@@ -1,8 +1,12 @@
 module Main exposing (..)
 
 import Model exposing (..)
+import Style exposing (..)
+
 import Browser exposing (Document)
-import Html exposing (text)
+import Dict exposing (Dict)
+import Html exposing (Html, div, text, button, h2)
+import Html.Events exposing (onClick)
 
 
 
@@ -20,7 +24,7 @@ main =
 
 init : () -> ( Model, Cmd Msg )
 init flags =
-  ( Model
+  ( Model Dict.empty 0
   , Cmd.none
   )
 
@@ -32,9 +36,23 @@ init flags =
 view : Model -> Document Msg
 view model =
   Document
-    "Elm Starter"
-    [ text "Elm Starter"
+    "Elm DM6"
+    [ h2 [] [ text "Elm DM6" ]
+    , button [ onClick AddTopic ] [ text "Add Topic" ]
+    , viewGraph model
     ]
+
+
+viewGraph : Model -> Html Msg
+viewGraph model =
+  div []
+    ( Dict.values model.items |> List.map
+      (\item ->
+        case item of
+          Topic id pos -> div (topicStyle pos) []
+          Assoc _ _ _ _ -> text ""
+      )
+    )
 
 
 
@@ -43,7 +61,16 @@ view model =
 
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
-  (model, Cmd.none)
+  let
+    id = model.nextId
+  in
+  ( { model
+    | items = model.items |> Dict.insert id
+      ( Topic id <| Point 92 64 )
+    , nextId = id + 1
+    }
+    , Cmd.none
+  )
 
 
 
