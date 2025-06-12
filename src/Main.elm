@@ -3,14 +3,22 @@ module Main exposing (..)
 import Model exposing (..)
 import Style exposing (..)
 
+import Array
 import Browser
 import Browser.Events as Events
 import Dict exposing (Dict)
 import Html exposing (Html, div, text, button, h2)
 import Html.Attributes exposing (class, attribute)
-import Html.Events exposing (onClick)
+import Html.Events exposing (onClick, on)
 import Json.Decode as D
 import Debug exposing (log)
+
+
+
+-- CONFIG
+
+
+colors = Array.fromList([120, 0, 210, 36, 270, 58])
 
 
 
@@ -44,9 +52,14 @@ view : Model -> Browser.Document Msg
 view model =
   Browser.Document
     "Elm DM6"
-    [ h2 [] [ text "Elm DM6" ]
-    , button [ onClick AddTopic ] [ text "Add Topic" ]
-    , viewGraph model
+    [ div
+      ( [ on "mouseover" overDecoder ]
+        ++ appStyle
+      )
+      [ h2 [] [ text "Elm DM6" ]
+      , button [ onClick AddTopic ] [ text "Add Topic" ]
+      , viewGraph model
+      ]
     ]
 
 
@@ -56,19 +69,19 @@ viewGraph model =
     ( Dict.values model.items |> List.map
       (\item ->
         case item of
-          Topic id pos -> viewTopic id pos
+          Topic id pos color -> viewTopic model id pos color
           Assoc _ _ _ _ -> text ""
       )
     )
 
 
-viewTopic : Id -> Point -> Html Msg
-viewTopic id pos =
+viewTopic : Model -> Id -> Point -> Color -> Html Msg
+viewTopic model id pos color =
   div
     ( [ class "dmx-topic"
       , attribute "data-id" (String.fromInt id)
       ]
-      ++ topicStyle pos
+      ++ topicStyle model id pos color
     )
     []
 
@@ -80,21 +93,30 @@ viewTopic id pos =
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
   let
-    _ = log "update" msg
+    _ =
+      case msg of
+        Mouse (Move _) -> msg
+        _ -> log "update" msg
   in
   case msg of
-    AddTopic ->
-      let
-        id = model.nextId
-      in
-      ( { model
-        | items = model.items |> Dict.insert id
-          ( Topic id <| Point 92 64 )
-        , nextId = id + 1
-        }
-        , Cmd.none
-      )
+    AddTopic -> ( addTopic model, Cmd.none )
     Mouse mouseMsg -> updateMouse mouseMsg model
+
+
+addTopic : Model -> Model
+addTopic model =
+  let
+    id = model.nextId
+    index = modBy (Array.length colors) (Dict.size model.items)
+    color = case colors |> Array.get index of
+      Just color_ -> color_
+      Nothing -> logError "addTopic" "Illegal color" 0
+  in
+  { model
+  | items = model.items |> Dict.insert id
+    ( Topic id (Point 92 64) color )
+  , nextId = id + 1
+  }
 
 
 updateMouse : MouseMsg -> Model -> ( Model, Cmd Msg )
@@ -104,6 +126,7 @@ updateMouse msg model =
     DownItem class id pos -> ( mouseDownOnItem model class id pos, Cmd.none )
     Move pos -> ( mouseMove model pos, Cmd.none )
     Up -> mouseUp model
+    Over class id -> ( mouseOver model class id, Cmd.none )
 
 
 mouseDownOnItem : Model -> Class -> Id -> Point -> Model
@@ -118,11 +141,11 @@ mouseMove model pos =
       -- enter DragTopic state only on 1st move
       let
         dragState = case class of
-          "dmx-topic" -> DragTopic id pos_
+          "dmx-topic" -> DragTopic id pos_ Nothing
           _ -> NoDrag -- the error will be logged in performDrag
       in
       performDrag { model | dragState = dragState } pos
-    DragTopic _ _ ->
+    DragTopic _ _ _ ->
       performDrag model pos
     NoDrag ->
       logError "mouseMove" "Received Move message when dragState is NoDrag" model
@@ -131,7 +154,7 @@ mouseMove model pos =
 performDrag : Model -> Point -> Model
 performDrag model pos =
   case model.dragState of
-    DragTopic id lastPoint ->
+    DragTopic id lastPoint target ->
       let
         delta = Point
           (pos.x - lastPoint.x)
@@ -139,7 +162,7 @@ performDrag model pos =
       in
       { model
         | items = updateTopic model id delta
-        , dragState = DragTopic id pos -- update lastPoint
+        , dragState = DragTopic id pos target -- update lastPoint
       }
     DragEngaged _ _ _ ->
       logError "performDrag" "Received Move message when dragState is DragEngaged" model
@@ -152,12 +175,11 @@ updateTopic model id delta =
   model.items |> Dict.update
     id
     (\item_ -> case item_ of
-      Just (Topic id_ pos) -> Just
-        (let
+      Just (Topic id_ pos color) ->
+        let
           pos_ = Point (pos.x + delta.x) (pos.y + delta.y)
         in
-          Topic id_ pos_)
-        -- { timespan | begin = timespan.begin + delta_ }
+          Just (Topic id_ pos_ color)
       Just assoc -> Just assoc
       Nothing -> illegalItemId "updateTopic" id Nothing
     )
@@ -165,8 +187,36 @@ updateTopic model id delta =
 
 mouseUp : Model -> ( Model, Cmd Msg )
 mouseUp model =
-  -- TODO
-  ( { model | dragState = NoDrag }, Cmd.none )
+  let
+    newModel = case model.dragState of
+      DragTopic id _ (Just targetId) ->
+        log ("--> dropped " ++ String.fromInt id ++ " on " ++ String.fromInt targetId)
+          createHierarchy model id targetId
+      DragTopic _ _ _ ->
+        log "--> no drop" model
+      DragEngaged _ _ _ ->
+        log "Hint: MouseUp without dragging" model
+      NoDrag -> logError "mouseUp" "Received Up when dragState is NoDrag" model
+  in
+    ( { newModel | dragState = NoDrag }, Cmd.none )
+
+
+mouseOver : Model -> Class -> Id -> Model
+mouseOver model class targetId =
+  case model.dragState of
+    NoDrag -> model
+    DragTopic id lastPoint _ ->
+      let
+        target = if id /= targetId then (Just targetId) else Nothing
+      in
+      { model | dragState = DragTopic id lastPoint target } -- update drop target
+    DragEngaged _ _ _ ->
+      logError "mouseOver" "Received Over message when dragState is DragEngaged" model
+
+
+createHierarchy : Model -> Id -> Id -> Model
+createHierarchy model id targetId =
+  model -- TODO
 
 
 
@@ -178,7 +228,7 @@ subscriptions model =
   case model.dragState of
     NoDrag -> mouseDownSub
     DragEngaged _ _ _ -> dragSub
-    DragTopic _ _ -> dragSub
+    DragTopic _ _ _ -> dragSub
 
 
 mouseDownSub : Sub Msg
@@ -199,7 +249,7 @@ dragSub : Sub Msg
 dragSub =
   Sub.batch
     [ Events.onMouseMove <| D.map Mouse <| D.map Move
-        ( D.map2 Point
+        ( D.map2 Point -- TODO: no double code
           ( D.field "clientX" D.int )
           ( D.field "clientY" D.int )
         )
@@ -212,6 +262,18 @@ strToIntDecoder str =
   case String.toInt str of
     Just int -> D.succeed int
     Nothing -> D.fail <| "\"" ++ str ++ "\" is an invalid ID"
+
+
+
+-- HELPER
+
+
+-- TODO: no double code
+overDecoder : D.Decoder Msg
+overDecoder =
+  D.map Mouse <| D.map2 Over
+    ( D.at ["target", "className"] D.string )
+    ( D.at ["target", "dataset", "id"] D.string |> D.andThen strToIntDecoder )
 
 
 

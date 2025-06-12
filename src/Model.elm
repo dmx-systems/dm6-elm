@@ -15,7 +15,7 @@ type alias Items = Dict Id Item
 
 
 type Item
-  = Topic Id Point
+  = Topic Id Point Color
   | Assoc Id RoleType Id RoleType
 
 
@@ -29,12 +29,13 @@ type alias Id = Int
 type alias RoleType = String
 type alias Class = String
 type alias Delta = Point
+type alias Color = Int
 
 
 type DragState
   = NoDrag
-  | DragEngaged Class Id Point -- topic id, start point
-  | DragTopic Id Point         -- topic id, last point
+  | DragEngaged Class Id Point    -- topic id, start point
+  | DragTopic Id Point (Maybe Id) -- topic id, last point, drop tartget
 
 
 type Msg
@@ -47,3 +48,4 @@ type MouseMsg
   | DownItem Class Id Point -- mouse down on an item where a drag can be engaged
   | Move Point
   | Up
+  | Over Class Id
