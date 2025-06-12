@@ -3,6 +3,7 @@ module Style exposing (..)
 import Model exposing (..)
 import Html exposing (Attribute)
 import Html.Attributes exposing (style)
+import Debug exposing (log)
 
 
 
@@ -19,3 +20,12 @@ topicStyle pos =
   , style "border-radius" "15px"
   , style "background-color" "green"
   ]
+
+
+
+-- DEBUG
+
+
+logError : String -> String -> a -> a
+logError func text val =
+  log ("### ERROR @" ++ func ++ ": " ++ text) val
