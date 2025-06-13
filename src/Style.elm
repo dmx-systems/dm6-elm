@@ -15,6 +15,7 @@ topicSize = 24
 topicBorder = 5
 topicRadius = topicSize // 2 + topicBorder
 assocWith = 5
+selectionColor = "#007AFF" -- Firefox focus color
 
 
 
@@ -29,12 +30,14 @@ appStyle =
 topicStyle : Model -> TopicInfo -> List (Attribute Msg)
 topicStyle model { id, pos, color } =
   let
+    selected = model.selection |> List.member id
     dragging = case model.dragState of
       DragTopic id_ _ _ -> id_ == id
       _ -> False
     targeted = case model.dragState of
       DragTopic _ _ (Just id_) -> id_ == id
       _ -> False
+    borderColor = if targeted then "blue" else if selected then selectionColor else "transparent"
   in
   [ style "position" "absolute"
   , style "left" <| fromInt (pos.x - topicRadius) ++ "px"
@@ -44,7 +47,7 @@ topicStyle model { id, pos, color } =
   , style "border-radius" <| fromInt topicRadius ++ "px"
   , style "border-width" <| fromInt topicBorder ++ "px"
   , style "border-style" "solid"
-  , style "border-color" <| if targeted then "blue" else "transparent"
+  , style "border-color" borderColor
   , style "z-index" <| if dragging then "0" else "1"
   , style "background-color" <| "hsl(" ++ fromInt color ++ ", 70%, 60%)"
   ]

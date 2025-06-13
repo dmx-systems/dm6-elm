@@ -6,6 +6,7 @@ import Dict exposing (Dict)
 
 type alias Model =
   { items : Items
+  , selection: List Id    -- transient
   , dragState : DragState -- transient
   , nextId : Id
   }

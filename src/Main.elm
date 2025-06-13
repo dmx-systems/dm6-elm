@@ -41,6 +41,7 @@ init : () -> ( Model, Cmd Msg )
 init flags =
   ( Model
       Dict.empty
+      []
       NoDrag
       0
   , Cmd.none
@@ -190,16 +191,24 @@ addHierarchyAssoc model childId parentId =
 updateMouse : MouseMsg -> Model -> ( Model, Cmd Msg )
 updateMouse msg model =
   case msg of
-    Down -> ( model, Cmd.none )
+    Down -> ( mouseDown model, Cmd.none )
     DownItem class id pos -> ( mouseDownOnItem model class id pos, Cmd.none )
     Move pos -> ( mouseMove model pos, Cmd.none )
     Up -> mouseUp model
     Over class id -> ( mouseOver model class id, Cmd.none )
 
 
+mouseDown : Model -> Model
+mouseDown model =
+  { model | selection = [] }
+
+
 mouseDownOnItem : Model -> Class -> Id -> Point -> Model
 mouseDownOnItem model class id pos =
-  { model | dragState = DragEngaged class id pos }
+  { model
+  | selection = [ id ]
+  , dragState = DragEngaged class id pos
+  }
 
 
 mouseMove : Model -> Point -> Model
@@ -264,7 +273,7 @@ mouseUp model =
       DragTopic _ _ _ ->
         log "--> no drop" model
       DragEngaged _ _ _ ->
-        log "Hint: MouseUp without dragging" model
+        log "--> not dragged" model
       NoDrag -> logError "mouseUp" "Received Up when dragState is NoDrag" model
   in
     ( { newModel | dragState = NoDrag }, Cmd.none )
