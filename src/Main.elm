@@ -10,6 +10,9 @@ import Dict exposing (Dict)
 import Html exposing (Html, div, text, button, h2)
 import Html.Attributes exposing (class, attribute)
 import Html.Events exposing (onClick, on)
+import String exposing (String, fromInt)
+import Svg exposing (Svg, svg, line)
+import Svg.Attributes exposing (viewBox, width, height)
 import Json.Decode as D
 import Debug exposing (log)
 
@@ -65,25 +68,78 @@ view model =
 
 viewGraph : Model -> Html Msg
 viewGraph model =
-  div []
-    ( Dict.values model.items |> List.map
-      (\item ->
-        case item of
-          Topic topic -> viewTopic model topic
-          Assoc assoc -> text ""
-      )
-    )
+  let
+    ( nodes, edges ) =
+      model.items |> Dict.values |> List.foldr
+        (\item ( n, e ) ->
+            case item of
+              Topic topic -> ( viewTopic model topic :: n, e )
+              Assoc assoc -> ( n, viewAssoc model assoc :: e )
+        )
+        ( [], [] )
+  in
+  div
+    []
+    [ div
+        []
+        nodes
+    , svg
+        ( [ width "800"
+          , height "600"
+          , viewBox ("0 0 800 600")
+          ]
+          ++ svgStyle
+        )
+        edges
+    ]
 
 
 viewTopic : Model -> TopicInfo -> Html Msg
-viewTopic model { id, pos, color } =
+viewTopic model topic =
   div
     ( [ class "dmx-topic"
-      , attribute "data-id" (String.fromInt id)
+      , attribute "data-id" (fromInt topic.id)
       ]
-      ++ topicStyle model id pos color
+      ++ topicStyle model topic
     )
     []
+
+
+viewAssoc : Model -> AssocInfo -> Svg Msg
+viewAssoc model assoc =
+  let
+    geom = lineGeometry model assoc
+  in
+  case geom of
+    Just ( pos1, pos2 ) ->
+      line
+        (lineStyle pos1 pos2)
+        []
+    Nothing -> text "" -- TODO
+
+
+lineGeometry : Model -> AssocInfo -> Maybe ( Point, Point )
+lineGeometry model assoc =
+  let
+    topic1 = topicPlayer model assoc .player1
+    topic2 = topicPlayer model assoc .player2
+  in
+    Maybe.map2
+      (\ t1 t2 -> ( t1.pos, t2.pos ))
+      topic1
+      topic2
+
+
+topicPlayer : Model -> AssocInfo -> (AssocInfo -> Id) -> Maybe TopicInfo
+topicPlayer model assoc playerFunc =
+  let
+    playerId = playerFunc assoc
+    topic_ = case model.items |> Dict.get playerId of
+      Just (Topic topic) -> Just topic
+      Just (Assoc _) -> Nothing
+      Nothing -> illegalItemId "lineGeometry" playerId Nothing
+  in
+    topic_
 
 
 
@@ -114,7 +170,7 @@ addTopic model =
   in
   { model
   | items = model.items |> Dict.insert id
-    ( Topic <| TopicInfo id (Point 92 64) color )
+    ( Topic <| TopicInfo id (Point 112 76) color )
   , nextId = id + 1
   }
 
@@ -183,17 +239,18 @@ performDrag model pos =
 
 
 updateTopicPos : Model -> Id -> Delta -> Items
-updateTopicPos model id_ delta =
+updateTopicPos model id delta =
   model.items |> Dict.update
-    id_
+    id
     (\item -> case item of
-      Just (Topic {id, pos, color}) ->
+      Just (Topic topic) ->
         let
-          pos_ = Point (pos.x + delta.x) (pos.y + delta.y)
+          pos = Point (topic.pos.x + delta.x) (topic.pos.y + delta.y)
+          topic_ = { topic | pos = pos }
         in
-          Just (Topic <| TopicInfo id pos_ color)
+          Just (Topic topic_)
       Just assoc -> Just assoc
-      Nothing -> illegalItemId "updateTopicPos" id_ Nothing
+      Nothing -> illegalItemId "updateTopicPos" id Nothing
     )
 
 
@@ -202,7 +259,7 @@ mouseUp model =
   let
     newModel = case model.dragState of
       DragTopic id _ (Just targetId) ->
-        log ("--> dropped " ++ String.fromInt id ++ " on " ++ String.fromInt targetId)
+        log ("--> dropped " ++ fromInt id ++ " on " ++ fromInt targetId)
           addHierarchyAssoc model id targetId
       DragTopic _ _ _ ->
         log "--> no drop" model
@@ -294,4 +351,4 @@ illegalItemId func id val =
 
 illegalId : String -> String -> Int -> a -> a
 illegalId func item id val =
-  logError func (String.fromInt id ++ " is an illegal " ++ item ++ " ID") val
+  logError func (fromInt id ++ " is an illegal " ++ item ++ " ID") val
