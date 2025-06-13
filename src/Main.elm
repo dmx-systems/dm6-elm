@@ -7,9 +7,9 @@ import Array
 import Browser
 import Browser.Events as Events
 import Dict exposing (Dict)
-import Html exposing (Html, div, text, button, h2)
-import Html.Attributes exposing (class, attribute)
-import Html.Events exposing (onClick, on)
+import Html exposing (Html, Attribute, div, text, button, h2)
+import Html.Attributes exposing (class, attribute, disabled)
+import Html.Events exposing (onClick, on, stopPropagationOn)
 import String exposing (String, fromInt)
 import Svg exposing (Svg, svg, line)
 import Svg.Attributes exposing (viewBox, width, height)
@@ -54,6 +54,9 @@ init flags =
 
 view : Model -> Browser.Document Msg
 view model =
+  let
+    deleteDisabled = List.isEmpty model.selection
+  in
   Browser.Document
     "Elm DM6"
     [ div
@@ -61,7 +64,17 @@ view model =
         ++ appStyle
       )
       [ h2 [] [ text "Elm DM6" ]
-      , button [ onClick AddTopic ] [ text "Add Topic" ]
+      , button
+          [ onClick AddTopic ]
+          [ text "Add Topic" ]
+      , button
+          ( [ onClick Delete
+            , stopPropagationOnMousedown
+            , disabled deleteDisabled
+            ]
+            ++ buttonStyle
+          )
+          [ text "Delete" ]
       , viewGraph model
       ]
     ]
@@ -143,6 +156,11 @@ topicPlayer model assoc playerFunc =
     topic_
 
 
+stopPropagationOnMousedown : Attribute Msg
+stopPropagationOnMousedown =
+  stopPropagationOn "mousedown" <| D.succeed (NoOp, True)
+
+
 
 -- UPDATE
 
@@ -157,7 +175,9 @@ update msg model =
   in
   case msg of
     AddTopic -> ( addTopic model, Cmd.none )
+    Delete -> ( delete model, Cmd.none )
     Mouse mouseMsg -> updateMouse mouseMsg model
+    NoOp -> ( model, Cmd.none )
 
 
 addTopic : Model -> Model
@@ -186,6 +206,22 @@ addHierarchyAssoc model childId parentId =
     ( Assoc <| AssocInfo id childId "dmx.child" parentId "dmx.parent" )
   , nextId = id + 1
   }
+
+
+delete : Model -> Model
+delete model =
+  { model
+  | items = deleteItems model.items model.selection
+  , selection = []
+  }
+
+
+deleteItems : Items -> List Id -> Items
+deleteItems items ids =
+  case ids of
+    [] -> items
+    id :: moreIds -> deleteItems (Dict.remove id items) moreIds
+    -- TODO: delete assocs where this item is a player
 
 
 updateMouse : MouseMsg -> Model -> ( Model, Cmd Msg )

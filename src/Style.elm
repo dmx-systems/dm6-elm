@@ -73,6 +73,12 @@ lineStyle pos1 pos2 =
   ]
 
 
+buttonStyle : List (Attribute Msg)
+buttonStyle =
+  [ style "display" "block"
+  , style "margin-top" "20px" ]
+
+
 
 -- DEBUG
 

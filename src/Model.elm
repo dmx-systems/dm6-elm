@@ -57,7 +57,9 @@ type DragState
 
 type Msg
   = AddTopic
+  | Delete
   | Mouse MouseMsg
+  | NoOp
 
 
 type MouseMsg
