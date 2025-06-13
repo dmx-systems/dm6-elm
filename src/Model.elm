@@ -5,7 +5,7 @@ import Dict exposing (Dict)
 
 
 type alias Model =
-  { items: Items
+  { items : Items
   , dragState : DragState -- transient
   , nextId : Id
   }
@@ -15,8 +15,24 @@ type alias Items = Dict Id Item
 
 
 type Item
-  = Topic Id Point Color
-  | Assoc Id RoleType Id RoleType
+  = Topic TopicInfo
+  | Assoc AssocInfo
+
+
+type alias TopicInfo =
+  { id : Id
+  , pos : Point
+  , color : Color
+  }
+
+
+type alias AssocInfo =
+  { id : Id
+  , player1 : Id
+  , role1 : String
+  , player2 : Id
+  , role2 : String
+  }
 
 
 type alias Point =

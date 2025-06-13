@@ -69,14 +69,14 @@ viewGraph model =
     ( Dict.values model.items |> List.map
       (\item ->
         case item of
-          Topic id pos color -> viewTopic model id pos color
-          Assoc _ _ _ _ -> text ""
+          Topic topic -> viewTopic model topic
+          Assoc assoc -> text ""
       )
     )
 
 
-viewTopic : Model -> Id -> Point -> Color -> Html Msg
-viewTopic model id pos color =
+viewTopic : Model -> TopicInfo -> Html Msg
+viewTopic model { id, pos, color } =
   div
     ( [ class "dmx-topic"
       , attribute "data-id" (String.fromInt id)
@@ -114,7 +114,19 @@ addTopic model =
   in
   { model
   | items = model.items |> Dict.insert id
-    ( Topic id (Point 92 64) color )
+    ( Topic <| TopicInfo id (Point 92 64) color )
+  , nextId = id + 1
+  }
+
+
+addHierarchyAssoc : Model -> Id -> Id -> Model
+addHierarchyAssoc model childId parentId =
+  let
+    id = model.nextId
+  in
+  { model
+  | items = model.items |> Dict.insert id
+    ( Assoc <| AssocInfo id childId "dmx.child" parentId "dmx.parent" )
   , nextId = id + 1
   }
 
@@ -161,7 +173,7 @@ performDrag model pos =
           (pos.y - lastPoint.y)
       in
       { model
-        | items = updateTopic model id delta
+        | items = updateTopicPos model id delta
         , dragState = DragTopic id pos target -- update lastPoint
       }
     DragEngaged _ _ _ ->
@@ -170,18 +182,18 @@ performDrag model pos =
       logError "performDrag" "Received Move message when dragState is NoDrag" model
 
 
-updateTopic : Model -> Id -> Delta -> Items
-updateTopic model id delta =
+updateTopicPos : Model -> Id -> Delta -> Items
+updateTopicPos model id_ delta =
   model.items |> Dict.update
-    id
-    (\item_ -> case item_ of
-      Just (Topic id_ pos color) ->
+    id_
+    (\item -> case item of
+      Just (Topic {id, pos, color}) ->
         let
           pos_ = Point (pos.x + delta.x) (pos.y + delta.y)
         in
-          Just (Topic id_ pos_ color)
+          Just (Topic <| TopicInfo id pos_ color)
       Just assoc -> Just assoc
-      Nothing -> illegalItemId "updateTopic" id Nothing
+      Nothing -> illegalItemId "updateTopicPos" id_ Nothing
     )
 
 
@@ -191,7 +203,7 @@ mouseUp model =
     newModel = case model.dragState of
       DragTopic id _ (Just targetId) ->
         log ("--> dropped " ++ String.fromInt id ++ " on " ++ String.fromInt targetId)
-          createHierarchy model id targetId
+          addHierarchyAssoc model id targetId
       DragTopic _ _ _ ->
         log "--> no drop" model
       DragEngaged _ _ _ ->
@@ -212,11 +224,6 @@ mouseOver model class targetId =
       { model | dragState = DragTopic id lastPoint target } -- update drop target
     DragEngaged _ _ _ ->
       logError "mouseOver" "Received Over message when dragState is DragEngaged" model
-
-
-createHierarchy : Model -> Id -> Id -> Model
-createHierarchy model id targetId =
-  model -- TODO
 
 
 
