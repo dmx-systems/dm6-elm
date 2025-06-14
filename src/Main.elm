@@ -39,11 +39,13 @@ main =
 
 init : () -> ( Model, Cmd Msg )
 init flags =
-  ( Model
-      Dict.empty
-      []
-      NoDrag
-      0
+  ( { activeMap = 0
+    , maps = Dict.singleton 0 Dict.empty
+    , items = Dict.empty
+    , selection = []
+    , dragState = NoDrag
+    , nextId = 1
+    }
   , Cmd.none
   )
 
@@ -75,46 +77,65 @@ view model =
             ++ buttonStyle
           )
           [ text "Delete" ]
-      , viewGraph model
+      , viewMap model
       ]
     ]
 
 
-viewGraph : Model -> Html Msg
-viewGraph model =
+viewMap : Model -> Html Msg
+viewMap model =
   let
-    ( nodes, edges ) =
-      model.items |> Dict.values |> List.foldr
-        (\item ( n, e ) ->
-            case item of
-              Topic topic -> ( viewTopic model topic :: n, e )
-              Assoc assoc -> ( n, viewAssoc model assoc :: e )
-        )
-        ( [], [] )
+    map_ =
+      case model.maps |> Dict.get model.activeMap of
+        Just map -> Just (viewMapEntries model map)
+        Nothing -> illegalMapId "viewMap" model.activeMap Nothing
   in
-  div
-    []
-    [ div
+  case map_ of
+    Just ( topics, assocs ) ->
+      div
         []
-        nodes
-    , svg
-        ( [ width "800"
-          , height "600"
-          , viewBox ("0 0 800 600")
-          ]
-          ++ svgStyle
-        )
-        edges
-    ]
+        [ div
+            []
+            topics
+        , svg
+            ( [ width "800"
+              , height "600"
+              , viewBox ("0 0 800 600")
+              ]
+              ++ svgStyle
+            )
+            assocs
+        ]
+    Nothing ->
+      text <| "Can't render map " ++ fromInt model.activeMap
 
 
-viewTopic : Model -> TopicInfo -> Html Msg
-viewTopic model topic =
+viewMapEntries : Model -> Map -> ( List (Html Msg), List (Svg Msg) )
+viewMapEntries model map =
+  map |> Dict.toList |> List.foldr
+    (\(id, entry) ( t, a ) ->
+      case entry of
+        TopicEntry pos ->
+          case Dict.get id model.items of
+            Just (Topic topic) -> ( viewTopic model topic pos :: t, a )
+            Just (Assoc _) -> topicMismatch "viewMapEntries" id ( t, a )
+            Nothing -> illegalItemId "viewMapEntries" id ( t, a )
+        AssocEntry ->
+          case Dict.get id model.items of
+            Just (Assoc assoc) -> ( t, viewAssoc model assoc :: a )
+            Just (Topic _) -> assocMismatch "viewMapEntries" id ( t, a )
+            Nothing -> illegalItemId "viewMapEntries" id ( t, a )
+    )
+    ( [], [] )
+
+
+viewTopic : Model -> TopicInfo -> Point -> Html Msg
+viewTopic model topic pos =
   div
     ( [ class "dmx-topic"
       , attribute "data-id" (fromInt topic.id)
       ]
-      ++ topicStyle model topic
+      ++ topicStyle model topic pos
     )
     []
 
@@ -122,7 +143,7 @@ viewTopic model topic =
 viewAssoc : Model -> AssocInfo -> Svg Msg
 viewAssoc model assoc =
   let
-    geom = lineGeometry model assoc
+    geom = assocGeometry model assoc
   in
   case geom of
     Just ( pos1, pos2 ) ->
@@ -132,28 +153,29 @@ viewAssoc model assoc =
     Nothing -> text "" -- TODO
 
 
-lineGeometry : Model -> AssocInfo -> Maybe ( Point, Point )
-lineGeometry model assoc =
+assocGeometry : Model -> AssocInfo -> Maybe ( Point, Point )
+assocGeometry model assoc =
   let
-    topic1 = topicPlayer model assoc .player1
-    topic2 = topicPlayer model assoc .player2
+    pos1 = topicPos model assoc.player1
+    pos2 = topicPos model assoc.player2
   in
-    Maybe.map2
-      (\ t1 t2 -> ( t1.pos, t2.pos ))
-      topic1
-      topic2
+  Maybe.map2 (\p1 p2 -> ( p1, p2 )) pos1 pos2
 
 
-topicPlayer : Model -> AssocInfo -> (AssocInfo -> Id) -> Maybe TopicInfo
-topicPlayer model assoc playerFunc =
+topicPos : Model -> Id -> Maybe Point
+topicPos model id =
   let
-    playerId = playerFunc assoc
-    topic_ = case model.items |> Dict.get playerId of
-      Just (Topic topic) -> Just topic
-      Just (Assoc _) -> Nothing
-      Nothing -> illegalItemId "lineGeometry" playerId Nothing
+    map_ =
+      case Dict.get model.activeMap model.maps of
+        Just map -> Just map
+        Nothing -> illegalMapId "topicPos" model.activeMap Nothing
+    getPos map =
+      case Dict.get id map of
+        Just (TopicEntry pos) -> Just pos
+        Just AssocEntry -> Nothing
+        Nothing -> illegalItemId "topicPos" id Nothing
   in
-    topic_
+  map_ |> Maybe.andThen getPos
 
 
 stopPropagationOnMousedown : Attribute Msg
@@ -188,22 +210,34 @@ addTopic model =
     color = case colors |> Array.get index of
       Just color_ -> color_
       Nothing -> logError "addTopic" "Illegal color" 0
+    pos = Point 112 76
   in
   { model
-  | items = model.items |> Dict.insert id
-    ( Topic <| TopicInfo id (Point 112 76) color )
+  | maps = model.maps |> Dict.update model.activeMap
+      (\map_ ->
+        case map_ of
+          Just map -> Just (map |> Dict.insert id (TopicEntry pos))
+          Nothing -> illegalMapId "addTopic" model.activeMap Nothing
+      )
+  , items = model.items |> Dict.insert id ( Topic <| TopicInfo id color )
   , nextId = id + 1
   }
 
 
-addHierarchyAssoc : Model -> Id -> Id -> Model
-addHierarchyAssoc model childId parentId =
+addAssoc : Model -> Id -> Id -> Model
+addAssoc model player1 player2 =
   let
     id = model.nextId
   in
   { model
-  | items = model.items |> Dict.insert id
-    ( Assoc <| AssocInfo id childId "dmx.child" parentId "dmx.parent" )
+  | maps = model.maps |> Dict.update model.activeMap
+      (\map_ ->
+        case map_ of
+          Just map -> Just (map |> Dict.insert id AssocEntry)
+          Nothing -> illegalMapId "addAssoc" model.activeMap Nothing
+      )
+  , items = model.items |> Dict.insert id
+      ( Assoc <| AssocInfo id player1 "dmx.default" player2 "dmx.default" )
   , nextId = id + 1
   }
 
@@ -274,7 +308,7 @@ performDrag model pos =
           (pos.y - lastPoint.y)
       in
       { model
-        | items = updateTopicPos model id delta
+        | maps = updateTopicPos model id delta
         , dragState = DragTopic id pos target -- update lastPoint
       }
     DragEngaged _ _ _ ->
@@ -283,19 +317,22 @@ performDrag model pos =
       logError "performDrag" "Received Move message when dragState is NoDrag" model
 
 
-updateTopicPos : Model -> Id -> Delta -> Items
+updateTopicPos : Model -> Id -> Delta -> Maps
 updateTopicPos model id delta =
-  model.items |> Dict.update
-    id
-    (\item -> case item of
-      Just (Topic topic) ->
-        let
-          pos = Point (topic.pos.x + delta.x) (topic.pos.y + delta.y)
-          topic_ = { topic | pos = pos }
-        in
-          Just (Topic topic_)
-      Just assoc -> Just assoc
-      Nothing -> illegalItemId "updateTopicPos" id Nothing
+  model.maps |> Dict.update model.activeMap
+    (\map_ ->
+      case map_ of
+        Just map -> Just
+          (map |> Dict.update id
+            (\entry_ ->
+              case entry_ of
+                Just (TopicEntry pos) -> Just
+                  (TopicEntry <| Point (pos.x + delta.x) (pos.y + delta.y))
+                Just AssocEntry -> illegalItemId "updateTopicPos" id Nothing
+                Nothing -> illegalItemId "updateTopicPos" id Nothing
+            )
+          )
+        Nothing -> illegalMapId "addTopic" model.activeMap Nothing
     )
 
 
@@ -305,7 +342,7 @@ mouseUp model =
     newModel = case model.dragState of
       DragTopic id _ (Just targetId) ->
         log ("--> dropped " ++ fromInt id ++ " on " ++ fromInt targetId)
-          addHierarchyAssoc model id targetId
+          addAssoc model id targetId
       DragTopic _ _ _ ->
         log "--> no drop" model
       DragEngaged _ _ _ ->
@@ -387,6 +424,21 @@ overDecoder =
 
 
 -- DEBUG
+
+
+topicMismatch : String -> Int -> a -> a
+topicMismatch func id val =
+  logError func (fromInt id ++ " is not a Topic but an Assoc") val
+
+
+assocMismatch : String -> Int -> a -> a
+assocMismatch func id val =
+  logError func (fromInt id ++ " is not an Assoc but a Topic") val
+
+
+illegalMapId : String -> Int -> a -> a
+illegalMapId func id val =
+  illegalId func "Map" id val
 
 
 illegalItemId : String -> Int -> a -> a

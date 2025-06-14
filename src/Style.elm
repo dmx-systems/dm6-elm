@@ -27,8 +27,8 @@ appStyle =
   []
 
 
-topicStyle : Model -> TopicInfo -> List (Attribute Msg)
-topicStyle model { id, pos, color } =
+topicStyle : Model -> TopicInfo -> Point -> List (Attribute Msg)
+topicStyle model { id, color } pos =
   let
     selected = model.selection |> List.member id
     dragging = case model.dragState of

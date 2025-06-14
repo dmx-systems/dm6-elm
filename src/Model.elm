@@ -5,11 +5,22 @@ import Dict exposing (Dict)
 
 
 type alias Model =
-  { items : Items
-  , selection: List Id    -- transient
+  { activeMap : Id
+  , maps : Maps
+  , items : Items
+  , selection : List Id   -- transient
   , dragState : DragState -- transient
   , nextId : Id
   }
+
+
+type alias Maps = Dict Id Map
+type alias Map = Dict Id MapEntry
+
+
+type MapEntry
+  = TopicEntry Point
+  | AssocEntry
 
 
 type alias Items = Dict Id Item
@@ -22,7 +33,6 @@ type Item
 
 type alias TopicInfo =
   { id : Id
-  , pos : Point
   , color : Color
   }
 
