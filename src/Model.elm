@@ -65,7 +65,12 @@ type DragState
   | WaitForStartTime Class Id Point
   | DragEngaged Time.Posix Class Id Point -- topic id, start point
   | WaitForEndTime Time.Posix Class Id Point
-  | DragTopic Id Point (Maybe Id) -- topic id, last point, drop tartget
+  | Drag DragMode Id Point (Maybe Id) -- topic id, last point, drop tartget
+
+
+type DragMode
+  = DragTopic
+  | DrawAssoc
 
 
 type Msg

@@ -11,6 +11,7 @@ import Debug exposing (log)
 
 -- CONFIG
 
+
 topicSize = 24
 topicBorder = 5
 topicRadius = topicSize // 2 + topicBorder
@@ -24,7 +25,9 @@ selectionColor = "#007AFF" -- Firefox focus color
 
 appStyle : List (Attribute Msg)
 appStyle =
-  []
+  [ style "user-select" "none"
+  , style "-webkit-user-select" "none" -- Safari still needs vendor prefix
+  ]
 
 
 topicStyle : Model -> TopicInfo -> Point -> List (Attribute Msg)
@@ -32,10 +35,10 @@ topicStyle model { id, color } pos =
   let
     selected = model.selection |> List.member id
     dragging = case model.dragState of
-      DragTopic id_ _ _ -> id_ == id
+      Drag DragTopic id_ _ _ -> id_ == id
       _ -> False
     targeted = case model.dragState of
-      DragTopic _ _ (Just id_) -> id_ == id
+      Drag _ _ _ (Just id_) -> id_ == id
       _ -> False
     borderColor = if targeted then "blue" else if selected then selectionColor else "transparent"
   in

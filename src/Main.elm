@@ -24,6 +24,7 @@ import Debug exposing (log)
 
 
 colors = Array.fromList([120, 0, 210, 36, 270, 58])
+dragThresholdMillis = 300
 
 
 
@@ -106,7 +107,9 @@ viewMap model =
               ]
               ++ svgStyle
             )
-            assocs
+            ( assocs
+              ++ viewLimboAssoc model
+            )
         ]
     Nothing ->
       text <| "Can't render map " ++ fromInt model.activeMap
@@ -148,11 +151,25 @@ viewAssoc model assoc =
     geom = assocGeometry model assoc
   in
   case geom of
-    Just ( pos1, pos2 ) ->
-      line
-        (lineStyle pos1 pos2)
-        []
+    Just ( pos1, pos2 ) -> viewLine pos1 pos2
     Nothing -> text "" -- TODO
+
+
+viewLimboAssoc : Model -> List (Svg Msg)
+viewLimboAssoc model =
+  case model.dragState of
+    Drag DrawAssoc topicId pos _ ->
+      case topicPos model topicId of
+        Just pos1 -> [ viewLine pos1 pos ]
+        Nothing -> []
+    _ -> []
+
+
+viewLine : Point -> Point -> Svg Msg
+viewLine pos1 pos2 =
+  line
+    (lineStyle pos1 pos2)
+    []
 
 
 assocGeometry : Model -> AssocInfo -> Maybe ( Point, Point )
@@ -292,14 +309,19 @@ timeArrived model time =
     WaitForStartTime class id pos ->
       { model | dragState = DragEngaged time class id pos }
     WaitForEndTime startTime class id pos ->
-      -- if posixToMillis time - posixToMillis startTime < 1000 then -- TODO
-        { model | dragState =
-            case class of
-              "dmx-topic" -> DragTopic id pos Nothing
-              _ -> NoDrag -- the error will be logged in performDrag
-        }
-      -- else
-      --   log "--> DRAW ASSOC!" model
+      { model | dragState =
+          case class of
+            "dmx-topic" ->
+              let
+                dragMode =
+                  if posixToMillis time - posixToMillis startTime < dragThresholdMillis then
+                    DragTopic
+                  else
+                    DrawAssoc
+              in
+              Drag dragMode id pos Nothing
+            _ -> NoDrag -- the error will be logged in performDrag
+      }
     _ -> logError "timeArrived" "Received Time message when dragState is not WaitForTime"
         model
 
@@ -313,7 +335,7 @@ mouseMove model pos =
       )
     WaitForEndTime _ class id pos_ ->
       ( model, Cmd.none ) -- ignore
-    DragTopic _ _ _ ->
+    Drag _ _ _ _ ->
       ( performDrag model pos, Cmd.none )
     WaitForStartTime _ _ _ ->
       logError "mouseMove" "Received Move message when dragState is WaitForStartTime"
@@ -325,15 +347,19 @@ mouseMove model pos =
 performDrag : Model -> Point -> Model
 performDrag model pos =
   case model.dragState of
-    DragTopic id lastPoint target ->
+    Drag dragMode id lastPoint target ->
       let
         delta = Point
           (pos.x - lastPoint.x)
           (pos.y - lastPoint.y)
+        maps =
+          case dragMode of
+            DragTopic -> updateTopicPos model id delta
+            DrawAssoc -> model.maps
       in
       { model
-        | maps = updateTopicPos model id delta
-        , dragState = DragTopic id pos target -- update lastPoint
+        | maps = maps
+        , dragState = Drag dragMode id pos target -- update lastPoint
       }
     WaitForStartTime _ _ _ ->
       logError "performDrag" "Received Move message when dragState is WaitForStartTime" model
@@ -368,13 +394,16 @@ mouseUp : Model -> Model
 mouseUp model =
   let
     newModel = case model.dragState of
-      DragTopic id _ (Just targetId) ->
-        log ("--> dropped " ++ fromInt id ++ " on " ++ fromInt targetId)
+      Drag DragTopic id _ (Just targetId) ->
+        log ("--> dropped " ++ fromInt id ++ " on " ++ fromInt targetId) model
+          -- TODO
+      Drag DrawAssoc id _ (Just targetId) ->
+        log ("--> assoc drawn from " ++ fromInt id ++ " to " ++ fromInt targetId)
           addAssoc model id targetId
-      DragTopic _ _ _ ->
-        log "--> no drop" model
+      Drag _ _ _ _ ->
+        log "--> drag ended w/o target" model
       DragEngaged _ _ _ _ ->
-        log "--> not dragged" model
+        log "--> drag aborted w/o moving" model
       WaitForStartTime _ _ _ ->
         logError "mouseUp" "Received Up when dragState is WaitForStartTime" model
       WaitForEndTime _ _ _ _ ->
@@ -387,11 +416,11 @@ mouseUp model =
 mouseOver : Model -> Class -> Id -> Model
 mouseOver model class targetId =
   case model.dragState of
-    DragTopic id lastPoint _ ->
+    Drag dragMode id lastPoint _ ->
       let
         target = if id /= targetId then (Just targetId) else Nothing
       in
-      { model | dragState = DragTopic id lastPoint target } -- update drop target
+      { model | dragState = Drag dragMode id lastPoint target } -- update drop target
     NoDrag -> model
     WaitForStartTime _ _ _ -> model -- TODO: Error?
     WaitForEndTime _ _ _ _ -> model -- TODO: Error?
@@ -410,7 +439,7 @@ subscriptions model =
     WaitForStartTime _ _ _ -> Sub.none
     WaitForEndTime _ _ _ _ -> Sub.none
     DragEngaged _ _ _ _ -> dragSub
-    DragTopic _ _ _ -> dragSub
+    Drag _ _ _ _ -> dragSub
 
 
 mouseDownSub : Sub Msg
