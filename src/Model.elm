@@ -1,6 +1,7 @@
 module Model exposing (..)
 
 import Dict exposing (Dict)
+import Time
 
 
 
@@ -61,7 +62,9 @@ type alias Color = Int
 
 type DragState
   = NoDrag
-  | DragEngaged Class Id Point    -- topic id, start point
+  | WaitForStartTime Class Id Point
+  | DragEngaged Time.Posix Class Id Point -- topic id, start point
+  | WaitForEndTime Time.Posix Class Id Point
   | DragTopic Id Point (Maybe Id) -- topic id, last point, drop tartget
 
 
@@ -78,3 +81,4 @@ type MouseMsg
   | Move Point
   | Up
   | Over Class Id
+  | Time Time.Posix

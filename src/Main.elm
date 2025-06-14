@@ -13,6 +13,8 @@ import Html.Events exposing (onClick, on, stopPropagationOn)
 import String exposing (String, fromInt)
 import Svg exposing (Svg, svg, line)
 import Svg.Attributes exposing (viewBox, width, height)
+import Task
+import Time exposing (posixToMillis)
 import Json.Decode as D
 import Debug exposing (log)
 
@@ -60,12 +62,12 @@ view model =
     deleteDisabled = List.isEmpty model.selection
   in
   Browser.Document
-    "Elm DM6"
+    "DM6 Elm"
     [ div
       ( [ on "mouseover" overDecoder ]
         ++ appStyle
       )
-      [ h2 [] [ text "Elm DM6" ]
+      [ h2 [] [ text "DM6 Elm" ]
       , button
           [ onClick AddTopic ]
           [ text "Add Topic" ]
@@ -262,10 +264,11 @@ updateMouse : MouseMsg -> Model -> ( Model, Cmd Msg )
 updateMouse msg model =
   case msg of
     Down -> ( mouseDown model, Cmd.none )
-    DownItem class id pos -> ( mouseDownOnItem model class id pos, Cmd.none )
-    Move pos -> ( mouseMove model pos, Cmd.none )
-    Up -> mouseUp model
+    DownItem class id pos -> mouseDownOnItem model class id pos
+    Move pos -> mouseMove model pos
+    Up -> ( mouseUp model, Cmd.none )
     Over class id -> ( mouseOver model class id, Cmd.none )
+    Time time -> ( timeArrived model time, Cmd.none )
 
 
 mouseDown : Model -> Model
@@ -273,29 +276,50 @@ mouseDown model =
   { model | selection = [] }
 
 
-mouseDownOnItem : Model -> Class -> Id -> Point -> Model
+mouseDownOnItem : Model -> Class -> Id -> Point -> ( Model, Cmd Msg )
 mouseDownOnItem model class id pos =
-  { model
-  | selection = [ id ]
-  , dragState = DragEngaged class id pos
-  }
+  ( { model
+    | selection = [ id ]
+    , dragState = WaitForStartTime class id pos
+    }
+  , Task.perform (Time >> Mouse) Time.now
+  )
 
 
-mouseMove : Model -> Point -> Model
+timeArrived : Model -> Time.Posix -> Model
+timeArrived model time =
+  case model.dragState of
+    WaitForStartTime class id pos ->
+      { model | dragState = DragEngaged time class id pos }
+    WaitForEndTime startTime class id pos ->
+      -- if posixToMillis time - posixToMillis startTime < 1000 then -- TODO
+        { model | dragState =
+            case class of
+              "dmx-topic" -> DragTopic id pos Nothing
+              _ -> NoDrag -- the error will be logged in performDrag
+        }
+      -- else
+      --   log "--> DRAW ASSOC!" model
+    _ -> logError "timeArrived" "Received Time message when dragState is not WaitForTime"
+        model
+
+
+mouseMove : Model -> Point -> ( Model, Cmd Msg )
 mouseMove model pos =
   case model.dragState of
-    DragEngaged class id pos_ ->
-      -- enter DragTopic state only on 1st move
-      let
-        dragState = case class of
-          "dmx-topic" -> DragTopic id pos_ Nothing
-          _ -> NoDrag -- the error will be logged in performDrag
-      in
-      performDrag { model | dragState = dragState } pos
+    DragEngaged time class id pos_ ->
+      ( { model | dragState = WaitForEndTime time class id pos_ }
+      , Task.perform (Time >> Mouse) Time.now
+      )
+    WaitForEndTime _ class id pos_ ->
+      ( model, Cmd.none ) -- ignore
     DragTopic _ _ _ ->
-      performDrag model pos
+      ( performDrag model pos, Cmd.none )
+    WaitForStartTime _ _ _ ->
+      logError "mouseMove" "Received Move message when dragState is WaitForStartTime"
+        ( model, Cmd.none )
     NoDrag ->
-      logError "mouseMove" "Received Move message when dragState is NoDrag" model
+      logError "mouseMove" "Received Move message when dragState is NoDrag" ( model, Cmd.none )
 
 
 performDrag : Model -> Point -> Model
@@ -311,7 +335,11 @@ performDrag model pos =
         | maps = updateTopicPos model id delta
         , dragState = DragTopic id pos target -- update lastPoint
       }
-    DragEngaged _ _ _ ->
+    WaitForStartTime _ _ _ ->
+      logError "performDrag" "Received Move message when dragState is WaitForStartTime" model
+    WaitForEndTime _ _ _ _ ->
+      logError "performDrag" "Received Move message when dragState is WaitForEndTime" model
+    DragEngaged _ _ _ _ ->
       logError "performDrag" "Received Move message when dragState is DragEngaged" model
     NoDrag ->
       logError "performDrag" "Received Move message when dragState is NoDrag" model
@@ -336,7 +364,7 @@ updateTopicPos model id delta =
     )
 
 
-mouseUp : Model -> ( Model, Cmd Msg )
+mouseUp : Model -> Model
 mouseUp model =
   let
     newModel = case model.dragState of
@@ -345,23 +373,29 @@ mouseUp model =
           addAssoc model id targetId
       DragTopic _ _ _ ->
         log "--> no drop" model
-      DragEngaged _ _ _ ->
+      DragEngaged _ _ _ _ ->
         log "--> not dragged" model
+      WaitForStartTime _ _ _ ->
+        logError "mouseUp" "Received Up when dragState is WaitForStartTime" model
+      WaitForEndTime _ _ _ _ ->
+        logError "mouseUp" "Received Up when dragState is WaitForEndTime" model
       NoDrag -> logError "mouseUp" "Received Up when dragState is NoDrag" model
   in
-    ( { newModel | dragState = NoDrag }, Cmd.none )
+  { newModel | dragState = NoDrag }
 
 
 mouseOver : Model -> Class -> Id -> Model
 mouseOver model class targetId =
   case model.dragState of
-    NoDrag -> model
     DragTopic id lastPoint _ ->
       let
         target = if id /= targetId then (Just targetId) else Nothing
       in
       { model | dragState = DragTopic id lastPoint target } -- update drop target
-    DragEngaged _ _ _ ->
+    NoDrag -> model
+    WaitForStartTime _ _ _ -> model -- TODO: Error?
+    WaitForEndTime _ _ _ _ -> model -- TODO: Error?
+    DragEngaged _ _ _ _ ->
       logError "mouseOver" "Received Over message when dragState is DragEngaged" model
 
 
@@ -373,7 +407,9 @@ subscriptions : Model -> Sub Msg
 subscriptions model =
   case model.dragState of
     NoDrag -> mouseDownSub
-    DragEngaged _ _ _ -> dragSub
+    WaitForStartTime _ _ _ -> Sub.none
+    WaitForEndTime _ _ _ _ -> Sub.none
+    DragEngaged _ _ _ _ -> dragSub
     DragTopic _ _ _ -> dragSub
 
 
