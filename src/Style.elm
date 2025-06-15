@@ -25,7 +25,8 @@ selectionColor = "#007AFF" -- Firefox focus color
 
 appStyle : List (Attribute Msg)
 appStyle =
-  [ style "user-select" "none"
+  [ style "font-family" "sans-serif"
+  , style "user-select" "none"
   , style "-webkit-user-select" "none" -- Safari still needs vendor prefix
   ]
 
@@ -53,6 +54,14 @@ topicStyle model { id, color } pos =
   , style "border-color" borderColor
   , style "z-index" <| if dragging then "0" else "1"
   , style "background-color" <| "hsl(" ++ fromInt color ++ ", 70%, 60%)"
+  ]
+
+
+itemCountStyle : List (Attribute Msg)
+itemCountStyle =
+  [ style "position" "relative"
+  , style "top" "-1.3em"
+  , style "text-align" "center"
   ]
 
 

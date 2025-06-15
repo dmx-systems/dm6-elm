@@ -138,13 +138,30 @@ viewItems model map =
 
 viewTopic : Model -> TopicInfo -> Point -> Html Msg
 viewTopic model topic pos =
+  let
+    isMap = hasMap topic.id model
+    itemCount =
+      if isMap then
+        case getMap topic.id model of
+          Just map -> Dict.size map
+          Nothing -> 0
+      else
+        0
+  in
   div
     ( [ class "dmx-topic"
       , attribute "data-id" (fromInt topic.id)
       ]
       ++ topicStyle model topic pos
     )
-    []
+    ( if isMap then
+        [ div
+            itemCountStyle
+            [ text <| fromInt itemCount ]
+        ]
+      else
+        []
+    )
 
 
 viewAssoc : Model -> AssocInfo -> Svg Msg
@@ -283,13 +300,11 @@ removeItemFromMap model itemId mapId =
 
 getViewItemById : Model -> Id -> Id -> Maybe ViewItem
 getViewItemById model itemId mapId =
-  case getMap model mapId of
-    Just map -> getViewItem itemId map
-    Nothing -> Nothing
+  getMap mapId model |> Maybe.andThen (getViewItem itemId)
 
 
-getMap : Model -> Id -> Maybe Map
-getMap model mapId =
+getMap : Id -> Model -> Maybe Map
+getMap mapId model =
   case Dict.get mapId model.maps of
     Just map -> Just map
     Nothing -> illegalMapId "getMap" mapId Nothing
@@ -300,6 +315,11 @@ getViewItem itemId map =
   case Dict.get itemId map of
     Just viewItem -> Just viewItem
     Nothing -> illegalItemId "getViewItem" itemId Nothing
+
+
+hasMap : Id -> Model -> Bool
+hasMap mapId model =
+  Dict.member mapId model.maps
 
 
 topicPos : Model -> Id -> Maybe Point
