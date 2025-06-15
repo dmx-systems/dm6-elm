@@ -42,9 +42,9 @@ main =
 
 init : () -> ( Model, Cmd Msg )
 init flags =
-  ( { activeMap = 0
+  ( { items = Dict.empty
     , maps = Dict.singleton 0 Dict.empty
-    , items = Dict.empty
+    , activeMap = 0
     , selection = []
     , dragState = NoDrag
     , nextId = 1
@@ -92,7 +92,7 @@ viewMap model =
   let
     map_ =
       case model.maps |> Dict.get model.activeMap of
-        Just map -> Just (viewMapEntries model map)
+        Just map -> Just (viewItems model map)
         Nothing -> illegalMapId "viewMap" model.activeMap Nothing
   in
   case map_ of
@@ -117,21 +117,21 @@ viewMap model =
       text <| "Can't render map " ++ fromInt model.activeMap
 
 
-viewMapEntries : Model -> Map -> ( List (Html Msg), List (Svg Msg) )
-viewMapEntries model map =
-  map |> Dict.toList |> List.foldr
-    (\(id, entry) ( t, a ) ->
-      case entry of
-        TopicEntry pos ->
+viewItems : Model -> Map -> ( List (Html Msg), List (Svg Msg) )
+viewItems model map =
+  map |> Dict.values |> List.foldr
+    (\viewItem ( t, a ) ->
+      case viewItem of
+        ViewTopic {id, pos} ->
           case Dict.get id model.items of
             Just (Topic topic) -> ( viewTopic model topic pos :: t, a )
-            Just (Assoc _) -> topicMismatch "viewMapEntries" id ( t, a )
-            Nothing -> illegalItemId "viewMapEntries" id ( t, a )
-        AssocEntry ->
+            Just (Assoc _) -> topicMismatch "viewItems" id ( t, a )
+            Nothing -> illegalItemId "viewItems" id ( t, a )
+        ViewAssoc {id} ->
           case Dict.get id model.items of
             Just (Assoc assoc) -> ( t, viewAssoc model assoc :: a )
-            Just (Topic _) -> assocMismatch "viewMapEntries" id ( t, a )
-            Nothing -> illegalItemId "viewMapEntries" id ( t, a )
+            Just (Topic _) -> assocMismatch "viewItems" id ( t, a )
+            Nothing -> illegalItemId "viewItems" id ( t, a )
     )
     ( [], [] )
 
@@ -183,22 +183,6 @@ assocGeometry model assoc =
   Maybe.map2 (\p1 p2 -> ( p1, p2 )) pos1 pos2
 
 
-topicPos : Model -> Id -> Maybe Point
-topicPos model id =
-  let
-    map_ =
-      case Dict.get model.activeMap model.maps of
-        Just map -> Just map
-        Nothing -> illegalMapId "topicPos" model.activeMap Nothing
-    getPos map =
-      case Dict.get id map of
-        Just (TopicEntry pos) -> Just pos
-        Just AssocEntry -> Nothing
-        Nothing -> illegalItemId "topicPos" id Nothing
-  in
-  map_ |> Maybe.andThen getPos
-
-
 stopPropagationOnMousedown : Attribute Msg
 stopPropagationOnMousedown =
   stopPropagationOn "mousedown" <| D.succeed (NoOp, True)
@@ -234,13 +218,8 @@ addTopic model =
     pos = Point 112 76
   in
   { model
-  | maps = model.maps |> Dict.update model.activeMap
-      (\map_ ->
-        case map_ of
-          Just map -> Just (map |> Dict.insert id (TopicEntry pos))
-          Nothing -> illegalMapId "addTopic" model.activeMap Nothing
-      )
-  , items = model.items |> Dict.insert id ( Topic <| TopicInfo id color )
+  | items = model.items |> Dict.insert id ( Topic <| TopicInfo id color )
+  , maps = addItemToMap model (ViewTopic <| TopicProps id pos) model.activeMap "addTopic"
   , nextId = id + 1
   }
 
@@ -251,16 +230,66 @@ addAssoc model player1 player2 =
     id = model.nextId
   in
   { model
-  | maps = model.maps |> Dict.update model.activeMap
-      (\map_ ->
-        case map_ of
-          Just map -> Just (map |> Dict.insert id AssocEntry)
-          Nothing -> illegalMapId "addAssoc" model.activeMap Nothing
-      )
-  , items = model.items |> Dict.insert id
+  | items = model.items |> Dict.insert id
       ( Assoc <| AssocInfo id player1 "dmx.default" player2 "dmx.default" )
+  , maps = addItemToMap model (ViewAssoc <| AssocProps id) model.activeMap "addAssoc"
   , nextId = id + 1
   }
+
+
+moveTopicToMap : Model -> Id -> Id -> Model
+moveTopicToMap model id mapId =
+  model -- TODO
+
+
+addItemToMap : Model -> ViewItem -> Id -> String -> Maps
+addItemToMap model viewItem mapId funcName =
+  let
+    itemId = case viewItem of -- TODO: unify?
+      ViewTopic {id} -> id
+      ViewAssoc {id} -> id
+  in
+  model.maps |> Dict.update mapId
+    (\map_ ->
+      case map_ of
+        Just map -> Just (map |> Dict.insert itemId viewItem)
+        Nothing -> illegalMapId funcName mapId Nothing
+    )
+
+
+topicPos : Model -> Id -> Maybe Point
+topicPos model id =
+  let
+    map_ =
+      case Dict.get model.activeMap model.maps of
+        Just map -> Just map
+        Nothing -> illegalMapId "topicPos" model.activeMap Nothing
+    getPos map =
+      case Dict.get id map of
+        Just (ViewTopic {pos}) -> Just pos
+        Just (ViewAssoc _) -> Nothing
+        Nothing -> illegalItemId "topicPos" id Nothing
+  in
+  map_ |> Maybe.andThen getPos
+
+
+updateTopicPos : Model -> Id -> Delta -> Maps
+updateTopicPos model topicId delta =
+  model.maps |> Dict.update model.activeMap
+    (\map_ ->
+      case map_ of
+        Just map -> Just
+          (map |> Dict.update topicId
+            (\viewItem ->
+              case viewItem of
+                Just (ViewTopic {pos}) -> Just
+                  (ViewTopic (TopicProps topicId <| Point (pos.x + delta.x) (pos.y + delta.y)))
+                Just (ViewAssoc _) -> illegalItemId "updateTopicPos" topicId Nothing
+                Nothing -> illegalItemId "updateTopicPos" topicId Nothing
+            )
+          )
+        Nothing -> illegalMapId "addTopic" model.activeMap Nothing
+    )
 
 
 delete : Model -> Model
@@ -368,32 +397,13 @@ performDrag model pos =
       model
 
 
-updateTopicPos : Model -> Id -> Delta -> Maps
-updateTopicPos model id delta =
-  model.maps |> Dict.update model.activeMap
-    (\map_ ->
-      case map_ of
-        Just map -> Just
-          (map |> Dict.update id
-            (\entry_ ->
-              case entry_ of
-                Just (TopicEntry pos) -> Just
-                  (TopicEntry <| Point (pos.x + delta.x) (pos.y + delta.y))
-                Just AssocEntry -> illegalItemId "updateTopicPos" id Nothing
-                Nothing -> illegalItemId "updateTopicPos" id Nothing
-            )
-          )
-        Nothing -> illegalMapId "addTopic" model.activeMap Nothing
-    )
-
-
 mouseUp : Model -> Model
 mouseUp model =
   let
     newModel = case model.dragState of
       Drag DragTopic id _ (Just targetId) ->
-        log ("--> dropped " ++ fromInt id ++ " on " ++ fromInt targetId) model
-          -- TODO
+        log ("--> dropped " ++ fromInt id ++ " on " ++ fromInt targetId)
+          moveTopicToMap model id targetId
       Drag DrawAssoc id _ (Just targetId) ->
         log ("--> assoc drawn from " ++ fromInt id ++ " to " ++ fromInt targetId)
           addAssoc model id targetId

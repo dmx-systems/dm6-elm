@@ -6,9 +6,9 @@ import Time
 
 
 type alias Model =
-  { activeMap : Id
+  { items : Items
   , maps : Maps
-  , items : Items
+  , activeMap : Id
   , selection : List Id   -- transient
   , dragState : DragState -- transient
   , nextId : Id
@@ -16,12 +16,22 @@ type alias Model =
 
 
 type alias Maps = Dict Id Map
-type alias Map = Dict Id MapEntry
+type alias Map = Dict Id ViewItem
 
 
-type MapEntry
-  = TopicEntry Point
-  | AssocEntry
+type ViewItem
+  = ViewTopic TopicProps
+  | ViewAssoc AssocProps
+
+
+type alias TopicProps =
+  { id : Id
+  , pos : Point
+  }
+
+
+type alias AssocProps =
+  { id : Id }
 
 
 type alias Items = Dict Id Item
