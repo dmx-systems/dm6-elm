@@ -197,7 +197,7 @@ update msg model =
   let
     _ =
       case msg of
-        Mouse (Move _) -> msg
+        Mouse _ -> msg
         _ -> log "update" msg
   in
   case msg of
@@ -219,7 +219,7 @@ addTopic model =
   in
   { model
   | items = model.items |> Dict.insert id ( Topic <| TopicInfo id color )
-  , maps = addItemToMap model (ViewTopic <| TopicProps id pos) model.activeMap "addTopic"
+  , maps = addItemToMap (ViewTopic <| TopicProps id pos) model.activeMap model
   , nextId = id + 1
   }
 
@@ -232,50 +232,74 @@ addAssoc model player1 player2 =
   { model
   | items = model.items |> Dict.insert id
       ( Assoc <| AssocInfo id player1 "dmx.default" player2 "dmx.default" )
-  , maps = addItemToMap model (ViewAssoc <| AssocProps id) model.activeMap "addAssoc"
+  , maps = addItemToMap (ViewAssoc <| AssocProps id) model.activeMap model
   , nextId = id + 1
   }
 
 
-moveTopicToMap : Model -> Id -> Id -> Model
-moveTopicToMap model id mapId =
-  model -- TODO
+moveTopicToMap : Model -> Id -> Id -> Id -> Model
+moveTopicToMap model topicId fromMapId toMapId =
+  let
+    viewItem_ = getViewItemById model topicId fromMapId
+  in
+  case viewItem_ of
+    Just viewItem ->
+      { model | maps = addItemToMap viewItem toMapId
+        { model | maps = removeItemFromMap model topicId fromMapId }
+      }
+    Nothing -> model
 
 
-addItemToMap : Model -> ViewItem -> Id -> String -> Maps
-addItemToMap model viewItem mapId funcName =
+addItemToMap : ViewItem -> Id -> Model -> Maps
+addItemToMap viewItem mapId model =
   let
     itemId = case viewItem of -- TODO: unify?
       ViewTopic {id} -> id
       ViewAssoc {id} -> id
+    -- create map if not yet exists
+    maps =
+      if Dict.member mapId model.maps then
+        model.maps
+      else
+        model.maps |> Dict.insert mapId Dict.empty
   in
-  model.maps |> Dict.update mapId
+  maps |> Dict.update mapId
     (\map_ ->
       case map_ of
         Just map -> Just (map |> Dict.insert itemId viewItem)
-        Nothing -> illegalMapId funcName mapId Nothing
+        Nothing -> illegalMapId "addItemToMap" mapId Nothing
     )
 
 
--- TODO: not used
-removeItemFromMap : Model -> Id -> Id -> String -> Maps
-removeItemFromMap model itemId mapId funcName =
-  let
-    map_ = getMap model mapId (\map -> Just (Dict.remove itemId map)) "removeItemFromMap"
-  in
-    model.maps -- TODO
+removeItemFromMap : Model -> Id -> Id -> Maps
+removeItemFromMap model itemId mapId =
+  model.maps |> Dict.update mapId
+    (\map_ ->
+      case map_ of
+        Just map -> Just (map |> Dict.remove itemId)
+        Nothing -> illegalMapId "removeItemFromMap" mapId Nothing
+    )
 
 
--- TODO: not used
-getMap : Model -> Id -> (Map -> Maybe a) -> String -> Maybe a
-getMap model mapId func callerFuncName =
-  let
-    map_ =
-      case Dict.get mapId model.maps of
-        Just map -> Just map
-        Nothing -> illegalMapId callerFuncName mapId Nothing
-  in
-  map_ |> Maybe.andThen func
+getViewItemById : Model -> Id -> Id -> Maybe ViewItem
+getViewItemById model itemId mapId =
+  case getMap model mapId of
+    Just map -> getViewItem itemId map
+    Nothing -> Nothing
+
+
+getMap : Model -> Id -> Maybe Map
+getMap model mapId =
+  case Dict.get mapId model.maps of
+    Just map -> Just map
+    Nothing -> illegalMapId "getMap" mapId Nothing
+
+
+getViewItem : Id -> Map -> Maybe ViewItem
+getViewItem itemId map =
+  case Dict.get itemId map of
+    Just viewItem -> Just viewItem
+    Nothing -> illegalItemId "getViewItem" itemId Nothing
 
 
 topicPos : Model -> Id -> Maybe Point
@@ -444,7 +468,7 @@ mouseUp model =
     newModel = case model.dragState of
       Drag DragTopic id _ (Just targetId) ->
         log ("--> dropped " ++ fromInt id ++ " on " ++ fromInt targetId)
-          moveTopicToMap model id targetId
+          moveTopicToMap model id model.activeMap targetId
       Drag DrawAssoc id _ (Just targetId) ->
         log ("--> assoc drawn from " ++ fromInt id ++ " to " ++ fromInt targetId)
           addAssoc model id targetId
