@@ -86,4 +86,5 @@ type MouseMsg
   | Move Point
   | Up
   | Over Class Id
+  | Out Class Id
   | Time Time.Posix

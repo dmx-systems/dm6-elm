@@ -16,7 +16,7 @@ import Svg.Attributes exposing (viewBox, width, height)
 import Task
 import Time exposing (posixToMillis)
 import Json.Decode as D
-import Debug exposing (log)
+import Debug exposing (log, toString)
 
 
 
@@ -65,7 +65,9 @@ view model =
   Browser.Document
     "DM6 Elm"
     [ div
-      ( [ on "mouseover" overDecoder ]
+      ( [ on "mouseover" (mouseDecoder Over)
+        , on "mouseout" (mouseDecoder Out)
+        ]
         ++ appStyle
       )
       [ h2 [] [ text "DM6 Elm" ]
@@ -285,6 +287,7 @@ updateMouse msg model =
     Move pos -> mouseMove model pos
     Up -> ( mouseUp model, Cmd.none )
     Over class id -> ( mouseOver model class id, Cmd.none )
+    Out class id -> ( mouseOut model class id, Cmd.none )
     Time time -> ( timeArrived model time, Cmd.none )
 
 
@@ -322,8 +325,9 @@ timeArrived model time =
               Drag dragMode id pos Nothing
             _ -> NoDrag -- the error will be logged in performDrag
       }
-    _ -> logError "timeArrived" "Received Time message when dragState is not WaitForTime"
-        model
+    _ -> logError "timeArrived"
+      "Received \"Time\" message when dragState is not WaitForTime"
+      model
 
 
 mouseMove : Model -> Point -> ( Model, Cmd Msg )
@@ -337,11 +341,9 @@ mouseMove model pos =
       ( model, Cmd.none ) -- ignore
     Drag _ _ _ _ ->
       ( performDrag model pos, Cmd.none )
-    WaitForStartTime _ _ _ ->
-      logError "mouseMove" "Received Move message when dragState is WaitForStartTime"
-        ( model, Cmd.none )
-    NoDrag ->
-      logError "mouseMove" "Received Move message when dragState is NoDrag" ( model, Cmd.none )
+    _ -> logError "mouseMove"
+      ("Received \"Move\" message when dragState is " ++ toString model.dragState)
+      ( model, Cmd.none )
 
 
 performDrag : Model -> Point -> Model
@@ -361,14 +363,9 @@ performDrag model pos =
         | maps = maps
         , dragState = Drag dragMode id pos target -- update lastPoint
       }
-    WaitForStartTime _ _ _ ->
-      logError "performDrag" "Received Move message when dragState is WaitForStartTime" model
-    WaitForEndTime _ _ _ _ ->
-      logError "performDrag" "Received Move message when dragState is WaitForEndTime" model
-    DragEngaged _ _ _ _ ->
-      logError "performDrag" "Received Move message when dragState is DragEngaged" model
-    NoDrag ->
-      logError "performDrag" "Received Move message when dragState is NoDrag" model
+    _ -> logError "performDrag"
+      ("Received \"Move\" message when dragState is " ++ toString model.dragState)
+      model
 
 
 updateTopicPos : Model -> Id -> Delta -> Maps
@@ -404,11 +401,9 @@ mouseUp model =
         log "--> drag ended w/o target" model
       DragEngaged _ _ _ _ ->
         log "--> drag aborted w/o moving" model
-      WaitForStartTime _ _ _ ->
-        logError "mouseUp" "Received Up when dragState is WaitForStartTime" model
-      WaitForEndTime _ _ _ _ ->
-        logError "mouseUp" "Received Up when dragState is WaitForEndTime" model
-      NoDrag -> logError "mouseUp" "Received Up when dragState is NoDrag" model
+      _ -> logError "mouseUp"
+        ("Received \"Up\" message when dragState is " ++ toString model.dragState)
+        model
   in
   { newModel | dragState = NoDrag }
 
@@ -421,11 +416,17 @@ mouseOver model class targetId =
         target = if id /= targetId then (Just targetId) else Nothing
       in
       { model | dragState = Drag dragMode id lastPoint target } -- update drop target
-    NoDrag -> model
-    WaitForStartTime _ _ _ -> model -- TODO: Error?
-    WaitForEndTime _ _ _ _ -> model -- TODO: Error?
     DragEngaged _ _ _ _ ->
-      logError "mouseOver" "Received Over message when dragState is DragEngaged" model
+      logError "mouseOver" "Received \"Over\" message when dragState is DragEngaged" model
+    _ -> model
+
+
+mouseOut : Model -> Class -> Id -> Model
+mouseOut model class targetId =
+  case model.dragState of
+    Drag dragMode id lastPoint _ ->
+      { model | dragState = Drag dragMode id lastPoint Nothing } -- reset drop target
+    _ -> model
 
 
 
@@ -460,7 +461,7 @@ dragSub : Sub Msg
 dragSub =
   Sub.batch
     [ Events.onMouseMove <| D.map Mouse <| D.map Move
-        ( D.map2 Point -- TODO: no double code
+        ( D.map2 Point -- TODO: no code doubling
           ( D.field "clientX" D.int )
           ( D.field "clientY" D.int )
         )
@@ -479,10 +480,10 @@ strToIntDecoder str =
 -- HELPER
 
 
--- TODO: no double code
-overDecoder : D.Decoder Msg
-overDecoder =
-  D.map Mouse <| D.map2 Over
+-- TODO: no code doubling
+mouseDecoder : (Class -> Id -> MouseMsg) -> D.Decoder Msg
+mouseDecoder msg =
+  D.map Mouse <| D.map2 msg
     ( D.at ["target", "className"] D.string )
     ( D.at ["target", "dataset", "id"] D.string |> D.andThen strToIntDecoder )
 
