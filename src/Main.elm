@@ -257,6 +257,27 @@ addItemToMap model viewItem mapId funcName =
     )
 
 
+-- TODO: not used
+removeItemFromMap : Model -> Id -> Id -> String -> Maps
+removeItemFromMap model itemId mapId funcName =
+  let
+    map_ = getMap model mapId (\map -> Just (Dict.remove itemId map)) "removeItemFromMap"
+  in
+    model.maps -- TODO
+
+
+-- TODO: not used
+getMap : Model -> Id -> (Map -> Maybe a) -> String -> Maybe a
+getMap model mapId func callerFuncName =
+  let
+    map_ =
+      case Dict.get mapId model.maps of
+        Just map -> Just map
+        Nothing -> illegalMapId callerFuncName mapId Nothing
+  in
+  map_ |> Maybe.andThen func
+
+
 topicPos : Model -> Id -> Maybe Point
 topicPos model id =
   let
@@ -294,17 +315,37 @@ updateTopicPos model topicId delta =
 
 delete : Model -> Model
 delete model =
+  let
+    maps = model.maps |> Dict.update model.activeMap
+      (\map_ ->
+        case map_ of
+          Just map -> Just (deleteViewItems map model.selection)
+          Nothing -> illegalMapId "delete" model.activeMap Nothing
+      )
+  in
   { model
+  -- TODO: iterate model.selection only once?
   | items = deleteItems model.items model.selection
+  , maps = maps
   , selection = []
   }
 
+
+-- TODO: unify these 2?
 
 deleteItems : Items -> List Id -> Items
 deleteItems items ids =
   case ids of
     [] -> items
     id :: moreIds -> deleteItems (Dict.remove id items) moreIds
+    -- TODO: delete assocs where this item is a player
+
+
+deleteViewItems : Map -> List Id -> Map
+deleteViewItems map ids =
+  case ids of
+    [] -> map
+    id :: moreIds -> deleteViewItems (Dict.remove id map) moreIds
     -- TODO: delete assocs where this item is a player
 
 
