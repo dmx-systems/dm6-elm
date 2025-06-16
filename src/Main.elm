@@ -61,11 +61,7 @@ view : Model -> Browser.Document Msg
 view model =
   let
     expanded = case getSelectedId model of
-      Just id ->
-        case getViewItemById id model.activeMap model of
-          Just (ViewTopic props) -> props.expanded
-          Just (ViewAssoc _) -> False
-          Nothing -> illegalItemId "view" id False
+      Just id -> isExpanded id model.activeMap model
       Nothing -> False
     deleteDisabled = List.isEmpty model.selection
   in
@@ -97,7 +93,7 @@ view model =
             ++ buttonStyle
           )
           [ text "Delete" ]
-      , viewMap model
+      , viewMap model.activeMap model
       ]
     ]
 
@@ -109,38 +105,39 @@ expandDisabled model =
     id :: ids -> not (hasMap id model)
 
 
-viewMap : Model -> Html Msg
-viewMap model =
+viewMap : Id -> Model -> Html Msg
+viewMap mapId model =
   let
-    map_ =
-      case model.maps |> Dict.get model.activeMap of
-        Just map -> Just (viewItems model map)
-        Nothing -> illegalMapId "viewMap" model.activeMap Nothing
+    ( topics, assocs ) = case getMap mapId model of
+      Just map -> viewItems map model
+      Nothing -> ( [], [] )
+    isTopLevel = mapId == model.activeMap
+    size =
+      if isTopLevel then
+        { w = "1024", h = "600"}
+      else
+        { w = fromInt whitebox.width, h = fromInt whitebox.height }
   in
-  case map_ of
-    Just ( topics, assocs ) ->
-      div
-        []
-        [ div
-            []
-            topics
-        , svg
-            ( [ width "1024"
-              , height "600"
-              , viewBox ("0 0 1024 600")
-              ]
-              ++ svgStyle
-            )
-            ( assocs
-              ++ viewLimboAssoc model
-            )
-        ]
-    Nothing ->
-      text <| "Can't render map " ++ fromInt model.activeMap
+    div
+      []
+      [ div
+          []
+          topics
+      , svg
+          ( [ width size.w
+            , height size.h
+            , viewBox ("0 0 " ++ size.w ++ " " ++ size.h)
+            ]
+            ++ svgStyle
+          )
+          ( assocs
+            ++ viewLimboAssoc model
+          )
+      ]
 
 
-viewItems : Model -> Map -> ( List (Html Msg), List (Svg Msg) )
-viewItems model map =
+viewItems : Map -> Model -> ( List (Html Msg), List (Svg Msg) )
+viewItems map model =
   map |> Dict.toList |> List.foldr
     (\(id, viewItem) ( t, a ) ->
       case viewItem of
@@ -184,10 +181,13 @@ viewTopic topic props model =
         else normalStyle topic props
     )
     ( if isContainer then
-        [ div
-            itemCountStyle
-            [ text <| fromInt itemCount ]
-        ]
+        if props.expanded then
+          [ viewMap topic.id model ]
+        else
+          [ div
+              itemCountStyle
+              [ text <| fromInt itemCount ]
+          ]
       else
         []
     )
@@ -207,7 +207,7 @@ viewLimboAssoc : Model -> List (Svg Msg)
 viewLimboAssoc model =
   case model.dragState of
     Drag DrawAssoc topicId pos _ ->
-      case topicPos model topicId of
+      case topicPos topicId model.activeMap model of
         Just pos1 -> [ viewLine pos1 pos ]
         Nothing -> []
     _ -> []
@@ -223,8 +223,8 @@ viewLine pos1 pos2 =
 assocGeometry : Model -> AssocInfo -> Maybe ( Point, Point )
 assocGeometry model assoc =
   let
-    pos1 = topicPos model assoc.player1
-    pos2 = topicPos model assoc.player2
+    pos1 = topicPos assoc.player1 model.activeMap model
+    pos2 = topicPos assoc.player2 model.activeMap model
   in
   Maybe.map2 (\p1 p2 -> ( p1, p2 )) pos1 pos2
 
@@ -243,7 +243,7 @@ update msg model =
   let
     _ =
       case msg of
-        Mouse _ -> msg
+        Mouse (Move _) -> msg
         _ -> log "update" msg
   in
   case msg of
@@ -323,25 +323,6 @@ removeItemFromMap model itemId mapId =
   updateMaps mapId (Dict.remove itemId) model
 
 
-getViewItemById : Id -> Id -> Model -> Maybe ViewItem
-getViewItemById itemId mapId model =
-  getMap mapId model |> Maybe.andThen (getViewItem itemId)
-
-
-getMap : Id -> Model -> Maybe Map
-getMap mapId model =
-  case model.maps |> Dict.get mapId of
-    Just map -> Just map
-    Nothing -> illegalMapId "getMap" mapId Nothing
-
-
-getViewItem : Id -> Map -> Maybe ViewItem
-getViewItem itemId map =
-  case Dict.get itemId map of
-    Just viewItem -> Just viewItem
-    Nothing -> illegalItemId "getViewItem" itemId Nothing
-
-
 getSelectedId : Model -> Maybe Id
 getSelectedId model =
   case model.selection of
@@ -364,20 +345,12 @@ hasMap mapId model =
   Dict.member mapId model.maps
 
 
-topicPos : Model -> Id -> Maybe Point
-topicPos model id =
-  let
-    map_ =
-      case Dict.get model.activeMap model.maps of
-        Just map -> Just map
-        Nothing -> illegalMapId "topicPos" model.activeMap Nothing
-    getPos map =
-      case Dict.get id map of
-        Just (ViewTopic {pos}) -> Just pos
-        Just (ViewAssoc _) -> Nothing
-        Nothing -> illegalItemId "topicPos" id Nothing
-  in
-  map_ |> Maybe.andThen getPos
+topicPos : Id -> Id -> Model -> Maybe Point
+topicPos topicId mapId model =
+  case getViewItemById topicId mapId model of
+    Just (ViewTopic { pos }) -> Just pos
+    Just (ViewAssoc _) -> Nothing
+    Nothing -> illegalItemId "topicPos" topicId Nothing
 
 
 updateTopicPos : Id -> Id -> Delta -> Model -> Maps
@@ -407,6 +380,33 @@ updateExpand topicId mapId expanded model =
     mapId
     model
     (\props -> { props | expanded = expanded })
+
+
+isExpanded : Id -> Id -> Model -> Bool
+isExpanded topicId mapId model =
+  case getViewItemById topicId mapId model of
+    Just (ViewTopic { expanded }) -> expanded
+    Just (ViewAssoc _) -> False
+    Nothing -> illegalItemId "view" topicId False
+
+
+getViewItemById : Id -> Id -> Model -> Maybe ViewItem
+getViewItemById itemId mapId model =
+  getMap mapId model |> Maybe.andThen (getViewItem itemId)
+
+
+getMap : Id -> Model -> Maybe Map
+getMap mapId model =
+  case model.maps |> Dict.get mapId of
+    Just map -> Just map
+    Nothing -> illegalMapId "getMap" mapId Nothing
+
+
+getViewItem : Id -> Map -> Maybe ViewItem
+getViewItem itemId map =
+  case Dict.get itemId map of
+    Just viewItem -> Just viewItem
+    Nothing -> illegalItemId "getViewItem" itemId Nothing
 
 
 updateTopicProps : Id -> Id -> Model -> (TopicProps -> TopicProps) -> Maps
