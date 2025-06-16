@@ -86,7 +86,7 @@ type DragMode
 
 type Msg
   = AddTopic
-  | Expand
+  | Expand Bool
   | Delete
   | Mouse MouseMsg
   | NoOp

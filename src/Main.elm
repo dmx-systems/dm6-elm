@@ -60,6 +60,13 @@ init flags =
 view : Model -> Browser.Document Msg
 view model =
   let
+    expanded = case getSelectedId model of
+      Just id ->
+        case getViewItemById id model.activeMap model of
+          Just (ViewTopic props) -> props.expanded
+          Just (ViewAssoc _) -> False
+          Nothing -> illegalItemId "view" id False
+      Nothing -> False
     deleteDisabled = List.isEmpty model.selection
   in
   Browser.Document
@@ -75,13 +82,13 @@ view model =
           [ onClick AddTopic ]
           [ text "Add Topic" ]
       , button
-          ( [ onClick Expand
+          ( [ onClick (Expand <| not expanded)
             , stopPropagationOnMousedown
             , disabled <| expandDisabled model
             ]
             ++ buttonStyle
           )
-          [ text "Expand" ]
+          [ text (if expanded then "Collapse" else "Expand") ]
       , button
           ( [ onClick Delete
             , stopPropagationOnMousedown
@@ -118,9 +125,9 @@ viewMap model =
             []
             topics
         , svg
-            ( [ width "800"
+            ( [ width "1024"
               , height "600"
-              , viewBox ("0 0 800 600")
+              , viewBox ("0 0 1024 600")
               ]
               ++ svgStyle
             )
@@ -168,7 +175,13 @@ viewTopic topic props model =
       , attribute "data-id" (fromInt topic.id)
       ]
       ++ topicStyle topic model
-      ++ if isContainer then containerStyle props else normalStyle props
+      ++
+        if isContainer then
+          if props.expanded then
+            whiteboxStyle topic props
+          else
+            containerStyle topic props
+        else normalStyle topic props
     )
     ( if isContainer then
         [ div
@@ -235,7 +248,7 @@ update msg model =
   in
   case msg of
     AddTopic -> ( addTopic model, Cmd.none )
-    Expand -> ( expand model, Cmd.none )
+    Expand expanded -> ( expand expanded model, Cmd.none )
     Delete -> ( delete model, Cmd.none )
     Mouse mouseMsg -> updateMouse mouseMsg model
     NoOp -> ( model, Cmd.none )
@@ -274,12 +287,16 @@ addAssoc model player1 player2 =
 moveTopicToMap : Model -> Id -> Id -> Id -> Model
 moveTopicToMap model topicId fromMapId toMapId =
   let
-    viewItem_ = getViewItemById model topicId fromMapId
+    viewItem_ = getViewItemById topicId fromMapId model
   in
   case viewItem_ of
     Just viewItem ->
-      { model | maps = addItemToMap viewItem toMapId
-        { model | maps = removeItemFromMap model topicId fromMapId }
+      { model
+      | maps = addItemToMap viewItem toMapId
+          { model
+          | maps = removeItemFromMap model topicId fromMapId
+          }
+      , selection = [ toMapId ]
       }
     Nothing -> model
 
@@ -306,14 +323,14 @@ removeItemFromMap model itemId mapId =
   updateMaps mapId (Dict.remove itemId) model
 
 
-getViewItemById : Model -> Id -> Id -> Maybe ViewItem
-getViewItemById model itemId mapId =
+getViewItemById : Id -> Id -> Model -> Maybe ViewItem
+getViewItemById itemId mapId model =
   getMap mapId model |> Maybe.andThen (getViewItem itemId)
 
 
 getMap : Id -> Model -> Maybe Map
 getMap mapId model =
-  case Dict.get mapId model.maps of
+  case model.maps |> Dict.get mapId of
     Just map -> Just map
     Nothing -> illegalMapId "getMap" mapId Nothing
 
@@ -372,24 +389,24 @@ updateTopicPos topicId mapId delta model =
     (\props -> { props | pos = Point (props.pos.x + delta.x) (props.pos.y + delta.y) })
 
 
-expand : Model -> Model
-expand model =
+expand : Bool -> Model -> Model
+expand expanded model =
   let
     maps =
       case getSelectedId model of
-        Just topicId -> updateExpand topicId model.activeMap model
+        Just topicId -> updateExpand topicId model.activeMap expanded model
         Nothing -> model.maps
   in
   { model | maps = maps }
 
 
-updateExpand : Id -> Id -> Model -> Maps
-updateExpand topicId mapId model =
+updateExpand : Id -> Id -> Bool -> Model -> Maps
+updateExpand topicId mapId expanded model =
   updateTopicProps
     topicId
     mapId
     model
-    (\props -> { props | expanded = True })
+    (\props -> { props | expanded = expanded })
 
 
 updateTopicProps : Id -> Id -> Model -> (TopicProps -> TopicProps) -> Maps

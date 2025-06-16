@@ -21,6 +21,13 @@ containerSize = 30
 containerOffset = containerSize // 2 + borderWidth
 containerRadius = 10
 
+whitebox = { width = 350, height = 200}
+whiteboxOffset =
+  { x = whitebox.width // 2 + borderWidth
+  , y = whitebox.height // 2 + borderWidth
+  }
+whiteboxRadius = 20
+
 assocWith = 5
 selectionColor = "#007AFF" -- Firefox focus color
 
@@ -38,7 +45,7 @@ appStyle =
 
 
 topicStyle : TopicInfo -> Model -> List (Attribute Msg)
-topicStyle { id, color } model =
+topicStyle { id } model =
   let
     selected = model.selection |> List.member id
     dragging = case model.dragState of
@@ -47,34 +54,53 @@ topicStyle { id, color } model =
     targeted = case model.dragState of
       Drag _ _ _ (Just id_) -> id_ == id
       _ -> False
-    borderColor = if targeted then "blue" else if selected then selectionColor else "transparent"
+    borderColor =
+      if targeted then
+        "blue"
+      else
+        if selected then
+          selectionColor
+        else
+          "transparent"
   in
   [ style "position" "absolute"
   , style "border-width" <| fromInt borderWidth ++ "px"
   , style "border-style" "solid"
   , style "border-color" borderColor
   , style "z-index" <| if dragging then "0" else "1"
-  , style "background-color" <| "hsl(" ++ fromInt color ++ ", 70%, 60%)"
   ]
 
 
-normalStyle : TopicProps -> List (Attribute Msg)
-normalStyle { pos } =
+normalStyle : TopicInfo -> TopicProps -> List (Attribute Msg)
+normalStyle { color } { pos } =
   [ style "left" <| fromInt (pos.x - topicRadius) ++ "px"
   , style "top" <| fromInt (pos.y - topicRadius) ++ "px"
   , style "width" <| fromInt topicSize ++ "px"
   , style "height" <| fromInt topicSize ++ "px"
   , style "border-radius" <| fromInt topicRadius ++ "px"
+  , style "background-color" <| "hsl(" ++ fromInt color ++ ", 70%, 60%)"
   ]
 
 
-containerStyle : TopicProps -> List (Attribute Msg)
-containerStyle { pos } =
+containerStyle : TopicInfo -> TopicProps -> List (Attribute Msg)
+containerStyle { color } { pos } =
   [ style "left" <| fromInt (pos.x - containerOffset) ++ "px"
   , style "top" <| fromInt (pos.y - containerOffset) ++ "px"
   , style "width" <| fromInt containerSize ++ "px"
   , style "height" <| fromInt containerSize ++ "px"
   , style "border-radius" <| fromInt containerRadius ++ "px"
+  , style "background-color" <| "hsl(" ++ fromInt color ++ ", 70%, 60%)"
+  ]
+
+
+whiteboxStyle : TopicInfo -> TopicProps -> List (Attribute Msg)
+whiteboxStyle { color } { pos } =
+  [ style "left" <| fromInt (pos.x - whiteboxOffset.x) ++ "px"
+  , style "top" <| fromInt (pos.y - whiteboxOffset.y) ++ "px"
+  , style "width" <| fromInt whitebox.width ++ "px"
+  , style "height" <| fromInt whitebox.height ++ "px"
+  , style "border-radius" <| fromInt whiteboxRadius ++ "px"
+  , style "background-color" <| "hsl(" ++ fromInt color ++ ", 100%, 95%)"
   ]
 
 
