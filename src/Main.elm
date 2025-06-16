@@ -8,7 +8,7 @@ import Browser
 import Browser.Events as Events
 import Dict exposing (Dict)
 import Html exposing (Html, Attribute, div, text, button, h2)
-import Html.Attributes exposing (class, attribute, disabled)
+import Html.Attributes exposing (class, attribute, disabled, style)
 import Html.Events exposing (onClick, on, stopPropagationOn)
 import String exposing (String, fromInt)
 import Svg exposing (Svg, svg, line)
@@ -117,9 +117,22 @@ viewMap mapId model =
         { w = "1024", h = "600"}
       else
         { w = fromInt whitebox.width, h = fromInt whitebox.height }
+    -- For nested maps give the outer div a size and topic meta data so events can land there
+    -- and being detected as mousedown-on-item. Otherwise the SVG would be the target but our
+    -- event decoder does not work there.
+    nestedMapAttributes =
+      if isTopLevel then
+        []
+      else
+        [ class "dmx-topic"
+        , attribute "data-id" (fromInt mapId)
+        , style "position" "absolute"
+        , style "width" "100%"
+        , style "height" "100%"
+        ]
   in
     div
-      []
+      nestedMapAttributes
       [ div
           []
           topics
