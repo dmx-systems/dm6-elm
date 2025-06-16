@@ -75,6 +75,14 @@ view model =
           [ onClick AddTopic ]
           [ text "Add Topic" ]
       , button
+          ( [ onClick Expand
+            , stopPropagationOnMousedown
+            , disabled <| expandDisabled model
+            ]
+            ++ buttonStyle
+          )
+          [ text "Expand" ]
+      , button
           ( [ onClick Delete
             , stopPropagationOnMousedown
             , disabled deleteDisabled
@@ -85,6 +93,13 @@ view model =
       , viewMap model
       ]
     ]
+
+
+expandDisabled : Model -> Bool
+expandDisabled model =
+  case model.selection of
+    [] -> True
+    id :: ids -> not (hasMap id model)
 
 
 viewMap : Model -> Html Msg
@@ -219,6 +234,7 @@ update msg model =
   in
   case msg of
     AddTopic -> ( addTopic model, Cmd.none )
+    Expand -> ( expand model, Cmd.none )
     Delete -> ( delete model, Cmd.none )
     Mouse mouseMsg -> updateMouse mouseMsg model
     NoOp -> ( model, Cmd.none )
@@ -236,7 +252,7 @@ addTopic model =
   in
   { model
   | items = model.items |> Dict.insert id ( Topic <| TopicInfo id color )
-  , maps = addItemToMap (ViewTopic <| TopicProps id pos) model.activeMap model
+  , maps = addItemToMap (ViewTopic <| TopicProps id pos False) model.activeMap model
   , nextId = id + 1
   }
 
@@ -273,29 +289,20 @@ addItemToMap viewItem mapId model =
     itemId = case viewItem of -- TODO: unify?
       ViewTopic {id} -> id
       ViewAssoc {id} -> id
-    -- create map if not yet exists
-    maps =
-      if Dict.member mapId model.maps then
-        model.maps
+    -- create map if not exists
+    func =
+      if hasMap mapId model then
+        identity
       else
-        model.maps |> Dict.insert mapId Dict.empty
+        Dict.insert mapId Dict.empty
+    newModel = { model | maps = func model.maps }
   in
-  maps |> Dict.update mapId
-    (\map_ ->
-      case map_ of
-        Just map -> Just (map |> Dict.insert itemId viewItem)
-        Nothing -> illegalMapId "addItemToMap" mapId Nothing
-    )
+  updateMaps mapId (Dict.insert itemId viewItem) newModel
 
 
 removeItemFromMap : Model -> Id -> Id -> Maps
 removeItemFromMap model itemId mapId =
-  model.maps |> Dict.update mapId
-    (\map_ ->
-      case map_ of
-        Just map -> Just (map |> Dict.remove itemId)
-        Nothing -> illegalMapId "removeItemFromMap" mapId Nothing
-    )
+  updateMaps mapId (Dict.remove itemId) model
 
 
 getViewItemById : Model -> Id -> Id -> Maybe ViewItem
@@ -315,6 +322,16 @@ getViewItem itemId map =
   case Dict.get itemId map of
     Just viewItem -> Just viewItem
     Nothing -> illegalItemId "getViewItem" itemId Nothing
+
+
+updateMaps : Id -> (Map -> Map) -> Model -> Maps
+updateMaps mapId callback model =
+  model.maps |> Dict.update mapId
+    (\map_ ->
+      case map_ of
+        Just map -> Just (callback map)
+        Nothing -> illegalMapId "updateMaps" mapId Nothing
+    )
 
 
 hasMap : Id -> Model -> Bool
@@ -338,38 +355,45 @@ topicPos model id =
   map_ |> Maybe.andThen getPos
 
 
-updateTopicPos : Model -> Id -> Delta -> Maps
-updateTopicPos model topicId delta =
-  model.maps |> Dict.update model.activeMap
-    (\map_ ->
-      case map_ of
-        Just map -> Just
-          (map |> Dict.update topicId
-            (\viewItem ->
-              case viewItem of
-                Just (ViewTopic {pos}) -> Just
-                  (ViewTopic (TopicProps topicId <| Point (pos.x + delta.x) (pos.y + delta.y)))
-                Just (ViewAssoc _) -> illegalItemId "updateTopicPos" topicId Nothing
-                Nothing -> illegalItemId "updateTopicPos" topicId Nothing
-            )
-          )
-        Nothing -> illegalMapId "addTopic" model.activeMap Nothing
+updateTopicPos : Id -> Delta -> Model -> Maps
+updateTopicPos topicId delta model =
+  updateMaps
+    model.activeMap
+    (\map ->
+      (map |> Dict.update topicId
+        (\viewItem ->
+          case viewItem of
+            Just (ViewTopic {pos, expanded}) -> Just
+              (ViewTopic
+                (TopicProps topicId
+                  (Point (pos.x + delta.x) (pos.y + delta.y))
+                  expanded
+                )
+              )
+            Just (ViewAssoc _) -> illegalItemId "updateTopicPos" topicId Nothing
+            Nothing -> illegalItemId "updateTopicPos" topicId Nothing
+        )
+      )
     )
+    model
+
+
+expand : Model -> Model
+expand model =
+  model -- TODO
 
 
 delete : Model -> Model
 delete model =
   let
-    maps = model.maps |> Dict.update model.activeMap
-      (\map_ ->
-        case map_ of
-          Just map -> Just (deleteViewItems map model.selection)
-          Nothing -> illegalMapId "delete" model.activeMap Nothing
-      )
+    maps = updateMaps
+      model.activeMap
+      (deleteViewItems model.selection)
+      model
   in
   { model
   -- TODO: iterate model.selection only once?
-  | items = deleteItems model.items model.selection
+  | items = deleteItems model.selection model.items
   , maps = maps
   , selection = []
   }
@@ -377,21 +401,23 @@ delete model =
 
 -- TODO: unify these 2?
 
-deleteItems : Items -> List Id -> Items
-deleteItems items ids =
+deleteItems : List Id -> Items -> Items
+deleteItems ids items =
   case ids of
     [] -> items
-    id :: moreIds -> deleteItems (Dict.remove id items) moreIds
-    -- TODO: delete assocs where this item is a player
+    id :: moreIds -> deleteItems moreIds (Dict.remove id items)
+    -- TODO: delete assocs where the item is a player
 
 
-deleteViewItems : Map -> List Id -> Map
-deleteViewItems map ids =
+deleteViewItems : List Id -> Map -> Map
+deleteViewItems ids map =
   case ids of
     [] -> map
-    id :: moreIds -> deleteViewItems (Dict.remove id map) moreIds
-    -- TODO: delete assocs where this item is a player
+    id :: moreIds -> deleteViewItems moreIds (Dict.remove id map)
+    -- TODO: delete assocs where the item is a player
 
+
+-- MOUSE
 
 updateMouse : MouseMsg -> Model -> ( Model, Cmd Msg )
 updateMouse msg model =
@@ -470,7 +496,7 @@ performDrag model pos =
           (pos.y - lastPoint.y)
         maps =
           case dragMode of
-            DragTopic -> updateTopicPos model id delta
+            DragTopic -> updateTopicPos id delta model
             DrawAssoc -> model.maps
       in
       { model

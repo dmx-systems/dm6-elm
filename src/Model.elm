@@ -27,6 +27,7 @@ type ViewItem
 type alias TopicProps =
   { id : Id
   , pos : Point
+  , expanded : Bool
   }
 
 
@@ -85,6 +86,7 @@ type DragMode
 
 type Msg
   = AddTopic
+  | Expand
   | Delete
   | Mouse MouseMsg
   | NoOp
