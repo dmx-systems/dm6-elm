@@ -12,9 +12,15 @@ import Debug exposing (log)
 -- CONFIG
 
 
+borderWidth = 5
+
 topicSize = 24
-topicBorder = 5
-topicRadius = topicSize // 2 + topicBorder
+topicRadius = topicSize // 2 + borderWidth
+
+containerSize = 30
+containerOffset = containerSize // 2 + borderWidth
+containerRadius = 10
+
 assocWith = 5
 selectionColor = "#007AFF" -- Firefox focus color
 
@@ -31,8 +37,8 @@ appStyle =
   ]
 
 
-topicStyle : Model -> TopicInfo -> Point -> List (Attribute Msg)
-topicStyle model { id, color } pos =
+topicStyle : TopicInfo -> Model -> List (Attribute Msg)
+topicStyle { id, color } model =
   let
     selected = model.selection |> List.member id
     dragging = case model.dragState of
@@ -44,16 +50,31 @@ topicStyle model { id, color } pos =
     borderColor = if targeted then "blue" else if selected then selectionColor else "transparent"
   in
   [ style "position" "absolute"
-  , style "left" <| fromInt (pos.x - topicRadius) ++ "px"
-  , style "top" <| fromInt (pos.y - topicRadius) ++ "px"
-  , style "width" <| fromInt topicSize ++ "px"
-  , style "height" <| fromInt topicSize ++ "px"
-  , style "border-radius" <| fromInt topicRadius ++ "px"
-  , style "border-width" <| fromInt topicBorder ++ "px"
+  , style "border-width" <| fromInt borderWidth ++ "px"
   , style "border-style" "solid"
   , style "border-color" borderColor
   , style "z-index" <| if dragging then "0" else "1"
   , style "background-color" <| "hsl(" ++ fromInt color ++ ", 70%, 60%)"
+  ]
+
+
+normalStyle : TopicProps -> List (Attribute Msg)
+normalStyle { pos } =
+  [ style "left" <| fromInt (pos.x - topicRadius) ++ "px"
+  , style "top" <| fromInt (pos.y - topicRadius) ++ "px"
+  , style "width" <| fromInt topicSize ++ "px"
+  , style "height" <| fromInt topicSize ++ "px"
+  , style "border-radius" <| fromInt topicRadius ++ "px"
+  ]
+
+
+containerStyle : TopicProps -> List (Attribute Msg)
+containerStyle { pos } =
+  [ style "left" <| fromInt (pos.x - containerOffset) ++ "px"
+  , style "top" <| fromInt (pos.y - containerOffset) ++ "px"
+  , style "width" <| fromInt containerSize ++ "px"
+  , style "height" <| fromInt containerSize ++ "px"
+  , style "border-radius" <| fromInt containerRadius ++ "px"
   ]
 
 

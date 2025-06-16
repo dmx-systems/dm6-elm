@@ -134,29 +134,29 @@ viewMap model =
 
 viewItems : Model -> Map -> ( List (Html Msg), List (Svg Msg) )
 viewItems model map =
-  map |> Dict.values |> List.foldr
-    (\viewItem ( t, a ) ->
+  map |> Dict.toList |> List.foldr
+    (\(id, viewItem) ( t, a ) ->
       case viewItem of
-        ViewTopic {id, pos} ->
+        ViewTopic props ->
           case Dict.get id model.items of
-            Just (Topic topic) -> ( viewTopic model topic pos :: t, a )
+            Just (Topic topic) -> ( viewTopic topic props model :: t, a )
             Just (Assoc _) -> topicMismatch "viewItems" id ( t, a )
             Nothing -> illegalItemId "viewItems" id ( t, a )
-        ViewAssoc {id} ->
+        ViewAssoc props ->
           case Dict.get id model.items of
-            Just (Assoc assoc) -> ( t, viewAssoc model assoc :: a )
+            Just (Assoc assoc) -> ( t, viewAssoc assoc model :: a )
             Just (Topic _) -> assocMismatch "viewItems" id ( t, a )
             Nothing -> illegalItemId "viewItems" id ( t, a )
     )
     ( [], [] )
 
 
-viewTopic : Model -> TopicInfo -> Point -> Html Msg
-viewTopic model topic pos =
+viewTopic : TopicInfo -> TopicProps -> Model -> Html Msg
+viewTopic topic props model =
   let
-    isMap = hasMap topic.id model
+    isContainer = hasMap topic.id model
     itemCount =
-      if isMap then
+      if isContainer then
         case getMap topic.id model of
           Just map -> Dict.size map
           Nothing -> 0
@@ -167,9 +167,10 @@ viewTopic model topic pos =
     ( [ class "dmx-topic"
       , attribute "data-id" (fromInt topic.id)
       ]
-      ++ topicStyle model topic pos
+      ++ topicStyle topic model
+      ++ if isContainer then containerStyle props else normalStyle props
     )
-    ( if isMap then
+    ( if isContainer then
         [ div
             itemCountStyle
             [ text <| fromInt itemCount ]
@@ -179,8 +180,8 @@ viewTopic model topic pos =
     )
 
 
-viewAssoc : Model -> AssocInfo -> Svg Msg
-viewAssoc model assoc =
+viewAssoc : AssocInfo -> Model -> Svg Msg
+viewAssoc assoc model =
   let
     geom = assocGeometry model assoc
   in
@@ -324,6 +325,13 @@ getViewItem itemId map =
     Nothing -> illegalItemId "getViewItem" itemId Nothing
 
 
+getSelectedId : Model -> Maybe Id
+getSelectedId model =
+  case model.selection of
+    [] -> Nothing
+    id :: ids -> Just id
+
+
 updateMaps : Id -> (Map -> Map) -> Model -> Maps
 updateMaps mapId callback model =
   model.maps |> Dict.update mapId
@@ -355,32 +363,49 @@ topicPos model id =
   map_ |> Maybe.andThen getPos
 
 
-updateTopicPos : Id -> Delta -> Model -> Maps
-updateTopicPos topicId delta model =
-  updateMaps
-    model.activeMap
-    (\map ->
-      (map |> Dict.update topicId
-        (\viewItem ->
-          case viewItem of
-            Just (ViewTopic {pos, expanded}) -> Just
-              (ViewTopic
-                (TopicProps topicId
-                  (Point (pos.x + delta.x) (pos.y + delta.y))
-                  expanded
-                )
-              )
-            Just (ViewAssoc _) -> illegalItemId "updateTopicPos" topicId Nothing
-            Nothing -> illegalItemId "updateTopicPos" topicId Nothing
-        )
-      )
-    )
+updateTopicPos : Id -> Id -> Delta -> Model -> Maps
+updateTopicPos topicId mapId delta model =
+  updateTopicProps
+    topicId
+    mapId
     model
+    (\props -> { props | pos = Point (props.pos.x + delta.x) (props.pos.y + delta.y) })
 
 
 expand : Model -> Model
 expand model =
-  model -- TODO
+  let
+    maps =
+      case getSelectedId model of
+        Just topicId -> updateExpand topicId model.activeMap model
+        Nothing -> model.maps
+  in
+  { model | maps = maps }
+
+
+updateExpand : Id -> Id -> Model -> Maps
+updateExpand topicId mapId model =
+  updateTopicProps
+    topicId
+    mapId
+    model
+    (\props -> { props | expanded = True })
+
+
+updateTopicProps : Id -> Id -> Model -> (TopicProps -> TopicProps) -> Maps
+updateTopicProps topicId mapId model callback =
+  updateMaps
+    mapId
+    (Dict.update topicId
+      (\viewItem ->
+        case viewItem of
+          Just (ViewTopic props) -> Just
+            (ViewTopic (callback props))
+          Just (ViewAssoc _) -> illegalItemId "updateTopicProps" topicId Nothing
+          Nothing -> illegalItemId "updateTopicProps" topicId Nothing
+      )
+    )
+    model
 
 
 delete : Model -> Model
@@ -417,7 +442,7 @@ deleteViewItems ids map =
     -- TODO: delete assocs where the item is a player
 
 
--- MOUSE
+-- Mouse
 
 updateMouse : MouseMsg -> Model -> ( Model, Cmd Msg )
 updateMouse msg model =
@@ -496,7 +521,7 @@ performDrag model pos =
           (pos.y - lastPoint.y)
         maps =
           case dragMode of
-            DragTopic -> updateTopicPos id delta model
+            DragTopic -> updateTopicPos id model.activeMap delta model
             DrawAssoc -> model.maps
       in
       { model
