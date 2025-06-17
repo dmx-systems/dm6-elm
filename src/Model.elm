@@ -16,7 +16,12 @@ type alias Model =
 
 
 type alias Maps = Dict Id Map
-type alias Map = Dict Id ViewItem
+
+
+type alias Map =
+  { id : MapId
+  , items :Dict Id ViewItem
+  }
 
 
 type ViewItem
@@ -65,6 +70,7 @@ type alias Point =
 
 
 type alias Id = Int
+type alias MapId = Id
 type alias RoleType = String
 type alias Class = String
 type alias Delta = Point

@@ -43,7 +43,7 @@ main =
 init : () -> ( Model, Cmd Msg )
 init flags =
   ( { items = Dict.empty
-    , maps = Dict.singleton 0 Dict.empty
+    , maps = Dict.singleton 0 <| Map 0 Dict.empty
     , activeMap = 0
     , selection = []
     , dragState = NoDrag
@@ -93,7 +93,7 @@ view model =
             ++ buttonStyle
           )
           [ text "Delete" ]
-      , viewMap model.activeMap model
+      , viewMap model.activeMap -1 model -- top-level map has parentMapId -1
       ]
     ]
 
@@ -105,8 +105,8 @@ expandDisabled model =
     id :: ids -> not (hasMap id model)
 
 
-viewMap : Id -> Model -> Html Msg
-viewMap mapId model =
+viewMap : MapId -> MapId -> Model -> Html Msg
+viewMap mapId parentMapId model =
   let
     ( topics, assocs ) = case getMap mapId model of
       Just map -> viewItems map model
@@ -117,16 +117,16 @@ viewMap mapId model =
         { w = "1024", h = "600"}
       else
         { w = fromInt whitebox.width, h = fromInt whitebox.height }
-    -- For nested maps give the outer div a size and topic meta data so events can land there
-    -- and being detected as mousedown-on-item. Otherwise the SVG would be the target but our
-    -- event decoder does not work there.
+    -- For nested maps give the outer div both the topic meta data and a size. So mouse events
+    -- can land there and are detected as mousedown-on-item. Otherwise the target would be the
+    -- SVG but our event decoder does not work there.
     nestedMapAttributes =
       if isTopLevel then
         []
       else
-        [ class "dmx-topic"
-        , attribute "data-id" (fromInt mapId)
-        , style "position" "absolute"
+        topicAttr mapId parentMapId
+        ++
+        [ style "position" "absolute"
         , style "width" "100%"
         , style "height" "100%"
         ]
@@ -151,12 +151,12 @@ viewMap mapId model =
 
 viewItems : Map -> Model -> ( List (Html Msg), List (Svg Msg) )
 viewItems map model =
-  map |> Dict.toList |> List.foldr
+  map.items |> Dict.toList |> List.foldr
     (\(id, viewItem) ( t, a ) ->
       case viewItem of
         ViewTopic props ->
           case Dict.get id model.items of
-            Just (Topic topic) -> ( viewTopic topic props model :: t, a )
+            Just (Topic topic) -> ( viewTopic topic props map.id model :: t, a )
             Just (Assoc _) -> topicMismatch "viewItems" id ( t, a )
             Nothing -> illegalItemId "viewItems" id ( t, a )
         ViewAssoc props ->
@@ -168,22 +168,20 @@ viewItems map model =
     ( [], [] )
 
 
-viewTopic : TopicInfo -> TopicProps -> Model -> Html Msg
-viewTopic topic props model =
+viewTopic : TopicInfo -> TopicProps -> MapId -> Model -> Html Msg
+viewTopic topic props mapId model =
   let
     isContainer = hasMap topic.id model
     itemCount =
       if isContainer then
         case getMap topic.id model of
-          Just map -> Dict.size map
+          Just map -> map.items |> Dict.size
           Nothing -> 0
       else
         0
   in
   div
-    ( [ class "dmx-topic"
-      , attribute "data-id" (fromInt topic.id)
-      ]
+    ( topicAttr topic.id mapId
       ++ topicStyle topic model
       ++
         if isContainer then
@@ -195,7 +193,7 @@ viewTopic topic props model =
     )
     ( if isContainer then
         if props.expanded then
-          [ viewMap topic.id model ]
+          [ viewMap topic.id mapId model ]
         else
           [ div
               itemCountStyle
@@ -204,6 +202,14 @@ viewTopic topic props model =
       else
         []
     )
+
+
+topicAttr : Id -> MapId -> List (Attribute Msg)
+topicAttr id mapId =
+  [ class "dmx-topic"
+  , attribute "data-id" (fromInt id)
+  , attribute "data-map-id" (fromInt mapId)
+  ]
 
 
 viewAssoc : AssocInfo -> Model -> Svg Msg
@@ -314,43 +320,11 @@ moveTopicToMap model topicId fromMapId toMapId =
     Nothing -> model
 
 
-addItemToMap : ViewItem -> Id -> Model -> Maps
-addItemToMap viewItem mapId model =
-  let
-    itemId = case viewItem of -- TODO: unify?
-      ViewTopic {id} -> id
-      ViewAssoc {id} -> id
-    -- create map if not exists
-    func =
-      if hasMap mapId model then
-        identity
-      else
-        Dict.insert mapId Dict.empty
-    newModel = { model | maps = func model.maps }
-  in
-  updateMaps mapId (Dict.insert itemId viewItem) newModel
-
-
-removeItemFromMap : Model -> Id -> Id -> Maps
-removeItemFromMap model itemId mapId =
-  updateMaps mapId (Dict.remove itemId) model
-
-
 getSelectedId : Model -> Maybe Id
 getSelectedId model =
   case model.selection of
     [] -> Nothing
     id :: ids -> Just id
-
-
-updateMaps : Id -> (Map -> Map) -> Model -> Maps
-updateMaps mapId callback model =
-  model.maps |> Dict.update mapId
-    (\map_ ->
-      case map_ of
-        Just map -> Just (callback map)
-        Nothing -> illegalMapId "updateMaps" mapId Nothing
-    )
 
 
 hasMap : Id -> Model -> Bool
@@ -417,7 +391,7 @@ getMap mapId model =
 
 getViewItem : Id -> Map -> Maybe ViewItem
 getViewItem itemId map =
-  case Dict.get itemId map of
+  case map.items |> Dict.get itemId of
     Just viewItem -> Just viewItem
     Nothing -> illegalItemId "getViewItem" itemId Nothing
 
@@ -426,15 +400,7 @@ updateTopicProps : Id -> Id -> Model -> (TopicProps -> TopicProps) -> Maps
 updateTopicProps topicId mapId model callback =
   updateMaps
     mapId
-    (Dict.update topicId
-      (\viewItem ->
-        case viewItem of
-          Just (ViewTopic props) -> Just
-            (ViewTopic (callback props))
-          Just (ViewAssoc _) -> illegalItemId "updateTopicProps" topicId Nothing
-          Nothing -> illegalItemId "updateTopicProps" topicId Nothing
-      )
-    )
+    (updateTopicProps_ topicId callback)
     model
 
 
@@ -454,8 +420,6 @@ delete model =
   }
 
 
--- TODO: unify these 2?
-
 deleteItems : List Id -> Items -> Items
 deleteItems ids items =
   case ids of
@@ -468,8 +432,63 @@ deleteViewItems : List Id -> Map -> Map
 deleteViewItems ids map =
   case ids of
     [] -> map
-    id :: moreIds -> deleteViewItems moreIds (Dict.remove id map)
+    id :: moreIds -> deleteViewItems moreIds (removeItemFromMap_ id map)
     -- TODO: delete assocs where the item is a player
+
+
+removeItemFromMap : Model -> Id -> Id -> Maps
+removeItemFromMap model itemId mapId =
+  updateMaps mapId (removeItemFromMap_ itemId) model
+
+
+removeItemFromMap_ : Id -> Map -> Map
+removeItemFromMap_ itemId map =
+  { map | items = map.items |> Dict.remove itemId }
+
+
+addItemToMap : ViewItem -> MapId -> Model -> Maps
+addItemToMap viewItem mapId model =
+  let
+    itemId = case viewItem of -- TODO: make ViewItem a record with "id" field?
+      ViewTopic {id} -> id
+      ViewAssoc {id} -> id
+    -- create map if not exists
+    func =
+      if hasMap mapId model then
+        identity
+      else
+        Map mapId Dict.empty |> Dict.insert mapId
+    newModel = { model | maps = func model.maps }
+  in
+  updateMaps mapId (addItemToMap_ itemId viewItem) newModel
+
+
+addItemToMap_ : Id -> ViewItem -> Map -> Map
+addItemToMap_ itemId item map =
+  { map | items = map.items |> Dict.insert itemId item }
+
+
+updateTopicProps_ : Id -> (TopicProps -> TopicProps) -> Map -> Map
+updateTopicProps_ topicId callback map =
+  { map | items = map.items |> Dict.update topicId
+      (\viewItem ->
+        case viewItem of
+          Just (ViewTopic props) -> Just
+            (ViewTopic (callback props))
+          Just (ViewAssoc _) -> illegalItemId "updateTopicProps" topicId Nothing
+          Nothing -> illegalItemId "updateTopicProps" topicId Nothing
+      )
+  }
+
+
+updateMaps : Id -> (Map -> Map) -> Model -> Maps
+updateMaps mapId mapFunc model =
+  model.maps |> Dict.update mapId
+    (\map_ ->
+      case map_ of
+        Just map -> Just (mapFunc map)
+        Nothing -> illegalMapId "updateMaps" mapId Nothing
+    )
 
 
 -- Mouse
