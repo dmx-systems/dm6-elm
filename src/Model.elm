@@ -93,6 +93,7 @@ type DragMode
 
 type Msg
   = AddTopic
+  | MoveTopicToMap Id MapId MapId Point
   | Expand Bool
   | Delete
   | Mouse MouseMsg

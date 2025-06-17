@@ -10,6 +10,7 @@ import Dict exposing (Dict)
 import Html exposing (Html, Attribute, div, text, button, h2)
 import Html.Attributes exposing (class, attribute, disabled, style)
 import Html.Events exposing (onClick, on, stopPropagationOn)
+import Random
 import String exposing (String, fromInt)
 import Svg exposing (Svg, svg, line)
 import Svg.Attributes exposing (viewBox, width, height)
@@ -270,6 +271,8 @@ update msg model =
   in
   case msg of
     AddTopic -> ( addTopic model, Cmd.none )
+    MoveTopicToMap topicId fromMapId toMapId pos
+      -> ( moveTopicToMap topicId fromMapId toMapId pos model, Cmd.none )
     Expand expanded -> ( expand expanded model, Cmd.none )
     Delete -> ( delete model, Cmd.none )
     Mouse mouseMsg -> updateMouse mouseMsg model
@@ -306,10 +309,11 @@ addAssoc model player1 player2 =
   }
 
 
-moveTopicToMap : Model -> Id -> MapId -> MapId -> Model
-moveTopicToMap model topicId fromMapId toMapId =
+moveTopicToMap : Id -> MapId -> MapId -> Point -> Model -> Model
+moveTopicToMap topicId fromMapId toMapId pos model =
   let
-    viewItem_ = getViewItemById topicId fromMapId model
+    viewItem_ = getTopicProps topicId fromMapId model |> Maybe.andThen
+      (\props -> Just (ViewTopic { props | pos = pos }))
   in
   case viewItem_ of
     Just viewItem ->
@@ -338,9 +342,8 @@ hasMap mapId model =
 
 topicPos : Id -> MapId -> Model -> Maybe Point
 topicPos topicId mapId model =
-  case getViewItemById topicId mapId model of
-    Just (ViewTopic { pos }) -> Just pos
-    Just (ViewAssoc _) -> Nothing
+  case getTopicProps topicId mapId model of
+    Just { pos } -> Just pos
     Nothing -> logError "topicPos" (toString {topicId = topicId, mapId = mapId}) Nothing
 
 
@@ -375,10 +378,17 @@ updateExpand topicId mapId expanded model =
 
 isExpanded : Id -> MapId -> Model -> Bool
 isExpanded topicId mapId model =
-  case getViewItemById topicId mapId model of
-    Just (ViewTopic { expanded }) -> expanded
-    Just (ViewAssoc _) -> False
+  case getTopicProps topicId mapId model of
+    Just { expanded } -> expanded
     Nothing -> logError "isExpanded" (toString {topicId = topicId, mapId = mapId}) False
+
+
+getTopicProps : Id -> MapId -> Model -> Maybe TopicProps
+getTopicProps topicId mapId model =
+  case getViewItemById topicId mapId model of
+    Just (ViewTopic props) -> Just props
+    Just (ViewAssoc _) -> topicMismatch "getTopicProps" topicId Nothing
+    Nothing -> logError "getTopicProps" (toString {topicId = topicId, mapId = mapId}) Nothing
 
 
 getViewItemById : Id -> MapId -> Model -> Maybe ViewItem
@@ -503,7 +513,7 @@ updateMouse msg model =
     Down -> ( mouseDown model, Cmd.none )
     DownItem class id mapId pos -> mouseDownOnItem model class id mapId pos
     Move pos -> mouseMove model pos
-    Up -> ( mouseUp model, Cmd.none )
+    Up -> mouseUp model
     Over class id -> ( mouseOver model class id, Cmd.none )
     Out class id -> ( mouseOut model class id, Cmd.none )
     Time time -> ( timeArrived model time, Cmd.none )
@@ -586,27 +596,37 @@ performDrag model pos =
       model
 
 
-mouseUp : Model -> Model
+mouseUp : Model -> ( Model, Cmd Msg )
 mouseUp model =
   let
-    newModel = case model.dragState of
+    (newModel, cmd) = case model.dragState of
       Drag DragTopic id mapId _ (Just targetId) ->
         log ("--> dropped " ++ fromInt id ++ " (map " ++ fromInt mapId ++ ") on " ++
           fromInt targetId)
-          moveTopicToMap model id mapId targetId
+          ( model, Random.generate (MoveTopicToMap id mapId targetId) point )
       Drag DrawAssoc id mapId _ (Just targetId) ->
         log ("--> assoc drawn from " ++ fromInt id ++ " (map " ++ fromInt mapId ++ ") to " ++
           fromInt targetId)
-          addAssoc model id targetId
+          ( addAssoc model id targetId, Cmd.none)
       Drag _ _ _ _ _ ->
-        log "--> drag ended w/o target" model
+        log "--> drag ended w/o target"
+          ( model, Cmd.none )
       DragEngaged _ _ _ _ _ ->
-        log "--> drag aborted w/o moving" model
-      _ -> logError "mouseUp"
-        ("Received \"Up\" message when dragState is " ++ toString model.dragState)
-        model
+        log "--> drag aborted w/o moving"
+          ( model, Cmd.none )
+      _ ->
+        logError "mouseUp"
+          ("Received \"Up\" message when dragState is " ++ toString model.dragState)
+          ( model, Cmd.none )
   in
-  { newModel | dragState = NoDrag }
+  ( { newModel | dragState = NoDrag }, cmd )
+
+
+point : Random.Generator Point
+point =
+  Random.map2 Point
+    (Random.int 0 whitebox.width)
+    (Random.int 0 whitebox.height)
 
 
 mouseOver : Model -> Class -> Id -> Model
