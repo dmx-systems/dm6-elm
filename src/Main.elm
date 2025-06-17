@@ -108,7 +108,7 @@ expandDisabled model =
 viewMap : MapId -> MapId -> Model -> Html Msg
 viewMap mapId parentMapId model =
   let
-    ( topics, assocs ) = case getMap mapId model of
+    (topics, assocs) = case getMap mapId model of
       Just map -> viewItems map model
       Nothing -> ( [], [] )
     isTopLevel = mapId == model.activeMap
@@ -144,7 +144,7 @@ viewMap mapId parentMapId model =
             ++ svgStyle
           )
           ( assocs
-            ++ viewLimboAssoc model
+            ++ viewLimboAssoc mapId model
           )
       ]
 
@@ -222,13 +222,16 @@ viewAssoc assoc mapId model =
     Nothing -> text "" -- TODO
 
 
-viewLimboAssoc : Model -> List (Svg Msg)
-viewLimboAssoc model =
+viewLimboAssoc : MapId -> Model -> List (Svg Msg)
+viewLimboAssoc mapId model =
   case model.dragState of
-    Drag DrawAssoc topicId mapId pos _ ->
-      case topicPos topicId mapId model of
-        Just pos1 -> [ viewLine pos1 pos ]
-        Nothing -> []
+    Drag DrawAssoc topicId mapId_ pos _ ->
+      if mapId_ == mapId then
+        case topicPos topicId mapId_ model of
+          Just pos1 -> [ viewLine pos1 pos ]
+          Nothing -> []
+      else
+        []
     _ -> []
 
 
