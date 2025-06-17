@@ -44,15 +44,15 @@ appStyle =
   ]
 
 
-topicStyle : TopicInfo -> Model -> List (Attribute Msg)
-topicStyle { id } model =
+topicStyle : TopicInfo -> MapId -> Model -> List (Attribute Msg)
+topicStyle { id } mapId model =
   let
-    selected = model.selection |> List.member id
+    selected = model.selection |> List.member (id, mapId)
     dragging = case model.dragState of
-      Drag DragTopic id_ _ _ -> id_ == id
+      Drag DragTopic id_ _ _ _ -> id_ == id -- TODO: mapId?
       _ -> False
     targeted = case model.dragState of
-      Drag _ _ _ (Just id_) -> id_ == id
+      Drag _ _ _ _ (Just id_) -> id_ == id -- TODO: mapId?
       _ -> False
     borderColor =
       if targeted then
@@ -144,5 +144,5 @@ buttonStyle =
 
 
 logError : String -> String -> a -> a
-logError func text val =
-  log ("### ERROR @" ++ func ++ ": " ++ text) val
+logError funcName text val =
+  log ("### ERROR @" ++ funcName ++ ": " ++ text) val

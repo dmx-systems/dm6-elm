@@ -8,8 +8,8 @@ import Time
 type alias Model =
   { items : Items
   , maps : Maps
-  , activeMap : Id
-  , selection : List Id   -- transient
+  , activeMap : MapId
+  , selection : Selection -- transient
   , dragState : DragState -- transient
   , nextId : Id
   }
@@ -20,7 +20,7 @@ type alias Maps = Dict Id Map
 
 type alias Map =
   { id : MapId
-  , items :Dict Id ViewItem
+  , items : Dict Id ViewItem
   }
 
 
@@ -71,6 +71,7 @@ type alias Point =
 
 type alias Id = Int
 type alias MapId = Id
+type alias Selection = List (Id, MapId)
 type alias RoleType = String
 type alias Class = String
 type alias Delta = Point
@@ -79,10 +80,10 @@ type alias Color = Int
 
 type DragState
   = NoDrag
-  | WaitForStartTime Class Id Point
-  | DragEngaged Time.Posix Class Id Point -- topic id, start point
-  | WaitForEndTime Time.Posix Class Id Point
-  | Drag DragMode Id Point (Maybe Id) -- topic id, last point, drop tartget
+  | WaitForStartTime Class Id MapId Point
+  | DragEngaged Time.Posix Class Id MapId Point -- topic id, start point
+  | WaitForEndTime Time.Posix Class Id MapId Point
+  | Drag DragMode Id MapId Point (Maybe Id) -- topic id, last point, drop tartget
 
 
 type DragMode
@@ -100,7 +101,7 @@ type Msg
 
 type MouseMsg
   = Down -- mouse down somewhere
-  | DownItem Class Id Point -- mouse down on an item where a drag can be engaged
+  | DownItem Class Id MapId Point -- mouse down on an item where a drag can be engaged
   | Move Point
   | Up
   | Over Class Id

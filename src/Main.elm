@@ -60,8 +60,8 @@ init flags =
 view : Model -> Browser.Document Msg
 view model =
   let
-    expanded = case getSelectedId model of
-      Just id -> isExpanded id model.activeMap model
+    expanded = case getSingleSelection model of
+      Just (topicId, mapId) -> isExpanded topicId mapId model
       Nothing -> False
     deleteDisabled = List.isEmpty model.selection
   in
@@ -102,7 +102,7 @@ expandDisabled : Model -> Bool
 expandDisabled model =
   case model.selection of
     [] -> True
-    id :: ids -> not (hasMap id model)
+    (id, mapId) :: ids -> not (hasMap id model)
 
 
 viewMap : MapId -> MapId -> Model -> Html Msg
@@ -161,7 +161,7 @@ viewItems map model =
             Nothing -> illegalItemId "viewItems" id ( t, a )
         ViewAssoc props ->
           case Dict.get id model.items of
-            Just (Assoc assoc) -> ( t, viewAssoc assoc model :: a )
+            Just (Assoc assoc) -> ( t, viewAssoc assoc map.id model :: a )
             Just (Topic _) -> assocMismatch "viewItems" id ( t, a )
             Nothing -> illegalItemId "viewItems" id ( t, a )
     )
@@ -182,7 +182,7 @@ viewTopic topic props mapId model =
   in
   div
     ( topicAttr topic.id mapId
-      ++ topicStyle topic model
+      ++ topicStyle topic mapId model
       ++
         if isContainer then
           if props.expanded then
@@ -212,10 +212,10 @@ topicAttr id mapId =
   ]
 
 
-viewAssoc : AssocInfo -> Model -> Svg Msg
-viewAssoc assoc model =
+viewAssoc : AssocInfo -> MapId -> Model -> Svg Msg
+viewAssoc assoc mapId model =
   let
-    geom = assocGeometry model assoc
+    geom = assocGeometry assoc mapId model
   in
   case geom of
     Just ( pos1, pos2 ) -> viewLine pos1 pos2
@@ -225,8 +225,8 @@ viewAssoc assoc model =
 viewLimboAssoc : Model -> List (Svg Msg)
 viewLimboAssoc model =
   case model.dragState of
-    Drag DrawAssoc topicId pos _ ->
-      case topicPos topicId model.activeMap model of
+    Drag DrawAssoc topicId mapId pos _ ->
+      case topicPos topicId mapId model of
         Just pos1 -> [ viewLine pos1 pos ]
         Nothing -> []
     _ -> []
@@ -239,11 +239,11 @@ viewLine pos1 pos2 =
     []
 
 
-assocGeometry : Model -> AssocInfo -> Maybe ( Point, Point )
-assocGeometry model assoc =
+assocGeometry : AssocInfo -> MapId -> Model -> Maybe ( Point, Point )
+assocGeometry assoc mapId model =
   let
-    pos1 = topicPos assoc.player1 model.activeMap model
-    pos2 = topicPos assoc.player2 model.activeMap model
+    pos1 = topicPos assoc.player1 mapId model
+    pos2 = topicPos assoc.player2 mapId model
   in
   Maybe.map2 (\p1 p2 -> ( p1, p2 )) pos1 pos2
 
@@ -303,7 +303,7 @@ addAssoc model player1 player2 =
   }
 
 
-moveTopicToMap : Model -> Id -> Id -> Id -> Model
+moveTopicToMap : Model -> Id -> MapId -> MapId -> Model
 moveTopicToMap model topicId fromMapId toMapId =
   let
     viewItem_ = getViewItemById topicId fromMapId model
@@ -315,16 +315,17 @@ moveTopicToMap model topicId fromMapId toMapId =
           { model
           | maps = removeItemFromMap model topicId fromMapId
           }
-      , selection = [ toMapId ]
+      , selection = [ (toMapId, fromMapId) ]
       }
     Nothing -> model
 
 
-getSelectedId : Model -> Maybe Id
-getSelectedId model =
+getSingleSelection : Model -> Maybe (Id, MapId)
+getSingleSelection model =
   case model.selection of
     [] -> Nothing
-    id :: ids -> Just id
+    selItem :: selItems -> Just selItem
+    -- FIXME: return nothing if more than one item
 
 
 hasMap : Id -> Model -> Bool
@@ -332,12 +333,12 @@ hasMap mapId model =
   Dict.member mapId model.maps
 
 
-topicPos : Id -> Id -> Model -> Maybe Point
+topicPos : Id -> MapId -> Model -> Maybe Point
 topicPos topicId mapId model =
   case getViewItemById topicId mapId model of
     Just (ViewTopic { pos }) -> Just pos
     Just (ViewAssoc _) -> Nothing
-    Nothing -> illegalItemId "topicPos" topicId Nothing
+    Nothing -> logError "topicPos" (toString {topicId = topicId, mapId = mapId}) Nothing
 
 
 updateTopicPos : Id -> Id -> Delta -> Model -> Maps
@@ -353,14 +354,14 @@ expand : Bool -> Model -> Model
 expand expanded model =
   let
     maps =
-      case getSelectedId model of
-        Just topicId -> updateExpand topicId model.activeMap expanded model
+      case getSingleSelection model of
+        Just (topicId, mapId) -> updateExpand topicId mapId expanded model
         Nothing -> model.maps
   in
   { model | maps = maps }
 
 
-updateExpand : Id -> Id -> Bool -> Model -> Maps
+updateExpand : Id -> MapId -> Bool -> Model -> Maps
 updateExpand topicId mapId expanded model =
   updateTopicProps
     topicId
@@ -369,15 +370,15 @@ updateExpand topicId mapId expanded model =
     (\props -> { props | expanded = expanded })
 
 
-isExpanded : Id -> Id -> Model -> Bool
+isExpanded : Id -> MapId -> Model -> Bool
 isExpanded topicId mapId model =
   case getViewItemById topicId mapId model of
     Just (ViewTopic { expanded }) -> expanded
     Just (ViewAssoc _) -> False
-    Nothing -> illegalItemId "view" topicId False
+    Nothing -> logError "isExpanded" (toString {topicId = topicId, mapId = mapId}) False
 
 
-getViewItemById : Id -> Id -> Model -> Maybe ViewItem
+getViewItemById : Id -> MapId -> Model -> Maybe ViewItem
 getViewItemById itemId mapId model =
   getMap mapId model |> Maybe.andThen (getViewItem itemId)
 
@@ -393,7 +394,7 @@ getViewItem : Id -> Map -> Maybe ViewItem
 getViewItem itemId map =
   case map.items |> Dict.get itemId of
     Just viewItem -> Just viewItem
-    Nothing -> illegalItemId "getViewItem" itemId Nothing
+    Nothing -> itemNotInMap "getViewItem" itemId map.id Nothing
 
 
 updateTopicProps : Id -> Id -> Model -> (TopicProps -> TopicProps) -> Maps
@@ -408,7 +409,7 @@ delete : Model -> Model
 delete model =
   let
     maps = updateMaps
-      model.activeMap
+      model.activeMap -- FIXME: delete items from other/different maps
       (deleteViewItems model.selection)
       model
   in
@@ -420,20 +421,20 @@ delete model =
   }
 
 
-deleteItems : List Id -> Items -> Items
-deleteItems ids items =
-  case ids of
+deleteItems : Selection -> Items -> Items
+deleteItems selItems items =
+  case selItems of
     [] -> items
-    id :: moreIds -> deleteItems moreIds (Dict.remove id items)
-    -- TODO: delete assocs where the item is a player
+    (id, mapId) :: moreSelItems -> deleteItems moreSelItems (Dict.remove id items)
+    -- FIXME: delete assocs where the item is a player
 
 
-deleteViewItems : List Id -> Map -> Map
-deleteViewItems ids map =
-  case ids of
+deleteViewItems : Selection -> Map -> Map
+deleteViewItems selItems map =
+  case selItems of
     [] -> map
-    id :: moreIds -> deleteViewItems moreIds (removeItemFromMap_ id map)
-    -- TODO: delete assocs where the item is a player
+    (id, mapId) :: moreSelItems -> deleteViewItems moreSelItems (removeItemFromMap_ id map)
+    -- FIXME: delete assocs where the item is a player
 
 
 removeItemFromMap : Model -> Id -> Id -> Maps
@@ -497,7 +498,7 @@ updateMouse : MouseMsg -> Model -> ( Model, Cmd Msg )
 updateMouse msg model =
   case msg of
     Down -> ( mouseDown model, Cmd.none )
-    DownItem class id pos -> mouseDownOnItem model class id pos
+    DownItem class id mapId pos -> mouseDownOnItem model class id mapId pos
     Move pos -> mouseMove model pos
     Up -> ( mouseUp model, Cmd.none )
     Over class id -> ( mouseOver model class id, Cmd.none )
@@ -510,11 +511,11 @@ mouseDown model =
   { model | selection = [] }
 
 
-mouseDownOnItem : Model -> Class -> Id -> Point -> ( Model, Cmd Msg )
-mouseDownOnItem model class id pos =
+mouseDownOnItem : Model -> Class -> Id -> MapId -> Point -> ( Model, Cmd Msg )
+mouseDownOnItem model class id mapId pos =
   ( { model
-    | selection = [ id ]
-    , dragState = WaitForStartTime class id pos
+    | selection = [ (id, mapId) ]
+    , dragState = WaitForStartTime class id mapId pos
     }
   , Task.perform (Time >> Mouse) Time.now
   )
@@ -523,9 +524,9 @@ mouseDownOnItem model class id pos =
 timeArrived : Model -> Time.Posix -> Model
 timeArrived model time =
   case model.dragState of
-    WaitForStartTime class id pos ->
-      { model | dragState = DragEngaged time class id pos }
-    WaitForEndTime startTime class id pos ->
+    WaitForStartTime class id mapId pos ->
+      { model | dragState = DragEngaged time class id mapId pos }
+    WaitForEndTime startTime class id mapId pos ->
       { model | dragState =
           case class of
             "dmx-topic" ->
@@ -536,7 +537,7 @@ timeArrived model time =
                   else
                     DrawAssoc
               in
-              Drag dragMode id pos Nothing
+              Drag dragMode id mapId pos Nothing
             _ -> NoDrag -- the error will be logged in performDrag
       }
     _ -> logError "timeArrived"
@@ -547,13 +548,13 @@ timeArrived model time =
 mouseMove : Model -> Point -> ( Model, Cmd Msg )
 mouseMove model pos =
   case model.dragState of
-    DragEngaged time class id pos_ ->
-      ( { model | dragState = WaitForEndTime time class id pos_ }
+    DragEngaged time class id mapId pos_ ->
+      ( { model | dragState = WaitForEndTime time class id mapId pos_ }
       , Task.perform (Time >> Mouse) Time.now
       )
-    WaitForEndTime _ class id pos_ ->
-      ( model, Cmd.none ) -- ignore
-    Drag _ _ _ _ ->
+    WaitForEndTime _ _ _ _ _ ->
+      ( model, Cmd.none ) -- ignore -- TODO: can this happen at all? Is there a move listener?
+    Drag _ _ _ _ _ ->
       ( performDrag model pos, Cmd.none )
     _ -> logError "mouseMove"
       ("Received \"Move\" message when dragState is " ++ toString model.dragState)
@@ -563,19 +564,19 @@ mouseMove model pos =
 performDrag : Model -> Point -> Model
 performDrag model pos =
   case model.dragState of
-    Drag dragMode id lastPoint target ->
+    Drag dragMode id mapId lastPoint target ->
       let
         delta = Point
           (pos.x - lastPoint.x)
           (pos.y - lastPoint.y)
         maps =
           case dragMode of
-            DragTopic -> updateTopicPos id model.activeMap delta model
+            DragTopic -> updateTopicPos id mapId delta model
             DrawAssoc -> model.maps
       in
       { model
         | maps = maps
-        , dragState = Drag dragMode id pos target -- update lastPoint
+        , dragState = Drag dragMode id mapId pos target -- update lastPoint
       }
     _ -> logError "performDrag"
       ("Received \"Move\" message when dragState is " ++ toString model.dragState)
@@ -586,15 +587,17 @@ mouseUp : Model -> Model
 mouseUp model =
   let
     newModel = case model.dragState of
-      Drag DragTopic id _ (Just targetId) ->
-        log ("--> dropped " ++ fromInt id ++ " on " ++ fromInt targetId)
-          moveTopicToMap model id model.activeMap targetId
-      Drag DrawAssoc id _ (Just targetId) ->
-        log ("--> assoc drawn from " ++ fromInt id ++ " to " ++ fromInt targetId)
+      Drag DragTopic id mapId _ (Just targetId) ->
+        log ("--> dropped " ++ fromInt id ++ " (map " ++ fromInt mapId ++ ") on " ++
+          fromInt targetId)
+          moveTopicToMap model id mapId targetId
+      Drag DrawAssoc id mapId _ (Just targetId) ->
+        log ("--> assoc drawn from " ++ fromInt id ++ " (map " ++ fromInt mapId ++ ") to " ++
+          fromInt targetId)
           addAssoc model id targetId
-      Drag _ _ _ _ ->
+      Drag _ _ _ _ _ ->
         log "--> drag ended w/o target" model
-      DragEngaged _ _ _ _ ->
+      DragEngaged _ _ _ _ _ ->
         log "--> drag aborted w/o moving" model
       _ -> logError "mouseUp"
         ("Received \"Up\" message when dragState is " ++ toString model.dragState)
@@ -606,12 +609,12 @@ mouseUp model =
 mouseOver : Model -> Class -> Id -> Model
 mouseOver model class targetId =
   case model.dragState of
-    Drag dragMode id lastPoint _ ->
+    Drag dragMode id mapId lastPoint _ ->
       let
         target = if id /= targetId then (Just targetId) else Nothing
       in
-      { model | dragState = Drag dragMode id lastPoint target } -- update drop target
-    DragEngaged _ _ _ _ ->
+      { model | dragState = Drag dragMode id mapId lastPoint target } -- update drop target
+    DragEngaged _ _ _ _ _ ->
       logError "mouseOver" "Received \"Over\" message when dragState is DragEngaged" model
     _ -> model
 
@@ -619,8 +622,8 @@ mouseOver model class targetId =
 mouseOut : Model -> Class -> Id -> Model
 mouseOut model class targetId =
   case model.dragState of
-    Drag dragMode id lastPoint _ ->
-      { model | dragState = Drag dragMode id lastPoint Nothing } -- reset drop target
+    Drag dragMode id mapId lastPoint _ ->
+      { model | dragState = Drag dragMode id mapId lastPoint Nothing } -- reset drop target
     _ -> model
 
 
@@ -632,18 +635,19 @@ subscriptions : Model -> Sub Msg
 subscriptions model =
   case model.dragState of
     NoDrag -> mouseDownSub
-    WaitForStartTime _ _ _ -> Sub.none
-    WaitForEndTime _ _ _ _ -> Sub.none
-    DragEngaged _ _ _ _ -> dragSub
-    Drag _ _ _ _ -> dragSub
+    WaitForStartTime _ _ _ _ -> Sub.none
+    WaitForEndTime _ _ _ _ _ -> Sub.none
+    DragEngaged _ _ _ _ _ -> dragSub
+    Drag _ _ _ _ _ -> dragSub
 
 
 mouseDownSub : Sub Msg
 mouseDownSub =
   Events.onMouseDown <| D.oneOf
-    [ D.map Mouse <| D.map3 DownItem
+    [ D.map Mouse <| D.map4 DownItem
         ( D.at ["target", "className"] D.string )
         ( D.at ["target", "dataset", "id"] D.string |> D.andThen strToIntDecoder )
+        ( D.at ["target", "dataset", "mapId"] D.string |> D.andThen strToIntDecoder )
         ( D.map2 Point
           ( D.field "clientX" D.int )
           ( D.field "clientY" D.int )
@@ -687,26 +691,31 @@ mouseDecoder msg =
 -- DEBUG
 
 
-topicMismatch : String -> Int -> a -> a
-topicMismatch func id val =
-  logError func (fromInt id ++ " is not a Topic but an Assoc") val
+itemNotInMap : String -> Id -> Id -> a -> a
+itemNotInMap funcName itemId mapId val =
+  logError funcName (fromInt itemId ++ " not in map " ++ fromInt mapId) val
 
 
-assocMismatch : String -> Int -> a -> a
-assocMismatch func id val =
-  logError func (fromInt id ++ " is not an Assoc but a Topic") val
+topicMismatch : String -> Id -> a -> a
+topicMismatch funcName id val =
+  logError funcName (fromInt id ++ " is not a Topic but an Assoc") val
 
 
-illegalMapId : String -> Int -> a -> a
-illegalMapId func id val =
-  illegalId func "Map" id val
+assocMismatch : String -> Id -> a -> a
+assocMismatch funcName id val =
+  logError funcName (fromInt id ++ " is not an Assoc but a Topic") val
 
 
-illegalItemId : String -> Int -> a -> a
-illegalItemId func id val =
-  illegalId func "Item" id val
+illegalMapId : String -> Id -> a -> a
+illegalMapId funcName id val =
+  illegalId funcName "Map" id val
 
 
-illegalId : String -> String -> Int -> a -> a
-illegalId func item id val =
-  logError func (fromInt id ++ " is an illegal " ++ item ++ " ID") val
+illegalItemId : String -> Id -> a -> a
+illegalItemId funcName id val =
+  illegalId funcName "Item" id val
+
+
+illegalId : String -> String -> Id -> a -> a
+illegalId funcName item id val =
+  logError funcName (fromInt id ++ " is an illegal " ++ item ++ " ID") val
