@@ -296,15 +296,16 @@ addTopic model =
   }
 
 
-addAssoc : Model -> Id -> Id -> Model
-addAssoc model player1 player2 =
+-- Presumption: both players exist in same map
+addAssoc : Id -> Id -> MapId -> Model -> Model
+addAssoc player1 player2 mapId model =
   let
     id = model.nextId
   in
   { model
   | items = model.items |> Dict.insert id
       ( Assoc <| AssocInfo id player1 "dmx.default" player2 "dmx.default" )
-  , maps = addItemToMap (ViewAssoc <| AssocProps id) model.activeMap model
+  , maps = addItemToMap (ViewAssoc <| AssocProps id) mapId model
   , nextId = id + 1
   }
 
@@ -599,7 +600,7 @@ performDrag model pos =
 mouseUp : Model -> ( Model, Cmd Msg )
 mouseUp model =
   let
-    (newModel, cmd) = case model.dragState of
+    ( newModel, cmd ) = case model.dragState of
       Drag DragTopic id mapId _ (Just targetId) ->
         log ("--> dropped " ++ fromInt id ++ " (map " ++ fromInt mapId ++ ") on " ++
           fromInt targetId)
@@ -607,7 +608,7 @@ mouseUp model =
       Drag DrawAssoc id mapId _ (Just targetId) ->
         log ("--> assoc drawn from " ++ fromInt id ++ " (map " ++ fromInt mapId ++ ") to " ++
           fromInt targetId)
-          ( addAssoc model id targetId, Cmd.none)
+          ( addAssoc id targetId mapId model, Cmd.none)
       Drag _ _ _ _ _ ->
         log "--> drag ended w/o target"
           ( model, Cmd.none )
