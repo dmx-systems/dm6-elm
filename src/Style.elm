@@ -5,7 +5,7 @@ import Html exposing (Attribute)
 import Html.Attributes exposing (style)
 import String exposing (String, fromInt)
 import Svg.Attributes exposing (x1, y1, x2, y2, stroke, strokeWidth)
-import Debug exposing (log)
+import Debug exposing (log, toString)
 
 
 
@@ -21,7 +21,7 @@ containerSize = 30
 containerOffset = containerSize // 2 + borderWidth
 containerRadius = 10
 
-whitebox = { width = 350, height = 200}
+whitebox = { width = 350, height = 200 }
 whiteboxOffset =
   { x = whitebox.width // 2 + borderWidth
   , y = whitebox.height // 2 + borderWidth
@@ -52,7 +52,7 @@ topicStyle { id } mapId model =
       Drag DragTopic id_ _ _ _ -> id_ == id -- TODO: mapId?
       _ -> False
     targeted = case model.dragState of
-      Drag _ _ _ _ (Just id_) -> id_ == id -- TODO: mapId?
+      Drag _ _ _ _ (Just target) -> target == (id, mapId)
       _ -> False
     borderColor =
       if targeted then
@@ -143,6 +143,16 @@ buttonStyle =
 -- DEBUG
 
 
-logError : String -> String -> a -> a
+logError : String -> String -> v -> v
 logError funcName text val =
   log ("### ERROR @" ++ funcName ++ ": " ++ text) val
+
+
+fail : String -> a -> v -> v
+fail funcName args val =
+  log ("--> @" ++ funcName ++ " failed " ++ toString args) val
+
+
+call : String -> a -> v -> v
+call funcName args val =
+  log ("@" ++ funcName ++ " " ++ toString args ++ " -->") val

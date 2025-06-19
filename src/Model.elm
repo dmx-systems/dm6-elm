@@ -20,6 +20,7 @@ type alias Maps = Dict Id Map
 
 type alias Map =
   { id : MapId
+  , parent : MapId
   , items : Dict Id ViewItem
   }
 
@@ -83,7 +84,7 @@ type DragState
   | WaitForStartTime Class Id MapId Point
   | DragEngaged Time.Posix Class Id MapId Point -- topic id, start point
   | WaitForEndTime Time.Posix Class Id MapId Point
-  | Drag DragMode Id MapId Point (Maybe Id) -- topic id, last point, drop tartget
+  | Drag DragMode Id MapId Point (Maybe (Id, MapId)) -- topic id, last point, drop tartget
 
 
 type DragMode
@@ -93,7 +94,7 @@ type DragMode
 
 type Msg
   = AddTopic
-  | MoveTopicToMap Id MapId MapId Point
+  | MoveTopicToMap Id MapId Id MapId Point
   | Expand Bool
   | Delete
   | Mouse MouseMsg
@@ -105,6 +106,6 @@ type MouseMsg
   | DownItem Class Id MapId Point -- mouse down on an item where a drag can be engaged
   | Move Point
   | Up
-  | Over Class Id
-  | Out Class Id
+  | Over Class Id MapId
+  | Out Class Id MapId
   | Time Time.Posix
