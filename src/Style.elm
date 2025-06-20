@@ -12,14 +12,17 @@ import Debug exposing (log, toString)
 -- CONFIG
 
 
+mainFontSize = "14px"
+selectionColor = "#007AFF" -- Firefox focus color
+
 borderWidth = 5
 
 topicSize = 24
 topicRadius = topicSize // 2 + borderWidth
 
-containerSize = 30
-containerOffset = containerSize // 2 + borderWidth
-containerRadius = 10
+blackBoxSize = 30
+blackBoxOffset = blackBoxSize // 2 + borderWidth
+blackBoxRadius = 10
 
 whitebox = { width = 350, height = 200 }
 whiteboxOffset =
@@ -29,7 +32,6 @@ whiteboxOffset =
 whiteboxRadius = 20
 
 assocWith = 5
-selectionColor = "#007AFF" -- Firefox focus color
 
 
 
@@ -39,8 +41,38 @@ selectionColor = "#007AFF" -- Firefox focus color
 appStyle : List (Attribute Msg)
 appStyle =
   [ style "font-family" "sans-serif"
+  , style "font-size" mainFontSize
   , style "user-select" "none"
   , style "-webkit-user-select" "none" -- Safari still needs vendor prefix
+  ]
+
+
+toolbarStyle : List (Attribute Msg)
+toolbarStyle =
+  [ style "display" "inline-flex"
+  , style "flex-direction" "column"
+  , style "align-items" "flex-start"
+  , style "gap" "20px"
+  , style "margin-top" "20px"
+  ]
+
+
+displayModeStyle : Bool -> List (Attribute Msg)
+displayModeStyle disabled =
+  let
+    color = if disabled then "gray" else "unset"
+  in
+  [ style "display" "flex"
+  , style "flex-direction" "column"
+  , style "gap" "2px"
+  , style "color" color
+  ]
+
+
+buttonStyle : List (Attribute Msg)
+buttonStyle =
+  [ style "font-family" "sans-serif"
+  , style "font-size" mainFontSize
   ]
 
 
@@ -82,13 +114,13 @@ normalStyle { color } { pos } =
   ]
 
 
-containerStyle : TopicInfo -> TopicProps -> List (Attribute Msg)
-containerStyle { color } { pos } =
-  [ style "left" <| fromInt (pos.x - containerOffset) ++ "px"
-  , style "top" <| fromInt (pos.y - containerOffset) ++ "px"
-  , style "width" <| fromInt containerSize ++ "px"
-  , style "height" <| fromInt containerSize ++ "px"
-  , style "border-radius" <| fromInt containerRadius ++ "px"
+blackBoxStyle : TopicInfo -> TopicProps -> List (Attribute Msg)
+blackBoxStyle { color } { pos } =
+  [ style "left" <| fromInt (pos.x - blackBoxOffset) ++ "px"
+  , style "top" <| fromInt (pos.y - blackBoxOffset) ++ "px"
+  , style "width" <| fromInt blackBoxSize ++ "px"
+  , style "height" <| fromInt blackBoxSize ++ "px"
+  , style "border-radius" <| fromInt blackBoxRadius ++ "px"
   , style "background-color" <| "hsl(" ++ fromInt color ++ ", 70%, 60%)"
   ]
 
@@ -129,13 +161,6 @@ lineStyle pos1 pos2 =
   , y2 <| fromInt pos2.y
   , stroke "gray"
   , strokeWidth <| fromInt assocWith ++ "px"
-  ]
-
-
-buttonStyle : List (Attribute Msg)
-buttonStyle =
-  [ style "display" "block"
-  , style "margin-top" "20px"
   ]
 
 

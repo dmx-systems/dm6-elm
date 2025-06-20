@@ -15,32 +15,6 @@ type alias Model =
   }
 
 
-type alias Maps = Dict Id Map
-
-
-type alias Map =
-  { id : MapId
-  , parent : MapId
-  , items : Dict Id ViewItem
-  }
-
-
-type ViewItem
-  = ViewTopic TopicProps
-  | ViewAssoc AssocProps
-
-
-type alias TopicProps =
-  { id : Id
-  , pos : Point
-  , expanded : Bool
-  }
-
-
-type alias AssocProps =
-  { id : Id }
-
-
 type alias Items = Dict Id Item
 
 
@@ -62,6 +36,38 @@ type alias AssocInfo =
   , player2 : Id
   , role2 : String
   }
+
+
+type alias Maps = Dict Id Map
+
+
+type alias Map =
+  { id : MapId
+  , parent : MapId
+  , items : Dict Id ViewItem
+  }
+
+
+type ViewItem
+  = ViewTopic TopicProps
+  | ViewAssoc AssocProps
+
+
+type alias TopicProps =
+  { id : Id
+  , pos : Point
+  , displayMode : Maybe DisplayMode -- only set if topic has children
+  }
+
+
+type DisplayMode
+  = BlackBox
+  | WhiteBox
+  | Unboxed
+
+
+type alias AssocProps =
+  { id : Id }
 
 
 type alias Point =
@@ -95,7 +101,7 @@ type DragMode
 type Msg
   = AddTopic
   | MoveTopicToMap Id MapId Id MapId Point
-  | Expand Bool
+  | Set (Maybe DisplayMode)
   | Delete
   | Mouse MouseMsg
   | NoOp
