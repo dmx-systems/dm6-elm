@@ -75,7 +75,7 @@ view model =
       , div
           toolbarStyle
           [ button
-              ( [ onClick AddTopic ]
+              ( [ onClick CreateTopic ]
                 ++ buttonStyle
               )
               [ text "Add Topic" ]
@@ -352,7 +352,7 @@ update msg model =
         _ -> info "update" msg
   in
   case msg of
-    AddTopic -> ( addTopic model, Cmd.none )
+    CreateTopic -> ( createTopic model, Cmd.none )
     MoveTopicToMap topicId fromMapId targetId targetMapId pos
       -> ( moveTopicToMap topicId fromMapId targetId targetMapId pos model, Cmd.none )
     Set displayMode -> ( setDisplayMode displayMode model, Cmd.none )
@@ -361,14 +361,14 @@ update msg model =
     NoOp -> ( model, Cmd.none )
 
 
-addTopic : Model -> Model
-addTopic model =
+createTopic : Model -> Model
+createTopic model =
   let
     id = model.nextId
     index = modBy (Array.length colors) (Dict.size model.items)
     color = case colors |> Array.get index of
       Just color_ -> color_
-      Nothing -> logError "addTopic" "Illegal color" 0
+      Nothing -> logError "createTopic" "Illegal color" 0
     pos = Point 112 86
   in
   { model
@@ -379,14 +379,20 @@ addTopic model =
 
 
 -- Presumption: both players exist in same map
-addAssoc : Id -> Id -> MapId -> Model -> Model
-addAssoc player1 player2 mapId model =
+createDefaultAssoc : Id -> Id -> MapId -> Model -> Model
+createDefaultAssoc player1 player2 mapId model =
+  createAssoc "dmx.association" player1 "dmx.default" player2 "dmx.default" mapId model
+
+
+-- Presumption: both players exist in same map
+createAssoc : ItemType -> Id -> RoleType -> Id -> RoleType -> MapId -> Model -> Model
+createAssoc itemType player1 role1 player2 role2 mapId model =
   let
     id = model.nextId
   in
   { model
   | items = model.items |> Dict.insert id
-      ( Assoc <| AssocInfo id player1 "dmx.default" player2 "dmx.default" )
+      ( Assoc <| AssocInfo id itemType player1 role1 player2 role2 )
   , maps = addItemToMap (ViewAssoc <| AssocProps id) mapId model
   , nextId = id + 1
   }
@@ -419,6 +425,19 @@ moveTopicToMap topicId fromMapId targetId targetMapId pos model =
       , selection = [ (targetId, targetMapId) ]
       }
     Nothing -> model
+
+
+addItemToMap : ViewItem -> MapId -> Model -> Maps
+addItemToMap viewItem mapId model =
+  let
+    itemId = case viewItem of -- TODO: make ViewItem a record with "id" field?
+      ViewTopic {id} -> id
+      ViewAssoc {id} -> id
+  in
+  updateMaps
+    mapId
+    (\map -> { map | items = map.items |> Dict.insert itemId viewItem })
+    model
 
 
 getSingleSelection : Model -> Maybe (Id, MapId)
@@ -593,21 +612,6 @@ deleteViewItems selItems map =
     -- FIXME: delete assocs where the item is a player
 
 
-addItemToMap : ViewItem -> MapId -> Model -> Maps
-addItemToMap viewItem mapId model =
-  let
-    itemId = case viewItem of -- TODO: make ViewItem a record with "id" field?
-      ViewTopic {id} -> id
-      ViewAssoc {id} -> id
-  in
-  updateMaps mapId (addItemToMap_ itemId viewItem) model
-
-
-addItemToMap_ : Id -> ViewItem -> Map -> Map
-addItemToMap_ itemId item map =
-  { map | items = map.items |> Dict.insert itemId item }
-
-
 removeItemFromMap : Model -> Id -> Id -> Maps
 removeItemFromMap model itemId mapId =
   updateMaps mapId (removeItemFromMap_ itemId) model
@@ -759,7 +763,7 @@ mouseUp model =
           _ = info "mouseUp" ("assoc drawn from " ++ fromInt id ++ " (map " ++
             fromInt mapId ++ ") to " ++ fromInt targetId)
         in
-        ( addAssoc id targetId mapId model, Cmd.none)
+        ( createDefaultAssoc id targetId mapId model, Cmd.none)
       Drag _ _ _ _ _ ->
         let
           _ = info "mouseUp" "drag ended w/o target"

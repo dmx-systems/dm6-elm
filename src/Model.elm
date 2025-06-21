@@ -31,10 +31,11 @@ type alias TopicInfo =
 
 type alias AssocInfo =
   { id : Id
+  , itemType : ItemType
   , player1 : Id
-  , role1 : String
+  , role1 : RoleType
   , player2 : Id
-  , role2 : String
+  , role2 : RoleType
   }
 
 
@@ -78,9 +79,10 @@ type alias Point =
 
 type alias Id = Int
 type alias MapId = Id
-type alias Selection = List (Id, MapId)
+type alias Class = String -- a CSS class, e.g. "dmx-topic"
+type alias ItemType = String
 type alias RoleType = String
-type alias Class = String
+type alias Selection = List (Id, MapId)
 type alias Delta = Point
 type alias Color = Int
 
@@ -99,7 +101,7 @@ type DragMode
 
 
 type Msg
-  = AddTopic
+  = CreateTopic
   | MoveTopicToMap Id MapId Id MapId Point
   | Set (Maybe DisplayMode)
   | Delete
