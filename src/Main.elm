@@ -453,10 +453,13 @@ setDisplayMode displayMode model =
         Just (topicId, mapId) ->
           let
             newModel =
-              if displayMode == Just Unboxed then
-                { model | maps = unboxContainer topicId mapId model }
-              else
-                model
+              { model | maps =
+                  case displayMode of
+                    Just BlackBox -> boxContainer topicId mapId model
+                    Just WhiteBox -> boxContainer topicId mapId model
+                    Just Unboxed -> unboxContainer topicId mapId model
+                    Nothing -> model.maps
+              }
           in
           updateDisplayMode topicId mapId displayMode newModel
         Nothing -> model.maps
@@ -478,6 +481,32 @@ getDisplayMode topicId mapId model =
   case getTopicProps topicId mapId model of
     Just { displayMode } -> displayMode
     Nothing -> fail "getDisplayMode" {topicId = topicId, mapId = mapId} Nothing
+
+
+-- TODO: unify these 2 functions
+
+boxContainer : Id -> MapId -> Model -> Maps
+boxContainer topicId mapId model =
+  let
+    maps_ = getMap topicId model |> Maybe.andThen
+      (\fromMap -> Just
+        (updateMaps
+          mapId
+          (\toMap ->
+            let
+              toItems = fromMap.items |> Dict.toList |> List.foldr
+                (\(id, viewItem) newItems -> Dict.remove id newItems)
+                toMap.items
+            in
+            { toMap | items = toItems }
+          )
+          model
+        )
+      )
+  in
+  case maps_ of
+    Just maps -> maps
+    Nothing -> model.maps
 
 
 unboxContainer : Id -> MapId -> Model -> Maps
