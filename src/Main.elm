@@ -103,31 +103,31 @@ viewDisplayMode model =
     checked1 = displayMode == Just BlackBox
     checked2 = displayMode == Just WhiteBox
     checked3 = displayMode == Just Unboxed
-    disabled = displayMode == Nothing
+    disabled_ = displayMode == Nothing
   in
   div
-    (displayModeStyle disabled)
+    (displayModeStyle disabled_)
     [ div
         []
         [ text "Display Children" ]
     , label
         [ onClick (Set <| Just BlackBox), stopPropagationOnMousedown ]
         [ input
-            [ type_ "radio", name "display-mode", checked checked1 ]
+            [ type_ "radio", name "display-mode", checked checked1, disabled disabled_ ]
             []
         , text "Black Box"
         ]
     , label
         [ onClick (Set <| Just WhiteBox), stopPropagationOnMousedown ]
         [ input
-            [ type_ "radio", name "display-mode", checked checked2 ]
+            [ type_ "radio", name "display-mode", checked checked2, disabled disabled_ ]
             []
         , text "White Box"
         ]
     , label
         [ onClick (Set <| Just Unboxed), stopPropagationOnMousedown ]
         [ input
-            [ type_ "radio", name "display-mode", checked checked3 ]
+            [ type_ "radio", name "display-mode", checked checked3, disabled disabled_ ]
             []
         , text "Unboxed"
         ]
@@ -345,7 +345,7 @@ update msg model =
     _ =
       case msg of
         Mouse _ -> msg
-        _ -> log "update" msg
+        _ -> log "@update" msg
   in
   case msg of
     AddTopic -> ( addTopic model, Cmd.none )
@@ -684,19 +684,27 @@ mouseUp model =
   let
     ( newModel, cmd ) = case model.dragState of
       Drag DragTopic id mapId _ (Just (targetId, targetMapId)) ->
-        log ("--> dropped " ++ fromInt id ++ " (map " ++ fromInt mapId ++ ") on " ++
-          fromInt targetId ++ " (map " ++ fromInt targetMapId ++ ")")
-          ( model, Random.generate (MoveTopicToMap id mapId targetId targetMapId) point )
+        let
+          _ = info "mouseUp" ("dropped " ++ fromInt id ++ " (map " ++ fromInt mapId ++
+            ") on " ++ fromInt targetId ++ " (map " ++ fromInt targetMapId ++ ")")
+        in
+        ( model, Random.generate (MoveTopicToMap id mapId targetId targetMapId) point )
       Drag DrawAssoc id mapId _ (Just (targetId, _)) -> -- target map ID not used here
-        log ("--> assoc drawn from " ++ fromInt id ++ " (map " ++ fromInt mapId ++ ") to " ++
-          fromInt targetId)
-          ( addAssoc id targetId mapId model, Cmd.none)
+        let
+          _ = info "mouseUp" ("assoc drawn from " ++ fromInt id ++ " (map " ++
+            fromInt mapId ++ ") to " ++ fromInt targetId)
+        in
+        ( addAssoc id targetId mapId model, Cmd.none)
       Drag _ _ _ _ _ ->
-        log "--> drag ended w/o target"
-          ( model, Cmd.none )
+        let
+          _ = info "mouseUp" "drag ended w/o target"
+        in
+        ( model, Cmd.none )
       DragEngaged _ _ _ _ _ ->
-        log "--> drag aborted w/o moving"
-          ( model, Cmd.none )
+        let
+          _ = info "mouseUp" "drag aborted w/o moving"
+        in
+        ( model, Cmd.none )
       _ ->
         logError "mouseUp"
           ("Received \"Up\" message when dragState is " ++ toString model.dragState)

@@ -52,7 +52,7 @@ toolbarStyle =
   [ style "display" "inline-flex"
   , style "flex-direction" "column"
   , style "align-items" "flex-start"
-  , style "gap" "20px"
+  , style "gap" "28px"
   , style "margin-top" "20px"
   ]
 
@@ -60,12 +60,17 @@ toolbarStyle =
 displayModeStyle : Bool -> List (Attribute Msg)
 displayModeStyle disabled =
   let
-    color = if disabled then "gray" else "unset"
+    (color, pointerEvents) =
+      if disabled then
+        ("gray", "none")
+      else
+        ("unset", "unset")
   in
   [ style "display" "flex"
   , style "flex-direction" "column"
-  , style "gap" "2px"
+  , style "gap" "6px"
   , style "color" color
+  , style "pointer-events" pointerEvents
   ]
 
 
@@ -181,3 +186,8 @@ fail funcName args val =
 call : String -> a -> v -> v
 call funcName args val =
   log ("@" ++ funcName ++ " " ++ toString args ++ " -->") val
+
+
+info : String -> v -> v
+info funcName val =
+  log ("@" ++ funcName) val
