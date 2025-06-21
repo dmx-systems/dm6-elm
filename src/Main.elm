@@ -17,7 +17,7 @@ import Svg.Attributes exposing (viewBox, width, height)
 import Task
 import Time exposing (posixToMillis)
 import Json.Decode as D
-import Debug exposing (log, toString)
+import Debug exposing (toString)
 
 
 
@@ -109,7 +109,7 @@ viewDisplayMode model =
     (displayModeStyle disabled_)
     [ div
         []
-        [ text "Display Children" ]
+        [ text "Children Display" ]
     , label
         [ onClick (Set <| Just BlackBox), stopPropagationOnMousedown ]
         [ input
@@ -199,15 +199,6 @@ viewItems map model =
 
 viewTopic : TopicInfo -> TopicProps -> MapId -> Model -> Html Msg
 viewTopic topic props mapId model =
-  let
-    itemCount =
-      if props.displayMode /= Nothing then
-        case getMap topic.id model of
-          Just map -> map.items |> Dict.size
-          Nothing -> 0
-      else
-        0
-  in
   div
     ( topicAttr topic.id mapId
       ++ topicStyle topic mapId model
@@ -215,19 +206,32 @@ viewTopic topic props mapId model =
         case props.displayMode of
           Just BlackBox -> blackBoxStyle topic props
           Just WhiteBox -> whiteboxStyle topic props
-          Just Unboxed -> normalStyle topic props
+          Just Unboxed -> blackBoxStyle topic props
           Nothing -> normalStyle topic props
     )
     ( case props.displayMode of
-        Just BlackBox ->
-          [ div
-              itemCountStyle
-              [ text <| fromInt itemCount ]
-          ]
+        Just BlackBox -> viewItemCount props model
         Just WhiteBox -> [ viewMap topic.id mapId model ]
-        Just Unboxed -> []
+        Just Unboxed -> viewItemCount props model
         Nothing -> []
     )
+
+
+viewItemCount : TopicProps -> Model -> List (Html Msg)
+viewItemCount props model =
+  let
+    itemCount =
+      if props.displayMode /= Nothing then
+        case getMap props.id model of
+          Just map -> map.items |> Dict.size
+          Nothing -> 0
+      else
+        0
+  in
+    [ div
+        itemCountStyle
+        [ text <| fromInt itemCount ]
+    ]
 
 
 topicAttr : Id -> MapId -> List (Attribute Msg)
@@ -345,7 +349,7 @@ update msg model =
     _ =
       case msg of
         Mouse _ -> msg
-        _ -> log "@update" msg
+        _ -> info "update" msg
   in
   case msg of
     AddTopic -> ( addTopic model, Cmd.none )
@@ -446,7 +450,15 @@ setDisplayMode displayMode model =
   let
     maps =
       case getSingleSelection model of
-        Just (topicId, mapId) -> updateDisplayMode topicId mapId displayMode model
+        Just (topicId, mapId) ->
+          let
+            newModel =
+              if displayMode == Just Unboxed then
+                { model | maps = unboxContainer topicId mapId model }
+              else
+                model
+          in
+          updateDisplayMode topicId mapId displayMode newModel
         Nothing -> model.maps
   in
   { model | maps = maps }
@@ -466,6 +478,30 @@ getDisplayMode topicId mapId model =
   case getTopicProps topicId mapId model of
     Just { displayMode } -> displayMode
     Nothing -> fail "getDisplayMode" {topicId = topicId, mapId = mapId} Nothing
+
+
+unboxContainer : Id -> MapId -> Model -> Maps
+unboxContainer topicId mapId model =
+  let
+    maps_ = getMap topicId model |> Maybe.andThen
+      (\fromMap -> Just
+        (updateMaps
+          mapId
+          (\toMap ->
+            let
+              toItems = fromMap.items |> Dict.toList |> List.foldr
+                (\(id, viewItem) newItems -> Dict.insert id viewItem newItems)
+                toMap.items
+            in
+            { toMap | items = toItems }
+          )
+          model
+        )
+      )
+  in
+  case maps_ of
+    Just maps -> maps
+    Nothing -> model.maps
 
 
 getTopicProps : Id -> MapId -> Model -> Maybe TopicProps
