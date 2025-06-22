@@ -5,7 +5,6 @@ import Html exposing (Attribute)
 import Html.Attributes exposing (style)
 import String exposing (String, fromInt)
 import Svg.Attributes exposing (x1, y1, x2, y2, stroke, strokeWidth)
-import Debug exposing (log, toString)
 
 
 
@@ -167,27 +166,3 @@ lineStyle pos1 pos2 =
   , stroke "gray"
   , strokeWidth <| fromInt assocWith ++ "px"
   ]
-
-
-
--- DEBUG
-
-
-logError : String -> String -> v -> v
-logError funcName text val =
-  log ("### ERROR @" ++ funcName ++ ": " ++ text) val
-
-
-fail : String -> a -> v -> v
-fail funcName args val =
-  log ("--> @" ++ funcName ++ " failed " ++ toString args) val
-
-
-call : String -> a -> v -> v
-call funcName args val =
-  log ("@" ++ funcName ++ " " ++ toString args ++ " -->") val
-
-
-info : String -> v -> v
-info funcName val =
-  log ("@" ++ funcName) val

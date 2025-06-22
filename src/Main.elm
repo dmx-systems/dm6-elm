@@ -17,7 +17,7 @@ import Svg.Attributes exposing (viewBox, width, height)
 import Task
 import Time exposing (posixToMillis)
 import Json.Decode as D
-import Debug exposing (toString)
+import Debug exposing (log, toString)
 
 
 
@@ -352,7 +352,7 @@ update msg model =
         _ -> info "update" msg
   in
   case msg of
-    CreateTopic -> ( createTopic model, Cmd.none )
+    CreateTopic -> ( createTopicAndAddToMap model, Cmd.none )
     MoveTopicToMap topicId fromMapId targetId targetMapId pos
       -> ( moveTopicToMap topicId fromMapId targetId targetMapId pos model, Cmd.none )
     Set displayMode -> ( setDisplayMode displayMode model, Cmd.none )
@@ -361,41 +361,64 @@ update msg model =
     NoOp -> ( model, Cmd.none )
 
 
-createTopic : Model -> Model
+createTopic : Model -> (Model, Id)
 createTopic model =
   let
     id = model.nextId
-    index = modBy (Array.length colors) (Dict.size model.items)
+    index = modBy (Array.length colors) (topicCount model)
     color = case colors |> Array.get index of
       Just color_ -> color_
       Nothing -> logError "createTopic" "Illegal color" 0
+  in
+  ( { model
+    | items = model.items |> Dict.insert id ( Topic <| TopicInfo id color )
+    , nextId = id + 1
+    }
+  , id
+  )
+
+
+createTopicAndAddToMap : Model -> Model
+createTopicAndAddToMap model =
+  let
+    (newModel, topicId) = createTopic model
     pos = Point 112 86
   in
-  { model
-  | items = model.items |> Dict.insert id ( Topic <| TopicInfo id color )
-  , maps = addItemToMap id (ViewTopic <| TopicProps pos Nothing) model.activeMap model
-  , nextId = id + 1
-  }
+  addItemToMap topicId (ViewTopic <| TopicProps pos Nothing) model.activeMap newModel
 
 
 -- Presumption: both players exist in same map
 createDefaultAssoc : Id -> Id -> MapId -> Model -> Model
 createDefaultAssoc player1 player2 mapId model =
-  createAssoc "dmx.association" player1 "dmx.default" player2 "dmx.default" mapId model
+  createAssocAndAddToMap
+    "dmx.association"
+    player1 "dmx.default"
+    player2 "dmx.default"
+    mapId model
 
 
 -- Presumption: both players exist in same map
-createAssoc : ItemType -> Id -> RoleType -> Id -> RoleType -> MapId -> Model -> Model
-createAssoc itemType player1 role1 player2 role2 mapId model =
+createAssoc : ItemType -> Id -> RoleType -> Id -> RoleType -> Model -> (Model, Id)
+createAssoc itemType player1 role1 player2 role2 model =
   let
     id = model.nextId
   in
-  { model
-  | items = model.items |> Dict.insert id
-      ( Assoc <| AssocInfo id itemType player1 role1 player2 role2 )
-  , maps = addItemToMap id (ViewAssoc AssocProps) mapId model
-  , nextId = id + 1
-  }
+  ( { model
+    | items = model.items |> Dict.insert id
+        ( Assoc <| AssocInfo id itemType player1 role1 player2 role2 )
+    , nextId = id + 1
+    }
+  , id
+  )
+
+
+-- Presumption: both players exist in same map
+createAssocAndAddToMap : ItemType -> Id -> RoleType -> Id -> RoleType -> MapId -> Model -> Model
+createAssocAndAddToMap itemType player1 role1 player2 role2 mapId model =
+  let
+    (newModel, assocId) = createAssoc itemType player1 role1 player2 role2 model
+  in
+  addItemToMap assocId (ViewAssoc AssocProps) mapId newModel
 
 
 moveTopicToMap : Id -> MapId -> Id -> MapId -> Point -> Model -> Model
@@ -417,26 +440,30 @@ moveTopicToMap topicId fromMapId targetId targetMapId pos model =
   in
   case viewProps_ of
     Just viewProps ->
-      { newModel
-      | maps = addItemToMap topicId viewProps targetId
-          { newModel
-          | maps = removeItemFromMap newModel topicId fromMapId
-          }
-      , selection = [ (targetId, targetMapId) ]
-      }
+      addItemToMap topicId viewProps targetId
+        { newModel
+        | maps = removeItemFromMap topicId fromMapId newModel
+        , selection = [ (targetId, targetMapId) ]
+        }
     Nothing -> model
 
 
-addItemToMap : Id -> ViewProps -> MapId -> Model -> Maps
+addItemToMap : Id -> ViewProps -> MapId -> Model -> Model
 addItemToMap itemId props mapId model =
   let
-    mapAssocId = -1 -- TODO
-    viewItem = ViewItem itemId props mapAssocId
+    (newModel, assocId) = createAssoc
+      "dmx.composition"
+      itemId "dmx.child"
+      mapId "dmx.parent"
+      model
+    viewItem = ViewItem itemId props assocId
   in
-  updateMaps
-    mapId
-    (\map -> { map | items = map.items |> Dict.insert itemId viewItem })
-    model
+  { newModel | maps =
+    updateMaps
+      mapId
+      (\map -> { map | items = map.items |> Dict.insert itemId viewItem })
+      newModel
+  }
 
 
 getSingleSelection : Model -> Maybe (Id, MapId)
@@ -501,7 +528,7 @@ getDisplayMode topicId mapId model =
     Nothing -> fail "getDisplayMode" {topicId = topicId, mapId = mapId} Nothing
 
 
--- TODO: unify these 2 functions
+-- TODO: unify these 4 functions
 
 boxContainer : Id -> MapId -> Model -> Maps
 boxContainer topicId mapId model =
@@ -510,14 +537,7 @@ boxContainer topicId mapId model =
       (\fromMap -> Just
         (updateMaps
           mapId
-          (\toMap ->
-            let
-              toItems = fromMap.items |> Dict.toList |> List.foldr
-                (\(id, viewItem) newItems -> Dict.remove id newItems)
-                toMap.items
-            in
-            { toMap | items = toItems }
-          )
+          (boxItems fromMap)
           model
         )
       )
@@ -534,14 +554,7 @@ unboxContainer topicId mapId model =
       (\fromMap -> Just
         (updateMaps
           mapId
-          (\toMap ->
-            let
-              toItems = fromMap.items |> Dict.toList |> List.foldr
-                (\(id, viewItem) newItems -> Dict.insert id viewItem newItems)
-                toMap.items
-            in
-            { toMap | items = toItems }
-          )
+          (unboxItems fromMap)
           model
         )
       )
@@ -549,6 +562,34 @@ unboxContainer topicId mapId model =
   case maps_ of
     Just maps -> maps
     Nothing -> model.maps
+
+
+boxItems : Map -> Map -> Map
+boxItems fromMap toMap =
+  let
+    toItems = fromMap.items |> Dict.values |> List.foldr
+      (\viewItem newItems ->
+        Dict.remove viewItem.id newItems |> Dict.remove viewItem.mapAssocId
+      )
+      toMap.items
+  in
+  { toMap | items = toItems }
+
+
+unboxItems : Map -> Map -> Map
+unboxItems fromMap toMap =
+  let
+    toItems = fromMap.items |> Dict.values |> List.foldr
+      (\viewItem newItems ->
+        let
+          assocId = viewItem.mapAssocId
+          assocItem = ViewItem assocId (ViewAssoc AssocProps) -1
+        in
+        Dict.insert viewItem.id viewItem newItems |> Dict.insert assocId assocItem
+      )
+      toMap.items
+  in
+  { toMap | items = toItems }
 
 
 getTopicProps : Id -> MapId -> Model -> Maybe TopicProps
@@ -613,8 +654,8 @@ deleteViewItems selItems map =
     -- FIXME: delete assocs where the item is a player
 
 
-removeItemFromMap : Model -> Id -> Id -> Maps
-removeItemFromMap model itemId mapId =
+removeItemFromMap : Id -> Id -> Model -> Maps
+removeItemFromMap itemId mapId model =
   updateMaps mapId (removeItemFromMap_ itemId) model
 
 
@@ -878,6 +919,18 @@ mouseDecoder msg =
     ( D.at ["target", "dataset", "mapId"] D.string |> D.andThen strToIntDecoder )
 
 
+topicCount : Model -> Int
+topicCount model =
+  model.items |> Dict.values |> List.filter topicFilter |>  List.length
+
+
+topicFilter : Item -> Bool
+topicFilter item =
+  case item of
+    Topic _ -> True
+    Assoc _ -> False
+
+
 
 -- DEBUG
 
@@ -910,3 +963,24 @@ illegalItemId funcName id val =
 illegalId : String -> String -> Id -> a -> a
 illegalId funcName item id val =
   logError funcName (fromInt id ++ " is an illegal " ++ item ++ " ID") val
+
+--
+
+logError : String -> String -> v -> v
+logError funcName text val =
+  log ("### ERROR @" ++ funcName ++ ": " ++ text) val
+
+
+fail : String -> a -> v -> v
+fail funcName args val =
+  log ("--> @" ++ funcName ++ " failed " ++ toString args) val
+
+
+call : String -> a -> v -> v
+call funcName args val =
+  log ("@" ++ funcName ++ " " ++ toString args ++ " -->") val
+
+
+info : String -> v -> v
+info funcName val =
+  log ("@" ++ funcName) val
