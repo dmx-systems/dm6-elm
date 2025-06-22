@@ -40,12 +40,13 @@ type alias AssocInfo =
 
 
 type alias Maps = Dict Id Map
+type alias ViewItems = Dict Id ViewItem
 
 
 type alias Map =
   { id : MapId
   , parent : MapId
-  , items : Dict Id ViewItem
+  , items : ViewItems
   }
 
 

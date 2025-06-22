@@ -7,7 +7,7 @@ import Array
 import Browser
 import Browser.Events as Events
 import Dict exposing (Dict)
-import Html exposing (Html, Attribute, div, text, button, input, label, h2)
+import Html exposing (Html, Attribute, div, text, button, input, label, h1)
 import Html.Attributes exposing (class, attribute, type_, name, checked, disabled, style)
 import Html.Events exposing (onClick, on, stopPropagationOn)
 import Random
@@ -71,7 +71,7 @@ view model =
         ]
         ++ appStyle
       )
-      [ h2 [] [ text "DM6 Elm" ]
+      [ h1 [] [ text "DM6 Elm" ]
       , div
           toolbarStyle
           [ button
@@ -528,7 +528,7 @@ getDisplayMode topicId mapId model =
     Nothing -> fail "getDisplayMode" {topicId = topicId, mapId = mapId} Nothing
 
 
--- TODO: unify these 4 functions
+-- TODO: consolidate these 2 functions
 
 boxContainer : Id -> MapId -> Model -> Maps
 boxContainer topicId mapId model =
@@ -537,7 +537,9 @@ boxContainer topicId mapId model =
       (\fromMap -> Just
         (updateMaps
           mapId
-          (boxItems fromMap)
+          (\toMap ->
+            { toMap | items = boxItems fromMap.items toMap.items model }
+          )
           model
         )
       )
@@ -554,7 +556,11 @@ unboxContainer topicId mapId model =
       (\fromMap -> Just
         (updateMaps
           mapId
-          (unboxItems fromMap)
+          (\toMap ->
+            { toMap | items =
+              Dict.union toMap.items (unboxItems fromMap.items model)
+            }
+          )
           model
         )
       )
@@ -564,32 +570,36 @@ unboxContainer topicId mapId model =
     Nothing -> model.maps
 
 
-boxItems : Map -> Map -> Map
-boxItems fromMap toMap =
-  let
-    toItems = fromMap.items |> Dict.values |> List.foldr
-      (\viewItem newItems ->
-        Dict.remove viewItem.id newItems |> Dict.remove viewItem.mapAssocId
-      )
-      toMap.items
-  in
-  { toMap | items = toItems }
+boxItems : ViewItems -> ViewItems -> Model -> ViewItems
+boxItems fromItems toItems model =
+  fromItems |> Dict.values |> List.foldr
+    (\viewItem newItems ->
+      let
+        assocId = viewItem.mapAssocId
+        items = Dict.remove viewItem.id newItems |> Dict.remove assocId
+      in
+      case getMapIfExists viewItem.id model of
+        Just map -> boxItems map.items items model
+        Nothing -> items
+    )
+    toItems
 
 
-unboxItems : Map -> Map -> Map
-unboxItems fromMap toMap =
-  let
-    toItems = fromMap.items |> Dict.values |> List.foldr
-      (\viewItem newItems ->
-        let
-          assocId = viewItem.mapAssocId
-          assocItem = ViewItem assocId (ViewAssoc AssocProps) -1
-        in
-        Dict.insert viewItem.id viewItem newItems |> Dict.insert assocId assocItem
-      )
-      toMap.items
-  in
-  { toMap | items = toItems }
+unboxItems : ViewItems -> Model -> ViewItems
+unboxItems fromItems model =
+  fromItems |> Dict.values |> List.foldr
+    (\viewItem newItems ->
+      let
+        assocId = viewItem.mapAssocId
+        assocItem = ViewItem assocId (ViewAssoc AssocProps) -1
+        items = Dict.insert viewItem.id viewItem newItems |> Dict.insert assocId assocItem
+        deepViewItems = case getMapIfExists viewItem.id model of
+          Just map -> unboxItems map.items model
+          Nothing -> Dict.empty
+      in
+      Dict.union items deepViewItems
+    )
+    Dict.empty
 
 
 getTopicProps : Id -> MapId -> Model -> Maybe TopicProps
@@ -691,9 +701,16 @@ updateMaps mapId mapFunc model =
 
 getMap : MapId -> Model -> Maybe Map
 getMap mapId model =
-  case model.maps |> Dict.get mapId of
+  case getMapIfExists mapId model of
     Just map -> Just map
     Nothing -> illegalMapId "getMap" mapId Nothing
+
+
+getMapIfExists : MapId -> Model -> Maybe Map
+getMapIfExists mapId model =
+  case model.maps |> Dict.get mapId of
+    Just map -> Just map
+    Nothing -> Nothing
 
 
 hasMap : MapId -> Model -> Bool
