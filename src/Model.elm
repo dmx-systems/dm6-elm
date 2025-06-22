@@ -49,26 +49,32 @@ type alias Map =
   }
 
 
-type ViewItem
+type alias ViewItem =
+  { id : Id
+  , viewProps : ViewProps
+  , mapAssocId : Id
+  }
+
+
+type ViewProps
   = ViewTopic TopicProps
   | ViewAssoc AssocProps
 
 
 type alias TopicProps =
-  { id : Id
-  , pos : Point
+  { pos : Point
   , displayMode : Maybe DisplayMode -- only set if topic has children
   }
+
+
+type alias AssocProps =
+  {}
 
 
 type DisplayMode
   = BlackBox
   | WhiteBox
   | Unboxed
-
-
-type alias AssocProps =
-  { id : Id }
 
 
 type alias Point =

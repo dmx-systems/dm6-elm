@@ -182,7 +182,7 @@ viewItems : Map -> Model -> ( List (Html Msg), List (Svg Msg) )
 viewItems map model =
   map.items |> Dict.toList |> List.foldr
     (\(id, viewItem) ( t, a ) ->
-      case viewItem of
+      case viewItem.viewProps of
         ViewTopic props ->
           case Dict.get id model.items of
             Just (Topic topic) -> ( viewTopic topic props map.id model :: t, a )
@@ -210,19 +210,19 @@ viewTopic topic props mapId model =
           Nothing -> normalStyle topic props
     )
     ( case props.displayMode of
-        Just BlackBox -> viewItemCount props model
+        Just BlackBox -> viewItemCount topic.id props model
         Just WhiteBox -> [ viewMap topic.id mapId model ]
-        Just Unboxed -> viewItemCount props model
+        Just Unboxed -> viewItemCount topic.id props model
         Nothing -> []
     )
 
 
-viewItemCount : TopicProps -> Model -> List (Html Msg)
-viewItemCount props model =
+viewItemCount : Id -> TopicProps -> Model -> List (Html Msg)
+viewItemCount topicId props model =
   let
     itemCount =
       if props.displayMode /= Nothing then
-        case getMap props.id model of
+        case getMap topicId model of
           Just map -> map.items |> Dict.size
           Nothing -> 0
       else
@@ -373,7 +373,7 @@ createTopic model =
   in
   { model
   | items = model.items |> Dict.insert id ( Topic <| TopicInfo id color )
-  , maps = addItemToMap (ViewTopic <| TopicProps id pos Nothing) model.activeMap model
+  , maps = addItemToMap id (ViewTopic <| TopicProps pos Nothing) model.activeMap model
   , nextId = id + 1
   }
 
@@ -393,7 +393,7 @@ createAssoc itemType player1 role1 player2 role2 mapId model =
   { model
   | items = model.items |> Dict.insert id
       ( Assoc <| AssocInfo id itemType player1 role1 player2 role2 )
-  , maps = addItemToMap (ViewAssoc <| AssocProps id) mapId model
+  , maps = addItemToMap id (ViewAssoc AssocProps) mapId model
   , nextId = id + 1
   }
 
@@ -401,7 +401,7 @@ createAssoc itemType player1 role1 player2 role2 mapId model =
 moveTopicToMap : Id -> MapId -> Id -> MapId -> Point -> Model -> Model
 moveTopicToMap topicId fromMapId targetId targetMapId pos model =
   let
-    viewItem_ = getTopicProps topicId fromMapId model |> Maybe.andThen
+    viewProps_ = getTopicProps topicId fromMapId model |> Maybe.andThen
       (\props -> Just (ViewTopic { props | pos = pos }))
     -- create map if not exists
     newModel =
@@ -415,10 +415,10 @@ moveTopicToMap topicId fromMapId targetId targetMapId pos model =
             }
         }
   in
-  case viewItem_ of
-    Just viewItem ->
+  case viewProps_ of
+    Just viewProps ->
       { newModel
-      | maps = addItemToMap viewItem targetId
+      | maps = addItemToMap topicId viewProps targetId
           { newModel
           | maps = removeItemFromMap newModel topicId fromMapId
           }
@@ -427,12 +427,11 @@ moveTopicToMap topicId fromMapId targetId targetMapId pos model =
     Nothing -> model
 
 
-addItemToMap : ViewItem -> MapId -> Model -> Maps
-addItemToMap viewItem mapId model =
+addItemToMap : Id -> ViewProps -> MapId -> Model -> Maps
+addItemToMap itemId props mapId model =
   let
-    itemId = case viewItem of -- TODO: make ViewItem a record with "id" field?
-      ViewTopic {id} -> id
-      ViewAssoc {id} -> id
+    mapAssocId = -1 -- TODO
+    viewItem = ViewItem itemId props mapAssocId
   in
   updateMaps
     mapId
@@ -555,8 +554,10 @@ unboxContainer topicId mapId model =
 getTopicProps : Id -> MapId -> Model -> Maybe TopicProps
 getTopicProps topicId mapId model =
   case getViewItemById topicId mapId model of
-    Just (ViewTopic props) -> Just props
-    Just (ViewAssoc _) -> topicMismatch "getTopicProps" topicId Nothing
+    Just viewItem ->
+      case viewItem.viewProps of
+        ViewTopic props -> Just props
+        ViewAssoc _ -> topicMismatch "getTopicProps" topicId Nothing
     Nothing -> fail "getTopicProps" {topicId = topicId, mapId = mapId} Nothing
 
 
@@ -573,10 +574,10 @@ getViewItem itemId map =
 
 
 updateTopicProps : Id -> Id -> Model -> (TopicProps -> TopicProps) -> Maps
-updateTopicProps topicId mapId model callback =
+updateTopicProps topicId mapId model propsFunc =
   updateMaps
     mapId
-    (updateTopicProps_ topicId callback)
+    (updateTopicProps_ topicId propsFunc)
     model
 
 
@@ -623,15 +624,17 @@ removeItemFromMap_ itemId map =
 
 
 updateTopicProps_ : Id -> (TopicProps -> TopicProps) -> Map -> Map
-updateTopicProps_ topicId callback map =
+updateTopicProps_ topicId propsFunc map =
   { map | items = map.items |> Dict.update topicId
-      (\viewItem ->
-        case viewItem of
-          Just (ViewTopic props) -> Just
-            (ViewTopic (callback props))
-          Just (ViewAssoc _) -> illegalItemId "updateTopicProps" topicId Nothing
-          Nothing -> illegalItemId "updateTopicProps" topicId Nothing
-      )
+    (\viewItem_ ->
+      case viewItem_ of
+        Just viewItem ->
+          case viewItem.viewProps of
+            ViewTopic props -> Just
+              { viewItem | viewProps = ViewTopic (propsFunc props) }
+            ViewAssoc _ -> illegalItemId "updateTopicProps" topicId Nothing
+        Nothing -> illegalItemId "updateTopicProps" topicId Nothing
+    )
   }
 
 
