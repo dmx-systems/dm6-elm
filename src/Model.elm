@@ -43,6 +43,9 @@ type alias Maps = Dict Id Map
 type alias ViewItems = Dict Id ViewItem
 
 
+type alias TransferFunc = ViewItems -> ViewItems -> Model -> ViewItems
+
+
 type alias Map =
   { id : MapId
   , parent : MapId

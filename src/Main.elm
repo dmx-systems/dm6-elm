@@ -536,36 +536,25 @@ getDisplayMode topicId mapId model =
     Nothing -> fail "getDisplayMode" {topicId = topicId, mapId = mapId} Nothing
 
 
--- TODO: consolidate these 2 functions
-
 boxContainer : Id -> MapId -> Model -> Maps
 boxContainer containerId targetMapId model =
-  let
-    maps_ = getMap containerId model |> Maybe.andThen
-      (\containerMap -> Just
-        (updateMaps
-          targetMapId
-          (\targetMap ->
-            { targetMap | items = boxItems containerMap.items targetMap.items model }
-          )
-          model
-        )
-      )
-  in
-  case maps_ of
-    Just maps -> maps
-    Nothing -> model.maps
+  transferContent containerId targetMapId boxItems model
 
 
 unboxContainer : Id -> MapId -> Model -> Maps
 unboxContainer containerId targetMapId model =
+  transferContent containerId targetMapId unboxItems model
+
+
+transferContent : Id -> MapId -> TransferFunc -> Model -> Maps
+transferContent containerId targetMapId transferFunc model =
   let
     maps_ = getMap containerId model |> Maybe.andThen
       (\containerMap -> Just
         (updateMaps
           targetMapId
           (\targetMap ->
-            { targetMap | items = unboxItems containerMap.items targetMap.items model }
+            { targetMap | items = transferFunc containerMap.items targetMap.items model }
           )
           model
         )
@@ -581,27 +570,12 @@ boxItems sourceItems targetItems model =
   sourceItems |> Dict.values |> List.foldr
     (\viewItem newItems ->
       let
-        assocId = viewItem.mapAssocId
-        items = Dict.update
-          viewItem.id
-          (\item_ ->
-            case item_ of
-              Just item -> Just { item | hidden = True}
-              Nothing -> Nothing
-          )
-          newItems
-        items2 = Dict.update
-          assocId
-          (\item_ ->
-            case item_ of
-              Just item -> Just { item | hidden = True}
-              Nothing -> Nothing
-          )
-          items
+        items = setHidden viewItem.id True newItems
+          |> setHidden viewItem.mapAssocId True
       in
       case getMapIfExists viewItem.id model of
-        Just map -> boxItems map.items items2 model
-        Nothing -> items2
+        Just map -> boxItems map.items items model
+        Nothing -> items
     )
     targetItems
 
@@ -667,12 +641,38 @@ getViewItem itemId map =
     Nothing -> itemNotInMap "getViewItem" itemId map.id Nothing
 
 
+setHidden : Id -> Bool -> ViewItems -> ViewItems
+setHidden itemId hidden items =
+  items |> Dict.update
+    itemId
+    (\item_ ->
+      case item_ of
+        Just item -> Just { item | hidden = hidden }
+        Nothing -> Nothing
+    )
+
+
 updateTopicProps : Id -> Id -> Model -> (TopicProps -> TopicProps) -> Maps
 updateTopicProps topicId mapId model propsFunc =
   updateMaps
     mapId
     (updateTopicProps_ topicId propsFunc)
     model
+
+
+updateTopicProps_ : Id -> (TopicProps -> TopicProps) -> Map -> Map
+updateTopicProps_ topicId propsFunc map =
+  { map | items = map.items |> Dict.update topicId
+    (\viewItem_ ->
+      case viewItem_ of
+        Just viewItem ->
+          case viewItem.viewProps of
+            ViewTopic props -> Just
+              { viewItem | viewProps = ViewTopic (propsFunc props) }
+            ViewAssoc _ -> illegalItemId "updateTopicProps" topicId Nothing
+        Nothing -> illegalItemId "updateTopicProps" topicId Nothing
+    )
+  }
 
 
 delete : Model -> Model
@@ -715,21 +715,6 @@ removeItemFromMap itemId mapId model =
 removeItemFromMap_ : Id -> Map -> Map
 removeItemFromMap_ itemId map =
   { map | items = map.items |> Dict.remove itemId }
-
-
-updateTopicProps_ : Id -> (TopicProps -> TopicProps) -> Map -> Map
-updateTopicProps_ topicId propsFunc map =
-  { map | items = map.items |> Dict.update topicId
-    (\viewItem_ ->
-      case viewItem_ of
-        Just viewItem ->
-          case viewItem.viewProps of
-            ViewTopic props -> Just
-              { viewItem | viewProps = ViewTopic (propsFunc props) }
-            ViewAssoc _ -> illegalItemId "updateTopicProps" topicId Nothing
-        Nothing -> illegalItemId "updateTopicProps" topicId Nothing
-    )
-  }
 
 
 updateMaps : MapId -> (Map -> Map) -> Model -> Maps
