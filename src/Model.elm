@@ -52,6 +52,7 @@ type alias Map =
 
 type alias ViewItem =
   { id : Id
+  , hidden : Bool
   , viewProps : ViewProps
   , mapAssocId : Id
   }
@@ -64,7 +65,7 @@ type ViewProps
 
 type alias TopicProps =
   { pos : Point
-  , displayMode : Maybe DisplayMode -- only set if topic has children
+  , displayMode : Maybe DisplayMode -- only set for container topics
   }
 
 

@@ -139,29 +139,16 @@ viewMap mapId parentMapId model =
   let
     (topics, assocs) = case getMap mapId model of
       Just map -> viewItems map model
-      Nothing -> ( [], [] )
+      Nothing -> ([], [])
     isTopLevel = mapId == model.activeMap
     size =
       if isTopLevel then
-        { w = "1024", h = "600"}
+        { w = "1024", h = "600"} -- TODO
       else
         { w = fromInt whitebox.width, h = fromInt whitebox.height }
-    -- For nested maps give the outer div both the topic meta data and a size. So mouse events
-    -- can land there and are detected as mousedown-on-item. Otherwise the target would be the
-    -- SVG but our event decoder does not work there.
-    nestedMapAttributes =
-      if isTopLevel then
-        []
-      else
-        topicAttr mapId parentMapId
-        ++
-        [ style "position" "absolute"
-        , style "width" "100%"
-        , style "height" "100%"
-        ]
   in
     div
-      nestedMapAttributes
+      (nestedMapAttributes mapId parentMapId model)
       [ div
           []
           topics
@@ -180,21 +167,20 @@ viewMap mapId parentMapId model =
 
 viewItems : Map -> Model -> ( List (Html Msg), List (Svg Msg) )
 viewItems map model =
-  map.items |> Dict.toList |> List.foldr
-    (\(id, viewItem) ( t, a ) ->
-      case viewItem.viewProps of
-        ViewTopic props ->
-          case Dict.get id model.items of
-            Just (Topic topic) -> ( viewTopic topic props map.id model :: t, a )
-            Just (Assoc _) -> topicMismatch "viewItems" id ( t, a )
-            Nothing -> illegalItemId "viewItems" id ( t, a )
-        ViewAssoc props ->
-          case Dict.get id model.items of
-            Just (Assoc assoc) -> ( t, viewAssoc assoc map.id model :: a )
-            Just (Topic _) -> assocMismatch "viewItems" id ( t, a )
-            Nothing -> illegalItemId "viewItems" id ( t, a )
+  map.items |> Dict.values |> List.foldr
+    (\{id, hidden, viewProps} (t, a) ->
+      if hidden then
+        (t, a)
+      else
+        let
+          item = model.items |> Dict.get id
+        in
+        case (item, viewProps) of
+          (Just (Topic topic), ViewTopic props) -> (viewTopic topic props map.id model :: t, a)
+          (Just (Assoc assoc), ViewAssoc _) -> (t, viewAssoc assoc map.id model :: a)
+          _ -> logError "viewItems" ("problem with item" ++ fromInt id) (t, a)
     )
-    ( [], [] )
+    ([], [])
 
 
 viewTopic : TopicInfo -> TopicProps -> MapId -> Model -> Html Msg
@@ -231,6 +217,25 @@ viewItemCount topicId props model =
     [ div
         itemCountStyle
         [ text <| fromInt itemCount ]
+    ]
+
+
+-- For nested maps give the outer div both the topic meta data and a size. So mouse events
+-- can land there and are detected as mousedown-on-item. Otherwise the target would be the
+-- SVG but our event decoder does not work there.
+nestedMapAttributes : MapId -> MapId -> Model -> List (Attribute Msg)
+nestedMapAttributes mapId parentMapId model =
+  let
+    isTopLevel = mapId == model.activeMap
+  in
+  if isTopLevel then
+    []
+  else
+    topicAttr mapId parentMapId
+    ++
+    [ style "position" "absolute"
+    , style "width" "100%"
+    , style "height" "100%"
     ]
 
 
@@ -382,9 +387,10 @@ createTopicAndAddToMap : Model -> Model
 createTopicAndAddToMap model =
   let
     (newModel, topicId) = createTopic model
+    props = ViewTopic (TopicProps pos Nothing)
     pos = Point 112 86
   in
-  addItemToMap topicId (ViewTopic <| TopicProps pos Nothing) model.activeMap newModel
+  addItemToMap topicId props model.activeMap newModel
 
 
 -- Presumption: both players exist in same map
@@ -417,8 +423,9 @@ createAssocAndAddToMap : ItemType -> Id -> RoleType -> Id -> RoleType -> MapId -
 createAssocAndAddToMap itemType player1 role1 player2 role2 mapId model =
   let
     (newModel, assocId) = createAssoc itemType player1 role1 player2 role2 model
+    props = ViewAssoc AssocProps
   in
-  addItemToMap assocId (ViewAssoc AssocProps) mapId newModel
+  addItemToMap assocId props mapId newModel
 
 
 moveTopicToMap : Id -> MapId -> Id -> MapId -> Point -> Model -> Model
@@ -428,7 +435,7 @@ moveTopicToMap topicId fromMapId targetId targetMapId pos model =
       (\props -> Just (ViewTopic { props | pos = pos }))
     -- create map if not exists
     newModel =
-      if hasMap targetId model then
+      if isContainer targetId model then
         model
       else
         { model
@@ -456,7 +463,7 @@ addItemToMap itemId props mapId model =
       itemId "dmx.child"
       mapId "dmx.parent"
       model
-    viewItem = ViewItem itemId props assocId
+    viewItem = ViewItem itemId False props assocId -- hidden=False
   in
   { newModel | maps =
     updateMaps
@@ -590,9 +597,10 @@ unboxItems sourceItems targetMapId model =
   sourceItems |> Dict.values |> List.foldr
     (\viewItem newItems ->
       let
-        newItem = targetViewItem viewItem
+        newItem = targetViewItem viewItem model
         assocId = viewItem.mapAssocId
-        assocItem = ViewItem assocId (ViewAssoc AssocProps) -1
+        assocProps = ViewAssoc AssocProps
+        assocItem = ViewItem assocId False assocProps -1 -- hidden=False
         items = Dict.insert viewItem.id newItem newItems |> Dict.insert assocId assocItem
         deepItems = case getMapIfExists viewItem.id model of
           Just map -> unboxItems map.items targetMapId model
@@ -603,13 +611,16 @@ unboxItems sourceItems targetMapId model =
     Dict.empty
 
 
-targetViewItem : ViewItem -> ViewItem
-targetViewItem viewItem =
-  { viewItem | viewProps =
-    case viewItem.viewProps of
-      ViewTopic props -> ViewTopic { props | displayMode = Just Unboxed }
-      ViewAssoc props -> ViewAssoc props
-  }
+targetViewItem : ViewItem -> Model -> ViewItem
+targetViewItem viewItem model =
+  if isContainer viewItem.id model then
+    { viewItem | viewProps =
+        case viewItem.viewProps of
+          ViewTopic props -> ViewTopic { props | displayMode = Just Unboxed }
+          ViewAssoc props -> ViewAssoc props
+    }
+  else
+    viewItem
 
 
 getTopicProps : Id -> MapId -> Model -> Maybe TopicProps
@@ -723,9 +734,9 @@ getMapIfExists mapId model =
     Nothing -> Nothing
 
 
-hasMap : MapId -> Model -> Bool
-hasMap mapId model =
-  model.maps |> Dict.member mapId
+isContainer : Id -> Model -> Bool
+isContainer topicId model =
+  model.maps |> Dict.member topicId
 
 
 -- Mouse
