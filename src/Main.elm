@@ -137,9 +137,10 @@ viewDisplayMode model =
 viewMap : MapId -> MapId -> Model -> Html Msg
 viewMap mapId parentMapId model =
   let
-    (topics, assocs) = case getMap mapId model of
-      Just map -> viewItems map model
-      Nothing -> ([], [])
+    (topics, assocs) =
+      case getMap mapId model of
+        Just map -> viewItems map model
+        Nothing -> ([], [])
     isTopLevel = mapId == model.activeMap
     size =
       if isTopLevel then
@@ -538,14 +539,14 @@ getDisplayMode topicId mapId model =
 -- TODO: consolidate these 2 functions
 
 boxContainer : Id -> MapId -> Model -> Maps
-boxContainer topicId mapId model =
+boxContainer containerId targetMapId model =
   let
-    maps_ = getMap topicId model |> Maybe.andThen
-      (\fromMap -> Just
+    maps_ = getMap containerId model |> Maybe.andThen
+      (\containerMap -> Just
         (updateMaps
-          mapId
-          (\toMap ->
-            { toMap | items = boxItems fromMap.items toMap.items model }
+          targetMapId
+          (\targetMap ->
+            { targetMap | items = boxItems containerMap.items targetMap.items model }
           )
           model
         )
@@ -564,9 +565,7 @@ unboxContainer containerId targetMapId model =
         (updateMaps
           targetMapId
           (\targetMap ->
-            { targetMap | items =
-              Dict.union targetMap.items (unboxItems containerMap.items targetMapId model)
-            }
+            { targetMap | items = unboxItems containerMap.items targetMap.items model }
           )
           model
         )
@@ -578,49 +577,72 @@ unboxContainer containerId targetMapId model =
 
 
 boxItems : ViewItems -> ViewItems -> Model -> ViewItems
-boxItems fromItems toItems model =
-  fromItems |> Dict.values |> List.foldr
-    (\viewItem newItems ->
-      let
-        assocId = viewItem.mapAssocId
-        items = Dict.remove viewItem.id newItems |> Dict.remove assocId
-      in
-      case getMapIfExists viewItem.id model of
-        Just map -> boxItems map.items items model
-        Nothing -> items
-    )
-    toItems
-
-
-unboxItems : ViewItems -> MapId -> Model -> ViewItems
-unboxItems sourceItems targetMapId model =
+boxItems sourceItems targetItems model =
   sourceItems |> Dict.values |> List.foldr
     (\viewItem newItems ->
       let
-        newItem = targetViewItem viewItem model
         assocId = viewItem.mapAssocId
-        assocProps = ViewAssoc AssocProps
-        assocItem = ViewItem assocId False assocProps -1 -- hidden=False
-        items = Dict.insert viewItem.id newItem newItems |> Dict.insert assocId assocItem
-        deepItems = case getMapIfExists viewItem.id model of
-          Just map -> unboxItems map.items targetMapId model
-          Nothing -> Dict.empty
+        items = Dict.update
+          viewItem.id
+          (\item_ ->
+            case item_ of
+              Just item -> Just { item | hidden = True}
+              Nothing -> Nothing
+          )
+          newItems
+        items2 = Dict.update
+          assocId
+          (\item_ ->
+            case item_ of
+              Just item -> Just { item | hidden = True}
+              Nothing -> Nothing
+          )
+          items
       in
-      Dict.union items deepItems
+      case getMapIfExists viewItem.id model of
+        Just map -> boxItems map.items items2 model
+        Nothing -> items2
     )
-    Dict.empty
+    targetItems
 
 
-targetViewItem : ViewItem -> Model -> ViewItem
-targetViewItem viewItem model =
-  if isContainer viewItem.id model then
-    { viewItem | viewProps =
-        case viewItem.viewProps of
-          ViewTopic props -> ViewTopic { props | displayMode = Just Unboxed }
-          ViewAssoc props -> ViewAssoc props
-    }
-  else
-    viewItem
+unboxItems : ViewItems -> ViewItems -> Model -> ViewItems
+unboxItems sourceItems targetItems model =
+  sourceItems |> Dict.values |> List.foldr
+    (\viewItem newItems ->
+      let
+        newItem = targetViewItem viewItem targetItems model
+        assocItem = targetAssocItem viewItem targetItems
+        items = Dict.insert viewItem.id newItem newItems
+          |> Dict.insert viewItem.mapAssocId assocItem
+      in
+      case getMapIfExists viewItem.id model of
+        Just map -> unboxItems map.items items model
+        Nothing -> items
+    )
+    targetItems
+
+
+targetViewItem : ViewItem -> ViewItems -> Model -> ViewItem
+targetViewItem viewItem targetItems model =
+  case targetItems |> Dict.get viewItem.id of
+    Just item -> { item | hidden = False }
+    Nothing ->
+      if isContainer viewItem.id model then
+        { viewItem | viewProps =
+            case viewItem.viewProps of
+              ViewTopic props -> ViewTopic { props | displayMode = Just Unboxed }
+              ViewAssoc props -> ViewAssoc props
+        }
+      else
+        viewItem
+
+
+targetAssocItem : ViewItem -> ViewItems -> ViewItem
+targetAssocItem viewItem targetItems =
+  case targetItems |> Dict.get viewItem.mapAssocId of
+    Just item -> { item | hidden = False }
+    Nothing -> ViewItem viewItem.mapAssocId False (ViewAssoc AssocProps) -1 -- hidden=False
 
 
 getTopicProps : Id -> MapId -> Model -> Maybe TopicProps
