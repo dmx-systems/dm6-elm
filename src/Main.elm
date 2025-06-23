@@ -206,13 +206,13 @@ viewTopic topic props mapId model =
         case props.displayMode of
           Just BlackBox -> blackBoxStyle topic props
           Just WhiteBox -> whiteboxStyle topic props
-          Just Unboxed -> blackBoxStyle topic props
+          Just Unboxed -> normalStyle topic props
           Nothing -> normalStyle topic props
     )
     ( case props.displayMode of
         Just BlackBox -> viewItemCount topic.id props model
         Just WhiteBox -> [ viewMap topic.id mapId model ]
-        Just Unboxed -> viewItemCount topic.id props model
+        Just Unboxed -> []
         Nothing -> []
     )
 
@@ -550,15 +550,15 @@ boxContainer topicId mapId model =
 
 
 unboxContainer : Id -> MapId -> Model -> Maps
-unboxContainer topicId mapId model =
+unboxContainer containerId targetMapId model =
   let
-    maps_ = getMap topicId model |> Maybe.andThen
-      (\fromMap -> Just
+    maps_ = getMap containerId model |> Maybe.andThen
+      (\containerMap -> Just
         (updateMaps
-          mapId
-          (\toMap ->
-            { toMap | items =
-              Dict.union toMap.items (unboxItems fromMap.items model)
+          targetMapId
+          (\targetMap ->
+            { targetMap | items =
+              Dict.union targetMap.items (unboxItems containerMap.items targetMapId model)
             }
           )
           model
@@ -585,21 +585,31 @@ boxItems fromItems toItems model =
     toItems
 
 
-unboxItems : ViewItems -> Model -> ViewItems
-unboxItems fromItems model =
-  fromItems |> Dict.values |> List.foldr
+unboxItems : ViewItems -> MapId -> Model -> ViewItems
+unboxItems sourceItems targetMapId model =
+  sourceItems |> Dict.values |> List.foldr
     (\viewItem newItems ->
       let
+        newItem = targetViewItem viewItem
         assocId = viewItem.mapAssocId
         assocItem = ViewItem assocId (ViewAssoc AssocProps) -1
-        items = Dict.insert viewItem.id viewItem newItems |> Dict.insert assocId assocItem
-        deepViewItems = case getMapIfExists viewItem.id model of
-          Just map -> unboxItems map.items model
+        items = Dict.insert viewItem.id newItem newItems |> Dict.insert assocId assocItem
+        deepItems = case getMapIfExists viewItem.id model of
+          Just map -> unboxItems map.items targetMapId model
           Nothing -> Dict.empty
       in
-      Dict.union items deepViewItems
+      Dict.union items deepItems
     )
     Dict.empty
+
+
+targetViewItem : ViewItem -> ViewItem
+targetViewItem viewItem =
+  { viewItem | viewProps =
+    case viewItem.viewProps of
+      ViewTopic props -> ViewTopic { props | displayMode = Just Unboxed }
+      ViewAssoc props -> ViewAssoc props
+  }
 
 
 getTopicProps : Id -> MapId -> Model -> Maybe TopicProps
