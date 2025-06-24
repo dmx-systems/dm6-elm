@@ -585,31 +585,50 @@ unboxItems sourceItems targetItems model =
   sourceItems |> Dict.values |> List.foldr
     (\viewItem newItems ->
       let
-        newItem = targetViewItem viewItem targetItems model
+        (topicItem, abort) = targetTopicItem viewItem targetItems model
         assocItem = targetAssocItem viewItem targetItems
-        items = Dict.insert viewItem.id newItem newItems
+        items = Dict.insert viewItem.id topicItem newItems
           |> Dict.insert viewItem.mapAssocId assocItem
       in
-      case getMapIfExists viewItem.id model of
-        Just map -> unboxItems map.items items model
-        Nothing -> items
+      if abort then
+        items
+      else
+        case getMapIfExists viewItem.id model of
+          Just map -> unboxItems map.items items model
+          Nothing -> items
     )
     targetItems
 
 
-targetViewItem : ViewItem -> ViewItems -> Model -> ViewItem
-targetViewItem viewItem targetItems model =
+targetTopicItem : ViewItem -> ViewItems -> Model -> (ViewItem, Bool)
+targetTopicItem viewItem targetItems model =
   case targetItems |> Dict.get viewItem.id of
-    Just item -> { item | hidden = False }
+    Just item ->
+      -- abort further unboxing if view item exists (= was unboxed before) and is set to
+      -- BlackBox or WhiteBox
+      let
+        abort =
+          case item.viewProps of
+            ViewTopic props ->
+              case props.displayMode of
+                Just BlackBox -> True
+                Just WhiteBox -> True
+                Just Unboxed -> False
+                Nothing -> False
+            ViewAssoc _ -> False
+      in
+      ( { item | hidden = False }, abort )
     Nothing ->
+      -- by default (when no view item exists) an unboxed container will also be unboxed
       if isContainer viewItem.id model then
-        { viewItem | viewProps =
-            case viewItem.viewProps of
-              ViewTopic props -> ViewTopic { props | displayMode = Just Unboxed }
-              ViewAssoc props -> ViewAssoc props
-        }
+        ( { viewItem | viewProps =
+              case viewItem.viewProps of
+                ViewTopic props -> ViewTopic { props | displayMode = Just Unboxed }
+                ViewAssoc props -> ViewAssoc props
+          }
+        , False )
       else
-        viewItem
+        ( viewItem, False )
 
 
 targetAssocItem : ViewItem -> ViewItems -> ViewItem
