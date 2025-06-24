@@ -23,7 +23,7 @@ blackBoxSize = 30
 blackBoxOffset = blackBoxSize // 2 + borderWidth
 blackBoxRadius = 10
 
-whitebox = { width = 350, height = 200 }
+whitebox = { width = 250, height = 150 }
 whiteboxOffset =
   { x = whitebox.width // 2 + borderWidth
   , y = whitebox.height // 2 + borderWidth

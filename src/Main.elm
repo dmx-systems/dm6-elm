@@ -109,7 +109,7 @@ viewDisplayMode model =
     (displayModeStyle disabled_)
     [ div
         []
-        [ text "Children Display" ]
+        [ text "Content Display" ]
     , label
         [ onClick (Set <| Just BlackBox), stopPropagationOnMousedown ]
         [ input
@@ -893,8 +893,8 @@ mouseUp model =
 point : Random.Generator Point
 point =
   Random.map2 Point
-    (Random.int 0 whitebox.width)
-    (Random.int 0 whitebox.height)
+    (Random.int topicSize (whitebox.width - topicSize))
+    (Random.int topicSize (whitebox.height - topicSize))
 
 
 mouseOver : Model -> Class -> Id -> MapId -> Model
