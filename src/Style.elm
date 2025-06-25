@@ -18,10 +18,14 @@ borderWidth = 5
 
 topicSize = 24
 topicRadius = topicSize // 2 + borderWidth
+topicExtent_ = topicSize + 2 * borderWidth
+topicExtent = Size topicExtent_ topicExtent_
 
 blackBoxSize = 30
 blackBoxOffset = blackBoxSize // 2 + borderWidth
 blackBoxRadius = 10
+blackBoxExtent_ = blackBoxSize + 2 * borderWidth
+blackBoxExtent = Size blackBoxExtent_ blackBoxExtent_
 
 whitebox = { width = 250, height = 150 }
 whiteboxOffset =

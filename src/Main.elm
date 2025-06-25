@@ -44,7 +44,7 @@ main =
 init : () -> ( Model, Cmd Msg )
 init flags =
   ( { items = Dict.empty
-    , maps = Dict.singleton 0 <| Map 0 -1 Dict.empty -- parent = -1
+    , maps = Dict.singleton 0 <| Map 0 -1 Dict.empty (Size 0 0) -- parent = -1
     , activeMap = 0
     , selection = []
     , dragState = NoDrag
@@ -442,7 +442,8 @@ moveTopicToMap topicId fromMapId targetId targetMapId pos model =
         { model
         | maps = updateDisplayMode targetId targetMapId (Just BlackBox)
             { model
-            | maps = model.maps |> Dict.insert targetId (Map targetId targetMapId Dict.empty)
+            | maps = model.maps |>
+              Dict.insert targetId (Map targetId targetMapId Dict.empty (Size 0 0))
             }
         }
   in
@@ -470,7 +471,7 @@ addItemToMap itemId props mapId model =
     updateMaps
       mapId
       (\map -> { map | items = map.items |> Dict.insert itemId viewItem })
-      newModel
+      newModel.maps
   }
 
 
@@ -496,6 +497,61 @@ updateTopicPos topicId mapId delta model =
     mapId
     model
     (\props -> { props | pos = Point (props.pos.x + delta.x) (props.pos.y + delta.y) })
+
+
+updateGeometry : Model -> Model
+updateGeometry model =
+  { model | maps =
+    let
+      (size, maps) = updateMapGeometry model.activeMap model.maps
+    in
+    maps
+  }
+
+
+updateMapGeometry : MapId -> Maps -> (Size, Maps)
+updateMapGeometry mapId maps =
+  let
+    result_ = getMap_ mapId maps |> Maybe.andThen
+      (\map -> Just
+        (map.items |> Dict.values |> List.foldr
+          (\viewItem (p1, p2, maps_) ->
+            case viewItem.viewProps of
+              ViewTopic {pos, displayMode} ->
+                case displayMode of
+                  Just BlackBox -> extent pos blackBoxExtent p1 p2 maps_
+                  Just WhiteBox ->
+                    let
+                      (size, maps__) = updateMapGeometry viewItem.id maps_
+                    in
+                    extent pos size p1 p2 maps__
+                  Just Unboxed -> extent pos topicExtent p1 p2 maps_
+                  Nothing -> extent pos topicExtent p1 p2 maps_
+              ViewAssoc _ -> (p1, p1, maps_)
+          )
+          (Point 5000 5000, Point -5000 -5000, maps) -- x-min y-min x-max y-max
+        )
+      )
+  in
+  case result_ of
+    Just (p1, p2, maps_) ->
+      let
+        size = Size (p2.x - p1.x) (p2.y - p1.y)
+      in
+      (size, updateMaps mapId (\map -> { map | size = size }) maps_)
+    Nothing -> (Size 0 0, maps)
+
+
+extent : Point -> Size -> Point -> Point -> Maps -> (Point, Point, Maps)
+extent pos size p1 p2 maps =
+  ( Point
+    (min p1.x (pos.x - size.width // 2))
+    (min p1.y (pos.y - size.height // 2))
+  , Point
+    (max p2.x (pos.x + size.width // 2))
+    (max p2.y (pos.y + size.height // 2))
+  , maps
+  )
 
 
 setDisplayMode : Maybe DisplayMode -> Model -> Model
@@ -556,7 +612,7 @@ transferContent containerId targetMapId transferFunc model =
           (\targetMap ->
             { targetMap | items = transferFunc containerMap.items targetMap.items model }
           )
-          model
+          model.maps
         )
       )
   in
@@ -676,7 +732,7 @@ updateTopicProps topicId mapId model propsFunc =
   updateMaps
     mapId
     (updateTopicProps_ topicId propsFunc)
-    model
+    model.maps
 
 
 updateTopicProps_ : Id -> (TopicProps -> TopicProps) -> Map -> Map
@@ -700,7 +756,7 @@ delete model =
     maps = updateMaps
       model.activeMap -- FIXME: delete items from other/different maps
       (deleteViewItems model.selection)
-      model
+      model.maps
   in
   { model
   -- TODO: iterate model.selection only once?
@@ -728,7 +784,7 @@ deleteViewItems selItems map =
 
 removeItemFromMap : Id -> Id -> Model -> Maps
 removeItemFromMap itemId mapId model =
-  updateMaps mapId (removeItemFromMap_ itemId) model
+  updateMaps mapId (removeItemFromMap_ itemId) model.maps
 
 
 removeItemFromMap_ : Id -> Map -> Map
@@ -736,9 +792,9 @@ removeItemFromMap_ itemId map =
   { map | items = map.items |> Dict.remove itemId }
 
 
-updateMaps : MapId -> (Map -> Map) -> Model -> Maps
-updateMaps mapId mapFunc model =
-  model.maps |> Dict.update mapId
+updateMaps : MapId -> (Map -> Map) -> Maps -> Maps
+updateMaps mapId mapFunc maps =
+  maps |> Dict.update mapId
     (\map_ ->
       case map_ of
         Just map -> Just (mapFunc map)
@@ -748,14 +804,24 @@ updateMaps mapId mapFunc model =
 
 getMap : MapId -> Model -> Maybe Map
 getMap mapId model =
-  case getMapIfExists mapId model of
+  getMap_ mapId model.maps
+
+
+getMap_ : MapId -> Maps -> Maybe Map
+getMap_ mapId maps =
+  case getMapIfExists_ mapId maps of
     Just map -> Just map
-    Nothing -> illegalMapId "getMap" mapId Nothing
+    Nothing -> illegalMapId "getMap_" mapId Nothing
 
 
 getMapIfExists : MapId -> Model -> Maybe Map
 getMapIfExists mapId model =
-  case model.maps |> Dict.get mapId of
+  getMapIfExists_ mapId model.maps
+
+
+getMapIfExists_ : MapId -> Maps -> Maybe Map
+getMapIfExists_ mapId maps =
+  case maps |> Dict.get mapId of
     Just map -> Just map
     Nothing -> Nothing
 
