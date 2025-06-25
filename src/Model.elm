@@ -50,7 +50,7 @@ type alias Map =
   { id : MapId
   , parent : MapId
   , items : ViewItems
-  , size : Size
+  , rect : Rectangle
   }
 
 
@@ -86,6 +86,14 @@ type DisplayMode
 type alias Point =
   { x : Int
   , y : Int
+  }
+
+
+type alias Rectangle =
+  { x1 : Int
+  , y1 : Int
+  , x2 : Int
+  , y2 : Int
   }
 
 

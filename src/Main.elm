@@ -44,7 +44,7 @@ main =
 init : () -> ( Model, Cmd Msg )
 init flags =
   ( { items = Dict.empty
-    , maps = Dict.singleton 0 <| Map 0 -1 Dict.empty (Size 0 0) -- parent = -1
+    , maps = Dict.singleton 0 <| Map 0 -1 Dict.empty (Rectangle 0 0 0 0) -- parent = -1
     , activeMap = 0
     , selection = []
     , dragState = NoDrag
@@ -137,33 +137,38 @@ viewDisplayMode model =
 viewMap : MapId -> MapId -> Model -> Html Msg
 viewMap mapId parentMapId model =
   let
-    (topics, assocs) =
-      case getMap mapId model of
-        Just map -> viewItems map model
-        Nothing -> ([], [])
     isTopLevel = mapId == model.activeMap
-    size =
-      if isTopLevel then
-        { w = "1024", h = "600"} -- TODO
-      else
-        { w = fromInt whitebox.width, h = fromInt whitebox.height }
+    ((topics, assocs), vb) =
+      case getMap mapId model of
+        Just map ->
+          ( viewItems map model,
+            if isTopLevel then
+              { x = "0", y = "0", w = "1024", h = "600"} -- TODO
+            else
+              { x = fromInt map.rect.x1
+              , y = fromInt map.rect.y1
+              , w = fromInt (map.rect.x2 - map.rect.x1)
+              , h = fromInt (map.rect.y2 - map.rect.y1)
+              }
+          )
+        Nothing -> (([], []), {x = "0", y = "0", w = "0", h = "0"})
   in
-    div
-      (nestedMapAttributes mapId parentMapId model)
-      [ div
-          []
-          topics
-      , svg
-          ( [ width size.w
-            , height size.h
-            , viewBox ("0 0 " ++ size.w ++ " " ++ size.h)
-            ]
-            ++ svgStyle
-          )
-          ( assocs
-            ++ viewLimboAssoc mapId model
-          )
-      ]
+  div
+    (nestedMapAttributes mapId parentMapId model)
+    [ div
+        []
+        topics
+    , svg
+        ( [ width vb.w
+          , height vb.h
+          , viewBox (vb.x ++ " " ++ vb.y ++ " " ++ vb.w ++ " " ++ vb.h)
+          ]
+          ++ svgStyle
+        )
+        ( assocs
+          ++ viewLimboAssoc mapId model
+        )
+    ]
 
 
 viewItems : Map -> Model -> ( List (Html Msg), List (Svg Msg) )
@@ -192,7 +197,14 @@ viewTopic topic props mapId model =
       ++
         case props.displayMode of
           Just BlackBox -> blackBoxStyle topic props
-          Just WhiteBox -> whiteboxStyle topic props
+          Just WhiteBox ->
+            let
+              rect =
+                case getMap topic.id model of
+                  Just map -> map.rect
+                  Nothing -> Rectangle 0 0 10 150 -- TODO
+            in
+            whiteboxStyle topic props rect
           Just Unboxed -> normalStyle topic props
           Nothing -> normalStyle topic props
     )
@@ -289,20 +301,21 @@ offsetPos mapId offset model =
     Just offset
   else
     let
+      -- TODO: refactor, don't call getParentMapId twice
       nextMap =
         getParentMapId mapId model
       nextOffset =
         mapPos mapId model |> Maybe.andThen
-          (\pos ->
+          (\(pos, rect) ->
             Just
-              ( Point
-                  (offset.x + pos.x - whitebox.width // 2)
-                  (offset.y + pos.y - whitebox.height // 2)
+              (Point
+                (offset.x + pos.x + rect.x1)
+                (offset.y + pos.y + rect.y1)
               )
           )
       pos_ =
         Maybe.map2
-          (\parentMapId offset_ ->
+          (\(parentMapId, _) offset_ ->
             offsetPos parentMapId offset_ model
           )
           nextMap
@@ -313,15 +326,20 @@ offsetPos mapId offset model =
         Nothing -> Nothing
 
 
-mapPos : MapId -> Model -> Maybe Point
+mapPos : MapId -> Model -> Maybe (Point, Rectangle)
 mapPos mapId model =
-  getParentMapId mapId model |> Maybe.andThen
-    (\parentMapId -> topicPos mapId parentMapId model)
+  getParentMapId mapId model
+    |> Maybe.andThen
+      (\(parentMapId, rect) -> topicPos mapId parentMapId model
+        |> Maybe.andThen (\pos -> Just (pos, rect))
+      )
 
 
-getParentMapId : MapId -> Model -> Maybe MapId
+{-| Returns both a map's rectangle, and the map's parent Id
+-}
+getParentMapId : MapId -> Model -> Maybe (MapId, Rectangle)
 getParentMapId mapId model =
-  getMap mapId model |> Maybe.andThen (\map -> Just map.parent)
+  getMap mapId model |> Maybe.andThen (\map -> Just (map.parent, map.rect))
 
 
 viewLine : Point -> Point -> Svg Msg
@@ -356,15 +374,17 @@ update msg model =
       case msg of
         Mouse _ -> msg
         _ -> info "update" msg
+    (newModel, cmd) =
+      case msg of
+        CreateTopic -> ( createTopicAndAddToMap model, Cmd.none )
+        MoveTopicToMap topicId fromMapId targetId targetMapId pos
+          -> ( moveTopicToMap topicId fromMapId targetId targetMapId pos model, Cmd.none )
+        Set displayMode -> ( setDisplayMode displayMode model, Cmd.none )
+        Delete -> ( delete model, Cmd.none )
+        Mouse mouseMsg -> updateMouse mouseMsg model
+        NoOp -> ( model, Cmd.none )
   in
-  case msg of
-    CreateTopic -> ( createTopicAndAddToMap model, Cmd.none )
-    MoveTopicToMap topicId fromMapId targetId targetMapId pos
-      -> ( moveTopicToMap topicId fromMapId targetId targetMapId pos model, Cmd.none )
-    Set displayMode -> ( setDisplayMode displayMode model, Cmd.none )
-    Delete -> ( delete model, Cmd.none )
-    Mouse mouseMsg -> updateMouse mouseMsg model
-    NoOp -> ( model, Cmd.none )
+  (newModel |> updateGeometry, cmd)
 
 
 createTopic : Model -> (Model, Id)
@@ -443,7 +463,7 @@ moveTopicToMap topicId fromMapId targetId targetMapId pos model =
         | maps = updateDisplayMode targetId targetMapId (Just BlackBox)
             { model
             | maps = model.maps |>
-              Dict.insert targetId (Map targetId targetMapId Dict.empty (Size 0 0))
+              Dict.insert targetId (Map targetId targetMapId Dict.empty (Rectangle 0 0 0 0))
             }
         }
   in
@@ -509,47 +529,43 @@ updateGeometry model =
   }
 
 
-updateMapGeometry : MapId -> Maps -> (Size, Maps)
+updateMapGeometry : MapId -> Maps -> (Rectangle, Maps)
 updateMapGeometry mapId maps =
   let
     result_ = getMap_ mapId maps |> Maybe.andThen
       (\map -> Just
         (map.items |> Dict.values |> List.foldr
-          (\viewItem (p1, p2, maps_) ->
+          (\viewItem (rect, maps_) ->
             case viewItem.viewProps of
               ViewTopic {pos, displayMode} ->
                 case displayMode of
-                  Just BlackBox -> extent pos blackBoxExtent p1 p2 maps_
+                  Just BlackBox -> extent pos blackBoxRect rect maps_
                   Just WhiteBox ->
                     let
-                      (size, maps__) = updateMapGeometry viewItem.id maps_
+                      (rect_, maps__) = updateMapGeometry viewItem.id maps_
                     in
-                    extent pos size p1 p2 maps__
-                  Just Unboxed -> extent pos topicExtent p1 p2 maps_
-                  Nothing -> extent pos topicExtent p1 p2 maps_
-              ViewAssoc _ -> (p1, p1, maps_)
+                    extent pos rect_ rect maps__
+                  Just Unboxed -> extent pos topicRect rect maps_
+                  Nothing -> extent pos topicRect rect maps_
+              ViewAssoc _ -> (rect, maps_)
           )
-          (Point 5000 5000, Point -5000 -5000, maps) -- x-min y-min x-max y-max
+          (Rectangle 5000 5000 -5000 -5000, maps) -- x-min y-min x-max y-max
         )
       )
   in
   case result_ of
-    Just (p1, p2, maps_) ->
-      let
-        size = Size (p2.x - p1.x) (p2.y - p1.y)
-      in
-      (size, updateMaps mapId (\map -> { map | size = size }) maps_)
-    Nothing -> (Size 0 0, maps)
+    Just (rect, maps_) ->
+      (rect, updateMaps mapId (\map -> { map | rect = rect }) maps_)
+    Nothing -> (Rectangle 0 0 0 0, maps)
 
 
-extent : Point -> Size -> Point -> Point -> Maps -> (Point, Point, Maps)
-extent pos size p1 p2 maps =
-  ( Point
-    (min p1.x (pos.x - size.width // 2))
-    (min p1.y (pos.y - size.height // 2))
-  , Point
-    (max p2.x (pos.x + size.width // 2))
-    (max p2.y (pos.y + size.height // 2))
+extent : Point -> Rectangle -> Rectangle -> Maps -> (Rectangle, Maps)
+extent pos rect rectAcc maps =
+  ( Rectangle
+    (min rectAcc.x1 (pos.x + rect.x1))
+    (min rectAcc.y1 (pos.y + rect.y1))
+    (max rectAcc.x2 (pos.x + rect.x2))
+    (max rectAcc.y2 (pos.y + rect.y2))
   , maps
   )
 
@@ -959,8 +975,10 @@ mouseUp model =
 point : Random.Generator Point
 point =
   Random.map2 Point
-    (Random.int topicSize (whitebox.width - topicSize))
-    (Random.int topicSize (whitebox.height - topicSize))
+    (Random.int 0 0)
+    (Random.int 0 0)
+    -- (Random.int topicSize (whitebox.width - topicSize)) -- TODO
+    -- (Random.int topicSize (whitebox.height - topicSize))
 
 
 mouseOver : Model -> Class -> Id -> MapId -> Model

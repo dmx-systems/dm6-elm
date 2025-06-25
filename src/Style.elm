@@ -18,20 +18,18 @@ borderWidth = 5
 
 topicSize = 24
 topicRadius = topicSize // 2 + borderWidth
-topicExtent_ = topicSize + 2 * borderWidth
-topicExtent = Size topicExtent_ topicExtent_
+topicRect = Rectangle -topicRadius -topicRadius topicRadius topicRadius
 
 blackBoxSize = 30
 blackBoxOffset = blackBoxSize // 2 + borderWidth
 blackBoxRadius = 10
-blackBoxExtent_ = blackBoxSize + 2 * borderWidth
-blackBoxExtent = Size blackBoxExtent_ blackBoxExtent_
+blackBoxRect = Rectangle -blackBoxOffset -blackBoxOffset blackBoxOffset blackBoxOffset
 
 whitebox = { width = 250, height = 150 }
-whiteboxOffset =
-  { x = whitebox.width // 2 + borderWidth
-  , y = whitebox.height // 2 + borderWidth
-  }
+-- whiteboxOffset =
+--   { x = whitebox.width // 2 + borderWidth
+--   , y = whitebox.height // 2 + borderWidth
+--   }
 whiteboxRadius = 20
 
 assocWith = 5
@@ -133,12 +131,12 @@ blackBoxStyle { color } { pos } =
   ]
 
 
-whiteboxStyle : TopicInfo -> TopicProps -> List (Attribute Msg)
-whiteboxStyle { color } { pos } =
-  [ style "left" <| fromInt (pos.x - whiteboxOffset.x) ++ "px"
-  , style "top" <| fromInt (pos.y - whiteboxOffset.y) ++ "px"
-  , style "width" <| fromInt whitebox.width ++ "px"
-  , style "height" <| fromInt whitebox.height ++ "px"
+whiteboxStyle : TopicInfo -> TopicProps -> Rectangle -> List (Attribute Msg)
+whiteboxStyle { color } { pos } rect =
+  [ style "left" <| fromInt (pos.x + rect.x1) ++ "px" -- TODO: border-width?
+  , style "top" <| fromInt (pos.y + rect.y1) ++ "px" -- TODO: border-width?
+  , style "width" <| fromInt (rect.x2 - rect.x1) ++ "px"
+  , style "height" <| fromInt (rect.y2 - rect.y1) ++ "px"
   , style "border-radius" <| fromInt whiteboxRadius ++ "px"
   , style "background-color" <| "hsl(" ++ fromInt color ++ ", 100%, 95%)"
   ]
