@@ -8,7 +8,7 @@ import Browser
 import Browser.Events as Events
 import Dict exposing (Dict)
 import Html exposing (Html, Attribute, div, text, button, input, label, h1)
-import Html.Attributes exposing (class, attribute, type_, name, checked, disabled, style)
+import Html.Attributes exposing (class, attribute, type_, name, checked, disabled)
 import Html.Events exposing (onClick, on, stopPropagationOn)
 import Random
 import String exposing (String, fromInt)
@@ -138,11 +138,12 @@ viewMap : MapId -> MapId -> Model -> Html Msg
 viewMap mapId parentMapId model =
   let
     isTopLevel = mapId == model.activeMap
-    ((topics, assocs), vb) =
+    ((topics, assocs), rect, vb) =
       case getMap mapId model of
         Just map ->
-          ( viewItems map model,
-            if isTopLevel then
+          ( viewItems map model
+          , map.rect
+          , if isTopLevel then
               { x = "0", y = "0", w = "1024", h = "600"} -- TODO
             else
               { x = fromInt map.rect.x1
@@ -151,12 +152,16 @@ viewMap mapId parentMapId model =
               , h = fromInt (map.rect.y2 - map.rect.y1)
               }
           )
-        Nothing -> (([], []), {x = "0", y = "0", w = "0", h = "0"})
+        Nothing -> (([], []), Rectangle 0 0 0 0, {x = "0", y = "0", w = "0", h = "0"})
   in
   div
     (nestedMapAttributes mapId parentMapId model)
     [ div
-        []
+        ( if not isTopLevel then
+            nestedTopicLayerStyle rect
+          else
+            []
+        )
         topics
     , svg
         ( [ width vb.w
@@ -246,11 +251,7 @@ nestedMapAttributes mapId parentMapId model =
   else
     topicAttr mapId parentMapId
     ++
-    [ style "position" "absolute"
-    , style "width" "100%"
-    , style "height" "100%"
-    ]
-
+    nestedMapStyle
 
 topicAttr : Id -> MapId -> List (Attribute Msg)
 topicAttr id mapId =
@@ -302,22 +303,18 @@ offsetPos mapId offset model =
   else
     let
       -- TODO: refactor, don't call getParentMapId twice
-      nextMap =
-        getParentMapId mapId model
-      nextOffset =
-        mapPos mapId model |> Maybe.andThen
-          (\(pos, rect) ->
-            Just
-              (Point
-                (offset.x + pos.x + rect.x1)
-                (offset.y + pos.y + rect.y1)
-              )
+      nextMap = getParentMapId mapId model
+      nextOffset = mapPos mapId model
+        |> Maybe.andThen
+          (\pos -> Just
+            (Point
+              (offset.x + pos.x)
+              (offset.y + pos.y)
+            )
           )
       pos_ =
         Maybe.map2
-          (\(parentMapId, _) offset_ ->
-            offsetPos parentMapId offset_ model
-          )
+          (\parentMapId offset_ -> offsetPos parentMapId offset_ model)
           nextMap
           nextOffset
     in
@@ -326,20 +323,18 @@ offsetPos mapId offset model =
         Nothing -> Nothing
 
 
-mapPos : MapId -> Model -> Maybe (Point, Rectangle)
+mapPos : MapId -> Model -> Maybe Point
 mapPos mapId model =
   getParentMapId mapId model
     |> Maybe.andThen
-      (\(parentMapId, rect) -> topicPos mapId parentMapId model
-        |> Maybe.andThen (\pos -> Just (pos, rect))
+      (\parentMapId -> topicPos mapId parentMapId model
+        |> Maybe.andThen (\pos -> Just pos)
       )
 
 
-{-| Returns both a map's rectangle, and the map's parent Id
--}
-getParentMapId : MapId -> Model -> Maybe (MapId, Rectangle)
+getParentMapId : MapId -> Model -> Maybe MapId
 getParentMapId mapId model =
-  getMap mapId model |> Maybe.andThen (\map -> Just (map.parent, map.rect))
+  getMap mapId model |> Maybe.andThen (\map -> Just map.parent)
 
 
 viewLine : Point -> Point -> Svg Msg
@@ -374,17 +369,15 @@ update msg model =
       case msg of
         Mouse _ -> msg
         _ -> info "update" msg
-    (newModel, cmd) =
-      case msg of
-        CreateTopic -> ( createTopicAndAddToMap model, Cmd.none )
-        MoveTopicToMap topicId fromMapId targetId targetMapId pos
-          -> ( moveTopicToMap topicId fromMapId targetId targetMapId pos model, Cmd.none )
-        Set displayMode -> ( setDisplayMode displayMode model, Cmd.none )
-        Delete -> ( delete model, Cmd.none )
-        Mouse mouseMsg -> updateMouse mouseMsg model
-        NoOp -> ( model, Cmd.none )
   in
-  (newModel |> updateGeometry, cmd)
+  case msg of
+    CreateTopic -> ( createTopicAndAddToMap model, Cmd.none )
+    MoveTopicToMap topicId fromMapId targetId targetMapId pos
+      -> ( moveTopicToMap topicId fromMapId targetId targetMapId pos model, Cmd.none )
+    Set displayMode -> ( setDisplayMode displayMode model, Cmd.none )
+    Delete -> ( delete model, Cmd.none )
+    Mouse mouseMsg -> updateMouse mouseMsg model
+    NoOp -> ( model, Cmd.none )
 
 
 createTopic : Model -> (Model, Id)
@@ -543,8 +536,13 @@ updateMapGeometry mapId maps =
                   Just WhiteBox ->
                     let
                       (rect_, maps__) = updateMapGeometry viewItem.id maps_
+                      rect__ =
+                        { rect_
+                        | x2 = rect_.x2 + 2 * borderWidth
+                        , y2 = rect_.y2 + 2 * borderWidth
+                        }
                     in
-                    extent pos rect_ rect maps__
+                    extent pos rect__ rect maps__
                   Just Unboxed -> extent pos topicRect rect maps_
                   Nothing -> extent pos topicRect rect maps_
               ViewAssoc _ -> (rect, maps_)
@@ -589,7 +587,7 @@ setDisplayMode displayMode model =
           updateDisplayMode topicId mapId displayMode newModel
         Nothing -> model.maps
   in
-  { model | maps = maps }
+  { model | maps = maps } |> updateGeometry
 
 
 updateDisplayMode : Id -> MapId -> Maybe DisplayMode -> Model -> Maps
@@ -932,7 +930,7 @@ performDrag model pos =
       { model
         | maps = maps
         , dragState = Drag dragMode id mapId pos target -- update lastPoint
-      }
+      } |> updateGeometry
     _ -> logError "performDrag"
       ("Received \"Move\" message when dragState is " ++ toString model.dragState)
       model
@@ -974,11 +972,13 @@ mouseUp model =
 
 point : Random.Generator Point
 point =
+  let
+    rw = whiteboxRange.width // 2
+    rh = whiteboxRange.height // 2
+  in
   Random.map2 Point
-    (Random.int 0 0)
-    (Random.int 0 0)
-    -- (Random.int topicSize (whitebox.width - topicSize)) -- TODO
-    -- (Random.int topicSize (whitebox.height - topicSize))
+    (Random.int -rw rw) -- FIXME: include topic radius?
+    (Random.int -rh rh) -- FIXME: include topic radius?
 
 
 mouseOver : Model -> Class -> Id -> MapId -> Model

@@ -25,11 +25,7 @@ blackBoxOffset = blackBoxSize // 2 + borderWidth
 blackBoxRadius = 10
 blackBoxRect = Rectangle -blackBoxOffset -blackBoxOffset blackBoxOffset blackBoxOffset
 
-whitebox = { width = 250, height = 150 }
--- whiteboxOffset =
---   { x = whitebox.width // 2 + borderWidth
---   , y = whitebox.height // 2 + borderWidth
---   }
+whiteboxRange = { width = 250, height = 150 }
 whiteboxRadius = 20
 
 assocWith = 5
@@ -133,8 +129,8 @@ blackBoxStyle { color } { pos } =
 
 whiteboxStyle : TopicInfo -> TopicProps -> Rectangle -> List (Attribute Msg)
 whiteboxStyle { color } { pos } rect =
-  [ style "left" <| fromInt (pos.x + rect.x1) ++ "px" -- TODO: border-width?
-  , style "top" <| fromInt (pos.y + rect.y1) ++ "px" -- TODO: border-width?
+  [ style "left" <| fromInt (pos.x + rect.x1) ++ "px"
+  , style "top" <| fromInt (pos.y + rect.y1) ++ "px"
   , style "width" <| fromInt (rect.x2 - rect.x1) ++ "px"
   , style "height" <| fromInt (rect.y2 - rect.y1) ++ "px"
   , style "border-radius" <| fromInt whiteboxRadius ++ "px"
@@ -150,12 +146,28 @@ itemCountStyle =
   ]
 
 
+nestedMapStyle : List (Attribute Msg)
+nestedMapStyle =
+  [ style "position" "absolute"
+  , style "width" "100%"
+  , style "height" "100%"
+  ]
+
+
+nestedTopicLayerStyle : Rectangle -> List (Attribute Msg)
+nestedTopicLayerStyle mapRect =
+  [ style "position" "absolute"
+  , style "left" <| fromInt -mapRect.x1 ++ "px"
+  , style "top" <| fromInt -mapRect.y1 ++ "px"
+  ]
+
+
 svgStyle : List (Attribute Msg)
 svgStyle =
   [ style "position" "absolute"
   , style "top" "0"
   , style "left" "0"
-  , style "z-index" "-1" -- behind the nodes
+  , style "z-index" "-1" -- behind the topic layer
   ]
 
 
