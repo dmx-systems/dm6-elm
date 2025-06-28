@@ -48,9 +48,9 @@ type alias TransferFunc = ViewItems -> ViewItems -> Model -> ViewItems
 
 type alias Map =
   { id : MapId
-  , parent : MapId
   , items : ViewItems
   , rect : Rectangle
+  , parentMapId : MapId
   }
 
 

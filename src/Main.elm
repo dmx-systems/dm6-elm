@@ -44,7 +44,7 @@ main =
 init : () -> ( Model, Cmd Msg )
 init flags =
   ( { items = Dict.empty
-    , maps = Dict.singleton 0 <| Map 0 -1 Dict.empty (Rectangle 0 0 0 0) -- parent = -1
+    , maps = Dict.singleton 0 <| Map 0 Dict.empty (Rectangle 0 0 0 0) -1 -- parentMapId = -1
     , activeMap = 0
     , selection = []
     , dragState = NoDrag
@@ -139,7 +139,7 @@ viewMap mapId parentMapId model =
   let
     isTopLevel = mapId == model.activeMap
     ((topics, assocs), rect, vb) =
-      case getMap mapId model of
+      case getMap mapId model.maps of
         Just map ->
           ( viewItems map model
           , map.rect
@@ -205,7 +205,7 @@ viewTopic topic props mapId model =
           Just WhiteBox ->
             let
               rect =
-                case getMap topic.id model of
+                case getMap topic.id model.maps of
                   Just map -> map.rect
                   Nothing -> Rectangle 0 0 10 150 -- TODO
             in
@@ -226,7 +226,7 @@ viewItemCount topicId props model =
   let
     itemCount =
       if props.displayMode /= Nothing then
-        case getMap topicId model of
+        case getMap topicId model.maps of
           Just map -> map.items |> Dict.size
           Nothing -> 0
       else
@@ -252,6 +252,7 @@ nestedMapAttributes mapId parentMapId model =
     topicAttr mapId parentMapId
     ++
     nestedMapStyle
+
 
 topicAttr : Id -> MapId -> List (Attribute Msg)
 topicAttr id mapId =
@@ -288,53 +289,6 @@ viewLimboAssoc mapId model =
       else
         []
     _ -> []
-
-
-relPos : Point -> MapId -> Model -> Maybe Point
-relPos pos mapId model =
-  offsetPos mapId (Point 0 0) model |> Maybe.andThen
-    (\offset -> Just (Point (pos.x - offset.x) (pos.y - offset.y)))
-
-
-offsetPos : MapId -> Point -> Model -> Maybe Point
-offsetPos mapId offset model =
-  if mapId == model.activeMap then
-    Just offset
-  else
-    let
-      -- TODO: refactor, don't call getParentMapId twice
-      nextMap = getParentMapId mapId model
-      nextOffset = mapPos mapId model
-        |> Maybe.andThen
-          (\pos -> Just
-            (Point
-              (offset.x + pos.x)
-              (offset.y + pos.y)
-            )
-          )
-      pos_ =
-        Maybe.map2
-          (\parentMapId offset_ -> offsetPos parentMapId offset_ model)
-          nextMap
-          nextOffset
-    in
-      case pos_ of
-        Just p -> p
-        Nothing -> Nothing
-
-
-mapPos : MapId -> Model -> Maybe Point
-mapPos mapId model =
-  getParentMapId mapId model
-    |> Maybe.andThen
-      (\parentMapId -> topicPos mapId parentMapId model
-        |> Maybe.andThen (\pos -> Just pos)
-      )
-
-
-getParentMapId : MapId -> Model -> Maybe MapId
-getParentMapId mapId model =
-  getMap mapId model |> Maybe.andThen (\map -> Just map.parent)
 
 
 viewLine : Point -> Point -> Svg Msg
@@ -456,7 +410,7 @@ moveTopicToMap topicId fromMapId targetId targetMapId pos model =
         | maps = updateDisplayMode targetId targetMapId (Just BlackBox)
             { model
             | maps = model.maps |>
-              Dict.insert targetId (Map targetId targetMapId Dict.empty (Rectangle 0 0 0 0))
+              Dict.insert targetId (Map targetId Dict.empty (Rectangle 0 0 0 0) targetMapId)
             }
         }
   in
@@ -505,11 +459,14 @@ topicPos topicId mapId model =
 
 updateTopicPos : Id -> Id -> Delta -> Model -> Maps
 updateTopicPos topicId mapId delta model =
-  updateTopicProps
-    topicId
-    mapId
-    model
-    (\props -> { props | pos = Point (props.pos.x + delta.x) (props.pos.y + delta.y) })
+  updateTopicProps topicId mapId model
+    (\props ->
+      { props | pos =
+        Point
+          (props.pos.x + delta.x)
+          (props.pos.y + delta.y)
+      }
+    )
 
 
 updateGeometry : Model -> Model
@@ -525,7 +482,7 @@ updateGeometry model =
 updateMapGeometry : MapId -> Maps -> (Rectangle, Maps)
 updateMapGeometry mapId maps =
   let
-    result_ = getMap_ mapId maps |> Maybe.andThen
+    result_ = getMap mapId maps |> Maybe.andThen
       (\map -> Just
         (map.items |> Dict.values |> List.foldr
           (\viewItem (rect, maps_) ->
@@ -619,7 +576,7 @@ unboxContainer containerId targetMapId model =
 transferContent : Id -> MapId -> TransferFunc -> Model -> Maps
 transferContent containerId targetMapId transferFunc model =
   let
-    maps_ = getMap containerId model |> Maybe.andThen
+    maps_ = getMap containerId model.maps |> Maybe.andThen
       (\containerMap -> Just
         (updateMaps
           targetMapId
@@ -643,7 +600,7 @@ boxItems sourceItems targetItems model =
         items = setHidden viewItem.id True newItems
           |> setHidden viewItem.mapAssocId True
       in
-      case getMapIfExists viewItem.id model of
+      case getMapIfExists viewItem.id model.maps of
         Just map -> boxItems map.items items model
         Nothing -> items
     )
@@ -663,7 +620,7 @@ unboxItems sourceItems targetItems model =
       if abort then
         items
       else
-        case getMapIfExists viewItem.id model of
+        case getMapIfExists viewItem.id model.maps of
           Just map -> unboxItems map.items items model
           Nothing -> items
     )
@@ -720,7 +677,7 @@ getTopicProps topicId mapId model =
 
 getViewItemById : Id -> MapId -> Model -> Maybe ViewItem
 getViewItemById itemId mapId model =
-  getMap mapId model |> Maybe.andThen (getViewItem itemId)
+  getMap mapId model.maps |> Maybe.andThen (getViewItem itemId)
 
 
 getViewItem : Id -> Map -> Maybe ViewItem
@@ -816,25 +773,62 @@ updateMaps mapId mapFunc maps =
     )
 
 
-getMap : MapId -> Model -> Maybe Map
-getMap mapId model =
-  getMap_ mapId model.maps
+relPos : Point -> MapId -> Model -> Maybe Point
+relPos pos mapId model =
+  offsetPos mapId (Point 0 0) model |> Maybe.andThen
+    (\offset -> Just (Point (pos.x - offset.x) (pos.y - offset.y)))
 
 
-getMap_ : MapId -> Maps -> Maybe Map
-getMap_ mapId maps =
-  case getMapIfExists_ mapId maps of
+offsetPos : MapId -> Point -> Model -> Maybe Point
+offsetPos mapId offset model =
+  if mapId == model.activeMap then
+    Just offset
+  else
+    let
+      -- TODO: refactor, don't call getParentMapId twice
+      nextMap = getParentMapId mapId model
+      nextOffset = mapPos mapId model
+        |> Maybe.andThen
+          (\pos -> Just
+            (Point
+              (offset.x + pos.x)
+              (offset.y + pos.y)
+            )
+          )
+      pos_ =
+        Maybe.map2
+          (\parentMapId offset_ -> offsetPos parentMapId offset_ model)
+          nextMap
+          nextOffset
+    in
+      case pos_ of
+        Just p -> p
+        Nothing -> Nothing
+
+
+mapPos : MapId -> Model -> Maybe Point
+mapPos mapId model =
+  getParentMapId mapId model
+    |> Maybe.andThen
+      (\parentMapId -> topicPos mapId parentMapId model
+        |> Maybe.andThen (\pos -> Just pos)
+      )
+
+
+getParentMapId : MapId -> Model -> Maybe MapId
+getParentMapId mapId model =
+  getMap mapId model.maps |> Maybe.andThen (\map -> Just map.parentMapId)
+
+
+getMap : MapId -> Maps -> Maybe Map
+getMap mapId maps =
+  case getMapIfExists mapId maps of
     Just map -> Just map
-    Nothing -> illegalMapId "getMap_" mapId Nothing
+    Nothing -> illegalMapId "getMap" mapId Nothing
 
 
-getMapIfExists : MapId -> Model -> Maybe Map
-getMapIfExists mapId model =
-  getMapIfExists_ mapId model.maps
-
-
-getMapIfExists_ : MapId -> Maps -> Maybe Map
-getMapIfExists_ mapId maps =
+getMapIfExists : MapId -> Maps -> Maybe Map
+getMapIfExists mapId maps =
   case maps |> Dict.get mapId of
     Just map -> Just map
     Nothing -> Nothing
@@ -952,9 +946,16 @@ mouseUp model =
             fromInt mapId ++ ") to " ++ fromInt targetId)
         in
         ( createDefaultAssoc id targetId mapId model, Cmd.none)
-      Drag _ _ _ _ _ ->
+      Drag _ id mapId _ _ ->
         let
           _ = info "mouseUp" "drag ended w/o target"
+          _ = case getTopicProps id mapId model of
+            Just props ->
+              log "" { id = id, pos = props.pos }
+            Nothing -> { id = 0, pos = Point 0 0 }
+          _ = case getMapIfExists id model.maps of
+            Just map -> log "" { rect = map.rect }
+            Nothing -> { rect = Rectangle 0 0 0 0 }
         in
         ( model, Cmd.none )
       DragEngaged _ _ _ _ _ ->
