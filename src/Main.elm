@@ -98,7 +98,7 @@ viewDisplayMode : Model -> Html Msg
 viewDisplayMode model =
   let
     displayMode = case getSingleSelection model of
-      Just (topicId, mapId) -> getDisplayMode topicId mapId model
+      Just (topicId, mapId) -> getDisplayMode topicId mapId model.maps
       Nothing -> Nothing
     checked1 = displayMode == Just BlackBox
     checked2 = displayMode == Just WhiteBox
@@ -280,7 +280,7 @@ viewLimboAssoc mapId model =
         let
           points = Maybe.map2
             (\pos1 pos2 -> (pos1, pos2))
-            (topicPos topicId mapId model)
+            (topicPos topicId mapId model.maps)
             (relPos pos mapId model)
         in
         case points of
@@ -301,8 +301,8 @@ viewLine pos1 pos2 =
 assocGeometry : AssocInfo -> MapId -> Model -> Maybe ( Point, Point )
 assocGeometry assoc mapId model =
   let
-    pos1 = topicPos assoc.player1 mapId model
-    pos2 = topicPos assoc.player2 mapId model
+    pos1 = topicPos assoc.player1 mapId model.maps
+    pos2 = topicPos assoc.player2 mapId model.maps
   in
   Maybe.map2 (\p1 p2 -> ( p1, p2 )) pos1 pos2
 
@@ -399,7 +399,7 @@ createAssocAndAddToMap itemType player1 role1 player2 role2 mapId model =
 moveTopicToMap : Id -> MapId -> Id -> MapId -> Point -> Model -> Model
 moveTopicToMap topicId fromMapId targetId targetMapId pos model =
   let
-    viewProps_ = getTopicProps topicId fromMapId model |> Maybe.andThen
+    viewProps_ = getTopicProps topicId fromMapId model.maps |> Maybe.andThen
       (\props -> Just (ViewTopic { props | pos = pos }))
     -- create map if not exists
     newModel =
@@ -450,9 +450,9 @@ getSingleSelection model =
     -- FIXME: return nothing if more than one item
 
 
-topicPos : Id -> MapId -> Model -> Maybe Point
-topicPos topicId mapId model =
-  case getTopicProps topicId mapId model of
+topicPos : Id -> MapId -> Maps -> Maybe Point
+topicPos topicId mapId maps =
+  case getTopicProps topicId mapId maps of
     Just { pos } -> Just pos
     Nothing -> fail "topicPos" {topicId = topicId, mapId = mapId} Nothing
 
@@ -556,9 +556,9 @@ updateDisplayMode topicId mapId displayMode model =
     (\props -> { props | displayMode = displayMode })
 
 
-getDisplayMode : Id -> MapId -> Model -> Maybe DisplayMode
-getDisplayMode topicId mapId model =
-  case getTopicProps topicId mapId model of
+getDisplayMode : Id -> MapId -> Maps -> Maybe DisplayMode
+getDisplayMode topicId mapId maps =
+  case getTopicProps topicId mapId maps of
     Just { displayMode } -> displayMode
     Nothing -> fail "getDisplayMode" {topicId = topicId, mapId = mapId} Nothing
 
@@ -665,9 +665,9 @@ targetAssocItem viewItem targetItems =
     Nothing -> ViewItem viewItem.mapAssocId False (ViewAssoc AssocProps) -1 -- hidden=False
 
 
-getTopicProps : Id -> MapId -> Model -> Maybe TopicProps
-getTopicProps topicId mapId model =
-  case getViewItemById topicId mapId model of
+getTopicProps : Id -> MapId -> Maps -> Maybe TopicProps
+getTopicProps topicId mapId maps =
+  case getViewItemById topicId mapId maps of
     Just viewItem ->
       case viewItem.viewProps of
         ViewTopic props -> Just props
@@ -675,9 +675,9 @@ getTopicProps topicId mapId model =
     Nothing -> fail "getTopicProps" {topicId = topicId, mapId = mapId} Nothing
 
 
-getViewItemById : Id -> MapId -> Model -> Maybe ViewItem
-getViewItemById itemId mapId model =
-  getMap mapId model.maps |> Maybe.andThen (getViewItem itemId)
+getViewItemById : Id -> MapId -> Maps -> Maybe ViewItem
+getViewItemById itemId mapId maps =
+  getMap mapId maps |> Maybe.andThen (getViewItem itemId)
 
 
 getViewItem : Id -> Map -> Maybe ViewItem
@@ -786,8 +786,8 @@ offsetPos mapId offset model =
   else
     let
       -- TODO: refactor, don't call getParentMapId twice
-      nextMap = getParentMapId mapId model
-      nextOffset = mapPos mapId model
+      nextMap = getParentMapId mapId model.maps
+      nextOffset = mapPos mapId model.maps
         |> Maybe.andThen
           (\pos -> Just
             (Point
@@ -806,18 +806,18 @@ offsetPos mapId offset model =
         Nothing -> Nothing
 
 
-mapPos : MapId -> Model -> Maybe Point
-mapPos mapId model =
-  getParentMapId mapId model
+mapPos : MapId -> Maps -> Maybe Point
+mapPos mapId maps =
+  getParentMapId mapId maps
     |> Maybe.andThen
-      (\parentMapId -> topicPos mapId parentMapId model
+      (\parentMapId -> topicPos mapId parentMapId maps
         |> Maybe.andThen (\pos -> Just pos)
       )
 
 
-getParentMapId : MapId -> Model -> Maybe MapId
-getParentMapId mapId model =
-  getMap mapId model.maps |> Maybe.andThen (\map -> Just map.parentMapId)
+getParentMapId : MapId -> Maps -> Maybe MapId
+getParentMapId mapId maps =
+  getMap mapId maps |> Maybe.andThen (\map -> Just map.parentMapId)
 
 
 getMap : MapId -> Maps -> Maybe Map
@@ -949,7 +949,7 @@ mouseUp model =
       Drag _ id mapId _ _ ->
         let
           _ = info "mouseUp" "drag ended w/o target"
-          _ = case getTopicProps id mapId model of
+          _ = case getTopicProps id mapId model.maps of
             Just props ->
               log "" { id = id, pos = props.pos }
             Nothing -> { id = 0, pos = Point 0 0 }
