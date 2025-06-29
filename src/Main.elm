@@ -819,21 +819,26 @@ updateMaps mapId mapFunc maps =
     )
 
 
+{-| Transforms an absolute screen position to a map-relative position.
+-}
 relPos : Point -> MapId -> Model -> Maybe Point
 relPos pos mapId model =
-  offsetPos mapId (Point 0 0) model |> Maybe.andThen
-    (\offset -> Just (Point (pos.x - offset.x) (pos.y - offset.y)))
+  mapPosAbsolute mapId (Point 0 0) model |> Maybe.andThen
+    (\posAbs -> Just (Point (pos.x - posAbs.x) (pos.y - posAbs.y)))
 
 
-offsetPos : MapId -> Point -> Model -> Maybe Point
-offsetPos mapId offset model =
+{-| Recursively calculates the absolute position of a map. "accOffset" is the offset position
+accumulated so far.
+-}
+mapPosAbsolute : MapId -> Point -> Model -> Maybe Point
+mapPosAbsolute mapId accOffset model =
   if mapId == model.activeMap then
-    Just offset
+    Just accOffset
   else
     let
       mapOffset =
         case getMap mapId model.maps of
-          Just map_ -> map_.offset
+          Just map -> map.offset
           Nothing -> Offset 0 0
       -- TODO: refactor, don't call getParentMapId twice
       nextMap = getParentMapId mapId model.maps
@@ -841,13 +846,13 @@ offsetPos mapId offset model =
         |> Maybe.andThen
           (\pos -> Just
             (Point
-              (offset.x + pos.x + mapOffset.x)
-              (offset.y + pos.y + mapOffset.y)
+              (accOffset.x + pos.x + mapOffset.x + borderWidth)
+              (accOffset.y + pos.y + mapOffset.y + borderWidth)
             )
           )
       pos_ =
         Maybe.map2
-          (\parentMapId offset_ -> offsetPos parentMapId offset_ model)
+          (\parentMapId offset_ -> mapPosAbsolute parentMapId offset_ model)
           nextMap
           nextOffset
     in
