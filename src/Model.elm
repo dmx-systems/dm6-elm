@@ -50,6 +50,7 @@ type alias Map =
   { id : MapId
   , items : ViewItems
   , rect : Rectangle
+  , offset : Offset
   , parentMapId : MapId
   }
 
@@ -100,6 +101,12 @@ type alias Rectangle =
 type alias Size =
   { width : Int
   , height : Int
+  }
+
+
+type alias Offset =
+  { x : Int -- FIXME: Float
+  , y : Int -- FIXME: Float
   }
 
 

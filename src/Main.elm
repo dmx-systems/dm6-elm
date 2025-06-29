@@ -25,7 +25,7 @@ import Debug exposing (log, toString)
 
 
 colors = Array.fromList([120, 0, 210, 36, 270, 58])
-dragThresholdMillis = 300
+dragThresholdMillis = 200
 
 
 
@@ -44,7 +44,8 @@ main =
 init : () -> ( Model, Cmd Msg )
 init flags =
   ( { items = Dict.empty
-    , maps = Dict.singleton 0 <| Map 0 Dict.empty (Rectangle 0 0 0 0) -1 -- parentMapId = -1
+    , maps = Dict.singleton 0
+      <| Map 0 Dict.empty (Rectangle 0 0 0 0) (Offset 0 0) -1 -- parentMapId = -1
     , activeMap = 0
     , selection = []
     , dragState = NoDrag
@@ -204,12 +205,12 @@ viewTopic topic props mapId model =
           Just BlackBox -> blackBoxStyle topic props
           Just WhiteBox ->
             let
-              rect =
+              (rect, offset) =
                 case getMap topic.id model.maps of
-                  Just map -> map.rect
-                  Nothing -> Rectangle 0 0 10 150 -- TODO
+                  Just map -> (map.rect, map.offset)
+                  Nothing -> (Rectangle 0 0 0 0, Offset 0 0)
             in
-            whiteboxStyle topic props rect
+            whiteboxStyle topic props rect offset
           Just Unboxed -> normalStyle topic props
           Nothing -> normalStyle topic props
     )
@@ -410,7 +411,9 @@ moveTopicToMap topicId fromMapId targetId targetMapId pos model =
         | maps = updateDisplayMode targetId targetMapId (Just BlackBox)
             { model
             | maps = model.maps |>
-              Dict.insert targetId (Map targetId Dict.empty (Rectangle 0 0 0 0) targetMapId)
+              Dict.insert
+                targetId
+                (Map targetId Dict.empty (Rectangle 0 0 0 0) (Offset 0 0) targetMapId)
             }
         }
   in
@@ -420,7 +423,7 @@ moveTopicToMap topicId fromMapId targetId targetMapId pos model =
         { newModel
         | maps = removeItemFromMap topicId fromMapId newModel
         , selection = [ (targetId, targetMapId) ]
-        }
+        } |> updateGeometry
     Nothing -> model
 
 
@@ -450,16 +453,9 @@ getSingleSelection model =
     -- FIXME: return nothing if more than one item
 
 
-topicPos : Id -> MapId -> Maps -> Maybe Point
-topicPos topicId mapId maps =
-  case getTopicProps topicId mapId maps of
-    Just { pos } -> Just pos
-    Nothing -> fail "topicPos" {topicId = topicId, mapId = mapId} Nothing
-
-
-updateTopicPos : Id -> Id -> Delta -> Model -> Maps
-updateTopicPos topicId mapId delta model =
-  updateTopicProps topicId mapId model
+updateTopicPos : Id -> Id -> Delta -> Maps -> Maps
+updateTopicPos topicId mapId delta maps =
+  updateTopicProps topicId mapId maps
     (\props ->
       { props | pos =
         Point
@@ -473,54 +469,104 @@ updateGeometry : Model -> Model
 updateGeometry model =
   { model | maps =
     let
-      (size, maps) = updateMapGeometry model.activeMap model.maps
+      (_, _, maps) = updateMapGeometry model.activeMap 0 model.maps
     in
     maps
   }
 
 
-updateMapGeometry : MapId -> Maps -> (Rectangle, Maps)
-updateMapGeometry mapId maps =
+updateMapGeometry : MapId -> Int -> Maps -> (Rectangle, Int, Maps)
+updateMapGeometry mapId level maps =
+{-let
+    (rect, level_, maps_) = calcMapRectangle mapId level maps
+  in
+  (rect, level, updateMaps mapId (\map -> { map | rect = rect }) maps_)
+-}
+  --
+  -- calculate and store the map's "rect" and, based on its change, calculate and store
+  -- 1) the map's "pos" adjustmennt ("delta") and 2) the whitebox positioning "offset"
+  --
+  let
+    (rect, level_, maps_) = calcMapRectangle mapId level maps
+    maps__ =
+      if level == 0 then
+        Just maps_
+      else
+        let
+          delta_ = getMap mapId maps_ |> Maybe.andThen
+            (\map -> Just
+              (Point
+                ((rect.x1 + rect.x2 - map.rect.x1 - map.rect.x2) // 2)
+                ((rect.y1 + rect.y2 - map.rect.y1 - map.rect.y2) // 2)
+              )
+            )
+        in
+        Maybe.map2
+          (\delta parentMapId ->
+            updateMaps mapId
+              (\map ->
+                { map
+                | rect = rect
+                , offset = Offset (map.offset.x - delta.x) (map.offset.y - delta.y)
+                }
+              ) maps_
+            |> updateTopicPos mapId parentMapId delta
+          )
+          delta_
+          (getParentMapId mapId maps_)
+  in
+  case maps__ of
+    Just maps___ -> (rect, level_, maps___)
+    Nothing -> (Rectangle 0 0 0 0, level_, maps_)
+
+
+calcMapRectangle : MapId -> Int -> Maps -> (Rectangle, Int, Maps)
+calcMapRectangle mapId level maps =
   let
     result_ = getMap mapId maps |> Maybe.andThen
       (\map -> Just
         (map.items |> Dict.values |> List.foldr
-          (\viewItem (rect, maps_) ->
+          (\viewItem (rect, level_, maps_) ->
             case viewItem.viewProps of
               ViewTopic {pos, displayMode} ->
                 case displayMode of
-                  Just BlackBox -> extent pos blackBoxRect rect maps_
+                  Just BlackBox -> extent pos blackBoxRect (Offset 0 0) rect level maps_
                   Just WhiteBox ->
                     let
-                      (rect_, maps__) = updateMapGeometry viewItem.id maps_
+                      (rect_, level__, maps__) =
+                        updateMapGeometry viewItem.id (level + 1) maps_
                       rect__ =
                         { rect_
                         | x2 = rect_.x2 + 2 * borderWidth
                         , y2 = rect_.y2 + 2 * borderWidth
                         }
+                      offset =
+                        case getMap viewItem.id maps__ of
+                          Just map_ -> map_.offset
+                          Nothing -> Offset 0 0
                     in
-                    extent pos rect__ rect maps__
-                  Just Unboxed -> extent pos topicRect rect maps_
-                  Nothing -> extent pos topicRect rect maps_
-              ViewAssoc _ -> (rect, maps_)
+                    extent pos rect__ offset rect level maps__
+                  Just Unboxed -> extent pos topicRect (Offset 0 0) rect level maps_
+                  Nothing -> extent pos topicRect (Offset 0 0) rect level maps_
+              ViewAssoc _ -> (rect, level_, maps_)
           )
-          (Rectangle 5000 5000 -5000 -5000, maps) -- x-min y-min x-max y-max
+          (Rectangle 5000 5000 -5000 -5000, level, maps) -- x-min y-min x-max y-max
         )
       )
   in
   case result_ of
-    Just (rect, maps_) ->
-      (rect, updateMaps mapId (\map -> { map | rect = rect }) maps_)
-    Nothing -> (Rectangle 0 0 0 0, maps)
+    Just result -> result
+    Nothing -> (Rectangle 0 0 0 0, level, maps)
 
 
-extent : Point -> Rectangle -> Rectangle -> Maps -> (Rectangle, Maps)
-extent pos rect rectAcc maps =
+extent : Point -> Rectangle -> Offset -> Rectangle -> Int -> Maps -> (Rectangle, Int, Maps)
+extent pos rect offset rectAcc level maps =
   ( Rectangle
-    (min rectAcc.x1 (pos.x + rect.x1))
-    (min rectAcc.y1 (pos.y + rect.y1))
-    (max rectAcc.x2 (pos.x + rect.x2))
-    (max rectAcc.y2 (pos.y + rect.y2))
+    (min rectAcc.x1 (pos.x + rect.x1 + offset.x))
+    (min rectAcc.y1 (pos.y + rect.y1 + offset.y))
+    (max rectAcc.x2 (pos.x + rect.x2 + offset.x))
+    (max rectAcc.y2 (pos.y + rect.y2 + offset.y))
+  , level
   , maps
   )
 
@@ -552,7 +598,7 @@ updateDisplayMode topicId mapId displayMode model =
   updateTopicProps
     topicId
     mapId
-    model
+    model.maps
     (\props -> { props | displayMode = displayMode })
 
 
@@ -698,12 +744,12 @@ setHidden itemId hidden items =
     )
 
 
-updateTopicProps : Id -> Id -> Model -> (TopicProps -> TopicProps) -> Maps
-updateTopicProps topicId mapId model propsFunc =
+updateTopicProps : Id -> Id -> Maps -> (TopicProps -> TopicProps) -> Maps
+updateTopicProps topicId mapId maps propsFunc =
   updateMaps
     mapId
     (updateTopicProps_ topicId propsFunc)
-    model.maps
+    maps
 
 
 updateTopicProps_ : Id -> (TopicProps -> TopicProps) -> Map -> Map
@@ -785,14 +831,18 @@ offsetPos mapId offset model =
     Just offset
   else
     let
+      mapOffset =
+        case getMap mapId model.maps of
+          Just map_ -> map_.offset
+          Nothing -> Offset 0 0
       -- TODO: refactor, don't call getParentMapId twice
       nextMap = getParentMapId mapId model.maps
       nextOffset = mapPos mapId model.maps
         |> Maybe.andThen
           (\pos -> Just
             (Point
-              (offset.x + pos.x)
-              (offset.y + pos.y)
+              (offset.x + pos.x + mapOffset.x)
+              (offset.y + pos.y + mapOffset.y)
             )
           )
       pos_ =
@@ -813,6 +863,13 @@ mapPos mapId maps =
       (\parentMapId -> topicPos mapId parentMapId maps
         |> Maybe.andThen (\pos -> Just pos)
       )
+
+
+topicPos : Id -> MapId -> Maps -> Maybe Point
+topicPos topicId mapId maps =
+  case getTopicProps topicId mapId maps of
+    Just { pos } -> Just pos
+    Nothing -> fail "topicPos" {topicId = topicId, mapId = mapId} Nothing
 
 
 getParentMapId : MapId -> Maps -> Maybe MapId
@@ -918,7 +975,7 @@ performDrag model pos =
           (pos.y - lastPoint.y)
         maps =
           case dragMode of
-            DragTopic -> updateTopicPos id mapId delta model
+            DragTopic -> updateTopicPos id mapId delta model.maps
             DrawAssoc -> model.maps
       in
       { model
