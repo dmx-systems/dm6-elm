@@ -454,18 +454,6 @@ getSingleSelection model =
     -- FIXME: return nothing if more than one item
 
 
-updateTopicPos : Id -> Id -> Delta -> Maps -> Maps
-updateTopicPos topicId mapId delta maps =
-  updateTopicProps topicId mapId maps
-    (\props ->
-      { props | pos =
-        Point
-          (props.pos.x + delta.x)
-          (props.pos.y + delta.y)
-      }
-    )
-
-
 updateGeometry : Model -> Model
 updateGeometry model =
   { model | maps =
@@ -478,11 +466,6 @@ updateGeometry model =
 
 updateMapGeometry : MapId -> Int -> Maps -> (Rectangle, Int, Maps)
 updateMapGeometry mapId level maps =
-{-let
-    (rect, level_, maps_) = calcMapRectangle mapId level maps
-  in
-  (rect, level, updateMaps mapId (\map -> { map | rect = rect }) maps_)
--}
   --
   -- calculate and store the map's "rect" and, based on its change, calculate and store
   -- 1) the map's "pos" adjustmennt ("delta") and 2) the whitebox positioning "offset"
@@ -493,32 +476,34 @@ updateMapGeometry mapId level maps =
       if level == 0 then
         Just maps_
       else
-        let
-          delta_ = getMap mapId maps_ |> Maybe.andThen
-            (\map -> Just
-              (Point
-                ((rect.x1 + rect.x2 - map.rect.x1 - map.rect.x2) // 2)
-                ((rect.y1 + rect.y2 - map.rect.y1 - map.rect.y2) // 2)
-              )
+        getMap mapId maps_ |> Maybe.andThen
+          (\map -> Just
+            ( let
+                delta = Point
+                  ((rect.x1 + rect.x2 - map.rect.x1 - map.rect.x2) // 2)
+                  ((rect.y1 + rect.y2 - map.rect.y1 - map.rect.y2) // 2)
+              in
+              updateMapRectAndOffset mapId rect delta maps_
+                |> updateTopicPos mapId map.parentMapId delta
             )
-        in
-        Maybe.map2
-          (\delta parentMapId ->
-            updateMaps mapId
-              (\map ->
-                { map
-                | rect = rect
-                , offset = Offset (map.offset.x - delta.x) (map.offset.y - delta.y)
-                }
-              ) maps_
-            |> updateTopicPos mapId parentMapId delta
           )
-          delta_
-          (getParentMapId mapId maps_)
   in
   case maps__ of
     Just maps___ -> (rect, level_, maps___)
-    Nothing -> (Rectangle 0 0 0 0, level_, maps_)
+    Nothing -> (rect, level_, maps_)
+
+
+updateMapRectAndOffset : MapId -> Rectangle -> Point -> Maps -> Maps
+updateMapRectAndOffset mapId rect delta maps =
+  updateMaps
+    mapId
+    (\map ->
+      { map
+      | rect = rect
+      , offset = Offset (map.offset.x - delta.x) (map.offset.y - delta.y)
+      }
+    )
+    maps
 
 
 calcMapRectangle : MapId -> Int -> Maps -> (Rectangle, Int, Maps)
@@ -712,28 +697,6 @@ targetAssocItem viewItem targetItems =
     Nothing -> ViewItem viewItem.mapAssocId False (ViewAssoc AssocProps) -1 -- hidden=False
 
 
-getTopicProps : Id -> MapId -> Maps -> Maybe TopicProps
-getTopicProps topicId mapId maps =
-  case getViewItemById topicId mapId maps of
-    Just viewItem ->
-      case viewItem.viewProps of
-        ViewTopic props -> Just props
-        ViewAssoc _ -> topicMismatch "getTopicProps" topicId Nothing
-    Nothing -> fail "getTopicProps" {topicId = topicId, mapId = mapId} Nothing
-
-
-getViewItemById : Id -> MapId -> Maps -> Maybe ViewItem
-getViewItemById itemId mapId maps =
-  getMap mapId maps |> Maybe.andThen (getViewItem itemId)
-
-
-getViewItem : Id -> Map -> Maybe ViewItem
-getViewItem itemId map =
-  case map.items |> Dict.get itemId of
-    Just viewItem -> Just viewItem
-    Nothing -> itemNotInMap "getViewItem" itemId map.id Nothing
-
-
 setHidden : Id -> Bool -> ViewItems -> ViewItems
 setHidden itemId hidden items =
   items |> Dict.update
@@ -742,6 +705,18 @@ setHidden itemId hidden items =
       case item_ of
         Just item -> Just { item | hidden = hidden }
         Nothing -> Nothing
+    )
+
+
+updateTopicPos : Id -> Id -> Delta -> Maps -> Maps
+updateTopicPos topicId mapId delta maps =
+  updateTopicProps topicId mapId maps
+    (\props ->
+      { props | pos =
+        Point
+          (props.pos.x + delta.x)
+          (props.pos.y + delta.y)
+      }
     )
 
 
@@ -852,7 +827,7 @@ absMapPos mapId posAcc model =
         )
 
 
--- not called
+-- not called anymore
 mapPos : MapId -> Maps -> Maybe Point
 mapPos mapId maps =
   getParentMapId mapId maps
@@ -862,6 +837,12 @@ mapPos mapId maps =
       )
 
 
+-- not called anymore
+getParentMapId : MapId -> Maps -> Maybe MapId
+getParentMapId mapId maps =
+  getMap mapId maps |> Maybe.andThen (\map -> Just map.parentMapId)
+
+
 topicPos : Id -> MapId -> Maps -> Maybe Point
 topicPos topicId mapId maps =
   case getTopicProps topicId mapId maps of
@@ -869,9 +850,26 @@ topicPos topicId mapId maps =
     Nothing -> fail "topicPos" {topicId = topicId, mapId = mapId} Nothing
 
 
-getParentMapId : MapId -> Maps -> Maybe MapId
-getParentMapId mapId maps =
-  getMap mapId maps |> Maybe.andThen (\map -> Just map.parentMapId)
+getTopicProps : Id -> MapId -> Maps -> Maybe TopicProps
+getTopicProps topicId mapId maps =
+  case getViewItemById topicId mapId maps of
+    Just viewItem ->
+      case viewItem.viewProps of
+        ViewTopic props -> Just props
+        ViewAssoc _ -> topicMismatch "getTopicProps" topicId Nothing
+    Nothing -> fail "getTopicProps" {topicId = topicId, mapId = mapId} Nothing
+
+
+getViewItemById : Id -> MapId -> Maps -> Maybe ViewItem
+getViewItemById itemId mapId maps =
+  getMap mapId maps |> Maybe.andThen (getViewItem itemId)
+
+
+getViewItem : Id -> Map -> Maybe ViewItem
+getViewItem itemId map =
+  case map.items |> Dict.get itemId of
+    Just viewItem -> Just viewItem
+    Nothing -> itemNotInMap "getViewItem" itemId map.id Nothing
 
 
 getMap : MapId -> Maps -> Maybe Map
