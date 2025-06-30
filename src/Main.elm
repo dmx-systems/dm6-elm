@@ -399,33 +399,39 @@ createAssocAndAddToMap itemType player1 role1 player2 role2 mapId model =
 
 
 moveTopicToMap : Id -> MapId -> Id -> MapId -> Point -> Model -> Model
-moveTopicToMap topicId fromMapId targetId targetMapId pos model =
+moveTopicToMap topicId mapId targetId targetMapId pos model =
   let
-    viewProps_ = getTopicProps topicId fromMapId model.maps |> Maybe.andThen
-      (\props -> Just (ViewTopic { props | pos = pos }))
-    -- create map if not exists
-    newModel =
-      if isContainer targetId model then
-        model
-      else
-        { model
-        | maps = updateDisplayMode targetId targetMapId (Just BlackBox)
-            { model
-            | maps = model.maps |>
-              Dict.insert
-                targetId
-                (Map targetId Dict.empty (Rectangle 0 0 0 0) (Offset 0 0) targetMapId)
-            }
-        }
+    (newModel, created) = createMapIfNeeded targetId targetMapId model
+    newPos = if created then Point -borderWidth -borderWidth else pos -- FIXME: should Point 0 0
+    viewProps_ = getTopicProps topicId mapId newModel.maps |> Maybe.andThen
+      (\props -> Just (ViewTopic { props | pos = newPos }))
   in
   case viewProps_ of
     Just viewProps ->
       addItemToMap topicId viewProps targetId
         { newModel
-        | maps = removeItemFromMap topicId fromMapId newModel
+        | maps = removeItemFromMap topicId mapId newModel
         , selection = [ (targetId, targetMapId) ]
         } |> updateGeometry
     Nothing -> model
+
+
+createMapIfNeeded : Id -> MapId -> Model -> (Model, Bool)
+createMapIfNeeded targetId targetMapId model =
+  if isContainer targetId model then
+    (model, False)
+  else
+    ( { model
+      | maps = updateDisplayMode targetId targetMapId (Just BlackBox)
+          { model
+          | maps = model.maps |>
+            Dict.insert
+              targetId
+              (Map targetId Dict.empty (Rectangle 0 0 0 0) (Offset 0 0) targetMapId)
+          }
+      }
+    , True
+    )
 
 
 addItemToMap : Id -> ViewProps -> MapId -> Model -> Model
@@ -493,7 +499,7 @@ updateMapGeometry mapId level maps =
     Nothing -> (rect, level_, maps_)
 
 
-updateMapRectAndOffset : MapId -> Rectangle -> Point -> Maps -> Maps
+updateMapRectAndOffset : MapId -> Rectangle -> Delta -> Maps -> Maps
 updateMapRectAndOffset mapId rect delta maps =
   updateMaps
     mapId
