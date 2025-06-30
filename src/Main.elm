@@ -239,9 +239,10 @@ viewItemCount topicId props model =
     ]
 
 
--- For nested maps give the outer div both the topic meta data and a size. So mouse events
--- can land there and are detected as mousedown-on-item. Otherwise the target would be the
--- SVG but our event decoder does not work there.
+{-| For nested maps give the outer div both the topic meta data and a size. So mouse events
+can land there and are detected as mousedown-on-item. Otherwise the target would be the
+SVG but our event decoder does not work there.
+-}
 nestedMapAttributes : MapId -> MapId -> Model -> List (Attribute Msg)
 nestedMapAttributes mapId parentMapId model =
   let
@@ -823,44 +824,35 @@ updateMaps mapId mapFunc maps =
 -}
 relPos : Point -> MapId -> Model -> Maybe Point
 relPos pos mapId model =
-  mapPosAbsolute mapId (Point 0 0) model |> Maybe.andThen
+  absMapPos mapId (Point 0 0) model |> Maybe.andThen
     (\posAbs -> Just (Point (pos.x - posAbs.x) (pos.y - posAbs.y)))
 
 
-{-| Recursively calculates the absolute position of a map. "accOffset" is the offset position
-accumulated so far.
+{-| Recursively calculates the absolute position of a map.
+    "posAcc" is the position accumulated so far.
 -}
-mapPosAbsolute : MapId -> Point -> Model -> Maybe Point
-mapPosAbsolute mapId accOffset model =
+absMapPos : MapId -> Point -> Model -> Maybe Point
+absMapPos mapId posAcc model =
   if mapId == model.activeMap then
-    Just accOffset
+    Just posAcc
   else
-    let
-      mapOffset =
-        case getMap mapId model.maps of
-          Just map -> map.offset
-          Nothing -> Offset 0 0
-      -- TODO: refactor, don't call getParentMapId twice
-      nextMap = getParentMapId mapId model.maps
-      nextOffset = mapPos mapId model.maps
-        |> Maybe.andThen
-          (\pos -> Just
-            (Point
-              (accOffset.x + pos.x + mapOffset.x + borderWidth)
-              (accOffset.y + pos.y + mapOffset.y + borderWidth)
+    getMap mapId model.maps
+      |> Maybe.andThen
+        (\map -> topicPos map.id map.parentMapId model.maps
+          |> Maybe.andThen
+            (\mapPos_ ->
+              absMapPos
+                map.parentMapId
+                (Point
+                  (posAcc.x + mapPos_.x + map.offset.x + borderWidth)
+                  (posAcc.y + mapPos_.y + map.offset.y + borderWidth)
+                )
+                model
             )
-          )
-      pos_ =
-        Maybe.map2
-          (\parentMapId offset_ -> mapPosAbsolute parentMapId offset_ model)
-          nextMap
-          nextOffset
-    in
-      case pos_ of
-        Just p -> p
-        Nothing -> Nothing
+        )
 
 
+-- not called
 mapPos : MapId -> Maps -> Maybe Point
 mapPos mapId maps =
   getParentMapId mapId maps
