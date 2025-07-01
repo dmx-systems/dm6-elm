@@ -150,24 +150,26 @@ itemCountStyle =
 nestedMapStyle : List (Attribute Msg)
 nestedMapStyle =
   [ style "position" "absolute"
-  , style "width" "100%"
-  , style "height" "100%"
+  , style "left" <| fromInt -borderWidth ++ "px"
+  , style "top" <| fromInt -borderWidth ++ "px"
+  , style "width" <| "calc(100% + " ++ fromInt (2 * borderWidth) ++ "px)"
+  , style "height" <| "calc(100% + " ++ fromInt (2 * borderWidth) ++ "px)"
   ]
 
 
 topicLayerStyle : Rectangle -> List (Attribute Msg)
 topicLayerStyle mapRect =
   [ style "position" "absolute"
-  , style "left" <| fromInt (-mapRect.x1 - borderWidth) ++ "px"
-  , style "top" <| fromInt (-mapRect.y1 - borderWidth) ++ "px"
+  , style "left" <| fromInt -mapRect.x1 ++ "px"
+  , style "top" <| fromInt -mapRect.y1 ++ "px"
   ]
 
 
 svgStyle : List (Attribute Msg)
 svgStyle =
   [ style "position" "absolute"
-  , style "top" <| fromInt -borderWidth ++ "px"
-  , style "left" <| fromInt -borderWidth ++ "px"
+  , style "top" "0"
+  , style "left" "0"
   , style "z-index" "-1" -- behind the topic layer
   ]
 

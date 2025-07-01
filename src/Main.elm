@@ -799,8 +799,8 @@ relPos pos mapId model =
   absMapPos mapId (Point 0 0) model |> Maybe.andThen
     (\posAbs -> Just
       (Point
-        (pos.x - posAbs.x + borderWidth)
-        (pos.y - posAbs.y + borderWidth)
+        (pos.x - posAbs.x)
+        (pos.y - posAbs.y)
       )
     )
 
