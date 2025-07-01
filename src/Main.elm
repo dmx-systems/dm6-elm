@@ -158,11 +158,7 @@ viewMap mapId parentMapId model =
   div
     (nestedMapAttributes mapId parentMapId model)
     [ div
-        ( if not isTopLevel then
-            nestedTopicLayerStyle rect
-          else
-            []
-        )
+        (topicLayerStyle rect)
         topics
     , svg
         ( [ width vb.w
@@ -402,7 +398,7 @@ moveTopicToMap : Id -> MapId -> Id -> MapId -> Point -> Model -> Model
 moveTopicToMap topicId mapId targetId targetMapId pos model =
   let
     (newModel, created) = createMapIfNeeded targetId targetMapId model
-    newPos = if created then Point -borderWidth -borderWidth else pos -- FIXME: should Point 0 0
+    newPos = if created then Point 0 0 else pos
     viewProps_ = getTopicProps topicId mapId newModel.maps |> Maybe.andThen
       (\props -> Just (ViewTopic { props | pos = newPos }))
   in
@@ -527,17 +523,12 @@ calcMapRectangle mapId level maps =
                     let
                       (rect_, level__, maps__) =
                         updateMapGeometry viewItem.id (level + 1) maps_
-                      rect__ =
-                        { rect_
-                        | x2 = rect_.x2 + 2 * borderWidth
-                        , y2 = rect_.y2 + 2 * borderWidth
-                        }
                       offset =
                         case getMap viewItem.id maps__ of
                           Just map_ -> map_.offset
                           Nothing -> Offset 0 0
                     in
-                    extent pos rect__ offset rect level maps__
+                    extent pos rect_ offset rect level maps__
                   Just Unboxed -> extent pos topicRect (Offset 0 0) rect level maps_
                   Nothing -> extent pos topicRect (Offset 0 0) rect level maps_
               ViewAssoc _ -> (rect, level_, maps_)
@@ -554,10 +545,10 @@ calcMapRectangle mapId level maps =
 extent : Point -> Rectangle -> Offset -> Rectangle -> Int -> Maps -> (Rectangle, Int, Maps)
 extent pos rect offset rectAcc level maps =
   ( Rectangle
-    (min rectAcc.x1 (pos.x + rect.x1 + offset.x))
-    (min rectAcc.y1 (pos.y + rect.y1 + offset.y))
-    (max rectAcc.x2 (pos.x + rect.x2 + offset.x))
-    (max rectAcc.y2 (pos.y + rect.y2 + offset.y))
+    (min rectAcc.x1 (pos.x + rect.x1 + offset.x - borderWidth))
+    (min rectAcc.y1 (pos.y + rect.y1 + offset.y - borderWidth))
+    (max rectAcc.x2 (pos.x + rect.x2 + offset.x + borderWidth))
+    (max rectAcc.y2 (pos.y + rect.y2 + offset.y + borderWidth))
   , level
   , maps
   )
@@ -806,7 +797,12 @@ updateMaps mapId mapFunc maps =
 relPos : Point -> MapId -> Model -> Maybe Point
 relPos pos mapId model =
   absMapPos mapId (Point 0 0) model |> Maybe.andThen
-    (\posAbs -> Just (Point (pos.x - posAbs.x) (pos.y - posAbs.y)))
+    (\posAbs -> Just
+      (Point
+        (pos.x - posAbs.x + borderWidth)
+        (pos.y - posAbs.y + borderWidth)
+      )
+    )
 
 
 {-| Recursively calculates the absolute position of a map.
@@ -825,8 +821,8 @@ absMapPos mapId posAcc model =
               absMapPos
                 map.parentMapId
                 (Point
-                  (posAcc.x + mapPos_.x + map.offset.x + borderWidth)
-                  (posAcc.y + mapPos_.y + map.offset.y + borderWidth)
+                  (posAcc.x + mapPos_.x + map.offset.x)
+                  (posAcc.y + mapPos_.y + map.offset.y)
                 )
                 model
             )

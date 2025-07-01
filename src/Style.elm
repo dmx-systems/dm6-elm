@@ -16,12 +16,12 @@ selectionColor = "#007AFF" -- Firefox focus color
 
 borderWidth = 5
 
-topicSize = 24
-topicRadius = topicSize // 2 + borderWidth
+topicSize = 34
+topicRadius = topicSize // 2
 topicRect = Rectangle -topicRadius -topicRadius topicRadius topicRadius
 
-blackBoxSize = 30
-blackBoxOffset = blackBoxSize // 2 + borderWidth
+blackBoxSize = 42
+blackBoxOffset = blackBoxSize // 2
 blackBoxRadius = 10
 blackBoxRect = Rectangle -blackBoxOffset -blackBoxOffset blackBoxOffset blackBoxOffset
 
@@ -101,6 +101,7 @@ topicStyle { id } mapId model =
   , style "border-width" <| fromInt borderWidth ++ "px"
   , style "border-style" "solid"
   , style "border-color" borderColor
+  , style "box-sizing" "border-box"
   , style "z-index" <| if dragging then "0" else "1"
   ]
 
@@ -154,19 +155,19 @@ nestedMapStyle =
   ]
 
 
-nestedTopicLayerStyle : Rectangle -> List (Attribute Msg)
-nestedTopicLayerStyle mapRect =
+topicLayerStyle : Rectangle -> List (Attribute Msg)
+topicLayerStyle mapRect =
   [ style "position" "absolute"
-  , style "left" <| fromInt -mapRect.x1 ++ "px"
-  , style "top" <| fromInt -mapRect.y1 ++ "px"
+  , style "left" <| fromInt (-mapRect.x1 - borderWidth) ++ "px"
+  , style "top" <| fromInt (-mapRect.y1 - borderWidth) ++ "px"
   ]
 
 
 svgStyle : List (Attribute Msg)
 svgStyle =
   [ style "position" "absolute"
-  , style "top" "0"
-  , style "left" "0"
+  , style "top" <| fromInt -borderWidth ++ "px"
+  , style "left" <| fromInt -borderWidth ++ "px"
   , style "z-index" "-1" -- behind the topic layer
   ]
 
