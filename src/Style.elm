@@ -83,10 +83,10 @@ topicStyle { id } mapId model =
   let
     selected = model.selection |> List.member (id, mapId)
     dragging = case model.dragState of
-      Drag DragTopic id_ _ _ _ -> id_ == id -- TODO: mapId?
+      Drag DragTopic id_ _ _ _ _ -> id_ == id -- TODO: mapId?
       _ -> False
     targeted = case model.dragState of
-      Drag _ _ _ _ (Just target) -> target == (id, mapId)
+      Drag _ _ _ _ _ (Just target) -> target == (id, mapId)
       _ -> False
     borderColor =
       if targeted then
@@ -170,7 +170,7 @@ svgStyle =
   [ style "position" "absolute"
   , style "top" "0"
   , style "left" "0"
-  , style "z-index" "-1" -- behind the topic layer
+  , style "z-index" "-1" -- behind topic layer
   ]
 
 

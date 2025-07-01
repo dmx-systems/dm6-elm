@@ -273,7 +273,7 @@ viewAssoc assoc mapId model =
 viewLimboAssoc : MapId -> Model -> List (Svg Msg)
 viewLimboAssoc mapId model =
   case model.dragState of
-    Drag DrawAssoc topicId mapId_ pos _ ->
+    Drag DrawAssoc topicId mapId_ _ pos _ ->
       if mapId_ == mapId then
         let
           points = Maybe.map2
@@ -324,8 +324,8 @@ update msg model =
   in
   case msg of
     CreateTopic -> ( createTopicAndAddToMap model, Cmd.none )
-    MoveTopicToMap topicId fromMapId targetId targetMapId pos
-      -> ( moveTopicToMap topicId fromMapId targetId targetMapId pos model, Cmd.none )
+    MoveTopicToMap topicId mapId origPos targetId targetMapId pos
+      -> ( moveTopicToMap topicId mapId origPos targetId targetMapId pos model, Cmd.none )
     Set displayMode -> ( setDisplayMode displayMode model, Cmd.none )
     Delete -> ( delete model, Cmd.none )
     Mouse mouseMsg -> updateMouse mouseMsg model
@@ -394,8 +394,8 @@ createAssocAndAddToMap itemType player1 role1 player2 role2 mapId model =
   addItemToMap assocId props mapId newModel
 
 
-moveTopicToMap : Id -> MapId -> Id -> MapId -> Point -> Model -> Model
-moveTopicToMap topicId mapId targetId targetMapId pos model =
+moveTopicToMap : Id -> MapId -> Point -> Id -> MapId -> Point -> Model -> Model
+moveTopicToMap topicId mapId origPos targetId targetMapId pos model =
   let
     (newModel, created) = createMapIfNeeded targetId targetMapId model
     newPos = if created then Point 0 0 else pos
@@ -406,7 +406,7 @@ moveTopicToMap topicId mapId targetId targetMapId pos model =
     Just viewProps ->
       addItemToMap topicId viewProps targetId
         { newModel
-        | maps = removeItemFromMap topicId mapId newModel
+        | maps = hideItem topicId mapId newModel.maps |> setTopicPos topicId mapId origPos
         , selection = [ (targetId, targetMapId) ]
         } |> updateGeometry
     Nothing -> model
@@ -414,7 +414,7 @@ moveTopicToMap topicId mapId targetId targetMapId pos model =
 
 createMapIfNeeded : Id -> MapId -> Model -> (Model, Bool)
 createMapIfNeeded targetId targetMapId model =
-  if isContainer targetId model then
+  if hasMap targetId model.maps then
     (model, False)
   else
     ( { model
@@ -656,6 +656,8 @@ unboxItems sourceItems targetItems model =
     targetItems
 
 
+{-| Part of unboxing
+-}
 targetTopicItem : ViewItem -> ViewItems -> Model -> (ViewItem, Bool)
 targetTopicItem viewItem targetItems model =
   case targetItems |> Dict.get viewItem.id of
@@ -676,17 +678,20 @@ targetTopicItem viewItem targetItems model =
       ( { item | hidden = False }, abort )
     Nothing ->
       -- by default (when no view item exists) an unboxed container will also be unboxed
-      if isContainer viewItem.id model then
+      if hasMap viewItem.id model.maps then
         ( { viewItem | viewProps =
               case viewItem.viewProps of
                 ViewTopic props -> ViewTopic { props | displayMode = Just Unboxed }
                 ViewAssoc props -> ViewAssoc props
           }
-        , False )
+        , False
+        )
       else
         ( viewItem, False )
 
 
+{-| Part of unboxing
+-}
 targetAssocItem : ViewItem -> ViewItems -> ViewItem
 targetAssocItem viewItem targetItems =
   case targetItems |> Dict.get viewItem.mapAssocId of
@@ -703,6 +708,12 @@ setHidden itemId hidden items =
         Just item -> Just { item | hidden = hidden }
         Nothing -> Nothing
     )
+
+
+setTopicPos : Id -> Id -> Point -> Maps -> Maps
+setTopicPos topicId mapId pos maps =
+  updateTopicProps topicId mapId maps
+    (\props -> { props | pos = pos })
 
 
 updateTopicPos : Id -> Id -> Delta -> Maps -> Maps
@@ -772,9 +783,14 @@ deleteViewItems selItems map =
     -- FIXME: delete assocs where the item is a player
 
 
-removeItemFromMap : Id -> Id -> Model -> Maps
-removeItemFromMap itemId mapId model =
-  updateMaps mapId (removeItemFromMap_ itemId) model.maps
+hideItem : Id -> MapId -> Maps -> Maps
+hideItem itemId mapId maps =
+  updateMaps mapId (\map -> { map | items = setHidden itemId True map.items }) maps
+
+
+removeItemFromMap : Id -> MapId -> Maps -> Maps
+removeItemFromMap itemId mapId maps =
+  updateMaps mapId (removeItemFromMap_ itemId) maps
 
 
 removeItemFromMap_ : Id -> Map -> Map
@@ -888,9 +904,9 @@ getMapIfExists mapId maps =
     Nothing -> Nothing
 
 
-isContainer : Id -> Model -> Bool
-isContainer topicId model =
-  model.maps |> Dict.member topicId
+hasMap : MapId -> Maps -> Bool
+hasMap mapId maps =
+  maps |> Dict.member mapId
 
 
 -- Mouse
@@ -904,7 +920,7 @@ updateMouse msg model =
     Up -> mouseUp model
     Over class id mapId -> ( mouseOver model class id mapId, Cmd.none )
     Out class id mapId -> ( mouseOut model class id mapId, Cmd.none )
-    Time time -> ( timeArrived model time, Cmd.none )
+    Time time -> ( timeArrived time model, Cmd.none )
 
 
 mouseDown : Model -> Model
@@ -922,24 +938,24 @@ mouseDownOnItem model class id mapId pos =
   )
 
 
-timeArrived : Model -> Time.Posix -> Model
-timeArrived model time =
+timeArrived : Time.Posix -> Model -> Model
+timeArrived time model =
   case model.dragState of
     WaitForStartTime class id mapId pos ->
       { model | dragState = DragEngaged time class id mapId pos }
     WaitForEndTime startTime class id mapId pos ->
       { model | dragState =
-          case class of
-            "dmx-topic" ->
-              let
-                dragMode =
-                  if posixToMillis time - posixToMillis startTime < dragThresholdMillis then
-                    DragTopic
-                  else
-                    DrawAssoc
-              in
-              Drag dragMode id mapId pos Nothing
-            _ -> NoDrag -- the error will be logged in performDrag
+        case class of
+          "dmx-topic" ->
+            let
+              delay = posixToMillis time - posixToMillis startTime > dragThresholdMillis
+              dragMode = if delay then DrawAssoc else DragTopic
+              origPos_ = topicPos id mapId model.maps
+            in
+            case origPos_ of
+              Just origPos -> Drag dragMode id mapId origPos pos Nothing
+              Nothing -> NoDrag
+          _ -> NoDrag -- the error will be logged in performDrag
       }
     _ -> logError "timeArrived"
       "Received \"Time\" message when dragState is not WaitForTime"
@@ -955,7 +971,7 @@ mouseMove model pos =
       )
     WaitForEndTime _ _ _ _ _ ->
       ( model, Cmd.none ) -- ignore -- TODO: can this happen at all? Is there a move listener?
-    Drag _ _ _ _ _ ->
+    Drag _ _ _ _ _ _ ->
       ( performDrag model pos, Cmd.none )
     _ -> logError "mouseMove"
       ("Received \"Move\" message when dragState is " ++ toString model.dragState)
@@ -965,11 +981,11 @@ mouseMove model pos =
 performDrag : Model -> Point -> Model
 performDrag model pos =
   case model.dragState of
-    Drag dragMode id mapId lastPoint target ->
+    Drag dragMode id mapId origPos lastPos target ->
       let
         delta = Point
-          (pos.x - lastPoint.x)
-          (pos.y - lastPoint.y)
+          (pos.x - lastPos.x)
+          (pos.y - lastPos.y)
         maps =
           case dragMode of
             DragTopic -> updateTopicPos id mapId delta model.maps
@@ -977,7 +993,7 @@ performDrag model pos =
       in
       { model
         | maps = maps
-        , dragState = Drag dragMode id mapId pos target -- update lastPoint
+        , dragState = Drag dragMode id mapId origPos pos target -- update lastPos
       } |> updateGeometry
     _ -> logError "performDrag"
       ("Received \"Move\" message when dragState is " ++ toString model.dragState)
@@ -988,19 +1004,21 @@ mouseUp : Model -> ( Model, Cmd Msg )
 mouseUp model =
   let
     ( newModel, cmd ) = case model.dragState of
-      Drag DragTopic id mapId _ (Just (targetId, targetMapId)) ->
+      Drag DragTopic id mapId origPos _ (Just (targetId, targetMapId)) ->
         let
           _ = info "mouseUp" ("dropped " ++ fromInt id ++ " (map " ++ fromInt mapId ++
             ") on " ++ fromInt targetId ++ " (map " ++ fromInt targetMapId ++ ")")
         in
-        ( model, Random.generate (MoveTopicToMap id mapId targetId targetMapId) point )
-      Drag DrawAssoc id mapId _ (Just (targetId, _)) -> -- target map ID not used here
+        ( model
+        , Random.generate (MoveTopicToMap id mapId origPos targetId targetMapId) point
+        )
+      Drag DrawAssoc id mapId _ _ (Just (targetId, _)) -> -- target map ID not used here
         let
           _ = info "mouseUp" ("assoc drawn from " ++ fromInt id ++ " (map " ++
             fromInt mapId ++ ") to " ++ fromInt targetId)
         in
         ( createDefaultAssoc id targetId mapId model, Cmd.none)
-      Drag _ id mapId _ _ ->
+      Drag _ id mapId _ _ _ ->
         let
           _ = info "mouseUp" "drag ended w/o target"
           _ = case getTopicProps id mapId model.maps of
@@ -1039,15 +1057,15 @@ point =
 mouseOver : Model -> Class -> Id -> MapId -> Model
 mouseOver model class targetId targetMapId =
   case model.dragState of
-    Drag dragMode id mapId lastPoint _ ->
+    Drag dragMode id mapId origPos lastPos _ ->
       let
         target =
           if (id, mapId) /= (targetId, targetMapId) then
-            (Just (targetId, targetMapId))
+            Just (targetId, targetMapId)
           else
             Nothing
       in
-      { model | dragState = Drag dragMode id mapId lastPoint target } -- update drop target
+      { model | dragState = Drag dragMode id mapId origPos lastPos target } -- update target
     DragEngaged _ _ _ _ _ ->
       logError "mouseOver" "Received \"Over\" message when dragState is DragEngaged" model
     _ -> model
@@ -1056,8 +1074,8 @@ mouseOver model class targetId targetMapId =
 mouseOut : Model -> Class -> Id -> MapId -> Model
 mouseOut model class targetId targetMapId =
   case model.dragState of
-    Drag dragMode id mapId lastPoint _ ->
-      { model | dragState = Drag dragMode id mapId lastPoint Nothing } -- reset drop target
+    Drag dragMode id mapId origPos lastPos _ ->
+      { model | dragState = Drag dragMode id mapId origPos lastPos Nothing } -- reset target
     _ -> model
 
 
@@ -1072,7 +1090,7 @@ subscriptions model =
     WaitForStartTime _ _ _ _ -> Sub.none
     WaitForEndTime _ _ _ _ _ -> Sub.none
     DragEngaged _ _ _ _ _ -> dragSub
-    Drag _ _ _ _ _ -> dragSub
+    Drag _ _ _ _ _ _ -> dragSub
 
 
 mouseDownSub : Sub Msg

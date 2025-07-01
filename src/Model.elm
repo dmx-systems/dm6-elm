@@ -113,19 +113,19 @@ type alias Offset =
 type alias Id = Int
 type alias MapId = Id
 type alias Class = String -- a CSS class, e.g. "dmx-topic"
-type alias ItemType = String
-type alias RoleType = String
+type alias ItemType = String -- a type URI, e.g. "dmx.association"
+type alias RoleType = String -- a role type URI, e.g. "dmx.default"
 type alias Selection = List (Id, MapId)
 type alias Delta = Point
-type alias Color = Int
+type alias Color = Int -- Hue
 
 
 type DragState
   = NoDrag
-  | WaitForStartTime Class Id MapId Point
-  | DragEngaged Time.Posix Class Id MapId Point -- topic id, start point
-  | WaitForEndTime Time.Posix Class Id MapId Point
-  | Drag DragMode Id MapId Point (Maybe (Id, MapId)) -- topic id, last point, drop tartget
+  | WaitForStartTime Class Id MapId Point -- start point (mouse)
+  | DragEngaged Time.Posix Class Id MapId Point -- start point (mouse)
+  | WaitForEndTime Time.Posix Class Id MapId Point -- start point (mouse)
+  | Drag DragMode Id MapId Point Point (Maybe (Id, MapId)) -- orig topic pos, last point (mouse)
 
 
 type DragMode
@@ -135,7 +135,7 @@ type DragMode
 
 type Msg
   = CreateTopic
-  | MoveTopicToMap Id MapId Id MapId Point
+  | MoveTopicToMap Id MapId Point Id MapId Point -- start point, random point (for target)
   | Set (Maybe DisplayMode)
   | Delete
   | Mouse MouseMsg
