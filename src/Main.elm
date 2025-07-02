@@ -1012,12 +1012,17 @@ mouseUp model =
         ( model
         , Random.generate (MoveTopicToMap id mapId origPos targetId targetMapId) point
         )
-      Drag DrawAssoc id mapId _ _ (Just (targetId, _)) -> -- target map ID not used here
+      Drag DrawAssoc id mapId _ _ (Just (targetId, targetMapId)) ->
         let
-          _ = info "mouseUp" ("assoc drawn from " ++ fromInt id ++ " (map " ++
-            fromInt mapId ++ ") to " ++ fromInt targetId)
+          _ = info "mouseUp" ("assoc drawn from " ++ fromInt id ++ " (map " ++ fromInt mapId
+            ++ ") to " ++ fromInt targetId ++ " (map " ++ fromInt targetMapId ++ ") --> "
+            ++ if isSameMap then "create assoc" else "abort")
+          isSameMap = mapId == targetMapId
         in
-        ( createDefaultAssoc id targetId mapId model, Cmd.none)
+        if isSameMap then
+          ( createDefaultAssoc id targetId mapId model, Cmd.none )
+        else
+          ( model, Cmd.none )
       Drag _ id mapId _ _ _ ->
         let
           _ = info "mouseUp" "drag ended w/o target"

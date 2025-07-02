@@ -86,6 +86,8 @@ topicStyle { id } mapId model =
       Drag DragTopic id_ _ _ _ _ -> id_ == id -- TODO: mapId?
       _ -> False
     targeted = case model.dragState of
+      -- both assoc players must exist in same map
+      Drag DrawAssoc _ mapId_ _ _ (Just target) -> target == (id, mapId) && mapId == mapId_
       Drag _ _ _ _ _ (Just target) -> target == (id, mapId)
       _ -> False
     borderColor =
