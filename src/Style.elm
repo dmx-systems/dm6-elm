@@ -83,12 +83,13 @@ topicStyle { id } mapId model =
   let
     selected = model.selection |> List.member (id, mapId)
     dragging = case model.dragState of
-      Drag DragTopic id_ _ _ _ _ -> id_ == id -- TODO: mapId?
+      Drag DragTopic id_ _ _ _ _ -> id_ == id
       _ -> False
     targeted = case model.dragState of
-      -- both assoc players must exist in same map
-      Drag DrawAssoc _ mapId_ _ _ (Just target) -> target == (id, mapId) && mapId == mapId_
-      Drag _ _ _ _ _ (Just target) -> target == (id, mapId)
+      -- can't move a topic to a map where it is already
+      Drag DragTopic _ mapId_ _ _ (Just target) -> target == (id, mapId) && mapId_ /= id
+      -- can't create assoc when both topics are in different map
+      Drag DrawAssoc _ mapId_ _ _ (Just target) -> target == (id, mapId) && mapId_ == mapId
       _ -> False
     borderColor =
       if targeted then

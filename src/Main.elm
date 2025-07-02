@@ -1003,49 +1003,54 @@ performDrag model pos =
 mouseUp : Model -> ( Model, Cmd Msg )
 mouseUp model =
   let
-    ( newModel, cmd ) = case model.dragState of
-      Drag DragTopic id mapId origPos _ (Just (targetId, targetMapId)) ->
-        let
-          _ = info "mouseUp" ("dropped " ++ fromInt id ++ " (map " ++ fromInt mapId ++
-            ") on " ++ fromInt targetId ++ " (map " ++ fromInt targetMapId ++ ")")
-        in
-        ( model
-        , Random.generate (MoveTopicToMap id mapId origPos targetId targetMapId) point
-        )
-      Drag DrawAssoc id mapId _ _ (Just (targetId, targetMapId)) ->
-        let
-          _ = info "mouseUp" ("assoc drawn from " ++ fromInt id ++ " (map " ++ fromInt mapId
-            ++ ") to " ++ fromInt targetId ++ " (map " ++ fromInt targetMapId ++ ") --> "
-            ++ if isSameMap then "create assoc" else "abort")
-          isSameMap = mapId == targetMapId
-        in
-        if isSameMap then
-          ( createDefaultAssoc id targetId mapId model, Cmd.none )
-        else
-          ( model, Cmd.none )
-      Drag _ id mapId _ _ _ ->
-        let
-          _ = info "mouseUp" "drag ended w/o target"
-          _ = case getTopicProps id mapId model.maps of
-            Just props ->
-              log "" { id = id, pos = props.pos }
-            Nothing -> { id = 0, pos = Point 0 0 }
-          _ = case getMapIfExists id model.maps of
-            Just map -> log "" { rect = map.rect }
-            Nothing -> { rect = Rectangle 0 0 0 0 }
-        in
-        ( model, Cmd.none )
-      DragEngaged _ _ _ _ _ ->
-        let
-          _ = info "mouseUp" "drag aborted w/o moving"
-        in
-        ( model, Cmd.none )
-      _ ->
-        logError "mouseUp"
-          ("Received \"Up\" message when dragState is " ++ toString model.dragState)
-          ( model, Cmd.none )
+    (newModel, cmd) =
+      case model.dragState of
+        Drag DragTopic id mapId origPos _ (Just (targetId, targetMapId)) ->
+          let
+            _ = info "mouseUp" ("dropped " ++ fromInt id ++ " (map " ++ fromInt mapId
+              ++ ") on " ++ fromInt targetId ++ " (map " ++ fromInt targetMapId ++ ") --> "
+              ++ if notDroppedOnOwnMap then "move topic" else "abort")
+            notDroppedOnOwnMap = mapId /= targetId
+            msg = MoveTopicToMap id mapId origPos targetId targetMapId
+          in
+          if notDroppedOnOwnMap then
+            (model, Random.generate msg point)
+          else
+            (model, Cmd.none)
+        Drag DrawAssoc id mapId _ _ (Just (targetId, targetMapId)) ->
+          let
+            _ = info "mouseUp" ("assoc drawn from " ++ fromInt id ++ " (map " ++ fromInt mapId
+              ++ ") to " ++ fromInt targetId ++ " (map " ++ fromInt targetMapId ++ ") --> "
+              ++ if isSameMap then "create assoc" else "abort")
+            isSameMap = mapId == targetMapId
+          in
+          if isSameMap then
+            (createDefaultAssoc id targetId mapId model, Cmd.none)
+          else
+            (model, Cmd.none)
+        Drag _ id mapId _ _ _ ->
+          let
+            _ = info "mouseUp" "drag ended w/o target"
+            _ = case getTopicProps id mapId model.maps of
+              Just props ->
+                log "" { id = id, pos = props.pos }
+              Nothing -> { id = 0, pos = Point 0 0 }
+            _ = case getMapIfExists id model.maps of
+              Just map -> log "" { rect = map.rect }
+              Nothing -> { rect = Rectangle 0 0 0 0 }
+          in
+          (model, Cmd.none)
+        DragEngaged _ _ _ _ _ ->
+          let
+            _ = info "mouseUp" "drag aborted w/o moving"
+          in
+          (model, Cmd.none)
+        _ ->
+          logError "mouseUp"
+            ("Received \"Up\" message when dragState is " ++ toString model.dragState)
+            (model, Cmd.none)
   in
-  ( { newModel | dragState = NoDrag }, cmd )
+  ({ newModel | dragState = NoDrag }, cmd)
 
 
 point : Random.Generator Point
