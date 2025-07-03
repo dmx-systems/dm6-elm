@@ -406,7 +406,7 @@ moveTopicToMap topicId mapId origPos targetId targetMapId pos model =
     Just viewProps ->
       addItemToMap topicId viewProps targetId
         { newModel
-        | maps = hideItem topicId mapId newModel.maps |> setTopicPos topicId mapId origPos
+        | maps = hideItem topicId mapId newModel.maps model |> setTopicPos topicId mapId origPos
         , selection = [ (targetId, targetMapId) ]
         } |> updateGeometry
     Nothing -> model
@@ -592,11 +592,15 @@ getDisplayMode topicId mapId maps =
     Nothing -> fail "getDisplayMode" {topicId = topicId, mapId = mapId} Nothing
 
 
+{-| Entry point
+-}
 boxContainer : Id -> MapId -> Model -> Maps
 boxContainer containerId targetMapId model =
   transferContent containerId targetMapId boxItems model
 
 
+{-| Entry point
+-}
 unboxContainer : Id -> MapId -> Model -> Maps
 unboxContainer containerId targetMapId model =
   transferContent containerId targetMapId unboxItems model
@@ -621,13 +625,14 @@ transferContent containerId targetMapId transferFunc model =
     Nothing -> model.maps
 
 
+{-| Called recursively
+-}
 boxItems : ViewItems -> ViewItems -> Model -> ViewItems
 boxItems sourceItems targetItems model =
   sourceItems |> Dict.values |> List.foldr
     (\viewItem newItems ->
       let
-        items = setHidden viewItem.id True newItems
-          |> setHidden viewItem.mapAssocId True
+        items = hideItems viewItem.id model newItems
       in
       case getMapIfExists viewItem.id model.maps of
         Just map -> boxItems map.items items model
@@ -636,6 +641,8 @@ boxItems sourceItems targetItems model =
     targetItems
 
 
+{-| Called recursively
+-}
 unboxItems : ViewItems -> ViewItems -> Model -> ViewItems
 unboxItems sourceItems targetItems model =
   sourceItems |> Dict.values |> List.foldr
@@ -699,15 +706,52 @@ targetAssocItem viewItem targetItems =
     Nothing -> ViewItem viewItem.mapAssocId False (ViewAssoc AssocProps) -1 -- hidden=False
 
 
-setHidden : Id -> Bool -> ViewItems -> ViewItems
-setHidden itemId hidden items =
-  items |> Dict.update
-    itemId
-    (\item_ ->
-      case item_ of
-        Just item -> Just { item | hidden = hidden }
-        Nothing -> Nothing
-    )
+hideItem : Id -> MapId -> Maps -> Model -> Maps
+hideItem itemId mapId maps model =
+  updateMaps
+    mapId
+    (\map -> { map | items = hideItems itemId model map.items })
+    maps
+
+
+hideItems : Id -> Model -> ViewItems -> ViewItems
+hideItems itemId model items =
+  let
+    newItems = items |> Dict.update
+      itemId
+      (\item_ ->
+        case item_ of
+          Just item -> Just { item | hidden = True }
+          Nothing -> Nothing
+      )
+    assocIds = assocsOfPlayer itemId items model
+  in
+  List.foldr
+    (\assocId newItems_ -> hideItems assocId model newItems_)
+    newItems
+    assocIds
+
+
+assocsOfPlayer : Id -> ViewItems -> Model -> List Id
+assocsOfPlayer itemId items model =
+  items |> Dict.values
+    |> List.filter isAssoc
+    |> List.filter (hasPlayer itemId model)
+    |> List.map .id
+
+
+isAssoc : ViewItem -> Bool
+isAssoc item =
+  case item.viewProps of
+    ViewTopic _ -> False
+    ViewAssoc _ -> True
+
+
+hasPlayer : Id -> Model -> ViewItem -> Bool
+hasPlayer itemId model assocItem =
+  case getAssocInfo assocItem.id model of
+    Just assoc -> assoc.player1 == itemId || assoc.player2 == itemId
+    Nothing -> False
 
 
 setTopicPos : Id -> Id -> Point -> Maps -> Maps
@@ -745,7 +789,7 @@ updateTopicProps_ topicId propsFunc map =
           case viewItem.viewProps of
             ViewTopic props -> Just
               { viewItem | viewProps = ViewTopic (propsFunc props) }
-            ViewAssoc _ -> illegalItemId "updateTopicProps" topicId Nothing
+            ViewAssoc _ -> topicMismatch "updateTopicProps" topicId Nothing
         Nothing -> illegalItemId "updateTopicProps" topicId Nothing
     )
   }
@@ -781,11 +825,6 @@ deleteViewItems selItems map =
     [] -> map
     (id, mapId) :: moreSelItems -> deleteViewItems moreSelItems (removeItemFromMap_ id map)
     -- FIXME: delete assocs where the item is a player
-
-
-hideItem : Id -> MapId -> Maps -> Maps
-hideItem itemId mapId maps =
-  updateMaps mapId (\map -> { map | items = setHidden itemId True map.items }) maps
 
 
 removeItemFromMap : Id -> MapId -> Maps -> Maps
@@ -845,7 +884,7 @@ absMapPos mapId posAcc model =
         )
 
 
--- not called anymore
+-- not called
 mapPos : MapId -> Maps -> Maybe Point
 mapPos mapId maps =
   getParentMapId mapId maps
@@ -855,7 +894,7 @@ mapPos mapId maps =
       )
 
 
--- not called anymore
+-- not called
 getParentMapId : MapId -> Maps -> Maybe MapId
 getParentMapId mapId maps =
   getMap mapId maps |> Maybe.andThen (\map -> Just map.parentMapId)
@@ -866,6 +905,27 @@ topicPos topicId mapId maps =
   case getTopicProps topicId mapId maps of
     Just { pos } -> Just pos
     Nothing -> fail "topicPos" {topicId = topicId, mapId = mapId} Nothing
+
+
+-- not called
+getTopicInfo : Id -> Model -> Maybe TopicInfo
+getTopicInfo topicId model =
+  case model.items |> Dict.get topicId of
+    Just item ->
+      case item of
+        Topic topic -> Just topic
+        Assoc _ -> topicMismatch "getTopicInfo" topicId Nothing
+    Nothing -> illegalItemId "getTopicInfo" topicId Nothing
+
+
+getAssocInfo : Id -> Model -> Maybe AssocInfo
+getAssocInfo assocId model =
+  case model.items |> Dict.get assocId of
+    Just item ->
+      case item of
+        Topic _ -> assocMismatch "getAssocInfo" assocId Nothing
+        Assoc assoc -> Just assoc
+    Nothing -> illegalItemId "getAssocInfo" assocId Nothing
 
 
 getTopicProps : Id -> MapId -> Maps -> Maybe TopicProps
