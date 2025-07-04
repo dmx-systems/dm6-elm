@@ -439,6 +439,7 @@ addItemToMap itemId props mapId model =
       mapId "dmx.parent"
       model
     viewItem = ViewItem itemId False props assocId -- hidden=False
+    _ = info "addItemToMap" { itemId = itemId, props = props, mapId = mapId, assocId = assocId}
   in
   { newModel | maps =
     updateMaps
@@ -559,18 +560,18 @@ setDisplayMode displayMode model =
   let
     maps =
       case getSingleSelection model of
-        Just (topicId, mapId) ->
+        Just (containerId, targetMapId) ->
           let
             newModel =
               { model | maps =
                   case displayMode of
-                    Just BlackBox -> boxContainer topicId mapId model
-                    Just WhiteBox -> boxContainer topicId mapId model
-                    Just Unboxed -> unboxContainer topicId mapId model
+                    Just BlackBox -> boxContainer containerId targetMapId model
+                    Just WhiteBox -> boxContainer containerId targetMapId model
+                    Just Unboxed -> unboxContainer containerId targetMapId model
                     Nothing -> model.maps
               }
           in
-          updateDisplayMode topicId mapId displayMode newModel
+          updateDisplayMode containerId targetMapId displayMode newModel
         Nothing -> model.maps
   in
   { model | maps = maps } |> updateGeometry
@@ -625,49 +626,55 @@ transferContent containerId targetMapId transferFunc model =
     Nothing -> model.maps
 
 
-{-| Called recursively
+{-| Transfer function, Boxing.
+Iterates the container items (recursively) and sets corresponding target items to hidden.
+Returns the updated target items.
 -}
 boxItems : ViewItems -> ViewItems -> Model -> ViewItems
-boxItems sourceItems targetItems model =
-  sourceItems |> Dict.values |> List.foldr
-    (\viewItem newItems ->
+boxItems containerItems targetItems model =
+  containerItems |> Dict.values |> List.foldr
+    (\containerItem targetItemsAcc ->
       let
-        items = hideItems viewItem.id model newItems
+        items = hideItems containerItem.id model targetItemsAcc
       in
-      case getMapIfExists viewItem.id model.maps of
+      case getMapIfExists containerItem.id model.maps of
         Just map -> boxItems map.items items model
         Nothing -> items
     )
     targetItems
 
 
-{-| Called recursively
+{-| Transfer function, Unboxing.
+Iterates the container items (recursively) and reveals corresponding target items.
+Returns the updated target items.
 -}
 unboxItems : ViewItems -> ViewItems -> Model -> ViewItems
-unboxItems sourceItems targetItems model =
-  sourceItems |> Dict.values |> List.foldr
-    (\viewItem newItems ->
+unboxItems containerItems targetItems model =
+  containerItems |> Dict.values |> List.foldr
+    (\containerItem targetItemsAcc ->
       let
-        (topicItem, abort) = targetTopicItem viewItem targetItems model
-        assocItem = targetAssocItem viewItem targetItems
-        items = Dict.insert viewItem.id topicItem newItems
-          |> Dict.insert viewItem.mapAssocId assocItem
+        (topicItem, abort) = targetTopicItem containerItem targetItems model
+        assocItem = targetAssocItem containerItem targetItems
+        items = targetItemsAcc
+          |> Dict.insert containerItem.id topicItem
+          |> Dict.insert containerItem.parentAssocId assocItem
       in
       if abort then
         items
       else
-        case getMapIfExists viewItem.id model.maps of
+        case getMapIfExists containerItem.id model.maps of
           Just map -> unboxItems map.items items model
           Nothing -> items
     )
     targetItems
 
 
-{-| Part of unboxing
+{-| Returns the target item to reveal that corresponds to the container item.
+Part of unboxing.
 -}
 targetTopicItem : ViewItem -> ViewItems -> Model -> (ViewItem, Bool)
-targetTopicItem viewItem targetItems model =
-  case targetItems |> Dict.get viewItem.id of
+targetTopicItem containerItem targetItems model =
+  case targetItems |> Dict.get containerItem.id of
     Just item ->
       -- abort further unboxing if view item exists (= was unboxed before) and is set to
       -- BlackBox or WhiteBox
@@ -685,25 +692,29 @@ targetTopicItem viewItem targetItems model =
       ( { item | hidden = False }, abort )
     Nothing ->
       -- by default (when no view item exists) an unboxed container will also be unboxed
-      if hasMap viewItem.id model.maps then
-        ( { viewItem | viewProps =
-              case viewItem.viewProps of
+      if hasMap containerItem.id model.maps then
+        ( { containerItem | viewProps =
+              case containerItem.viewProps of
                 ViewTopic props -> ViewTopic { props | displayMode = Just Unboxed }
                 ViewAssoc props -> ViewAssoc props
           }
         , False
         )
       else
-        ( viewItem, False )
+        let
+          _ = info "targetTopicItem" containerItem
+        in
+        ( containerItem, False )
 
 
-{-| Part of unboxing
+{-| Returns the target item to reveal that corresponds to the container item.
+Part of unboxing.
 -}
 targetAssocItem : ViewItem -> ViewItems -> ViewItem
-targetAssocItem viewItem targetItems =
-  case targetItems |> Dict.get viewItem.mapAssocId of
+targetAssocItem containerItem targetItems =
+  case targetItems |> Dict.get containerItem.parentAssocId of
     Just item -> { item | hidden = False }
-    Nothing -> ViewItem viewItem.mapAssocId False (ViewAssoc AssocProps) -1 -- hidden=False
+    Nothing -> ViewItem containerItem.parentAssocId False (ViewAssoc AssocProps) -1
 
 
 hideItem : Id -> MapId -> Maps -> Model -> Maps

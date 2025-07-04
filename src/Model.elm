@@ -59,7 +59,7 @@ type alias ViewItem =
   { id : Id
   , hidden : Bool
   , viewProps : ViewProps
-  , mapAssocId : Id
+  , parentAssocId : Id
   }
 
 
