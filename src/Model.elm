@@ -78,7 +78,7 @@ type alias AssocProps =
   {}
 
 
-type DisplayMode
+type DisplayMode -- TODO: rename to "ContainerDisplay"?
   = BlackBox
   | WhiteBox
   | Unboxed

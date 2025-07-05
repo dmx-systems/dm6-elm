@@ -110,7 +110,7 @@ viewDisplayMode model =
     (displayModeStyle disabled_)
     [ div
         []
-        [ text "Content Display" ]
+        [ text "Container Display" ]
     , label
         [ onClick (Set <| Just BlackBox), stopPropagationOnMousedown ]
         [ input
@@ -186,7 +186,7 @@ viewItems map model =
         case (item, viewProps) of
           (Just (Topic topic), ViewTopic props) -> (viewTopic topic props map.id model :: t, a)
           (Just (Assoc assoc), ViewAssoc _) -> (t, viewAssoc assoc map.id model :: a)
-          _ -> logError "viewItems" ("problem with item" ++ fromInt id) (t, a)
+          _ -> logError "viewItems" ("problem with item " ++ fromInt id) (t, a)
     )
     ([], [])
 
@@ -302,7 +302,9 @@ assocGeometry assoc mapId model =
     pos1 = topicPos assoc.player1 mapId model.maps
     pos2 = topicPos assoc.player2 mapId model.maps
   in
-  Maybe.map2 (\p1 p2 -> ( p1, p2 )) pos1 pos2
+  case Maybe.map2 (\p1 p2 -> ( p1, p2 )) pos1 pos2 of
+    Just geometry -> Just geometry
+    Nothing -> fail "assocGeometry" { assoc = assoc, mapId = mapId } Nothing
 
 
 stopPropagationOnMousedown : Attribute Msg
@@ -433,13 +435,14 @@ createMapIfNeeded targetId targetMapId model =
 addItemToMap : Id -> ViewProps -> MapId -> Model -> Model
 addItemToMap itemId props mapId model =
   let
-    (newModel, assocId) = createAssoc
+    (newModel, parentAssocId) = createAssoc
       "dmx.composition"
       itemId "dmx.child"
       mapId "dmx.parent"
       model
-    viewItem = ViewItem itemId False props assocId -- hidden=False
-    _ = info "addItemToMap" { itemId = itemId, props = props, mapId = mapId, assocId = assocId}
+    viewItem = ViewItem itemId False props parentAssocId -- hidden=False
+    _ = info "addItemToMap"
+      { itemId = itemId, props = props, mapId = mapId, parentAssocId = parentAssocId}
   in
   { newModel | maps =
     updateMaps
@@ -652,69 +655,87 @@ unboxItems : ViewItems -> ViewItems -> Model -> ViewItems
 unboxItems containerItems targetItems model =
   containerItems |> Dict.values |> List.foldr
     (\containerItem targetItemsAcc ->
-      let
-        (topicItem, abort) = targetTopicItem containerItem targetItems model
-        assocItem = targetAssocItem containerItem targetItems
-        items = targetItemsAcc
-          |> Dict.insert containerItem.id topicItem
-          |> Dict.insert containerItem.parentAssocId assocItem
-      in
-      if abort then
-        items
+      if isTopic containerItem then
+        let
+          (items, abort) = unboxTopic containerItem targetItemsAcc model
+        in
+        if not abort then
+          case getMapIfExists containerItem.id model.maps of
+            Just map -> unboxItems map.items items model
+            Nothing -> items
+        else
+          items
       else
-        case getMapIfExists containerItem.id model.maps of
-          Just map -> unboxItems map.items items model
-          Nothing -> items
+        unboxAssoc containerItem targetItemsAcc
     )
     targetItems
 
 
 {-| Returns the target item to reveal that corresponds to the container item.
-Part of unboxing.
+Part of unboxing. FIXDOC
 -}
-targetTopicItem : ViewItem -> ViewItems -> Model -> (ViewItem, Bool)
-targetTopicItem containerItem targetItems model =
-  case targetItems |> Dict.get containerItem.id of
-    Just item ->
-      -- abort further unboxing if view item exists (= was unboxed before) and is set to
-      -- BlackBox or WhiteBox
-      let
-        abort =
-          case item.viewProps of
-            ViewTopic props ->
-              case props.displayMode of
-                Just BlackBox -> True
-                Just WhiteBox -> True
-                Just Unboxed -> False
-                Nothing -> False
-            ViewAssoc _ -> False
-      in
-      ( { item | hidden = False }, abort )
-    Nothing ->
-      -- by default (when no view item exists) an unboxed container will also be unboxed
-      if hasMap containerItem.id model.maps then
-        ( { containerItem | viewProps =
-              case containerItem.viewProps of
-                ViewTopic props -> ViewTopic { props | displayMode = Just Unboxed }
-                ViewAssoc props -> ViewAssoc props
-          }
-        , False
-        )
-      else
-        let
-          _ = info "targetTopicItem" containerItem
-        in
-        ( containerItem, False )
+unboxTopic : ViewItem -> ViewItems -> Model -> (ViewItems, Bool)
+unboxTopic containerItem targetItems model =
+  let
+    (topicToInsert, abort) =
+      case targetItems |> Dict.get containerItem.id of
+        Just item ->
+          -- abort further unboxing if view item exists (= was unboxed before) and is set to
+          -- BlackBox or WhiteBox
+          ({ item | hidden = False }, isAbort item)
+        Nothing ->
+          -- by default (when no view item exists) an unboxed container will also be unboxed
+          if hasMap containerItem.id model.maps then
+            (setUnboxed containerItem, False)
+          else
+            (containerItem, False)
+    assocToInsert = targetAssocItem containerItem.parentAssocId targetItems
+  in
+  ( targetItems
+    |> Dict.insert topicToInsert.id topicToInsert
+    |> Dict.insert assocToInsert.id assocToInsert
+  , abort
+  )
+
+
+unboxAssoc : ViewItem -> ViewItems -> ViewItems
+unboxAssoc containerItem targetItems =
+  let
+    assocToInsert = targetAssocItem containerItem.id targetItems
+  in
+  targetItems
+    |> Dict.insert assocToInsert.id assocToInsert
+
+
+setUnboxed : ViewItem -> ViewItem
+setUnboxed item =
+  { item | viewProps =
+    case item.viewProps of
+      ViewTopic props -> ViewTopic { props | displayMode = Just Unboxed }
+      ViewAssoc props -> ViewAssoc props
+  }
+
+
+isAbort : ViewItem -> Bool
+isAbort item =
+  case item.viewProps of
+    ViewTopic props ->
+      case props.displayMode of
+        Just BlackBox -> True
+        Just WhiteBox -> True
+        Just Unboxed -> False
+        Nothing -> False
+    ViewAssoc _ -> False
 
 
 {-| Returns the target item to reveal that corresponds to the container item.
-Part of unboxing.
+Part of unboxing. FIXDOC
 -}
-targetAssocItem : ViewItem -> ViewItems -> ViewItem
-targetAssocItem containerItem targetItems =
-  case targetItems |> Dict.get containerItem.parentAssocId of
+targetAssocItem : Id -> ViewItems -> ViewItem
+targetAssocItem assocId targetItems =
+  case targetItems |> Dict.get assocId of
     Just item -> { item | hidden = False }
-    Nothing -> ViewItem containerItem.parentAssocId False (ViewAssoc AssocProps) -1
+    Nothing -> ViewItem assocId False (ViewAssoc AssocProps) -1
 
 
 hideItem : Id -> MapId -> Maps -> Model -> Maps
@@ -749,6 +770,13 @@ assocsOfPlayer itemId items model =
     |> List.filter isAssoc
     |> List.filter (hasPlayer itemId model)
     |> List.map .id
+
+
+isTopic : ViewItem -> Bool
+isTopic item =
+  case item.viewProps of
+    ViewTopic _ -> True
+    ViewAssoc _ -> False
 
 
 isAssoc : ViewItem -> Bool
@@ -1102,13 +1130,13 @@ mouseUp model =
         Drag _ id mapId _ _ _ ->
           let
             _ = info "mouseUp" "drag ended w/o target"
-            _ = case getTopicProps id mapId model.maps of
+            {- _ = case getTopicProps id mapId model.maps of
               Just props ->
                 log "" { id = id, pos = props.pos }
               Nothing -> { id = 0, pos = Point 0 0 }
             _ = case getMapIfExists id model.maps of
               Just map -> log "" { rect = map.rect }
-              Nothing -> { rect = Rectangle 0 0 0 0 }
+              Nothing -> { rect = Rectangle 0 0 0 0 } -}
           in
           (model, Cmd.none)
         DragEngaged _ _ _ _ _ ->
