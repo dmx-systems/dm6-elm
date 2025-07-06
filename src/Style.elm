@@ -4,7 +4,8 @@ import Model exposing (..)
 import Html exposing (Attribute)
 import Html.Attributes exposing (style)
 import String exposing (String, fromInt)
-import Svg.Attributes exposing (x1, y1, x2, y2, stroke, strokeWidth)
+import Svg
+import Svg.Attributes as SA exposing (x1, y1, x2, y2, stroke, strokeWidth)
 
 
 
@@ -186,3 +187,23 @@ lineStyle pos1 pos2 =
   , stroke "gray"
   , strokeWidth <| fromInt assocWith ++ "px"
   ]
+
+
+
+-- Edit Dialog
+
+editDialogStyle : List (Attribute Msg)
+editDialogStyle =
+  [ style "position" "absolute"
+  , style "left" "20px"
+  , style "top" "250px"
+  , style "width" "300px"
+  , style "height" "200px"
+  , style "background-color" "white"
+  , style "border" "1px solid lightgray"
+  ]
+
+
+closeButtonStyle : List (Svg.Attribute Msg)
+closeButtonStyle =
+  [SA.style "position: absolute; right: 0;"]

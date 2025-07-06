@@ -2,6 +2,7 @@ module Main exposing (..)
 
 import Model exposing (..)
 import Style exposing (..)
+import EditDialog exposing (..)
 
 import Array
 import Browser
@@ -49,6 +50,7 @@ init flags =
     , activeMap = 0
     , selection = []
     , dragState = NoDrag
+    , isEditDialogOpen = False
     , nextId = 1
     }
   , Cmd.none
@@ -61,9 +63,6 @@ init flags =
 
 view : Model -> Browser.Document Msg
 view model =
-  let
-    deleteDisabled = List.isEmpty model.selection
-  in
   Browser.Document
     "DM6 Elm"
     [ div
@@ -72,26 +71,48 @@ view model =
         ]
         ++ appStyle
       )
-      [ h1 [] [ text "DM6 Elm" ]
-      , div
-          toolbarStyle
-          [ button
-              ( [ onClick CreateTopic ]
-                ++ buttonStyle
-              )
-              [ text "Add Topic" ]
-          , viewDisplayMode model
-          , button
-              ( [ onClick Delete
-                , stopPropagationOnMousedown
-                , disabled deleteDisabled
-                ]
-                ++ buttonStyle
-              )
-              [ text "Delete" ]
+      ( [ h1 [] [ text "DM6 Elm" ]
+        , viewToolbar model
+        , viewMap model.activeMap -1 model -- top-level map has parentMapId -1
+        ]
+        ++
+          if model.isEditDialogOpen then
+            [ viewEditDialog model ]
+          else
+            []
+      )
+    ]
+
+
+viewToolbar : Model -> Html Msg
+viewToolbar model =
+  let
+    hasNoSelection = List.isEmpty model.selection
+  in
+  div
+    toolbarStyle
+    [ button
+        ( [ onClick AddTopic ]
+          ++ buttonStyle
+        )
+        [ text "Add Topic" ]
+    , viewDisplayMode model
+    , button
+        ( [ onClick (Edit Open)
+          , stopPropagationOnMousedown
+          , disabled hasNoSelection
           ]
-      , viewMap model.activeMap -1 model -- top-level map has parentMapId -1
-      ]
+          ++ buttonStyle
+        )
+        [ text "Edit" ]
+    , button
+        ( [ onClick Delete
+          , stopPropagationOnMousedown
+          , disabled hasNoSelection
+          ]
+          ++ buttonStyle
+        )
+        [ text "Delete" ]
     ]
 
 
@@ -325,13 +346,14 @@ update msg model =
         _ -> info "update" msg
   in
   case msg of
-    CreateTopic -> ( createTopicAndAddToMap model, Cmd.none )
+    AddTopic -> (createTopicAndAddToMap model, Cmd.none)
     MoveTopicToMap topicId mapId origPos targetId targetMapId pos
-      -> ( moveTopicToMap topicId mapId origPos targetId targetMapId pos model, Cmd.none )
-    Set displayMode -> ( setDisplayMode displayMode model, Cmd.none )
-    Delete -> ( delete model, Cmd.none )
+      -> (moveTopicToMap topicId mapId origPos targetId targetMapId pos model, Cmd.none)
+    Set displayMode -> (setDisplayMode displayMode model, Cmd.none)
+    Edit editMsg -> (edit editMsg model, Cmd.none)
+    Delete -> (delete model, Cmd.none)
     Mouse mouseMsg -> updateMouse mouseMsg model
-    NoOp -> ( model, Cmd.none )
+    NoOp -> (model, Cmd.none)
 
 
 createTopic : Model -> (Model, Id)
@@ -358,7 +380,9 @@ createTopicAndAddToMap model =
     props = ViewTopic (TopicProps pos Nothing)
     pos = Point 112 86
   in
-  addItemToMap topicId props model.activeMap newModel
+  newModel
+    |> addItemToMap topicId props model.activeMap
+    |> select topicId model.activeMap
 
 
 -- Presumption: both players exist in same map
@@ -409,7 +433,7 @@ moveTopicToMap topicId mapId origPos targetId targetMapId pos model =
       addItemToMap topicId viewProps targetId
         { newModel
         | maps = hideItem topicId mapId newModel.maps model |> setTopicPos topicId mapId origPos
-        , selection = [ (targetId, targetMapId) ]
+        , selection = [ (targetId, targetMapId) ] -- TODO: call "select"
         } |> updateGeometry
     Nothing -> model
 
@@ -450,6 +474,11 @@ addItemToMap itemId props mapId model =
       (\map -> { map | items = map.items |> Dict.insert itemId viewItem })
       newModel.maps
   }
+
+
+select : Id -> MapId -> Model -> Model
+select id mapId model =
+  { model | selection = [ (id, mapId) ] }
 
 
 getSingleSelection : Model -> Maybe (Id, MapId)
@@ -843,6 +872,15 @@ updateTopicProps_ topicId propsFunc map =
   }
 
 
+edit : EditMsg -> Model -> Model
+edit msg model =
+  { model | isEditDialogOpen =
+    case msg of
+      Open -> True
+      Close -> False
+  }
+
+
 delete : Model -> Model
 delete model =
   let
@@ -1039,7 +1077,7 @@ mouseDown model =
 mouseDownOnItem : Model -> Class -> Id -> MapId -> Point -> ( Model, Cmd Msg )
 mouseDownOnItem model class id mapId pos =
   ( { model
-    | selection = [ (id, mapId) ]
+    | selection = [ (id, mapId) ] -- TODO: call "select"
     , dragState = WaitForStartTime class id mapId pos
     }
   , Task.perform (Time >> Mouse) Time.now

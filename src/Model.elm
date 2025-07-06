@@ -11,6 +11,7 @@ type alias Model =
   , activeMap : MapId
   , selection : Selection -- transient
   , dragState : DragState -- transient
+  , isEditDialogOpen : Bool -- transient
   , nextId : Id
   }
 
@@ -134,12 +135,18 @@ type DragMode
 
 
 type Msg
-  = CreateTopic
+  = AddTopic
   | MoveTopicToMap Id MapId Point Id MapId Point -- start point, random point (for target)
   | Set (Maybe DisplayMode)
+  | Edit EditMsg
   | Delete
   | Mouse MouseMsg
   | NoOp
+
+
+type EditMsg
+  = Open
+  | Close
 
 
 type MouseMsg
