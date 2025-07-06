@@ -196,14 +196,32 @@ editDialogStyle : List (Attribute Msg)
 editDialogStyle =
   [ style "position" "absolute"
   , style "left" "20px"
-  , style "top" "250px"
-  , style "width" "300px"
-  , style "height" "200px"
+  , style "top" "200px"
+  , style "width" "320px"
+  , style "height" "320px"
   , style "background-color" "white"
   , style "border" "1px solid lightgray"
   ]
 
 
-closeButtonStyle : List (Svg.Attribute Msg)
+iconsStyle : List (Attribute Msg)
+iconsStyle =
+  [ style "height" "100%"
+  , style "overflow" "auto"
+  ]
+
+
+iconButtonStyle : List (Attribute Msg)
+iconButtonStyle =
+  [ --style "background-color" "white"
+    style "border-width" "0"
+  , style "margin" "8px"
+  ]
+
+
+closeButtonStyle : List (Attribute Msg)
 closeButtonStyle =
-  [SA.style "position: absolute; right: 0;"]
+  [ style "position" "absolute"
+  , style "top" "0"
+  , style "right" "0"
+  ]
