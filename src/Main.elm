@@ -470,6 +470,7 @@ updateGeometry model =
   }
 
 
+-- called indirect recursive
 updateMapGeometry : MapId -> Int -> Maps -> (Rectangle, Int, Maps)
 updateMapGeometry mapId level maps =
   --
@@ -519,23 +520,10 @@ calcMapRectangle mapId level maps =
       (\map -> Just
         (map.items |> Dict.values |> List.foldr
           (\viewItem (rect, level_, maps_) ->
-            case viewItem.viewProps of
-              ViewTopic {pos, displayMode} ->
-                case displayMode of
-                  Just BlackBox -> extent pos blackBoxRect (Offset 0 0) rect level maps_
-                  Just WhiteBox ->
-                    let
-                      (rect_, level__, maps__) =
-                        updateMapGeometry viewItem.id (level + 1) maps_
-                      offset =
-                        case getMap viewItem.id maps__ of
-                          Just map_ -> map_.offset
-                          Nothing -> Offset 0 0
-                    in
-                    extent pos rect_ offset rect level maps__
-                  Just Unboxed -> extent pos topicRect (Offset 0 0) rect level maps_
-                  Nothing -> extent pos topicRect (Offset 0 0) rect level maps_
-              ViewAssoc _ -> (rect, level_, maps_)
+            if not viewItem.hidden then
+              calcItemSize viewItem rect level_ maps_
+            else
+              (rect, level_, maps_)
           )
           (Rectangle 5000 5000 -5000 -5000, level, maps) -- x-min y-min x-max y-max
         )
@@ -546,16 +534,37 @@ calcMapRectangle mapId level maps =
     Nothing -> (Rectangle 0 0 0 0, level, maps)
 
 
-extent : Point -> Rectangle -> Offset -> Rectangle -> Int -> Maps -> (Rectangle, Int, Maps)
-extent pos rect offset rectAcc level maps =
-  ( Rectangle
+calcItemSize : ViewItem -> Rectangle -> Int -> Maps -> (Rectangle, Int, Maps)
+calcItemSize viewItem rect level maps =
+  let
+    (rect__, maps__) =
+      case viewItem.viewProps of
+        ViewTopic {pos, displayMode} ->
+          case displayMode of
+            Just BlackBox -> (extent pos blackBoxRect (Offset 0 0) rect, maps)
+            Just WhiteBox ->
+              let
+                (rect_, _, maps_) = updateMapGeometry viewItem.id (level + 1) maps
+                offset =
+                  case getMap viewItem.id maps_ of
+                    Just map_ -> map_.offset
+                    Nothing -> Offset 0 0
+              in
+              (extent pos rect_ offset rect, maps_)
+            Just Unboxed -> (extent pos topicRect (Offset 0 0) rect, maps)
+            Nothing -> (extent pos topicRect (Offset 0 0) rect, maps)
+        ViewAssoc _ -> (rect, maps)
+  in
+  (rect__, level, maps__)
+
+
+extent : Point -> Rectangle -> Offset -> Rectangle -> Rectangle
+extent pos rect offset rectAcc =
+  Rectangle
     (min rectAcc.x1 (pos.x + rect.x1 + offset.x - borderWidth))
     (min rectAcc.y1 (pos.y + rect.y1 + offset.y - borderWidth))
     (max rectAcc.x2 (pos.x + rect.x2 + offset.x + borderWidth))
     (max rectAcc.y2 (pos.y + rect.y2 + offset.y + borderWidth))
-  , level
-  , maps
-  )
 
 
 setDisplayMode : Maybe DisplayMode -> Model -> Model
