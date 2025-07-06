@@ -195,8 +195,8 @@ lineStyle pos1 pos2 =
 editDialogStyle : List (Attribute Msg)
 editDialogStyle =
   [ style "position" "absolute"
-  , style "left" "20px"
-  , style "top" "200px"
+  , style "left" "72px"
+  , style "top" "244px"
   , style "width" "320px"
   , style "height" "320px"
   , style "background-color" "white"
@@ -224,4 +224,11 @@ closeButtonStyle =
   [ style "position" "absolute"
   , style "top" "0"
   , style "right" "0"
+  ]
+
+
+topicIconStyle : List (Attribute Msg)
+topicIconStyle =
+  [ style "color" "white"
+  , style "pointer-events" "none"
   ]

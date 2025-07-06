@@ -10,7 +10,7 @@ import Browser.Events as Events
 import Dict exposing (Dict)
 import Html exposing (Html, Attribute, div, text, button, input, label, h1)
 import Html.Attributes exposing (class, attribute, type_, name, checked, disabled)
-import Html.Events exposing (onClick, on, stopPropagationOn)
+import Html.Events exposing (onClick, on)
 import Random
 import String exposing (String, fromInt)
 import Svg exposing (Svg, svg, line)
@@ -235,7 +235,7 @@ viewTopic topic props mapId model =
         Just BlackBox -> viewItemCount topic.id props model
         Just WhiteBox -> [ viewMap topic.id mapId model ]
         Just Unboxed -> []
-        Nothing -> []
+        Nothing -> [ viewTopicIcon topic.id model ]
     )
 
 
@@ -328,11 +328,6 @@ assocGeometry assoc mapId model =
     Nothing -> fail "assocGeometry" { assoc = assoc, mapId = mapId } Nothing
 
 
-stopPropagationOnMousedown : Attribute Msg
-stopPropagationOnMousedown =
-  stopPropagationOn "mousedown" <| D.succeed (NoOp, True)
-
-
 
 -- UPDATE
 
@@ -366,7 +361,7 @@ createTopic model =
       Nothing -> logError "createTopic" "Illegal color" 0
   in
   ( { model
-    | items = model.items |> Dict.insert id ( Topic <| TopicInfo id color )
+    | items = model.items |> Dict.insert id ( Topic <| TopicInfo id color Nothing )
     , nextId = id + 1
     }
   , id
@@ -872,14 +867,32 @@ updateTopicProps_ topicId propsFunc map =
   }
 
 
+-- Edit Dialog
+
 edit : EditMsg -> Model -> Model
 edit msg model =
-  { model | isEditDialogOpen =
-    case msg of
-      Open -> True
-      Close -> False
-  }
+  case msg of
+    Open -> setEditDialogOpen True model
+    Close -> setEditDialogOpen False model
+    SetIcon maybeIcon -> setIcon maybeIcon model
+      |> setEditDialogOpen False
 
+
+setEditDialogOpen : Bool -> Model -> Model
+setEditDialogOpen isOpen model =
+  { model | isEditDialogOpen = isOpen }
+
+
+setIcon : Maybe IconName -> Model -> Model
+setIcon iconName model =
+  case getSingleSelection model of
+    Just (id, _) -> updateTopicInfo id
+      (\topic -> { topic | iconName = iconName })
+      model
+    Nothing -> model -- FIXME: illegal state -> make Edit dialog modal
+
+
+--
 
 delete : Model -> Model
 delete model =
@@ -993,25 +1006,17 @@ topicPos topicId mapId maps =
     Nothing -> fail "topicPos" {topicId = topicId, mapId = mapId} Nothing
 
 
--- not called
-getTopicInfo : Id -> Model -> Maybe TopicInfo
-getTopicInfo topicId model =
-  case model.items |> Dict.get topicId of
-    Just item ->
-      case item of
-        Topic topic -> Just topic
-        Assoc _ -> topicMismatch "getTopicInfo" topicId Nothing
-    Nothing -> illegalItemId "getTopicInfo" topicId Nothing
-
-
-getAssocInfo : Id -> Model -> Maybe AssocInfo
-getAssocInfo assocId model =
-  case model.items |> Dict.get assocId of
-    Just item ->
-      case item of
-        Topic _ -> assocMismatch "getAssocInfo" assocId Nothing
-        Assoc assoc -> Just assoc
-    Nothing -> illegalItemId "getAssocInfo" assocId Nothing
+updateTopicInfo : Id -> (TopicInfo -> TopicInfo) -> Model -> Model
+updateTopicInfo topicId topicFunc model =
+  { model | items = model.items |> Dict.update topicId
+    (\maybeItem ->
+      case maybeItem of
+        Just item -> case item of
+          Topic topic -> Just (topicFunc topic |> Topic)
+          Assoc _  -> topicMismatch "updateTopicInfo" topicId Nothing
+        Nothing -> illegalItemId "updateTopicInfo" topicId Nothing
+    )
+  }
 
 
 getTopicProps : Id -> MapId -> Maps -> Maybe TopicProps
@@ -1306,58 +1311,3 @@ topicFilter item =
   case item of
     Topic _ -> True
     Assoc _ -> False
-
-
-
--- DEBUG
-
-
-itemNotInMap : String -> Id -> Id -> a -> a
-itemNotInMap funcName itemId mapId val =
-  logError funcName ("item " ++ fromInt itemId ++ " not in map " ++ fromInt mapId) val
-
-
-topicMismatch : String -> Id -> a -> a
-topicMismatch funcName id val =
-  logError funcName (fromInt id ++ " is not a Topic but an Assoc") val
-
-
-assocMismatch : String -> Id -> a -> a
-assocMismatch funcName id val =
-  logError funcName (fromInt id ++ " is not an Assoc but a Topic") val
-
-
-illegalMapId : String -> Id -> a -> a
-illegalMapId funcName id val =
-  illegalId funcName "Map" id val
-
-
-illegalItemId : String -> Id -> a -> a
-illegalItemId funcName id val =
-  illegalId funcName "Item" id val
-
-
-illegalId : String -> String -> Id -> a -> a
-illegalId funcName item id val =
-  logError funcName (fromInt id ++ " is an illegal " ++ item ++ " ID") val
-
---
-
-logError : String -> String -> v -> v
-logError funcName text val =
-  log ("### ERROR @" ++ funcName ++ ": " ++ text) val
-
-
-fail : String -> a -> v -> v
-fail funcName args val =
-  log ("--> @" ++ funcName ++ " failed " ++ toString args) val
-
-
-call : String -> a -> v -> v
-call funcName args val =
-  log ("@" ++ funcName ++ " " ++ toString args ++ " -->") val
-
-
-info : String -> v -> v
-info funcName val =
-  log ("@" ++ funcName) val

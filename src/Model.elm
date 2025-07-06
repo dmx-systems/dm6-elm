@@ -1,7 +1,14 @@
 module Model exposing (..)
 
 import Dict exposing (Dict)
+import String exposing (fromInt)
 import Time
+import Debug exposing (log, toString)
+
+-- TODO: move to "Utils"
+import Html exposing (Attribute)
+import Html.Events exposing (stopPropagationOn)
+import Json.Decode as D
 
 
 
@@ -27,6 +34,7 @@ type Item
 type alias TopicInfo =
   { id : Id
   , color : Color
+  , iconName : Maybe IconName
   }
 
 
@@ -119,6 +127,7 @@ type alias RoleType = String -- a role type URI, e.g. "dmx.default"
 type alias Selection = List (Id, MapId)
 type alias Delta = Point
 type alias Color = Int -- Hue
+type alias IconName = String -- name of feather icon, https://feathericons.com
 
 
 type DragState
@@ -146,6 +155,7 @@ type Msg
 
 type EditMsg
   = Open
+  | SetIcon (Maybe IconName)
   | Close
 
 
@@ -157,3 +167,91 @@ type MouseMsg
   | Over Class Id MapId
   | Out Class Id MapId
   | Time Time.Posix
+
+
+
+-- MODEL HELPER
+
+
+getTopicInfo : Id -> Model -> Maybe TopicInfo
+getTopicInfo topicId model =
+  case model.items |> Dict.get topicId of
+    Just item ->
+      case item of
+        Topic topic -> Just topic
+        Assoc _ -> topicMismatch "getTopicInfo" topicId Nothing
+    Nothing -> illegalItemId "getTopicInfo" topicId Nothing
+
+
+getAssocInfo : Id -> Model -> Maybe AssocInfo
+getAssocInfo assocId model =
+  case model.items |> Dict.get assocId of
+    Just item ->
+      case item of
+        Topic _ -> assocMismatch "getAssocInfo" assocId Nothing
+        Assoc assoc -> Just assoc
+    Nothing -> illegalItemId "getAssocInfo" assocId Nothing
+
+
+
+-- EVENT HELPER -- TODO: move to "Utils"
+
+
+stopPropagationOnMousedown : Attribute Msg
+stopPropagationOnMousedown =
+  stopPropagationOn "mousedown" <| D.succeed (NoOp, True)
+
+
+
+-- DEBUG
+
+
+itemNotInMap : String -> Id -> Id -> a -> a
+itemNotInMap funcName itemId mapId val =
+  logError funcName ("item " ++ fromInt itemId ++ " not in map " ++ fromInt mapId) val
+
+
+topicMismatch : String -> Id -> a -> a
+topicMismatch funcName id val =
+  logError funcName (fromInt id ++ " is not a Topic but an Assoc") val
+
+
+assocMismatch : String -> Id -> a -> a
+assocMismatch funcName id val =
+  logError funcName (fromInt id ++ " is not an Assoc but a Topic") val
+
+
+illegalMapId : String -> Id -> a -> a
+illegalMapId funcName id val =
+  illegalId funcName "Map" id val
+
+
+illegalItemId : String -> Id -> a -> a
+illegalItemId funcName id val =
+  illegalId funcName "Item" id val
+
+
+illegalId : String -> String -> Id -> a -> a
+illegalId funcName item id val =
+  logError funcName (fromInt id ++ " is an illegal " ++ item ++ " ID") val
+
+--
+
+logError : String -> String -> v -> v
+logError funcName text val =
+  log ("### ERROR @" ++ funcName ++ ": " ++ text) val
+
+
+fail : String -> a -> v -> v
+fail funcName args val =
+  log ("--> @" ++ funcName ++ " failed " ++ toString args) val
+
+
+call : String -> a -> v -> v
+call funcName args val =
+  log ("@" ++ funcName ++ " " ++ toString args ++ " -->") val
+
+
+info : String -> v -> v
+info funcName val =
+  log ("@" ++ funcName) val
