@@ -173,6 +173,8 @@ type MouseMsg
 -- MODEL HELPER
 
 
+-- Items
+
 getTopicInfo : Id -> Model -> Maybe TopicInfo
 getTopicInfo topicId model =
   case model.items |> Dict.get topicId of
@@ -191,6 +193,34 @@ getAssocInfo assocId model =
         Topic _ -> assocMismatch "getAssocInfo" assocId Nothing
         Assoc assoc -> Just assoc
     Nothing -> illegalItemId "getAssocInfo" assocId Nothing
+
+
+updateTopicInfo : Id -> (TopicInfo -> TopicInfo) -> Model -> Model
+updateTopicInfo topicId topicFunc model =
+  { model | items = model.items |> Dict.update topicId
+    (\maybeItem ->
+      case maybeItem of
+        Just item -> case item of
+          Topic topic -> Just (topicFunc topic |> Topic)
+          Assoc _  -> topicMismatch "updateTopicInfo" topicId Nothing
+        Nothing -> illegalItemId "updateTopicInfo" topicId Nothing
+    )
+  }
+
+
+-- Selection
+
+select : Id -> MapId -> Model -> Model
+select id mapId model =
+  { model | selection = [ (id, mapId) ] }
+
+
+getSingleSelection : Model -> Maybe (Id, MapId)
+getSingleSelection model =
+  case model.selection of
+    [] -> Nothing
+    selItem :: selItems -> Just selItem
+    -- FIXME: return nothing if more than one item
 
 
 

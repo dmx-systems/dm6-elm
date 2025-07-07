@@ -345,7 +345,7 @@ update msg model =
     MoveTopicToMap topicId mapId origPos targetId targetMapId pos
       -> (moveTopicToMap topicId mapId origPos targetId targetMapId pos model, Cmd.none)
     Set displayMode -> (setDisplayMode displayMode model, Cmd.none)
-    Edit editMsg -> (edit editMsg model, Cmd.none)
+    Edit editMsg -> (updateEdit editMsg model, Cmd.none)
     Delete -> (delete model, Cmd.none)
     Mouse mouseMsg -> updateMouse mouseMsg model
     NoOp -> (model, Cmd.none)
@@ -469,19 +469,6 @@ addItemToMap itemId props mapId model =
       (\map -> { map | items = map.items |> Dict.insert itemId viewItem })
       newModel.maps
   }
-
-
-select : Id -> MapId -> Model -> Model
-select id mapId model =
-  { model | selection = [ (id, mapId) ] }
-
-
-getSingleSelection : Model -> Maybe (Id, MapId)
-getSingleSelection model =
-  case model.selection of
-    [] -> Nothing
-    selItem :: selItems -> Just selItem
-    -- FIXME: return nothing if more than one item
 
 
 updateGeometry : Model -> Model
@@ -867,33 +854,6 @@ updateTopicProps_ topicId propsFunc map =
   }
 
 
--- Edit Dialog
-
-edit : EditMsg -> Model -> Model
-edit msg model =
-  case msg of
-    Open -> setEditDialogOpen True model
-    Close -> setEditDialogOpen False model
-    SetIcon maybeIcon -> setIcon maybeIcon model
-      |> setEditDialogOpen False
-
-
-setEditDialogOpen : Bool -> Model -> Model
-setEditDialogOpen isOpen model =
-  { model | isEditDialogOpen = isOpen }
-
-
-setIcon : Maybe IconName -> Model -> Model
-setIcon iconName model =
-  case getSingleSelection model of
-    Just (id, _) -> updateTopicInfo id
-      (\topic -> { topic | iconName = iconName })
-      model
-    Nothing -> model -- FIXME: illegal state -> make Edit dialog modal
-
-
---
-
 delete : Model -> Model
 delete model =
   let
@@ -1004,19 +964,6 @@ topicPos topicId mapId maps =
   case getTopicProps topicId mapId maps of
     Just { pos } -> Just pos
     Nothing -> fail "topicPos" {topicId = topicId, mapId = mapId} Nothing
-
-
-updateTopicInfo : Id -> (TopicInfo -> TopicInfo) -> Model -> Model
-updateTopicInfo topicId topicFunc model =
-  { model | items = model.items |> Dict.update topicId
-    (\maybeItem ->
-      case maybeItem of
-        Just item -> case item of
-          Topic topic -> Just (topicFunc topic |> Topic)
-          Assoc _  -> topicMismatch "updateTopicInfo" topicId Nothing
-        Nothing -> illegalItemId "updateTopicInfo" topicId Nothing
-    )
-  }
 
 
 getTopicProps : Id -> MapId -> Maps -> Maybe TopicProps

@@ -1,4 +1,4 @@
-module EditDialog exposing (viewEditDialog, viewTopicIcon)
+module EditDialog exposing (updateEdit, viewEditDialog, viewTopicIcon)
 
 import Model exposing (..)
 import Style exposing (..)
@@ -9,6 +9,29 @@ import Html.Attributes exposing (title)
 import Html.Events exposing (onClick)
 import FeatherIcons as Icon
 
+
+
+updateEdit : EditMsg -> Model -> Model
+updateEdit msg model =
+  case msg of
+    Open -> setEditDialogOpen True model
+    Close -> setEditDialogOpen False model
+    SetIcon maybeIcon -> setIcon maybeIcon model
+      |> setEditDialogOpen False
+
+
+setEditDialogOpen : Bool -> Model -> Model
+setEditDialogOpen isOpen model =
+  { model | isEditDialogOpen = isOpen }
+
+
+setIcon : Maybe IconName -> Model -> Model
+setIcon iconName model =
+  case getSingleSelection model of
+    Just (id, _) -> updateTopicInfo id
+      (\topic -> { topic | iconName = iconName })
+      model
+    Nothing -> model -- FIXME: illegal state -> make Edit dialog modal
 
 
 viewEditDialog : Model -> Html Msg
