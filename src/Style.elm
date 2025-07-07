@@ -13,13 +13,16 @@ import Svg.Attributes as SA exposing (x1, y1, x2, y2, stroke, strokeWidth)
 
 
 mainFontSize = "14px"
-selectionColor = "#007AFF" -- Firefox focus color
 
-borderWidth = 5
+borderWidth = 1
+assocWith = 1
 
-topicSize = 34
-topicRadius = topicSize // 2
-topicRect = Rectangle -topicRadius -topicRadius topicRadius topicRadius
+topicSize = { w = 120, h = 28 }
+topicRadius = 6
+topicRect =
+  Rectangle
+    (-topicSize.w // 2) (-topicSize.h // 2)
+    (topicSize.w // 2) (topicSize.h // 2)
 
 blackBoxSize = 42
 blackBoxOffset = blackBoxSize // 2
@@ -28,8 +31,7 @@ blackBoxRect = Rectangle -blackBoxOffset -blackBoxOffset blackBoxOffset blackBox
 
 whiteboxRange = { width = 250, height = 150 }
 whiteboxRadius = 20
-
-assocWith = 5
+whiteboxPadding = 10
 
 
 
@@ -92,32 +94,29 @@ topicStyle { id } mapId model =
       -- can't create assoc when both topics are in different map
       Drag DrawAssoc _ mapId_ _ _ (Just target) -> target == (id, mapId) && mapId_ == mapId
       _ -> False
-    borderColor =
-      if targeted then
-        "blue"
-      else
-        if selected then
-          selectionColor
-        else
-          "transparent"
   in
   [ style "position" "absolute"
   , style "border-width" <| fromInt borderWidth ++ "px"
-  , style "border-style" "solid"
-  , style "border-color" borderColor
+  , style "border-style" <| if targeted then "dashed" else "solid"
   , style "box-sizing" "border-box"
+  , style "background-color" "white"
   , style "z-index" <| if dragging then "0" else "1"
   ]
+  ++ if selected then selectionStyle else []
+
+
+selectionStyle : List (Attribute Msg)
+selectionStyle =
+  [ style "box-shadow" "4px 4px 4px gray" ]
 
 
 normalStyle : TopicInfo -> TopicProps -> List (Attribute Msg)
 normalStyle { color } { pos } =
-  [ style "left" <| fromInt (pos.x - topicRadius) ++ "px"
-  , style "top" <| fromInt (pos.y - topicRadius) ++ "px"
-  , style "width" <| fromInt topicSize ++ "px"
-  , style "height" <| fromInt topicSize ++ "px"
+  [ style "left" <| fromInt (pos.x - topicSize.w // 2) ++ "px"
+  , style "top" <| fromInt (pos.y - topicSize.h // 2) ++ "px"
+  , style "width" <| fromInt topicSize.w ++ "px"
+  , style "height" <| fromInt topicSize.h ++ "px"
   , style "border-radius" <| fromInt topicRadius ++ "px"
-  , style "background-color" <| "hsl(" ++ fromInt color ++ ", 70%, 60%)"
   ]
 
 
@@ -128,7 +127,6 @@ blackBoxStyle { color } { pos } =
   , style "width" <| fromInt blackBoxSize ++ "px"
   , style "height" <| fromInt blackBoxSize ++ "px"
   , style "border-radius" <| fromInt blackBoxRadius ++ "px"
-  , style "background-color" <| "hsl(" ++ fromInt color ++ ", 70%, 60%)"
   ]
 
 
@@ -139,7 +137,6 @@ whiteboxStyle { color } { pos } rect offset =
   , style "width" <| fromInt (rect.x2 - rect.x1) ++ "px"
   , style "height" <| fromInt (rect.y2 - rect.y1) ++ "px"
   , style "border-radius" <| fromInt whiteboxRadius ++ "px"
-  , style "background-color" <| "hsl(" ++ fromInt color ++ ", 100%, 95%)"
   ]
 
 
@@ -229,6 +226,6 @@ closeButtonStyle =
 
 topicIconStyle : List (Attribute Msg)
 topicIconStyle =
-  [ style "color" "white"
-  , style "pointer-events" "none"
+  [ -- style "color" "white"
+    style "pointer-events" "none"
   ]

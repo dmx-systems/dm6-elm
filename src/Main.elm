@@ -373,7 +373,7 @@ createTopicAndAddToMap model =
   let
     (newModel, topicId) = createTopic model
     props = ViewTopic (TopicProps pos Nothing)
-    pos = Point 112 86
+    pos = Point 160 98
   in
   newModel
     |> addItemToMap topicId props model.activeMap
@@ -572,10 +572,10 @@ calcItemSize viewItem rect level maps =
 extent : Point -> Rectangle -> Offset -> Rectangle -> Rectangle
 extent pos rect offset rectAcc =
   Rectangle
-    (min rectAcc.x1 (pos.x + rect.x1 + offset.x - borderWidth))
-    (min rectAcc.y1 (pos.y + rect.y1 + offset.y - borderWidth))
-    (max rectAcc.x2 (pos.x + rect.x2 + offset.x + borderWidth))
-    (max rectAcc.y2 (pos.y + rect.y2 + offset.y + borderWidth))
+    (min rectAcc.x1 (pos.x + rect.x1 + offset.x - whiteboxPadding))
+    (min rectAcc.y1 (pos.y + rect.y1 + offset.y - whiteboxPadding))
+    (max rectAcc.x2 (pos.x + rect.x2 + offset.x + whiteboxPadding))
+    (max rectAcc.y2 (pos.y + rect.y2 + offset.y + whiteboxPadding))
 
 
 setDisplayMode : Maybe DisplayMode -> Model -> Model
