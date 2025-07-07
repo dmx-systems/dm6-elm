@@ -81,7 +81,7 @@ viewTopicIcon topicId model =
       case topic.iconName of
         Just iconName ->
           case Icon.icons |> Dict.get iconName of
-            Just icon -> icon |> Icon.toHtml topicIconStyle
+            Just icon -> icon |> Icon.withSize topicIconSize |> Icon.toHtml topicIconStyle
             Nothing -> text "??"
         Nothing -> text ""
     Nothing -> text "?"

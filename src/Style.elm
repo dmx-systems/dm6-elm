@@ -13,11 +13,11 @@ import Svg.Attributes as SA exposing (x1, y1, x2, y2, stroke, strokeWidth)
 
 
 mainFontSize = "14px"
+assocWith = 2
 
-borderWidth = 1
-assocWith = 1
-
-topicSize = { w = 120, h = 28 }
+topicSize = { w = 128, h = 28 }
+topicIconSize = 18
+topicBorderWidth = 1
 topicRadius = 6
 topicRect =
   Rectangle
@@ -31,7 +31,7 @@ blackBoxRect = Rectangle -blackBoxOffset -blackBoxOffset blackBoxOffset blackBox
 
 whiteboxRange = { width = 250, height = 150 }
 whiteboxRadius = 20
-whiteboxPadding = 10
+whiteboxPadding = 12
 
 
 
@@ -96,7 +96,7 @@ topicStyle { id } mapId model =
       _ -> False
   in
   [ style "position" "absolute"
-  , style "border-width" <| fromInt borderWidth ++ "px"
+  , style "border-width" <| fromInt topicBorderWidth ++ "px"
   , style "border-style" <| if targeted then "dashed" else "solid"
   , style "box-sizing" "border-box"
   , style "background-color" "white"
@@ -151,10 +151,10 @@ itemCountStyle =
 nestedMapStyle : List (Attribute Msg)
 nestedMapStyle =
   [ style "position" "absolute"
-  , style "left" <| fromInt -borderWidth ++ "px"
-  , style "top" <| fromInt -borderWidth ++ "px"
-  , style "width" <| "calc(100% + " ++ fromInt (2 * borderWidth) ++ "px)"
-  , style "height" <| "calc(100% + " ++ fromInt (2 * borderWidth) ++ "px)"
+  , style "left" <| fromInt -topicBorderWidth ++ "px"
+  , style "top" <| fromInt -topicBorderWidth ++ "px"
+  , style "width" <| "calc(100% + " ++ fromInt (2 * topicBorderWidth) ++ "px)"
+  , style "height" <| "calc(100% + " ++ fromInt (2 * topicBorderWidth) ++ "px)"
   ]
 
 
@@ -224,8 +224,23 @@ closeButtonStyle =
   ]
 
 
+topicIconBoxStyle : List (Attribute Msg)
+topicIconBoxStyle =
+  [ style "position" "relative"
+  , style "top" <| fromInt -topicBorderWidth ++ "px"
+  , style "left" <| fromInt -topicBorderWidth ++ "px"
+  , style "width" <| fromInt topicSize.h ++ "px"
+  , style "height" <| fromInt topicSize.h ++ "px"
+  , style "border-radius" <| fromInt topicRadius ++ "px 0 0 " ++ fromInt topicRadius ++ "px"
+  , style "background-color" "black"
+  ]
+
+
 topicIconStyle : List (Attribute Msg)
 topicIconStyle =
-  [ -- style "color" "white"
-    style "pointer-events" "none"
+  [ style "position" "relative"
+  , style "top" <| fromInt ((topicSize.h - topicIconSize) // 2) ++ "px"
+  , style "left" <| fromInt ((topicSize.h - topicIconSize) // 2) ++ "px"
+  , style "color" "white"
+  , style "pointer-events" "none"
   ]

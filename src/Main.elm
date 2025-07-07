@@ -214,29 +214,39 @@ viewItems map model =
 
 viewTopic : TopicInfo -> TopicProps -> MapId -> Model -> Html Msg
 viewTopic topic props mapId model =
-  div
-    ( topicAttr topic.id mapId
-      ++ topicStyle topic mapId model
-      ++
-        case props.displayMode of
-          Just BlackBox -> blackBoxStyle topic props
-          Just WhiteBox ->
-            let
+  let
+    (style, children) =
+      case props.displayMode of
+        Just BlackBox -> (blackBoxStyle topic props, viewItemCount topic.id props model)
+        Just WhiteBox ->
+          ( let
               (rect, offset) =
                 case getMap topic.id model.maps of
                   Just map -> (map.rect, map.offset)
                   Nothing -> (Rectangle 0 0 0 0, Offset 0 0)
             in
             whiteboxStyle topic props rect offset
-          Just Unboxed -> normalStyle topic props
-          Nothing -> normalStyle topic props
+          , [ viewMap topic.id mapId model ]
+          )
+        Just Unboxed -> normalTopic topic props model
+        Nothing -> normalTopic topic props model
+  in
+  div
+    ( topicAttr topic.id mapId
+      ++ topicStyle topic mapId model
+      ++ style
     )
-    ( case props.displayMode of
-        Just BlackBox -> viewItemCount topic.id props model
-        Just WhiteBox -> [ viewMap topic.id mapId model ]
-        Just Unboxed -> []
-        Nothing -> [ viewTopicIcon topic.id model ]
-    )
+    children
+
+
+normalTopic : TopicInfo -> TopicProps -> Model -> (List (Attribute Msg), List (Html Msg))
+normalTopic topic props model =
+  ( normalStyle topic props
+  , [ div
+      topicIconBoxStyle
+      [ viewTopicIcon topic.id model ]
+    ]
+  )
 
 
 viewItemCount : Id -> TopicProps -> Model -> List (Html Msg)
