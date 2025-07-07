@@ -345,9 +345,9 @@ update msg model =
     MoveTopicToMap topicId mapId origPos targetId targetMapId pos
       -> (moveTopicToMap topicId mapId origPos targetId targetMapId pos model, Cmd.none)
     Set displayMode -> (setDisplayMode displayMode model, Cmd.none)
-    Edit editMsg -> (updateEdit editMsg model, Cmd.none)
-    Delete -> (delete model, Cmd.none)
+    Edit editMsg -> (updateEditDialog editMsg model, Cmd.none)
     Mouse mouseMsg -> updateMouse mouseMsg model
+    Delete -> (delete model, Cmd.none)
     NoOp -> (model, Cmd.none)
 
 

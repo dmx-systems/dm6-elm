@@ -1,4 +1,4 @@
-module EditDialog exposing (updateEdit, viewEditDialog, viewTopicIcon)
+module EditDialog exposing (updateEditDialog, viewEditDialog, viewTopicIcon)
 
 import Model exposing (..)
 import Style exposing (..)
@@ -11,8 +11,11 @@ import FeatherIcons as Icon
 
 
 
-updateEdit : EditMsg -> Model -> Model
-updateEdit msg model =
+-- UPDATE
+
+
+updateEditDialog : EditMsg -> Model -> Model
+updateEditDialog msg model =
   case msg of
     Open -> setEditDialogOpen True model
     Close -> setEditDialogOpen False model
@@ -32,6 +35,10 @@ setIcon iconName model =
       (\topic -> { topic | iconName = iconName })
       model
     Nothing -> model -- FIXME: illegal state -> make Edit dialog modal
+
+
+
+-- VIEW
 
 
 viewEditDialog : Model -> Html Msg

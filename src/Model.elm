@@ -148,15 +148,15 @@ type Msg
   | MoveTopicToMap Id MapId Point Id MapId Point -- start point, random point (for target)
   | Set (Maybe DisplayMode)
   | Edit EditMsg
-  | Delete
   | Mouse MouseMsg
+  | Delete
   | NoOp
 
 
 type EditMsg
   = Open
-  | SetIcon (Maybe IconName)
   | Close
+  | SetIcon (Maybe IconName)
 
 
 type MouseMsg
