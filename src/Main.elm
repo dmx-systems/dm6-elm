@@ -220,12 +220,12 @@ viewTopic topic props mapId model =
         Just BlackBox -> (blackBoxStyle topic props, viewItemCount topic.id props model)
         Just WhiteBox ->
           ( let
-              (rect, offset) =
+              rect =
                 case getMap topic.id model.maps of
-                  Just map -> (map.rect, map.offset)
-                  Nothing -> (Rectangle 0 0 0 0, Offset 0 0)
+                  Just map -> map.rect
+                  Nothing -> Rectangle 0 0 0 0
             in
-            whiteboxStyle topic props rect offset
+            whiteboxStyle topic props rect
           , [ viewMap topic.id mapId model ]
           )
         Just Unboxed -> normalTopic topic props model
@@ -508,8 +508,10 @@ updateMapGeometry mapId level maps =
           (\map -> Just
             ( let
                 delta = Point
-                  ((rect.x1 + rect.x2 - map.rect.x1 - map.rect.x2) // 2)
-                  ((rect.y1 + rect.y2 - map.rect.y1 - map.rect.y2) // 2)
+                  ((rect.x1 + rect.x2) // 2 - (map.rect.x1 + map.rect.x2) // 2)
+                  ((rect.y1 + rect.y2) // 2 - (map.rect.y1 + map.rect.y2) // 2)
+                  -- ((rect.x1 + rect.x2 - map.rect.x1 - map.rect.x2) // 2)
+                  -- ((rect.y1 + rect.y2 - map.rect.y1 - map.rect.y2) // 2)
               in
               updateMapRectAndOffset mapId rect delta maps_
                 |> updateTopicPos mapId map.parentMapId delta
@@ -562,30 +564,30 @@ calcItemSize viewItem rect level maps =
       case viewItem.viewProps of
         ViewTopic {pos, displayMode} ->
           case displayMode of
-            Just BlackBox -> (extent pos blackBoxRect (Offset 0 0) rect, maps)
+            Just BlackBox -> (extent pos blackBoxRect rect, maps)
             Just WhiteBox ->
               let
                 (rect_, _, maps_) = updateMapGeometry viewItem.id (level + 1) maps
-                offset =
-                  case getMap viewItem.id maps_ of
-                    Just map_ -> map_.offset
-                    Nothing -> Offset 0 0
               in
-              (extent pos rect_ offset rect, maps_)
-            Just Unboxed -> (extent pos topicRect (Offset 0 0) rect, maps)
-            Nothing -> (extent pos topicRect (Offset 0 0) rect, maps)
+              (extent pos rect_ rect, maps_)
+            Just Unboxed -> (extent pos topicRect rect, maps)
+            Nothing -> (extent pos topicRect rect, maps)
         ViewAssoc _ -> (rect, maps)
   in
   (rect__, level, maps__)
 
 
-extent : Point -> Rectangle -> Offset -> Rectangle -> Rectangle
-extent pos rect offset rectAcc =
+extent : Point -> Rectangle -> Rectangle -> Rectangle
+extent pos rect rectAcc =
+  let
+    w2 = (rect.x2 - rect.x1) // 2
+    h2 = (rect.y2 - rect.y1) // 2
+  in
   Rectangle
-    (min rectAcc.x1 (pos.x + rect.x1 + offset.x - whiteboxPadding))
-    (min rectAcc.y1 (pos.y + rect.y1 + offset.y - whiteboxPadding))
-    (max rectAcc.x2 (pos.x + rect.x2 + offset.x + whiteboxPadding))
-    (max rectAcc.y2 (pos.y + rect.y2 + offset.y + whiteboxPadding))
+    (min rectAcc.x1 (pos.x - w2 - whiteboxPadding))
+    (min rectAcc.y1 (pos.y - h2 - whiteboxPadding))
+    (max rectAcc.x2 (pos.x + w2 + whiteboxPadding))
+    (max rectAcc.y2 (pos.y + h2 + whiteboxPadding))
 
 
 setDisplayMode : Maybe DisplayMode -> Model -> Model

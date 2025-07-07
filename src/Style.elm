@@ -130,12 +130,16 @@ blackBoxStyle { color } { pos } =
   ]
 
 
-whiteboxStyle : TopicInfo -> TopicProps -> Rectangle -> Offset -> List (Attribute Msg)
-whiteboxStyle { color } { pos } rect offset =
-  [ style "left" <| fromInt (pos.x + rect.x1 + offset.x) ++ "px"
-  , style "top" <| fromInt (pos.y + rect.y1 + offset.y) ++ "px"
-  , style "width" <| fromInt (rect.x2 - rect.x1) ++ "px"
-  , style "height" <| fromInt (rect.y2 - rect.y1) ++ "px"
+whiteboxStyle : TopicInfo -> TopicProps -> Rectangle -> List (Attribute Msg)
+whiteboxStyle { color } { pos } rect =
+  let
+    width = rect.x2 - rect.x1
+    height = rect.y2 - rect.y1
+  in
+  [ style "left" <| fromInt (pos.x - width // 2) ++ "px"
+  , style "top" <| fromInt (pos.y - height // 2) ++ "px"
+  , style "width" <| fromInt width ++ "px"
+  , style "height" <| fromInt height ++ "px"
   , style "border-radius" <| fromInt whiteboxRadius ++ "px"
   ]
 
