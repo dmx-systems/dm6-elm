@@ -194,12 +194,72 @@ updateTopicInfo topicId topicFunc model =
   { model | items = model.items |> Dict.update topicId
     (\maybeItem ->
       case maybeItem of
-        Just item -> case item of
-          Topic topic -> Just (topicFunc topic |> Topic)
-          Assoc _  -> topicMismatch "updateTopicInfo" topicId Nothing
+        Just item ->
+          case item of
+            Topic topic -> Just (topicFunc topic |> Topic)
+            Assoc _  -> topicMismatch "updateTopicInfo" topicId Nothing
         Nothing -> illegalItemId "updateTopicInfo" topicId Nothing
     )
   }
+
+
+-- Maps
+
+getMap : MapId -> Maps -> Maybe Map
+getMap mapId maps =
+  case getMapIfExists mapId maps of
+    Just map -> Just map
+    Nothing -> illegalMapId "getMap" mapId Nothing
+
+
+getMapIfExists : MapId -> Maps -> Maybe Map
+getMapIfExists mapId maps =
+  maps |> Dict.get mapId
+
+
+updateTopicPos : Id -> Id -> Delta -> Maps -> Maps
+updateTopicPos topicId mapId delta maps =
+  updateTopicProps topicId mapId maps
+    (\props ->
+      { props | pos =
+        Point
+          (props.pos.x + delta.x)
+          (props.pos.y + delta.y)
+      }
+    )
+
+
+updateTopicProps : Id -> Id -> Maps -> (TopicProps -> TopicProps) -> Maps
+updateTopicProps topicId mapId maps propsFunc =
+  updateMaps
+    mapId
+    (updateTopicProps_ topicId propsFunc)
+    maps
+
+
+updateTopicProps_ : Id -> (TopicProps -> TopicProps) -> Map -> Map
+updateTopicProps_ topicId propsFunc map =
+  { map | items = map.items |> Dict.update topicId
+    (\viewItem_ ->
+      case viewItem_ of
+        Just viewItem ->
+          case viewItem.viewProps of
+            ViewTopic props -> Just
+              { viewItem | viewProps = ViewTopic (propsFunc props) }
+            ViewAssoc _ -> topicMismatch "updateTopicProps" topicId Nothing
+        Nothing -> illegalItemId "updateTopicProps" topicId Nothing
+    )
+  }
+
+
+updateMaps : MapId -> (Map -> Map) -> Maps -> Maps
+updateMaps mapId mapFunc maps =
+  maps |> Dict.update mapId
+    (\map_ ->
+      case map_ of
+        Just map -> Just (mapFunc map)
+        Nothing -> illegalMapId "updateMaps" mapId Nothing
+    )
 
 
 -- Selection

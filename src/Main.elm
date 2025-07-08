@@ -3,6 +3,7 @@ module Main exposing (..)
 import Model exposing (..)
 import Style exposing (..)
 import EditDialog exposing (..)
+import MapAutoSize exposing (..)
 
 import Array
 import Browser
@@ -483,100 +484,7 @@ addItemToMap itemId props mapId model =
 
 updateGeometry : Model -> Model
 updateGeometry model =
-  { model | maps =
-    let
-      (_, _, maps) = updateMapGeometry model.activeMap 0 model.maps
-    in
-    maps
-  }
-
-
--- called indirect recursive
-updateMapGeometry : MapId -> Int -> Maps -> (Rectangle, Int, Maps)
-updateMapGeometry mapId level maps =
-  -- 1) calculate and store the map's "rect" and, based on its change,
-  -- 2) calculate and store the map's "pos" adjustmennt ("delta")
-  let
-    (rect, level_, maps_) = calcMapRect mapId level maps
-    maps__ =
-      if level == 0 then
-        maps_
-      else
-        case getMap mapId maps_ of
-          Just map ->
-            ( let
-                delta = Point
-                  ((rect.x1 + rect.x2 - map.rect.x1 - map.rect.x2) / 2)
-                  ((rect.y1 + rect.y2 - map.rect.y1 - map.rect.y2) / 2)
-              in
-              updateMapRect mapId rect maps_
-                |> updateTopicPos mapId map.parentMapId delta
-            )
-          Nothing -> maps_
-  in
-  (rect, level_, maps__)
-
-
-updateMapRect : MapId -> Rectangle -> Maps -> Maps
-updateMapRect mapId rect maps =
-  updateMaps
-    mapId
-    (\map -> { map | rect = rect })
-    maps
-
-
-calcMapRect : MapId -> Int -> Maps -> (Rectangle, Int, Maps)
-calcMapRect mapId level maps =
-  let
-    result_ = getMap mapId maps |> Maybe.andThen
-      (\map -> Just
-        (map.items |> Dict.values |> List.foldr
-          (\viewItem (rect, level_, maps_) ->
-            if not viewItem.hidden then
-              calcItemSize viewItem rect level_ maps_
-            else
-              (rect, level_, maps_)
-          )
-          (Rectangle 5000 5000 -5000 -5000, level, maps) -- x-min y-min x-max y-max
-        )
-      )
-  in
-  case result_ of
-    Just result -> result
-    Nothing -> (Rectangle 0 0 0 0, level, maps)
-
-
-calcItemSize : ViewItem -> Rectangle -> Int -> Maps -> (Rectangle, Int, Maps)
-calcItemSize viewItem rect level maps =
-  let
-    (rect__, maps__) =
-      case viewItem.viewProps of
-        ViewTopic {pos, displayMode} ->
-          case displayMode of
-            Just BlackBox -> (extent pos blackBoxRect rect, maps)
-            Just WhiteBox ->
-              let
-                (rect_, _, maps_) = updateMapGeometry viewItem.id (level + 1) maps
-              in
-              (extent pos rect_ rect, maps_)
-            Just Unboxed -> (extent pos topicRect rect, maps)
-            Nothing -> (extent pos topicRect rect, maps)
-        ViewAssoc _ -> (rect, maps)
-  in
-  (rect__, level, maps__)
-
-
-extent : Point -> Rectangle -> Rectangle -> Rectangle
-extent pos rect rectAcc =
-  let
-    w2 = (rect.x2 - rect.x1) / 2
-    h2 = (rect.y2 - rect.y1) / 2
-  in
-  Rectangle
-    (min rectAcc.x1 (pos.x - w2 - whiteboxPadding))
-    (min rectAcc.y1 (pos.y - h2 - whiteboxPadding))
-    (max rectAcc.x2 (pos.x + w2 + whiteboxPadding))
-    (max rectAcc.y2 (pos.y + h2 + whiteboxPadding))
+  { model | maps = autoSize model.activeMap model.maps }
 
 
 setDisplayMode : Maybe DisplayMode -> Model -> Model
@@ -820,41 +728,6 @@ setTopicPos topicId mapId pos maps =
     (\props -> { props | pos = pos })
 
 
-updateTopicPos : Id -> Id -> Delta -> Maps -> Maps
-updateTopicPos topicId mapId delta maps =
-  updateTopicProps topicId mapId maps
-    (\props ->
-      { props | pos =
-        Point
-          (props.pos.x + delta.x)
-          (props.pos.y + delta.y)
-      }
-    )
-
-
-updateTopicProps : Id -> Id -> Maps -> (TopicProps -> TopicProps) -> Maps
-updateTopicProps topicId mapId maps propsFunc =
-  updateMaps
-    mapId
-    (updateTopicProps_ topicId propsFunc)
-    maps
-
-
-updateTopicProps_ : Id -> (TopicProps -> TopicProps) -> Map -> Map
-updateTopicProps_ topicId propsFunc map =
-  { map | items = map.items |> Dict.update topicId
-    (\viewItem_ ->
-      case viewItem_ of
-        Just viewItem ->
-          case viewItem.viewProps of
-            ViewTopic props -> Just
-              { viewItem | viewProps = ViewTopic (propsFunc props) }
-            ViewAssoc _ -> topicMismatch "updateTopicProps" topicId Nothing
-        Nothing -> illegalItemId "updateTopicProps" topicId Nothing
-    )
-  }
-
-
 delete : Model -> Model
 delete model =
   let
@@ -895,16 +768,6 @@ removeItemFromMap itemId mapId maps =
 removeItemFromMap_ : Id -> Map -> Map
 removeItemFromMap_ itemId map =
   { map | items = map.items |> Dict.remove itemId }
-
-
-updateMaps : MapId -> (Map -> Map) -> Maps -> Maps
-updateMaps mapId mapFunc maps =
-  maps |> Dict.update mapId
-    (\map_ ->
-      case map_ of
-        Just map -> Just (mapFunc map)
-        Nothing -> illegalMapId "updateMaps" mapId Nothing
-    )
 
 
 {-| Transforms an absolute screen position to a map-relative position.
@@ -987,20 +850,6 @@ getViewItem itemId map =
   case map.items |> Dict.get itemId of
     Just viewItem -> Just viewItem
     Nothing -> itemNotInMap "getViewItem" itemId map.id Nothing
-
-
-getMap : MapId -> Maps -> Maybe Map
-getMap mapId maps =
-  case getMapIfExists mapId maps of
-    Just map -> Just map
-    Nothing -> illegalMapId "getMap" mapId Nothing
-
-
-getMapIfExists : MapId -> Maps -> Maybe Map
-getMapIfExists mapId maps =
-  case maps |> Dict.get mapId of
-    Just map -> Just map
-    Nothing -> Nothing
 
 
 hasMap : MapId -> Maps -> Bool
