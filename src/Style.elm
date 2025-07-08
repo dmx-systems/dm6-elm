@@ -3,7 +3,7 @@ module Style exposing (..)
 import Model exposing (..)
 import Html exposing (Attribute)
 import Html.Attributes exposing (style)
-import String exposing (String, fromInt)
+import String exposing (String, fromInt, fromFloat)
 import Svg
 import Svg.Attributes as SA exposing (x1, y1, x2, y2, stroke, strokeWidth)
 
@@ -21,11 +21,11 @@ topicBorderWidth = 1
 topicRadius = 6
 topicRect =
   Rectangle
-    (-topicSize.w // 2) (-topicSize.h // 2)
-    (topicSize.w // 2) (topicSize.h // 2)
+    (-topicSize.w / 2) (-topicSize.h / 2)
+    (topicSize.w / 2) (topicSize.h / 2)
 
 blackBoxSize = 42
-blackBoxOffset = blackBoxSize // 2
+blackBoxOffset = blackBoxSize / 2
 blackBoxRadius = 10
 blackBoxRect = Rectangle -blackBoxOffset -blackBoxOffset blackBoxOffset blackBoxOffset
 
@@ -112,8 +112,8 @@ selectionStyle =
 
 normalStyle : TopicInfo -> TopicProps -> List (Attribute Msg)
 normalStyle { color } { pos } =
-  [ style "left" <| fromInt (pos.x - topicSize.w // 2) ++ "px"
-  , style "top" <| fromInt (pos.y - topicSize.h // 2) ++ "px"
+  [ style "left" <| fromFloat (pos.x - topicSize.w / 2) ++ "px"
+  , style "top" <| fromFloat (pos.y - topicSize.h / 2) ++ "px"
   , style "width" <| fromInt topicSize.w ++ "px"
   , style "height" <| fromInt topicSize.h ++ "px"
   , style "border-radius" <| fromInt topicRadius ++ "px"
@@ -122,8 +122,8 @@ normalStyle { color } { pos } =
 
 blackBoxStyle : TopicInfo -> TopicProps -> List (Attribute Msg)
 blackBoxStyle { color } { pos } =
-  [ style "left" <| fromInt (pos.x - blackBoxOffset) ++ "px"
-  , style "top" <| fromInt (pos.y - blackBoxOffset) ++ "px"
+  [ style "left" <| fromFloat (pos.x - blackBoxOffset) ++ "px"
+  , style "top" <| fromFloat (pos.y - blackBoxOffset) ++ "px"
   , style "width" <| fromInt blackBoxSize ++ "px"
   , style "height" <| fromInt blackBoxSize ++ "px"
   , style "border-radius" <| fromInt blackBoxRadius ++ "px"
@@ -136,10 +136,10 @@ whiteboxStyle { color } { pos } rect =
     width = rect.x2 - rect.x1
     height = rect.y2 - rect.y1
   in
-  [ style "left" <| fromInt (pos.x - width // 2) ++ "px"
-  , style "top" <| fromInt (pos.y - height // 2) ++ "px"
-  , style "width" <| fromInt width ++ "px"
-  , style "height" <| fromInt height ++ "px"
+  [ style "left" <| fromFloat (pos.x - width / 2) ++ "px"
+  , style "top" <| fromFloat (pos.y - height / 2) ++ "px"
+  , style "width" <| fromFloat width ++ "px"
+  , style "height" <| fromFloat height ++ "px"
   , style "border-radius" <| fromInt whiteboxRadius ++ "px"
   ]
 
@@ -165,8 +165,8 @@ nestedMapStyle =
 topicLayerStyle : Rectangle -> List (Attribute Msg)
 topicLayerStyle mapRect =
   [ style "position" "absolute"
-  , style "left" <| fromInt -mapRect.x1 ++ "px"
-  , style "top" <| fromInt -mapRect.y1 ++ "px"
+  , style "left" <| fromFloat -mapRect.x1 ++ "px"
+  , style "top" <| fromFloat -mapRect.y1 ++ "px"
   ]
 
 
@@ -181,10 +181,10 @@ svgStyle =
 
 lineStyle : Point -> Point -> List (Attribute Msg)
 lineStyle pos1 pos2 =
-  [ x1 <| fromInt pos1.x
-  , y1 <| fromInt pos1.y
-  , x2 <| fromInt pos2.x
-  , y2 <| fromInt pos2.y
+  [ x1 <| fromFloat pos1.x
+  , y1 <| fromFloat pos1.y
+  , x2 <| fromFloat pos2.x
+  , y2 <| fromFloat pos2.y
   , stroke "gray"
   , strokeWidth <| fromInt assocWith ++ "px"
   ]
@@ -243,8 +243,8 @@ topicIconBoxStyle =
 topicIconStyle : List (Attribute Msg)
 topicIconStyle =
   [ style "position" "relative"
-  , style "top" <| fromInt ((topicSize.h - topicIconSize) // 2) ++ "px"
-  , style "left" <| fromInt ((topicSize.h - topicIconSize) // 2) ++ "px"
+  , style "top" <| fromFloat ((topicSize.h - topicIconSize) / 2) ++ "px"
+  , style "left" <| fromFloat ((topicSize.h - topicIconSize) / 2) ++ "px"
   , style "color" "white"
   , style "pointer-events" "none"
   ]

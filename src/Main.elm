@@ -168,10 +168,10 @@ viewMap mapId parentMapId model =
           , if isTopLevel then
               { x = "0", y = "0", w = "1024", h = "600"} -- TODO
             else
-              { x = fromInt map.rect.x1
-              , y = fromInt map.rect.y1
-              , w = fromInt (map.rect.x2 - map.rect.x1)
-              , h = fromInt (map.rect.y2 - map.rect.y1)
+              { x = map.rect.x1 |> round |> fromInt
+              , y = map.rect.y1 |> round |> fromInt
+              , w = (map.rect.x2 - map.rect.x1) |> round |> fromInt
+              , h = (map.rect.y2 - map.rect.y1) |> round |> fromInt
               }
           )
         Nothing -> (([], []), Rectangle 0 0 0 0, {x = "0", y = "0", w = "0", h = "0"})
@@ -506,11 +506,8 @@ updateMapGeometry mapId level maps =
           Just map ->
             ( let
                 delta = Point
-                  -- reorder terms alleviate loss due to integer division
-                  ((rect.x1 + rect.x2) // 2 - (map.rect.x1 + map.rect.x2) // 2)
-                  ((rect.y1 + rect.y2) // 2 - (map.rect.y1 + map.rect.y2) // 2)
-                  -- ((rect.x1 + rect.x2 - map.rect.x1 - map.rect.x2) // 2)
-                  -- ((rect.y1 + rect.y2 - map.rect.y1 - map.rect.y2) // 2)
+                  ((rect.x1 + rect.x2 - map.rect.x1 - map.rect.x2) / 2)
+                  ((rect.y1 + rect.y2 - map.rect.y1 - map.rect.y2) / 2)
               in
               updateMapRect mapId rect maps_
                 |> updateTopicPos mapId map.parentMapId delta
@@ -572,8 +569,8 @@ calcItemSize viewItem rect level maps =
 extent : Point -> Rectangle -> Rectangle -> Rectangle
 extent pos rect rectAcc =
   let
-    w2 = (rect.x2 - rect.x1) // 2
-    h2 = (rect.y2 - rect.y1) // 2
+    w2 = (rect.x2 - rect.x1) / 2
+    h2 = (rect.y2 - rect.y1) / 2
   in
   Rectangle
     (min rectAcc.x1 (pos.x - w2 - whiteboxPadding))
@@ -939,8 +936,8 @@ absMapPos mapId posAcc model =
               absMapPos
                 map.parentMapId
                 (Point
-                  (posAcc.x + mapPos_.x - (map.rect.x2 + map.rect.x1) // 2)
-                  (posAcc.y + mapPos_.y - (map.rect.y2 + map.rect.y1) // 2)
+                  (posAcc.x + mapPos_.x - (map.rect.x2 + map.rect.x1) / 2)
+                  (posAcc.y + mapPos_.y - (map.rect.y2 + map.rect.y1) / 2)
                 )
                 model
             )
@@ -1158,12 +1155,12 @@ mouseUp model =
 point : Random.Generator Point
 point =
   let
-    rw = whiteboxRange.width // 2
-    rh = whiteboxRange.height // 2
+    rw = whiteboxRange.width / 2
+    rh = whiteboxRange.height / 2
   in
   Random.map2 Point
-    (Random.int -rw rw) -- FIXME: include topic radius?
-    (Random.int -rh rh) -- FIXME: include topic radius?
+    (Random.float -rw rw)
+    (Random.float -rh rh)
 
 
 mouseOver : Model -> Class -> Id -> MapId -> Model
@@ -1212,9 +1209,9 @@ mouseDownSub =
         ( D.at ["target", "className"] D.string )
         ( D.at ["target", "dataset", "id"] D.string |> D.andThen strToIntDecoder )
         ( D.at ["target", "dataset", "mapId"] D.string |> D.andThen strToIntDecoder )
-        ( D.map2 Point
-          ( D.field "clientX" D.int )
-          ( D.field "clientY" D.int )
+        ( D.map2 Point -- TODO: no code doubling
+          ( D.field "clientX" D.float )
+          ( D.field "clientY" D.float )
         )
     , D.succeed (Mouse Down)
     ]
@@ -1225,8 +1222,8 @@ dragSub =
   Sub.batch
     [ Events.onMouseMove <| D.map Mouse <| D.map Move
         ( D.map2 Point -- TODO: no code doubling
-          ( D.field "clientX" D.int )
-          ( D.field "clientY" D.int )
+          ( D.field "clientX" D.float )
+          ( D.field "clientY" D.float )
         )
     , Events.onMouseUp <| D.map Mouse <| D.succeed Up
     ]

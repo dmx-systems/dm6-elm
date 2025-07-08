@@ -93,22 +93,23 @@ type DisplayMode -- TODO: rename to "ContainerDisplay"?
 
 
 type alias Point =
-  { x : Int
-  , y : Int
+  { x : Float
+  , y : Float
   }
 
 
 type alias Rectangle =
-  { x1 : Int
-  , y1 : Int
-  , x2 : Int
-  , y2 : Int
+  { x1 : Float
+  , y1 : Float
+  , x2 : Float
+  , y2 : Float
   }
 
 
+-- not used
 type alias Size =
-  { width : Int
-  , height : Int
+  { width : Float
+  , height : Float
   }
 
 
