@@ -46,7 +46,7 @@ init : () -> ( Model, Cmd Msg )
 init flags =
   ( { items = Dict.empty
     , maps = Dict.singleton 0
-      <| Map 0 Dict.empty (Rectangle 0 0 0 0) (Offset 0 0) -1 -- parentMapId = -1
+      <| Map 0 Dict.empty (Rectangle 0 0 0 0) -1 -- parentMapId = -1
     , activeMap = 0
     , selection = []
     , dragState = NoDrag
@@ -454,7 +454,7 @@ createMapIfNeeded targetId targetMapId model =
           | maps = model.maps |>
             Dict.insert
               targetId
-              (Map targetId Dict.empty (Rectangle 0 0 0 0) (Offset 0 0) targetMapId)
+              (Map targetId Dict.empty (Rectangle 0 0 0 0) targetMapId)
           }
       }
     , True
@@ -494,50 +494,42 @@ updateGeometry model =
 -- called indirect recursive
 updateMapGeometry : MapId -> Int -> Maps -> (Rectangle, Int, Maps)
 updateMapGeometry mapId level maps =
-  --
-  -- calculate and store the map's "rect" and, based on its change, calculate and store
-  -- 1) the map's "pos" adjustmennt ("delta") and 2) the whitebox positioning "offset"
-  --
+  -- 1) calculate and store the map's "rect" and, based on its change,
+  -- 2) calculate and store the map's "pos" adjustmennt ("delta")
   let
-    (rect, level_, maps_) = calcMapRectangle mapId level maps
+    (rect, level_, maps_) = calcMapRect mapId level maps
     maps__ =
       if level == 0 then
-        Just maps_
+        maps_
       else
-        getMap mapId maps_ |> Maybe.andThen
-          (\map -> Just
+        case getMap mapId maps_ of
+          Just map ->
             ( let
                 delta = Point
+                  -- reorder terms alleviate loss due to integer division
                   ((rect.x1 + rect.x2) // 2 - (map.rect.x1 + map.rect.x2) // 2)
                   ((rect.y1 + rect.y2) // 2 - (map.rect.y1 + map.rect.y2) // 2)
                   -- ((rect.x1 + rect.x2 - map.rect.x1 - map.rect.x2) // 2)
                   -- ((rect.y1 + rect.y2 - map.rect.y1 - map.rect.y2) // 2)
               in
-              updateMapRectAndOffset mapId rect delta maps_
+              updateMapRect mapId rect maps_
                 |> updateTopicPos mapId map.parentMapId delta
             )
-          )
+          Nothing -> maps_
   in
-  case maps__ of
-    Just maps___ -> (rect, level_, maps___)
-    Nothing -> (rect, level_, maps_)
+  (rect, level_, maps__)
 
 
-updateMapRectAndOffset : MapId -> Rectangle -> Delta -> Maps -> Maps
-updateMapRectAndOffset mapId rect delta maps =
+updateMapRect : MapId -> Rectangle -> Maps -> Maps
+updateMapRect mapId rect maps =
   updateMaps
     mapId
-    (\map ->
-      { map
-      | rect = rect
-      , offset = Offset (map.offset.x - delta.x) (map.offset.y - delta.y)
-      }
-    )
+    (\map -> { map | rect = rect })
     maps
 
 
-calcMapRectangle : MapId -> Int -> Maps -> (Rectangle, Int, Maps)
-calcMapRectangle mapId level maps =
+calcMapRect : MapId -> Int -> Maps -> (Rectangle, Int, Maps)
+calcMapRect mapId level maps =
   let
     result_ = getMap mapId maps |> Maybe.andThen
       (\map -> Just
@@ -947,8 +939,8 @@ absMapPos mapId posAcc model =
               absMapPos
                 map.parentMapId
                 (Point
-                  (posAcc.x + mapPos_.x + map.offset.x)
-                  (posAcc.y + mapPos_.y + map.offset.y)
+                  (posAcc.x + mapPos_.x - (map.rect.x2 + map.rect.x1) // 2)
+                  (posAcc.y + mapPos_.y - (map.rect.y2 + map.rect.y1) // 2)
                 )
                 model
             )
