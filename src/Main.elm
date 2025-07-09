@@ -14,7 +14,7 @@ import Html.Attributes exposing (class, attribute, type_, name, checked, disable
 import Html.Events exposing (onClick, on)
 import Random
 import String exposing (String, fromInt)
-import Svg exposing (Svg, svg, line)
+import Svg exposing (Svg, svg, line, path)
 import Svg.Attributes exposing (viewBox, width, height)
 import Task
 import Time exposing (posixToMillis)
@@ -27,6 +27,7 @@ import Debug exposing (log, toString)
 
 
 colors = Array.fromList([120, 0, 210, 36, 270, 58])
+lineFunc = viewTaxiLine -- viewLine
 dragThresholdMillis = 200
 
 
@@ -298,7 +299,7 @@ viewAssoc assoc mapId model =
     geom = assocGeometry assoc mapId model
   in
   case geom of
-    Just ( pos1, pos2 ) -> viewLine pos1 pos2
+    Just ( pos1, pos2 ) -> lineFunc pos1 pos2
     Nothing -> text "" -- TODO
 
 
@@ -314,7 +315,7 @@ viewLimboAssoc mapId model =
             (relPos pos mapId model)
         in
         case points of
-          Just (pos1, pos2) -> [ viewLine pos1 pos2 ]
+          Just (pos1, pos2) -> [ lineFunc pos1 pos2 ]
           Nothing -> []
       else
         []
@@ -325,6 +326,13 @@ viewLine : Point -> Point -> Svg Msg
 viewLine pos1 pos2 =
   line
     (lineStyle pos1 pos2)
+    []
+
+
+viewTaxiLine : Point -> Point -> Svg Msg
+viewTaxiLine pos1 pos2 =
+  path
+    (taxiLineStyle pos1 pos2)
     []
 
 

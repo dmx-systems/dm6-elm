@@ -5,7 +5,7 @@ import Html exposing (Attribute)
 import Html.Attributes exposing (style)
 import String exposing (String, fromInt, fromFloat)
 import Svg
-import Svg.Attributes as SA exposing (x1, y1, x2, y2, stroke, strokeWidth)
+import Svg.Attributes exposing (x1, y1, x2, y2, d, stroke, strokeWidth, fill)
 
 
 
@@ -13,12 +13,15 @@ import Svg.Attributes as SA exposing (x1, y1, x2, y2, stroke, strokeWidth)
 
 
 mainFontSize = "14px"
-assocWith = 2
+
+assocWith = 1.5
+assocRadius = 14
+assocColor = "black"
 
 topicSize = { w = 128, h = 28 }
 topicIconSize = 18
 topicBorderWidth = 1
-topicRadius = 6
+topicRadius = 7
 topicRect =
   Rectangle
     (-topicSize.w / 2) (-topicSize.h / 2)
@@ -27,7 +30,10 @@ topicRect =
 blackBoxSize = 42
 blackBoxOffset = blackBoxSize / 2
 blackBoxRadius = 10
-blackBoxRect = Rectangle -blackBoxOffset -blackBoxOffset blackBoxOffset blackBoxOffset
+blackBoxRect =
+  Rectangle
+    -blackBoxOffset -blackBoxOffset
+    blackBoxOffset blackBoxOffset
 
 whiteboxRange = { width = 250, height = 150 }
 whiteboxRadius = 20
@@ -96,7 +102,7 @@ topicStyle { id } mapId model =
       _ -> False
   in
   [ style "position" "absolute"
-  , style "border-width" <| fromInt topicBorderWidth ++ "px"
+  , style "border-width" <| fromFloat topicBorderWidth ++ "px"
   , style "border-style" <| if targeted then "dashed" else "solid"
   , style "box-sizing" "border-box"
   , style "background-color" "white"
@@ -155,10 +161,10 @@ itemCountStyle =
 nestedMapStyle : List (Attribute Msg)
 nestedMapStyle =
   [ style "position" "absolute"
-  , style "left" <| fromInt -topicBorderWidth ++ "px"
-  , style "top" <| fromInt -topicBorderWidth ++ "px"
-  , style "width" <| "calc(100% + " ++ fromInt (2 * topicBorderWidth) ++ "px)"
-  , style "height" <| "calc(100% + " ++ fromInt (2 * topicBorderWidth) ++ "px)"
+  , style "left" <| fromFloat -topicBorderWidth ++ "px"
+  , style "top" <| fromFloat -topicBorderWidth ++ "px"
+  , style "width" <| "calc(100% + " ++ fromFloat (2 * topicBorderWidth) ++ "px)"
+  , style "height" <| "calc(100% + " ++ fromFloat (2 * topicBorderWidth) ++ "px)"
   ]
 
 
@@ -185,10 +191,41 @@ lineStyle pos1 pos2 =
   , y1 <| fromFloat pos1.y
   , x2 <| fromFloat pos2.x
   , y2 <| fromFloat pos2.y
-  , stroke "gray"
-  , strokeWidth <| fromInt assocWith ++ "px"
+  , stroke assocColor
+  , strokeWidth <| fromFloat assocWith ++ "px"
   ]
 
+
+taxiLineStyle : Point -> Point -> List (Attribute Msg)
+taxiLineStyle pos1 pos2 =
+  let
+    sx = if pos2.x > pos1.x then 1 else -1 -- sign x
+    sy = if pos2.y > pos1.y then -1 else 1 -- sign y
+    ym = (pos1.y + pos2.y) / 2
+    x1 = pos1.x + sx * assocRadius
+    x2 = pos2.x - sx * assocRadius
+    y1 = ym + sy * assocRadius
+    y2 = ym - sy * assocRadius
+    sweep1 =
+      if sy == 1 then
+        if sx == 1 then 1 else 0
+      else
+        if sx == 1 then 0 else 1
+    sweep2 = 1 - sweep1
+  in
+  [ d ( "M " ++ fromFloat pos1.x ++ " " ++ fromFloat pos1.y ++
+        " V " ++ fromFloat y1 ++
+        " A " ++ fromFloat assocRadius ++ " " ++ fromFloat assocRadius ++ " 0 0 " ++
+        fromInt sweep1 ++ " " ++ fromFloat x1 ++ " " ++ fromFloat ym ++
+        " H " ++ fromFloat x2 ++
+        " A " ++ fromFloat assocRadius ++ " " ++ fromFloat assocRadius ++ " 0 0 " ++
+        fromInt sweep2 ++ " " ++ fromFloat pos2.x ++ " " ++ fromFloat y2 ++
+        " V " ++ fromFloat pos2.y
+      )
+  , stroke assocColor
+  , strokeWidth <| fromFloat assocWith ++ "px"
+  , fill "none"
+  ]
 
 
 -- Edit Dialog
@@ -231,8 +268,8 @@ closeButtonStyle =
 topicIconBoxStyle : List (Attribute Msg)
 topicIconBoxStyle =
   [ style "position" "relative"
-  , style "top" <| fromInt -topicBorderWidth ++ "px"
-  , style "left" <| fromInt -topicBorderWidth ++ "px"
+  , style "top" <| fromFloat -topicBorderWidth ++ "px"
+  , style "left" <| fromFloat -topicBorderWidth ++ "px"
   , style "width" <| fromInt topicSize.h ++ "px"
   , style "height" <| fromInt topicSize.h ++ "px"
   , style "border-radius" <| fromInt topicRadius ++ "px 0 0 " ++ fromInt topicRadius ++ "px"
