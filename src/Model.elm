@@ -7,7 +7,7 @@ import Debug exposing (log, toString)
 
 -- TODO: move to "Utils"
 import Html exposing (Attribute)
-import Html.Events exposing (stopPropagationOn)
+import Html.Events exposing (on, stopPropagationOn, keyCode)
 import Json.Decode as D
 
 
@@ -17,6 +17,7 @@ type alias Model =
   , maps : Maps
   , activeMap : MapId
   , selection : Selection -- transient
+  , editState : EditState -- transient
   , dragState : DragState -- transient
   , isEditDialogOpen : Bool -- transient
   , nextId : Id
@@ -125,6 +126,11 @@ type alias Color = Int -- Hue
 type alias IconName = String -- name of feather icon, https://feathericons.com
 
 
+type EditState
+  = ItemEdit Id
+  | NoEdit
+
+
 type DragState
   = NoDrag
   | WaitForStartTime Class Id MapId Point -- start point (mouse)
@@ -149,7 +155,10 @@ type Msg
 
 
 type EditMsg
-  = Open
+  = ItemEditStart
+  | ItemEditInput String
+  | ItemEditEnd
+  | Open
   | Close
   | SetIcon (Maybe IconName)
 
@@ -280,6 +289,28 @@ getSingleSelection model =
 
 
 -- EVENT HELPER -- TODO: move to "Utils"
+
+
+onEnterOrEsc : Msg -> Attribute Msg
+onEnterOrEsc msg =
+  on "keydown"
+    ( D.oneOf
+        [ keyDecoder 13 msg
+        , keyDecoder 27 msg
+        ]
+    )
+
+
+keyDecoder : Int -> Msg -> D.Decoder Msg
+keyDecoder key msg =
+  let
+    isKey code =
+      if code == key then
+        D.succeed msg
+      else
+        D.fail "not that key"
+  in
+    keyCode |> D.andThen isKey
 
 
 stopPropagationOnMousedown : Attribute Msg

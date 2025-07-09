@@ -10,8 +10,8 @@ import Browser
 import Browser.Events as Events
 import Dict exposing (Dict)
 import Html exposing (Html, Attribute, div, text, button, input, label, h1)
-import Html.Attributes exposing (class, attribute, type_, name, checked, disabled)
-import Html.Events exposing (onClick, on)
+import Html.Attributes exposing (class, attribute, type_, name, value, checked, disabled)
+import Html.Events exposing (onClick, onInput, on)
 import Random
 import String exposing (String, fromInt)
 import Svg exposing (Svg, svg)
@@ -51,6 +51,7 @@ init flags =
       <| Map 0 Dict.empty (Rectangle 0 0 0 0) -1 -- parentMapId = -1
     , activeMap = 0
     , selection = []
+    , editState = NoEdit
     , dragState = NoDrag
     , isEditDialogOpen = False
     , nextId = 1
@@ -100,13 +101,21 @@ viewToolbar model =
         [ text "Add Topic" ]
     , viewDisplayMode model
     , button
+        ( [ onClick (Edit ItemEditStart)
+          , stopPropagationOnMousedown
+          , disabled hasNoSelection
+          ]
+          ++ buttonStyle
+        )
+        [ text "Edit Text" ]
+    , button
         ( [ onClick (Edit Open)
           , stopPropagationOnMousedown
           , disabled hasNoSelection
           ]
           ++ buttonStyle
         )
-        [ text "Edit" ]
+        [ text "Choose Icon" ]
     , button
         ( [ onClick Delete
           , stopPropagationOnMousedown
@@ -243,13 +252,28 @@ viewTopic topic props mapId model =
 
 normalTopic : TopicInfo -> TopicProps -> Model -> (List (Attribute Msg), List (Html Msg))
 normalTopic topic props model =
+  let
+    textElem =
+      if model.editState == ItemEdit topic.id then
+        input
+          ( [ value topic.text
+            , onInput (ItemEditInput >> Edit)
+            , onEnterOrEsc (Edit ItemEditEnd)
+            , stopPropagationOnMousedown
+            ]
+            ++ topicInputStyle
+          )
+          []
+      else
+        div
+          topicLabelStyle
+          [ text topic.text ]
+  in
   ( normalStyle topic props
   , [ div
         topicIconBoxStyle
         [ viewTopicIcon topic.id model ]
-    , div
-        topicLabelStyle
-        [ text topic.text ]
+    , textElem
     ]
   )
 
@@ -871,7 +895,10 @@ updateMouse msg model =
 
 mouseDown : Model -> Model
 mouseDown model =
-  { model | selection = [] }
+  { model
+  | selection = []
+  , editState = NoEdit
+  }
 
 
 mouseDownOnItem : Model -> Class -> Id -> MapId -> Point -> ( Model, Cmd Msg )

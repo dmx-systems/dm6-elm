@@ -17,6 +17,9 @@ import FeatherIcons as Icon
 updateEditDialog : EditMsg -> Model -> Model
 updateEditDialog msg model =
   case msg of
+    ItemEditStart -> startItemEdit model
+    ItemEditInput text -> updateItemText text model
+    ItemEditEnd -> endItemEdit model
     Open -> setEditDialogOpen True model
     Close -> setEditDialogOpen False model
     SetIcon maybeIcon -> setIcon maybeIcon model
@@ -26,6 +29,27 @@ updateEditDialog msg model =
 setEditDialogOpen : Bool -> Model -> Model
 setEditDialogOpen isOpen model =
   { model | isEditDialogOpen = isOpen }
+
+
+startItemEdit : Model -> Model
+startItemEdit model =
+  case getSingleSelection model of
+    Just (id, _) -> { model | editState = ItemEdit id }
+    Nothing -> model
+
+
+updateItemText : String -> Model -> Model
+updateItemText text model =
+  case model.editState of
+    ItemEdit id -> updateTopicInfo id
+      (\topic -> { topic | text = text })
+      model
+    NoEdit -> logError "updateItemText" "called when editState is NoEdit" model
+
+
+endItemEdit : Model -> Model
+endItemEdit model =
+  { model | editState = NoEdit }
 
 
 setIcon : Maybe IconName -> Model -> Model

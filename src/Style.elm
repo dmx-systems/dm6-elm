@@ -19,7 +19,7 @@ assocRadius = 14 -- should not bigger than half topic height
 assocColor = "black"
 
 topicSize = { w = 128, h = 28 }
-topicIconSize = 18
+topicIconSize = 16
 topicBorderWidth = 1
 topicRadius = 7
 topicRect =
@@ -131,7 +131,8 @@ normalStyle { color } { pos } =
 
 topicIconBoxStyle : List (Attribute Msg)
 topicIconBoxStyle =
-  [ style "width" <| fromInt topicSize.h ++ "px"
+  [ style "flex" "none"
+  , style "width" <| fromInt topicSize.h ++ "px"
   , style "height" <| fromInt topicSize.h ++ "px"
   , style "border-radius" <| fromInt topicRadius ++ "px 0 0 " ++ fromInt topicRadius ++ "px"
   , style "background-color" "black"
@@ -150,7 +151,16 @@ topicIconStyle =
 
 topicLabelStyle : List (Attribute Msg)
 topicLabelStyle =
-  [ style "pointer-events" "none"
+  [ style "pointer-events" "none" ]
+
+
+topicInputStyle : List (Attribute Msg)
+topicInputStyle =
+  [ style "width" "100%"
+  , style "position" "relative"
+  , style "left" "-4px"
+  , style "font-family" "sans-serif" -- Default for <input> is "-apple-system" (on Mac)
+  , style "font-size" mainFontSize
   ]
 
 
