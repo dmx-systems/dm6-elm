@@ -33,6 +33,7 @@ type Item
 
 type alias TopicInfo =
   { id : Id
+  , text : String
   , color : Color
   , iconName : Maybe IconName
   }

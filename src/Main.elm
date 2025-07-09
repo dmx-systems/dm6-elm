@@ -245,8 +245,11 @@ normalTopic : TopicInfo -> TopicProps -> Model -> (List (Attribute Msg), List (H
 normalTopic topic props model =
   ( normalStyle topic props
   , [ div
-      topicIconBoxStyle
-      [ viewTopicIcon topic.id model ]
+        topicIconBoxStyle
+        [ viewTopicIcon topic.id model ]
+    , div
+        topicLabelStyle
+        [ text topic.text ]
     ]
   )
 
@@ -360,15 +363,14 @@ createTopic : Model -> (Model, Id)
 createTopic model =
   let
     id = model.nextId
+    text = "New Topic"
     index = modBy (Array.length colors) (topicCount model)
     color = case colors |> Array.get index of
       Just color_ -> color_
       Nothing -> logError "createTopic" "Illegal color" 0
+    topic = TopicInfo id text color Nothing
   in
-  ( { model
-    | items = model.items |> Dict.insert id ( Topic <| TopicInfo id color Nothing )
-    , nextId = id + 1
-    }
+  ( { model | items = model.items |> Dict.insert id (Topic topic) } |> nextId
   , id
   )
 
@@ -400,12 +402,9 @@ createAssoc : ItemType -> Id -> RoleType -> Id -> RoleType -> Model -> (Model, I
 createAssoc itemType player1 role1 player2 role2 model =
   let
     id = model.nextId
+    assoc = AssocInfo id itemType player1 role1 player2 role2
   in
-  ( { model
-    | items = model.items |> Dict.insert id
-        ( Assoc <| AssocInfo id itemType player1 role1 player2 role2 )
-    , nextId = id + 1
-    }
+  ( { model | items = model.items |> Dict.insert id (Assoc assoc) } |> nextId
   , id
   )
 
@@ -418,6 +417,11 @@ createAssocAndAddToMap itemType player1 role1 player2 role2 mapId model =
     props = ViewAssoc AssocProps
   in
   addItemToMap assocId props mapId newModel
+
+
+nextId : Model -> Model
+nextId model =
+  { model | nextId = model.nextId + 1 }
 
 
 moveTopicToMap : Id -> MapId -> Point -> Id -> MapId -> Point -> Model -> Model

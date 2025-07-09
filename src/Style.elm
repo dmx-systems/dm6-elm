@@ -118,11 +118,39 @@ selectionStyle =
 
 normalStyle : TopicInfo -> TopicProps -> List (Attribute Msg)
 normalStyle { color } { pos } =
-  [ style "left" <| fromFloat (pos.x - topicSize.w / 2) ++ "px"
+  [ style "display" "flex"
+  , style "align-items" "center"
+  , style "gap" "8px"
+  , style "left" <| fromFloat (pos.x - topicSize.w / 2) ++ "px"
   , style "top" <| fromFloat (pos.y - topicSize.h / 2) ++ "px"
   , style "width" <| fromInt topicSize.w ++ "px"
   , style "height" <| fromInt topicSize.h ++ "px"
   , style "border-radius" <| fromInt topicRadius ++ "px"
+  ]
+
+
+topicIconBoxStyle : List (Attribute Msg)
+topicIconBoxStyle =
+  [ style "width" <| fromInt topicSize.h ++ "px"
+  , style "height" <| fromInt topicSize.h ++ "px"
+  , style "border-radius" <| fromInt topicRadius ++ "px 0 0 " ++ fromInt topicRadius ++ "px"
+  , style "background-color" "black"
+  , style "pointer-events" "none"
+  ]
+
+
+topicIconStyle : List (Attribute Msg)
+topicIconStyle =
+  [ style "position" "relative"
+  , style "top" <| fromFloat ((topicSize.h - topicIconSize) / 2) ++ "px"
+  , style "left" <| fromFloat ((topicSize.h - topicIconSize) / 2) ++ "px"
+  , style "color" "white"
+  ]
+
+
+topicLabelStyle : List (Attribute Msg)
+topicLabelStyle =
+  [ style "pointer-events" "none"
   ]
 
 
@@ -283,26 +311,4 @@ closeButtonStyle =
   [ style "position" "absolute"
   , style "top" "0"
   , style "right" "0"
-  ]
-
-
-topicIconBoxStyle : List (Attribute Msg)
-topicIconBoxStyle =
-  [ style "position" "relative"
-  , style "top" <| fromFloat -topicBorderWidth ++ "px"
-  , style "left" <| fromFloat -topicBorderWidth ++ "px"
-  , style "width" <| fromInt topicSize.h ++ "px"
-  , style "height" <| fromInt topicSize.h ++ "px"
-  , style "border-radius" <| fromInt topicRadius ++ "px 0 0 " ++ fromInt topicRadius ++ "px"
-  , style "background-color" "black"
-  ]
-
-
-topicIconStyle : List (Attribute Msg)
-topicIconStyle =
-  [ style "position" "relative"
-  , style "top" <| fromFloat ((topicSize.h - topicIconSize) / 2) ++ "px"
-  , style "left" <| fromFloat ((topicSize.h - topicIconSize) / 2) ++ "px"
-  , style "color" "white"
-  , style "pointer-events" "none"
   ]
