@@ -14,7 +14,7 @@ import Html.Attributes exposing (class, attribute, type_, name, checked, disable
 import Html.Events exposing (onClick, on)
 import Random
 import String exposing (String, fromInt)
-import Svg exposing (Svg, svg, line, path)
+import Svg exposing (Svg, svg)
 import Svg.Attributes exposing (viewBox, width, height)
 import Task
 import Time exposing (posixToMillis)
@@ -27,7 +27,7 @@ import Debug exposing (log, toString)
 
 
 colors = Array.fromList([120, 0, 210, 36, 270, 58])
-lineFunc = viewTaxiLine -- viewLine
+lineFunc = taxiLine -- directLine
 dragThresholdMillis = 200
 
 
@@ -320,20 +320,6 @@ viewLimboAssoc mapId model =
       else
         []
     _ -> []
-
-
-viewLine : Point -> Point -> Svg Msg
-viewLine pos1 pos2 =
-  line
-    (lineStyle pos1 pos2)
-    []
-
-
-viewTaxiLine : Point -> Point -> Svg Msg
-viewTaxiLine pos1 pos2 =
-  path
-    (taxiLineStyle pos1 pos2)
-    []
 
 
 assocGeometry : AssocInfo -> MapId -> Model -> Maybe ( Point, Point )

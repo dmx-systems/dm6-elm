@@ -4,7 +4,7 @@ import Model exposing (..)
 import Html exposing (Attribute)
 import Html.Attributes exposing (style)
 import String exposing (String, fromInt, fromFloat)
-import Svg
+import Svg exposing (Svg, line, path)
 import Svg.Attributes exposing (x1, y1, x2, y2, d, stroke, strokeWidth, fill)
 
 
@@ -15,7 +15,7 @@ import Svg.Attributes exposing (x1, y1, x2, y2, d, stroke, strokeWidth, fill)
 mainFontSize = "14px"
 
 assocWith = 1.5
-assocRadius = 14
+assocRadius = 14 -- should not bigger than half topic height
 assocColor = "black"
 
 topicSize = { w = 128, h = 28 }
@@ -185,44 +185,65 @@ svgStyle =
   ]
 
 
-lineStyle : Point -> Point -> List (Attribute Msg)
-lineStyle pos1 pos2 =
-  [ x1 <| fromFloat pos1.x
-  , y1 <| fromFloat pos1.y
-  , x2 <| fromFloat pos2.x
-  , y2 <| fromFloat pos2.y
-  , stroke assocColor
-  , strokeWidth <| fromFloat assocWith ++ "px"
-  ]
+directLine : Point -> Point -> Svg Msg
+directLine pos1 pos2 =
+  line
+    ( [ x1 <| fromFloat pos1.x
+      , y1 <| fromFloat pos1.y
+      , x2 <| fromFloat pos2.x
+      , y2 <| fromFloat pos2.y
+      ] ++ lineStyle
+    )
+    []
 
 
-taxiLineStyle : Point -> Point -> List (Attribute Msg)
-taxiLineStyle pos1 pos2 =
-  let
-    sx = if pos2.x > pos1.x then 1 else -1 -- sign x
-    sy = if pos2.y > pos1.y then -1 else 1 -- sign y
-    ym = (pos1.y + pos2.y) / 2
-    x1 = pos1.x + sx * assocRadius
-    x2 = pos2.x - sx * assocRadius
-    y1 = ym + sy * assocRadius
-    y2 = ym - sy * assocRadius
-    sweep1 =
-      if sy == 1 then
-        if sx == 1 then 1 else 0
-      else
-        if sx == 1 then 0 else 1
-    sweep2 = 1 - sweep1
-  in
-  [ d ( "M " ++ fromFloat pos1.x ++ " " ++ fromFloat pos1.y ++
-        " V " ++ fromFloat y1 ++
-        " A " ++ fromFloat assocRadius ++ " " ++ fromFloat assocRadius ++ " 0 0 " ++
-        fromInt sweep1 ++ " " ++ fromFloat x1 ++ " " ++ fromFloat ym ++
-        " H " ++ fromFloat x2 ++
-        " A " ++ fromFloat assocRadius ++ " " ++ fromFloat assocRadius ++ " 0 0 " ++
-        fromInt sweep2 ++ " " ++ fromFloat pos2.x ++ " " ++ fromFloat y2 ++
-        " V " ++ fromFloat pos2.y
+taxiLine : Point -> Point -> Svg Msg
+taxiLine pos1 pos2 =
+  if abs (pos2.x - pos1.x) < 2 * assocRadius then -- straight vertical
+    let
+      xm = (pos1.x + pos2.x) / 2
+    in
+    path
+      ( [ d ("M " ++ fromFloat xm ++ " " ++ fromFloat pos1.y ++ " V " ++ fromFloat pos2.y)
+        ] ++ lineStyle
       )
-  , stroke assocColor
+      []
+  else -- 5 segment taxi line
+    let
+      sx = if pos2.x > pos1.x then 1 else -1 -- sign x
+      sy = if pos2.y > pos1.y then -1 else 1 -- sign y
+      ym = (pos1.y + pos2.y) / 2 -- y mean
+      x1 = fromFloat (pos1.x + sx * assocRadius)
+      x2 = fromFloat (pos2.x - sx * assocRadius)
+      y1 = fromFloat (ym + sy * assocRadius)
+      y2 = fromFloat (ym - sy * assocRadius)
+      sweep1 =
+        if sy == 1 then
+          if sx == 1 then 1 else 0
+        else
+          if sx == 1 then 0 else 1
+      sweep2 = 1 - sweep1
+      sw1 = fromInt sweep1
+      sw2 = fromInt sweep2
+      r = fromFloat assocRadius
+    in
+    path
+      ( [ d
+          ( "M " ++ fromFloat pos1.x ++ " " ++ fromFloat pos1.y ++
+            " V " ++ y1 ++
+            " A " ++ r ++ " " ++ r ++ " 0 0 " ++ sw1 ++ " " ++ x1 ++ " " ++ fromFloat ym ++
+            " H " ++ x2 ++
+            " A " ++ r ++ " " ++ r ++ " 0 0 " ++ sw2 ++ " " ++ fromFloat pos2.x ++ " " ++ y2 ++
+            " V " ++ fromFloat pos2.y
+          )
+        ] ++ lineStyle
+      )
+      []
+
+
+lineStyle : List (Attribute Msg)
+lineStyle =
+  [ stroke assocColor
   , strokeWidth <| fromFloat assocWith ++ "px"
   , fill "none"
   ]
@@ -242,8 +263,8 @@ editDialogStyle =
   ]
 
 
-iconsStyle : List (Attribute Msg)
-iconsStyle =
+iconsListStyle : List (Attribute Msg)
+iconsListStyle =
   [ style "height" "100%"
   , style "overflow" "auto"
   ]

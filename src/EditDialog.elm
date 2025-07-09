@@ -46,7 +46,7 @@ viewEditDialog model =
   div
     editDialogStyle
     [ div
-        iconsStyle
+        iconsListStyle
         viewIcons
     , button
       ( [onClick (Edit Close)]
