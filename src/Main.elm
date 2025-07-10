@@ -171,7 +171,7 @@ viewMap : MapId -> MapId -> Model -> Html Msg
 viewMap mapId parentMapId model =
   let
     isTopLevel = mapId == model.activeMap
-    ((topics, assocs), rect, vb) =
+    ((topics, ghostTopics, assocs), rect, vb) =
       case getMap mapId model.maps of
         Just map ->
           ( viewItems map model
@@ -185,13 +185,16 @@ viewMap mapId parentMapId model =
               , h = (map.rect.y2 - map.rect.y1) |> round |> fromInt
               }
           )
-        Nothing -> (([], []), Rectangle 0 0 0 0, {x = "0", y = "0", w = "0", h = "0"})
+        Nothing -> (([], [], []), Rectangle 0 0 0 0, {x = "0", y = "0", w = "0", h = "0"})
   in
   div
     (nestedMapAttributes mapId parentMapId model)
     [ div
         (topicLayerStyle rect)
         topics
+    , div
+        (topicLayerStyle rect)
+        ghostTopics
     , svg
         ( [ width vb.w
           , height vb.h
@@ -205,30 +208,39 @@ viewMap mapId parentMapId model =
     ]
 
 
-viewItems : Map -> Model -> ( List (Html Msg), List (Svg Msg) )
+viewItems : Map -> Model -> ( List (Html Msg), List (Html Msg), List (Svg Msg) )
 viewItems map model =
   map.items |> Dict.values |> List.foldr
-    (\{id, hidden, viewProps} (t, a) ->
-      if hidden then
-        (t, a)
-      else
+    (\{id, hidden, viewProps} (t, gt, a) ->
+      if not hidden then
         let
           item = model.items |> Dict.get id
         in
         case (item, viewProps) of
-          (Just (Topic topic), ViewTopic props) -> (viewTopic topic props map.id model :: t, a)
-          (Just (Assoc assoc), ViewAssoc _) -> (t, viewAssoc assoc map.id model :: a)
-          _ -> logError "viewItems" ("problem with item " ++ fromInt id) (t, a)
+          (Just (Topic topic), ViewTopic props) ->
+            let
+              (topicHtml, maybeGhostTopic) = viewTopic topic props map.id model
+            in
+            ( topicHtml :: t
+            , case maybeGhostTopic of
+                Just ghostTopic -> ghostTopic :: gt
+                Nothing -> gt
+            , a
+            )
+          (Just (Assoc assoc), ViewAssoc _) -> (t, gt, viewAssoc assoc map.id model :: a)
+          _ -> logError "viewItems" ("problem with item " ++ fromInt id) (t, gt, a)
+      else
+        (t, gt, a)
     )
-    ([], [])
+    ([], [], [])
 
 
-viewTopic : TopicInfo -> TopicProps -> MapId -> Model -> Html Msg
+viewTopic : TopicInfo -> TopicProps -> MapId -> Model -> (Html Msg, Maybe (Html Msg))
 viewTopic topic props mapId model =
   let
-    (style, children) =
+    (style, children, ghostTopic) =
       case props.displayMode of
-        Just BlackBox -> (blackBoxStyle topic props, viewItemCount topic.id props model)
+        Just BlackBox -> blackBoxTopic topic props model
         Just WhiteBox ->
           ( let
               rect =
@@ -238,19 +250,35 @@ viewTopic topic props mapId model =
             in
             whiteboxStyle topic props rect
           , [ viewMap topic.id mapId model ]
+          , Nothing
           )
         Just Unboxed -> normalTopic topic props model
         Nothing -> normalTopic topic props model
   in
-  div
-    ( topicAttr topic.id mapId
-      ++ topicStyle topic mapId model
-      ++ style
-    )
-    children
+  ( div
+      ( topicAttr topic.id mapId
+        ++ topicStyle topic mapId model
+        ++ style
+      )
+      children
+  , ghostTopic
+  )
 
 
-normalTopic : TopicInfo -> TopicProps -> Model -> (List (Attribute Msg), List (Html Msg))
+blackBoxTopic : TopicInfo -> TopicProps -> Model -> TopicRendering
+blackBoxTopic topic props model =
+  let
+    (style, children, _) = normalTopic topic props model
+    ghostTopic = div (ghostTopicStyle props) []
+  in
+  ( style
+  , children
+      ++ (viewItemCount topic.id props model)
+  , Just ghostTopic
+  )
+
+
+normalTopic : TopicInfo -> TopicProps -> Model -> TopicRendering
 normalTopic topic props model =
   let
     textElem =
@@ -275,6 +303,7 @@ normalTopic topic props model =
         [ viewTopicIcon topic.id model ]
     , textElem
     ]
+  , Nothing
   )
 
 

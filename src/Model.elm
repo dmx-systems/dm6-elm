@@ -6,7 +6,7 @@ import Time
 import Debug exposing (log, toString)
 
 -- TODO: move to "Utils"
-import Html exposing (Attribute)
+import Html exposing (Html, Attribute)
 import Html.Events exposing (on, stopPropagationOn, keyCode)
 import Json.Decode as D
 
@@ -50,11 +50,14 @@ type alias AssocInfo =
   }
 
 
-type alias Maps = Dict Id Map
+type alias Maps = Dict MapId Map
 type alias ViewItems = Dict Id ViewItem
 
 
 type alias TransferFunc = ViewItems -> ViewItems -> Model -> ViewItems
+
+
+type alias TopicRendering = (List (Attribute Msg), List (Html Msg), Maybe (Html Msg))
 
 
 type alias Map =

@@ -164,6 +164,7 @@ topicInputStyle =
   ]
 
 
+-- not used
 blackBoxStyle : TopicInfo -> TopicProps -> List (Attribute Msg)
 blackBoxStyle { color } { pos } =
   [ style "left" <| fromFloat (pos.x - blackBoxOffset) ++ "px"
@@ -171,6 +172,22 @@ blackBoxStyle { color } { pos } =
   , style "width" <| fromInt blackBoxSize ++ "px"
   , style "height" <| fromInt blackBoxSize ++ "px"
   , style "border-radius" <| fromInt blackBoxRadius ++ "px"
+  ]
+
+
+ghostTopicStyle : TopicProps -> List (Attribute Msg)
+ghostTopicStyle { pos } =
+  [ style "position" "absolute"
+  , style "left" <| fromFloat (pos.x - topicSize.w / 2 + 5) ++ "px"
+  , style "top" <| fromFloat (pos.y - topicSize.h / 2 + 5) ++ "px"
+  , style "width" <| fromInt topicSize.w ++ "px"
+  , style "height" <| fromInt topicSize.h ++ "px"
+  , style "box-sizing" "border-box"
+  , style "border-radius" <| fromInt topicRadius ++ "px"
+  , style "border-width" <| fromFloat topicBorderWidth ++ "px"
+  , style "border-style" <| {- if targeted then "dashed" else -} "solid"
+  , style "background-color" "white"
+  , style "z-index" "-1" -- behind topic layer
   ]
 
 
@@ -190,9 +207,8 @@ whiteboxStyle { color } { pos } rect =
 
 itemCountStyle : List (Attribute Msg)
 itemCountStyle =
-  [ style "position" "relative"
-  , style "top" "-1.3em"
-  , style "text-align" "center"
+  [ style "position" "absolute"
+  , style "left" "calc(100% + 10px)"
   ]
 
 
@@ -219,7 +235,7 @@ svgStyle =
   [ style "position" "absolute"
   , style "top" "0"
   , style "left" "0"
-  , style "z-index" "-1" -- behind topic layer
+  , style "z-index" "-2" -- behind ghost topic layer
   ]
 
 
