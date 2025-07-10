@@ -27,13 +27,7 @@ topicRect =
     (-topicSize.w / 2) (-topicSize.h / 2)
     (topicSize.w / 2) (topicSize.h / 2)
 
-blackBoxSize = 42
-blackBoxOffset = blackBoxSize / 2
-blackBoxRadius = 10
-blackBoxRect =
-  Rectangle
-    -blackBoxOffset -blackBoxOffset
-    blackBoxOffset blackBoxOffset
+ghostTopicOffset = 5
 
 whiteboxRange = { width = 250, height = 150 }
 whiteboxRadius = 20
@@ -164,22 +158,11 @@ topicInputStyle =
   ]
 
 
--- not used
-blackBoxStyle : TopicInfo -> TopicProps -> List (Attribute Msg)
-blackBoxStyle { color } { pos } =
-  [ style "left" <| fromFloat (pos.x - blackBoxOffset) ++ "px"
-  , style "top" <| fromFloat (pos.y - blackBoxOffset) ++ "px"
-  , style "width" <| fromInt blackBoxSize ++ "px"
-  , style "height" <| fromInt blackBoxSize ++ "px"
-  , style "border-radius" <| fromInt blackBoxRadius ++ "px"
-  ]
-
-
 ghostTopicStyle : TopicProps -> List (Attribute Msg)
 ghostTopicStyle { pos } =
   [ style "position" "absolute"
-  , style "left" <| fromFloat (pos.x - topicSize.w / 2 + 5) ++ "px"
-  , style "top" <| fromFloat (pos.y - topicSize.h / 2 + 5) ++ "px"
+  , style "left" <| fromFloat (pos.x - topicSize.w / 2 + ghostTopicOffset) ++ "px"
+  , style "top" <| fromFloat (pos.y - topicSize.h / 2 + ghostTopicOffset) ++ "px"
   , style "width" <| fromInt topicSize.w ++ "px"
   , style "height" <| fromInt topicSize.h ++ "px"
   , style "box-sizing" "border-box"
