@@ -27,6 +27,7 @@ topicRect =
     (-topicSize.w / 2) (-topicSize.h / 2)
     (topicSize.w / 2) (topicSize.h / 2)
 
+-- not used
 blackBoxSize = 42
 blackBoxOffset = blackBoxSize / 2
 blackBoxRadius = 10
@@ -94,18 +95,8 @@ topicStyle { id } mapId model =
     dragging = case model.dragState of
       Drag DragTopic id_ _ _ _ _ -> id_ == id
       _ -> False
-    targeted = case model.dragState of
-      -- can't move a topic to a map where it is already
-      Drag DragTopic _ mapId_ _ _ (Just target) -> target == (id, mapId) && mapId_ /= id
-      -- can't create assoc when both topics are in different map
-      Drag DrawAssoc _ mapId_ _ _ (Just target) -> target == (id, mapId) && mapId_ == mapId
-      _ -> False
   in
   [ style "position" "absolute"
-  , style "border-width" <| fromFloat topicBorderWidth ++ "px"
-  , style "border-style" <| if targeted then "dashed" else "solid"
-  , style "box-sizing" "border-box"
-  , style "background-color" "white"
   , style "z-index" <| if dragging then "0" else "1"
   ]
   ++ if selected then selectionStyle else []
@@ -116,16 +107,38 @@ selectionStyle =
   [ style "box-shadow" "4px 4px 4px gray" ]
 
 
-normalStyle : TopicInfo -> TopicProps -> List (Attribute Msg)
-normalStyle { color } { pos } =
+normalStyle : TopicInfo -> TopicProps -> MapId -> Model -> List (Attribute Msg)
+normalStyle topic props mapId model =
+  topicFlexboxStyle topic mapId model ++ topicPosition props
+
+
+topicFlexboxStyle : TopicInfo -> MapId -> Model -> List (Attribute Msg)
+topicFlexboxStyle { id } mapId model =
+  let
+    targeted = case model.dragState of
+      -- can't move a topic to a map where it is already
+      -- can't create assoc when both topics are in different map
+      Drag DragTopic _ mapId_ _ _ (Just target) -> target == (id, mapId) && mapId_ /= id
+      Drag DrawAssoc _ mapId_ _ _ (Just target) -> target == (id, mapId) && mapId_ == mapId
+      _ -> False
+  in
   [ style "display" "flex"
   , style "align-items" "center"
   , style "gap" "8px"
-  , style "left" <| fromFloat (pos.x - topicSize.w / 2) ++ "px"
-  , style "top" <| fromFloat (pos.y - topicSize.h / 2) ++ "px"
   , style "width" <| fromInt topicSize.w ++ "px"
   , style "height" <| fromInt topicSize.h ++ "px"
+  , style "box-sizing" "border-box"
+  , style "border-width" <| fromFloat topicBorderWidth ++ "px"
+  , style "border-style" <| if targeted then "dashed" else "solid"
   , style "border-radius" <| fromInt topicRadius ++ "px"
+  , style "background-color" "white"
+  ]
+
+
+topicPosition : TopicProps -> List (Attribute Msg)
+topicPosition { pos } =
+  [ style "left" <| fromFloat (pos.x - topicSize.w / 2) ++ "px"
+  , style "top" <| fromFloat (pos.y - topicSize.h / 2) ++ "px"
   ]
 
 
@@ -164,13 +177,25 @@ topicInputStyle =
   ]
 
 
-blackBoxStyle : TopicInfo -> TopicProps -> List (Attribute Msg)
-blackBoxStyle { color } { pos } =
-  [ style "left" <| fromFloat (pos.x - blackBoxOffset) ++ "px"
-  , style "top" <| fromFloat (pos.y - blackBoxOffset) ++ "px"
-  , style "width" <| fromInt blackBoxSize ++ "px"
-  , style "height" <| fromInt blackBoxSize ++ "px"
-  , style "border-radius" <| fromInt blackBoxRadius ++ "px"
+blackBoxStyle : List (Attribute Msg)
+blackBoxStyle =
+  [ style "pointer-events" "none" ]
+
+
+ghostTopicStyle : List (Attribute Msg)
+ghostTopicStyle =
+  [ style "position" "absolute"
+  , style "left" "5px"
+  , style "top" "5px"
+  , style "width" <| fromInt topicSize.w ++ "px"
+  , style "height" <| fromInt topicSize.h ++ "px"
+  , style "box-sizing" "border-box"
+  , style "border-radius" <| fromInt topicRadius ++ "px"
+  , style "border-width" <| fromFloat topicBorderWidth ++ "px"
+  , style "border-style" <| {- if targeted then "dashed" else -} "solid"
+  , style "background-color" "white"
+  , style "pointer-events" "none"
+  , style "z-index" "-1" -- behind topic
   ]
 
 
@@ -190,9 +215,8 @@ whiteboxStyle { color } { pos } rect =
 
 itemCountStyle : List (Attribute Msg)
 itemCountStyle =
-  [ style "position" "relative"
-  , style "top" "-1.3em"
-  , style "text-align" "center"
+  [ style "position" "absolute"
+  , style "left" "calc(100% + 12px)"
   ]
 
 

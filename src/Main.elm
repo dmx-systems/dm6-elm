@@ -228,7 +228,7 @@ viewTopic topic props mapId model =
   let
     (style, children) =
       case props.displayMode of
-        Just BlackBox -> (blackBoxStyle topic props, viewItemCount topic.id props model)
+        Just BlackBox -> blackBoxTopic topic props mapId model
         Just WhiteBox ->
           ( let
               rect =
@@ -239,8 +239,8 @@ viewTopic topic props mapId model =
             whiteboxStyle topic props rect
           , [ viewMap topic.id mapId model ]
           )
-        Just Unboxed -> normalTopic topic props model
-        Nothing -> normalTopic topic props model
+        Just Unboxed -> normalTopic topic props mapId model
+        Nothing -> normalTopic topic props mapId model
   in
   div
     ( topicAttr topic.id mapId
@@ -250,8 +250,28 @@ viewTopic topic props mapId model =
     children
 
 
-normalTopic : TopicInfo -> TopicProps -> Model -> (List (Attribute Msg), List (Html Msg))
-normalTopic topic props model =
+blackBoxTopic : TopicInfo -> TopicProps -> MapId -> Model -> TopicRendering
+blackBoxTopic topic props mapId model =
+  ( topicPosition props
+  , [ div
+        ( topicFlexboxStyle topic mapId model ++ blackBoxStyle )
+        [ div
+            topicIconBoxStyle
+            [ viewTopicIcon topic.id model ]
+        , div
+            topicLabelStyle
+            [ text topic.text ]
+        , viewItemCount topic.id props model
+        ]
+    , div
+        ghostTopicStyle
+        []
+    ]
+  )
+
+
+normalTopic : TopicInfo -> TopicProps -> MapId -> Model -> TopicRendering
+normalTopic topic props mapId model =
   let
     textElem =
       if model.editState == ItemEdit topic.id then
@@ -269,7 +289,7 @@ normalTopic topic props model =
           topicLabelStyle
           [ text topic.text ]
   in
-  ( normalStyle topic props
+  ( normalStyle topic props mapId model
   , [ div
         topicIconBoxStyle
         [ viewTopicIcon topic.id model ]
@@ -278,7 +298,7 @@ normalTopic topic props model =
   )
 
 
-viewItemCount : Id -> TopicProps -> Model -> List (Html Msg)
+viewItemCount : Id -> TopicProps -> Model -> Html Msg
 viewItemCount topicId props model =
   let
     itemCount =
@@ -289,10 +309,9 @@ viewItemCount topicId props model =
       else
         0
   in
-    [ div
-        itemCountStyle
-        [ text <| fromInt itemCount ]
-    ]
+  div
+    itemCountStyle
+    [ text <| fromInt itemCount ]
 
 
 {-| For nested maps give the outer div both the topic meta data and a size. So mouse events
