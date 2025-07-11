@@ -111,10 +111,9 @@ type alias Rectangle =
   }
 
 
--- not used
 type alias Size =
-  { width : Float
-  , height : Float
+  { w : Float
+  , h : Float
   }
 
 

@@ -257,7 +257,7 @@ blackBoxTopic topic props mapId model =
         (topicFlexboxStyle topic mapId model ++ blackBoxStyle)
         (normalTopicHtml topic model ++ viewItemCount topic.id props model)
     , div
-        ghostTopicStyle
+        (ghostTopicStyle topic mapId model)
         []
     ]
   )

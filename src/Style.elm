@@ -18,7 +18,7 @@ assocWith = 1.5
 assocRadius = 14 -- should not bigger than half topic height
 assocColor = "black"
 
-topicSize = { w = 128, h = 28 }
+topicSize = Size 128 28
 topicIconSize = 16
 topicBorderWidth = 1
 topicRadius = 7
@@ -82,9 +82,8 @@ buttonStyle =
 
 
 topicStyle : TopicInfo -> MapId -> Model -> List (Attribute Msg)
-topicStyle { id } mapId model =
+topicStyle ({ id } as topic) mapId model =
   let
-    selected = model.selection |> List.member (id, mapId)
     dragging = case model.dragState of
       Drag DragTopic id_ _ _ _ _ -> id_ == id
       _ -> False
@@ -92,12 +91,18 @@ topicStyle { id } mapId model =
   [ style "position" "absolute"
   , style "z-index" <| if dragging then "0" else "1"
   ]
-  ++ if selected then selectionStyle else []
+  ++ selectionStyle topic mapId model
 
 
-selectionStyle : List (Attribute Msg)
-selectionStyle =
-  [ style "box-shadow" "4px 4px 4px gray" ]
+selectionStyle : TopicInfo -> MapId -> Model -> List (Attribute Msg)
+selectionStyle { id } mapId model =
+  let
+    selected = model.selection |> List.member (id, mapId)
+  in
+  if selected then
+    [ style "box-shadow" "4px 4px 4px gray" ]
+  else
+    []
 
 
 normalStyle : TopicInfo -> TopicProps -> MapId -> Model -> List (Attribute Msg)
@@ -110,8 +115,8 @@ topicFlexboxStyle topic mapId model =
   [ style "display" "flex"
   , style "align-items" "center"
   , style "gap" "8px"
-  , style "width" <| fromInt topicSize.w ++ "px"
-  , style "height" <| fromInt topicSize.h ++ "px"
+  , style "width" <| fromFloat topicSize.w ++ "px"
+  , style "height" <| fromFloat topicSize.h ++ "px"
   , style "border-radius" <| fromInt topicRadius ++ "px"
   ]
   ++ topicBorderStyle topic mapId model
@@ -127,8 +132,8 @@ topicPosStyle { pos } =
 topicIconBoxStyle : List (Attribute Msg)
 topicIconBoxStyle =
   [ style "flex" "none"
-  , style "width" <| fromInt topicSize.h ++ "px"
-  , style "height" <| fromInt topicSize.h ++ "px"
+  , style "width" <| fromFloat topicSize.h ++ "px"
+  , style "height" <| fromFloat topicSize.h ++ "px"
   , style "border-radius" <| fromInt topicRadius ++ "px 0 0 " ++ fromInt topicRadius ++ "px"
   , style "background-color" "black"
   , style "pointer-events" "none"
@@ -164,27 +169,25 @@ blackBoxStyle =
   [ style "pointer-events" "none" ]
 
 
-ghostTopicStyle : List (Attribute Msg)
-ghostTopicStyle =
+ghostTopicStyle : TopicInfo -> MapId -> Model -> List (Attribute Msg)
+ghostTopicStyle topic mapId model =
   [ style "position" "absolute"
   , style "left" <| fromInt blackBoxOffset ++ "px"
   , style "top" <| fromInt blackBoxOffset ++ "px"
-  , style "width" <| fromInt topicSize.w ++ "px"
-  , style "height" <| fromInt topicSize.h ++ "px"
-  , style "box-sizing" "border-box"
+  , style "width" <| fromFloat topicSize.w ++ "px"
+  , style "height" <| fromFloat topicSize.h ++ "px"
   , style "border-radius" <| fromInt topicRadius ++ "px"
-  , style "border-width" <| fromFloat topicBorderWidth ++ "px"
-  , style "border-style" <| {- if targeted then "dashed" else -} "solid"
-  , style "background-color" "white"
   , style "pointer-events" "none"
   , style "z-index" "-1" -- behind topic
   ]
+  ++ topicBorderStyle topic mapId model
+  ++ selectionStyle topic mapId model
 
 
 itemCountStyle : List (Attribute Msg)
 itemCountStyle =
   [ style "position" "absolute"
-  , style "left" "calc(100% + 12px)"
+  , style "left" "calc(100% + 14px)"
   ]
 
 
