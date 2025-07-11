@@ -236,7 +236,7 @@ viewTopic topic props mapId model =
                   Just map -> map.rect
                   Nothing -> Rectangle 0 0 0 0
             in
-            whiteboxStyle topic props rect
+            whiteboxStyle topic props rect mapId model
           , [ viewMap topic.id mapId model ]
           )
         Just Unboxed -> normalTopic topic props mapId model
@@ -252,17 +252,10 @@ viewTopic topic props mapId model =
 
 blackBoxTopic : TopicInfo -> TopicProps -> MapId -> Model -> TopicRendering
 blackBoxTopic topic props mapId model =
-  ( topicPosition props
+  ( topicPosStyle props
   , [ div
-        ( topicFlexboxStyle topic mapId model ++ blackBoxStyle )
-        [ div
-            topicIconBoxStyle
-            [ viewTopicIcon topic.id model ]
-        , div
-            topicLabelStyle
-            [ text topic.text ]
-        , viewItemCount topic.id props model
-        ]
+        (topicFlexboxStyle topic mapId model ++ blackBoxStyle)
+        (normalTopicHtml topic model ++ viewItemCount topic.id props model)
     , div
         ghostTopicStyle
         []
@@ -272,9 +265,20 @@ blackBoxTopic topic props mapId model =
 
 normalTopic : TopicInfo -> TopicProps -> MapId -> Model -> TopicRendering
 normalTopic topic props mapId model =
+  ( normalStyle topic props mapId model
+  , normalTopicHtml topic model
+  )
+
+
+normalTopicHtml : TopicInfo -> Model -> List (Html Msg)
+normalTopicHtml topic model =
   let
     textElem =
-      if model.editState == ItemEdit topic.id then
+      if model.editState /= ItemEdit topic.id then
+        div
+          topicLabelStyle
+          [ text topic.text ]
+      else
         input
           ( [ value topic.text
             , onInput (ItemEditInput >> Edit)
@@ -284,21 +288,15 @@ normalTopic topic props mapId model =
             ++ topicInputStyle
           )
           []
-      else
-        div
-          topicLabelStyle
-          [ text topic.text ]
   in
-  ( normalStyle topic props mapId model
-  , [ div
-        topicIconBoxStyle
-        [ viewTopicIcon topic.id model ]
-    , textElem
-    ]
-  )
+  [ div
+      topicIconBoxStyle
+      [ viewTopicIcon topic.id model ]
+  , textElem
+  ]
 
 
-viewItemCount : Id -> TopicProps -> Model -> Html Msg
+viewItemCount : Id -> TopicProps -> Model -> List (Html Msg)
 viewItemCount topicId props model =
   let
     itemCount =
@@ -309,9 +307,10 @@ viewItemCount topicId props model =
       else
         0
   in
-  div
-    itemCountStyle
-    [ text <| fromInt itemCount ]
+  [ div
+      itemCountStyle
+      [ text <| fromInt itemCount ]
+  ]
 
 
 {-| For nested maps give the outer div both the topic meta data and a size. So mouse events

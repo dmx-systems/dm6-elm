@@ -109,34 +109,23 @@ selectionStyle =
 
 normalStyle : TopicInfo -> TopicProps -> MapId -> Model -> List (Attribute Msg)
 normalStyle topic props mapId model =
-  topicFlexboxStyle topic mapId model ++ topicPosition props
+  topicFlexboxStyle topic mapId model ++ topicPosStyle props
 
 
 topicFlexboxStyle : TopicInfo -> MapId -> Model -> List (Attribute Msg)
-topicFlexboxStyle { id } mapId model =
-  let
-    targeted = case model.dragState of
-      -- can't move a topic to a map where it is already
-      -- can't create assoc when both topics are in different map
-      Drag DragTopic _ mapId_ _ _ (Just target) -> target == (id, mapId) && mapId_ /= id
-      Drag DrawAssoc _ mapId_ _ _ (Just target) -> target == (id, mapId) && mapId_ == mapId
-      _ -> False
-  in
+topicFlexboxStyle topic mapId model =
   [ style "display" "flex"
   , style "align-items" "center"
   , style "gap" "8px"
   , style "width" <| fromInt topicSize.w ++ "px"
   , style "height" <| fromInt topicSize.h ++ "px"
-  , style "box-sizing" "border-box"
-  , style "border-width" <| fromFloat topicBorderWidth ++ "px"
-  , style "border-style" <| if targeted then "dashed" else "solid"
   , style "border-radius" <| fromInt topicRadius ++ "px"
-  , style "background-color" "white"
   ]
+  ++ topicBorderStyle topic mapId model
 
 
-topicPosition : TopicProps -> List (Attribute Msg)
-topicPosition { pos } =
+topicPosStyle : TopicProps -> List (Attribute Msg)
+topicPosStyle { pos } =
   [ style "left" <| fromFloat (pos.x - topicSize.w / 2) ++ "px"
   , style "top" <| fromFloat (pos.y - topicSize.h / 2) ++ "px"
   ]
@@ -199,8 +188,15 @@ ghostTopicStyle =
   ]
 
 
-whiteboxStyle : TopicInfo -> TopicProps -> Rectangle -> List (Attribute Msg)
-whiteboxStyle { color } { pos } rect =
+itemCountStyle : List (Attribute Msg)
+itemCountStyle =
+  [ style "position" "absolute"
+  , style "left" "calc(100% + 12px)"
+  ]
+
+
+whiteboxStyle : TopicInfo -> TopicProps -> Rectangle -> MapId -> Model -> List (Attribute Msg)
+whiteboxStyle topic { pos } rect mapId model =
   let
     width = rect.x2 - rect.x1
     height = rect.y2 - rect.y1
@@ -211,12 +207,23 @@ whiteboxStyle { color } { pos } rect =
   , style "height" <| fromFloat height ++ "px"
   , style "border-radius" <| fromInt whiteboxRadius ++ "px"
   ]
+  ++ topicBorderStyle topic mapId model
 
 
-itemCountStyle : List (Attribute Msg)
-itemCountStyle =
-  [ style "position" "absolute"
-  , style "left" "calc(100% + 12px)"
+topicBorderStyle : TopicInfo -> MapId -> Model -> List (Attribute Msg)
+topicBorderStyle { id } mapId model =
+  let
+    targeted = case model.dragState of
+      -- can't move a topic to a map where it is already
+      -- can't create assoc when both topics are in different map
+      Drag DragTopic _ mapId_ _ _ (Just target) -> target == (id, mapId) && mapId_ /= id
+      Drag DrawAssoc _ mapId_ _ _ (Just target) -> target == (id, mapId) && mapId_ == mapId
+      _ -> False
+  in
+  [ style "border-width" <| fromFloat topicBorderWidth ++ "px"
+  , style "border-style" <| if targeted then "dashed" else "solid"
+  , style "box-sizing" "border-box"
+  , style "background-color" "white"
   ]
 
 
