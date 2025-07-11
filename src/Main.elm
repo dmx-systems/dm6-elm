@@ -236,7 +236,7 @@ viewTopic topic props mapId model =
                   Just map -> map.rect
                   Nothing -> Rectangle 0 0 0 0
             in
-            whiteboxStyle topic props rect mapId model
+            whiteBoxStyle topic props rect mapId model
           , [ viewMap topic.id mapId model ]
           )
         Just Unboxed -> normalTopic topic props mapId model
@@ -1047,8 +1047,8 @@ mouseUp model =
 point : Random.Generator Point
 point =
   let
-    rw = whiteboxRange.width / 2
-    rh = whiteboxRange.height / 2
+    rw = whiteBoxRange.width / 2
+    rh = whiteBoxRange.height / 2
   in
   Random.map2 Point
     (Random.float -rw rw)
@@ -1143,7 +1143,7 @@ mouseDecoder msg =
 
 topicCount : Model -> Int
 topicCount model =
-  model.items |> Dict.values |> List.filter topicFilter |>  List.length
+  model.items |> Dict.values |> List.filter topicFilter |> List.length
 
 
 topicFilter : Item -> Bool

@@ -66,7 +66,7 @@ calcItemSize viewItem rect level maps =
   case viewItem.viewProps of
     ViewTopic {pos, displayMode} ->
       case displayMode of
-        Just BlackBox -> (extent pos blackBoxRect rect, maps)
+        Just BlackBox -> (extent pos topicRect rect, maps)
         Just WhiteBox ->
           let
             (rect_, maps_) = updateMapGeometry viewItem.id (level + 1) maps
@@ -84,7 +84,7 @@ extent pos rect rectAcc =
     h2 = (rect.y2 - rect.y1) / 2
   in
   Rectangle
-    (min rectAcc.x1 (pos.x - w2 - whiteboxPadding))
-    (min rectAcc.y1 (pos.y - h2 - whiteboxPadding))
-    (max rectAcc.x2 (pos.x + w2 + whiteboxPadding))
-    (max rectAcc.y2 (pos.y + h2 + whiteboxPadding))
+    (min rectAcc.x1 (pos.x - w2 - whiteBoxPadding))
+    (min rectAcc.y1 (pos.y - h2 - whiteBoxPadding))
+    (max rectAcc.x2 (pos.x + w2 + whiteBoxPadding))
+    (max rectAcc.y2 (pos.y + h2 + whiteBoxPadding))

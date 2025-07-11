@@ -27,18 +27,11 @@ topicRect =
     (-topicSize.w / 2) (-topicSize.h / 2)
     (topicSize.w / 2) (topicSize.h / 2)
 
--- not used
-blackBoxSize = 42
-blackBoxOffset = blackBoxSize / 2
-blackBoxRadius = 10
-blackBoxRect =
-  Rectangle
-    -blackBoxOffset -blackBoxOffset
-    blackBoxOffset blackBoxOffset
+blackBoxOffset = 5
 
-whiteboxRange = { width = 250, height = 150 }
-whiteboxRadius = 20
-whiteboxPadding = 12
+whiteBoxRange = { width = 250, height = 150 }
+whiteBoxRadius = 20
+whiteBoxPadding = 12
 
 
 
@@ -174,8 +167,8 @@ blackBoxStyle =
 ghostTopicStyle : List (Attribute Msg)
 ghostTopicStyle =
   [ style "position" "absolute"
-  , style "left" "5px"
-  , style "top" "5px"
+  , style "left" <| fromInt blackBoxOffset ++ "px"
+  , style "top" <| fromInt blackBoxOffset ++ "px"
   , style "width" <| fromInt topicSize.w ++ "px"
   , style "height" <| fromInt topicSize.h ++ "px"
   , style "box-sizing" "border-box"
@@ -195,8 +188,8 @@ itemCountStyle =
   ]
 
 
-whiteboxStyle : TopicInfo -> TopicProps -> Rectangle -> MapId -> Model -> List (Attribute Msg)
-whiteboxStyle topic { pos } rect mapId model =
+whiteBoxStyle : TopicInfo -> TopicProps -> Rectangle -> MapId -> Model -> List (Attribute Msg)
+whiteBoxStyle topic { pos } rect mapId model =
   let
     width = rect.x2 - rect.x1
     height = rect.y2 - rect.y1
@@ -205,7 +198,7 @@ whiteboxStyle topic { pos } rect mapId model =
   , style "top" <| fromFloat (pos.y - height / 2) ++ "px"
   , style "width" <| fromFloat width ++ "px"
   , style "height" <| fromFloat height ++ "px"
-  , style "border-radius" <| fromInt whiteboxRadius ++ "px"
+  , style "border-radius" <| fromInt whiteBoxRadius ++ "px"
   ]
   ++ topicBorderStyle topic mapId model
 
