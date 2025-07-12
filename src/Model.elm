@@ -312,7 +312,7 @@ keyDecoder key msg =
       else
         D.fail "not that key"
   in
-    keyCode |> D.andThen isKey
+  keyCode |> D.andThen isKey
 
 
 stopPropagationOnMousedown : Attribute Msg

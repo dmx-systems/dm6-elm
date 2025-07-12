@@ -31,7 +31,7 @@ updateMapGeometry mapId level maps =
                 ((rect.y1 + rect.y2 - map.rect.y1 - map.rect.y2) / 2)
             in
             updateMapRect mapId rect maps_
-              |> updateTopicPos mapId map.parentMapId delta            
+              |> updateTopicPos mapId map.parentMapId delta
           Nothing -> maps_
   in
   (rect, maps__)

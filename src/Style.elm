@@ -161,6 +161,7 @@ topicInputStyle =
   , style "left" "-4px"
   , style "font-family" "sans-serif" -- Default for <input> is "-apple-system" (on Mac)
   , style "font-size" mainFontSize
+  , style "pointer-events" "initial"
   ]
 
 
