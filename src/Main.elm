@@ -7,10 +7,11 @@ import MapAutoSize exposing (..)
 
 import Array
 import Browser
+import Browser.Dom as Dom
 import Browser.Events as Events
 import Dict exposing (Dict)
 import Html exposing (Html, Attribute, div, text, button, input, label, h1)
-import Html.Attributes exposing (class, attribute, type_, name, value, checked, disabled)
+import Html.Attributes exposing (class, id, attribute, type_, name, value, checked, disabled)
 import Html.Events exposing (onClick, onInput, on)
 import Random
 import String exposing (String, fromInt)
@@ -53,7 +54,7 @@ init flags =
     , selection = []
     , editState = NoEdit
     , dragState = NoDrag
-    , isIconMenuOpen = False
+    , iconMenuState = False
     , nextId = 1
     }
   , Cmd.none
@@ -79,7 +80,7 @@ view model =
         , viewMap model.activeMap -1 model -- top-level map has parentMapId -1
         ]
         ++
-          if model.isIconMenuOpen then
+          if model.iconMenuState then
             [ viewIconMenu model ]
           else
             []
@@ -101,14 +102,6 @@ viewToolbar model =
         [ text "Add Topic" ]
     , viewDisplayMode model
     , button
-        ( [ onClick (Edit ItemEditStart)
-          , stopPropagationOnMousedown
-          , disabled hasNoSelection
-          ]
-          ++ buttonStyle
-        )
-        [ text "Edit Text" ]
-    , button
         ( [ onClick (IconMenu Open)
           , stopPropagationOnMousedown
           , disabled hasNoSelection
@@ -116,6 +109,14 @@ viewToolbar model =
           ++ buttonStyle
         )
         [ text "Choose Icon" ]
+    , button
+        ( [ onClick (Edit ItemEditStart)
+          , stopPropagationOnMousedown
+          , disabled hasNoSelection
+          ]
+          ++ buttonStyle
+        )
+        [ text "Edit Text" ]
     , button
         ( [ onClick Delete
           , stopPropagationOnMousedown
@@ -280,7 +281,8 @@ normalTopicHtml topic model =
           [ text topic.text ]
       else
         input
-          ( [ value topic.text
+          ( [ id ("dmx-input-" ++ fromInt topic.id)
+            , value topic.text
             , onInput (ItemEditInput >> Edit)
             , onEnterOrEsc (Edit ItemEditEnd)
             , stopPropagationOnMousedown
@@ -395,7 +397,7 @@ update msg model =
     MoveTopicToMap topicId mapId origPos targetId targetMapId pos
       -> (moveTopicToMap topicId mapId origPos targetId targetMapId pos model, Cmd.none)
     Set displayMode -> (setDisplayMode displayMode model, Cmd.none)
-    Edit editMsg -> (updateEdit editMsg model, Cmd.none)
+    Edit editMsg -> updateEdit editMsg model
     IconMenu iconMenuMsg -> (updateIconMenu iconMenuMsg model, Cmd.none)
     Mouse mouseMsg -> updateMouse mouseMsg model
     Delete -> (delete model, Cmd.none)
@@ -570,19 +572,22 @@ getDisplayMode topicId mapId maps =
 
 -- Text Edit
 
-updateEdit : EditMsg -> Model -> Model
+updateEdit : EditMsg -> Model -> (Model, Cmd Msg)
 updateEdit msg model =
   case msg of
     ItemEditStart -> startItemEdit model
-    ItemEditInput text -> updateItemText text model
-    ItemEditEnd -> endItemEdit model
+    ItemEditInput text -> (updateItemText text model, Cmd.none)
+    ItemEditEnd -> (endItemEdit model, Cmd.none)
 
 
-startItemEdit : Model -> Model
+startItemEdit : Model -> (Model, Cmd Msg)
 startItemEdit model =
-  case getSingleSelection model of
-    Just (id, _) -> { model | editState = ItemEdit id }
-    Nothing -> model
+  let
+    newModel = case getSingleSelection model of
+      Just (id, _) -> { model | editState = ItemEdit id }
+      Nothing -> model
+  in
+  (newModel, focus newModel)
 
 
 updateItemText : String -> Model -> Model
@@ -597,6 +602,22 @@ updateItemText text model =
 endItemEdit : Model -> Model
 endItemEdit model =
   { model | editState = NoEdit }
+
+
+focus : Model -> Cmd Msg
+focus model =
+  let
+    nodeId =
+      case model.editState of
+        ItemEdit id -> "dmx-input-" ++ String.fromInt id
+        NoEdit -> logError "focus" "called when editState is NoEdit" ""
+  in
+  Dom.focus nodeId |> Task.attempt
+    (\result ->
+      case result of
+        Ok () -> NoOp
+        Err e -> logError "focus" (toString e) NoOp
+    )
 
 
 -- Boxing/Unboxing

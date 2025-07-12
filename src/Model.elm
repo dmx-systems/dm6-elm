@@ -19,7 +19,7 @@ type alias Model =
   , selection : Selection -- transient
   , editState : EditState -- transient
   , dragState : DragState -- transient
-  , isIconMenuOpen : Bool -- transient
+  , iconMenuState : Bool -- transient
   , nextId : Id
   }
 

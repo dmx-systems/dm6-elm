@@ -25,7 +25,7 @@ updateIconMenu msg model =
 
 setEditDialogOpen : Bool -> Model -> Model
 setEditDialogOpen isOpen model =
-  { model | isIconMenuOpen = isOpen }
+  { model | iconMenuState = isOpen }
 
 
 setIcon : Maybe IconName -> Model -> Model
