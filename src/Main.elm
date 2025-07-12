@@ -2,7 +2,7 @@ module Main exposing (..)
 
 import Model exposing (..)
 import Style exposing (..)
-import EditDialog exposing (..)
+import IconMenu exposing (..)
 import MapAutoSize exposing (..)
 
 import Array
@@ -53,7 +53,7 @@ init flags =
     , selection = []
     , editState = NoEdit
     , dragState = NoDrag
-    , isEditDialogOpen = False
+    , isIconMenuOpen = False
     , nextId = 1
     }
   , Cmd.none
@@ -79,8 +79,8 @@ view model =
         , viewMap model.activeMap -1 model -- top-level map has parentMapId -1
         ]
         ++
-          if model.isEditDialogOpen then
-            [ viewEditDialog model ]
+          if model.isIconMenuOpen then
+            [ viewIconMenu model ]
           else
             []
       )
@@ -109,7 +109,7 @@ viewToolbar model =
         )
         [ text "Edit Text" ]
     , button
-        ( [ onClick (Edit Open)
+        ( [ onClick (IconMenu Open)
           , stopPropagationOnMousedown
           , disabled hasNoSelection
           ]
@@ -395,7 +395,8 @@ update msg model =
     MoveTopicToMap topicId mapId origPos targetId targetMapId pos
       -> (moveTopicToMap topicId mapId origPos targetId targetMapId pos model, Cmd.none)
     Set displayMode -> (setDisplayMode displayMode model, Cmd.none)
-    Edit editMsg -> (updateEditDialog editMsg model, Cmd.none)
+    Edit editMsg -> (updateEdit editMsg model, Cmd.none)
+    IconMenu iconMenuMsg -> (updateIconMenu iconMenuMsg model, Cmd.none)
     Mouse mouseMsg -> updateMouse mouseMsg model
     Delete -> (delete model, Cmd.none)
     NoOp -> (model, Cmd.none)
@@ -527,6 +528,8 @@ updateGeometry model =
   { model | maps = autoSize model.activeMap model.maps }
 
 
+-- Display Mode
+
 setDisplayMode : Maybe DisplayMode -> Model -> Model
 setDisplayMode displayMode model =
   let
@@ -564,6 +567,39 @@ getDisplayMode topicId mapId maps =
     Just { displayMode } -> displayMode
     Nothing -> fail "getDisplayMode" {topicId = topicId, mapId = mapId} Nothing
 
+
+-- Text Edit
+
+updateEdit : EditMsg -> Model -> Model
+updateEdit msg model =
+  case msg of
+    ItemEditStart -> startItemEdit model
+    ItemEditInput text -> updateItemText text model
+    ItemEditEnd -> endItemEdit model
+
+
+startItemEdit : Model -> Model
+startItemEdit model =
+  case getSingleSelection model of
+    Just (id, _) -> { model | editState = ItemEdit id }
+    Nothing -> model
+
+
+updateItemText : String -> Model -> Model
+updateItemText text model =
+  case model.editState of
+    ItemEdit id -> updateTopicInfo id
+      (\topic -> { topic | text = text })
+      model
+    NoEdit -> logError "updateItemText" "called when editState is NoEdit" model
+
+
+endItemEdit : Model -> Model
+endItemEdit model =
+  { model | editState = NoEdit }
+
+
+-- Boxing/Unboxing
 
 {-| Entry point
 -}

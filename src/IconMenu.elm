@@ -1,4 +1,4 @@
-module EditDialog exposing (updateEditDialog, viewEditDialog, viewTopicIcon)
+module IconMenu exposing (updateIconMenu, viewIconMenu, viewTopicIcon)
 
 import Model exposing (..)
 import Style exposing (..)
@@ -14,12 +14,9 @@ import FeatherIcons as Icon
 -- UPDATE
 
 
-updateEditDialog : EditMsg -> Model -> Model
-updateEditDialog msg model =
+updateIconMenu : IconMenuMsg -> Model -> Model
+updateIconMenu msg model =
   case msg of
-    ItemEditStart -> startItemEdit model
-    ItemEditInput text -> updateItemText text model
-    ItemEditEnd -> endItemEdit model
     Open -> setEditDialogOpen True model
     Close -> setEditDialogOpen False model
     SetIcon maybeIcon -> setIcon maybeIcon model
@@ -28,28 +25,7 @@ updateEditDialog msg model =
 
 setEditDialogOpen : Bool -> Model -> Model
 setEditDialogOpen isOpen model =
-  { model | isEditDialogOpen = isOpen }
-
-
-startItemEdit : Model -> Model
-startItemEdit model =
-  case getSingleSelection model of
-    Just (id, _) -> { model | editState = ItemEdit id }
-    Nothing -> model
-
-
-updateItemText : String -> Model -> Model
-updateItemText text model =
-  case model.editState of
-    ItemEdit id -> updateTopicInfo id
-      (\topic -> { topic | text = text })
-      model
-    NoEdit -> logError "updateItemText" "called when editState is NoEdit" model
-
-
-endItemEdit : Model -> Model
-endItemEdit model =
-  { model | editState = NoEdit }
+  { model | isIconMenuOpen = isOpen }
 
 
 setIcon : Maybe IconName -> Model -> Model
@@ -65,15 +41,15 @@ setIcon iconName model =
 -- VIEW
 
 
-viewEditDialog : Model -> Html Msg
-viewEditDialog model =
+viewIconMenu : Model -> Html Msg
+viewIconMenu model =
   div
     editDialogStyle
     [ div
         iconsListStyle
         viewIcons
     , button
-      ( [onClick (Edit Close)]
+      ( [onClick (IconMenu Close)]
         ++ closeButtonStyle
       )
       [ Icon.x
@@ -88,7 +64,7 @@ viewIcons =
   Icon.icons |> Dict.toList |> List.map
     (\(iconName, icon) ->
       button
-        ( [ onClick (Just iconName |> SetIcon |> Edit)
+        ( [ onClick (Just iconName |> SetIcon |> IconMenu)
           , stopPropagationOnMousedown
           , title iconName
           ]

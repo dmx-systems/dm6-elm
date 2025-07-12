@@ -19,7 +19,7 @@ type alias Model =
   , selection : Selection -- transient
   , editState : EditState -- transient
   , dragState : DragState -- transient
-  , isEditDialogOpen : Bool -- transient
+  , isIconMenuOpen : Bool -- transient
   , nextId : Id
   }
 
@@ -151,6 +151,7 @@ type Msg
   | MoveTopicToMap Id MapId Point Id MapId Point -- start point, random point (for target)
   | Set (Maybe DisplayMode)
   | Edit EditMsg
+  | IconMenu IconMenuMsg
   | Mouse MouseMsg
   | Delete
   | NoOp
@@ -160,7 +161,10 @@ type EditMsg
   = ItemEditStart
   | ItemEditInput String
   | ItemEditEnd
-  | Open
+
+
+type IconMenuMsg
+  = Open
   | Close
   | SetIcon (Maybe IconName)
 
