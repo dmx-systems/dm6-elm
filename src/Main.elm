@@ -77,7 +77,7 @@ view model =
       )
       ( [ h1 [] [ text "DM6 Elm" ]
         , viewToolbar model
-        , viewMap model.activeMap model
+        , viewMap model.activeMap -1 model -- parentMapId = -1
         ]
         ++
           if model.iconMenuState then
@@ -168,8 +168,8 @@ viewDisplayMode model =
     ]
 
 
-viewMap : MapId -> Model -> Html Msg
-viewMap mapId model =
+viewMap : MapId -> MapId -> Model -> Html Msg
+viewMap mapId parentMapId model =
   let
     isTopLevel = mapId == model.activeMap
     ((topics, assocs), rect, vb) =
@@ -198,6 +198,7 @@ viewMap mapId model =
           , height vb.h
           , viewBox (vb.x ++ " " ++ vb.y ++ " " ++ vb.w ++ " " ++ vb.h)
           ]
+          ++ topicAttr mapId parentMapId
           ++ svgStyle
         )
         ( assocs
@@ -268,10 +269,8 @@ whiteBoxTopic topic props mapId model =
         (topicFlexboxStyle topic mapId model ++ blackBoxStyle)
         (normalTopicHtml topic model ++ viewItemCount topic.id props model)
     , div
-        ( topicAttr topic.id mapId
-          ++ whiteBoxStyle topic props rect mapId model
-        )
-        [ viewMap topic.id model ]
+        (whiteBoxStyle topic props rect mapId model)
+        [ viewMap topic.id mapId model ]
     ]
   )
 
@@ -329,7 +328,7 @@ viewItemCount topicId props model =
 
 topicAttr : Id -> MapId -> List (Attribute Msg)
 topicAttr id mapId =
-  [ class "dmx-topic"
+  [ attribute "class" "dmx-topic"
   , attribute "data-id" (fromInt id)
   , attribute "data-map-id" (fromInt mapId)
   ]
@@ -1134,7 +1133,11 @@ mouseDownSub : Sub Msg
 mouseDownSub =
   Events.onMouseDown <| D.oneOf
     [ D.map Mouse <| D.map4 DownItem
-        ( D.at ["target", "className"] D.string )
+        ( D.oneOf
+          [ D.at ["target", "className"] D.string -- HTML elements
+          , D.at ["target", "className", "baseVal"] D.string -- SVG elements
+          ]
+        )
         ( D.at ["target", "dataset", "id"] D.string |> D.andThen strToIntDecoder )
         ( D.at ["target", "dataset", "mapId"] D.string |> D.andThen strToIntDecoder )
         ( D.map2 Point -- TODO: no code doubling
@@ -1172,7 +1175,11 @@ strToIntDecoder str =
 mouseDecoder : (Class -> Id -> MapId -> MouseMsg) -> D.Decoder Msg
 mouseDecoder msg =
   D.map Mouse <| D.map3 msg
-    ( D.at ["target", "className"] D.string )
+    ( D.oneOf
+      [ D.at ["target", "className"] D.string -- HTML elements
+      , D.at ["target", "className", "baseVal"] D.string -- SVG elements
+      ]
+    )
     ( D.at ["target", "dataset", "id"] D.string |> D.andThen strToIntDecoder )
     ( D.at ["target", "dataset", "mapId"] D.string |> D.andThen strToIntDecoder )
 

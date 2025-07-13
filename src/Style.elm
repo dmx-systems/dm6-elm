@@ -50,6 +50,8 @@ toolbarStyle =
   , style "align-items" "flex-start"
   , style "gap" "28px"
   , style "margin-top" "20px"
+  , style "position" "relative"
+  , style "z-index" "3"
   ]
 
 
@@ -85,7 +87,7 @@ topicStyle ({ id } as topic) mapId model =
       _ -> False
   in
   [ style "position" "absolute"
-  , style "z-index" <| if dragging then "0" else "1"
+  , style "z-index" <| if dragging then "1" else "2"
   ]
   ++ selectionStyle topic mapId model
 
@@ -217,7 +219,7 @@ topicBorderStyle { id } mapId model =
   [ style "border-width" <| fromFloat topicBorderWidth ++ "px"
   , style "border-style" <| if targeted then "dashed" else "solid"
   , style "box-sizing" "border-box"
-  --, style "background-color" "white" -- FIXME
+  , style "background-color" "white" -- FIXME
   ]
 
 
@@ -234,7 +236,6 @@ svgStyle =
   [ style "position" "absolute"
   , style "top" "0"
   , style "left" "0"
-  , style "z-index" "-1" -- behind topic layer
   ]
 
 
