@@ -77,7 +77,7 @@ view model =
       )
       ( [ h1 [] [ text "DM6 Elm" ]
         , viewToolbar model
-        , viewMap model.activeMap -1 model -- top-level map has parentMapId -1
+        , viewMap model.activeMap model
         ]
         ++
           if model.iconMenuState then
@@ -168,8 +168,8 @@ viewDisplayMode model =
     ]
 
 
-viewMap : MapId -> MapId -> Model -> Html Msg
-viewMap mapId parentMapId model =
+viewMap : MapId -> Model -> Html Msg
+viewMap mapId model =
   let
     isTopLevel = mapId == model.activeMap
     ((topics, assocs), rect, vb) =
@@ -189,7 +189,7 @@ viewMap mapId parentMapId model =
         Nothing -> (([], []), Rectangle 0 0 0 0, {x = "0", y = "0", w = "0", h = "0"})
   in
   div
-    (nestedMapAttributes mapId parentMapId model)
+    []
     [ div
         (topicLayerStyle rect)
         topics
@@ -268,8 +268,10 @@ whiteBoxTopic topic props mapId model =
         (topicFlexboxStyle topic mapId model ++ blackBoxStyle)
         (normalTopicHtml topic model ++ viewItemCount topic.id props model)
     , div
-        (whiteBoxStyle topic props rect mapId model)
-        [ viewMap topic.id mapId model ]
+        ( topicAttr topic.id mapId
+          ++ whiteBoxStyle topic props rect mapId model
+        )
+        [ viewMap topic.id model ]
     ]
   )
 
@@ -323,23 +325,6 @@ viewItemCount topicId props model =
       itemCountStyle
       [ text <| fromInt itemCount ]
   ]
-
-
-{-| For nested maps give the outer div both the topic meta data and a size. So mouse events
-can land there and are detected as mousedown-on-item. Otherwise the target would be the
-SVG but our event decoder does not work there.
--}
-nestedMapAttributes : MapId -> MapId -> Model -> List (Attribute Msg)
-nestedMapAttributes mapId parentMapId model =
-  let
-    isTopLevel = mapId == model.activeMap
-  in
-  if isTopLevel then
-    []
-  else
-    topicAttr mapId parentMapId
-    ++
-    nestedMapStyle
 
 
 topicAttr : Id -> MapId -> List (Attribute Msg)
@@ -912,22 +897,6 @@ absMapPos mapId posAcc model =
                 model
             )
         )
-
-
--- not called
-mapPos : MapId -> Maps -> Maybe Point
-mapPos mapId maps =
-  getParentMapId mapId maps
-    |> Maybe.andThen
-      (\parentMapId -> topicPos mapId parentMapId maps
-        |> Maybe.andThen (\pos -> Just pos)
-      )
-
-
--- not called
-getParentMapId : MapId -> Maps -> Maybe MapId
-getParentMapId mapId maps =
-  getMap mapId maps |> Maybe.andThen (\map -> Just map.parentMapId)
 
 
 topicPos : Id -> MapId -> Maps -> Maybe Point

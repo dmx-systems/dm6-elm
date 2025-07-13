@@ -22,10 +22,6 @@ topicSize = Size 128 28
 topicIconSize = 16
 topicBorderWidth = 1
 topicRadius = 7
-topicRect =
-  Rectangle
-    (-topicSize.w / 2) (-topicSize.h / 2)
-    (topicSize.w / 2) (topicSize.h / 2)
 
 blackBoxOffset = 5
 
@@ -222,16 +218,6 @@ topicBorderStyle { id } mapId model =
   , style "border-style" <| if targeted then "dashed" else "solid"
   , style "box-sizing" "border-box"
   --, style "background-color" "white" -- FIXME
-  ]
-
-
-nestedMapStyle : List (Attribute Msg)
-nestedMapStyle =
-  [ style "position" "absolute"
-  , style "left" <| fromFloat -topicBorderWidth ++ "px"
-  , style "top" <| fromFloat -topicBorderWidth ++ "px"
-  , style "width" <| "calc(100% + " ++ fromFloat (2 * topicBorderWidth) ++ "px)"
-  , style "height" <| "calc(100% + " ++ fromFloat (2 * topicBorderWidth) ++ "px)"
   ]
 
 
