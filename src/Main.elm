@@ -230,16 +230,7 @@ viewTopic topic props mapId model =
     (style, children) =
       case props.displayMode of
         Just BlackBox -> blackBoxTopic topic props mapId model
-        Just WhiteBox ->
-          ( let
-              rect =
-                case getMap topic.id model.maps of
-                  Just map -> map.rect
-                  Nothing -> Rectangle 0 0 0 0
-            in
-            whiteBoxStyle topic props rect mapId model
-          , [ viewMap topic.id mapId model ]
-          )
+        Just WhiteBox -> whiteBoxTopic topic props mapId model
         Just Unboxed -> normalTopic topic props mapId model
         Nothing -> normalTopic topic props mapId model
   in
@@ -260,6 +251,25 @@ blackBoxTopic topic props mapId model =
     , div
         (ghostTopicStyle topic mapId model)
         []
+    ]
+  )
+
+
+whiteBoxTopic : TopicInfo -> TopicProps -> MapId -> Model -> TopicRendering
+whiteBoxTopic topic props mapId model =
+  let
+    rect =
+      case getMap topic.id model.maps of
+        Just map -> map.rect
+        Nothing -> Rectangle 0 0 0 0
+  in
+  ( topicPosStyle props
+  , [ div
+        (topicFlexboxStyle topic mapId model ++ blackBoxStyle)
+        (normalTopicHtml topic model ++ viewItemCount topic.id props model)
+    , div
+        (whiteBoxStyle topic props rect mapId model)
+        [ viewMap topic.id mapId model ]
     ]
   )
 
@@ -896,8 +906,8 @@ absMapPos mapId posAcc model =
               absMapPos
                 map.parentMapId
                 (Point
-                  (posAcc.x + mapPos_.x - (map.rect.x2 + map.rect.x1) / 2)
-                  (posAcc.y + mapPos_.y - (map.rect.y2 + map.rect.y1) / 2)
+                  (posAcc.x + mapPos_.x - topicSize.w / 2 - map.rect.x1)
+                  (posAcc.y + mapPos_.y + topicSize.h / 2 - map.rect.y1)
                 )
                 model
             )

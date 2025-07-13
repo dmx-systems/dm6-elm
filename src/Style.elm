@@ -30,7 +30,7 @@ topicRect =
 blackBoxOffset = 5
 
 whiteBoxRange = { width = 250, height = 150 }
-whiteBoxRadius = 20
+whiteBoxRadius = 14
 whiteBoxPadding = 12
 
 
@@ -198,8 +198,9 @@ whiteBoxStyle topic { pos } rect mapId model =
     width = rect.x2 - rect.x1
     height = rect.y2 - rect.y1
   in
-  [ style "left" <| fromFloat (pos.x - width / 2) ++ "px"
-  , style "top" <| fromFloat (pos.y - height / 2) ++ "px"
+  [ style "position" "absolute"
+  , style "left" "0"
+  , style "top" <| fromFloat (topicSize.h - topicBorderWidth) ++ "px"
   , style "width" <| fromFloat width ++ "px"
   , style "height" <| fromFloat height ++ "px"
   , style "border-radius" <| fromInt whiteBoxRadius ++ "px"
@@ -220,7 +221,7 @@ topicBorderStyle { id } mapId model =
   [ style "border-width" <| fromFloat topicBorderWidth ++ "px"
   , style "border-style" <| if targeted then "dashed" else "solid"
   , style "box-sizing" "border-box"
-  , style "background-color" "white"
+  --, style "background-color" "white" -- FIXME
   ]
 
 

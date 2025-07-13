@@ -27,8 +27,8 @@ updateMapGeometry mapId level maps =
           Just map ->
             let
               delta = Point
-                ((rect.x1 + rect.x2 - map.rect.x1 - map.rect.x2) / 2)
-                ((rect.y1 + rect.y2 - map.rect.y1 - map.rect.y2) / 2)
+                (rect.x1 - map.rect.x1)
+                (rect.y1 - map.rect.y1)
             in
             updateMapRect mapId rect maps_
               |> updateTopicPos mapId map.parentMapId delta
@@ -66,25 +66,40 @@ calcItemSize viewItem rect level maps =
   case viewItem.viewProps of
     ViewTopic {pos, displayMode} ->
       case displayMode of
-        Just BlackBox -> (extent pos topicRect rect, maps)
+        Just BlackBox -> (topicExtent pos rect, maps)
         Just WhiteBox ->
           let
             (rect_, maps_) = updateMapGeometry viewItem.id (level + 1) maps
           in
-          (extent pos rect_ rect, maps_)
-        Just Unboxed -> (extent pos topicRect rect, maps)
-        Nothing -> (extent pos topicRect rect, maps)
+          (mapExtent pos rect_ rect, maps_)
+        Just Unboxed -> (topicExtent pos rect, maps)
+        Nothing -> (topicExtent pos rect, maps)
     ViewAssoc _ -> (rect, maps)
 
 
-extent : Point -> Rectangle -> Rectangle -> Rectangle
-extent pos rect rectAcc =
+topicExtent : Point -> Rectangle -> Rectangle
+topicExtent pos rectAcc =
   let
-    w2 = (rect.x2 - rect.x1) / 2
-    h2 = (rect.y2 - rect.y1) / 2
+    tw2 = topicSize.w / 2
+    th2 = topicSize.h / 2
   in
   Rectangle
-    (min rectAcc.x1 (pos.x - w2 - whiteBoxPadding))
-    (min rectAcc.y1 (pos.y - h2 - whiteBoxPadding))
-    (max rectAcc.x2 (pos.x + w2 + whiteBoxPadding))
-    (max rectAcc.y2 (pos.y + h2 + whiteBoxPadding))
+    (min rectAcc.x1 (pos.x - tw2 - whiteBoxPadding))
+    (min rectAcc.y1 (pos.y - th2 - whiteBoxPadding))
+    (max rectAcc.x2 (pos.x + tw2 + whiteBoxPadding))
+    (max rectAcc.y2 (pos.y + th2 + whiteBoxPadding))
+
+
+mapExtent : Point -> Rectangle -> Rectangle -> Rectangle
+mapExtent pos rect rectAcc =
+  let
+    tw2 = topicSize.w / 2
+    th2 = topicSize.h / 2
+    mw = rect.x2 - rect.x1
+    mh = rect.y2 - rect.y1
+  in
+  Rectangle
+    (min rectAcc.x1 (pos.x - tw2 - whiteBoxPadding))
+    (min rectAcc.y1 (pos.y - th2 - whiteBoxPadding))
+    (max rectAcc.x2 (pos.x - tw2 + mw + whiteBoxPadding))
+    (max rectAcc.y2 (pos.y + th2 + mh - topicBorderWidth + whiteBoxPadding))
