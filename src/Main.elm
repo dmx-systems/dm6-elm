@@ -232,8 +232,8 @@ viewTopic topic props mapId model =
       case props.displayMode of
         Just BlackBox -> blackBoxTopic topic props mapId model
         Just WhiteBox -> whiteBoxTopic topic props mapId model
-        Just Unboxed -> normalTopic topic props mapId model
-        Nothing -> normalTopic topic props mapId model
+        Just Unboxed -> genericTopic topic props mapId model
+        Nothing -> genericTopic topic props mapId model
   in
   div
     ( topicAttr topic.id mapId
@@ -248,7 +248,7 @@ blackBoxTopic topic props mapId model =
   ( topicPosStyle props
   , [ div
         (topicFlexboxStyle topic mapId model ++ blackBoxStyle)
-        (normalTopicHtml topic model ++ viewItemCount topic.id props model)
+        (genericTopicHtml topic model ++ viewItemCount topic.id props model)
     , div
         (ghostTopicStyle topic mapId model)
         []
@@ -267,7 +267,7 @@ whiteBoxTopic topic props mapId model =
   ( topicPosStyle props
   , [ div
         (topicFlexboxStyle topic mapId model ++ blackBoxStyle)
-        (normalTopicHtml topic model ++ viewItemCount topic.id props model)
+        (genericTopicHtml topic model)
     , div
         (whiteBoxStyle topic props rect mapId model)
         [ viewMap topic.id mapId model ]
@@ -275,15 +275,15 @@ whiteBoxTopic topic props mapId model =
   )
 
 
-normalTopic : TopicInfo -> TopicProps -> MapId -> Model -> TopicRendering
-normalTopic topic props mapId model =
-  ( normalStyle topic props mapId model
-  , normalTopicHtml topic model
+genericTopic : TopicInfo -> TopicProps -> MapId -> Model -> TopicRendering
+genericTopic topic props mapId model =
+  ( genericStyle topic props mapId model
+  , genericTopicHtml topic model
   )
 
 
-normalTopicHtml : TopicInfo -> Model -> List (Html Msg)
-normalTopicHtml topic model =
+genericTopicHtml : TopicInfo -> Model -> List (Html Msg)
+genericTopicHtml topic model =
   let
     textElem =
       if model.editState /= ItemEdit topic.id then
@@ -328,10 +328,13 @@ viewItemCount topicId props model =
 
 topicAttr : Id -> MapId -> List (Attribute Msg)
 topicAttr id mapId =
-  [ attribute "class" "dmx-topic"
-  , attribute "data-id" (fromInt id)
-  , attribute "data-map-id" (fromInt mapId)
-  ]
+  case id of
+    0 -> [] -- top-level map requires dedicated event handling, TODO
+    _ ->
+      [ attribute "class" "dmx-topic"
+      , attribute "data-id" (fromInt id)
+      , attribute "data-map-id" (fromInt mapId)
+      ]
 
 
 viewAssoc : AssocInfo -> MapId -> Model -> Svg Msg
@@ -474,10 +477,11 @@ moveTopicToMap topicId mapId origPos targetId targetMapId pos model =
   case viewProps_ of
     Just viewProps ->
       addItemToMap topicId viewProps targetId
-        { newModel
-        | maps = hideItem topicId mapId newModel.maps model |> setTopicPos topicId mapId origPos
-        , selection = [ (targetId, targetMapId) ] -- TODO: call "select"
-        } |> updateGeometry
+        { newModel | maps =
+            hideItem topicId mapId newModel.maps model
+              |> setTopicPos topicId mapId origPos
+        } |> select targetId targetMapId
+          |> updateGeometry
     Nothing -> model
 
 
@@ -956,10 +960,8 @@ mouseDown model =
 
 mouseDownOnItem : Model -> Class -> Id -> MapId -> Point -> ( Model, Cmd Msg )
 mouseDownOnItem model class id mapId pos =
-  ( { model
-    | selection = [ (id, mapId) ] -- TODO: call "select"
-    , dragState = WaitForStartTime class id mapId pos
-    }
+  ( { model | dragState = WaitForStartTime class id mapId pos
+    } |> select id mapId
   , Task.perform (Time >> Mouse) Time.now
   )
 

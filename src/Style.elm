@@ -103,8 +103,8 @@ selectionStyle { id } mapId model =
     []
 
 
-normalStyle : TopicInfo -> TopicProps -> MapId -> Model -> List (Attribute Msg)
-normalStyle topic props mapId model =
+genericStyle : TopicInfo -> TopicProps -> MapId -> Model -> List (Attribute Msg)
+genericStyle topic props mapId model =
   topicFlexboxStyle topic mapId model ++ topicPosStyle props
 
 
@@ -204,6 +204,7 @@ whiteBoxStyle topic { pos } rect mapId model =
   , style "border-radius" <| fromInt whiteBoxRadius ++ "px"
   ]
   ++ topicBorderStyle topic mapId model
+  ++ selectionStyle topic mapId model
 
 
 topicBorderStyle : TopicInfo -> MapId -> Model -> List (Attribute Msg)
