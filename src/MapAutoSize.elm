@@ -86,8 +86,8 @@ topicExtent pos rectAcc =
   Rectangle
     (min rectAcc.x1 (pos.x - tw2 - whiteBoxPadding))
     (min rectAcc.y1 (pos.y - th2 - whiteBoxPadding))
-    (max rectAcc.x2 (pos.x + tw2 + whiteBoxPadding))
-    (max rectAcc.y2 (pos.y + th2 + whiteBoxPadding))
+    (max rectAcc.x2 (pos.x + tw2 + whiteBoxPadding + 2 * topicBorderWidth))
+    (max rectAcc.y2 (pos.y + th2 + whiteBoxPadding + 2 * topicBorderWidth))
 
 
 mapExtent : Point -> Rectangle -> Rectangle -> Rectangle
@@ -102,4 +102,4 @@ mapExtent pos rect rectAcc =
     (min rectAcc.x1 (pos.x - tw2 - whiteBoxPadding))
     (min rectAcc.y1 (pos.y - th2 - whiteBoxPadding))
     (max rectAcc.x2 (pos.x - tw2 + mw + whiteBoxPadding))
-    (max rectAcc.y2 (pos.y + th2 + mh - topicBorderWidth + whiteBoxPadding))
+    (max rectAcc.y2 (pos.y + th2 + mh + whiteBoxPadding))

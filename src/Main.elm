@@ -267,7 +267,7 @@ whiteBoxTopic topic props mapId model =
   ( topicPosStyle props
   , [ div
         (topicFlexboxStyle topic mapId model ++ blackBoxStyle)
-        (genericTopicHtml topic model)
+        (genericTopicHtml topic model ++ viewItemCount topic.id props model)
     , div
         (whiteBoxStyle topic props rect mapId model)
         [ viewMap topic.id mapId model ]
@@ -422,7 +422,7 @@ createTopicAndAddToMap model =
   let
     (newModel, topicId) = createTopic model
     props = ViewTopic (TopicProps pos Nothing)
-    pos = Point 160 98
+    pos = Point 175 98
   in
   newModel
     |> addItemToMap topicId props model.activeMap
@@ -470,7 +470,11 @@ moveTopicToMap : Id -> MapId -> Point -> Id -> MapId -> Point -> Model -> Model
 moveTopicToMap topicId mapId origPos targetId targetMapId pos model =
   let
     (newModel, created) = createMapIfNeeded targetId targetMapId model
-    newPos = if created then Point 0 0 else pos
+    newPos = case created of
+      True -> Point
+        (topicSize.w / 2 + whiteBoxPadding)
+        (topicSize.h / 2 + whiteBoxPadding)
+      False -> pos
     viewProps_ = getTopicProps topicId mapId newModel.maps |> Maybe.andThen
       (\props -> Just (ViewTopic { props | pos = newPos }))
   in
@@ -478,10 +482,10 @@ moveTopicToMap topicId mapId origPos targetId targetMapId pos model =
     Just viewProps ->
       addItemToMap topicId viewProps targetId
         { newModel | maps =
-            hideItem topicId mapId newModel.maps model
-              |> setTopicPos topicId mapId origPos
-        } |> select targetId targetMapId
-          |> updateGeometry
+            hideItem topicId mapId newModel.maps model |> setTopicPos topicId mapId origPos
+        }
+        |> select targetId targetMapId
+        |> updateGeometry
     Nothing -> model
 
 
@@ -1084,12 +1088,15 @@ mouseUp model =
 point : Random.Generator Point
 point =
   let
-    rw = whiteBoxRange.width / 2
-    rh = whiteBoxRange.height / 2
+    cx = topicSize.w / 2 + whiteBoxPadding
+    cy = topicSize.h / 2 + whiteBoxPadding
+    rw = whiteBoxRange.width
+    rh = whiteBoxRange.height
   in
-  Random.map2 Point
-    (Random.float -rw rw)
-    (Random.float -rh rh)
+  Random.map2
+    (\x y -> Point (cx + x) (cy + y))
+    (Random.float 0 rw)
+    (Random.float 0 rh)
 
 
 mouseOver : Model -> Class -> Id -> MapId -> Model
