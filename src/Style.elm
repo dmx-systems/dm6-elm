@@ -105,17 +105,23 @@ selectionStyle { id } mapId model =
 
 genericStyle : TopicInfo -> TopicProps -> MapId -> Model -> List (Attribute Msg)
 genericStyle topic props mapId model =
-  topicFlexboxStyle topic mapId model ++ topicPosStyle props
+  topicFlexboxStyle topic props mapId model ++ topicPosStyle props
 
 
-topicFlexboxStyle : TopicInfo -> MapId -> Model -> List (Attribute Msg)
-topicFlexboxStyle topic mapId model =
+topicFlexboxStyle : TopicInfo -> TopicProps -> MapId -> Model -> List (Attribute Msg)
+topicFlexboxStyle topic props mapId model =
+  let
+    r12 = fromInt topicRadius ++ "px"
+    r34 = case props.displayMode of
+      Just WhiteBox -> "0"
+      _ -> r12
+  in
   [ style "display" "flex"
   , style "align-items" "center"
   , style "gap" "8px"
   , style "width" <| fromFloat topicSize.w ++ "px"
   , style "height" <| fromFloat topicSize.h ++ "px"
-  , style "border-radius" <| fromInt topicRadius ++ "px"
+  , style "border-radius" <| r12 ++ " " ++ r12 ++ " " ++ r34 ++ " " ++ r34
   ]
   ++ topicBorderStyle topic mapId model
 
@@ -127,12 +133,18 @@ topicPosStyle { pos } =
   ]
 
 
-topicIconBoxStyle : List (Attribute Msg)
-topicIconBoxStyle =
+topicIconBoxStyle : TopicProps -> List (Attribute Msg)
+topicIconBoxStyle props =
+  let
+    r1 = fromInt topicRadius ++ "px"
+    r4 = case props.displayMode of
+      Just WhiteBox -> "0"
+      _ -> r1
+  in
   [ style "flex" "none"
   , style "width" <| fromFloat topicSize.h ++ "px"
   , style "height" <| fromFloat topicSize.h ++ "px"
-  , style "border-radius" <| fromInt topicRadius ++ "px 0 0 " ++ fromInt topicRadius ++ "px"
+  , style "border-radius" <| r1 ++ " 0 0 " ++ r4
   , style "background-color" "black"
   , style "pointer-events" "none"
   ]
@@ -195,13 +207,14 @@ whiteBoxStyle topic { pos } rect mapId model =
   let
     width = rect.x2 - rect.x1
     height = rect.y2 - rect.y1
+    r = fromInt whiteBoxRadius ++ "px"
   in
   [ style "position" "absolute"
   , style "left" "0"
   , style "top" <| fromFloat (topicSize.h - topicBorderWidth) ++ "px"
   , style "width" <| fromFloat width ++ "px"
   , style "height" <| fromFloat height ++ "px"
-  , style "border-radius" <| fromInt whiteBoxRadius ++ "px"
+  , style "border-radius" <| "0 " ++ r ++ " " ++ r ++ " " ++ r
   ]
   ++ topicBorderStyle topic mapId model
   ++ selectionStyle topic mapId model

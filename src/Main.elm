@@ -247,8 +247,8 @@ blackBoxTopic : TopicInfo -> TopicProps -> MapId -> Model -> TopicRendering
 blackBoxTopic topic props mapId model =
   ( topicPosStyle props
   , [ div
-        (topicFlexboxStyle topic mapId model ++ blackBoxStyle)
-        (genericTopicHtml topic model ++ viewItemCount topic.id props model)
+        (topicFlexboxStyle topic props mapId model ++ blackBoxStyle)
+        (genericTopicHtml topic props model ++ viewItemCount topic.id props model)
     , div
         (ghostTopicStyle topic mapId model)
         []
@@ -266,8 +266,8 @@ whiteBoxTopic topic props mapId model =
   in
   ( topicPosStyle props
   , [ div
-        (topicFlexboxStyle topic mapId model ++ blackBoxStyle)
-        (genericTopicHtml topic model ++ viewItemCount topic.id props model)
+        (topicFlexboxStyle topic props mapId model ++ blackBoxStyle)
+        (genericTopicHtml topic props model ++ viewItemCount topic.id props model)
     , div
         (whiteBoxStyle topic props rect mapId model)
         [ viewMap topic.id mapId model ]
@@ -278,12 +278,12 @@ whiteBoxTopic topic props mapId model =
 genericTopic : TopicInfo -> TopicProps -> MapId -> Model -> TopicRendering
 genericTopic topic props mapId model =
   ( genericStyle topic props mapId model
-  , genericTopicHtml topic model
+  , genericTopicHtml topic props model
   )
 
 
-genericTopicHtml : TopicInfo -> Model -> List (Html Msg)
-genericTopicHtml topic model =
+genericTopicHtml : TopicInfo -> TopicProps -> Model -> List (Html Msg)
+genericTopicHtml topic props model =
   let
     textElem =
       if model.editState /= ItemEdit topic.id then
@@ -303,7 +303,7 @@ genericTopicHtml topic model =
           []
   in
   [ div
-      topicIconBoxStyle
+      (topicIconBoxStyle props)
       [ viewTopicIcon topic.id model ]
   , textElem
   ]
