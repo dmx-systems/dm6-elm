@@ -187,9 +187,12 @@ viewMap mapId parentMapId model =
               }
           )
         Nothing -> (([], []), Rectangle 0 0 0 0, {x = "0", y = "0", w = "0", h = "0"})
+    mapStyle = case isTopLevel of
+      True -> []
+      False -> whiteBoxStyle mapId rect parentMapId model
   in
   div
-    []
+    mapStyle
     [ div
         (topicLayerStyle rect)
         topics
@@ -259,19 +262,16 @@ blackBoxTopic topic props mapId model =
 whiteBoxTopic : TopicInfo -> TopicProps -> MapId -> Model -> TopicRendering
 whiteBoxTopic topic props mapId model =
   let
+    (style, children) = genericTopic topic props mapId model
     rect =
       case getMap topic.id model.maps of
         Just map -> map.rect
         Nothing -> Rectangle 0 0 0 0
   in
-  ( topicPosStyle props
-  , [ div
-        (topicFlexboxStyle topic props mapId model ++ blackBoxStyle)
-        (genericTopicHtml topic props model ++ viewItemCount topic.id props model)
-    , div
-        (whiteBoxStyle topic props rect mapId model)
-        [ viewMap topic.id mapId model ]
-    ]
+  ( style
+  , children
+      ++ viewItemCount topic.id props model
+      ++ [ viewMap topic.id mapId model ]
   )
 
 
@@ -280,12 +280,17 @@ unboxedTopic topic props mapId model =
   let
     (style, children) = genericTopic topic props mapId model
   in
-  (style, children ++ viewItemCount topic.id props model)
+  ( style
+  , children
+      ++ viewItemCount topic.id props model
+  )
 
 
 genericTopic : TopicInfo -> TopicProps -> MapId -> Model -> TopicRendering
 genericTopic topic props mapId model =
-  ( topicPosStyle props ++ topicFlexboxStyle topic props mapId model
+  ( topicPosStyle props
+      ++ topicFlexboxStyle topic props mapId model
+      ++ selectionStyle topic.id mapId model
   , genericTopicHtml topic props model
   )
 

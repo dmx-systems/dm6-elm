@@ -89,13 +89,12 @@ topicStyle ({ id } as topic) mapId model =
   [ style "position" "absolute"
   , style "z-index" <| if dragging then "1" else "2"
   ]
-  ++ selectionStyle topic mapId model
 
 
-selectionStyle : TopicInfo -> MapId -> Model -> List (Attribute Msg)
-selectionStyle { id } mapId model =
+selectionStyle : Id -> MapId -> Model -> List (Attribute Msg)
+selectionStyle topicId mapId model =
   let
-    selected = model.selection |> List.member (id, mapId)
+    selected = model.selection |> List.member (topicId, mapId)
   in
   if selected then
     [ style "box-shadow" "4px 4px 4px gray" ]
@@ -118,7 +117,7 @@ topicFlexboxStyle topic props mapId model =
   , style "height" <| fromFloat topicSize.h ++ "px"
   , style "border-radius" <| r12 ++ " " ++ r12 ++ " " ++ r34 ++ " " ++ r34
   ]
-  ++ topicBorderStyle topic mapId model
+  ++ topicBorderStyle topic.id mapId model
 
 
 topicPosStyle : TopicProps -> List (Attribute Msg)
@@ -186,8 +185,8 @@ ghostTopicStyle topic mapId model =
   , style "pointer-events" "none"
   , style "z-index" "-1" -- behind topic
   ]
-  ++ topicBorderStyle topic mapId model
-  ++ selectionStyle topic mapId model
+  ++ topicBorderStyle topic.id mapId model
+  ++ selectionStyle topic.id mapId model
 
 
 itemCountStyle : List (Attribute Msg)
@@ -197,26 +196,26 @@ itemCountStyle =
   ]
 
 
-whiteBoxStyle : TopicInfo -> TopicProps -> Rectangle -> MapId -> Model -> List (Attribute Msg)
-whiteBoxStyle topic { pos } rect mapId model =
+whiteBoxStyle : Id -> Rectangle -> MapId -> Model -> List (Attribute Msg)
+whiteBoxStyle topicId rect mapId model =
   let
     width = rect.x2 - rect.x1
     height = rect.y2 - rect.y1
     r = fromInt whiteBoxRadius ++ "px"
   in
   [ style "position" "absolute"
-  , style "left" "0"
-  , style "top" <| fromFloat (topicSize.h - topicBorderWidth) ++ "px"
+  , style "left" <| fromFloat -topicBorderWidth ++ "px"
+  , style "top" <| fromFloat (topicSize.h - 2 * topicBorderWidth) ++ "px"
   , style "width" <| fromFloat width ++ "px"
   , style "height" <| fromFloat height ++ "px"
   , style "border-radius" <| "0 " ++ r ++ " " ++ r ++ " " ++ r
   ]
-  ++ topicBorderStyle topic mapId model
-  ++ selectionStyle topic mapId model
+  ++ topicBorderStyle topicId mapId model
+  ++ selectionStyle topicId mapId model
 
 
-topicBorderStyle : TopicInfo -> MapId -> Model -> List (Attribute Msg)
-topicBorderStyle { id } mapId model =
+topicBorderStyle : Id -> MapId -> Model -> List (Attribute Msg)
+topicBorderStyle id mapId model =
   let
     targeted = case model.dragState of
       -- can't move a topic to a map where it is already
