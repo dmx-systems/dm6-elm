@@ -103,11 +103,6 @@ selectionStyle { id } mapId model =
     []
 
 
-genericStyle : TopicInfo -> TopicProps -> MapId -> Model -> List (Attribute Msg)
-genericStyle topic props mapId model =
-  topicFlexboxStyle topic props mapId model ++ topicPosStyle props
-
-
 topicFlexboxStyle : TopicInfo -> TopicProps -> MapId -> Model -> List (Attribute Msg)
 topicFlexboxStyle topic props mapId model =
   let

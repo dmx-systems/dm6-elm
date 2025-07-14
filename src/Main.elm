@@ -232,7 +232,7 @@ viewTopic topic props mapId model =
       case props.displayMode of
         Just BlackBox -> blackBoxTopic topic props mapId model
         Just WhiteBox -> whiteBoxTopic topic props mapId model
-        Just Unboxed -> genericTopic topic props mapId model
+        Just Unboxed -> unboxedTopic topic props mapId model
         Nothing -> genericTopic topic props mapId model
   in
   div
@@ -275,9 +275,17 @@ whiteBoxTopic topic props mapId model =
   )
 
 
+unboxedTopic : TopicInfo -> TopicProps -> MapId -> Model -> TopicRendering
+unboxedTopic topic props mapId model =
+  let
+    (style, children) = genericTopic topic props mapId model
+  in
+  (style, children ++ viewItemCount topic.id props model)
+
+
 genericTopic : TopicInfo -> TopicProps -> MapId -> Model -> TopicRendering
 genericTopic topic props mapId model =
-  ( genericStyle topic props mapId model
+  ( topicPosStyle props ++ topicFlexboxStyle topic props mapId model
   , genericTopicHtml topic props model
   )
 
