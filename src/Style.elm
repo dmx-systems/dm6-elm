@@ -270,6 +270,15 @@ taxiLine pos1 pos2 =
         ] ++ lineStyle
       )
       []
+  else if abs (pos2.y - pos1.y) < 2 * assocRadius then -- straight horizontal
+    let
+      ym = (pos1.y + pos2.y) / 2
+    in
+    path
+      ( [ d ("M " ++ fromFloat pos1.x ++ " " ++ fromFloat ym ++ " H " ++ fromFloat pos2.x)
+        ] ++ lineStyle
+      )
+      []
   else -- 5 segment taxi line
     let
       sx = if pos2.x > pos1.x then 1 else -1 -- sign x
