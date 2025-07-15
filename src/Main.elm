@@ -353,7 +353,7 @@ viewAssoc assoc mapId model =
     geom = assocGeometry assoc mapId model
   in
   case geom of
-    Just ( pos1, pos2 ) -> lineFunc pos1 pos2
+    Just (pos1, pos2) -> lineFunc (Just assoc) pos1 pos2
     Nothing -> text "" -- TODO
 
 
@@ -369,14 +369,14 @@ viewLimboAssoc mapId model =
             (relPos pos mapId model)
         in
         case points of
-          Just (pos1, pos2) -> [ lineFunc pos1 pos2 ]
+          Just (pos1, pos2) -> [ lineFunc Nothing pos1 pos2 ]
           Nothing -> []
       else
         []
     _ -> []
 
 
-assocGeometry : AssocInfo -> MapId -> Model -> Maybe ( Point, Point )
+assocGeometry : AssocInfo -> MapId -> Model -> Maybe (Point, Point)
 assocGeometry assoc mapId model =
   let
     pos1 = topicPos assoc.player1 mapId model.maps
@@ -391,7 +391,7 @@ assocGeometry assoc mapId model =
 -- UPDATE
 
 
-update : Msg -> Model -> ( Model, Cmd Msg )
+update : Msg -> Model -> (Model, Cmd Msg)
 update msg model =
   let
     _ =

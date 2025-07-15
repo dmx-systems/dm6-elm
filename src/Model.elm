@@ -42,7 +42,7 @@ type alias TopicInfo =
 
 type alias AssocInfo =
   { id : Id
-  , itemType : ItemType
+  , itemType : ItemType -- can't be named "type", a reserved word
   , player1 : Id
   , role1 : RoleType
   , player2 : Id

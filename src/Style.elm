@@ -5,7 +5,7 @@ import Html exposing (Attribute)
 import Html.Attributes exposing (style)
 import String exposing (String, fromInt, fromFloat)
 import Svg exposing (Svg, line, path)
-import Svg.Attributes exposing (x1, y1, x2, y2, d, stroke, strokeWidth, fill)
+import Svg.Attributes exposing (x1, y1, x2, y2, d, stroke, strokeWidth, strokeDasharray, fill)
 
 
 
@@ -247,27 +247,29 @@ svgStyle =
   ]
 
 
-directLine : Point -> Point -> Svg Msg
-directLine pos1 pos2 =
+-- One possible line func
+directLine : Maybe AssocInfo -> Point -> Point -> Svg Msg
+directLine assoc pos1 pos2 =
   line
     ( [ x1 <| fromFloat pos1.x
       , y1 <| fromFloat pos1.y
       , x2 <| fromFloat pos2.x
       , y2 <| fromFloat pos2.y
-      ] ++ lineStyle
+      ] ++ lineStyle assoc
     )
     []
 
 
-taxiLine : Point -> Point -> Svg Msg
-taxiLine pos1 pos2 =
+-- One possible line func
+taxiLine : Maybe AssocInfo -> Point -> Point -> Svg Msg
+taxiLine assoc pos1 pos2 =
   if abs (pos2.x - pos1.x) < 2 * assocRadius then -- straight vertical
     let
       xm = (pos1.x + pos2.x) / 2
     in
     path
       ( [ d ("M " ++ fromFloat xm ++ " " ++ fromFloat pos1.y ++ " V " ++ fromFloat pos2.y)
-        ] ++ lineStyle
+        ] ++ lineStyle assoc
       )
       []
   else if abs (pos2.y - pos1.y) < 2 * assocRadius then -- straight horizontal
@@ -276,7 +278,7 @@ taxiLine pos1 pos2 =
     in
     path
       ( [ d ("M " ++ fromFloat pos1.x ++ " " ++ fromFloat ym ++ " H " ++ fromFloat pos2.x)
-        ] ++ lineStyle
+        ] ++ lineStyle assoc
       )
       []
   else -- 5 segment taxi line
@@ -307,17 +309,29 @@ taxiLine pos1 pos2 =
             " A " ++ r ++ " " ++ r ++ " 0 0 " ++ sw2 ++ " " ++ fromFloat pos2.x ++ " " ++ y2 ++
             " V " ++ fromFloat pos2.y
           )
-        ] ++ lineStyle
+        ] ++ lineStyle assoc
       )
       []
 
 
-lineStyle : List (Attribute Msg)
-lineStyle =
+lineStyle : Maybe AssocInfo -> List (Attribute Msg)
+lineStyle assoc =
   [ stroke assocColor
   , strokeWidth <| fromFloat assocWith ++ "px"
+  , strokeDasharray <| lineDasharray assoc
   , fill "none"
   ]
+
+
+lineDasharray : Maybe AssocInfo -> String
+lineDasharray maybeAssoc =
+  case maybeAssoc of
+    Just { itemType } ->
+      case itemType of
+        "dmx.association" -> "5" -- dotted
+        "dmx.composition" -> "5 0" -- solid
+        _ -> "1" -- error
+    Nothing -> "5" -- dotted
 
 
 -- Edit Dialog
