@@ -49,12 +49,9 @@ calcMapRect : MapId -> Int -> Maps -> (Rectangle, Maps)
 calcMapRect mapId level maps =
   case getMap mapId maps of
     Just map ->
-      (map.items |> Dict.values |> List.foldr
+      (map.items |> Dict.values |> List.filter isVisible |> List.foldr
         (\viewItem (rect, maps_) ->
-          if not viewItem.hidden then
-            calcItemSize viewItem rect level maps_
-          else
-            (rect, maps_)
+          calcItemSize viewItem rect level maps_
         )
         (Rectangle 5000 5000 -5000 -5000, maps) -- x-min y-min x-max y-max
       )

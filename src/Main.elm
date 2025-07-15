@@ -212,18 +212,15 @@ viewMap mapId parentMapId model =
 
 viewItems : Map -> Model -> ( List (Html Msg), List (Svg Msg) )
 viewItems map model =
-  map.items |> Dict.values |> List.foldr
-    (\{id, hidden, viewProps} (t, a) ->
-      if hidden then
-        (t, a)
-      else
-        let
-          item = model.items |> Dict.get id
-        in
-        case (item, viewProps) of
-          (Just (Topic topic), ViewTopic props) -> (viewTopic topic props map.id model :: t, a)
-          (Just (Assoc assoc), ViewAssoc _) -> (t, viewAssoc assoc map.id model :: a)
-          _ -> logError "viewItems" ("problem with item " ++ fromInt id) (t, a)
+  map.items |> Dict.values |> List.filter isVisible |> List.foldr
+    (\{id, viewProps} (t, a) ->
+      let
+        item = model.items |> Dict.get id
+      in
+      case (item, viewProps) of
+        (Just (Topic topic), ViewTopic props) -> (viewTopic topic props map.id model :: t, a)
+        (Just (Assoc assoc), ViewAssoc _) -> (t, viewAssoc assoc map.id model :: a)
+        _ -> logError "viewItems" ("problem with item " ++ fromInt id) (t, a)
     )
     ([], [])
 
@@ -328,7 +325,7 @@ viewItemCount topicId props model =
     itemCount =
       if props.displayMode /= Nothing then
         case getMap topicId model.maps of
-          Just map -> map.items |> Dict.size
+          Just map -> map.items |> Dict.values |> List.filter isVisible |> List.length
           Nothing -> 0
       else
         0

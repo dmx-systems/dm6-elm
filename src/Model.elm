@@ -278,6 +278,11 @@ updateMaps mapId mapFunc maps =
     )
 
 
+isVisible : ViewItem -> Bool
+isVisible item =
+  not item.hidden
+
+
 -- Selection
 
 select : Id -> MapId -> Model -> Model
