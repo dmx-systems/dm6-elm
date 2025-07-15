@@ -171,36 +171,15 @@ viewDisplayMode model =
 viewMap : MapId -> MapId -> Model -> Html Msg
 viewMap mapId parentMapId model =
   let
-    isTopLevel = mapId == model.activeMap
-    ((topics, assocs), rect, vb) =
-      case getMap mapId model.maps of
-        Just map ->
-          ( viewItems map model
-          , map.rect
-          , if isTopLevel then
-              { x = "0", y = "0", w = "1024", h = "600"} -- TODO
-            else
-              { x = map.rect.x1 |> round |> fromInt
-              , y = map.rect.y1 |> round |> fromInt
-              , w = (map.rect.x2 - map.rect.x1) |> round |> fromInt
-              , h = (map.rect.y2 - map.rect.y1) |> round |> fromInt
-              }
-          )
-        Nothing -> (([], []), Rectangle 0 0 0 0, {x = "0", y = "0", w = "0", h = "0"})
-    mapStyle = case isTopLevel of
-      True -> []
-      False -> whiteBoxStyle mapId rect parentMapId model
+    ((topics, assocs), mapRect, (svgSize, mapStyle)) = mapInfo mapId parentMapId model
   in
   div
     mapStyle
     [ div
-        (topicLayerStyle rect)
+        (topicLayerStyle mapRect)
         topics
     , svg
-        ( [ width vb.w
-          , height vb.h
-          , viewBox (vb.x ++ " " ++ vb.y ++ " " ++ vb.w ++ " " ++ vb.h)
-          ]
+        ( [ width svgSize.w, height svgSize.h ]
           ++ topicAttr mapId parentMapId
           ++ svgStyle
         )
@@ -210,7 +189,31 @@ viewMap mapId parentMapId model =
     ]
 
 
-viewItems : Map -> Model -> ( List (Html Msg), List (Svg Msg) )
+mapInfo : MapId -> MapId -> Model -> MapInfo
+mapInfo mapId parentMapId model =
+  let
+    isTopLevel = mapId == model.activeMap
+  in
+  case getMap mapId model.maps of
+    Just map ->
+      ( viewItems map model
+      , map.rect
+      , if isTopLevel then
+          ( { w = "100%", h = "100%"}
+          , []
+          )
+        else
+          ( { w = (map.rect.x2 - map.rect.x1) |> round |> fromInt
+            , h = (map.rect.y2 - map.rect.y1) |> round |> fromInt
+            }
+          , whiteBoxStyle mapId map.rect parentMapId model
+          )
+      )
+    Nothing ->
+      ( ([], []), Rectangle 0 0 0 0, ( {w = "0", h = "0"}, [] ))
+
+
+viewItems : Map -> Model -> (List (Html Msg), List (Svg Msg))
 viewItems map model =
   map.items |> Dict.values |> List.filter isVisible |> List.foldr
     (\{id, viewProps} (t, a) ->

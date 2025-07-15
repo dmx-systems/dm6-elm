@@ -328,10 +328,10 @@ lineDasharray maybeAssoc =
   case maybeAssoc of
     Just { itemType } ->
       case itemType of
-        "dmx.association" -> "5" -- dotted
-        "dmx.composition" -> "5 0" -- solid
+        "dmx.association" -> "5 0" -- solid
+        "dmx.composition" -> "5" -- dotted
         _ -> "1" -- error
-    Nothing -> "5" -- dotted
+    Nothing -> "5 0" -- solid
 
 
 -- Edit Dialog
