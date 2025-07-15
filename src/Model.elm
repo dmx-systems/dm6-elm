@@ -54,18 +54,7 @@ type alias AssocInfo =
 type alias Maps = Dict Id Map
 type alias ViewItems = Dict Id ViewItem
 
-
 type alias TransferFunc = ViewItems -> ViewItems -> Model -> ViewItems
-
-type alias MapInfo =
-  ( ( List (Html Msg), List (Svg Msg) )
-  , Rectangle
-  , ( { w: String, h: String}
-    , List (Attribute Msg)
-    )
-  )
-
-type alias TopicRendering = (List (Attribute Msg), List (Html Msg))
 
 
 type alias Map =
@@ -241,6 +230,13 @@ getMapIfExists mapId maps =
   maps |> Dict.get mapId
 
 
+topicPos : Id -> MapId -> Maps -> Maybe Point
+topicPos topicId mapId maps =
+  case getTopicProps topicId mapId maps of
+    Just { pos } -> Just pos
+    Nothing -> fail "topicPos" {topicId = topicId, mapId = mapId} Nothing
+
+
 updateTopicPos : Id -> Id -> Delta -> Maps -> Maps
 updateTopicPos topicId mapId delta maps =
   updateTopicProps topicId mapId maps
@@ -251,6 +247,16 @@ updateTopicPos topicId mapId delta maps =
           (props.pos.y + delta.y)
       }
     )
+
+
+getTopicProps : Id -> MapId -> Maps -> Maybe TopicProps
+getTopicProps topicId mapId maps =
+  case getViewItemById topicId mapId maps of
+    Just viewItem ->
+      case viewItem.viewProps of
+        ViewTopic props -> Just props
+        ViewAssoc _ -> topicMismatch "getTopicProps" topicId Nothing
+    Nothing -> fail "getTopicProps" {topicId = topicId, mapId = mapId} Nothing
 
 
 updateTopicProps : Id -> Id -> Maps -> (TopicProps -> TopicProps) -> Maps
@@ -274,6 +280,18 @@ updateTopicProps_ topicId propsFunc map =
         Nothing -> illegalItemId "updateTopicProps" topicId Nothing
     )
   }
+
+
+getViewItemById : Id -> MapId -> Maps -> Maybe ViewItem
+getViewItemById itemId mapId maps =
+  getMap mapId maps |> Maybe.andThen (getViewItem itemId)
+
+
+getViewItem : Id -> Map -> Maybe ViewItem
+getViewItem itemId map =
+  case map.items |> Dict.get itemId of
+    Just viewItem -> Just viewItem
+    Nothing -> itemNotInMap "getViewItem" itemId map.id Nothing
 
 
 updateMaps : MapId -> (Map -> Map) -> Maps -> Maps
