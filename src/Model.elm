@@ -6,9 +6,8 @@ import Time
 import Debug exposing (log, toString)
 
 -- TODO: move to "Utils"
-import Html exposing (Html, Attribute)
+import Html exposing (Attribute)
 import Html.Events exposing (on, stopPropagationOn, keyCode)
-import Svg exposing (Svg)
 import Json.Decode as D
 
 
@@ -53,8 +52,6 @@ type alias AssocInfo =
 
 type alias Maps = Dict Id Map
 type alias ViewItems = Dict Id ViewItem
-
-type alias TransferFunc = ViewItems -> ViewItems -> Model -> ViewItems
 
 
 type alias Map =
@@ -230,6 +227,11 @@ getMapIfExists mapId maps =
   maps |> Dict.get mapId
 
 
+hasMap : MapId -> Maps -> Bool
+hasMap mapId maps =
+  maps |> Dict.member mapId
+
+
 topicPos : Id -> MapId -> Maps -> Maybe Point
 topicPos topicId mapId maps =
   case getTopicProps topicId mapId maps of
@@ -302,6 +304,61 @@ updateMaps mapId mapFunc maps =
         Just map -> Just (mapFunc map)
         Nothing -> illegalMapId "updateMaps" mapId Nothing
     )
+
+
+hideItem : Id -> MapId -> Maps -> Model -> Maps
+hideItem itemId mapId maps model =
+  updateMaps
+    mapId
+    (\map -> { map | items = hideItems itemId model map.items })
+    maps
+
+
+hideItems : Id -> Model -> ViewItems -> ViewItems
+hideItems itemId model items =
+  let
+    newItems = items |> Dict.update
+      itemId
+      (\item_ ->
+        case item_ of
+          Just item -> Just { item | hidden = True }
+          Nothing -> Nothing
+      )
+    assocIds = assocsOfPlayer itemId items model
+  in
+  List.foldr
+    (\assocId newItems_ -> hideItems assocId model newItems_)
+    newItems
+    assocIds
+
+
+assocsOfPlayer : Id -> ViewItems -> Model -> List Id
+assocsOfPlayer itemId items model =
+  items |> Dict.values
+    |> List.filter isAssoc
+    |> List.filter (hasPlayer itemId model)
+    |> List.map .id
+
+
+hasPlayer : Id -> Model -> ViewItem -> Bool
+hasPlayer itemId model assocItem =
+  case getAssocInfo assocItem.id model of
+    Just assoc -> assoc.player1 == itemId || assoc.player2 == itemId
+    Nothing -> False
+
+
+isTopic : ViewItem -> Bool
+isTopic item =
+  case item.viewProps of
+    ViewTopic _ -> True
+    ViewAssoc _ -> False
+
+
+isAssoc : ViewItem -> Bool
+isAssoc item =
+  case item.viewProps of
+    ViewTopic _ -> False
+    ViewAssoc _ -> True
 
 
 isVisible : ViewItem -> Bool

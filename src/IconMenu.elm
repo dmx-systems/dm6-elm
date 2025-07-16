@@ -4,9 +4,10 @@ import Model exposing (..)
 import Style exposing (..)
 
 import Dict
-import Html exposing (Html, div, text, button)
-import Html.Attributes exposing (title)
+import Html exposing (Html, Attribute, div, text, button)
+import Html.Attributes exposing (title, style)
 import Html.Events exposing (onClick)
+import String exposing (fromFloat)
 import FeatherIcons as Icon
 
 
@@ -85,3 +86,16 @@ viewTopicIcon topicId model =
             Nothing -> text "??"
         Nothing -> text ""
     Nothing -> text "?"
+
+
+
+-- STYLE
+
+
+topicIconStyle : List (Attribute Msg)
+topicIconStyle =
+  [ style "position" "relative"
+  , style "top" <| fromFloat ((topicSize.h - topicIconSize) / 2) ++ "px"
+  , style "left" <| fromFloat ((topicSize.h - topicIconSize) / 2) ++ "px"
+  , style "color" "white"
+  ]
