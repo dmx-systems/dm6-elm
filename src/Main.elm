@@ -260,19 +260,22 @@ moveTopicToMap : Id -> MapId -> Point -> Id -> MapId -> Point -> Model -> Model
 moveTopicToMap topicId mapId origPos targetId targetMapId pos model =
   let
     (newModel, created) = createMapIfNeeded targetId targetMapId model
-    newPos = case created of
-      True -> Point
-        (topicSize.w / 2 + whiteBoxPadding)
-        (topicSize.h / 2 + whiteBoxPadding)
-      False -> pos
-    viewProps_ = getTopicProps topicId mapId newModel.maps |> Maybe.andThen
-      (\props -> Just (ViewTopic { props | pos = newPos }))
+    newPos =
+      case created of
+        True -> Point
+          (topicSize.w / 2 + whiteBoxPadding)
+          (topicSize.h / 2 + whiteBoxPadding)
+        False -> pos
+    viewProps_ =
+      getTopicProps topicId mapId newModel.maps
+      |> Maybe.andThen (\props -> Just (ViewTopic { props | pos = newPos }))
   in
   case viewProps_ of
     Just viewProps ->
       addItemToMap topicId viewProps targetId
         { newModel | maps =
-            hideItem topicId mapId newModel.maps model |> setTopicPos topicId mapId origPos
+            hideItem topicId mapId newModel.maps model
+            |> setTopicPos topicId mapId origPos
         }
         |> select targetId targetMapId
         |> updateGeometry
@@ -505,7 +508,7 @@ timeArrived time model =
             let
               delay = posixToMillis time - posixToMillis startTime > dragThresholdMillis
               dragMode = if delay then DrawAssoc else DragTopic
-              origPos_ = topicPos id mapId model.maps
+              origPos_ = getTopicPos id mapId model.maps
             in
             case origPos_ of
               Just origPos -> Drag dragMode id mapId origPos pos Nothing

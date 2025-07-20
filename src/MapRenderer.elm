@@ -247,7 +247,7 @@ viewLimboAssoc mapId model =
         let
           points = Maybe.map2
             (\pos1 pos2 -> (pos1, pos2))
-            (topicPos topicId mapId model.maps)
+            (getTopicPos topicId mapId model.maps)
             (relPos pos mapId model)
         in
         case points of
@@ -261,8 +261,8 @@ viewLimboAssoc mapId model =
 assocGeometry : AssocInfo -> MapId -> Model -> Maybe (Point, Point)
 assocGeometry assoc mapId model =
   let
-    pos1 = topicPos assoc.player1 mapId model.maps
-    pos2 = topicPos assoc.player2 mapId model.maps
+    pos1 = getTopicPos assoc.player1 mapId model.maps
+    pos2 = getTopicPos assoc.player2 mapId model.maps
   in
   case Maybe.map2 (\p1 p2 -> ( p1, p2 )) pos1 pos2 of
     Just geometry -> Just geometry
@@ -292,7 +292,7 @@ absMapPos mapId posAcc model =
   else
     getMap mapId model.maps
       |> Maybe.andThen
-        (\map -> topicPos map.id map.parentMapId model.maps
+        (\map -> getTopicPos map.id map.parentMapId model.maps
           |> Maybe.andThen
             (\mapPos_ ->
               absMapPos

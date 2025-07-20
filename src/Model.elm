@@ -232,14 +232,14 @@ hasMap mapId maps =
   maps |> Dict.member mapId
 
 
-topicPos : Id -> MapId -> Maps -> Maybe Point
-topicPos topicId mapId maps =
+getTopicPos : Id -> MapId -> Maps -> Maybe Point
+getTopicPos topicId mapId maps =
   case getTopicProps topicId mapId maps of
     Just { pos } -> Just pos
-    Nothing -> fail "topicPos" {topicId = topicId, mapId = mapId} Nothing
+    Nothing -> fail "getTopicPos" {topicId = topicId, mapId = mapId} Nothing
 
 
-updateTopicPos : Id -> Id -> Delta -> Maps -> Maps
+updateTopicPos : Id -> MapId -> Delta -> Maps -> Maps
 updateTopicPos topicId mapId delta maps =
   updateTopicProps topicId mapId maps
     (\props ->
@@ -261,7 +261,7 @@ getTopicProps topicId mapId maps =
     Nothing -> fail "getTopicProps" {topicId = topicId, mapId = mapId} Nothing
 
 
-updateTopicProps : Id -> Id -> Maps -> (TopicProps -> TopicProps) -> Maps
+updateTopicProps : Id -> MapId -> Maps -> (TopicProps -> TopicProps) -> Maps
 updateTopicProps topicId mapId maps propsFunc =
   updateMaps
     mapId
