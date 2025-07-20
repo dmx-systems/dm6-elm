@@ -1,7 +1,6 @@
 module Boxing exposing (boxContainer, unboxContainer)
 
 import Model exposing (..)
-
 import Dict exposing (Dict)
 
 
@@ -28,20 +27,14 @@ unboxContainer containerId targetMapId model =
 
 transferContent : Id -> MapId -> TransferFunc -> Model -> Maps
 transferContent containerId targetMapId transferFunc model =
-  let
-    maps_ = getMap containerId model.maps |> Maybe.andThen
-      (\containerMap -> Just
-        (updateMaps
-          targetMapId
-          (\targetMap ->
-            { targetMap | items = transferFunc containerMap.items targetMap.items model }
-          )
-          model.maps
+  case getMap containerId model.maps of
+    Just containerMap ->
+      updateMaps
+        targetMapId
+        (\targetMap ->
+          { targetMap | items = transferFunc containerMap.items targetMap.items model }
         )
-      )
-  in
-  case maps_ of
-    Just maps -> maps
+        model.maps
     Nothing -> model.maps
 
 
