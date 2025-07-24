@@ -35,7 +35,6 @@ type Item
 type alias TopicInfo =
   { id : Id
   , text : String
-  , color : Color
   , iconName : Maybe IconName
   }
 
@@ -118,7 +117,6 @@ type alias ItemType = String -- a type URI, e.g. "dmx.association"
 type alias RoleType = String -- a role type URI, e.g. "dmx.default"
 type alias Selection = List (Id, MapId)
 type alias Delta = Point
-type alias Color = Int -- Hue
 type alias IconName = String -- name of feather icon, https://feathericons.com
 
 

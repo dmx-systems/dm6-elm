@@ -25,13 +25,6 @@ import Debug exposing (log, toString)
 
 
 
--- CONFIG
-
-
-colors = Array.fromList([120, 0, 210, 36, 270, 58])
-
-
-
 -- MAIN
 
 
@@ -196,13 +189,13 @@ createTopic model =
   let
     id = model.nextId
     text = "New Topic"
-    index = modBy (Array.length colors) (topicCount model)
-    color = case colors |> Array.get index of
-      Just color_ -> color_
-      Nothing -> logError "createTopic" "Illegal color" 0
-    topic = TopicInfo id text color Nothing
+    topic = TopicInfo id text Nothing
   in
-  ( { model | items = model.items |> Dict.insert id (Topic topic) } |> nextId
+  ( { model
+    | items = model.items
+      |> Dict.insert id (Topic topic)
+    }
+    |> nextId
   , id
   )
 

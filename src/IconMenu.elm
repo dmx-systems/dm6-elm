@@ -113,8 +113,7 @@ iconListStyle =
 
 iconButtonStyle : List (Attribute Msg)
 iconButtonStyle =
-  [ --style "background-color" "white"
-    style "border-width" "0"
+  [ style "border-width" "0"
   , style "margin" "8px"
   ]
 

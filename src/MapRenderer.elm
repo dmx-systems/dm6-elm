@@ -449,7 +449,7 @@ topicBorderStyle id mapId model =
   [ style "border-width" <| fromFloat topicBorderWidth ++ "px"
   , style "border-style" <| if targeted then "dashed" else "solid"
   , style "box-sizing" "border-box"
-  , style "background-color" "white" -- FIXME
+  , style "background-color" "white"
   ]
 
 
