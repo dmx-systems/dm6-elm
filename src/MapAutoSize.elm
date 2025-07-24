@@ -1,10 +1,13 @@
 module MapAutoSize exposing (autoSize)
 
 import Model exposing (..)
-import Style exposing (..)
+import Config exposing (..)
 
 import Dict
 
+
+
+-- UPDATE
 
 
 autoSize : MapId -> Maps -> Maps

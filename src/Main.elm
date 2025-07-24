@@ -1,7 +1,7 @@
 module Main exposing (..)
 
 import Model exposing (..)
-import Style exposing (..)
+import Config exposing (..)
 import MapRenderer exposing (viewMap)
 import MapAutoSize exposing (autoSize)
 import Boxing exposing (boxContainer, unboxContainer)
@@ -13,7 +13,8 @@ import Browser.Dom as Dom
 import Browser.Events as Events
 import Dict exposing (Dict)
 import Html exposing (Html, Attribute, div, text, button, input, label, h1)
-import Html.Attributes exposing (class, id, attribute, type_, name, value, checked, disabled)
+import Html.Attributes exposing
+  (class, id, style, attribute, type_, name, value, checked, disabled)
 import Html.Events exposing (onClick, on)
 import Random
 import String exposing (String, fromInt)
@@ -28,7 +29,6 @@ import Debug exposing (log, toString)
 
 
 colors = Array.fromList([120, 0, 210, 36, 270, 58])
-dragThresholdMillis = 200
 
 
 
@@ -729,3 +729,52 @@ topicFilter item =
   case item of
     Topic _ -> True
     Assoc _ -> False
+
+
+
+-- STYLE
+
+
+appStyle : List (Attribute Msg)
+appStyle =
+  [ style "font-family" "sans-serif"
+  , style "font-size" mainFontSize
+  , style "user-select" "none"
+  , style "-webkit-user-select" "none" -- Safari still needs vendor prefix
+  ]
+
+
+toolbarStyle : List (Attribute Msg)
+toolbarStyle =
+  [ style "display" "inline-flex"
+  , style "flex-direction" "column"
+  , style "align-items" "flex-start"
+  , style "gap" "28px"
+  , style "margin-top" "20px"
+  , style "position" "relative"
+  , style "z-index" "3"
+  ]
+
+
+displayModeStyle : Bool -> List (Attribute Msg)
+displayModeStyle disabled =
+  let
+    (color, pointerEvents) =
+      if disabled then
+        ("gray", "none")
+      else
+        ("unset", "unset")
+  in
+  [ style "display" "flex"
+  , style "flex-direction" "column"
+  , style "gap" "6px"
+  , style "color" color
+  , style "pointer-events" pointerEvents
+  ]
+
+
+buttonStyle : List (Attribute Msg)
+buttonStyle =
+  [ style "font-family" "sans-serif"
+  , style "font-size" mainFontSize
+  ]

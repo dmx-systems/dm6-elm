@@ -2,7 +2,7 @@ module MapRenderer exposing (viewMap)
 
 import IconMenu exposing (viewTopicIcon)
 import Model exposing (..)
-import Style exposing (..)
+import Config exposing (..)
 
 import Dict exposing (Dict)
 import Html exposing (Html, Attribute, div, text, input)

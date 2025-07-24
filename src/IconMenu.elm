@@ -1,7 +1,7 @@
 module IconMenu exposing (updateIconMenu, viewIconMenu, viewTopicIcon)
 
 import Model exposing (..)
-import Style exposing (..)
+import Config exposing (..)
 
 import Dict
 import Html exposing (Html, Attribute, div, text, button)
@@ -18,14 +18,14 @@ import FeatherIcons as Icon
 updateIconMenu : IconMenuMsg -> Model -> Model
 updateIconMenu msg model =
   case msg of
-    Open -> setEditDialogOpen True model
-    Close -> setEditDialogOpen False model
+    Open -> setIconMenuState True model
+    Close -> setIconMenuState False model
     SetIcon maybeIcon -> setIcon maybeIcon model
-      |> setEditDialogOpen False
+      |> setIconMenuState False
 
 
-setEditDialogOpen : Bool -> Model -> Model
-setEditDialogOpen isOpen model =
+setIconMenuState : Bool -> Model -> Model
+setIconMenuState isOpen model =
   { model | iconMenuState = isOpen }
 
 
@@ -45,10 +45,10 @@ setIcon iconName model =
 viewIconMenu : Model -> Html Msg
 viewIconMenu model =
   div
-    editDialogStyle
+    iconMenuStyle
     [ div
-        iconsListStyle
-        viewIcons
+        iconListStyle
+        viewIconList
     , button
       ( [onClick (IconMenu Close)]
         ++ closeButtonStyle
@@ -60,8 +60,8 @@ viewIconMenu model =
     ]
 
 
-viewIcons : List (Html Msg)
-viewIcons =
+viewIconList : List (Html Msg)
+viewIconList =
   Icon.icons |> Dict.toList |> List.map
     (\(iconName, icon) ->
       button
@@ -90,6 +90,41 @@ viewTopicIcon topicId model =
 
 
 -- STYLE
+
+
+iconMenuStyle : List (Attribute Msg)
+iconMenuStyle =
+  [ style "position" "absolute"
+  , style "left" "72px"
+  , style "top" "244px"
+  , style "width" "320px"
+  , style "height" "320px"
+  , style "background-color" "white"
+  , style "border" "1px solid lightgray"
+  ]
+
+
+iconListStyle : List (Attribute Msg)
+iconListStyle =
+  [ style "height" "100%"
+  , style "overflow" "auto"
+  ]
+
+
+iconButtonStyle : List (Attribute Msg)
+iconButtonStyle =
+  [ --style "background-color" "white"
+    style "border-width" "0"
+  , style "margin" "8px"
+  ]
+
+
+closeButtonStyle : List (Attribute Msg)
+closeButtonStyle =
+  [ style "position" "absolute"
+  , style "top" "0"
+  , style "right" "0"
+  ]
 
 
 topicIconStyle : List (Attribute Msg)
