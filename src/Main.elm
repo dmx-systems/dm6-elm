@@ -126,9 +126,9 @@ viewDisplayMode model =
     displayMode = case getSingleSelection model of
       Just (topicId, mapId) -> getDisplayMode topicId mapId model.maps
       Nothing -> Nothing
-    checked1 = displayMode == Just BlackBox
-    checked2 = displayMode == Just WhiteBox
-    checked3 = displayMode == Just Unboxed
+    checked1 = displayMode == Just (Container BlackBox)
+    checked2 = displayMode == Just (Container WhiteBox)
+    checked3 = displayMode == Just (Container Unboxed)
     disabled_ = displayMode == Nothing
   in
   div
@@ -137,21 +137,21 @@ viewDisplayMode model =
         []
         [ text "Container Display" ]
     , label
-        [ onClick (Set <| Just BlackBox), stopPropagationOnMousedown ]
+        [ onClick (Set <| Container BlackBox), stopPropagationOnMousedown ]
         [ input
             [ type_ "radio", name "display-mode", checked checked1, disabled disabled_ ]
             []
         , text "Black Box"
         ]
     , label
-        [ onClick (Set <| Just WhiteBox), stopPropagationOnMousedown ]
+        [ onClick (Set <| Container WhiteBox), stopPropagationOnMousedown ]
         [ input
             [ type_ "radio", name "display-mode", checked checked2, disabled disabled_ ]
             []
         , text "White Box"
         ]
     , label
-        [ onClick (Set <| Just Unboxed), stopPropagationOnMousedown ]
+        [ onClick (Set <| Container Unboxed), stopPropagationOnMousedown ]
         [ input
             [ type_ "radio", name "display-mode", checked checked3, disabled disabled_ ]
             []
@@ -204,7 +204,7 @@ createTopicAndAddToMap : Model -> Model
 createTopicAndAddToMap model =
   let
     (newModel, topicId) = createTopic model
-    props = ViewTopic (TopicProps pos Nothing)
+    props = ViewTopic <| TopicProps pos (Monad Detail)
     pos = Point 175 98
   in
   newModel
@@ -281,7 +281,7 @@ createMapIfNeeded targetId targetMapId model =
     (model, False)
   else
     ( { model
-      | maps = updateDisplayMode targetId targetMapId (Just BlackBox)
+      | maps = updateDisplayMode targetId targetMapId (Container BlackBox)
           { model
           | maps = model.maps |>
             Dict.insert
@@ -320,7 +320,7 @@ updateGeometry model =
 
 -- Display Mode
 
-setDisplayMode : Maybe DisplayMode -> Model -> Model
+setDisplayMode : DisplayMode -> Model -> Model
 setDisplayMode displayMode model =
   let
     maps =
@@ -329,20 +329,21 @@ setDisplayMode displayMode model =
           let
             newModel =
               { model | maps =
-                  case displayMode of
-                    Just BlackBox -> boxContainer containerId targetMapId model
-                    Just WhiteBox -> boxContainer containerId targetMapId model
-                    Just Unboxed -> unboxContainer containerId targetMapId model
-                    Nothing -> model.maps
+                case displayMode of
+                  Monad _ -> model.maps -- TODO: Monad Detail
+                  Container BlackBox -> boxContainer containerId targetMapId model
+                  Container WhiteBox -> boxContainer containerId targetMapId model
+                  Container Unboxed -> unboxContainer containerId targetMapId model
               }
           in
           updateDisplayMode containerId targetMapId displayMode newModel
         Nothing -> model.maps
   in
-  { model | maps = maps } |> updateGeometry
+  { model | maps = maps }
+  |> updateGeometry
 
 
-updateDisplayMode : Id -> MapId -> Maybe DisplayMode -> Model -> Maps
+updateDisplayMode : Id -> MapId -> DisplayMode -> Model -> Maps
 updateDisplayMode topicId mapId displayMode model =
   updateTopicProps
     topicId
@@ -354,7 +355,7 @@ updateDisplayMode topicId mapId displayMode model =
 getDisplayMode : Id -> MapId -> Maps -> Maybe DisplayMode
 getDisplayMode topicId mapId maps =
   case getTopicProps topicId mapId maps of
-    Just { displayMode } -> displayMode
+    Just { displayMode } -> Just displayMode
     Nothing -> fail "getDisplayMode" {topicId = topicId, mapId = mapId} Nothing
 
 

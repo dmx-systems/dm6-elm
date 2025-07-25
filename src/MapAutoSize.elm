@@ -66,14 +66,14 @@ calcItemSize viewItem rect level maps =
   case viewItem.viewProps of
     ViewTopic {pos, displayMode} ->
       case displayMode of
-        Just BlackBox -> (topicExtent pos rect, maps)
-        Just WhiteBox ->
+        Monad _ -> (topicExtent pos rect, maps) -- TODO: Monad Detail
+        Container BlackBox -> (topicExtent pos rect, maps)
+        Container WhiteBox ->
           let
             (rect_, maps_) = updateMapGeometry viewItem.id (level + 1) maps
           in
           (mapExtent pos rect_ rect, maps_)
-        Just Unboxed -> (topicExtent pos rect, maps)
-        Nothing -> (topicExtent pos rect, maps)
+        Container Unboxed -> (topicExtent pos rect, maps)
     ViewAssoc _ -> (rect, maps)
 
 

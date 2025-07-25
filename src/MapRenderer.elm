@@ -112,10 +112,10 @@ viewTopic topic props mapId model =
   let
     (style, children) =
       case props.displayMode of
-        Just BlackBox -> blackBoxTopic topic props mapId model
-        Just WhiteBox -> whiteBoxTopic topic props mapId model
-        Just Unboxed -> unboxedTopic topic props mapId model
-        Nothing -> genericTopic topic props mapId model
+        Monad _ -> genericTopic topic props mapId model -- TODO: Monad Detail
+        Container BlackBox -> blackBoxTopic topic props mapId model
+        Container WhiteBox -> whiteBoxTopic topic props mapId model
+        Container Unboxed -> unboxedTopic topic props mapId model
   in
   div
     ( topicAttr topic.id mapId
@@ -205,12 +205,12 @@ viewItemCount : Id -> TopicProps -> Model -> List (Html Msg)
 viewItemCount topicId props model =
   let
     itemCount =
-      if props.displayMode /= Nothing then
-        case getMap topicId model.maps of
-          Just map -> map.items |> Dict.values |> List.filter isVisible |> List.length
-          Nothing -> 0
-      else
-        0
+      case props.displayMode of
+        Monad _ -> 0
+        Container _ ->
+          case getMap topicId model.maps of
+            Just map -> map.items |> Dict.values |> List.filter isVisible |> List.length
+            Nothing -> 0
   in
   [ div
       itemCountStyle
@@ -338,7 +338,7 @@ topicFlexboxStyle topic props mapId model =
   let
     r12 = fromInt topicRadius ++ "px"
     r34 = case props.displayMode of
-      Just WhiteBox -> "0"
+      Container WhiteBox -> "0"
       _ -> r12
   in
   [ style "display" "flex"
@@ -363,7 +363,7 @@ topicIconBoxStyle props =
   let
     r1 = fromInt topicRadius ++ "px"
     r4 = case props.displayMode of
-      Just WhiteBox -> "0"
+      Container WhiteBox -> "0"
       _ -> r1
   in
   [ style "flex" "none"

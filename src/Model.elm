@@ -76,7 +76,7 @@ type ViewProps
 
 type alias TopicProps =
   { pos : Point
-  , displayMode : Maybe DisplayMode -- only set for container topics
+  , displayMode : DisplayMode
   }
 
 
@@ -84,7 +84,17 @@ type alias AssocProps =
   {}
 
 
-type DisplayMode -- TODO: rename to "ContainerDisplay"?
+type DisplayMode
+  = Monad MonadDisplay
+  | Container ContainerDisplay
+
+
+type MonadDisplay
+  = Label
+  | Detail
+
+
+type ContainerDisplay
   = BlackBox
   | WhiteBox
   | Unboxed
@@ -141,7 +151,7 @@ type DragMode
 type Msg
   = AddTopic
   | MoveTopicToMap Id MapId Point Id MapId Point -- start point, random point (for target)
-  | Set (Maybe DisplayMode)
+  | Set DisplayMode
   | Edit EditMsg
   | IconMenu IconMenuMsg
   | Mouse MouseMsg
