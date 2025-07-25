@@ -112,7 +112,8 @@ viewTopic topic props mapId model =
   let
     (style, children) =
       case props.displayMode of
-        Monad _ -> genericTopic topic props mapId model -- TODO: Monad Detail
+        Monad Label -> genericTopic topic props mapId model
+        Monad Detail -> detailTopic topic props mapId model
         Container BlackBox -> blackBoxTopic topic props mapId model
         Container WhiteBox -> whiteBoxTopic topic props mapId model
         Container Unboxed -> unboxedTopic topic props mapId model
@@ -123,6 +124,77 @@ viewTopic topic props mapId model =
       ++ style
     )
     children
+
+
+genericTopic : TopicInfo -> TopicProps -> MapId -> Model -> TopicRendering
+genericTopic topic props mapId model =
+  ( topicPosStyle props
+      ++ topicFlexboxStyle topic props mapId model
+      ++ selectionStyle topic.id mapId model
+  , genericTopicHtml topic props model
+  )
+
+
+genericTopicHtml : TopicInfo -> TopicProps -> Model -> List (Html Msg)
+genericTopicHtml topic props model =
+  let
+    textElem =
+      if model.editState /= ItemEdit topic.id then
+        div
+          topicLabelStyle
+          [ text topic.text ]
+      else
+        input
+          ( [ id ("dmx-input-" ++ fromInt topic.id)
+            , value topic.text
+            , onInput (ItemEditInput >> Edit)
+            , onEnterOrEsc (Edit ItemEditEnd)
+            , stopPropagationOnMousedown
+            ]
+            ++ topicInputStyle
+          )
+          []
+  in
+  [ div
+      (topicIconBoxStyle props)
+      [ viewTopicIcon topic.id model ]
+  , textElem
+  ]
+
+
+detailTopic : TopicInfo -> TopicProps -> MapId -> Model -> TopicRendering
+detailTopic topic props mapId model =
+  let
+    r = fromInt topicRadius ++ "px"
+  in
+  ( [ style "left" <| fromFloat (props.pos.x - topicSize.w / 2) ++ "px"
+    , style "top" <| fromFloat (props.pos.y - topicSize.h / 2) ++ "px"
+    , style "width" <| fromFloat (topicDetailWidth + topicSize.h) ++ "px"
+    , style "background-color" "beige" -- FIXME
+    ]
+  , [ div
+      ( [ style "position" "relative"
+        , style "left" <| fromFloat topicSize.h ++ "px"
+        , style "min-width" <| fromFloat (topicSize.w - topicSize.h) ++ "px"
+        , style "max-width" "max-content"
+        , style "min-height" <| fromFloat topicSize.h ++ "px"
+        , style "border-radius" <| "0 " ++ r ++ " " ++ r ++ " " ++ r
+        , style "padding" "8px"
+        , style "z-index" "1" -- before icon box box-shadow
+        , style "pointer-events" "none"
+        ]
+        ++ topicBorderStyle topic.id mapId model
+        ++ selectionStyle topic.id mapId model
+      )
+      [ text topic.text ]
+    , div
+      ( detailIconBoxStyle props
+        ++ detailBorderStyle topic.id mapId model
+        ++ selectionStyle topic.id mapId model
+      )
+      [ viewTopicIcon topic.id model ]
+    ]
+  )
 
 
 blackBoxTopic : TopicInfo -> TopicProps -> MapId -> Model -> TopicRendering
@@ -163,42 +235,6 @@ unboxedTopic topic props mapId model =
   , children
       ++ viewItemCount topic.id props model
   )
-
-
-genericTopic : TopicInfo -> TopicProps -> MapId -> Model -> TopicRendering
-genericTopic topic props mapId model =
-  ( topicPosStyle props
-      ++ topicFlexboxStyle topic props mapId model
-      ++ selectionStyle topic.id mapId model
-  , genericTopicHtml topic props model
-  )
-
-
-genericTopicHtml : TopicInfo -> TopicProps -> Model -> List (Html Msg)
-genericTopicHtml topic props model =
-  let
-    textElem =
-      if model.editState /= ItemEdit topic.id then
-        div
-          topicLabelStyle
-          [ text topic.text ]
-      else
-        input
-          ( [ id ("dmx-input-" ++ fromInt topic.id)
-            , value topic.text
-            , onInput (ItemEditInput >> Edit)
-            , onEnterOrEsc (Edit ItemEditEnd)
-            , stopPropagationOnMousedown
-            ]
-            ++ topicInputStyle
-          )
-          []
-  in
-  [ div
-      (topicIconBoxStyle props)
-      [ viewTopicIcon topic.id model ]
-  , textElem
-  ]
 
 
 viewItemCount : Id -> TopicProps -> Model -> List (Html Msg)
@@ -375,6 +411,22 @@ topicIconBoxStyle props =
   ]
 
 
+detailIconBoxStyle : TopicProps -> List (Attribute Msg)
+detailIconBoxStyle props =
+  let
+    r = fromInt topicRadius ++ "px"
+  in
+  [ style "position" "absolute"
+  , style "top" "0"
+  , style "left" "0"
+  , style "width" <| fromFloat topicSize.h ++ "px"
+  , style "height" <| fromFloat topicSize.h ++ "px"
+  , style "border-radius" <| r ++ " 0 0 " ++ r
+  , style "background-color" "black"
+  , style "pointer-events" "none"
+  ]
+
+
 topicLabelStyle : List (Attribute Msg)
 topicLabelStyle =
   [ style "pointer-events" "none" ]
@@ -450,6 +502,22 @@ topicBorderStyle id mapId model =
   , style "border-style" <| if targeted then "dashed" else "solid"
   , style "box-sizing" "border-box"
   , style "background-color" "white"
+  ]
+
+
+detailBorderStyle : Id -> MapId -> Model -> List (Attribute Msg)
+detailBorderStyle id mapId model =
+  let
+    targeted = case model.dragState of
+      -- can't move a topic to a map where it is already
+      -- can't create assoc when both topics are in different map
+      Drag DragTopic _ mapId_ _ _ (Just target) -> target == (id, mapId) && mapId_ /= id
+      Drag DrawAssoc _ mapId_ _ _ (Just target) -> target == (id, mapId) && mapId_ == mapId
+      _ -> False
+  in
+  [ style "border-width" <| fromFloat topicBorderWidth ++ "px"
+  , style "border-style" <| if targeted then "dashed" else "solid"
+  , style "box-sizing" "border-box"
   ]
 
 

@@ -16,6 +16,7 @@ assocColor = "black"
 dragThresholdMillis = 200
 
 topicSize = Size 128 28
+topicDetailWidth = 300
 topicIconSize = 16
 topicBorderWidth = 1
 topicRadius = 7
