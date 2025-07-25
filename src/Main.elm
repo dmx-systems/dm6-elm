@@ -92,7 +92,8 @@ viewToolbar model =
           ++ buttonStyle
         )
         [ text "Add Topic" ]
-    , viewDisplayMode model
+    , viewMonadMode model
+    , viewContainerMode model
     , button
         ( [ onClick (IconMenu Open)
           , stopPropagationOnMousedown
@@ -120,16 +121,57 @@ viewToolbar model =
     ]
 
 
-viewDisplayMode : Model -> Html Msg
-viewDisplayMode model =
+
+viewMonadMode : Model -> Html Msg
+viewMonadMode model =
   let
     displayMode = case getSingleSelection model of
       Just (topicId, mapId) -> getDisplayMode topicId mapId model.maps
       Nothing -> Nothing
-    checked1 = displayMode == Just (Container BlackBox)
-    checked2 = displayMode == Just (Container WhiteBox)
-    checked3 = displayMode == Just (Container Unboxed)
-    disabled_ = displayMode == Nothing
+    (checked1, checked2, disabled_) =
+      case displayMode of
+        Just (Monad Label) -> (True, False, False)
+        Just (Monad Detail) -> (False, True, False)
+        _ -> (False, False, True)
+  in
+  div
+    (displayModeStyle disabled_)
+    [ div
+        []
+        [ text "Monad Display" ]
+    , label
+        [ onClick (Set <| Monad Label), stopPropagationOnMousedown ]
+        [ input
+            [ type_ "radio", name "display-mode", checked checked1, disabled disabled_ ]
+            []
+        , text "Label"
+        ]
+    , label
+        [ onClick (Set <| Monad Detail), stopPropagationOnMousedown ]
+        [ input
+            [ type_ "radio", name "display-mode", checked checked2, disabled disabled_ ]
+            []
+        , text "Detail"
+        ]
+    ]
+
+
+viewContainerMode : Model -> Html Msg
+viewContainerMode model =
+  let
+    displayMode = case getSingleSelection model of
+      Just (topicId, mapId) -> getDisplayMode topicId mapId model.maps
+      Nothing -> Nothing
+    (checked1, checked2, checked3) =
+      case displayMode of
+        Just (Container BlackBox) -> (True, False, False)
+        Just (Container WhiteBox) -> (False, True, False)
+        Just (Container Unboxed) -> (False, False, True)
+        _ -> (False, False, False)
+    disabled_ =
+      case displayMode of
+        Just (Container _) -> False
+        _ -> True
   in
   div
     (displayModeStyle disabled_)
@@ -204,12 +246,12 @@ createTopicAndAddToMap : Model -> Model
 createTopicAndAddToMap model =
   let
     (newModel, topicId) = createTopic model
-    props = ViewTopic <| TopicProps pos (Monad Detail)
+    props = ViewTopic <| TopicProps pos (Monad Label)
     pos = Point 175 98
   in
   newModel
-    |> addItemToMap topicId props model.activeMap
-    |> select topicId model.activeMap
+  |> addItemToMap topicId props model.activeMap
+  |> select topicId model.activeMap
 
 
 -- Presumption: both players exist in same map
