@@ -408,6 +408,7 @@ updateEdit msg model =
   case msg of
     ItemEditStart -> startItemEdit model
     ItemEditInput text -> (updateItemText text model, Cmd.none)
+    ItemEditBlur text -> (updateItemText text model, Cmd.none)
     ItemEditEnd -> (endItemEdit model, Cmd.none)
 
 

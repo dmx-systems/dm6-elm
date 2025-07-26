@@ -162,6 +162,7 @@ type Msg
 type EditMsg
   = ItemEditStart
   | ItemEditInput String
+  | ItemEditBlur String
   | ItemEditEnd
 
 
@@ -413,6 +414,14 @@ keyDecoder key msg =
         D.fail "not that key"
   in
   keyCode |> D.andThen isKey
+
+
+onBlur : (String -> Msg) -> Attribute Msg
+onBlur msg =
+  on "blur"
+    ( (D.at ["target", "innerText"] D.string)
+      |> D.andThen (\text -> D.succeed (msg text))
+    )
 
 
 stopPropagationOnMousedown : Attribute Msg

@@ -165,6 +165,17 @@ genericTopicHtml topic props model =
 detailTopic : TopicInfo -> TopicProps -> MapId -> Model -> TopicRendering
 detailTopic topic props mapId model =
   let
+    isEdit = model.editState == ItemEdit topic.id
+    editAttr =
+      if isEdit then
+        [ attribute "contenteditable" "plaintext-only"
+        , onBlur (ItemEditBlur >> Edit)
+        , stopPropagationOnMousedown
+        ]
+      else
+        [ attribute "contenteditable" "false"
+        , style "pointer-events" "none"
+        ]
     r = fromInt topicRadius ++ "px"
   in
   ( [ style "left" <| fromFloat (props.pos.x - topicSize.w / 2) ++ "px"
@@ -173,7 +184,8 @@ detailTopic topic props mapId model =
     , style "background-color" "beige" -- FIXME
     ]
   , [ div
-      ( [ style "position" "relative"
+      ( [ id ("dmx-input-" ++ fromInt topic.id)
+        , style "position" "relative"
         , style "left" <| fromFloat topicSize.h ++ "px"
         , style "min-width" <| fromFloat (topicSize.w - topicSize.h) ++ "px"
         , style "max-width" "max-content"
@@ -181,8 +193,8 @@ detailTopic topic props mapId model =
         , style "border-radius" <| "0 " ++ r ++ " " ++ r ++ " " ++ r
         , style "padding" "8px"
         , style "z-index" "1" -- before icon box box-shadow
-        , style "pointer-events" "none"
         ]
+        ++ editAttr
         ++ topicBorderStyle topic.id mapId model
         ++ selectionStyle topic.id mapId model
       )
