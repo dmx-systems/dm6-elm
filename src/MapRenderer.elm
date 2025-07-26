@@ -5,7 +5,7 @@ import Model exposing (..)
 import Config exposing (..)
 
 import Dict exposing (Dict)
-import Html exposing (Html, Attribute, div, text, input)
+import Html exposing (Html, Attribute, div, text, input, textarea)
 import Html.Attributes exposing (id, style, attribute, value)
 import Html.Events exposing (onInput)
 import String exposing (fromInt, fromFloat)
@@ -147,7 +147,7 @@ genericTopicHtml topic props model =
         input
           ( [ id ("dmx-input-" ++ fromInt topic.id)
             , value topic.text
-            , onInput (ItemEditInput >> Edit)
+            , onInput (Edit << ItemEditInput)
             , onEnterOrEsc (Edit ItemEditEnd)
             , stopPropagationOnMousedown
             ]
@@ -165,28 +165,28 @@ genericTopicHtml topic props model =
 detailTopic : TopicInfo -> TopicProps -> MapId -> Model -> TopicRendering
 detailTopic topic props mapId model =
   let
-    r = fromInt topicRadius ++ "px"
+    isEdit = model.editState == ItemEdit topic.id
+    textElem =
+      if isEdit then
+        textarea
+          ( [ id <| "dmx-input-" ++ fromInt topic.id
+            , onInput (Edit << ItemEditInput)
+            , onEsc (Edit ItemEditEnd)
+            , stopPropagationOnMousedown
+            ]
+            ++ detailTextStyle topic mapId model
+            ++ detailTextEditStyle
+          )
+          [ text topic.text ]
+      else
+        div
+          ( detailTextStyle topic mapId model
+            ++ detailTextViewStyle
+          )
+          [ text topic.text ]
   in
-  ( [ style "left" <| fromFloat (props.pos.x - topicSize.w / 2) ++ "px"
-    , style "top" <| fromFloat (props.pos.y - topicSize.h / 2) ++ "px"
-    , style "width" <| fromFloat (topicDetailWidth + topicSize.h) ++ "px"
-    , style "background-color" "beige" -- FIXME
-    ]
-  , [ div
-      ( [ style "position" "relative"
-        , style "left" <| fromFloat topicSize.h ++ "px"
-        , style "min-width" <| fromFloat (topicSize.w - topicSize.h) ++ "px"
-        , style "max-width" "max-content"
-        , style "min-height" <| fromFloat topicSize.h ++ "px"
-        , style "border-radius" <| "0 " ++ r ++ " " ++ r ++ " " ++ r
-        , style "padding" "8px"
-        , style "z-index" "1" -- before icon box box-shadow
-        , style "pointer-events" "none"
-        ]
-        ++ topicBorderStyle topic.id mapId model
-        ++ selectionStyle topic.id mapId model
-      )
-      [ text topic.text ]
+  ( detailTopicStyle props
+  , [ textElem
     , div
       ( detailIconBoxStyle props
         ++ detailBorderStyle topic.id mapId model
@@ -195,6 +195,50 @@ detailTopic topic props mapId model =
       [ viewTopicIcon topic.id model ]
     ]
   )
+
+
+detailTopicStyle : TopicProps -> List (Attribute Msg)
+detailTopicStyle {pos} =
+  [ style "left" <| fromFloat (pos.x - topicSize.w / 2) ++ "px"
+  , style "top" <| fromFloat (pos.y - topicSize.h / 2) ++ "px"
+  , style "width" <| fromFloat (topicDetailWidth + topicSize.h) ++ "px"
+  , style "box-shadow" "4px 4px 4px red" -- debugging
+  ]
+
+
+detailTextStyle : TopicInfo -> MapId -> Model -> List (Attribute Msg)
+detailTextStyle topic mapId model =
+  let
+    r = fromInt topicRadius ++ "px"
+  in
+  [ style "position" "relative"
+  , style "left" <| fromFloat topicSize.h ++ "px"
+  , style "line-height" "1.4"
+  , style "padding" "8px"
+  , style "border-radius" <| "0 " ++ r ++ " " ++ r ++ " " ++ r
+  , style "z-index" "1" -- before icon box box-shadow
+  ]
+  ++ topicBorderStyle topic.id mapId model
+  ++ selectionStyle topic.id mapId model
+
+
+detailTextEditStyle : List (Attribute Msg)
+detailTextEditStyle =
+  [ style "top" <| fromFloat -topicBorderWidth ++ "px"
+  , style "width" <| fromFloat topicDetailWidth ++ "px"
+  , style "font-family" "sans-serif" -- <textarea> default is "monospace"
+  , style "font-size" mainFontSize -- <textarea> default is "13px"
+  , style "border-color" "black" -- <textarea> default is some lightgray
+  , style "resize" "none"
+  ]
+
+
+detailTextViewStyle : List (Attribute Msg)
+detailTextViewStyle =
+  [ style "min-width" <| fromFloat (topicSize.w - topicSize.h) ++ "px"
+  , style "max-width" "max-content"
+  , style "pointer-events" "none"
+  ]
 
 
 blackBoxTopic : TopicInfo -> TopicProps -> MapId -> Model -> TopicRendering

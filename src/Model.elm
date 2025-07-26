@@ -393,13 +393,18 @@ getSingleSelection model =
 -- EVENT HELPER -- TODO: move to "Utils"
 
 
+onEsc : Msg -> Attribute Msg
+onEsc msg =
+  on "keydown" (keyDecoder 27 msg)
+
+
 onEnterOrEsc : Msg -> Attribute Msg
 onEnterOrEsc msg =
   on "keydown"
     ( D.oneOf
-        [ keyDecoder 13 msg
-        , keyDecoder 27 msg
-        ]
+      [ keyDecoder 13 msg
+      , keyDecoder 27 msg
+      ]
     )
 
 
