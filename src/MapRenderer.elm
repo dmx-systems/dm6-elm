@@ -474,7 +474,11 @@ detailIconBoxStyle props =
 
 topicLabelStyle : List (Attribute Msg)
 topicLabelStyle =
-  [ style "pointer-events" "none" ]
+  [ style "overflow" "hidden"
+  , style "text-overflow" "ellipsis"
+  , style "white-space" "nowrap"
+  , style "pointer-events" "none"
+  ]
 
 
 topicInputStyle : List (Attribute Msg)
