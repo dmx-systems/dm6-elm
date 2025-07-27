@@ -34,7 +34,7 @@ updateMapGeometry mapId level maps =
                 (rect.y1 - map.rect.y1)
             in
             updateMapRect mapId rect maps_
-              |> updateTopicPos mapId map.parentMapId delta
+              |> setTopicPosByDelta mapId map.parentMapId delta
           Nothing -> maps_
   in
   (rect, maps__)

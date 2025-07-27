@@ -110,13 +110,14 @@ viewItems map model =
 viewTopic : TopicInfo -> TopicProps -> MapId -> Model -> Html Msg
 viewTopic topic props mapId model =
   let
-    (style, children) =
+    (style, children) = topicFunc topic props mapId model
+    topicFunc =
       case props.displayMode of
-        Monad Label -> genericTopic topic props mapId model
-        Monad Detail -> detailTopic topic props mapId model
-        Container BlackBox -> blackBoxTopic topic props mapId model
-        Container WhiteBox -> whiteBoxTopic topic props mapId model
-        Container Unboxed -> unboxedTopic topic props mapId model
+        Monad LabelOnly -> genericTopic
+        Monad Detail -> detailTopic
+        Container BlackBox -> blackBoxTopic
+        Container WhiteBox -> whiteBoxTopic
+        Container Unboxed -> unboxedTopic
   in
   div
     ( topicAttr topic.id mapId

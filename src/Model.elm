@@ -50,7 +50,7 @@ type alias AssocInfo =
 
 
 type alias Maps = Dict Id Map
-type alias ViewItems = Dict Id ViewItem
+type alias ViewItems = Dict Id ViewItem -- rename "MapItems"?
 
 
 type alias Map =
@@ -61,7 +61,7 @@ type alias Map =
   }
 
 
-type alias ViewItem =
+type alias ViewItem = -- rename "MapItem"?
   { id : Id
   , hidden : Bool
   , viewProps : ViewProps
@@ -90,7 +90,7 @@ type DisplayMode
 
 
 type MonadDisplay
-  = Label
+  = LabelOnly
   | Detail
 
 
@@ -247,8 +247,14 @@ getTopicPos topicId mapId maps =
     Nothing -> fail "getTopicPos" {topicId = topicId, mapId = mapId} Nothing
 
 
-updateTopicPos : Id -> MapId -> Delta -> Maps -> Maps
-updateTopicPos topicId mapId delta maps =
+setTopicPos : Id -> MapId -> Point -> Maps -> Maps
+setTopicPos topicId mapId pos maps =
+  updateTopicProps topicId mapId maps
+    (\props -> { props | pos = pos })
+
+
+setTopicPosByDelta : Id -> MapId -> Delta -> Maps -> Maps
+setTopicPosByDelta topicId mapId delta maps =
   updateTopicProps topicId mapId maps
     (\props ->
       { props | pos =
@@ -257,6 +263,19 @@ updateTopicPos topicId mapId delta maps =
           (props.pos.y + delta.y)
       }
     )
+
+
+getDisplayMode : Id -> MapId -> Maps -> Maybe DisplayMode
+getDisplayMode topicId mapId maps =
+  case getTopicProps topicId mapId maps of
+    Just { displayMode } -> Just displayMode
+    Nothing -> fail "getDisplayMode" {topicId = topicId, mapId = mapId} Nothing
+
+
+setDisplayMode : Id -> MapId -> DisplayMode -> Model -> Maps
+setDisplayMode topicId mapId displayMode model =
+  updateTopicProps topicId mapId model.maps
+    (\props -> { props | displayMode = displayMode })
 
 
 getTopicProps : Id -> MapId -> Maps -> Maybe TopicProps

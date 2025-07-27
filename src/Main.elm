@@ -130,7 +130,7 @@ viewMonadMode model =
       Nothing -> Nothing
     (checked1, checked2, disabled_) =
       case displayMode of
-        Just (Monad Label) -> (True, False, False)
+        Just (Monad LabelOnly) -> (True, False, False)
         Just (Monad Detail) -> (False, True, False)
         _ -> (False, False, True)
   in
@@ -140,11 +140,11 @@ viewMonadMode model =
         []
         [ text "Monad Display" ]
     , label
-        [ onClick (Set <| Monad Label), stopPropagationOnMousedown ]
+        [ onClick (Set <| Monad LabelOnly), stopPropagationOnMousedown ]
         [ input
             [ type_ "radio", name "display-mode", checked checked1, disabled disabled_ ]
             []
-        , text "Label"
+        , text "Label Only"
         ]
     , label
         [ onClick (Set <| Monad Detail), stopPropagationOnMousedown ]
@@ -218,7 +218,7 @@ update msg model =
     AddTopic -> (createTopicAndAddToMap model, Cmd.none)
     MoveTopicToMap topicId mapId origPos targetId targetMapId pos
       -> (moveTopicToMap topicId mapId origPos targetId targetMapId pos model, Cmd.none)
-    Set displayMode -> (setDisplayMode displayMode model, Cmd.none)
+    Set displayMode -> (switchDisplayMode displayMode model, Cmd.none)
     Edit editMsg -> updateEdit editMsg model
     IconMenu iconMenuMsg -> (updateIconMenu iconMenuMsg model, Cmd.none)
     Mouse mouseMsg -> updateMouse mouseMsg model
@@ -246,7 +246,7 @@ createTopicAndAddToMap : Model -> Model
 createTopicAndAddToMap model =
   let
     (newModel, topicId) = createTopic model
-    props = ViewTopic <| TopicProps pos (Monad Label)
+    props = ViewTopic <| TopicProps pos (Monad LabelOnly)
     pos = Point 175 98
   in
   newModel
@@ -323,7 +323,7 @@ createMapIfNeeded targetId targetMapId model =
     (model, False)
   else
     ( { model
-      | maps = updateDisplayMode targetId targetMapId (Container BlackBox)
+      | maps = setDisplayMode targetId targetMapId (Container BlackBox)
           { model
           | maps = model.maps |>
             Dict.insert
@@ -362,8 +362,8 @@ updateGeometry model =
 
 -- Display Mode
 
-setDisplayMode : DisplayMode -> Model -> Model
-setDisplayMode displayMode model =
+switchDisplayMode : DisplayMode -> Model -> Model
+switchDisplayMode displayMode model =
   let
     maps =
       case getSingleSelection model of
@@ -378,27 +378,11 @@ setDisplayMode displayMode model =
                   Container Unboxed -> unboxContainer containerId targetMapId model
               }
           in
-          updateDisplayMode containerId targetMapId displayMode newModel
+          setDisplayMode containerId targetMapId displayMode newModel
         Nothing -> model.maps
   in
   { model | maps = maps }
   |> updateGeometry
-
-
-updateDisplayMode : Id -> MapId -> DisplayMode -> Model -> Maps
-updateDisplayMode topicId mapId displayMode model =
-  updateTopicProps
-    topicId
-    mapId
-    model.maps
-    (\props -> { props | displayMode = displayMode })
-
-
-getDisplayMode : Id -> MapId -> Maps -> Maybe DisplayMode
-getDisplayMode topicId mapId maps =
-  case getTopicProps topicId mapId maps of
-    Just { displayMode } -> Just displayMode
-    Nothing -> fail "getDisplayMode" {topicId = topicId, mapId = mapId} Nothing
 
 
 -- Text Edit
@@ -415,10 +399,24 @@ startItemEdit : Model -> (Model, Cmd Msg)
 startItemEdit model =
   let
     newModel = case getSingleSelection model of
-      Just (id, _) -> { model | editState = ItemEdit id }
+      Just (topicId, mapId) ->
+        { model | editState = ItemEdit topicId }
+        |> setDetailDisplayIfMonade topicId mapId
       Nothing -> model
   in
   (newModel, focus newModel)
+
+
+setDetailDisplayIfMonade : Id -> MapId -> Model -> Model
+setDetailDisplayIfMonade topicId mapId model =
+  { model
+  | maps = updateTopicProps topicId mapId model.maps
+    (\props ->
+      case props.displayMode of
+        Monad _ -> { props | displayMode = Monad Detail }
+        _ -> props
+    )
+  }
 
 
 updateItemText : String -> Model -> Model
@@ -452,12 +450,6 @@ focus model =
 
 
 --
-
-setTopicPos : Id -> Id -> Point -> Maps -> Maps
-setTopicPos topicId mapId pos maps =
-  updateTopicProps topicId mapId maps
-    (\props -> { props | pos = pos })
-
 
 delete : Model -> Model
 delete model =
@@ -499,7 +491,6 @@ removeItemFromMap itemId mapId maps =
 removeItemFromMap_ : Id -> Map -> Map
 removeItemFromMap_ itemId map =
   { map | items = map.items |> Dict.remove itemId }
-
 
 
 -- Mouse
@@ -582,7 +573,7 @@ performDrag model pos =
           (pos.y - lastPos.y)
         maps =
           case dragMode of
-            DragTopic -> updateTopicPos id mapId delta model.maps
+            DragTopic -> setTopicPosByDelta id mapId delta model.maps
             DrawAssoc -> model.maps
       in
       { model
