@@ -121,7 +121,6 @@ viewToolbar model =
     ]
 
 
-
 viewMonadMode : Model -> Html Msg
 viewMonadMode model =
   let
@@ -247,7 +246,7 @@ createTopicAndAddToMap model =
   let
     (newModel, topicId) = createTopic model
     props = ViewTopic <| TopicProps pos (Monad LabelOnly)
-    pos = Point 175 98
+    pos = Point 189 97
   in
   newModel
   |> addItemToMap topicId props model.activeMap

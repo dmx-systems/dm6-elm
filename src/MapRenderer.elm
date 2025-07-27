@@ -187,23 +187,23 @@ detailTopic topic props mapId model =
           [ text topic.text ]
   in
   ( detailTopicStyle props
-  , [ textElem
-    , div
-      ( detailIconBoxStyle props
+  , [ div
+      ( topicIconBoxStyle props
         ++ detailBorderStyle topic.id mapId model
         ++ selectionStyle topic.id mapId model
       )
       [ viewTopicIcon topic.id model ]
+    , textElem
     ]
   )
 
 
 detailTopicStyle : TopicProps -> List (Attribute Msg)
 detailTopicStyle {pos} =
-  [ style "left" <| fromFloat (pos.x - topicSize.w / 2) ++ "px"
+  [ style "display" "flex"
+  , style "left" <| fromFloat (pos.x - topicSize.w / 2) ++ "px"
   , style "top" <| fromFloat (pos.y - topicSize.h / 2) ++ "px"
-  , style "width" <| fromFloat (topicDetailWidth + topicSize.h) ++ "px"
-  , style "box-shadow" "4px 4px 4px red" -- debugging
+  --, style "box-shadow" "red 4px 4px 4px" -- debugging
   ]
 
 
@@ -212,33 +212,32 @@ detailTextStyle topic mapId model =
   let
     r = fromInt topicRadius ++ "px"
   in
-  [ style "position" "relative"
-  , style "left" <| fromFloat topicSize.h ++ "px"
-  , style "line-height" "1.4"
+  [ style "line-height" "1.4"
   , style "padding" "8px"
   , style "border-radius" <| "0 " ++ r ++ " " ++ r ++ " " ++ r
-  , style "z-index" "1" -- before icon box box-shadow
   ]
   ++ topicBorderStyle topic.id mapId model
   ++ selectionStyle topic.id mapId model
 
 
+detailTextViewStyle : List (Attribute Msg)
+detailTextViewStyle =
+  [ style "width" <| fromFloat topicDetailWidth ++ "px"
+  , style "min-width" <| fromFloat (topicSize.w - topicSize.h) ++ "px"
+  , style "max-width" "max-content"
+  , style "pointer-events" "none"
+  ]
+
+
 detailTextEditStyle : List (Attribute Msg)
 detailTextEditStyle =
-  [ style "top" <| fromFloat -topicBorderWidth ++ "px"
+  [ style "position" "relative"
+  , style "top" <| fromFloat -topicBorderWidth ++ "px"
   , style "width" <| fromFloat topicDetailWidth ++ "px"
   , style "font-family" "sans-serif" -- <textarea> default is "monospace"
   , style "font-size" mainFontSize -- <textarea> default is "13px"
   , style "border-color" "black" -- <textarea> default is some lightgray
   , style "resize" "none"
-  ]
-
-
-detailTextViewStyle : List (Attribute Msg)
-detailTextViewStyle =
-  [ style "min-width" <| fromFloat (topicSize.w - topicSize.h) ++ "px"
-  , style "max-width" "max-content"
-  , style "pointer-events" "none"
   ]
 
 
@@ -409,7 +408,7 @@ selectionStyle topicId mapId model =
     selected = model.selection |> List.member (topicId, mapId)
   in
   if selected then
-    [ style "box-shadow" "4px 4px 4px gray" ]
+    [ style "box-shadow" "gray 4px 4px 4px" ]
   else
     []
 
@@ -451,22 +450,6 @@ topicIconBoxStyle props =
   , style "width" <| fromFloat topicSize.h ++ "px"
   , style "height" <| fromFloat topicSize.h ++ "px"
   , style "border-radius" <| r1 ++ " 0 0 " ++ r4
-  , style "background-color" "black"
-  , style "pointer-events" "none"
-  ]
-
-
-detailIconBoxStyle : TopicProps -> List (Attribute Msg)
-detailIconBoxStyle props =
-  let
-    r = fromInt topicRadius ++ "px"
-  in
-  [ style "position" "absolute"
-  , style "top" "0"
-  , style "left" "0"
-  , style "width" <| fromFloat topicSize.h ++ "px"
-  , style "height" <| fromFloat topicSize.h ++ "px"
-  , style "border-radius" <| r ++ " 0 0 " ++ r
   , style "background-color" "black"
   , style "pointer-events" "none"
   ]
