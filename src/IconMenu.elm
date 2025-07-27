@@ -1,7 +1,8 @@
-module IconMenu exposing (updateIconMenu, viewIconMenu, viewTopicIcon)
+module IconMenu exposing (viewIconMenu, viewTopicIcon, updateIconMenu)
 
-import Model exposing (..)
 import Config exposing (..)
+import Model exposing (..)
+import Utils exposing (..)
 
 import Dict
 import Html exposing (Html, Attribute, div, text, button)
@@ -66,7 +67,7 @@ viewIconList =
     (\(iconName, icon) ->
       button
         ( [ onClick (Just iconName |> SetIcon |> IconMenu)
-          , stopPropagationOnMousedown
+          , stopPropagationOnMousedown NoOp
           , title iconName
           ]
           ++ iconButtonStyle

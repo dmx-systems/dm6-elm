@@ -1,8 +1,9 @@
 module MapRenderer exposing (viewMap)
 
+import Config exposing (..)
 import IconMenu exposing (viewTopicIcon)
 import Model exposing (..)
-import Config exposing (..)
+import Utils exposing (..)
 
 import Dict exposing (Dict)
 import Html exposing (Html, Attribute, div, text, input, textarea)
@@ -150,7 +151,7 @@ genericTopicHtml topic props model =
             , value topic.text
             , onInput (Edit << ItemEditInput)
             , onEnterOrEsc (Edit ItemEditEnd)
-            , stopPropagationOnMousedown
+            , stopPropagationOnMousedown NoOp
             ]
             ++ topicInputStyle
           )
@@ -173,7 +174,7 @@ detailTopic topic props mapId model =
           ( [ id <| "dmx-input-" ++ fromInt topic.id
             , onInput (Edit << ItemEditInput)
             , onEsc (Edit ItemEditEnd)
-            , stopPropagationOnMousedown
+            , stopPropagationOnMousedown NoOp
             ]
             ++ detailTextStyle topic mapId model
             ++ detailTextEditStyle
@@ -184,7 +185,7 @@ detailTopic topic props mapId model =
           ( detailTextStyle topic mapId model
             ++ detailTextViewStyle
           )
-          [ text topic.text ]
+          ( multilineHtml topic.text )
   in
   ( detailTopicStyle props
   , [ div

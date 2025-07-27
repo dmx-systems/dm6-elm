@@ -1,14 +1,10 @@
 module Model exposing (..)
 
+import Utils exposing (..)
+
 import Dict exposing (Dict)
 import String exposing (fromInt)
 import Time
-import Debug exposing (log, toString)
-
--- TODO: move to "Utils"
-import Html exposing (Attribute)
-import Html.Events exposing (on, stopPropagationOn, keyCode)
-import Json.Decode as D
 
 
 
@@ -409,42 +405,6 @@ getSingleSelection model =
 
 
 
--- EVENT HELPER -- TODO: move to "Utils"
-
-
-onEsc : Msg -> Attribute Msg
-onEsc msg =
-  on "keydown" (keyDecoder 27 msg)
-
-
-onEnterOrEsc : Msg -> Attribute Msg
-onEnterOrEsc msg =
-  on "keydown"
-    ( D.oneOf
-      [ keyDecoder 13 msg
-      , keyDecoder 27 msg
-      ]
-    )
-
-
-keyDecoder : Int -> Msg -> D.Decoder Msg
-keyDecoder key msg =
-  let
-    isKey code =
-      if code == key then
-        D.succeed msg
-      else
-        D.fail "not that key"
-  in
-  keyCode |> D.andThen isKey
-
-
-stopPropagationOnMousedown : Attribute Msg
-stopPropagationOnMousedown =
-  stopPropagationOn "mousedown" <| D.succeed (NoOp, True)
-
-
-
 -- DEBUG
 
 
@@ -476,24 +436,3 @@ illegalItemId funcName id val =
 illegalId : String -> String -> Id -> a -> a
 illegalId funcName item id val =
   logError funcName (fromInt id ++ " is an illegal " ++ item ++ " ID") val
-
---
-
-logError : String -> String -> v -> v
-logError funcName text val =
-  log ("### ERROR @" ++ funcName ++ ": " ++ text) val
-
-
-fail : String -> a -> v -> v
-fail funcName args val =
-  log ("--> @" ++ funcName ++ " failed " ++ toString args) val
-
-
-call : String -> a -> v -> v
-call funcName args val =
-  log ("@" ++ funcName ++ " " ++ toString args ++ " -->") val
-
-
-info : String -> v -> v
-info funcName val =
-  log ("@" ++ funcName) val

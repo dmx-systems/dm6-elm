@@ -1,11 +1,12 @@
 module Main exposing (..)
 
-import Model exposing (..)
-import Config exposing (..)
-import MapRenderer exposing (viewMap)
-import MapAutoSize exposing (autoSize)
 import Boxing exposing (boxContainer, unboxContainer)
-import IconMenu exposing (updateIconMenu, viewIconMenu)
+import Config exposing (..)
+import IconMenu exposing (viewIconMenu, updateIconMenu)
+import MapAutoSize exposing (autoSize)
+import MapRenderer exposing (viewMap)
+import Model exposing (..)
+import Utils exposing (..)
 
 import Array
 import Browser
@@ -96,7 +97,7 @@ viewToolbar model =
     , viewContainerMode model
     , button
         ( [ onClick (IconMenu Open)
-          , stopPropagationOnMousedown
+          , stopPropagationOnMousedown NoOp
           , disabled hasNoSelection
           ]
           ++ buttonStyle
@@ -104,7 +105,7 @@ viewToolbar model =
         [ text "Choose Icon" ]
     , button
         ( [ onClick (Edit ItemEditStart)
-          , stopPropagationOnMousedown
+          , stopPropagationOnMousedown NoOp
           , disabled hasNoSelection
           ]
           ++ buttonStyle
@@ -112,7 +113,7 @@ viewToolbar model =
         [ text "Edit Text" ]
     , button
         ( [ onClick Delete
-          , stopPropagationOnMousedown
+          , stopPropagationOnMousedown NoOp
           , disabled hasNoSelection
           ]
           ++ buttonStyle
@@ -139,14 +140,14 @@ viewMonadMode model =
         []
         [ text "Monad Display" ]
     , label
-        [ onClick (Set <| Monad LabelOnly), stopPropagationOnMousedown ]
+        [ onClick (Set <| Monad LabelOnly), stopPropagationOnMousedown NoOp ]
         [ input
             [ type_ "radio", name "display-mode", checked checked1, disabled disabled_ ]
             []
         , text "Label Only"
         ]
     , label
-        [ onClick (Set <| Monad Detail), stopPropagationOnMousedown ]
+        [ onClick (Set <| Monad Detail), stopPropagationOnMousedown NoOp ]
         [ input
             [ type_ "radio", name "display-mode", checked checked2, disabled disabled_ ]
             []
@@ -178,21 +179,21 @@ viewContainerMode model =
         []
         [ text "Container Display" ]
     , label
-        [ onClick (Set <| Container BlackBox), stopPropagationOnMousedown ]
+        [ onClick (Set <| Container BlackBox), stopPropagationOnMousedown NoOp ]
         [ input
             [ type_ "radio", name "display-mode", checked checked1, disabled disabled_ ]
             []
         , text "Black Box"
         ]
     , label
-        [ onClick (Set <| Container WhiteBox), stopPropagationOnMousedown ]
+        [ onClick (Set <| Container WhiteBox), stopPropagationOnMousedown NoOp ]
         [ input
             [ type_ "radio", name "display-mode", checked checked2, disabled disabled_ ]
             []
         , text "White Box"
         ]
     , label
-        [ onClick (Set <| Container Unboxed), stopPropagationOnMousedown ]
+        [ onClick (Set <| Container Unboxed), stopPropagationOnMousedown NoOp ]
         [ input
             [ type_ "radio", name "display-mode", checked checked3, disabled disabled_ ]
             []
