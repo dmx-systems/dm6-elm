@@ -1,27 +1,26 @@
 module Main exposing (..)
 
-import Model exposing (..)
-import Config exposing (..)
-import MapRenderer exposing (viewMap)
-import MapAutoSize exposing (autoSize)
 import Boxing exposing (boxContainer, unboxContainer)
-import IconMenu exposing (updateIconMenu, viewIconMenu)
+import Config exposing (..)
+import IconMenu exposing (viewIconMenu, updateIconMenu)
+import MapAutoSize exposing (autoSize)
+import MapRenderer exposing (viewMap)
+import Model exposing (..)
+import Utils exposing (..)
 
-import Array
 import Browser
 import Browser.Dom as Dom
 import Browser.Events as Events
-import Dict exposing (Dict)
+import Dict
 import Html exposing (Html, Attribute, div, text, button, input, label, h1)
-import Html.Attributes exposing
-  (class, id, style, attribute, type_, name, value, checked, disabled)
+import Html.Attributes exposing (style, type_, name, checked, disabled)
 import Html.Events exposing (onClick, on)
 import Random
 import String exposing (String, fromInt)
 import Task
 import Time exposing (posixToMillis)
 import Json.Decode as D
-import Debug exposing (log, toString)
+import Debug exposing (toString)
 
 
 
@@ -92,10 +91,11 @@ viewToolbar model =
           ++ buttonStyle
         )
         [ text "Add Topic" ]
-    , viewDisplayMode model
+    , viewMonadMode model
+    , viewContainerMode model
     , button
         ( [ onClick (IconMenu Open)
-          , stopPropagationOnMousedown
+          , stopPropagationOnMousedown NoOp
           , disabled hasNoSelection
           ]
           ++ buttonStyle
@@ -103,7 +103,7 @@ viewToolbar model =
         [ text "Choose Icon" ]
     , button
         ( [ onClick (Edit ItemEditStart)
-          , stopPropagationOnMousedown
+          , stopPropagationOnMousedown NoOp
           , disabled hasNoSelection
           ]
           ++ buttonStyle
@@ -111,7 +111,7 @@ viewToolbar model =
         [ text "Edit Text" ]
     , button
         ( [ onClick Delete
-          , stopPropagationOnMousedown
+          , stopPropagationOnMousedown NoOp
           , disabled hasNoSelection
           ]
           ++ buttonStyle
@@ -120,16 +120,56 @@ viewToolbar model =
     ]
 
 
-viewDisplayMode : Model -> Html Msg
-viewDisplayMode model =
+viewMonadMode : Model -> Html Msg
+viewMonadMode model =
   let
     displayMode = case getSingleSelection model of
       Just (topicId, mapId) -> getDisplayMode topicId mapId model.maps
       Nothing -> Nothing
-    checked1 = displayMode == Just BlackBox
-    checked2 = displayMode == Just WhiteBox
-    checked3 = displayMode == Just Unboxed
-    disabled_ = displayMode == Nothing
+    (checked1, checked2, disabled_) =
+      case displayMode of
+        Just (Monad LabelOnly) -> (True, False, False)
+        Just (Monad Detail) -> (False, True, False)
+        _ -> (False, False, True)
+  in
+  div
+    (displayModeStyle disabled_)
+    [ div
+        []
+        [ text "Monad Display" ]
+    , label
+        [ onClick (Set <| Monad LabelOnly), stopPropagationOnMousedown NoOp ]
+        [ input
+            [ type_ "radio", name "display-mode", checked checked1, disabled disabled_ ]
+            []
+        , text "Label Only"
+        ]
+    , label
+        [ onClick (Set <| Monad Detail), stopPropagationOnMousedown NoOp ]
+        [ input
+            [ type_ "radio", name "display-mode", checked checked2, disabled disabled_ ]
+            []
+        , text "Detail"
+        ]
+    ]
+
+
+viewContainerMode : Model -> Html Msg
+viewContainerMode model =
+  let
+    displayMode = case getSingleSelection model of
+      Just (topicId, mapId) -> getDisplayMode topicId mapId model.maps
+      Nothing -> Nothing
+    (checked1, checked2, checked3) =
+      case displayMode of
+        Just (Container BlackBox) -> (True, False, False)
+        Just (Container WhiteBox) -> (False, True, False)
+        Just (Container Unboxed) -> (False, False, True)
+        _ -> (False, False, False)
+    disabled_ =
+      case displayMode of
+        Just (Container _) -> False
+        _ -> True
   in
   div
     (displayModeStyle disabled_)
@@ -137,21 +177,21 @@ viewDisplayMode model =
         []
         [ text "Container Display" ]
     , label
-        [ onClick (Set <| Just BlackBox), stopPropagationOnMousedown ]
+        [ onClick (Set <| Container BlackBox), stopPropagationOnMousedown NoOp ]
         [ input
             [ type_ "radio", name "display-mode", checked checked1, disabled disabled_ ]
             []
         , text "Black Box"
         ]
     , label
-        [ onClick (Set <| Just WhiteBox), stopPropagationOnMousedown ]
+        [ onClick (Set <| Container WhiteBox), stopPropagationOnMousedown NoOp ]
         [ input
             [ type_ "radio", name "display-mode", checked checked2, disabled disabled_ ]
             []
         , text "White Box"
         ]
     , label
-        [ onClick (Set <| Just Unboxed), stopPropagationOnMousedown ]
+        [ onClick (Set <| Container Unboxed), stopPropagationOnMousedown NoOp ]
         [ input
             [ type_ "radio", name "display-mode", checked checked3, disabled disabled_ ]
             []
@@ -176,7 +216,7 @@ update msg model =
     AddTopic -> (createTopicAndAddToMap model, Cmd.none)
     MoveTopicToMap topicId mapId origPos targetId targetMapId pos
       -> (moveTopicToMap topicId mapId origPos targetId targetMapId pos model, Cmd.none)
-    Set displayMode -> (setDisplayMode displayMode model, Cmd.none)
+    Set displayMode -> (switchDisplayMode displayMode model, Cmd.none)
     Edit editMsg -> updateEdit editMsg model
     IconMenu iconMenuMsg -> (updateIconMenu iconMenuMsg model, Cmd.none)
     Mouse mouseMsg -> updateMouse mouseMsg model
@@ -204,12 +244,12 @@ createTopicAndAddToMap : Model -> Model
 createTopicAndAddToMap model =
   let
     (newModel, topicId) = createTopic model
-    props = ViewTopic (TopicProps pos Nothing)
-    pos = Point 175 98
+    props = ViewTopic <| TopicProps pos (Monad LabelOnly)
+    pos = Point 189 97
   in
   newModel
-    |> addItemToMap topicId props model.activeMap
-    |> select topicId model.activeMap
+  |> addItemToMap topicId props model.activeMap
+  |> select topicId model.activeMap
 
 
 -- Presumption: both players exist in same map
@@ -281,7 +321,7 @@ createMapIfNeeded targetId targetMapId model =
     (model, False)
   else
     ( { model
-      | maps = updateDisplayMode targetId targetMapId (Just BlackBox)
+      | maps = setDisplayMode targetId targetMapId (Container BlackBox)
           { model
           | maps = model.maps |>
             Dict.insert
@@ -320,8 +360,8 @@ updateGeometry model =
 
 -- Display Mode
 
-setDisplayMode : Maybe DisplayMode -> Model -> Model
-setDisplayMode displayMode model =
+switchDisplayMode : DisplayMode -> Model -> Model
+switchDisplayMode displayMode model =
   let
     maps =
       case getSingleSelection model of
@@ -329,33 +369,18 @@ setDisplayMode displayMode model =
           let
             newModel =
               { model | maps =
-                  case displayMode of
-                    Just BlackBox -> boxContainer containerId targetMapId model
-                    Just WhiteBox -> boxContainer containerId targetMapId model
-                    Just Unboxed -> unboxContainer containerId targetMapId model
-                    Nothing -> model.maps
+                case displayMode of
+                  Monad _ -> model.maps -- TODO: Monad Detail
+                  Container BlackBox -> boxContainer containerId targetMapId model
+                  Container WhiteBox -> boxContainer containerId targetMapId model
+                  Container Unboxed -> unboxContainer containerId targetMapId model
               }
           in
-          updateDisplayMode containerId targetMapId displayMode newModel
+          setDisplayMode containerId targetMapId displayMode newModel
         Nothing -> model.maps
   in
-  { model | maps = maps } |> updateGeometry
-
-
-updateDisplayMode : Id -> MapId -> Maybe DisplayMode -> Model -> Maps
-updateDisplayMode topicId mapId displayMode model =
-  updateTopicProps
-    topicId
-    mapId
-    model.maps
-    (\props -> { props | displayMode = displayMode })
-
-
-getDisplayMode : Id -> MapId -> Maps -> Maybe DisplayMode
-getDisplayMode topicId mapId maps =
-  case getTopicProps topicId mapId maps of
-    Just { displayMode } -> displayMode
-    Nothing -> fail "getDisplayMode" {topicId = topicId, mapId = mapId} Nothing
+  { model | maps = maps }
+  |> updateGeometry
 
 
 -- Text Edit
@@ -372,10 +397,24 @@ startItemEdit : Model -> (Model, Cmd Msg)
 startItemEdit model =
   let
     newModel = case getSingleSelection model of
-      Just (id, _) -> { model | editState = ItemEdit id }
+      Just (topicId, mapId) ->
+        { model | editState = ItemEdit topicId }
+        |> setDetailDisplayIfMonade topicId mapId
       Nothing -> model
   in
   (newModel, focus newModel)
+
+
+setDetailDisplayIfMonade : Id -> MapId -> Model -> Model
+setDetailDisplayIfMonade topicId mapId model =
+  { model
+  | maps = updateTopicProps topicId mapId model.maps
+    (\props ->
+      case props.displayMode of
+        Monad _ -> { props | displayMode = Monad Detail }
+        _ -> props
+    )
+  }
 
 
 updateItemText : String -> Model -> Model
@@ -409,12 +448,6 @@ focus model =
 
 
 --
-
-setTopicPos : Id -> Id -> Point -> Maps -> Maps
-setTopicPos topicId mapId pos maps =
-  updateTopicProps topicId mapId maps
-    (\props -> { props | pos = pos })
-
 
 delete : Model -> Model
 delete model =
@@ -458,7 +491,6 @@ removeItemFromMap_ itemId map =
   { map | items = map.items |> Dict.remove itemId }
 
 
-
 -- Mouse
 
 updateMouse : MouseMsg -> Model -> ( Model, Cmd Msg )
@@ -475,10 +507,7 @@ updateMouse msg model =
 
 mouseDown : Model -> Model
 mouseDown model =
-  { model
-  | selection = []
-  , editState = NoEdit
-  }
+  { model | selection = [] }
 
 
 mouseDownOnItem : Model -> Class -> Id -> MapId -> Point -> ( Model, Cmd Msg )
@@ -539,7 +568,7 @@ performDrag model pos =
           (pos.y - lastPos.y)
         maps =
           case dragMode of
-            DragTopic -> updateTopicPos id mapId delta model.maps
+            DragTopic -> setTopicPosByDelta id mapId delta model.maps
             DrawAssoc -> model.maps
       in
       { model

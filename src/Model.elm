@@ -1,14 +1,10 @@
 module Model exposing (..)
 
+import Utils exposing (..)
+
 import Dict exposing (Dict)
 import String exposing (fromInt)
 import Time
-import Debug exposing (log, toString)
-
--- TODO: move to "Utils"
-import Html exposing (Attribute)
-import Html.Events exposing (on, stopPropagationOn, keyCode)
-import Json.Decode as D
 
 
 
@@ -50,7 +46,7 @@ type alias AssocInfo =
 
 
 type alias Maps = Dict Id Map
-type alias ViewItems = Dict Id ViewItem
+type alias ViewItems = Dict Id ViewItem -- rename "MapItems"?
 
 
 type alias Map =
@@ -61,7 +57,7 @@ type alias Map =
   }
 
 
-type alias ViewItem =
+type alias ViewItem = -- rename "MapItem"?
   { id : Id
   , hidden : Bool
   , viewProps : ViewProps
@@ -76,7 +72,7 @@ type ViewProps
 
 type alias TopicProps =
   { pos : Point
-  , displayMode : Maybe DisplayMode -- only set for container topics
+  , displayMode : DisplayMode
   }
 
 
@@ -84,7 +80,17 @@ type alias AssocProps =
   {}
 
 
-type DisplayMode -- TODO: rename to "ContainerDisplay"?
+type DisplayMode
+  = Monad MonadDisplay
+  | Container ContainerDisplay
+
+
+type MonadDisplay
+  = LabelOnly
+  | Detail
+
+
+type ContainerDisplay
   = BlackBox
   | WhiteBox
   | Unboxed
@@ -141,7 +147,7 @@ type DragMode
 type Msg
   = AddTopic
   | MoveTopicToMap Id MapId Point Id MapId Point -- start point, random point (for target)
-  | Set (Maybe DisplayMode)
+  | Set DisplayMode
   | Edit EditMsg
   | IconMenu IconMenuMsg
   | Mouse MouseMsg
@@ -237,8 +243,14 @@ getTopicPos topicId mapId maps =
     Nothing -> fail "getTopicPos" {topicId = topicId, mapId = mapId} Nothing
 
 
-updateTopicPos : Id -> MapId -> Delta -> Maps -> Maps
-updateTopicPos topicId mapId delta maps =
+setTopicPos : Id -> MapId -> Point -> Maps -> Maps
+setTopicPos topicId mapId pos maps =
+  updateTopicProps topicId mapId maps
+    (\props -> { props | pos = pos })
+
+
+setTopicPosByDelta : Id -> MapId -> Delta -> Maps -> Maps
+setTopicPosByDelta topicId mapId delta maps =
   updateTopicProps topicId mapId maps
     (\props ->
       { props | pos =
@@ -247,6 +259,19 @@ updateTopicPos topicId mapId delta maps =
           (props.pos.y + delta.y)
       }
     )
+
+
+getDisplayMode : Id -> MapId -> Maps -> Maybe DisplayMode
+getDisplayMode topicId mapId maps =
+  case getTopicProps topicId mapId maps of
+    Just { displayMode } -> Just displayMode
+    Nothing -> fail "getDisplayMode" {topicId = topicId, mapId = mapId} Nothing
+
+
+setDisplayMode : Id -> MapId -> DisplayMode -> Model -> Maps
+setDisplayMode topicId mapId displayMode model =
+  updateTopicProps topicId mapId model.maps
+    (\props -> { props | displayMode = displayMode })
 
 
 getTopicProps : Id -> MapId -> Maps -> Maybe TopicProps
@@ -380,37 +405,6 @@ getSingleSelection model =
 
 
 
--- EVENT HELPER -- TODO: move to "Utils"
-
-
-onEnterOrEsc : Msg -> Attribute Msg
-onEnterOrEsc msg =
-  on "keydown"
-    ( D.oneOf
-        [ keyDecoder 13 msg
-        , keyDecoder 27 msg
-        ]
-    )
-
-
-keyDecoder : Int -> Msg -> D.Decoder Msg
-keyDecoder key msg =
-  let
-    isKey code =
-      if code == key then
-        D.succeed msg
-      else
-        D.fail "not that key"
-  in
-  keyCode |> D.andThen isKey
-
-
-stopPropagationOnMousedown : Attribute Msg
-stopPropagationOnMousedown =
-  stopPropagationOn "mousedown" <| D.succeed (NoOp, True)
-
-
-
 -- DEBUG
 
 
@@ -442,24 +436,3 @@ illegalItemId funcName id val =
 illegalId : String -> String -> Id -> a -> a
 illegalId funcName item id val =
   logError funcName (fromInt id ++ " is an illegal " ++ item ++ " ID") val
-
---
-
-logError : String -> String -> v -> v
-logError funcName text val =
-  log ("### ERROR @" ++ funcName ++ ": " ++ text) val
-
-
-fail : String -> a -> v -> v
-fail funcName args val =
-  log ("--> @" ++ funcName ++ " failed " ++ toString args) val
-
-
-call : String -> a -> v -> v
-call funcName args val =
-  log ("@" ++ funcName ++ " " ++ toString args ++ " -->") val
-
-
-info : String -> v -> v
-info funcName val =
-  log ("@" ++ funcName) val

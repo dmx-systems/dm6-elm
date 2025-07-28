@@ -1,7 +1,7 @@
 module Boxing exposing (boxContainer, unboxContainer)
 
 import Model exposing (..)
-import Dict exposing (Dict)
+import Dict
 
 
 
@@ -120,7 +120,7 @@ setUnboxed : ViewItem -> ViewItem
 setUnboxed item =
   { item | viewProps =
     case item.viewProps of
-      ViewTopic props -> ViewTopic { props | displayMode = Just Unboxed }
+      ViewTopic props -> ViewTopic { props | displayMode = Container Unboxed }
       ViewAssoc props -> ViewAssoc props
   }
 
@@ -130,10 +130,10 @@ isAbort item =
   case item.viewProps of
     ViewTopic props ->
       case props.displayMode of
-        Just BlackBox -> True
-        Just WhiteBox -> True
-        Just Unboxed -> False
-        Nothing -> False
+        Container BlackBox -> True
+        Container WhiteBox -> True
+        Container Unboxed -> False
+        Monad _ -> False
     ViewAssoc _ -> False
 
 

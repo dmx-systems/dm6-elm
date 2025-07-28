@@ -1,13 +1,14 @@
 module MapRenderer exposing (viewMap)
 
+import Config exposing (..)
 import IconMenu exposing (viewTopicIcon)
 import Model exposing (..)
-import Config exposing (..)
+import Utils exposing (..)
 
-import Dict exposing (Dict)
-import Html exposing (Html, Attribute, div, text, input)
+import Dict
+import Html exposing (Html, Attribute, div, text, input, textarea)
 import Html.Attributes exposing (id, style, attribute, value)
-import Html.Events exposing (onInput)
+import Html.Events exposing (onInput, onBlur)
 import String exposing (fromInt, fromFloat)
 import Svg exposing (Svg, svg, line, path)
 import Svg.Attributes exposing (width, height, viewBox, x1, y1, x2, y2, d, stroke, strokeWidth,
@@ -110,12 +111,14 @@ viewItems map model =
 viewTopic : TopicInfo -> TopicProps -> MapId -> Model -> Html Msg
 viewTopic topic props mapId model =
   let
-    (style, children) =
+    (style, children) = topicFunc topic props mapId model
+    topicFunc =
       case props.displayMode of
-        Just BlackBox -> blackBoxTopic topic props mapId model
-        Just WhiteBox -> whiteBoxTopic topic props mapId model
-        Just Unboxed -> unboxedTopic topic props mapId model
-        Nothing -> genericTopic topic props mapId model
+        Monad LabelOnly -> genericTopic
+        Monad Detail -> detailTopic
+        Container BlackBox -> blackBoxTopic
+        Container WhiteBox -> whiteBoxTopic
+        Container Unboxed -> unboxedTopic
   in
   div
     ( topicAttr topic.id mapId
@@ -123,46 +126,6 @@ viewTopic topic props mapId model =
       ++ style
     )
     children
-
-
-blackBoxTopic : TopicInfo -> TopicProps -> MapId -> Model -> TopicRendering
-blackBoxTopic topic props mapId model =
-  ( topicPosStyle props
-  , [ div
-        (topicFlexboxStyle topic props mapId model ++ blackBoxStyle)
-        (genericTopicHtml topic props model ++ viewItemCount topic.id props model)
-    , div
-        (ghostTopicStyle topic mapId model)
-        []
-    ]
-  )
-
-
-whiteBoxTopic : TopicInfo -> TopicProps -> MapId -> Model -> TopicRendering
-whiteBoxTopic topic props mapId model =
-  let
-    (style, children) = genericTopic topic props mapId model
-    rect =
-      case getMap topic.id model.maps of
-        Just map -> map.rect
-        Nothing -> Rectangle 0 0 0 0
-  in
-  ( style
-  , children
-      ++ viewItemCount topic.id props model
-      ++ [ viewMap topic.id mapId model ]
-  )
-
-
-unboxedTopic : TopicInfo -> TopicProps -> MapId -> Model -> TopicRendering
-unboxedTopic topic props mapId model =
-  let
-    (style, children) = genericTopic topic props mapId model
-  in
-  ( style
-  , children
-      ++ viewItemCount topic.id props model
-  )
 
 
 genericTopic : TopicInfo -> TopicProps -> MapId -> Model -> TopicRendering
@@ -186,9 +149,10 @@ genericTopicHtml topic props model =
         input
           ( [ id ("dmx-input-" ++ fromInt topic.id)
             , value topic.text
-            , onInput (ItemEditInput >> Edit)
+            , onInput (Edit << ItemEditInput)
+            , onBlur (Edit ItemEditEnd)
             , onEnterOrEsc (Edit ItemEditEnd)
-            , stopPropagationOnMousedown
+            , stopPropagationOnMousedown NoOp
             ]
             ++ topicInputStyle
           )
@@ -201,16 +165,131 @@ genericTopicHtml topic props model =
   ]
 
 
+detailTopic : TopicInfo -> TopicProps -> MapId -> Model -> TopicRendering
+detailTopic topic props mapId model =
+  let
+    isEdit = model.editState == ItemEdit topic.id
+    textElem =
+      if isEdit then
+        textarea
+          ( [ id <| "dmx-input-" ++ fromInt topic.id
+            , onInput (Edit << ItemEditInput)
+            , onBlur (Edit ItemEditEnd)
+            , onEsc (Edit ItemEditEnd)
+            , stopPropagationOnMousedown NoOp
+            ]
+            ++ detailTextStyle topic mapId model
+            ++ detailTextEditStyle
+          )
+          [ text topic.text ]
+      else
+        div
+          ( detailTextStyle topic mapId model
+            ++ detailTextViewStyle
+          )
+          ( multilineHtml topic.text )
+  in
+  ( detailTopicStyle props
+  , [ div
+      ( topicIconBoxStyle props
+        ++ detailBorderStyle topic.id mapId model
+        ++ selectionStyle topic.id mapId model
+      )
+      [ viewTopicIcon topic.id model ]
+    , textElem
+    ]
+  )
+
+
+detailTopicStyle : TopicProps -> List (Attribute Msg)
+detailTopicStyle {pos} =
+  [ style "display" "flex"
+  , style "left" <| fromFloat (pos.x - topicSize.w / 2) ++ "px"
+  , style "top" <| fromFloat (pos.y - topicSize.h / 2) ++ "px"
+  --, style "box-shadow" "red 5px 5px 5px" -- debugging
+  ]
+
+
+detailTextStyle : TopicInfo -> MapId -> Model -> List (Attribute Msg)
+detailTextStyle topic mapId model =
+  let
+    r = fromInt topicRadius ++ "px"
+  in
+  [ style "line-height" "1.4"
+  , style "padding" "8px"
+  , style "border-radius" <| "0 " ++ r ++ " " ++ r ++ " " ++ r
+  ]
+  ++ topicBorderStyle topic.id mapId model
+  ++ selectionStyle topic.id mapId model
+
+
+detailTextViewStyle : List (Attribute Msg)
+detailTextViewStyle =
+  [ style "width" <| fromFloat topicDetailWidth ++ "px"
+  , style "min-width" <| fromFloat (topicSize.w - topicSize.h) ++ "px"
+  , style "max-width" "max-content"
+  , style "pointer-events" "none"
+  ]
+
+
+detailTextEditStyle : List (Attribute Msg)
+detailTextEditStyle =
+  [ style "position" "relative"
+  , style "top" <| fromFloat -topicBorderWidth ++ "px"
+  , style "width" <| fromFloat topicDetailWidth ++ "px"
+  , style "font-family" "sans-serif" -- <textarea> default is "monospace"
+  , style "font-size" mainFontSize -- <textarea> default is "13px"
+  , style "border-color" "black" -- <textarea> default is some lightgray
+  , style "resize" "none"
+  ]
+
+
+blackBoxTopic : TopicInfo -> TopicProps -> MapId -> Model -> TopicRendering
+blackBoxTopic topic props mapId model =
+  ( topicPosStyle props
+  , [ div
+      (topicFlexboxStyle topic props mapId model ++ blackBoxStyle)
+      (genericTopicHtml topic props model ++ viewItemCount topic.id props model)
+    , div
+      (ghostTopicStyle topic mapId model)
+      []
+    ]
+  )
+
+
+whiteBoxTopic : TopicInfo -> TopicProps -> MapId -> Model -> TopicRendering
+whiteBoxTopic topic props mapId model =
+  let
+    (style, children) = genericTopic topic props mapId model
+  in
+  ( style
+  , children
+    ++ viewItemCount topic.id props model
+    ++ [ viewMap topic.id mapId model ]
+  )
+
+
+unboxedTopic : TopicInfo -> TopicProps -> MapId -> Model -> TopicRendering
+unboxedTopic topic props mapId model =
+  let
+    (style, children) = genericTopic topic props mapId model
+  in
+  ( style
+  , children
+    ++ viewItemCount topic.id props model
+  )
+
+
 viewItemCount : Id -> TopicProps -> Model -> List (Html Msg)
 viewItemCount topicId props model =
   let
     itemCount =
-      if props.displayMode /= Nothing then
-        case getMap topicId model.maps of
-          Just map -> map.items |> Dict.values |> List.filter isVisible |> List.length
-          Nothing -> 0
-      else
-        0
+      case props.displayMode of
+        Monad _ -> 0
+        Container _ ->
+          case getMap topicId model.maps of
+            Just map -> map.items |> Dict.values |> List.filter isVisible |> List.length
+            Nothing -> 0
   in
   [ div
       itemCountStyle
@@ -328,7 +407,7 @@ selectionStyle topicId mapId model =
     selected = model.selection |> List.member (topicId, mapId)
   in
   if selected then
-    [ style "box-shadow" "4px 4px 4px gray" ]
+    [ style "box-shadow" "gray 5px 5px 5px" ]
   else
     []
 
@@ -338,7 +417,7 @@ topicFlexboxStyle topic props mapId model =
   let
     r12 = fromInt topicRadius ++ "px"
     r34 = case props.displayMode of
-      Just WhiteBox -> "0"
+      Container WhiteBox -> "0"
       _ -> r12
   in
   [ style "display" "flex"
@@ -363,7 +442,7 @@ topicIconBoxStyle props =
   let
     r1 = fromInt topicRadius ++ "px"
     r4 = case props.displayMode of
-      Just WhiteBox -> "0"
+      Container WhiteBox -> "0"
       _ -> r1
   in
   [ style "flex" "none"
@@ -377,7 +456,11 @@ topicIconBoxStyle props =
 
 topicLabelStyle : List (Attribute Msg)
 topicLabelStyle =
-  [ style "pointer-events" "none" ]
+  [ style "overflow" "hidden"
+  , style "text-overflow" "ellipsis"
+  , style "white-space" "nowrap"
+  , style "pointer-events" "none"
+  ]
 
 
 topicInputStyle : List (Attribute Msg)
@@ -450,6 +533,22 @@ topicBorderStyle id mapId model =
   , style "border-style" <| if targeted then "dashed" else "solid"
   , style "box-sizing" "border-box"
   , style "background-color" "white"
+  ]
+
+
+detailBorderStyle : Id -> MapId -> Model -> List (Attribute Msg)
+detailBorderStyle id mapId model =
+  let
+    targeted = case model.dragState of
+      -- can't move a topic to a map where it is already
+      -- can't create assoc when both topics are in different map
+      Drag DragTopic _ mapId_ _ _ (Just target) -> target == (id, mapId) && mapId_ /= id
+      Drag DrawAssoc _ mapId_ _ _ (Just target) -> target == (id, mapId) && mapId_ == mapId
+      _ -> False
+  in
+  [ style "border-width" <| fromFloat topicBorderWidth ++ "px"
+  , style "border-style" <| if targeted then "dashed" else "solid"
+  , style "box-sizing" "border-box"
   ]
 
 
