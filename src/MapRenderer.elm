@@ -8,7 +8,7 @@ import Utils exposing (..)
 import Dict exposing (Dict)
 import Html exposing (Html, Attribute, div, text, input, textarea)
 import Html.Attributes exposing (id, style, attribute, value)
-import Html.Events exposing (onInput)
+import Html.Events exposing (onInput, onBlur)
 import String exposing (fromInt, fromFloat)
 import Svg exposing (Svg, svg, line, path)
 import Svg.Attributes exposing (width, height, viewBox, x1, y1, x2, y2, d, stroke, strokeWidth,
@@ -150,6 +150,7 @@ genericTopicHtml topic props model =
           ( [ id ("dmx-input-" ++ fromInt topic.id)
             , value topic.text
             , onInput (Edit << ItemEditInput)
+            , onBlur (Edit ItemEditEnd)
             , onEnterOrEsc (Edit ItemEditEnd)
             , stopPropagationOnMousedown NoOp
             ]
@@ -173,6 +174,7 @@ detailTopic topic props mapId model =
         textarea
           ( [ id <| "dmx-input-" ++ fromInt topic.id
             , onInput (Edit << ItemEditInput)
+            , onBlur (Edit ItemEditEnd)
             , onEsc (Edit ItemEditEnd)
             , stopPropagationOnMousedown NoOp
             ]
@@ -204,7 +206,7 @@ detailTopicStyle {pos} =
   [ style "display" "flex"
   , style "left" <| fromFloat (pos.x - topicSize.w / 2) ++ "px"
   , style "top" <| fromFloat (pos.y - topicSize.h / 2) ++ "px"
-  --, style "box-shadow" "red 4px 4px 4px" -- debugging
+  --, style "box-shadow" "red 5px 5px 5px" -- debugging
   ]
 
 
@@ -409,7 +411,7 @@ selectionStyle topicId mapId model =
     selected = model.selection |> List.member (topicId, mapId)
   in
   if selected then
-    [ style "box-shadow" "gray 4px 4px 4px" ]
+    [ style "box-shadow" "gray 5px 5px 5px" ]
   else
     []
 

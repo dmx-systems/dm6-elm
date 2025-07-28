@@ -509,10 +509,7 @@ updateMouse msg model =
 
 mouseDown : Model -> Model
 mouseDown model =
-  { model
-  | selection = []
-  , editState = NoEdit
-  }
+  { model | selection = [] }
 
 
 mouseDownOnItem : Model -> Class -> Id -> MapId -> Point -> ( Model, Cmd Msg )

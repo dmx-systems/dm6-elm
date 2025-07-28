@@ -47,9 +47,9 @@ stopPropagationOnMousedown msg_ =
 
 multilineHtml : String -> List (Html msg)
 multilineHtml str =
-  String.lines str |> List.foldl
+  String.lines str |> List.foldr
     (\line linesAcc ->
-      linesAcc ++ [ text line, br [] []]
+      [ text line, br [] [] ] ++ linesAcc
     )
     []
 
