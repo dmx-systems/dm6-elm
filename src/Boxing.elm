@@ -1,7 +1,7 @@
 module Boxing exposing (boxContainer, unboxContainer)
 
 import Model exposing (..)
-import Dict exposing (Dict)
+import Dict
 
 
 

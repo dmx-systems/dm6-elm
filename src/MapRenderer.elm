@@ -5,7 +5,7 @@ import IconMenu exposing (viewTopicIcon)
 import Model exposing (..)
 import Utils exposing (..)
 
-import Dict exposing (Dict)
+import Dict
 import Html exposing (Html, Attribute, div, text, input, textarea)
 import Html.Attributes exposing (id, style, attribute, value)
 import Html.Events exposing (onInput, onBlur)
@@ -248,11 +248,11 @@ blackBoxTopic : TopicInfo -> TopicProps -> MapId -> Model -> TopicRendering
 blackBoxTopic topic props mapId model =
   ( topicPosStyle props
   , [ div
-        (topicFlexboxStyle topic props mapId model ++ blackBoxStyle)
-        (genericTopicHtml topic props model ++ viewItemCount topic.id props model)
+      (topicFlexboxStyle topic props mapId model ++ blackBoxStyle)
+      (genericTopicHtml topic props model ++ viewItemCount topic.id props model)
     , div
-        (ghostTopicStyle topic mapId model)
-        []
+      (ghostTopicStyle topic mapId model)
+      []
     ]
   )
 
@@ -261,15 +261,11 @@ whiteBoxTopic : TopicInfo -> TopicProps -> MapId -> Model -> TopicRendering
 whiteBoxTopic topic props mapId model =
   let
     (style, children) = genericTopic topic props mapId model
-    rect =
-      case getMap topic.id model.maps of
-        Just map -> map.rect
-        Nothing -> Rectangle 0 0 0 0
   in
   ( style
   , children
-      ++ viewItemCount topic.id props model
-      ++ [ viewMap topic.id mapId model ]
+    ++ viewItemCount topic.id props model
+    ++ [ viewMap topic.id mapId model ]
   )
 
 
@@ -280,7 +276,7 @@ unboxedTopic topic props mapId model =
   in
   ( style
   , children
-      ++ viewItemCount topic.id props model
+    ++ viewItemCount topic.id props model
   )
 
 

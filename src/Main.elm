@@ -8,21 +8,19 @@ import MapRenderer exposing (viewMap)
 import Model exposing (..)
 import Utils exposing (..)
 
-import Array
 import Browser
 import Browser.Dom as Dom
 import Browser.Events as Events
-import Dict exposing (Dict)
+import Dict
 import Html exposing (Html, Attribute, div, text, button, input, label, h1)
-import Html.Attributes exposing
-  (class, id, style, attribute, type_, name, value, checked, disabled)
+import Html.Attributes exposing (style, type_, name, checked, disabled)
 import Html.Events exposing (onClick, on)
 import Random
 import String exposing (String, fromInt)
 import Task
 import Time exposing (posixToMillis)
 import Json.Decode as D
-import Debug exposing (log, toString)
+import Debug exposing (toString)
 
 
 
