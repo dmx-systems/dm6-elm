@@ -2,6 +2,7 @@ module Model exposing (..)
 
 import Utils exposing (..)
 
+import AutoExpand
 import Dict exposing (Dict)
 import String exposing (fromInt)
 import Time
@@ -16,6 +17,7 @@ type alias Model =
   , editState : EditState -- transient
   , dragState : DragState -- transient
   , iconMenuState : Bool -- transient
+  , autoExpandState : AutoExpand.State -- transient
   , nextId : Id
   }
 
@@ -158,6 +160,7 @@ type Msg
 type EditMsg
   = ItemEditStart
   | ItemEditInput String
+  | AutoExpandInput { textValue : String, state : AutoExpand.State }
   | ItemEditEnd
 
 

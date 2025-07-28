@@ -5,6 +5,7 @@ import IconMenu exposing (viewTopicIcon)
 import Model exposing (..)
 import Utils exposing (..)
 
+import AutoExpand
 import Dict
 import Html exposing (Html, Attribute, div, text, input, textarea)
 import Html.Attributes exposing (id, style, attribute, value)
@@ -173,15 +174,15 @@ detailTopic topic props mapId model =
       if isEdit then
         textarea
           ( [ id <| "dmx-input-" ++ fromInt topic.id
-            , onInput (Edit << ItemEditInput)
             , onBlur (Edit ItemEditEnd)
             , onEsc (Edit ItemEditEnd)
             , stopPropagationOnMousedown NoOp
             ]
+            ++ AutoExpand.attributes autoExpandConfig model.autoExpandState topic.text
             ++ detailTextStyle topic mapId model
             ++ detailTextEditStyle
           )
-          [ text topic.text ]
+          []
       else
         div
           ( detailTextStyle topic mapId model
@@ -215,10 +216,7 @@ detailTextStyle topic mapId model =
   let
     r = fromInt topicRadius ++ "px"
   in
-  [ style "line-height" "1.4"
-  , style "padding" "8px"
-  , style "border-radius" <| "0 " ++ r ++ " " ++ r ++ " " ++ r
-  ]
+  [ style "border-radius" <| "0 " ++ r ++ " " ++ r ++ " " ++ r ]
   ++ topicBorderStyle topic.id mapId model
   ++ selectionStyle topic.id mapId model
 
@@ -228,6 +226,8 @@ detailTextViewStyle =
   [ style "width" <| fromFloat topicDetailWidth ++ "px"
   , style "min-width" <| fromFloat (topicSize.w - topicSize.h) ++ "px"
   , style "max-width" "max-content"
+  , style "line-height" <| fromFloat lineHeight
+  , style "padding" <| fromInt textPadding ++ "px"
   , style "pointer-events" "none"
   ]
 
@@ -237,9 +237,9 @@ detailTextEditStyle =
   [ style "position" "relative"
   , style "top" <| fromFloat -topicBorderWidth ++ "px"
   , style "width" <| fromFloat topicDetailWidth ++ "px"
-  , style "font-family" "sans-serif" -- <textarea> default is "monospace"
-  , style "font-size" mainFontSize -- <textarea> default is "13px"
-  , style "border-color" "black" -- <textarea> default is some lightgray
+  , style "font-family" "sans-serif"                  -- <textarea> default is "monospace"
+  , style "font-size" <| fromInt mainFontSize ++ "px" -- <textarea> default is "13px"
+  , style "border-color" "black"                      -- <textarea> default is some lightgray
   , style "resize" "none"
   ]
 
@@ -469,7 +469,7 @@ topicInputStyle =
   , style "position" "relative"
   , style "left" "-4px"
   , style "font-family" "sans-serif" -- Default for <input> is "-apple-system" (on Mac)
-  , style "font-size" mainFontSize
+  , style "font-size" <| fromInt mainFontSize ++ "px"
   , style "pointer-events" "initial"
   ]
 

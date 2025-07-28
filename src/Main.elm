@@ -8,6 +8,7 @@ import MapRenderer exposing (viewMap)
 import Model exposing (..)
 import Utils exposing (..)
 
+import AutoExpand
 import Browser
 import Browser.Dom as Dom
 import Browser.Events as Events
@@ -46,6 +47,7 @@ init flags =
     , editState = NoEdit
     , dragState = NoDrag
     , iconMenuState = False
+    , autoExpandState = AutoExpand.initState autoExpandConfig
     , nextId = 1
     }
   , Cmd.none
@@ -390,6 +392,7 @@ updateEdit msg model =
   case msg of
     ItemEditStart -> startItemEdit model
     ItemEditInput text -> (updateItemText text model, Cmd.none)
+    AutoExpandInput {textValue, state} -> (updateAutoExpand textValue state model, Cmd.none)
     ItemEditEnd -> (endItemEdit model, Cmd.none)
 
 
@@ -424,6 +427,16 @@ updateItemText text model =
       (\topic -> { topic | text = text })
       model
     NoEdit -> logError "updateItemText" "called when editState is NoEdit" model
+
+
+updateAutoExpand : String -> AutoExpand.State -> Model -> Model
+updateAutoExpand text state model =
+  case model.editState of
+    ItemEdit id ->
+      { model | autoExpandState = state }
+      |> updateTopicInfo id
+        (\topic -> { topic | text = text })
+    NoEdit -> logError "updateAutoExpand" "called when editState is NoEdit" model
 
 
 endItemEdit : Model -> Model
@@ -760,7 +773,7 @@ topicFilter item =
 appStyle : List (Attribute Msg)
 appStyle =
   [ style "font-family" "sans-serif"
-  , style "font-size" mainFontSize
+  , style "font-size" <| fromInt mainFontSize ++ "px"
   , style "user-select" "none"
   , style "-webkit-user-select" "none" -- Safari still needs vendor prefix
   ]
@@ -798,5 +811,5 @@ displayModeStyle disabled =
 buttonStyle : List (Attribute Msg)
 buttonStyle =
   [ style "font-family" "sans-serif"
-  , style "font-size" mainFontSize
+  , style "font-size" <| fromInt mainFontSize ++ "px"
   ]
