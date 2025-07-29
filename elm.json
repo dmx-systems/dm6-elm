@@ -13,7 +13,8 @@
             "elm/random": "1.0.0",
             "elm/svg": "1.0.1",
             "elm/time": "1.0.0",
-            "feathericons/elm-feather": "1.5.0"
+            "feathericons/elm-feather": "1.5.0",
+            "ohanhi/autoexpand": "3.0.0"
         },
         "indirect": {
             "elm/url": "1.0.0",

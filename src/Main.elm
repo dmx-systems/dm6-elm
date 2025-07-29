@@ -8,6 +8,7 @@ import MapRenderer exposing (viewMap)
 import Model exposing (..)
 import Utils exposing (..)
 
+import AutoExpand
 import Browser
 import Browser.Dom as Dom
 import Browser.Events as Events
@@ -16,7 +17,7 @@ import Html exposing (Html, Attribute, div, text, button, input, label, h1)
 import Html.Attributes exposing (style, type_, name, checked, disabled)
 import Html.Events exposing (onClick, on)
 import Random
-import String exposing (String, fromInt)
+import String exposing (fromInt)
 import Task
 import Time exposing (posixToMillis)
 import Json.Decode as D
@@ -244,8 +245,10 @@ createTopicAndAddToMap : Model -> Model
 createTopicAndAddToMap model =
   let
     (newModel, topicId) = createTopic model
-    props = ViewTopic <| TopicProps pos (Monad LabelOnly)
-    pos = Point 189 97
+    props = ViewTopic <| TopicProps
+      (Point 189 97)
+      (Monad LabelOnly)
+      (AutoExpand.initState autoExpandConfig)
   in
   newModel
   |> addItemToMap topicId props model.activeMap
@@ -358,8 +361,6 @@ updateGeometry model =
   { model | maps = autoSize model.activeMap model.maps }
 
 
--- Display Mode
-
 switchDisplayMode : DisplayMode -> Model -> Model
 switchDisplayMode displayMode model =
   let
@@ -390,6 +391,7 @@ updateEdit msg model =
   case msg of
     ItemEditStart -> startItemEdit model
     ItemEditInput text -> (updateItemText text model, Cmd.none)
+    AutoExpandInput {textValue, state} -> (updateAutoExpand textValue state model, Cmd.none)
     ItemEditEnd -> (endItemEdit model, Cmd.none)
 
 
@@ -398,7 +400,7 @@ startItemEdit model =
   let
     newModel = case getSingleSelection model of
       Just (topicId, mapId) ->
-        { model | editState = ItemEdit topicId }
+        { model | editState = ItemEdit topicId mapId }
         |> setDetailDisplayIfMonade topicId mapId
       Nothing -> model
   in
@@ -420,10 +422,23 @@ setDetailDisplayIfMonade topicId mapId model =
 updateItemText : String -> Model -> Model
 updateItemText text model =
   case model.editState of
-    ItemEdit id -> updateTopicInfo id
+    ItemEdit id _ -> updateTopicInfo id
       (\topic -> { topic | text = text })
       model
     NoEdit -> logError "updateItemText" "called when editState is NoEdit" model
+
+
+updateAutoExpand : String -> AutoExpand.State -> Model -> Model
+updateAutoExpand text state model =
+  case model.editState of
+    ItemEdit topicId mapId ->
+      { model
+      | maps = updateTopicProps topicId mapId model.maps
+        (\props -> { props | autoExpandState = state })
+      }
+      |> updateTopicInfo topicId
+        (\topic -> { topic | text = text })
+    NoEdit -> logError "updateAutoExpand" "called when editState is NoEdit" model
 
 
 endItemEdit : Model -> Model
@@ -436,7 +451,7 @@ focus model =
   let
     nodeId =
       case model.editState of
-        ItemEdit id -> "dmx-input-" ++ String.fromInt id
+        ItemEdit id mapId -> "dmx-input-" ++ fromInt id ++ "-" ++ fromInt mapId
         NoEdit -> logError "focus" "called when editState is NoEdit" ""
   in
   Dom.focus nodeId |> Task.attempt
@@ -760,7 +775,7 @@ topicFilter item =
 appStyle : List (Attribute Msg)
 appStyle =
   [ style "font-family" "sans-serif"
-  , style "font-size" mainFontSize
+  , style "font-size" <| fromInt mainFontSize ++ "px"
   , style "user-select" "none"
   , style "-webkit-user-select" "none" -- Safari still needs vendor prefix
   ]
@@ -798,5 +813,5 @@ displayModeStyle disabled =
 buttonStyle : List (Attribute Msg)
 buttonStyle =
   [ style "font-family" "sans-serif"
-  , style "font-size" mainFontSize
+  , style "font-size" <| fromInt mainFontSize ++ "px"
   ]

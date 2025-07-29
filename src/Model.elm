@@ -2,6 +2,7 @@ module Model exposing (..)
 
 import Utils exposing (..)
 
+import AutoExpand
 import Dict exposing (Dict)
 import String exposing (fromInt)
 import Time
@@ -73,6 +74,7 @@ type ViewProps
 type alias TopicProps =
   { pos : Point
   , displayMode : DisplayMode
+  , autoExpandState : AutoExpand.State -- transient? TODO: move to TopicInfo?
   }
 
 
@@ -127,7 +129,7 @@ type alias IconName = String -- name of feather icon, https://feathericons.com
 
 
 type EditState
-  = ItemEdit Id
+  = ItemEdit Id MapId
   | NoEdit
 
 
@@ -158,6 +160,7 @@ type Msg
 type EditMsg
   = ItemEditStart
   | ItemEditInput String
+  | AutoExpandInput { textValue : String, state : AutoExpand.State }
   | ItemEditEnd
 
 
