@@ -134,21 +134,18 @@ genericTopic topic props mapId model =
   ( topicPosStyle props
       ++ topicFlexboxStyle topic props mapId model
       ++ selectionStyle topic.id mapId model
-  , genericTopicHtml topic props model
+  , genericTopicHtml topic props mapId model
   )
 
 
-genericTopicHtml : TopicInfo -> TopicProps -> Model -> List (Html Msg)
-genericTopicHtml topic props model =
+genericTopicHtml : TopicInfo -> TopicProps -> MapId -> Model -> List (Html Msg)
+genericTopicHtml topic props mapId model =
   let
+    isEdit = model.editState == ItemEdit topic.id mapId
     textElem =
-      if model.editState /= ItemEdit topic.id then
-        div
-          topicLabelStyle
-          [ text topic.text ]
-      else
+      if isEdit then
         input
-          ( [ id ("dmx-input-" ++ fromInt topic.id)
+          ( [ id <| "dmx-input-" ++ fromInt topic.id ++ "-" ++ fromInt mapId
             , value topic.text
             , onInput (Edit << ItemEditInput)
             , onBlur (Edit ItemEditEnd)
@@ -158,6 +155,10 @@ genericTopicHtml topic props model =
             ++ topicInputStyle
           )
           []
+      else
+        div
+          topicLabelStyle
+          [ text topic.text ]
   in
   [ div
       (topicIconBoxStyle props)
@@ -169,16 +170,16 @@ genericTopicHtml topic props model =
 detailTopic : TopicInfo -> TopicProps -> MapId -> Model -> TopicRendering
 detailTopic topic props mapId model =
   let
-    isEdit = model.editState == ItemEdit topic.id
+    isEdit = model.editState == ItemEdit topic.id mapId
     textElem =
       if isEdit then
         textarea
-          ( [ id <| "dmx-input-" ++ fromInt topic.id
+          ( [ id <| "dmx-input-" ++ fromInt topic.id ++ "-" ++ fromInt mapId
             , onBlur (Edit ItemEditEnd)
             , onEsc (Edit ItemEditEnd)
             , stopPropagationOnMousedown NoOp
             ]
-            ++ AutoExpand.attributes autoExpandConfig model.autoExpandState topic.text
+            ++ AutoExpand.attributes autoExpandConfig props.autoExpandState topic.text
             ++ detailTextStyle topic mapId model
             ++ detailTextEditStyle
           )
@@ -249,7 +250,7 @@ blackBoxTopic topic props mapId model =
   ( topicPosStyle props
   , [ div
       (topicFlexboxStyle topic props mapId model ++ blackBoxStyle)
-      (genericTopicHtml topic props model ++ viewItemCount topic.id props model)
+      (genericTopicHtml topic props mapId model ++ viewItemCount topic.id props model)
     , div
       (ghostTopicStyle topic mapId model)
       []

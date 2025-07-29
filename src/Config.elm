@@ -36,5 +36,5 @@ autoExpandConfig = AutoExpand.config
   , padding = textPadding
   , lineHeight = lineHeight * mainFontSize
   , minRows = 1
-  , maxRows = 5
+  , maxRows = 32
   }

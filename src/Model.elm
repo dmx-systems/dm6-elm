@@ -17,7 +17,6 @@ type alias Model =
   , editState : EditState -- transient
   , dragState : DragState -- transient
   , iconMenuState : Bool -- transient
-  , autoExpandState : AutoExpand.State -- transient
   , nextId : Id
   }
 
@@ -75,6 +74,7 @@ type ViewProps
 type alias TopicProps =
   { pos : Point
   , displayMode : DisplayMode
+  , autoExpandState : AutoExpand.State -- transient? TODO: move to TopicInfo?
   }
 
 
@@ -129,7 +129,7 @@ type alias IconName = String -- name of feather icon, https://feathericons.com
 
 
 type EditState
-  = ItemEdit Id
+  = ItemEdit Id MapId
   | NoEdit
 
 

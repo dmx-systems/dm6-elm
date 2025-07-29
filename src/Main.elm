@@ -17,7 +17,7 @@ import Html exposing (Html, Attribute, div, text, button, input, label, h1)
 import Html.Attributes exposing (style, type_, name, checked, disabled)
 import Html.Events exposing (onClick, on)
 import Random
-import String exposing (String, fromInt)
+import String exposing (fromInt)
 import Task
 import Time exposing (posixToMillis)
 import Json.Decode as D
@@ -47,7 +47,6 @@ init flags =
     , editState = NoEdit
     , dragState = NoDrag
     , iconMenuState = False
-    , autoExpandState = AutoExpand.initState autoExpandConfig
     , nextId = 1
     }
   , Cmd.none
@@ -246,8 +245,10 @@ createTopicAndAddToMap : Model -> Model
 createTopicAndAddToMap model =
   let
     (newModel, topicId) = createTopic model
-    props = ViewTopic <| TopicProps pos (Monad LabelOnly)
-    pos = Point 189 97
+    props = ViewTopic <| TopicProps
+      (Point 189 97)
+      (Monad LabelOnly)
+      (AutoExpand.initState autoExpandConfig)
   in
   newModel
   |> addItemToMap topicId props model.activeMap
@@ -360,8 +361,6 @@ updateGeometry model =
   { model | maps = autoSize model.activeMap model.maps }
 
 
--- Display Mode
-
 switchDisplayMode : DisplayMode -> Model -> Model
 switchDisplayMode displayMode model =
   let
@@ -401,7 +400,7 @@ startItemEdit model =
   let
     newModel = case getSingleSelection model of
       Just (topicId, mapId) ->
-        { model | editState = ItemEdit topicId }
+        { model | editState = ItemEdit topicId mapId }
         |> setDetailDisplayIfMonade topicId mapId
       Nothing -> model
   in
@@ -423,7 +422,7 @@ setDetailDisplayIfMonade topicId mapId model =
 updateItemText : String -> Model -> Model
 updateItemText text model =
   case model.editState of
-    ItemEdit id -> updateTopicInfo id
+    ItemEdit id _ -> updateTopicInfo id
       (\topic -> { topic | text = text })
       model
     NoEdit -> logError "updateItemText" "called when editState is NoEdit" model
@@ -432,9 +431,12 @@ updateItemText text model =
 updateAutoExpand : String -> AutoExpand.State -> Model -> Model
 updateAutoExpand text state model =
   case model.editState of
-    ItemEdit id ->
-      { model | autoExpandState = state }
-      |> updateTopicInfo id
+    ItemEdit topicId mapId ->
+      { model
+      | maps = updateTopicProps topicId mapId model.maps
+        (\props -> { props | autoExpandState = state })
+      }
+      |> updateTopicInfo topicId
         (\topic -> { topic | text = text })
     NoEdit -> logError "updateAutoExpand" "called when editState is NoEdit" model
 
@@ -449,7 +451,7 @@ focus model =
   let
     nodeId =
       case model.editState of
-        ItemEdit id -> "dmx-input-" ++ String.fromInt id
+        ItemEdit id mapId -> "dmx-input-" ++ fromInt id ++ "-" ++ fromInt mapId
         NoEdit -> logError "focus" "called when editState is NoEdit" ""
   in
   Dom.focus nodeId |> Task.attempt
