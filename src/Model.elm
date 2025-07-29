@@ -24,7 +24,7 @@ type alias Model =
 type alias Items = Dict Id Item
 
 
-type Item
+type Item -- TODO: make it a record with "id" field, analogue ViewItem?
   = Topic TopicInfo
   | Assoc AssocInfo
 
@@ -118,12 +118,14 @@ type alias Size =
   }
 
 
+type alias Selection = List (Id, MapId)
+
+
 type alias Id = Int
 type alias MapId = Id
 type alias Class = String -- a CSS class, e.g. "dmx-topic"
 type alias ItemType = String -- a type URI, e.g. "dmx.association"
 type alias RoleType = String -- a role type URI, e.g. "dmx.default"
-type alias Selection = List (Id, MapId)
 type alias Delta = Point
 type alias IconName = String -- name of feather icon, https://feathericons.com
 
@@ -350,7 +352,7 @@ hideItems itemId model items =
           Just item -> Just { item | hidden = True }
           Nothing -> Nothing
       )
-    assocIds = assocsOfPlayer itemId items model
+    assocIds = viewAssocsOfPlayer itemId items model
   in
   List.foldr
     (\assocId newItems_ -> hideItems assocId model newItems_)
@@ -358,33 +360,69 @@ hideItems itemId model items =
     assocIds
 
 
-assocsOfPlayer : Id -> ViewItems -> Model -> List Id
-assocsOfPlayer itemId items model =
-  items |> Dict.values
+deleteItem : Id -> Model -> Model
+deleteItem itemId model =
+  assocsOfPlayer itemId model |> List.foldr
+    deleteItem -- recursion
+    { model
+      | items = model.items |> Dict.remove itemId -- delete item
+      , maps = model.maps |> Dict.map -- delete item from all maps
+        (\_ map -> { map | items = map.items |> Dict.remove itemId })
+    }
+
+
+assocsOfPlayer : Id -> Model -> List Id
+assocsOfPlayer playerId model =
+  model.items |> Dict.values
     |> List.filter isAssoc
-    |> List.filter (hasPlayer itemId model)
+    |> List.map getItemId
+    |> List.filter (hasPlayer playerId model)
+
+
+viewAssocsOfPlayer : Id -> ViewItems -> Model -> List Id
+viewAssocsOfPlayer playerId items model =
+  items |> Dict.values
+    |> List.filter isViewAssoc
     |> List.map .id
+    |> List.filter (hasPlayer playerId model)
 
 
-hasPlayer : Id -> Model -> ViewItem -> Bool
-hasPlayer itemId model assocItem =
-  case getAssocInfo assocItem.id model of
-    Just assoc -> assoc.player1 == itemId || assoc.player2 == itemId
+hasPlayer : Id -> Model -> Id -> Bool
+hasPlayer playerId model assocId =
+  case getAssocInfo assocId model of
+    Just assoc -> assoc.player1 == playerId || assoc.player2 == playerId
     Nothing -> False
 
 
-isTopic : ViewItem -> Bool
+getItemId : Item -> Id
+getItemId item =
+  case item of
+    Topic {id} -> id
+    Assoc {id} -> id
+
+
+isTopic : Item -> Bool
 isTopic item =
+  case item of
+    Topic _ -> True
+    Assoc _ -> False
+
+
+isAssoc : Item -> Bool
+isAssoc item =
+  not (isTopic item)
+
+
+isViewTopic : ViewItem -> Bool
+isViewTopic item =
   case item.viewProps of
     ViewTopic _ -> True
     ViewAssoc _ -> False
 
 
-isAssoc : ViewItem -> Bool
-isAssoc item =
-  case item.viewProps of
-    ViewTopic _ -> False
-    ViewAssoc _ -> True
+isViewAssoc : ViewItem -> Bool
+isViewAssoc item =
+  not (isViewTopic item)
 
 
 isVisible : ViewItem -> Bool
@@ -402,9 +440,8 @@ select id mapId model =
 getSingleSelection : Model -> Maybe (Id, MapId)
 getSingleSelection model =
   case model.selection of
-    [] -> Nothing
-    selItem :: selItems -> Just selItem
-    -- FIXME: return nothing if more than one item
+    [ selItem ] -> Just selItem
+    _ -> Nothing
 
 
 

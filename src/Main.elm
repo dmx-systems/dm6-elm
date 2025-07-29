@@ -467,43 +467,13 @@ focus model =
 delete : Model -> Model
 delete model =
   let
-    maps = updateMaps
-      model.activeMap -- FIXME: delete items from other/different maps
-      (deleteViewItems model.selection)
-      model.maps
+    newModel = model.selection
+      |> List.map Tuple.first
+      |> List.foldr
+        (\itemId model_ -> deleteItem itemId model_)
+        model
   in
-  { model
-  -- TODO: iterate model.selection only once?
-  | items = deleteItems model.selection model.items
-  , maps = maps
-  , selection = []
-  }
-
-
-deleteItems : Selection -> Items -> Items
-deleteItems selItems items =
-  case selItems of
-    [] -> items
-    (id, mapId) :: moreSelItems -> deleteItems moreSelItems (Dict.remove id items)
-    -- FIXME: delete assocs where the item is a player
-
-
-deleteViewItems : Selection -> Map -> Map
-deleteViewItems selItems map =
-  case selItems of
-    [] -> map
-    (id, mapId) :: moreSelItems -> deleteViewItems moreSelItems (removeItemFromMap_ id map)
-    -- FIXME: delete assocs where the item is a player
-
-
-removeItemFromMap : Id -> MapId -> Maps -> Maps
-removeItemFromMap itemId mapId maps =
-  updateMaps mapId (removeItemFromMap_ itemId) maps
-
-
-removeItemFromMap_ : Id -> Map -> Map
-removeItemFromMap_ itemId map =
-  { map | items = map.items |> Dict.remove itemId }
+  { newModel | selection = [] }
 
 
 -- Mouse
@@ -739,10 +709,6 @@ strToIntDecoder str =
     Nothing -> D.fail <| "\"" ++ str ++ "\" is an invalid ID"
 
 
-
--- HELPER
-
-
 -- TODO: no code doubling
 mouseDecoder : (Class -> Id -> MapId -> MouseMsg) -> D.Decoder Msg
 mouseDecoder msg =
@@ -754,18 +720,6 @@ mouseDecoder msg =
     )
     ( D.at ["target", "dataset", "id"] D.string |> D.andThen strToIntDecoder )
     ( D.at ["target", "dataset", "mapId"] D.string |> D.andThen strToIntDecoder )
-
-
-topicCount : Model -> Int
-topicCount model =
-  model.items |> Dict.values |> List.filter topicFilter |> List.length
-
-
-topicFilter : Item -> Bool
-topicFilter item =
-  case item of
-    Topic _ -> True
-    Assoc _ -> False
 
 
 
