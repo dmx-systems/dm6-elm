@@ -8,7 +8,6 @@ import MapRenderer exposing (viewMap)
 import Model exposing (..)
 import Utils exposing (..)
 
-import AutoExpand
 import Browser
 import Browser.Dom as Dom
 import Browser.Events as Events
@@ -248,7 +247,6 @@ createTopicAndAddToMap model =
     props = ViewTopic <| TopicProps
       (Point 189 97)
       (Monad LabelOnly)
-      (AutoExpand.initState autoExpandConfig)
   in
   newModel
   |> addItemToMap topicId props model.activeMap
@@ -391,7 +389,6 @@ updateEdit msg model =
   case msg of
     ItemEditStart -> startItemEdit model
     ItemEditInput text -> (updateItemText text model, Cmd.none)
-    AutoExpandInput {textValue, state} -> (updateAutoExpand textValue state model, Cmd.none)
     ItemEditEnd -> (endItemEdit model, Cmd.none)
 
 
@@ -426,19 +423,6 @@ updateItemText text model =
       (\topic -> { topic | text = text })
       model
     NoEdit -> logError "updateItemText" "called when editState is NoEdit" model
-
-
-updateAutoExpand : String -> AutoExpand.State -> Model -> Model
-updateAutoExpand text state model =
-  case model.editState of
-    ItemEdit topicId mapId ->
-      { model
-      | maps = updateTopicProps topicId mapId model.maps
-        (\props -> { props | autoExpandState = state })
-      }
-      |> updateTopicInfo topicId
-        (\topic -> { topic | text = text })
-    NoEdit -> logError "updateAutoExpand" "called when editState is NoEdit" model
 
 
 endItemEdit : Model -> Model

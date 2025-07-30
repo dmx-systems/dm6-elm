@@ -5,10 +5,9 @@ import IconMenu exposing (viewTopicIcon)
 import Model exposing (..)
 import Utils exposing (..)
 
-import AutoExpand
 import Dict
 import Html exposing (Html, Attribute, div, text, input, textarea)
-import Html.Attributes exposing (id, style, attribute, value)
+import Html.Attributes exposing (id, style, attribute, value, rows)
 import Html.Events exposing (onInput, onBlur)
 import String exposing (fromInt, fromFloat)
 import Svg exposing (Svg, svg, line, path)
@@ -175,15 +174,16 @@ detailTopic topic props mapId model =
       if isEdit then
         textarea
           ( [ id <| "dmx-input-" ++ fromInt topic.id ++ "-" ++ fromInt mapId
+            , rows 5
+            , onInput (Edit << ItemEditInput)
             , onBlur (Edit ItemEditEnd)
             , onEsc (Edit ItemEditEnd)
             , stopPropagationOnMousedown NoOp
             ]
-            ++ AutoExpand.attributes autoExpandConfig props.autoExpandState topic.text
             ++ detailTextStyle topic mapId model
             ++ detailTextEditStyle
           )
-          []
+          [ text topic.text ]
       else
         div
           ( detailTextStyle topic mapId model
@@ -217,7 +217,10 @@ detailTextStyle topic mapId model =
   let
     r = fromInt topicRadius ++ "px"
   in
-  [ style "border-radius" <| "0 " ++ r ++ " " ++ r ++ " " ++ r ]
+  [ style "line-height" <| fromFloat lineHeight
+  , style "padding" <| fromInt textPadding ++ "px"
+  , style "border-radius" <| "0 " ++ r ++ " " ++ r ++ " " ++ r
+  ]
   ++ topicBorderStyle topic.id mapId model
   ++ selectionStyle topic.id mapId model
 
@@ -227,8 +230,6 @@ detailTextViewStyle =
   [ style "width" <| fromFloat topicDetailWidth ++ "px"
   , style "min-width" <| fromFloat (topicSize.w - topicSize.h) ++ "px"
   , style "max-width" "max-content"
-  , style "line-height" <| fromFloat lineHeight
-  , style "padding" <| fromInt textPadding ++ "px"
   , style "pointer-events" "none"
   ]
 
