@@ -538,7 +538,7 @@ timeArrived time model =
         case class of
           "dmx-topic" ->
             let
-              delay = posixToMillis time - posixToMillis startTime > dragThresholdMillis
+              delay = posixToMillis time - posixToMillis startTime > assocDelayMillis
               dragMode = if delay then DrawAssoc else DragTopic
               origPos_ = getTopicPos id mapId model.maps
             in
@@ -753,7 +753,7 @@ mouseDecoder msg =
 
 appStyle : List (Attribute Msg)
 appStyle =
-  [ style "font-family" "sans-serif"
+  [ style "font-family" mainFont
   , style "font-size" <| fromInt mainFontSize ++ "px"
   , style "user-select" "none"
   , style "-webkit-user-select" "none" -- Safari still needs vendor prefix
@@ -791,7 +791,7 @@ displayModeStyle disabled =
 
 buttonStyle : List (Attribute Msg)
 buttonStyle =
-  [ style "font-family" "sans-serif"
+  [ style "font-family" mainFont
   , style "font-size" <| fromInt mainFontSize ++ "px"
   ]
 
@@ -801,15 +801,14 @@ measureStyle =
   [ style "position" "fixed"
   , style "visibility" "visible" -- "hidden", debugging
   , style "white-space" "pre-wrap"
-  , style "font-family" "sans-serif"
+  , style "font-family" mainFont
   , style "font-size" <| fromInt mainFontSize ++ "px"
-  , style "line-height" <| fromFloat lineHeight
-  , style "padding" <| fromInt textPadding ++ "px"
+  , style "line-height" <| fromFloat topicLineHeight
+  , style "padding" <| fromInt topicDetailPadding ++ "px"
   , style "width" <| fromFloat topicDetailSize.w ++ "px"
   , style "min-width" <| fromFloat (topicSize.w - topicSize.h) ++ "px"
   , style "max-width" "max-content"
   , style "border-width" <| fromFloat topicBorderWidth ++ "px"
   , style "border-style" "solid"
-  , style "border-color" "red" -- debugging
   , style "box-sizing" "border-box"
   ]
