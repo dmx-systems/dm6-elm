@@ -179,13 +179,13 @@ detailTopic topic props mapId model =
             , onEsc (Edit ItemEditEnd)
             , stopPropagationOnMousedown NoOp
             ]
-            ++ detailTextStyle topic mapId model
-            ++ detailTextEditStyle
+            ++ detailTextStyle topic.id mapId model
+            ++ detailTextEditStyle topic.id mapId model
           )
           [ text topic.text ]
       else
         div
-          ( detailTextStyle topic mapId model
+          ( detailTextStyle topic.id mapId model
             ++ detailTextViewStyle
           )
           ( multilineHtml topic.text )
@@ -211,33 +211,38 @@ detailTopicStyle {pos} =
   ]
 
 
-detailTextStyle : TopicInfo -> MapId -> Model -> List (Attribute Msg)
-detailTextStyle topic mapId model =
+detailTextStyle : Id -> MapId -> Model -> List (Attribute Msg)
+detailTextStyle topicId mapId model =
   let
     r = fromInt topicRadius ++ "px"
   in
-  [ style "line-height" <| fromFloat lineHeight
+  [ style "width" <| fromFloat topicDetailWidth ++ "px"
+  , style "line-height" <| fromFloat lineHeight
   , style "padding" <| fromInt textPadding ++ "px"
   , style "border-radius" <| "0 " ++ r ++ " " ++ r ++ " " ++ r
   ]
-  ++ topicBorderStyle topic.id mapId model
-  ++ selectionStyle topic.id mapId model
+  ++ topicBorderStyle topicId mapId model
+  ++ selectionStyle topicId mapId model
 
 
 detailTextViewStyle : List (Attribute Msg)
 detailTextViewStyle =
-  [ style "width" <| fromFloat topicDetailWidth ++ "px"
-  , style "min-width" <| fromFloat (topicSize.w - topicSize.h) ++ "px"
+  [ style "min-width" <| fromFloat (topicSize.w - topicSize.h) ++ "px"
   , style "max-width" "max-content"
   , style "pointer-events" "none"
   ]
 
 
-detailTextEditStyle : List (Attribute Msg)
-detailTextEditStyle =
+detailTextEditStyle : Id -> MapId -> Model -> List (Attribute Msg)
+detailTextEditStyle topicId mapId model =
+  let
+    height = case getTopicSize topicId mapId model.maps of
+      Just size -> size.h
+      Nothing -> 0
+  in
   [ style "position" "relative"
   , style "top" <| fromFloat -topicBorderWidth ++ "px"
-  , style "width" <| fromFloat topicDetailWidth ++ "px"
+  , style "height" <| fromFloat height ++ "px"
   , style "font-family" "sans-serif"                  -- <textarea> default is "monospace"
   , style "font-size" <| fromInt mainFontSize ++ "px" -- <textarea> default is "13px"
   , style "border-color" "black"                      -- <textarea> default is some lightgray

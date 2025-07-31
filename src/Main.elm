@@ -12,7 +12,7 @@ import Browser
 import Browser.Dom as Dom
 import Browser.Events as Events
 import Dict
-import Html exposing (Html, Attribute, div, text, button, input, label, h1)
+import Html exposing (Html, Attribute, div, text, br, button, input, label, h1)
 import Html.Attributes exposing (id, style, type_, name, checked, disabled)
 import Html.Events exposing (onClick, on)
 import Random
@@ -81,7 +81,9 @@ view model =
       ( [ id "measure" ]
         ++ measureStyle
       )
-      [ text model.measureText ]
+      [ text model.measureText
+      , br [] []
+      ]
     ]
 
 
@@ -398,10 +400,9 @@ updateEdit msg model =
     ItemEditInput text -> (updateItemText text model, Cmd.none)
     TextareaInput text -> updateTextareaText text model
     SetSize topicId mapId size ->
-      let
-        _ = info "SetSize" size
-      in
-      (model, Cmd.none) -- TODO
+      ( { model | maps = setTopicSize topicId mapId size model.maps }
+      , Cmd.none
+      )
     ItemEditEnd -> (endItemEdit model, Cmd.none)
 
 
@@ -799,7 +800,7 @@ buttonStyle =
 measureStyle : List (Attribute Msg)
 measureStyle =
   [ style "position" "fixed"
-  , style "visibility" "visible" -- "hidden"
+  , style "visibility" "visible" -- "hidden", debugging
   , style "white-space" "pre-wrap"
   , style "font-family" "sans-serif"
   , style "font-size" <| fromInt mainFontSize ++ "px"
