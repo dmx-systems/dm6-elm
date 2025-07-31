@@ -13,10 +13,10 @@ import Browser.Dom as Dom
 import Browser.Events as Events
 import Dict
 import Html exposing (Html, Attribute, div, text, button, input, label, h1)
-import Html.Attributes exposing (style, type_, name, checked, disabled)
+import Html.Attributes exposing (id, style, type_, name, checked, disabled)
 import Html.Events exposing (onClick, on)
 import Random
-import String exposing (fromInt)
+import String exposing (fromInt, fromFloat)
 import Task
 import Time exposing (posixToMillis)
 import Json.Decode as D
@@ -46,6 +46,7 @@ init flags =
     , editState = NoEdit
     , dragState = NoDrag
     , iconMenuState = False
+    , measureText = ""
     , nextId = 1
     }
   , Cmd.none
@@ -76,6 +77,11 @@ view model =
           else
             []
       )
+    , div
+      ( [ id "measure" ]
+        ++ measureStyle
+      )
+      [ text model.measureText ]
     ]
 
 
@@ -246,6 +252,7 @@ createTopicAndAddToMap model =
     (newModel, topicId) = createTopic model
     props = ViewTopic <| TopicProps
       (Point 189 97)
+      (Size 0 0) -- TODO?
       (Monad LabelOnly)
   in
   newModel
@@ -389,6 +396,12 @@ updateEdit msg model =
   case msg of
     ItemEditStart -> startItemEdit model
     ItemEditInput text -> (updateItemText text model, Cmd.none)
+    TextareaInput text -> updateTextareaText text model
+    SetSize topicId mapId size ->
+      let
+        _ = info "SetSize" size
+      in
+      (model, Cmd.none) -- TODO
     ItemEditEnd -> (endItemEdit model, Cmd.none)
 
 
@@ -419,10 +432,38 @@ setDetailDisplayIfMonade topicId mapId model =
 updateItemText : String -> Model -> Model
 updateItemText text model =
   case model.editState of
-    ItemEdit id _ -> updateTopicInfo id
-      (\topic -> { topic | text = text })
-      model
+    ItemEdit topicId _ ->
+      updateTopicInfo topicId
+        (\topic -> { topic | text = text })
+        model
     NoEdit -> logError "updateItemText" "called when editState is NoEdit" model
+
+
+updateTextareaText : String -> Model -> (Model, Cmd Msg)
+updateTextareaText text model =
+  case model.editState of
+    ItemEdit topicId mapId ->
+      updateTopicInfo topicId
+        (\topic -> { topic | text = text })
+        model
+      |> measureText text topicId mapId
+    NoEdit -> logError "updateTextareaText" "called when editState is NoEdit" (model, Cmd.none)
+
+
+measureText : String -> Id -> MapId -> Model -> (Model, Cmd Msg)
+measureText text topicId mapId model =
+  ( { model | measureText = text }
+  , Dom.getElement "measure"
+    |> Task.attempt
+      (\result ->
+        case result of
+          Ok elem -> Edit
+            (SetSize topicId mapId
+              (Size elem.element.width elem.element.height)
+            )
+          Err err -> logError "measureText" (toString err) NoOp
+      )
+  )
 
 
 endItemEdit : Model -> Model
@@ -752,4 +793,23 @@ buttonStyle : List (Attribute Msg)
 buttonStyle =
   [ style "font-family" "sans-serif"
   , style "font-size" <| fromInt mainFontSize ++ "px"
+  ]
+
+
+measureStyle : List (Attribute Msg)
+measureStyle =
+  [ style "position" "fixed"
+  , style "visibility" "visible" -- "hidden"
+  , style "white-space" "pre-wrap"
+  , style "font-family" "sans-serif"
+  , style "font-size" <| fromInt mainFontSize ++ "px"
+  , style "line-height" <| fromFloat lineHeight
+  , style "padding" <| fromInt textPadding ++ "px"
+  , style "width" <| fromFloat topicDetailWidth ++ "px"
+  , style "min-width" <| fromFloat (topicSize.w - topicSize.h) ++ "px"
+  , style "max-width" "max-content"
+  , style "border-width" <| fromFloat topicBorderWidth ++ "px"
+  , style "border-style" "solid"
+  , style "border-color" "red" -- debugging
+  , style "box-sizing" "border-box"
   ]

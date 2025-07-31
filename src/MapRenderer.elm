@@ -7,7 +7,7 @@ import Utils exposing (..)
 
 import Dict
 import Html exposing (Html, Attribute, div, text, input, textarea)
-import Html.Attributes exposing (id, style, attribute, value, rows)
+import Html.Attributes exposing (id, style, attribute, value)
 import Html.Events exposing (onInput, onBlur)
 import String exposing (fromInt, fromFloat)
 import Svg exposing (Svg, svg, line, path)
@@ -174,8 +174,7 @@ detailTopic topic props mapId model =
       if isEdit then
         textarea
           ( [ id <| "dmx-input-" ++ fromInt topic.id ++ "-" ++ fromInt mapId
-            , rows 5
-            , onInput (Edit << ItemEditInput)
+            , onInput (Edit << TextareaInput)
             , onBlur (Edit ItemEditEnd)
             , onEsc (Edit ItemEditEnd)
             , stopPropagationOnMousedown NoOp

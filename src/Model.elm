@@ -16,6 +16,7 @@ type alias Model =
   , editState : EditState -- transient
   , dragState : DragState -- transient
   , iconMenuState : Bool -- transient
+  , measureText : String -- transient
   , nextId : Id
   }
 
@@ -72,6 +73,7 @@ type ViewProps
 
 type alias TopicProps =
   { pos : Point
+  , size : Size
   , displayMode : DisplayMode
   }
 
@@ -160,6 +162,8 @@ type Msg
 type EditMsg
   = ItemEditStart
   | ItemEditInput String
+  | TextareaInput String
+  | SetSize Id MapId Size
   | ItemEditEnd
 
 
