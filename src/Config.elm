@@ -16,7 +16,8 @@ assocColor = "black"
 dragThresholdMillis = 200
 
 topicSize = Size 156 28
-topicDetailWidth = 300
+topicDetailSize = Size 300 (lineHeight * mainFontSize + 2 * (textPadding + topicBorderWidth))
+topicDefaultText = "New Topic"
 topicIconSize = 16
 topicBorderWidth = 1
 topicRadius = 7

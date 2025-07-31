@@ -221,7 +221,7 @@ update msg model =
         _ -> info "update" msg
   in
   case msg of
-    AddTopic -> (createTopicAndAddToMap model, Cmd.none)
+    AddTopic -> (createTopicAndAddToMap model.activeMap model, Cmd.none)
     MoveTopicToMap topicId mapId origPos targetId targetMapId pos
       -> (moveTopicToMap topicId mapId origPos targetId targetMapId pos model, Cmd.none)
     Set displayMode -> (switchDisplayMode displayMode model, Cmd.none)
@@ -236,8 +236,7 @@ createTopic : Model -> (Model, Id)
 createTopic model =
   let
     id = model.nextId
-    text = "New Topic"
-    topic = TopicInfo id text Nothing
+    topic = TopicInfo id topicDefaultText Nothing
   in
   ( { model
     | items = model.items
@@ -248,18 +247,18 @@ createTopic model =
   )
 
 
-createTopicAndAddToMap : Model -> Model
-createTopicAndAddToMap model =
+createTopicAndAddToMap : MapId -> Model -> Model
+createTopicAndAddToMap mapId model =
   let
     (newModel, topicId) = createTopic model
     props = ViewTopic <| TopicProps
       (Point 189 97)
-      (Size 0 0) -- TODO?
+      topicDetailSize
       (Monad LabelOnly)
   in
   newModel
-  |> addItemToMap topicId props model.activeMap
-  |> select topicId model.activeMap
+  |> addItemToMap topicId props mapId
+  |> select topicId mapId
 
 
 -- Presumption: both players exist in same map
@@ -806,7 +805,7 @@ measureStyle =
   , style "font-size" <| fromInt mainFontSize ++ "px"
   , style "line-height" <| fromFloat lineHeight
   , style "padding" <| fromInt textPadding ++ "px"
-  , style "width" <| fromFloat topicDetailWidth ++ "px"
+  , style "width" <| fromFloat topicDetailSize.w ++ "px"
   , style "min-width" <| fromFloat (topicSize.w - topicSize.h) ++ "px"
   , style "max-width" "max-content"
   , style "border-width" <| fromFloat topicBorderWidth ++ "px"

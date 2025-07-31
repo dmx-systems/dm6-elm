@@ -216,7 +216,7 @@ detailTextStyle topicId mapId model =
   let
     r = fromInt topicRadius ++ "px"
   in
-  [ style "width" <| fromFloat topicDetailWidth ++ "px"
+  [ style "width" <| fromFloat topicDetailSize.w ++ "px"
   , style "line-height" <| fromFloat lineHeight
   , style "padding" <| fromInt textPadding ++ "px"
   , style "border-radius" <| "0 " ++ r ++ " " ++ r ++ " " ++ r
