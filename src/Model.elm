@@ -163,7 +163,7 @@ type EditMsg
   = ItemEditStart
   | ItemEditInput String
   | TextareaInput String
-  | SetSize Id MapId Size
+  | SetTopicSize Id MapId Size
   | ItemEditEnd
 
 

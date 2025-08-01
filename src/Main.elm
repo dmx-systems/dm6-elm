@@ -364,7 +364,7 @@ addItemToMap itemId props mapId model =
 
 updateGeometry : Model -> Model
 updateGeometry model =
-  { model | maps = autoSize model.activeMap model.maps }
+  autoSize model
 
 
 switchDisplayMode : DisplayMode -> Model -> Model
@@ -377,7 +377,7 @@ switchDisplayMode displayMode model =
             newModel =
               { model | maps =
                 case displayMode of
-                  Monad _ -> model.maps -- TODO: Monad Detail
+                  Monad _ -> model.maps
                   Container BlackBox -> boxContainer containerId targetMapId model
                   Container WhiteBox -> boxContainer containerId targetMapId model
                   Container Unboxed -> unboxContainer containerId targetMapId model
@@ -398,8 +398,9 @@ updateEdit msg model =
     ItemEditStart -> startItemEdit model
     ItemEditInput text -> (updateItemText text model, Cmd.none)
     TextareaInput text -> updateTextareaText text model
-    SetSize topicId mapId size ->
+    SetTopicSize topicId mapId size ->
       ( { model | maps = setTopicSize topicId mapId size model.maps }
+        |> updateGeometry
       , Cmd.none
       )
     ItemEditEnd -> (endItemEdit model, Cmd.none)
@@ -412,6 +413,7 @@ startItemEdit model =
       Just (topicId, mapId) ->
         { model | editState = ItemEdit topicId mapId }
         |> setDetailDisplayIfMonade topicId mapId
+        |> updateGeometry
       Nothing -> model
   in
   (newModel, focus newModel)
@@ -458,7 +460,7 @@ measureText text topicId mapId model =
       (\result ->
         case result of
           Ok elem -> Edit
-            (SetSize topicId mapId
+            (SetTopicSize topicId mapId
               (Size elem.element.width elem.element.height)
             )
           Err err -> logError "measureText" (toString err) NoOp
@@ -469,6 +471,7 @@ measureText text topicId mapId model =
 endItemEdit : Model -> Model
 endItemEdit model =
   { model | editState = NoEdit }
+  |> updateGeometry
 
 
 focus : Model -> Cmd Msg

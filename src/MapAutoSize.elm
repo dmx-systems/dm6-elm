@@ -2,7 +2,6 @@ module MapAutoSize exposing (autoSize)
 
 import Model exposing (..)
 import Config exposing (..)
-import Utils exposing (..)
 
 import Dict
 
@@ -11,34 +10,36 @@ import Dict
 -- UPDATE
 
 
-autoSize : MapId -> Maps -> Maps
-autoSize mapId maps =
-  updateMapGeometry mapId 0 maps |> Tuple.second
+autoSize : Model -> Model
+autoSize model =
+  updateMapGeometry model.activeMap 0 model |> Tuple.second
 
 
 -- called indirect recursive
-updateMapGeometry : MapId -> Int -> Maps -> (Rectangle, Maps)
-updateMapGeometry mapId level maps =
+updateMapGeometry : MapId -> Int -> Model -> (Rectangle, Model)
+updateMapGeometry mapId level model =
   -- 1) calculate and store the map's "rect" and, based on its change,
   -- 2) calculate and store the map's "pos" adjustmennt ("delta")
   let
-    (rect, maps_) = calcMapRect mapId level maps
-    maps__ =
+    (rect, model_) = calcMapRect mapId level model
+    model__ =
       if level == 0 then
-        maps_
+        model_
       else
-        case getMap mapId maps_ of
+        case getMap mapId model_.maps of
           Just map ->
             let
               delta = Point
                 (rect.x1 - map.rect.x1)
                 (rect.y1 - map.rect.y1)
             in
-            updateMapRect mapId rect maps_
-            |> setTopicPosByDelta mapId map.parentMapId delta
-          Nothing -> maps_
+            { model_ | maps =
+              updateMapRect mapId rect model_.maps
+              |> setTopicPosByDelta mapId map.parentMapId delta
+            }
+          Nothing -> model_
   in
-  (rect, maps__)
+  (rect, model__)
 
 
 updateMapRect : MapId -> Rectangle -> Maps -> Maps
@@ -49,34 +50,34 @@ updateMapRect mapId rect maps =
     maps
 
 
-calcMapRect : MapId -> Int -> Maps -> (Rectangle, Maps)
-calcMapRect mapId level maps =
-  case getMap mapId maps of
+calcMapRect : MapId -> Int -> Model -> (Rectangle, Model)
+calcMapRect mapId level model =
+  case getMap mapId model.maps of
     Just map ->
       (map.items |> Dict.values |> List.filter isVisible |> List.foldr
-        (\viewItem (rect, maps_) ->
-          calcItemSize viewItem rect level maps_
+        (\viewItem (rect, model_) ->
+          calcItemSize viewItem mapId rect level model_
         )
-        (Rectangle 5000 5000 -5000 -5000, maps) -- x-min y-min x-max y-max
+        (Rectangle 5000 5000 -5000 -5000, model) -- x-min y-min x-max y-max
       )
-    Nothing -> (Rectangle 0 0 0 0, maps)
+    Nothing -> (Rectangle 0 0 0 0, model)
 
 
-calcItemSize : ViewItem -> Rectangle -> Int -> Maps -> (Rectangle, Maps)
-calcItemSize viewItem rect level maps =
+calcItemSize : ViewItem -> MapId -> Rectangle -> Int -> Model -> (Rectangle, Model)
+calcItemSize viewItem mapId rect level model =
   case viewItem.viewProps of
     ViewTopic {pos, size, displayMode} ->
       case displayMode of
-        Monad LabelOnly -> (topicExtent pos rect, maps)
-        Monad Detail -> (detailTopicExtent pos size rect, maps)
-        Container BlackBox -> (topicExtent pos rect, maps)
+        Monad LabelOnly -> (topicExtent pos rect, model)
+        Monad Detail -> (detailTopicExtent viewItem.id mapId pos size rect model, model)
+        Container BlackBox -> (topicExtent pos rect, model)
         Container WhiteBox ->
           let
-            (rect_, maps_) = updateMapGeometry viewItem.id (level + 1) maps
+            (rect_, model_) = updateMapGeometry viewItem.id (level + 1) model
           in
-          (mapExtent pos rect_ rect, maps_)
-        Container Unboxed -> (topicExtent pos rect, maps)
-    ViewAssoc _ -> (rect, maps)
+          (mapExtent pos rect_ rect, model_)
+        Container Unboxed -> (topicExtent pos rect, model)
+    ViewAssoc _ -> (rect, model)
 
 
 topicExtent : Point -> Rectangle -> Rectangle
@@ -88,12 +89,19 @@ topicExtent pos rectAcc =
     (max rectAcc.y2 (pos.y + topicH2 + whiteBoxPadding + 2 * topicBorderWidth))
 
 
-detailTopicExtent : Point -> Size -> Rectangle -> Rectangle
-detailTopicExtent pos size rectAcc =
+detailTopicExtent : Id -> MapId -> Point -> Size -> Rectangle -> Model -> Rectangle
+detailTopicExtent topicId mapId pos size rectAcc model =
+  let
+    textWidth =
+      if model.editState == ItemEdit topicId mapId then
+        topicDetailMaxWidth
+      else
+        size.w
+  in
   Rectangle
     (min rectAcc.x1 (pos.x - topicW2 - whiteBoxPadding))
     (min rectAcc.y1 (pos.y - topicH2 - whiteBoxPadding))
-    (max rectAcc.x2 (pos.x - topicW2 + size.w + topicSize.h + whiteBoxPadding + 2 * topicBorderWidth))
+    (max rectAcc.x2 (pos.x - topicW2 + textWidth + topicSize.h + whiteBoxPadding + 2 * topicBorderWidth))
     (max rectAcc.y2 (pos.y - topicH2 + size.h + whiteBoxPadding + 2 * topicBorderWidth))
 
 
