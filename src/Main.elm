@@ -320,7 +320,7 @@ moveTopicToMap topicId mapId origPos targetId targetMapId pos model =
             |> setTopicPos topicId mapId origPos
         }
         |> select targetId targetMapId
-        |> updateGeometry
+        |> autoSize
     Nothing -> model
 
 
@@ -362,11 +362,6 @@ addItemToMap itemId props mapId model =
   }
 
 
-updateGeometry : Model -> Model
-updateGeometry model =
-  autoSize model
-
-
 switchDisplayMode : DisplayMode -> Model -> Model
 switchDisplayMode displayMode model =
   let
@@ -387,7 +382,7 @@ switchDisplayMode displayMode model =
         Nothing -> model.maps
   in
   { model | maps = maps }
-  |> updateGeometry
+  |> autoSize
 
 
 -- Text Edit
@@ -400,7 +395,7 @@ updateEdit msg model =
     TextareaInput text -> updateTextareaText text model
     SetTopicSize topicId mapId size ->
       ( { model | maps = setTopicSize topicId mapId size model.maps }
-        |> updateGeometry
+        |> autoSize
       , Cmd.none
       )
     ItemEditEnd -> (endItemEdit model, Cmd.none)
@@ -413,7 +408,7 @@ startItemEdit model =
       Just (topicId, mapId) ->
         { model | editState = ItemEdit topicId mapId }
         |> setDetailDisplayIfMonade topicId mapId
-        |> updateGeometry
+        |> autoSize
       Nothing -> model
   in
   (newModel, focus newModel)
@@ -471,7 +466,7 @@ measureText text topicId mapId model =
 endItemEdit : Model -> Model
 endItemEdit model =
   { model | editState = NoEdit }
-  |> updateGeometry
+  |> autoSize
 
 
 focus : Model -> Cmd Msg
@@ -587,7 +582,7 @@ performDrag model pos =
       { model
         | maps = maps
         , dragState = Drag dragMode id mapId origPos pos target -- update lastPos
-      } |> updateGeometry
+      } |> autoSize
     _ -> logError "performDrag"
       ("Received \"Move\" message when dragState is " ++ toString model.dragState)
       model
