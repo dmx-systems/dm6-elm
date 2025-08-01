@@ -305,8 +305,8 @@ moveTopicToMap topicId mapId origPos targetId targetMapId pos model =
     newPos =
       case created of
         True -> Point
-          (topicSize.w / 2 + whiteBoxPadding)
-          (topicSize.h / 2 + whiteBoxPadding)
+          (topicW2 + whiteBoxPadding)
+          (topicH2 + whiteBoxPadding)
         False -> pos
     viewProps_ =
       getTopicProps topicId mapId newModel.maps
@@ -646,8 +646,8 @@ mouseUp model =
 point : Random.Generator Point
 point =
   let
-    cx = topicSize.w / 2 + whiteBoxPadding
-    cy = topicSize.h / 2 + whiteBoxPadding
+    cx = topicW2 + whiteBoxPadding
+    cy = topicH2 + whiteBoxPadding
     rw = whiteBoxRange.w
     rh = whiteBoxRange.h
   in
@@ -805,7 +805,7 @@ measureStyle =
   , style "font-size" <| fromInt mainFontSize ++ "px"
   , style "line-height" <| fromFloat topicLineHeight
   , style "padding" <| fromInt topicDetailPadding ++ "px"
-  , style "width" <| fromFloat topicDetailSize.w ++ "px"
+  , style "width" <| fromFloat topicDetailMaxWidth ++ "px"
   , style "min-width" <| fromFloat (topicSize.w - topicSize.h) ++ "px"
   , style "max-width" "max-content"
   , style "border-width" <| fromFloat topicBorderWidth ++ "px"

@@ -210,8 +210,8 @@ detailTopic topic props mapId model =
 detailTopicStyle : TopicProps -> List (Attribute Msg)
 detailTopicStyle {pos} =
   [ style "display" "flex"
-  , style "left" <| fromFloat (pos.x - topicSize.w / 2) ++ "px"
-  , style "top" <| fromFloat (pos.y - topicSize.h / 2) ++ "px"
+  , style "left" <| fromFloat (pos.x - topicW2) ++ "px"
+  , style "top" <| fromFloat (pos.y - topicH2) ++ "px"
   --, style "box-shadow" "red 5px 5px 5px" -- debugging
   ]
 
@@ -221,7 +221,7 @@ detailTextStyle topicId mapId model =
   let
     r = fromInt topicRadius ++ "px"
   in
-  [ style "width" <| fromFloat topicDetailSize.w ++ "px"
+  [ style "width" <| fromFloat topicDetailMaxWidth ++ "px"
   , style "line-height" <| fromFloat topicLineHeight
   , style "padding" <| fromInt topicDetailPadding ++ "px"
   , style "border-radius" <| "0 " ++ r ++ " " ++ r ++ " " ++ r
@@ -389,8 +389,8 @@ absMapPos mapId posAcc model =
               absMapPos
                 map.parentMapId
                 (Point
-                  (posAcc.x + mapPos_.x - topicSize.w / 2 - map.rect.x1)
-                  (posAcc.y + mapPos_.y + topicSize.h / 2 - map.rect.y1)
+                  (posAcc.x + mapPos_.x - topicW2 - map.rect.x1)
+                  (posAcc.y + mapPos_.y + topicH2 - map.rect.y1)
                 )
                 model
             )
@@ -444,8 +444,8 @@ topicFlexboxStyle topic props mapId model =
 
 topicPosStyle : TopicProps -> List (Attribute Msg)
 topicPosStyle { pos } =
-  [ style "left" <| fromFloat (pos.x - topicSize.w / 2) ++ "px"
-  , style "top" <| fromFloat (pos.y - topicSize.h / 2) ++ "px"
+  [ style "left" <| fromFloat (pos.x - topicW2) ++ "px"
+  , style "top" <| fromFloat (pos.y - topicH2) ++ "px"
   ]
 
 

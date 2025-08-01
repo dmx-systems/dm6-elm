@@ -2,6 +2,7 @@ module MapAutoSize exposing (autoSize)
 
 import Model exposing (..)
 import Config exposing (..)
+import Utils exposing (..)
 
 import Dict
 
@@ -34,7 +35,7 @@ updateMapGeometry mapId level maps =
                 (rect.y1 - map.rect.y1)
             in
             updateMapRect mapId rect maps_
-              |> setTopicPosByDelta mapId map.parentMapId delta
+            |> setTopicPosByDelta mapId map.parentMapId delta
           Nothing -> maps_
   in
   (rect, maps__)
@@ -64,9 +65,10 @@ calcMapRect mapId level maps =
 calcItemSize : ViewItem -> Rectangle -> Int -> Maps -> (Rectangle, Maps)
 calcItemSize viewItem rect level maps =
   case viewItem.viewProps of
-    ViewTopic {pos, displayMode} ->
+    ViewTopic {pos, size, displayMode} ->
       case displayMode of
-        Monad _ -> (topicExtent pos rect, maps) -- TODO: Monad Detail
+        Monad LabelOnly -> (topicExtent pos rect, maps)
+        Monad Detail -> (detailTopicExtent pos size rect, maps)
         Container BlackBox -> (topicExtent pos rect, maps)
         Container WhiteBox ->
           let
@@ -79,27 +81,30 @@ calcItemSize viewItem rect level maps =
 
 topicExtent : Point -> Rectangle -> Rectangle
 topicExtent pos rectAcc =
-  let
-    tw2 = topicSize.w / 2
-    th2 = topicSize.h / 2
-  in
   Rectangle
-    (min rectAcc.x1 (pos.x - tw2 - whiteBoxPadding))
-    (min rectAcc.y1 (pos.y - th2 - whiteBoxPadding))
-    (max rectAcc.x2 (pos.x + tw2 + whiteBoxPadding + 2 * topicBorderWidth))
-    (max rectAcc.y2 (pos.y + th2 + whiteBoxPadding + 2 * topicBorderWidth))
+    (min rectAcc.x1 (pos.x - topicW2 - whiteBoxPadding))
+    (min rectAcc.y1 (pos.y - topicH2 - whiteBoxPadding))
+    (max rectAcc.x2 (pos.x + topicW2 + whiteBoxPadding + 2 * topicBorderWidth))
+    (max rectAcc.y2 (pos.y + topicH2 + whiteBoxPadding + 2 * topicBorderWidth))
+
+
+detailTopicExtent : Point -> Size -> Rectangle -> Rectangle
+detailTopicExtent pos size rectAcc =
+  Rectangle
+    (min rectAcc.x1 (pos.x - topicW2 - whiteBoxPadding))
+    (min rectAcc.y1 (pos.y - topicH2 - whiteBoxPadding))
+    (max rectAcc.x2 (pos.x - topicW2 + size.w + topicSize.h + whiteBoxPadding + 2 * topicBorderWidth))
+    (max rectAcc.y2 (pos.y - topicH2 + size.h + whiteBoxPadding + 2 * topicBorderWidth))
 
 
 mapExtent : Point -> Rectangle -> Rectangle -> Rectangle
 mapExtent pos rect rectAcc =
   let
-    tw2 = topicSize.w / 2
-    th2 = topicSize.h / 2
     mw = rect.x2 - rect.x1
     mh = rect.y2 - rect.y1
   in
   Rectangle
-    (min rectAcc.x1 (pos.x - tw2 - whiteBoxPadding))
-    (min rectAcc.y1 (pos.y - th2 - whiteBoxPadding))
-    (max rectAcc.x2 (pos.x - tw2 + mw + whiteBoxPadding))
-    (max rectAcc.y2 (pos.y + th2 + mh + whiteBoxPadding))
+    (min rectAcc.x1 (pos.x - topicW2 - whiteBoxPadding))
+    (min rectAcc.y1 (pos.y - topicH2 - whiteBoxPadding))
+    (max rectAcc.x2 (pos.x - topicW2 + mw + whiteBoxPadding))
+    (max rectAcc.y2 (pos.y + topicH2 + mh + whiteBoxPadding))
