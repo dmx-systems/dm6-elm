@@ -8,16 +8,15 @@ import MapRenderer exposing (viewMap)
 import Model exposing (..)
 import Utils exposing (..)
 
-import AutoExpand
 import Browser
 import Browser.Dom as Dom
 import Browser.Events as Events
 import Dict
-import Html exposing (Html, Attribute, div, text, button, input, label, h1)
-import Html.Attributes exposing (style, type_, name, checked, disabled)
+import Html exposing (Html, Attribute, div, text, br, button, input, label, h1)
+import Html.Attributes exposing (id, style, type_, name, checked, disabled)
 import Html.Events exposing (onClick, on)
 import Random
-import String exposing (fromInt)
+import String exposing (fromInt, fromFloat)
 import Task
 import Time exposing (posixToMillis)
 import Json.Decode as D
@@ -47,6 +46,7 @@ init flags =
     , editState = NoEdit
     , dragState = NoDrag
     , iconMenuState = False
+    , measureText = ""
     , nextId = 1
     }
   , Cmd.none
@@ -77,6 +77,13 @@ view model =
           else
             []
       )
+    , div
+      ( [ id "measure" ]
+        ++ measureStyle
+      )
+      [ text model.measureText
+      , br [] []
+      ]
     ]
 
 
@@ -109,7 +116,7 @@ viewToolbar model =
           ]
           ++ buttonStyle
         )
-        [ text "Edit Text" ]
+        [ text "Edit" ]
     , button
         ( [ onClick Delete
           , stopPropagationOnMousedown NoOp
@@ -214,7 +221,7 @@ update msg model =
         _ -> info "update" msg
   in
   case msg of
-    AddTopic -> (createTopicAndAddToMap model, Cmd.none)
+    AddTopic -> (createTopicAndAddToMap model.activeMap model, Cmd.none)
     MoveTopicToMap topicId mapId origPos targetId targetMapId pos
       -> (moveTopicToMap topicId mapId origPos targetId targetMapId pos model, Cmd.none)
     Set displayMode -> (switchDisplayMode displayMode model, Cmd.none)
@@ -229,8 +236,7 @@ createTopic : Model -> (Model, Id)
 createTopic model =
   let
     id = model.nextId
-    text = "New Topic"
-    topic = TopicInfo id text Nothing
+    topic = TopicInfo id topicDefaultText Nothing
   in
   ( { model
     | items = model.items
@@ -241,18 +247,18 @@ createTopic model =
   )
 
 
-createTopicAndAddToMap : Model -> Model
-createTopicAndAddToMap model =
+createTopicAndAddToMap : MapId -> Model -> Model
+createTopicAndAddToMap mapId model =
   let
     (newModel, topicId) = createTopic model
     props = ViewTopic <| TopicProps
       (Point 189 97)
+      topicDetailSize
       (Monad LabelOnly)
-      (AutoExpand.initState autoExpandConfig)
   in
   newModel
-  |> addItemToMap topicId props model.activeMap
-  |> select topicId model.activeMap
+  |> addItemToMap topicId props mapId
+  |> select topicId mapId
 
 
 -- Presumption: both players exist in same map
@@ -391,7 +397,11 @@ updateEdit msg model =
   case msg of
     ItemEditStart -> startItemEdit model
     ItemEditInput text -> (updateItemText text model, Cmd.none)
-    AutoExpandInput {textValue, state} -> (updateAutoExpand textValue state model, Cmd.none)
+    TextareaInput text -> updateTextareaText text model
+    SetSize topicId mapId size ->
+      ( { model | maps = setTopicSize topicId mapId size model.maps }
+      , Cmd.none
+      )
     ItemEditEnd -> (endItemEdit model, Cmd.none)
 
 
@@ -422,23 +432,38 @@ setDetailDisplayIfMonade topicId mapId model =
 updateItemText : String -> Model -> Model
 updateItemText text model =
   case model.editState of
-    ItemEdit id _ -> updateTopicInfo id
-      (\topic -> { topic | text = text })
-      model
+    ItemEdit topicId _ ->
+      updateTopicInfo topicId
+        (\topic -> { topic | text = text })
+        model
     NoEdit -> logError "updateItemText" "called when editState is NoEdit" model
 
 
-updateAutoExpand : String -> AutoExpand.State -> Model -> Model
-updateAutoExpand text state model =
+updateTextareaText : String -> Model -> (Model, Cmd Msg)
+updateTextareaText text model =
   case model.editState of
     ItemEdit topicId mapId ->
-      { model
-      | maps = updateTopicProps topicId mapId model.maps
-        (\props -> { props | autoExpandState = state })
-      }
-      |> updateTopicInfo topicId
+      updateTopicInfo topicId
         (\topic -> { topic | text = text })
-    NoEdit -> logError "updateAutoExpand" "called when editState is NoEdit" model
+        model
+      |> measureText text topicId mapId
+    NoEdit -> logError "updateTextareaText" "called when editState is NoEdit" (model, Cmd.none)
+
+
+measureText : String -> Id -> MapId -> Model -> (Model, Cmd Msg)
+measureText text topicId mapId model =
+  ( { model | measureText = text }
+  , Dom.getElement "measure"
+    |> Task.attempt
+      (\result ->
+        case result of
+          Ok elem -> Edit
+            (SetSize topicId mapId
+              (Size elem.element.width elem.element.height)
+            )
+          Err err -> logError "measureText" (toString err) NoOp
+      )
+  )
 
 
 endItemEdit : Model -> Model
@@ -513,7 +538,7 @@ timeArrived time model =
         case class of
           "dmx-topic" ->
             let
-              delay = posixToMillis time - posixToMillis startTime > dragThresholdMillis
+              delay = posixToMillis time - posixToMillis startTime > assocDelayMillis
               dragMode = if delay then DrawAssoc else DragTopic
               origPos_ = getTopicPos id mapId model.maps
             in
@@ -728,7 +753,7 @@ mouseDecoder msg =
 
 appStyle : List (Attribute Msg)
 appStyle =
-  [ style "font-family" "sans-serif"
+  [ style "font-family" mainFont
   , style "font-size" <| fromInt mainFontSize ++ "px"
   , style "user-select" "none"
   , style "-webkit-user-select" "none" -- Safari still needs vendor prefix
@@ -766,6 +791,24 @@ displayModeStyle disabled =
 
 buttonStyle : List (Attribute Msg)
 buttonStyle =
-  [ style "font-family" "sans-serif"
+  [ style "font-family" mainFont
   , style "font-size" <| fromInt mainFontSize ++ "px"
+  ]
+
+
+measureStyle : List (Attribute Msg)
+measureStyle =
+  [ style "position" "fixed"
+  , style "visibility" "hidden"
+  , style "white-space" "pre-wrap"
+  , style "font-family" mainFont
+  , style "font-size" <| fromInt mainFontSize ++ "px"
+  , style "line-height" <| fromFloat topicLineHeight
+  , style "padding" <| fromInt topicDetailPadding ++ "px"
+  , style "width" <| fromFloat topicDetailSize.w ++ "px"
+  , style "min-width" <| fromFloat (topicSize.w - topicSize.h) ++ "px"
+  , style "max-width" "max-content"
+  , style "border-width" <| fromFloat topicBorderWidth ++ "px"
+  , style "border-style" "solid"
+  , style "box-sizing" "border-box"
   ]

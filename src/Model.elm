@@ -2,7 +2,6 @@ module Model exposing (..)
 
 import Utils exposing (..)
 
-import AutoExpand
 import Dict exposing (Dict)
 import String exposing (fromInt)
 import Time
@@ -17,6 +16,7 @@ type alias Model =
   , editState : EditState -- transient
   , dragState : DragState -- transient
   , iconMenuState : Bool -- transient
+  , measureText : String -- transient
   , nextId : Id
   }
 
@@ -73,8 +73,8 @@ type ViewProps
 
 type alias TopicProps =
   { pos : Point
+  , size : Size
   , displayMode : DisplayMode
-  , autoExpandState : AutoExpand.State -- transient? TODO: move to TopicInfo?
   }
 
 
@@ -162,7 +162,8 @@ type Msg
 type EditMsg
   = ItemEditStart
   | ItemEditInput String
-  | AutoExpandInput { textValue : String, state : AutoExpand.State }
+  | TextareaInput String
+  | SetSize Id MapId Size
   | ItemEditEnd
 
 
@@ -266,6 +267,19 @@ setTopicPosByDelta topicId mapId delta maps =
     )
 
 
+getTopicSize : Id -> MapId -> Maps -> Maybe Size
+getTopicSize topicId mapId maps =
+  case getTopicProps topicId mapId maps of
+    Just { size } -> Just size
+    Nothing -> fail "getTopicSize" {topicId = topicId, mapId = mapId} Nothing
+
+
+setTopicSize : Id -> MapId -> Size -> Maps -> Maps
+setTopicSize topicId mapId size maps =
+  updateTopicProps topicId mapId maps
+    (\props -> { props | size = size })
+
+
 getDisplayMode : Id -> MapId -> Maps -> Maybe DisplayMode
 getDisplayMode topicId mapId maps =
   case getTopicProps topicId mapId maps of
@@ -293,23 +307,20 @@ updateTopicProps : Id -> MapId -> Maps -> (TopicProps -> TopicProps) -> Maps
 updateTopicProps topicId mapId maps propsFunc =
   updateMaps
     mapId
-    (updateTopicProps_ topicId propsFunc)
-    maps
-
-
-updateTopicProps_ : Id -> (TopicProps -> TopicProps) -> Map -> Map
-updateTopicProps_ topicId propsFunc map =
-  { map | items = map.items |> Dict.update topicId
-    (\viewItem_ ->
-      case viewItem_ of
-        Just viewItem ->
-          case viewItem.viewProps of
-            ViewTopic props -> Just
-              { viewItem | viewProps = ViewTopic (propsFunc props) }
-            ViewAssoc _ -> topicMismatch "updateTopicProps" topicId Nothing
-        Nothing -> illegalItemId "updateTopicProps" topicId Nothing
+    (\map ->
+      { map | items = map.items |> Dict.update topicId
+        (\viewItem_ ->
+          case viewItem_ of
+            Just viewItem ->
+              case viewItem.viewProps of
+                ViewTopic props -> Just
+                  { viewItem | viewProps = ViewTopic (propsFunc props) }
+                ViewAssoc _ -> topicMismatch "updateTopicProps" topicId Nothing
+            Nothing -> illegalItemId "updateTopicProps" topicId Nothing
+        )
+      }
     )
-  }
+    maps
 
 
 getViewItemById : Id -> MapId -> Maps -> Maybe ViewItem

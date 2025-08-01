@@ -5,7 +5,6 @@ import IconMenu exposing (viewTopicIcon)
 import Model exposing (..)
 import Utils exposing (..)
 
-import AutoExpand
 import Dict
 import Html exposing (Html, Attribute, div, text, input, textarea)
 import Html.Attributes exposing (id, style, attribute, value)
@@ -156,9 +155,14 @@ genericTopicHtml topic props mapId model =
           )
           []
       else
+        let
+          label = case topic.text |> String.lines |> List.head of
+            Just line -> line
+            Nothing -> ""
+        in
         div
           topicLabelStyle
-          [ text topic.text ]
+          [ text label ]
   in
   [ div
       (topicIconBoxStyle props)
@@ -175,18 +179,18 @@ detailTopic topic props mapId model =
       if isEdit then
         textarea
           ( [ id <| "dmx-input-" ++ fromInt topic.id ++ "-" ++ fromInt mapId
+            , onInput (Edit << TextareaInput)
             , onBlur (Edit ItemEditEnd)
             , onEsc (Edit ItemEditEnd)
             , stopPropagationOnMousedown NoOp
             ]
-            ++ AutoExpand.attributes autoExpandConfig props.autoExpandState topic.text
-            ++ detailTextStyle topic mapId model
-            ++ detailTextEditStyle
+            ++ detailTextStyle topic.id mapId model
+            ++ detailTextEditStyle topic.id mapId model
           )
-          []
+          [ text topic.text ]
       else
         div
-          ( detailTextStyle topic mapId model
+          ( detailTextStyle topic.id mapId model
             ++ detailTextViewStyle
           )
           ( multilineHtml topic.text )
@@ -212,33 +216,40 @@ detailTopicStyle {pos} =
   ]
 
 
-detailTextStyle : TopicInfo -> MapId -> Model -> List (Attribute Msg)
-detailTextStyle topic mapId model =
+detailTextStyle : Id -> MapId -> Model -> List (Attribute Msg)
+detailTextStyle topicId mapId model =
   let
     r = fromInt topicRadius ++ "px"
   in
-  [ style "border-radius" <| "0 " ++ r ++ " " ++ r ++ " " ++ r ]
-  ++ topicBorderStyle topic.id mapId model
-  ++ selectionStyle topic.id mapId model
+  [ style "width" <| fromFloat topicDetailSize.w ++ "px"
+  , style "line-height" <| fromFloat topicLineHeight
+  , style "padding" <| fromInt topicDetailPadding ++ "px"
+  , style "border-radius" <| "0 " ++ r ++ " " ++ r ++ " " ++ r
+  ]
+  ++ topicBorderStyle topicId mapId model
+  ++ selectionStyle topicId mapId model
 
 
 detailTextViewStyle : List (Attribute Msg)
 detailTextViewStyle =
-  [ style "width" <| fromFloat topicDetailWidth ++ "px"
-  , style "min-width" <| fromFloat (topicSize.w - topicSize.h) ++ "px"
+  [ style "min-width" <| fromFloat (topicSize.w - topicSize.h) ++ "px"
   , style "max-width" "max-content"
-  , style "line-height" <| fromFloat lineHeight
-  , style "padding" <| fromInt textPadding ++ "px"
+  , style "white-space" "pre-wrap"
   , style "pointer-events" "none"
   ]
 
 
-detailTextEditStyle : List (Attribute Msg)
-detailTextEditStyle =
+detailTextEditStyle : Id -> MapId -> Model -> List (Attribute Msg)
+detailTextEditStyle topicId mapId model =
+  let
+    height = case getTopicSize topicId mapId model.maps of
+      Just size -> size.h
+      Nothing -> 0
+  in
   [ style "position" "relative"
   , style "top" <| fromFloat -topicBorderWidth ++ "px"
-  , style "width" <| fromFloat topicDetailWidth ++ "px"
-  , style "font-family" "sans-serif"                  -- <textarea> default is "monospace"
+  , style "height" <| fromFloat height ++ "px"
+  , style "font-family" mainFont                      -- <textarea> default is "monospace"
   , style "font-size" <| fromInt mainFontSize ++ "px" -- <textarea> default is "13px"
   , style "border-color" "black"                      -- <textarea> default is some lightgray
   , style "resize" "none"
@@ -469,7 +480,7 @@ topicInputStyle =
   [ style "width" "100%"
   , style "position" "relative"
   , style "left" "-4px"
-  , style "font-family" "sans-serif" -- Default for <input> is "-apple-system" (on Mac)
+  , style "font-family" mainFont -- Default for <input> is "-apple-system" (on Mac)
   , style "font-size" <| fromInt mainFontSize ++ "px"
   , style "pointer-events" "initial"
   ]
