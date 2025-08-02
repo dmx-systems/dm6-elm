@@ -114,7 +114,7 @@ viewTopic topic props mapId model =
     (style, children) = topicFunc topic props mapId model
     topicFunc =
       case props.displayMode of
-        Monad LabelOnly -> genericTopic
+        Monad LabelOnly -> labelTopic
         Monad Detail -> detailTopic
         Container BlackBox -> blackBoxTopic
         Container WhiteBox -> whiteBoxTopic
@@ -128,17 +128,17 @@ viewTopic topic props mapId model =
     children
 
 
-genericTopic : TopicInfo -> TopicProps -> MapId -> Model -> TopicRendering
-genericTopic topic props mapId model =
+labelTopic : TopicInfo -> TopicProps -> MapId -> Model -> TopicRendering
+labelTopic topic props mapId model =
   ( topicPosStyle props
       ++ topicFlexboxStyle topic props mapId model
       ++ selectionStyle topic.id mapId model
-  , genericTopicHtml topic props mapId model
+  , labelTopicHtml topic props mapId model
   )
 
 
-genericTopicHtml : TopicInfo -> TopicProps -> MapId -> Model -> List (Html Msg)
-genericTopicHtml topic props mapId model =
+labelTopicHtml : TopicInfo -> TopicProps -> MapId -> Model -> List (Html Msg)
+labelTopicHtml topic props mapId model =
   let
     isEdit = model.editState == ItemEdit topic.id mapId
     textElem =
@@ -198,7 +198,6 @@ detailTopic topic props mapId model =
   ( detailTopicStyle props
   , [ div
       ( topicIconBoxStyle props
-        ++ detailBorderStyle topic.id mapId model
         ++ selectionStyle topic.id mapId model
       )
       [ viewTopicIcon topic.id model ]
@@ -212,7 +211,6 @@ detailTopicStyle {pos} =
   [ style "display" "flex"
   , style "left" <| fromFloat (pos.x - topicW2) ++ "px"
   , style "top" <| fromFloat (pos.y - topicH2) ++ "px"
-  --, style "box-shadow" "red 5px 5px 5px" -- debugging
   ]
 
 
@@ -221,7 +219,8 @@ detailTextStyle topicId mapId model =
   let
     r = fromInt topicRadius ++ "px"
   in
-  [ style "width" <| fromFloat topicDetailMaxWidth ++ "px"
+  [ style "font-size" <| fromInt contentFontSize ++ "px"
+  , style "width" <| fromFloat topicDetailMaxWidth ++ "px"
   , style "line-height" <| fromFloat topicLineHeight
   , style "padding" <| fromInt topicDetailPadding ++ "px"
   , style "border-radius" <| "0 " ++ r ++ " " ++ r ++ " " ++ r
@@ -249,9 +248,8 @@ detailTextEditStyle topicId mapId model =
   [ style "position" "relative"
   , style "top" <| fromFloat -topicBorderWidth ++ "px"
   , style "height" <| fromFloat height ++ "px"
-  , style "font-family" mainFont                      -- <textarea> default is "monospace"
-  , style "font-size" <| fromInt mainFontSize ++ "px" -- <textarea> default is "13px"
-  , style "border-color" "black"                      -- <textarea> default is some lightgray
+  , style "font-family" mainFont -- <textarea> default is "monospace"
+  , style "border-color" "black" -- <textarea> default is some lightgray
   , style "resize" "none"
   ]
 
@@ -261,7 +259,7 @@ blackBoxTopic topic props mapId model =
   ( topicPosStyle props
   , [ div
       (topicFlexboxStyle topic props mapId model ++ blackBoxStyle)
-      (genericTopicHtml topic props mapId model ++ viewItemCount topic.id props model)
+      (labelTopicHtml topic props mapId model ++ viewItemCount topic.id props model)
     , div
       (ghostTopicStyle topic mapId model)
       []
@@ -272,7 +270,7 @@ blackBoxTopic topic props mapId model =
 whiteBoxTopic : TopicInfo -> TopicProps -> MapId -> Model -> TopicRendering
 whiteBoxTopic topic props mapId model =
   let
-    (style, children) = genericTopic topic props mapId model
+    (style, children) = labelTopic topic props mapId model
   in
   ( style
   , children
@@ -284,7 +282,7 @@ whiteBoxTopic topic props mapId model =
 unboxedTopic : TopicInfo -> TopicProps -> MapId -> Model -> TopicRendering
 unboxedTopic topic props mapId model =
   let
-    (style, children) = genericTopic topic props mapId model
+    (style, children) = labelTopic topic props mapId model
   in
   ( style
   , children
@@ -468,7 +466,9 @@ topicIconBoxStyle props =
 
 topicLabelStyle : List (Attribute Msg)
 topicLabelStyle =
-  [ style "overflow" "hidden"
+  [ style "font-size" <| fromInt contentFontSize ++ "px"
+  , style "font-weight" topicLabelWeight
+  , style "overflow" "hidden"
   , style "text-overflow" "ellipsis"
   , style "white-space" "nowrap"
   , style "pointer-events" "none"
@@ -477,11 +477,12 @@ topicLabelStyle =
 
 topicInputStyle : List (Attribute Msg)
 topicInputStyle =
-  [ style "width" "100%"
+  [ style "font-family" mainFont -- Default for <input> is "-apple-system" (on Mac)
+  , style "font-size" <| fromInt contentFontSize ++ "px"
+  , style "font-weight" topicLabelWeight
+  , style "width" "100%"
   , style "position" "relative"
   , style "left" "-4px"
-  , style "font-family" mainFont -- Default for <input> is "-apple-system" (on Mac)
-  , style "font-size" <| fromInt mainFontSize ++ "px"
   , style "pointer-events" "initial"
   ]
 
@@ -545,22 +546,6 @@ topicBorderStyle id mapId model =
   , style "border-style" <| if targeted then "dashed" else "solid"
   , style "box-sizing" "border-box"
   , style "background-color" "white"
-  ]
-
-
-detailBorderStyle : Id -> MapId -> Model -> List (Attribute Msg)
-detailBorderStyle id mapId model =
-  let
-    targeted = case model.dragState of
-      -- can't move a topic to a map where it is already
-      -- can't create assoc when both topics are in different map
-      Drag DragTopic _ mapId_ _ _ (Just target) -> target == (id, mapId) && mapId_ /= id
-      Drag DrawAssoc _ mapId_ _ _ (Just target) -> target == (id, mapId) && mapId_ == mapId
-      _ -> False
-  in
-  [ style "border-width" <| fromFloat topicBorderWidth ++ "px"
-  , style "border-style" <| if targeted then "dashed" else "solid"
-  , style "box-sizing" "border-box"
   ]
 
 

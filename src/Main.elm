@@ -89,47 +89,38 @@ view model =
 
 viewToolbar : Model -> Html Msg
 viewToolbar model =
-  let
-    hasNoSelection = List.isEmpty model.selection
-  in
   div
     toolbarStyle
-    [ button
-        ( [ onClick AddTopic ]
-          ++ buttonStyle
-        )
-        [ text "Add Topic" ]
-    , viewMonadMode model
-    , viewContainerMode model
-    , button
-        ( [ onClick (IconMenu Open)
-          , stopPropagationOnMousedown NoOp
-          , disabled hasNoSelection
-          ]
-          ++ buttonStyle
-        )
-        [ text "Choose Icon" ]
-    , button
-        ( [ onClick (Edit ItemEditStart)
-          , stopPropagationOnMousedown NoOp
-          , disabled hasNoSelection
-          ]
-          ++ buttonStyle
-        )
-        [ text "Edit" ]
-    , button
-        ( [ onClick Delete
-          , stopPropagationOnMousedown NoOp
-          , disabled hasNoSelection
-          ]
-          ++ buttonStyle
-        )
-        [ text "Delete" ]
+    [ viewToolbarButton "Add Topic" AddTopic False model
+    , viewToolbarButton "Choose Icon" (IconMenu Open) True model
+    , viewToolbarButton "Edit" (Edit ItemEditStart) True model
+    , viewMonadDisplay model
+    , viewContainerDisplay model
+    , viewToolbarButton "Delete" Delete True model
     ]
 
 
-viewMonadMode : Model -> Html Msg
-viewMonadMode model =
+viewToolbarButton : String -> Msg -> Bool -> Model -> Html Msg
+viewToolbarButton label msg requireSelection model =
+  let
+    hasNoSelection = List.isEmpty model.selection
+    buttonAttr = case requireSelection of
+      True ->
+        [ stopPropagationOnMousedown NoOp
+        , disabled hasNoSelection
+        ]
+      False -> []
+  in
+  button
+    ( [ onClick msg ]
+      ++ buttonAttr
+      ++ buttonStyle
+    )
+    [ text label ]
+
+
+viewMonadDisplay : Model -> Html Msg
+viewMonadDisplay model =
   let
     displayMode = case getSingleSelection model of
       Just (topicId, mapId) -> getDisplayMode topicId mapId model.maps
@@ -145,25 +136,13 @@ viewMonadMode model =
     [ div
         []
         [ text "Monad Display" ]
-    , label
-        [ onClick (Set <| Monad LabelOnly), stopPropagationOnMousedown NoOp ]
-        [ input
-            [ type_ "radio", name "display-mode", checked checked1, disabled disabled_ ]
-            []
-        , text "Label Only"
-        ]
-    , label
-        [ onClick (Set <| Monad Detail), stopPropagationOnMousedown NoOp ]
-        [ input
-            [ type_ "radio", name "display-mode", checked checked2, disabled disabled_ ]
-            []
-        , text "Detail"
-        ]
+    , viewRadioButton "Label Only" (Set <| Monad LabelOnly) checked1 disabled_
+    , viewRadioButton "Detail" (Set <| Monad Detail) checked2 disabled_
     ]
 
 
-viewContainerMode : Model -> Html Msg
-viewContainerMode model =
+viewContainerDisplay : Model -> Html Msg
+viewContainerDisplay model =
   let
     displayMode = case getSingleSelection model of
       Just (topicId, mapId) -> getDisplayMode topicId mapId model.maps
@@ -184,27 +163,22 @@ viewContainerMode model =
     [ div
         []
         [ text "Container Display" ]
-    , label
-        [ onClick (Set <| Container BlackBox), stopPropagationOnMousedown NoOp ]
-        [ input
-            [ type_ "radio", name "display-mode", checked checked1, disabled disabled_ ]
-            []
-        , text "Black Box"
-        ]
-    , label
-        [ onClick (Set <| Container WhiteBox), stopPropagationOnMousedown NoOp ]
-        [ input
-            [ type_ "radio", name "display-mode", checked checked2, disabled disabled_ ]
-            []
-        , text "White Box"
-        ]
-    , label
-        [ onClick (Set <| Container Unboxed), stopPropagationOnMousedown NoOp ]
-        [ input
-            [ type_ "radio", name "display-mode", checked checked3, disabled disabled_ ]
-            []
-        , text "Unboxed"
-        ]
+    , viewRadioButton "Black Box" (Set <| Container BlackBox) checked1 disabled_
+    , viewRadioButton "White Box" (Set <| Container WhiteBox) checked2 disabled_
+    , viewRadioButton "Unboxed" (Set <| Container Unboxed) checked3 disabled_
+    ]
+
+
+viewRadioButton : String -> Msg -> Bool -> Bool -> Html Msg
+viewRadioButton label_ msg isChecked isDisabled =
+  label
+    [ onClick msg
+    , stopPropagationOnMousedown NoOp
+    ]
+    [ input
+      [ type_ "radio", name "display-mode", checked isChecked, disabled isDisabled ]
+      []
+    , text label_
     ]
 
 
@@ -752,7 +726,6 @@ mouseDecoder msg =
 appStyle : List (Attribute Msg)
 appStyle =
   [ style "font-family" mainFont
-  , style "font-size" <| fromInt mainFontSize ++ "px"
   , style "user-select" "none"
   , style "-webkit-user-select" "none" -- Safari still needs vendor prefix
   ]
@@ -760,7 +733,8 @@ appStyle =
 
 toolbarStyle : List (Attribute Msg)
 toolbarStyle =
-  [ style "display" "inline-flex"
+  [ style "font-size" <| fromInt toolbarFontSize ++ "px"
+  , style "display" "inline-flex"
   , style "flex-direction" "column"
   , style "align-items" "flex-start"
   , style "gap" "28px"
@@ -790,7 +764,7 @@ displayModeStyle disabled =
 buttonStyle : List (Attribute Msg)
 buttonStyle =
   [ style "font-family" mainFont
-  , style "font-size" <| fromInt mainFontSize ++ "px"
+  , style "font-size" <| fromInt toolbarFontSize ++ "px"
   ]
 
 
@@ -800,7 +774,7 @@ measureStyle =
   , style "visibility" "hidden"
   , style "white-space" "pre-wrap"
   , style "font-family" mainFont
-  , style "font-size" <| fromInt mainFontSize ++ "px"
+  , style "font-size" <| fromInt contentFontSize ++ "px"
   , style "line-height" <| fromFloat topicLineHeight
   , style "padding" <| fromInt topicDetailPadding ++ "px"
   , style "width" <| fromFloat topicDetailMaxWidth ++ "px"
