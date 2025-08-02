@@ -165,8 +165,8 @@ labelTopicHtml topic props mapId model =
           [ text label ]
   in
   [ div
-      (topicIconBoxStyle props)
-      [ viewTopicIcon topic.id model ]
+    (topicIconBoxStyle props)
+    [ viewTopicIcon topic.id model ]
   , textElem
   ]
 
@@ -198,6 +198,7 @@ detailTopic topic props mapId model =
   ( detailTopicStyle props
   , [ div
       ( topicIconBoxStyle props
+        ++ detailTopicIconBoxStyle
         ++ selectionStyle topic.id mapId model
       )
       [ viewTopicIcon topic.id model ]
@@ -461,6 +462,14 @@ topicIconBoxStyle props =
   , style "border-radius" <| r1 ++ " 0 0 " ++ r4
   , style "background-color" "black"
   , style "pointer-events" "none"
+  ]
+
+
+detailTopicIconBoxStyle : List (Attribute Msg)
+detailTopicIconBoxStyle =
+  -- icon box correction as detail topic has no border, in contrast to label topic
+  [ style "padding-left" <| fromFloat topicBorderWidth ++ "px"
+  , style "width" <| fromFloat (topicSize.h - topicBorderWidth) ++ "px"
   ]
 
 
