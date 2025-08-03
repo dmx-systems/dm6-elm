@@ -27,6 +27,7 @@ import Debug exposing (toString)
 -- MAIN
 
 
+main : Program () Model Msg
 main =
   Browser.document
     { init = init

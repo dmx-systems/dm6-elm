@@ -401,7 +401,7 @@ absMapPos mapId posAcc model =
 
 
 topicStyle : TopicInfo -> MapId -> Model -> List (Attribute Msg)
-topicStyle ({ id } as topic) mapId model =
+topicStyle ({id}) mapId model =
   let
     dragging = case model.dragState of
       Drag DragTopic id_ _ _ _ _ -> id_ == id
