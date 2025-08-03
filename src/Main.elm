@@ -1,4 +1,4 @@
-module Main exposing (..)
+port module Main exposing (..)
 
 import Boxing exposing (boxContainer, unboxContainer)
 import Config exposing (..)
@@ -20,14 +20,22 @@ import String exposing (fromInt, fromFloat)
 import Task
 import Time exposing (posixToMillis)
 import Json.Decode as D
-import Debug exposing (toString)
+import Json.Encode as E
+import Debug exposing (log, toString)
+
+
+
+-- PORTS
+
+
+port store : E.Value -> Cmd msg
 
 
 
 -- MAIN
 
 
-main : Program () Model Msg
+main : Program E.Value Model Msg
 main =
   Browser.document
     { init = init
@@ -37,19 +45,16 @@ main =
     }
 
 
-init : () -> ( Model, Cmd Msg )
+init : E.Value -> ( Model, Cmd Msg )
 init flags =
-  ( { items = Dict.empty
-    , maps = Dict.singleton 0
-      <| Map 0 Dict.empty (Rectangle 0 0 0 0) -1 -- parentMapId = -1
-    , activeMap = 0
-    , selection = []
-    , editState = NoEdit
-    , dragState = NoDrag
-    , iconMenuState = False
-    , measureText = ""
-    , nextId = 1
-    }
+  ( case D.decodeValue decoder flags of
+    Ok model ->
+      log "Reading localStorage" model
+    Err e ->
+      let
+        _ = logError "init" "Could not read localStorage" e
+      in
+      defaultModel
   , Cmd.none
   )
 

@@ -7,18 +7,14 @@
 </head>
 <body>
 <script>
-// const storedData = localStorage.getItem('dm6-elm')
-// const model = storedData ? JSON.parse(storedData) : null
-
+const storedData = localStorage.getItem('dm6-elm')
+const model = storedData ? JSON.parse(storedData) : null
 const app = Elm.Main.init({
-  // flags: model
+  flags: model
 })
-
-// Listen for commands from the `store` port.
-// Turn the data to a string and put it in localStorage.
-/* app.ports.store.subscribe(function (model) {
+app.ports.store.subscribe(function (model) {
   localStorage.setItem('dm6-elm', JSON.stringify(model))
-}) */
+})
 </script>
 </body>
 </html>
