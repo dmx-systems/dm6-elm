@@ -100,7 +100,7 @@ viewToolbar model =
     toolbarStyle
     [ viewToolbarButton "Add Topic" AddTopic False model
     , viewToolbarButton "Choose Icon" (IconMenu Open) True model
-    , viewToolbarButton "Edit" (Edit ItemEditStart) True model
+    , viewToolbarButton "Edit" (Edit EditStart) True model
     , viewMonadDisplay model
     , viewContainerDisplay model
     , viewToolbarButton "Delete" Delete True model
@@ -143,8 +143,8 @@ viewMonadDisplay model =
     [ div
         []
         [ text "Monad Display" ]
-    , viewRadioButton "Label Only" (Set <| Monad LabelOnly) checked1 disabled_
-    , viewRadioButton "Detail" (Set <| Monad Detail) checked2 disabled_
+    , viewRadioButton "Label Only" (SwitchDisplay <| Monad LabelOnly) checked1 disabled_
+    , viewRadioButton "Detail" (SwitchDisplay <| Monad Detail) checked2 disabled_
     ]
 
 
@@ -170,9 +170,9 @@ viewContainerDisplay model =
     [ div
         []
         [ text "Container Display" ]
-    , viewRadioButton "Black Box" (Set <| Container BlackBox) checked1 disabled_
-    , viewRadioButton "White Box" (Set <| Container WhiteBox) checked2 disabled_
-    , viewRadioButton "Unboxed" (Set <| Container Unboxed) checked3 disabled_
+    , viewRadioButton "Black Box" (SwitchDisplay <| Container BlackBox) checked1 disabled_
+    , viewRadioButton "White Box" (SwitchDisplay <| Container WhiteBox) checked2 disabled_
+    , viewRadioButton "Unboxed" (SwitchDisplay <| Container Unboxed) checked3 disabled_
     ]
 
 
@@ -202,14 +202,14 @@ update msg model =
         _ -> info "update" msg
   in
   case msg of
-    AddTopic -> (createTopicAndAddToMap model.activeMap model, Cmd.none)
+    AddTopic -> createTopicAndAddToMap model.activeMap model |> storeModel
     MoveTopicToMap topicId mapId origPos targetId targetMapId pos
-      -> (moveTopicToMap topicId mapId origPos targetId targetMapId pos model, Cmd.none)
-    Set displayMode -> (switchDisplayMode displayMode model, Cmd.none)
+      -> moveTopicToMap topicId mapId origPos targetId targetMapId pos model |> storeModel
+    SwitchDisplay displayMode -> switchDisplay displayMode model |> storeModel
     Edit editMsg -> updateEdit editMsg model
     IconMenu iconMenuMsg -> (updateIconMenu iconMenuMsg model, Cmd.none)
     Mouse mouseMsg -> updateMouse mouseMsg model
-    Delete -> (delete model, Cmd.none)
+    Delete -> delete model |> storeModel
     NoOp -> (model, Cmd.none)
 
 
@@ -343,8 +343,8 @@ addItemToMap itemId props mapId model =
   }
 
 
-switchDisplayMode : DisplayMode -> Model -> Model
-switchDisplayMode displayMode model =
+switchDisplay : DisplayMode -> Model -> Model
+switchDisplay displayMode model =
   let
     maps =
       case getSingleSelection model of
@@ -371,15 +371,15 @@ switchDisplayMode displayMode model =
 updateEdit : EditMsg -> Model -> (Model, Cmd Msg)
 updateEdit msg model =
   case msg of
-    ItemEditStart -> startItemEdit model
-    ItemEditInput text -> (updateItemText text model, Cmd.none)
-    TextareaInput text -> updateTextareaText text model
+    EditStart -> startItemEdit model
+    OnTextInput text -> (onTextInput text model, Cmd.none)
+    OnTextareaInput text -> onTextareaInput text model
     SetTopicSize topicId mapId size ->
       ( { model | maps = setTopicSize topicId mapId size model.maps }
         |> autoSize
       , Cmd.none
       )
-    ItemEditEnd -> (endItemEdit model, Cmd.none)
+    EditEnd -> (endItemEdit model, Cmd.none)
 
 
 startItemEdit : Model -> (Model, Cmd Msg)
@@ -407,25 +407,25 @@ setDetailDisplayIfMonade topicId mapId model =
   }
 
 
-updateItemText : String -> Model -> Model
-updateItemText text model =
+onTextInput : String -> Model -> Model
+onTextInput text model =
   case model.editState of
     ItemEdit topicId _ ->
       updateTopicInfo topicId
         (\topic -> { topic | text = text })
         model
-    NoEdit -> logError "updateItemText" "called when editState is NoEdit" model
+    NoEdit -> logError "onTextInput" "called when editState is NoEdit" model
 
 
-updateTextareaText : String -> Model -> (Model, Cmd Msg)
-updateTextareaText text model =
+onTextareaInput : String -> Model -> (Model, Cmd Msg)
+onTextareaInput text model =
   case model.editState of
     ItemEdit topicId mapId ->
       updateTopicInfo topicId
         (\topic -> { topic | text = text })
         model
       |> measureText text topicId mapId
-    NoEdit -> logError "updateTextareaText" "called when editState is NoEdit" (model, Cmd.none)
+    NoEdit -> logError "onTextareaInput" "called when editState is NoEdit" (model, Cmd.none)
 
 
 measureText : String -> Id -> MapId -> Model -> (Model, Cmd Msg)
@@ -478,6 +478,21 @@ delete model =
         model
   in
   { newModel | selection = [] }
+
+
+storeModel : Model -> (Model, Cmd Msg)
+storeModel model =
+  (model, encodeModel model |> store)
+
+
+storeModelWith : (Model, Cmd Msg) -> (Model, Cmd Msg)
+storeModelWith (model, cmd) =
+  ( model
+  , Cmd.batch
+    [ cmd
+    , encodeModel model |> store
+    ]
+  )
 
 
 -- Mouse

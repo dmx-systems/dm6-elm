@@ -166,7 +166,7 @@ type DragMode
 type Msg
   = AddTopic
   | MoveTopicToMap Id MapId Point Id MapId Point -- start point, random point (for target)
-  | Set DisplayMode
+  | SwitchDisplay DisplayMode
   | Edit EditMsg
   | IconMenu IconMenuMsg
   | Mouse MouseMsg
@@ -175,11 +175,11 @@ type Msg
 
 
 type EditMsg
-  = ItemEditStart
-  | ItemEditInput String
-  | TextareaInput String
+  = EditStart
+  | OnTextInput String
+  | OnTextareaInput String
   | SetTopicSize Id MapId Size
-  | ItemEditEnd
+  | EditEnd
 
 
 type IconMenuMsg
