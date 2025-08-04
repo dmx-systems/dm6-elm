@@ -21,6 +21,21 @@ type alias Model =
   }
 
 
+defaultModel : Model
+defaultModel =
+  { items = Dict.empty
+  , maps = Dict.singleton 0
+    <| Map 0 Dict.empty (Rectangle 0 0 0 0) -1 -- parentMapId = -1
+  , activeMap = 0
+  , selection = []
+  , editState = NoEdit
+  , dragState = NoDrag
+  , iconMenuState = False
+  , measureText = ""
+  , nextId = 1
+  }
+
+
 type alias Items = Dict Id Item
 
 
@@ -151,7 +166,7 @@ type DragMode
 type Msg
   = AddTopic
   | MoveTopicToMap Id MapId Point Id MapId Point -- start point, random point (for target)
-  | Set DisplayMode
+  | SwitchDisplay DisplayMode
   | Edit EditMsg
   | IconMenu IconMenuMsg
   | Mouse MouseMsg
@@ -160,11 +175,11 @@ type Msg
 
 
 type EditMsg
-  = ItemEditStart
-  | ItemEditInput String
-  | TextareaInput String
+  = EditStart
+  | OnTextInput String
+  | OnTextareaInput String
   | SetTopicSize Id MapId Size
-  | ItemEditEnd
+  | EditEnd
 
 
 type IconMenuMsg

@@ -146,9 +146,9 @@ labelTopicHtml topic props mapId model =
         input
           ( [ id <| "dmx-input-" ++ fromInt topic.id ++ "-" ++ fromInt mapId
             , value topic.text
-            , onInput (Edit << ItemEditInput)
-            , onBlur (Edit ItemEditEnd)
-            , onEnterOrEsc (Edit ItemEditEnd)
+            , onInput (Edit << OnTextInput)
+            , onBlur (Edit EditEnd)
+            , onEnterOrEsc (Edit EditEnd)
             , stopPropagationOnMousedown NoOp
             ]
             ++ topicInputStyle
@@ -179,9 +179,9 @@ detailTopic topic props mapId model =
       if isEdit then
         textarea
           ( [ id <| "dmx-input-" ++ fromInt topic.id ++ "-" ++ fromInt mapId
-            , onInput (Edit << TextareaInput)
-            , onBlur (Edit ItemEditEnd)
-            , onEsc (Edit ItemEditEnd)
+            , onInput (Edit << OnTextareaInput)
+            , onBlur (Edit EditEnd)
+            , onEsc (Edit EditEnd)
             , stopPropagationOnMousedown NoOp
             ]
             ++ detailTextStyle topic.id mapId model
@@ -401,7 +401,7 @@ absMapPos mapId posAcc model =
 
 
 topicStyle : TopicInfo -> MapId -> Model -> List (Attribute Msg)
-topicStyle ({ id } as topic) mapId model =
+topicStyle ({id}) mapId model =
   let
     dragging = case model.dragState of
       Drag DragTopic id_ _ _ _ _ -> id_ == id

@@ -6,6 +6,7 @@ import IconMenu exposing (viewIconMenu, updateIconMenu)
 import MapAutoSize exposing (autoSize)
 import MapRenderer exposing (viewMap)
 import Model exposing (..)
+import Storage exposing (storeModel, storeModelWith, modelDecoder)
 import Utils exposing (..)
 
 import Browser
@@ -20,13 +21,15 @@ import String exposing (fromInt, fromFloat)
 import Task
 import Time exposing (posixToMillis)
 import Json.Decode as D
-import Debug exposing (toString)
+import Json.Encode as E
+import Debug exposing (log, toString)
 
 
 
 -- MAIN
 
 
+main : Program E.Value Model Msg
 main =
   Browser.document
     { init = init
@@ -36,19 +39,16 @@ main =
     }
 
 
-init : () -> ( Model, Cmd Msg )
+init : E.Value -> (Model, Cmd Msg)
 init flags =
-  ( { items = Dict.empty
-    , maps = Dict.singleton 0
-      <| Map 0 Dict.empty (Rectangle 0 0 0 0) -1 -- parentMapId = -1
-    , activeMap = 0
-    , selection = []
-    , editState = NoEdit
-    , dragState = NoDrag
-    , iconMenuState = False
-    , measureText = ""
-    , nextId = 1
-    }
+  ( case D.decodeValue modelDecoder flags of
+    Ok model ->
+      log "Reading localStorage" model
+    Err e ->
+      let
+        _ = logError "init" "Could not read localStorage" e
+      in
+      defaultModel
   , Cmd.none
   )
 
@@ -93,7 +93,7 @@ viewToolbar model =
     toolbarStyle
     [ viewToolbarButton "Add Topic" AddTopic False model
     , viewToolbarButton "Choose Icon" (IconMenu Open) True model
-    , viewToolbarButton "Edit" (Edit ItemEditStart) True model
+    , viewToolbarButton "Edit" (Edit EditStart) True model
     , viewMonadDisplay model
     , viewContainerDisplay model
     , viewToolbarButton "Delete" Delete True model
@@ -136,8 +136,8 @@ viewMonadDisplay model =
     [ div
         []
         [ text "Monad Display" ]
-    , viewRadioButton "Label Only" (Set <| Monad LabelOnly) checked1 disabled_
-    , viewRadioButton "Detail" (Set <| Monad Detail) checked2 disabled_
+    , viewRadioButton "Label Only" (SwitchDisplay <| Monad LabelOnly) checked1 disabled_
+    , viewRadioButton "Detail" (SwitchDisplay <| Monad Detail) checked2 disabled_
     ]
 
 
@@ -163,9 +163,9 @@ viewContainerDisplay model =
     [ div
         []
         [ text "Container Display" ]
-    , viewRadioButton "Black Box" (Set <| Container BlackBox) checked1 disabled_
-    , viewRadioButton "White Box" (Set <| Container WhiteBox) checked2 disabled_
-    , viewRadioButton "Unboxed" (Set <| Container Unboxed) checked3 disabled_
+    , viewRadioButton "Black Box" (SwitchDisplay <| Container BlackBox) checked1 disabled_
+    , viewRadioButton "White Box" (SwitchDisplay <| Container WhiteBox) checked2 disabled_
+    , viewRadioButton "Unboxed" (SwitchDisplay <| Container Unboxed) checked3 disabled_
     ]
 
 
@@ -195,14 +195,14 @@ update msg model =
         _ -> info "update" msg
   in
   case msg of
-    AddTopic -> (createTopicAndAddToMap model.activeMap model, Cmd.none)
+    AddTopic -> createTopicAndAddToMap model.activeMap model |> storeModel
     MoveTopicToMap topicId mapId origPos targetId targetMapId pos
-      -> (moveTopicToMap topicId mapId origPos targetId targetMapId pos model, Cmd.none)
-    Set displayMode -> (switchDisplayMode displayMode model, Cmd.none)
+      -> moveTopicToMap topicId mapId origPos targetId targetMapId pos model |> storeModel
+    SwitchDisplay displayMode -> switchDisplay displayMode model |> storeModel
     Edit editMsg -> updateEdit editMsg model
-    IconMenu iconMenuMsg -> (updateIconMenu iconMenuMsg model, Cmd.none)
+    IconMenu iconMenuMsg -> updateIconMenu iconMenuMsg model
     Mouse mouseMsg -> updateMouse mouseMsg model
-    Delete -> (delete model, Cmd.none)
+    Delete -> delete model |> storeModel
     NoOp -> (model, Cmd.none)
 
 
@@ -336,8 +336,8 @@ addItemToMap itemId props mapId model =
   }
 
 
-switchDisplayMode : DisplayMode -> Model -> Model
-switchDisplayMode displayMode model =
+switchDisplay : DisplayMode -> Model -> Model
+switchDisplay displayMode model =
   let
     maps =
       case getSingleSelection model of
@@ -364,19 +364,19 @@ switchDisplayMode displayMode model =
 updateEdit : EditMsg -> Model -> (Model, Cmd Msg)
 updateEdit msg model =
   case msg of
-    ItemEditStart -> startItemEdit model
-    ItemEditInput text -> (updateItemText text model, Cmd.none)
-    TextareaInput text -> updateTextareaText text model
+    EditStart -> startEdit model
+    OnTextInput text -> onTextInput text model |> storeModel
+    OnTextareaInput text -> onTextareaInput text model |> storeModelWith
     SetTopicSize topicId mapId size ->
       ( { model | maps = setTopicSize topicId mapId size model.maps }
         |> autoSize
       , Cmd.none
       )
-    ItemEditEnd -> (endItemEdit model, Cmd.none)
+    EditEnd -> (endEdit model, Cmd.none)
 
 
-startItemEdit : Model -> (Model, Cmd Msg)
-startItemEdit model =
+startEdit : Model -> (Model, Cmd Msg)
+startEdit model =
   let
     newModel = case getSingleSelection model of
       Just (topicId, mapId) ->
@@ -400,25 +400,25 @@ setDetailDisplayIfMonade topicId mapId model =
   }
 
 
-updateItemText : String -> Model -> Model
-updateItemText text model =
+onTextInput : String -> Model -> Model
+onTextInput text model =
   case model.editState of
     ItemEdit topicId _ ->
       updateTopicInfo topicId
         (\topic -> { topic | text = text })
         model
-    NoEdit -> logError "updateItemText" "called when editState is NoEdit" model
+    NoEdit -> logError "onTextInput" "called when editState is NoEdit" model
 
 
-updateTextareaText : String -> Model -> (Model, Cmd Msg)
-updateTextareaText text model =
+onTextareaInput : String -> Model -> (Model, Cmd Msg)
+onTextareaInput text model =
   case model.editState of
     ItemEdit topicId mapId ->
       updateTopicInfo topicId
         (\topic -> { topic | text = text })
         model
       |> measureText text topicId mapId
-    NoEdit -> logError "updateTextareaText" "called when editState is NoEdit" (model, Cmd.none)
+    NoEdit -> logError "onTextareaInput" "called when editState is NoEdit" (model, Cmd.none)
 
 
 measureText : String -> Id -> MapId -> Model -> (Model, Cmd Msg)
@@ -437,8 +437,8 @@ measureText text topicId mapId model =
   )
 
 
-endItemEdit : Model -> Model
-endItemEdit model =
+endEdit : Model -> Model
+endEdit model =
   { model | editState = NoEdit }
   |> autoSize
 
@@ -481,7 +481,7 @@ updateMouse msg model =
     Down -> ( mouseDown model, Cmd.none )
     DownItem class id mapId pos -> mouseDownOnItem model class id mapId pos
     Move pos -> mouseMove model pos
-    Up -> mouseUp model
+    Up -> mouseUp model |> storeModelWith
     Over class id mapId -> ( mouseOver model class id mapId, Cmd.none )
     Out class id mapId -> ( mouseOut model class id mapId, Cmd.none )
     Time time -> ( timeArrived time model, Cmd.none )
@@ -496,7 +496,7 @@ mouseDownOnItem : Model -> Class -> Id -> MapId -> Point -> ( Model, Cmd Msg )
 mouseDownOnItem model class id mapId pos =
   ( { model | dragState = WaitForStartTime class id mapId pos
     } |> select id mapId
-  , Task.perform (Time >> Mouse) Time.now
+  , Task.perform (Mouse << Time) Time.now
   )
 
 
@@ -529,7 +529,7 @@ mouseMove model pos =
   case model.dragState of
     DragEngaged time class id mapId pos_ ->
       ( { model | dragState = WaitForEndTime time class id mapId pos_ }
-      , Task.perform (Time >> Mouse) Time.now
+      , Task.perform (Mouse << Time) Time.now
       )
     WaitForEndTime _ _ _ _ _ ->
       ( model, Cmd.none ) -- ignore -- TODO: can this happen at all? Is there a move listener?
