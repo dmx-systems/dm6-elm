@@ -2,6 +2,7 @@ module IconMenu exposing (viewIconMenu, viewTopicIcon, updateIconMenu)
 
 import Config exposing (..)
 import Model exposing (..)
+import Storage exposing (storeModel)
 import Utils exposing (..)
 
 import Dict
@@ -16,13 +17,14 @@ import FeatherIcons as Icon
 -- UPDATE
 
 
-updateIconMenu : IconMenuMsg -> Model -> Model
+updateIconMenu : IconMenuMsg -> Model -> (Model, Cmd Msg)
 updateIconMenu msg model =
   case msg of
-    Open -> setIconMenuState True model
-    Close -> setIconMenuState False model
+    Open -> (setIconMenuState True model, Cmd.none)
+    Close -> (setIconMenuState False model, Cmd.none)
     SetIcon maybeIcon -> setIcon maybeIcon model
       |> setIconMenuState False
+      |> storeModel
 
 
 setIconMenuState : Bool -> Model -> Model

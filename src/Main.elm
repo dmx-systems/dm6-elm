@@ -1,4 +1,4 @@
-port module Main exposing (..)
+module Main exposing (..)
 
 import Boxing exposing (boxContainer, unboxContainer)
 import Config exposing (..)
@@ -6,7 +6,7 @@ import IconMenu exposing (viewIconMenu, updateIconMenu)
 import MapAutoSize exposing (autoSize)
 import MapRenderer exposing (viewMap)
 import Model exposing (..)
-import Storage exposing (encodeModel, modelDecoder)
+import Storage exposing (storeModel, storeModelWith, modelDecoder)
 import Utils exposing (..)
 
 import Browser
@@ -26,13 +26,6 @@ import Debug exposing (log, toString)
 
 
 
--- PORTS
-
-
-port store : E.Value -> Cmd msg
-
-
-
 -- MAIN
 
 
@@ -46,7 +39,7 @@ main =
     }
 
 
-init : E.Value -> ( Model, Cmd Msg )
+init : E.Value -> (Model, Cmd Msg)
 init flags =
   ( case D.decodeValue modelDecoder flags of
     Ok model ->
@@ -207,7 +200,7 @@ update msg model =
       -> moveTopicToMap topicId mapId origPos targetId targetMapId pos model |> storeModel
     SwitchDisplay displayMode -> switchDisplay displayMode model |> storeModel
     Edit editMsg -> updateEdit editMsg model
-    IconMenu iconMenuMsg -> (updateIconMenu iconMenuMsg model, Cmd.none)
+    IconMenu iconMenuMsg -> updateIconMenu iconMenuMsg model
     Mouse mouseMsg -> updateMouse mouseMsg model
     Delete -> delete model |> storeModel
     NoOp -> (model, Cmd.none)
@@ -371,19 +364,19 @@ switchDisplay displayMode model =
 updateEdit : EditMsg -> Model -> (Model, Cmd Msg)
 updateEdit msg model =
   case msg of
-    EditStart -> startItemEdit model
-    OnTextInput text -> (onTextInput text model, Cmd.none)
-    OnTextareaInput text -> onTextareaInput text model
+    EditStart -> startEdit model
+    OnTextInput text -> onTextInput text model |> storeModel
+    OnTextareaInput text -> onTextareaInput text model |> storeModelWith
     SetTopicSize topicId mapId size ->
       ( { model | maps = setTopicSize topicId mapId size model.maps }
         |> autoSize
       , Cmd.none
       )
-    EditEnd -> (endItemEdit model, Cmd.none)
+    EditEnd -> (endEdit model, Cmd.none)
 
 
-startItemEdit : Model -> (Model, Cmd Msg)
-startItemEdit model =
+startEdit : Model -> (Model, Cmd Msg)
+startEdit model =
   let
     newModel = case getSingleSelection model of
       Just (topicId, mapId) ->
@@ -444,8 +437,8 @@ measureText text topicId mapId model =
   )
 
 
-endItemEdit : Model -> Model
-endItemEdit model =
+endEdit : Model -> Model
+endEdit model =
   { model | editState = NoEdit }
   |> autoSize
 
@@ -480,21 +473,6 @@ delete model =
   { newModel | selection = [] }
 
 
-storeModel : Model -> (Model, Cmd Msg)
-storeModel model =
-  (model, encodeModel model |> store)
-
-
-storeModelWith : (Model, Cmd Msg) -> (Model, Cmd Msg)
-storeModelWith (model, cmd) =
-  ( model
-  , Cmd.batch
-    [ cmd
-    , encodeModel model |> store
-    ]
-  )
-
-
 -- Mouse
 
 updateMouse : MouseMsg -> Model -> ( Model, Cmd Msg )
@@ -503,7 +481,7 @@ updateMouse msg model =
     Down -> ( mouseDown model, Cmd.none )
     DownItem class id mapId pos -> mouseDownOnItem model class id mapId pos
     Move pos -> mouseMove model pos
-    Up -> mouseUp model
+    Up -> mouseUp model |> storeModelWith
     Over class id mapId -> ( mouseOver model class id mapId, Cmd.none )
     Out class id mapId -> ( mouseOut model class id mapId, Cmd.none )
     Time time -> ( timeArrived time model, Cmd.none )
@@ -518,7 +496,7 @@ mouseDownOnItem : Model -> Class -> Id -> MapId -> Point -> ( Model, Cmd Msg )
 mouseDownOnItem model class id mapId pos =
   ( { model | dragState = WaitForStartTime class id mapId pos
     } |> select id mapId
-  , Task.perform (Time >> Mouse) Time.now
+  , Task.perform (Mouse << Time) Time.now
   )
 
 
@@ -551,7 +529,7 @@ mouseMove model pos =
   case model.dragState of
     DragEngaged time class id mapId pos_ ->
       ( { model | dragState = WaitForEndTime time class id mapId pos_ }
-      , Task.perform (Time >> Mouse) Time.now
+      , Task.perform (Mouse << Time) Time.now
       )
     WaitForEndTime _ _ _ _ _ ->
       ( model, Cmd.none ) -- ignore -- TODO: can this happen at all? Is there a move listener?

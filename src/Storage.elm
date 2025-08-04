@@ -1,4 +1,4 @@
-module Storage exposing (encodeModel, modelDecoder)
+port module Storage exposing (storeModel, storeModelWith, modelDecoder)
 
 import Dict exposing (Dict)
 import Json.Decode as D
@@ -8,8 +8,32 @@ import Model exposing (..)
 
 
 
+-- PORTS
+
+
+port store : E.Value -> Cmd msg
+
+
+
 -- ENCODE/DECODE MODEL <-> JS VALUE (for storage)
 
+
+storeModel : Model -> (Model, Cmd Msg)
+storeModel model =
+  (model, encodeModel model |> store)
+
+
+storeModelWith : (Model, Cmd Msg) -> (Model, Cmd Msg)
+storeModelWith (model, cmd) =
+  ( model
+  , Cmd.batch
+    [ cmd
+    , encodeModel model |> store
+    ]
+  )
+
+
+-- Encode
 
 encodeModel : Model -> E.Value
 encodeModel model =
@@ -114,7 +138,7 @@ encodeDisplayName displayMode =
     )
 
 
--- Decoder
+-- Decode
 
 modelDecoder : D.Decoder Model
 modelDecoder =
