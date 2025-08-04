@@ -45,22 +45,26 @@ setIcon iconName model =
 -- VIEW
 
 
-viewIconMenu : Model -> Html Msg
+viewIconMenu : Model -> List (Html Msg)
 viewIconMenu model =
-  div
-    iconMenuStyle
+  if model.iconMenuState then
     [ div
+      iconMenuStyle
+      [ div
         iconListStyle
         viewIconList
-    , button
-      ( [onClick (IconMenu Close)]
-        ++ closeButtonStyle
-      )
-      [ Icon.x
-        |> Icon.withSize 12
-        |> Icon.toHtml []
+      , button
+        ( [onClick (IconMenu Close)]
+          ++ closeButtonStyle
+        )
+        [ Icon.x
+          |> Icon.withSize 12
+          |> Icon.toHtml []
+        ]
       ]
     ]
+  else
+    []
 
 
 viewIconList : List (Html Msg)

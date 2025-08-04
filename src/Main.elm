@@ -67,15 +67,11 @@ view model =
         ]
         ++ appStyle
       )
-      ( [ h1 [] [ text "DM6 Elm" ]
+      ( [ h1 [] [ text <| getMapName model ]
         , viewToolbar model
         , viewMap model.activeMap -1 model -- parentMapId = -1
         ]
-        ++
-          if model.iconMenuState then
-            [ viewIconMenu model ]
-          else
-            []
+        ++ viewIconMenu model
       )
     , div
       ( [ id "measure" ]
@@ -87,6 +83,16 @@ view model =
     ]
 
 
+getMapName : Model -> String
+getMapName model =
+  if model.activeMap == 0 then -- top-level map has no corresponding topic
+    defaultMapName
+  else
+    case getTopicInfo model.activeMap model of
+      Just topic -> getTopicLabel topic
+      Nothing -> "??"
+
+
 viewToolbar : Model -> Html Msg
 viewToolbar model =
   div
@@ -96,6 +102,7 @@ viewToolbar model =
     , viewToolbarButton "Edit" (Edit EditStart) True model
     , viewMonadDisplay model
     , viewContainerDisplay model
+    , viewToolbarButton "Fullscreen" Fullscreen True model
     , viewToolbarButton "Delete" Delete True model
     ]
 
@@ -202,6 +209,7 @@ update msg model =
     Edit editMsg -> updateEdit editMsg model
     IconMenu iconMenuMsg -> updateIconMenu iconMenuMsg model
     Mouse mouseMsg -> updateMouse mouseMsg model
+    Fullscreen -> fullscreen model |> storeModel
     Delete -> delete model |> storeModel
     NoOp -> (model, Cmd.none)
 
@@ -299,17 +307,17 @@ moveTopicToMap topicId mapId origPos targetId targetMapId pos model =
 
 
 createMapIfNeeded : Id -> MapId -> Model -> (Model, Bool)
-createMapIfNeeded targetId targetMapId model =
-  if hasMap targetId model.maps then
+createMapIfNeeded topicId mapId model =
+  if hasMap topicId model.maps then
     (model, False)
   else
     ( { model
-      | maps = setDisplayMode targetId targetMapId (Container BlackBox)
+      | maps = setDisplayMode topicId mapId (Container BlackBox)
           { model
           | maps = model.maps |>
             Dict.insert
-              targetId
-              (Map targetId Dict.empty (Rectangle 0 0 0 0) targetMapId)
+              topicId
+              (Map topicId Dict.empty (Rectangle 0 0 0 0) mapId)
           }
       }
     , True
@@ -460,6 +468,16 @@ focus model =
 
 
 --
+
+fullscreen : Model -> Model
+fullscreen model =
+  case getSingleSelection model of
+    Just (topicId, mapId) ->
+      { model | activeMap = topicId }
+      |> createMapIfNeeded topicId mapId
+      |> Tuple.first
+    Nothing -> model
+
 
 delete : Model -> Model
 delete model =

@@ -170,6 +170,7 @@ type Msg
   | Edit EditMsg
   | IconMenu IconMenuMsg
   | Mouse MouseMsg
+  | Fullscreen
   | Delete
   | NoOp
 
@@ -236,6 +237,13 @@ updateTopicInfo topicId topicFunc model =
         Nothing -> illegalItemId "updateTopicInfo" topicId Nothing
     )
   }
+
+
+getTopicLabel : TopicInfo -> String
+getTopicLabel topic =
+  case topic.text |> String.lines |> List.head of
+    Just line -> line
+    Nothing -> ""
 
 
 -- Maps
@@ -320,8 +328,7 @@ getTopicProps topicId mapId maps =
 
 updateTopicProps : Id -> MapId -> Maps -> (TopicProps -> TopicProps) -> Maps
 updateTopicProps topicId mapId maps propsFunc =
-  updateMaps
-    mapId
+  maps |> updateMaps mapId
     (\map ->
       { map | items = map.items |> Dict.update topicId
         (\viewItem_ ->
@@ -335,7 +342,6 @@ updateTopicProps topicId mapId maps propsFunc =
         )
       }
     )
-    maps
 
 
 getViewItemById : Id -> MapId -> Maps -> Maybe ViewItem

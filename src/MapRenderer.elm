@@ -155,14 +155,9 @@ labelTopicHtml topic props mapId model =
           )
           []
       else
-        let
-          label = case topic.text |> String.lines |> List.head of
-            Just line -> line
-            Nothing -> ""
-        in
         div
           topicLabelStyle
-          [ text label ]
+          [ text <| getTopicLabel topic ]
   in
   [ div
     (topicIconBoxStyle props)

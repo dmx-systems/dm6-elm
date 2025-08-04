@@ -7,6 +7,8 @@ import Model exposing (..)
 -- CONFIG
 
 
+defaultMapName = "DM6 Elm"
+
 mainFont = "sans-serif"
 toolbarFontSize = 14
 contentFontSize = 13
