@@ -1,7 +1,9 @@
 module Utils exposing (..)
 
-{-| Genral utilities, not application specific
--}
+
+
+-- GENRAL ELM UTILITIES
+
 
 import Debug exposing (log, toString)
 import Html exposing (Html, Attribute, text, br)

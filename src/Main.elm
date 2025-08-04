@@ -6,6 +6,7 @@ import IconMenu exposing (viewIconMenu, updateIconMenu)
 import MapAutoSize exposing (autoSize)
 import MapRenderer exposing (viewMap)
 import Model exposing (..)
+import Storage exposing (encodeModel, modelDecoder)
 import Utils exposing (..)
 
 import Browser
@@ -47,7 +48,7 @@ main =
 
 init : E.Value -> ( Model, Cmd Msg )
 init flags =
-  ( case D.decodeValue decoder flags of
+  ( case D.decodeValue modelDecoder flags of
     Ok model ->
       log "Reading localStorage" model
     Err e ->
