@@ -359,11 +359,9 @@ assocGeometry assoc mapId model =
 relPos : Point -> MapId -> Model -> Maybe Point
 relPos pos mapId model =
   absMapPos mapId (Point 0 0) model |> Maybe.andThen
-    (\posAbs -> Just
-      (Point
-        (pos.x - posAbs.x)
-        (pos.y - posAbs.y)
-      )
+    (\posAbs -> Just <| Point
+      (pos.x - posAbs.x)
+      (pos.y - posAbs.y)
     )
 
 
@@ -372,23 +370,24 @@ relPos pos mapId model =
 -}
 absMapPos : MapId -> Point -> Model -> Maybe Point
 absMapPos mapId posAcc model =
-  if isFullscreen mapId model then
-    Just posAcc
-  else
-    getMap mapId model.maps
-      |> Maybe.andThen
-        (\map -> getTopicPos map.id map.parentMapId model.maps
-          |> Maybe.andThen
-            (\mapPos ->
-              absMapPos
-                map.parentMapId
-                (Point
-                  (posAcc.x + mapPos.x - topicW2 - map.rect.x1)
-                  (posAcc.y + mapPos.y + topicH2 - map.rect.y1)
-                )
-                model
-            )
-        )
+  getMap mapId model.maps |> Maybe.andThen
+    (\map ->
+      if isFullscreen mapId model then
+        Just <| Point
+          (posAcc.x - map.rect.x1)
+          (posAcc.y - map.rect.y1)
+      else
+        getTopicPos map.id map.parentMapId model.maps |> Maybe.andThen
+          (\mapPos ->
+            absMapPos
+              map.parentMapId
+              (Point
+                (posAcc.x + mapPos.x - topicW2 - map.rect.x1)
+                (posAcc.y + mapPos.y + topicH2 - map.rect.y1)
+              )
+              model
+          )
+    )
 
 
 
