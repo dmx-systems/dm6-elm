@@ -10,9 +10,9 @@ import Html exposing (Html, Attribute, div, text, input, textarea)
 import Html.Attributes exposing (id, style, attribute, value)
 import Html.Events exposing (onInput, onBlur)
 import String exposing (fromInt, fromFloat)
-import Svg exposing (Svg, svg, line, path)
+import Svg exposing (Svg, svg, g, line, path)
 import Svg.Attributes exposing (width, height, viewBox, x1, y1, x2, y2, d, stroke, strokeWidth,
-  strokeDasharray, fill)
+  strokeDasharray, fill, transform)
 
 
 
@@ -31,7 +31,6 @@ type alias MapInfo =
   , Rectangle
   , ( { w: String, h: String }
     , List (Attribute Msg)
-    , List (Attribute Msg)
     )
   )
 
@@ -47,7 +46,7 @@ type alias TopicRendering = (List (Attribute Msg), List (Html Msg))
 viewMap : MapId -> MapId -> Model -> Html Msg
 viewMap mapId parentMapId model =
   let
-    ((topics, assocs), mapRect, (svgSize, svgAttr, mapStyle)) = mapInfo mapId parentMapId model
+    ((topics, assocs), mapRect, (svgSize, mapStyle)) = mapInfo mapId parentMapId model
   in
   div
     mapStyle
@@ -57,12 +56,21 @@ viewMap mapId parentMapId model =
     , svg
         ( [ width svgSize.w, height svgSize.h ]
           ++ topicAttr mapId parentMapId model
-          ++ svgAttr
           ++ svgStyle
         )
-        ( assocs
-          ++ viewLimboAssoc mapId model
-        )
+        [ g
+          ( gAttr mapId mapRect model)
+          ( assocs
+            ++ viewLimboAssoc mapId model
+          )
+        ]
+    ]
+
+
+gAttr : MapId -> Rectangle -> Model -> List (Attribute Msg)
+gAttr mapId mapRect model =
+    [ transform
+      <| "translate(" ++ fromFloat -mapRect.x1 ++ " " ++ fromFloat -mapRect.y1 ++ ")"
     ]
 
 
@@ -73,23 +81,16 @@ mapInfo mapId parentMapId model =
       ( viewItems map model
       , map.rect
       , if isFullscreen mapId model then
-          ( {w = "100%", h = "100%"}, [], [] )
+          ( { w = "100%", h = "100%" }, [] )
         else
-          let
-            vb =
-              { x = map.rect.x1 |> round |> fromInt
-              , y = map.rect.y1 |> round |> fromInt
-              , w = (map.rect.x2 - map.rect.x1) |> round |> fromInt
-              , h = (map.rect.y2 - map.rect.y1) |> round |> fromInt
-              }
-          in
-          ( {w = vb.w, h = vb.h}
-          , [ viewBox (vb.x ++ " " ++ vb.y ++ " " ++ vb.w ++ " " ++ vb.h) ]
+          ( { w = (map.rect.x2 - map.rect.x1) |> round |> fromInt
+            , h = (map.rect.y2 - map.rect.y1) |> round |> fromInt
+            }
           , whiteBoxStyle mapId map.rect parentMapId model
           )
       )
     Nothing ->
-      ( ([], []), Rectangle 0 0 0 0, ( {w = "0", h = "0"}, [], [] ))
+      ( ([], []), Rectangle 0 0 0 0, ( {w = "0", h = "0"}, [] ))
 
 
 viewItems : Map -> Model -> (List (Html Msg), List (Svg Msg))
@@ -512,7 +513,8 @@ ghostTopicStyle topic mapId model =
 
 itemCountStyle : List (Attribute Msg)
 itemCountStyle =
-  [ style "position" "absolute"
+  [ style "font-size" <| fromInt contentFontSize ++ "px"
+  , style "position" "absolute"
   , style "left" "calc(100% + 14px)"
   ]
 
@@ -562,7 +564,7 @@ topicLayerStyle mapRect =
 
 svgStyle : List (Attribute Msg)
 svgStyle =
-  [ style "position" "absolute"
+  [ style "position" "absolute" -- occupy entire window height (instead 150px default height)
   , style "top" "0"
   , style "left" "0"
   ]
