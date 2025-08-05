@@ -24,7 +24,7 @@ type alias Model =
 defaultModel : Model
 defaultModel =
   { items = Dict.empty
-  , maps = Dict.singleton 0 -- map 0 is top-level map
+  , maps = Dict.singleton 0 -- map 0 is the "home map", it has no corresponding topic
     <| Map 0 Dict.empty (Rectangle 0 0 0 0) -1 -- parentMapId = -1
   , mapPath = [0]
   , selection = []
@@ -69,7 +69,7 @@ type alias Map =
   { id : MapId
   , items : ViewItems
   , rect : Rectangle
-  , parentMapId : MapId
+  , parentMapId : MapId -- FIXME: ambiguous semantics? view context vs model?
   }
 
 
@@ -248,6 +248,17 @@ getTopicLabel topic =
 
 
 -- Maps
+
+
+isHome : Model -> Bool
+isHome model =
+  activeMap model == 0
+
+
+isFullscreen : MapId -> Model -> Bool
+isFullscreen mapId model =
+  activeMap model == mapId
+
 
 activeMap : Model -> MapId
 activeMap model =

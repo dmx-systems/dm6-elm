@@ -42,6 +42,8 @@ type alias TopicRendering = (List (Attribute Msg), List (Html Msg))
 -- VIEW
 
 
+-- For a fullscreen map parentMapId is -1
+-- parentMapId is NOT map.parentMapId! FIXME: ambiguous semantics?
 viewMap : MapId -> MapId -> Model -> Html Msg
 viewMap mapId parentMapId model =
   let
@@ -66,14 +68,11 @@ viewMap mapId parentMapId model =
 
 mapInfo : MapId -> MapId -> Model -> MapInfo
 mapInfo mapId parentMapId model =
-  let
-    isTopLevel = mapId == activeMap model
-  in
   case getMap mapId model.maps of
     Just map ->
       ( viewItems map model
       , map.rect
-      , if isTopLevel then
+      , if isFullscreen mapId model then
           ( {w = "100%", h = "100%"}, [], [] )
         else
           let
@@ -304,15 +303,12 @@ viewItemCount topicId props model =
 
 
 topicAttr : Id -> MapId -> Model -> List (Attribute Msg)
-topicAttr id mapId model =
-  let
-    isTopLevel = id == activeMap model
-  in
-  if isTopLevel then
-    [] -- top-level map requires dedicated event handling, TODO
+topicAttr topicId mapId model =
+  if isFullscreen topicId model then
+    [] -- the fullscreen map requires dedicated event handling, TODO
   else
     [ attribute "class" "dmx-topic"
-    , attribute "data-id" (fromInt id)
+    , attribute "data-id" (fromInt topicId)
     , attribute "data-map-id" (fromInt mapId)
     ]
 
@@ -375,19 +371,19 @@ relPos pos mapId model =
 -}
 absMapPos : MapId -> Point -> Model -> Maybe Point
 absMapPos mapId posAcc model =
-  if mapId == activeMap model then
+  if isFullscreen mapId model then
     Just posAcc
   else
     getMap mapId model.maps
       |> Maybe.andThen
         (\map -> getTopicPos map.id map.parentMapId model.maps
           |> Maybe.andThen
-            (\mapPos_ ->
+            (\mapPos ->
               absMapPos
                 map.parentMapId
                 (Point
-                  (posAcc.x + mapPos_.x - topicW2 - map.rect.x1)
-                  (posAcc.y + mapPos_.y + topicH2 - map.rect.y1)
+                  (posAcc.x + mapPos.x - topicW2 - map.rect.x1)
+                  (posAcc.y + mapPos.y + topicH2 - map.rect.y1)
                 )
                 model
             )

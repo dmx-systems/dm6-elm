@@ -84,8 +84,8 @@ view model =
 
 getMapName : Model -> String
 getMapName model =
-  if activeMap model == 0 then -- top-level map has no corresponding topic
-    defaultMapName
+  if isHome model then -- home map has no corresponding topic
+    homeMapName
   else
     case getTopicInfo (activeMap model) model of
       Just topic -> getTopicLabel topic
