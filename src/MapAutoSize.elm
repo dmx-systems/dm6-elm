@@ -12,7 +12,7 @@ import Dict
 
 autoSize : Model -> Model
 autoSize model =
-  calcMapRect model.activeMap model |> Tuple.second
+  calcMapRect (activeMap model) model |> Tuple.second
 
 
 -- called indirect recursive
@@ -42,7 +42,7 @@ calcMapRect mapId model =
 
 storeMapRect : MapId -> Rectangle -> Rectangle -> MapId -> Model -> (Rectangle, Model)
 storeMapRect mapId newRect oldRect parentMapId model =
-  if mapId == model.activeMap then
+  if mapId == activeMap model then
     ( newRect, model )
   else
     ( newRect

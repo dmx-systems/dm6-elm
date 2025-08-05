@@ -46,7 +46,7 @@ encodeModel model =
         String.fromInt
         encodeMap
       )
-    , ("activeMap", E.int model.activeMap)
+    , ("mapPath", E.list E.int model.mapPath)
     , ("nextId", E.int model.nextId)
     ]
 
@@ -164,7 +164,7 @@ modelDecoder =
         |> D.andThen strToIntDictDecoder
       )
     |> required "maps" (D.dict mapDecoder |> D.andThen strToIntDictDecoder)
-    |> required "activeMap" D.int
+    |> required "mapPath" (D.list D.int)
     |> hardcoded defaultModel.selection
     |> hardcoded defaultModel.editState
     |> hardcoded defaultModel.dragState

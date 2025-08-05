@@ -54,7 +54,7 @@ viewMap mapId parentMapId model =
         topics
     , svg
         ( [ width svgSize.w, height svgSize.h ]
-          ++ topicAttr mapId parentMapId
+          ++ topicAttr mapId parentMapId model
           ++ svgAttr
           ++ svgStyle
         )
@@ -67,7 +67,7 @@ viewMap mapId parentMapId model =
 mapInfo : MapId -> MapId -> Model -> MapInfo
 mapInfo mapId parentMapId model =
   let
-    isTopLevel = mapId == model.activeMap
+    isTopLevel = mapId == activeMap model
   in
   case getMap mapId model.maps of
     Just map ->
@@ -121,7 +121,7 @@ viewTopic topic props mapId model =
         Container Unboxed -> unboxedTopic
   in
   div
-    ( topicAttr topic.id mapId
+    ( topicAttr topic.id mapId model
       ++ topicStyle topic mapId model
       ++ style
     )
@@ -303,15 +303,18 @@ viewItemCount topicId props model =
   ]
 
 
-topicAttr : Id -> MapId -> List (Attribute Msg)
-topicAttr id mapId =
-  case id of
-    0 -> [] -- top-level map requires dedicated event handling, TODO
-    _ ->
-      [ attribute "class" "dmx-topic"
-      , attribute "data-id" (fromInt id)
-      , attribute "data-map-id" (fromInt mapId)
-      ]
+topicAttr : Id -> MapId -> Model -> List (Attribute Msg)
+topicAttr id mapId model =
+  let
+    isTopLevel = id == activeMap model
+  in
+  if isTopLevel then
+    [] -- top-level map requires dedicated event handling, TODO
+  else
+    [ attribute "class" "dmx-topic"
+    , attribute "data-id" (fromInt id)
+    , attribute "data-map-id" (fromInt mapId)
+    ]
 
 
 viewAssoc : AssocInfo -> MapId -> Model -> Svg Msg
@@ -372,7 +375,7 @@ relPos pos mapId model =
 -}
 absMapPos : MapId -> Point -> Model -> Maybe Point
 absMapPos mapId posAcc model =
-  if mapId == model.activeMap then
+  if mapId == activeMap model then
     Just posAcc
   else
     getMap mapId model.maps

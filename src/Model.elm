@@ -11,7 +11,7 @@ import Time
 type alias Model =
   { items : Items
   , maps : Maps
-  , activeMap : MapId
+  , mapPath : List MapId
   , selection : Selection -- transient
   , editState : EditState -- transient
   , dragState : DragState -- transient
@@ -24,9 +24,9 @@ type alias Model =
 defaultModel : Model
 defaultModel =
   { items = Dict.empty
-  , maps = Dict.singleton 0
+  , maps = Dict.singleton 0 -- map 0 is top-level map
     <| Map 0 Dict.empty (Rectangle 0 0 0 0) -1 -- parentMapId = -1
-  , activeMap = 0
+  , mapPath = [0]
   , selection = []
   , editState = NoEdit
   , dragState = NoDrag
@@ -171,6 +171,7 @@ type Msg
   | IconMenu IconMenuMsg
   | Mouse MouseMsg
   | Fullscreen
+  | Back
   | Delete
   | NoOp
 
@@ -247,6 +248,13 @@ getTopicLabel topic =
 
 
 -- Maps
+
+activeMap : Model -> MapId
+activeMap model =
+  case List.head model.mapPath of
+    Just mapId -> mapId
+    Nothing -> logError "activeMap" "mapPath is empty!" 0
+
 
 getMap : MapId -> Maps -> Maybe Map
 getMap mapId maps =

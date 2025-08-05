@@ -1,4 +1,4 @@
-module IconMenu exposing (viewIconMenu, viewTopicIcon, updateIconMenu)
+module IconMenu exposing (viewIcon, viewTopicIcon, viewIconMenu, updateIconMenu)
 
 import Config exposing (..)
 import Model exposing (..)
@@ -93,6 +93,13 @@ viewTopicIcon topicId model =
             Nothing -> text "??"
         Nothing -> text ""
     Nothing -> text "?"
+
+
+viewIcon : String -> Html Msg
+viewIcon iconName =
+  case Icon.icons |> Dict.get iconName of
+    Just icon -> icon |> Icon.toHtml []
+    Nothing -> text "??"
 
 
 

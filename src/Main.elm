@@ -2,7 +2,7 @@ module Main exposing (..)
 
 import Boxing exposing (boxContainer, unboxContainer)
 import Config exposing (..)
-import IconMenu exposing (viewIconMenu, updateIconMenu)
+import IconMenu exposing (viewIcon, viewIconMenu, updateIconMenu)
 import MapAutoSize exposing (autoSize)
 import MapRenderer exposing (viewMap)
 import Model exposing (..)
@@ -67,9 +67,8 @@ view model =
         ]
         ++ appStyle
       )
-      ( [ h1 [] [ text <| getMapName model ]
-        , viewToolbar model
-        , viewMap model.activeMap -1 model -- parentMapId = -1
+      ( [ viewToolbar model
+        , viewMap (activeMap model) -1 model -- parentMapId = -1
         ]
         ++ viewIconMenu model
       )
@@ -85,10 +84,10 @@ view model =
 
 getMapName : Model -> String
 getMapName model =
-  if model.activeMap == 0 then -- top-level map has no corresponding topic
+  if activeMap model == 0 then -- top-level map has no corresponding topic
     defaultMapName
   else
-    case getTopicInfo model.activeMap model of
+    case getTopicInfo (activeMap model) model of
       Just topic -> getTopicLabel topic
       Nothing -> "??"
 
@@ -97,13 +96,32 @@ viewToolbar : Model -> Html Msg
 viewToolbar model =
   div
     toolbarStyle
-    [ viewToolbarButton "Add Topic" AddTopic False model
-    , viewToolbarButton "Choose Icon" (IconMenu Open) True model
+    [ div
+      mapTitleStyle
+      [ text <| getMapName model ]
+    , viewBackButton model
+    , viewToolbarButton "Add Topic" AddTopic False model
     , viewToolbarButton "Edit" (Edit EditStart) True model
+    , viewToolbarButton "Choose Icon" (IconMenu Open) True model
     , viewMonadDisplay model
     , viewContainerDisplay model
     , viewToolbarButton "Fullscreen" Fullscreen True model
     , viewToolbarButton "Delete" Delete True model
+    ]
+
+
+viewBackButton : Model -> Html Msg
+viewBackButton model =
+  let
+    disabled_ = List.length model.mapPath == 1
+  in
+  div
+    backButtonStyle
+    [ button
+      [ onClick Back
+      , disabled disabled_
+      ]
+      [ viewIcon "arrow-left" ]
     ]
 
 
@@ -202,7 +220,7 @@ update msg model =
         _ -> info "update" msg
   in
   case msg of
-    AddTopic -> createTopicAndAddToMap model.activeMap model |> storeModel
+    AddTopic -> createTopicAndAddToMap (activeMap model) model |> storeModel
     MoveTopicToMap topicId mapId origPos targetId targetMapId pos
       -> moveTopicToMap topicId mapId origPos targetId targetMapId pos model |> storeModel
     SwitchDisplay displayMode -> switchDisplay displayMode model |> storeModel
@@ -210,6 +228,7 @@ update msg model =
     IconMenu iconMenuMsg -> updateIconMenu iconMenuMsg model
     Mouse mouseMsg -> updateMouse mouseMsg model
     Fullscreen -> fullscreen model |> storeModel
+    Back -> back model |> storeModel
     Delete -> delete model |> storeModel
     NoOp -> (model, Cmd.none)
 
@@ -473,10 +492,27 @@ fullscreen : Model -> Model
 fullscreen model =
   case getSingleSelection model of
     Just (topicId, mapId) ->
-      { model | activeMap = topicId }
+      { model
+      | mapPath = topicId :: model.mapPath
+      , selection = []
+      }
       |> createMapIfNeeded topicId mapId
       |> Tuple.first
     Nothing -> model
+
+
+back : Model -> Model
+back model =
+  let
+    (mapPath, selection) =
+      case model.mapPath of
+        prevMapId :: mapId :: mapIds -> (mapId :: mapIds, [(prevMapId, mapId)])
+        _ -> logError "back" "mapPath is empty!" ([0], [])
+  in
+  { model
+  | mapPath = mapPath
+  , selection = selection
+  }
 
 
 delete : Model -> Model
@@ -752,13 +788,26 @@ appStyle =
 toolbarStyle : List (Attribute Msg)
 toolbarStyle =
   [ style "font-size" <| fromInt toolbarFontSize ++ "px"
-  , style "display" "inline-flex"
+  , style "display" "flex"
   , style "flex-direction" "column"
   , style "align-items" "flex-start"
   , style "gap" "28px"
-  , style "margin-top" "20px"
-  , style "position" "relative"
-  , style "z-index" "3"
+  , style "position" "fixed"
+  , style "z-index" "1"
+  ]
+
+
+mapTitleStyle : List (Attribute Msg)
+mapTitleStyle =
+  [ style "font-size" "36px"
+  , style "font-weight" "bold"
+  , style "margin-top" "24px"
+  ]
+
+
+backButtonStyle : List (Attribute Msg)
+backButtonStyle =
+  [ style "margin-top" "-28px"
   ]
 
 
