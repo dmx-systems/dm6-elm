@@ -11,8 +11,8 @@ import Html.Attributes exposing (id, style, attribute, value)
 import Html.Events exposing (onInput, onBlur)
 import String exposing (fromInt, fromFloat)
 import Svg exposing (Svg, svg, g, line, path)
-import Svg.Attributes exposing (width, height, viewBox, x1, y1, x2, y2, d, stroke, strokeWidth,
-  strokeDasharray, fill, transform)
+import Svg.Attributes exposing (width, height, x1, y1, x2, y2, d, stroke, fill, transform,
+  strokeWidth, strokeDasharray)
 
 
 

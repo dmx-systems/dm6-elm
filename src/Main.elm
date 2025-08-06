@@ -13,8 +13,8 @@ import Browser
 import Browser.Dom as Dom
 import Browser.Events as Events
 import Dict
-import Html exposing (Html, Attribute, div, span, text, br, button, input, label, h1)
-import Html.Attributes exposing (id, style, type_, name, checked, disabled)
+import Html exposing (Html, Attribute, div, span, text, br, button, input, label, a)
+import Html.Attributes exposing (id, href, style, type_, name, checked, disabled)
 import Html.Events exposing (onClick, on)
 import Random
 import String exposing (fromInt, fromFloat)
@@ -104,6 +104,7 @@ viewToolbar model =
     , viewContainerDisplay model
     , viewToolbarButton "Fullscreen" Fullscreen True model
     , viewToolbarButton "Delete" Delete True model
+    , viewFooter
     ]
 
 
@@ -206,6 +207,44 @@ viewRadioButton label_ msg isChecked isDisabled =
     , text label_
     ]
 
+
+viewFooter : Html Msg
+viewFooter =
+  div
+    footerStyle
+    [ div
+      []
+      [ text "0.1-snapshot" ]
+    , div
+      []
+      [ text "Aug 6, 2025" ]
+    , div
+      []
+      [ text "Source: "
+      , a
+        ( [ href "https://github.com/dmx-systems/dm6-elm" ]
+          ++ linkStyle
+        )
+        [ text "GitHub" ]
+      ]
+    , a
+      ( [ href "https://dmx.berlin" ]
+        ++ linkStyle
+      )
+      [ text "DMX Systems" ]
+    ]
+
+
+footerStyle : List (Attribute Msg)
+footerStyle =
+  [ style "font-size" <| fromInt footerFontSize ++ "px"
+  , style "color" "lightgray"
+  ]
+
+
+linkStyle : List (Attribute Msg)
+linkStyle =
+  [ style "color" "lightgray" ]
 
 
 -- UPDATE

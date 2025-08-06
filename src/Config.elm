@@ -13,6 +13,7 @@ newTopicPos = Point 178 107
 mainFont = "sans-serif"
 toolbarFontSize = 14
 contentFontSize = 13
+footerFontSize = 13
 
 topicWidth = 156
 topicHeight = 28 -- also width/height of square icon box
