@@ -372,18 +372,21 @@ absMapPos : MapId -> Point -> Model -> Maybe Point
 absMapPos mapId posAcc model =
   getMap mapId model.maps |> Maybe.andThen
     (\map ->
-      if isFullscreen mapId model then
-        Just <| Point
+      let
+        posAcc_ = Point
           (posAcc.x - map.rect.x1)
           (posAcc.y - map.rect.y1)
+      in
+      if isFullscreen mapId model then
+        Just posAcc_
       else
         getTopicPos map.id map.parentMapId model.maps |> Maybe.andThen
           (\mapPos ->
             absMapPos
               map.parentMapId
               (Point
-                (posAcc.x + mapPos.x - topicW2 - map.rect.x1)
-                (posAcc.y + mapPos.y + topicH2 - map.rect.y1)
+                (posAcc_.x + mapPos.x - topicW2)
+                (posAcc_.y + mapPos.y + topicH2)
               )
               model
           )

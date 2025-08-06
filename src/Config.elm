@@ -8,6 +8,7 @@ import Model exposing (..)
 
 
 homeMapName = "DM6 Elm"
+newTopicPos = Point 178 107
 
 mainFont = "sans-serif"
 toolbarFontSize = 14

@@ -95,10 +95,10 @@ viewTopicIcon topicId model =
     Nothing -> text "?"
 
 
-viewIcon : String -> Html Msg
-viewIcon iconName =
+viewIcon : String -> Float -> Html Msg
+viewIcon iconName size =
   case Icon.icons |> Dict.get iconName of
-    Just icon -> icon |> Icon.toHtml []
+    Just icon -> icon |> Icon.withSize size |> Icon.toHtml []
     Nothing -> text "??"
 
 
@@ -115,6 +115,7 @@ iconMenuStyle =
   , style "height" "320px"
   , style "background-color" "white"
   , style "border" "1px solid lightgray"
+  , style "z-index" "1"
   ]
 
 

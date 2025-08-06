@@ -13,7 +13,7 @@ import Browser
 import Browser.Dom as Dom
 import Browser.Events as Events
 import Dict
-import Html exposing (Html, Attribute, div, text, br, button, input, label, h1)
+import Html exposing (Html, Attribute, div, span, text, br, button, input, label, h1)
 import Html.Attributes exposing (id, style, type_, name, checked, disabled)
 import Html.Events exposing (onClick, on)
 import Random
@@ -96,10 +96,7 @@ viewToolbar : Model -> Html Msg
 viewToolbar model =
   div
     toolbarStyle
-    [ div
-      mapTitleStyle
-      [ text <| getMapName model ]
-    , viewBackButton model
+    [ viewMapNav model
     , viewToolbarButton "Add Topic" AddTopic False model
     , viewToolbarButton "Edit" (Edit EditStart) True model
     , viewToolbarButton "Choose Icon" (IconMenu Open) True model
@@ -110,18 +107,21 @@ viewToolbar model =
     ]
 
 
-viewBackButton : Model -> Html Msg
-viewBackButton model =
+viewMapNav : Model -> Html Msg
+viewMapNav model =
   let
-    disabled_ = List.length model.mapPath == 1
+    backDisabled = isHome model
   in
   div
-    backButtonStyle
+    mapNavStyle
     [ button
       [ onClick Back
-      , disabled disabled_
+      , disabled backDisabled
       ]
-      [ viewIcon "arrow-left" ]
+      [ viewIcon "arrow-left" 20 ]
+    , span
+      mapTitleStyle
+      [ text <| getMapName model ]
     ]
 
 
@@ -250,16 +250,22 @@ createTopic model =
 
 createTopicAndAddToMap : MapId -> Model -> Model
 createTopicAndAddToMap mapId model =
-  let
-    (newModel, topicId) = createTopic model
-    props = ViewTopic <| TopicProps
-      (Point 189 97)
-      topicDetailSize
-      (Monad LabelOnly)
-  in
-  newModel
-  |> addItemToMap topicId props mapId
-  |> select topicId mapId
+  case getMap mapId model.maps of
+    Just map ->
+      let
+        (newModel, topicId) = createTopic model
+        props = ViewTopic <| TopicProps
+          (Point
+            (newTopicPos.x + map.rect.x1)
+            (newTopicPos.y + map.rect.y1)
+          )
+          topicDetailSize
+          (Monad LabelOnly)
+      in
+      newModel
+      |> addItemToMap topicId props mapId
+      |> select topicId mapId
+    Nothing -> model
 
 
 -- Presumption: both players exist in same map
@@ -513,6 +519,7 @@ back model =
   | mapPath = mapPath
   , selection = selection
   }
+  |> autoSize
 
 
 delete : Model -> Model
@@ -797,17 +804,19 @@ toolbarStyle =
   ]
 
 
+mapNavStyle : List (Attribute Msg)
+mapNavStyle =
+  [ style "margin-top" "20px"
+  , style "margin-bottom" "12px"
+  ]
+
+
 mapTitleStyle : List (Attribute Msg)
 mapTitleStyle =
   [ style "font-size" "36px"
   , style "font-weight" "bold"
-  , style "margin-top" "24px"
-  ]
-
-
-backButtonStyle : List (Attribute Msg)
-backButtonStyle =
-  [ style "margin-top" "-28px"
+  , style "vertical-align" "top"
+  , style "margin-left" "12px"
   ]
 
 
