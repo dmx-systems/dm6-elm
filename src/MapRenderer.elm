@@ -517,7 +517,7 @@ itemCountStyle : List (Attribute Msg)
 itemCountStyle =
   [ style "font-size" <| fromInt contentFontSize ++ "px"
   , style "position" "absolute"
-  , style "left" "calc(100% + 14px)"
+  , style "left" "calc(100% + 12px)"
   ]
 
 

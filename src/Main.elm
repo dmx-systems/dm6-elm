@@ -214,7 +214,7 @@ viewFooter =
     footerStyle
     [ div
       []
-      [ text "0.1-snapshot" ]
+      [ text "Version 0.1" ]
     , div
       []
       [ text "Aug 6, 2025" ]

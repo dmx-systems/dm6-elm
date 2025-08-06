@@ -1,14 +1,20 @@
 module Utils exposing (..)
 
-
-
--- GENRAL ELM UTILITIES
-
-
-import Debug exposing (log, toString)
 import Html exposing (Html, Attribute, text, br)
 import Html.Events exposing (on, stopPropagationOn, keyCode)
 import Json.Decode as D
+import Debug exposing (log, toString)
+{--
+log : String -> a -> a
+log text val = val
+
+toString : a -> String
+toString val = ""
+--}
+
+
+
+-- GENRAL ELM UTILITIES
 
 
 -- Events
