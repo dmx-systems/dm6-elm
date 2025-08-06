@@ -284,6 +284,17 @@ hasMap mapId maps =
   maps |> Dict.member mapId
 
 
+updateMapRect : MapId -> (Rectangle -> Rectangle) -> Model -> Model
+updateMapRect mapId rectFunc model =
+  { model | maps = updateMaps
+    mapId
+    (\map ->
+      { map | rect = rectFunc map.rect }
+    )
+    model.maps
+  }
+
+
 getTopicPos : Id -> MapId -> Maps -> Maybe Point
 getTopicPos topicId mapId maps =
   case getTopicProps topicId mapId maps of

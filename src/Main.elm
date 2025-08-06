@@ -504,22 +504,39 @@ fullscreen model =
       }
       |> createMapIfNeeded topicId mapId
       |> Tuple.first
+      |> adjustMapRect topicId -1
     Nothing -> model
 
 
 back : Model -> Model
 back model =
   let
-    (mapPath, selection) =
+    (mapId, mapPath, selection) =
       case model.mapPath of
-        prevMapId :: mapId :: mapIds -> (mapId :: mapIds, [(prevMapId, mapId)])
-        _ -> logError "back" "mapPath is empty!" ([0], [])
+        prevMapId :: nextMapId :: mapIds ->
+          ( prevMapId
+          , nextMapId :: mapIds
+          , [(prevMapId, nextMapId)]
+          )
+        _ -> logError "back" "model.mapPath has a problem" (0, [0], [])
   in
   { model
   | mapPath = mapPath
   , selection = selection
   }
+  |> adjustMapRect mapId 1
   |> autoSize
+
+
+adjustMapRect : MapId -> Float -> Model -> Model
+adjustMapRect mapId factor model =
+  model |> updateMapRect mapId
+    (\rect -> Rectangle
+      (rect.x1 + factor * 400) -- TODO
+      (rect.y1 + factor * 300) -- TODO
+      rect.x2
+      rect.y2
+    )
 
 
 delete : Model -> Model
