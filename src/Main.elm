@@ -214,10 +214,10 @@ viewFooter =
     footerStyle
     [ div
       []
-      [ text "Version 0.1" ]
+      [ text "0.2-snapshot" ]
     , div
       []
-      [ text "Aug 6, 2025" ]
+      [ text "Aug 8, 2025" ]
     , div
       []
       [ text "Source: "
@@ -588,6 +588,7 @@ delete model =
         model
   in
   { newModel | selection = [] }
+  |> autoSize
 
 
 -- Mouse
