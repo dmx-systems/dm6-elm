@@ -25,8 +25,8 @@ calcMapRect mapId model =
       let
         (rect, model_) =
           (map.items |> Dict.values |> List.filter isVisible |> List.foldr
-            (\viewItem (rectAcc, modelAcc) ->
-              calcItemSize viewItem mapId rectAcc modelAcc
+            (\mapItem (rectAcc, modelAcc) ->
+              calcItemSize mapItem mapId rectAcc modelAcc
             )
             (Rectangle 5000 5000 -5000 -5000, model) -- x-min y-min x-max y-max
           )
@@ -57,17 +57,17 @@ storeMapRect mapId newRect oldRect parentMapId model =
     )
 
 
-calcItemSize : ViewItem -> MapId -> Rectangle -> Model -> (Rectangle, Model)
-calcItemSize viewItem mapId rectAcc model =
-  case viewItem.viewProps of
+calcItemSize : MapItem -> MapId -> Rectangle -> Model -> (Rectangle, Model)
+calcItemSize mapItem mapId rectAcc model =
+  case mapItem.viewProps of
     ViewTopic {pos, size, displayMode} ->
       case displayMode of
         Monad LabelOnly -> (topicExtent pos rectAcc, model)
-        Monad Detail -> (detailTopicExtent viewItem.id mapId pos size rectAcc model, model)
+        Monad Detail -> (detailTopicExtent mapItem.id mapId pos size rectAcc model, model)
         Container BlackBox -> (topicExtent pos rectAcc, model)
         Container WhiteBox ->
           let
-            (rect, model_) = calcMapRect viewItem.id model
+            (rect, model_) = calcMapRect mapItem.id model
           in
           (mapExtent pos rect rectAcc, model_)
         Container Unboxed -> (topicExtent pos rectAcc, model)

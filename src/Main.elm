@@ -395,14 +395,14 @@ addItemToMap itemId props mapId model =
       itemId "dmx.child"
       mapId "dmx.parent"
       model
-    viewItem = ViewItem itemId False props parentAssocId -- hidden=False
+    mapItem = MapItem itemId False props parentAssocId -- hidden=False
     _ = info "addItemToMap"
       { itemId = itemId, props = props, mapId = mapId, parentAssocId = parentAssocId}
   in
   { newModel | maps =
     updateMaps
       mapId
-      (\map -> { map | items = map.items |> Dict.insert itemId viewItem })
+      (\map -> { map | items = map.items |> Dict.insert itemId mapItem })
       newModel.maps
   }
 

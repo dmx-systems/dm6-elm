@@ -12,12 +12,12 @@ type alias Model =
   { items : Items
   , maps : Maps
   , mapPath : List MapId
+  , nextId : Id
   , selection : Selection -- transient
   , editState : EditState -- transient
   , dragState : DragState -- transient
   , iconMenuState : Bool -- transient
   , measureText : String -- transient
-  , nextId : Id
   }
 
 
@@ -27,19 +27,19 @@ defaultModel =
   , maps = Dict.singleton 0 -- map 0 is the "home map", it has no corresponding topic
     <| Map 0 Dict.empty (Rectangle 0 0 0 0) -1 -- parentMapId = -1
   , mapPath = [0]
+  , nextId = 1
   , selection = []
   , editState = NoEdit
   , dragState = NoDrag
   , iconMenuState = False
   , measureText = ""
-  , nextId = 1
   }
 
 
 type alias Items = Dict Id Item
 
 
-type Item -- TODO: make it a record with "id" field, analogue ViewItem?
+type Item -- TODO: make it a record with "id" field, analogue MapItem?
   = Topic TopicInfo
   | Assoc AssocInfo
 
@@ -62,18 +62,18 @@ type alias AssocInfo =
 
 
 type alias Maps = Dict Id Map
-type alias ViewItems = Dict Id ViewItem -- rename "MapItems"?
+type alias MapItems = Dict Id MapItem
 
 
 type alias Map =
   { id : MapId
-  , items : ViewItems
+  , items : MapItems
   , rect : Rectangle
   , parentMapId : MapId -- FIXME: ambiguous semantics? view context vs model?
   }
 
 
-type alias ViewItem = -- rename "MapItem"?
+type alias MapItem =
   { id : Id
   , hidden : Bool
   , viewProps : ViewProps
@@ -353,8 +353,8 @@ setDisplayMode topicId mapId displayMode model =
 getTopicProps : Id -> MapId -> Maps -> Maybe TopicProps
 getTopicProps topicId mapId maps =
   case getViewItemById topicId mapId maps of
-    Just viewItem ->
-      case viewItem.viewProps of
+    Just mapItem ->
+      case mapItem.viewProps of
         ViewTopic props -> Just props
         ViewAssoc _ -> topicMismatch "getTopicProps" topicId Nothing
     Nothing -> fail "getTopicProps" {topicId = topicId, mapId = mapId} Nothing
@@ -365,12 +365,12 @@ updateTopicProps topicId mapId maps propsFunc =
   maps |> updateMaps mapId
     (\map ->
       { map | items = map.items |> Dict.update topicId
-        (\viewItem_ ->
-          case viewItem_ of
-            Just viewItem ->
-              case viewItem.viewProps of
+        (\mapItem_ ->
+          case mapItem_ of
+            Just mapItem ->
+              case mapItem.viewProps of
                 ViewTopic props -> Just
-                  { viewItem | viewProps = ViewTopic (propsFunc props) }
+                  { mapItem | viewProps = ViewTopic (propsFunc props) }
                 ViewAssoc _ -> topicMismatch "updateTopicProps" topicId Nothing
             Nothing -> illegalItemId "updateTopicProps" topicId Nothing
         )
@@ -378,15 +378,15 @@ updateTopicProps topicId mapId maps propsFunc =
     )
 
 
-getViewItemById : Id -> MapId -> Maps -> Maybe ViewItem
+getViewItemById : Id -> MapId -> Maps -> Maybe MapItem
 getViewItemById itemId mapId maps =
   getMap mapId maps |> Maybe.andThen (getViewItem itemId)
 
 
-getViewItem : Id -> Map -> Maybe ViewItem
+getViewItem : Id -> Map -> Maybe MapItem
 getViewItem itemId map =
   case map.items |> Dict.get itemId of
-    Just viewItem -> Just viewItem
+    Just mapItem -> Just mapItem
     Nothing -> itemNotInMap "getViewItem" itemId map.id Nothing
 
 
@@ -408,7 +408,7 @@ hideItem itemId mapId maps model =
     maps
 
 
-hideItems : Id -> Model -> ViewItems -> ViewItems
+hideItems : Id -> Model -> MapItems -> MapItems
 hideItems itemId model items =
   let
     newItems = items |> Dict.update
@@ -445,7 +445,7 @@ assocsOfPlayer playerId model =
     |> List.filter (hasPlayer playerId model)
 
 
-viewAssocsOfPlayer : Id -> ViewItems -> Model -> List Id
+viewAssocsOfPlayer : Id -> MapItems -> Model -> List Id
 viewAssocsOfPlayer playerId items model =
   items |> Dict.values
     |> List.filter isViewAssoc
@@ -479,19 +479,19 @@ isAssoc item =
   not (isTopic item)
 
 
-isViewTopic : ViewItem -> Bool
+isViewTopic : MapItem -> Bool
 isViewTopic item =
   case item.viewProps of
     ViewTopic _ -> True
     ViewAssoc _ -> False
 
 
-isViewAssoc : ViewItem -> Bool
+isViewAssoc : MapItem -> Bool
 isViewAssoc item =
   not (isViewTopic item)
 
 
-isVisible : ViewItem -> Bool
+isVisible : MapItem -> Bool
 isVisible item =
   not item.hidden
 

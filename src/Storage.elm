@@ -96,7 +96,7 @@ encodeMap map =
     ]
 
 
-encodeMapItem : ViewItem -> E.Value
+encodeMapItem : MapItem -> E.Value
 encodeMapItem item =
   E.object
     [ ("id", E.int item.id)
@@ -165,12 +165,12 @@ modelDecoder =
       )
     |> required "maps" (D.dict mapDecoder |> D.andThen strToIntDictDecoder)
     |> required "mapPath" (D.list D.int)
+    |> required "nextId" D.int
     |> hardcoded defaultModel.selection
     |> hardcoded defaultModel.editState
     |> hardcoded defaultModel.dragState
     |> hardcoded defaultModel.iconMenuState
     |> hardcoded defaultModel.measureText
-    |> required "nextId" D.int
 
 
 mapDecoder : D.Decoder Map
@@ -179,7 +179,7 @@ mapDecoder =
     (D.field "id" D.int)
     (D.field "items"
       (D.dict
-        (D.map4 ViewItem
+        (D.map4 MapItem
           (D.field "id" D.int)
           (D.field "hidden" D.bool)
           (D.oneOf

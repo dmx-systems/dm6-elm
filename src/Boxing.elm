@@ -8,7 +8,7 @@ import Dict
 -- MODEL
 
 
-type alias TransferFunc = ViewItems -> ViewItems -> Model -> ViewItems
+type alias TransferFunc = MapItems -> MapItems -> Model -> MapItems
 
 
 
@@ -42,7 +42,7 @@ transferContent containerId targetMapId transferFunc model =
 Iterates the container items (recursively) and sets corresponding target items to hidden.
 Returns the updated target items.
 -}
-boxItems : ViewItems -> ViewItems -> Model -> ViewItems
+boxItems : MapItems -> MapItems -> Model -> MapItems
 boxItems containerItems targetItems model =
   containerItems |> Dict.values |> List.foldr
     (\containerItem targetItemsAcc ->
@@ -60,7 +60,7 @@ boxItems containerItems targetItems model =
 Iterates the container items (recursively) and reveals corresponding target items.
 Returns the updated target items.
 -}
-unboxItems : ViewItems -> ViewItems -> Model -> ViewItems
+unboxItems : MapItems -> MapItems -> Model -> MapItems
 unboxItems containerItems targetItems model =
   containerItems |> Dict.values |> List.filter isVisible |> List.foldr
     (\containerItem targetItemsAcc ->
@@ -83,7 +83,7 @@ unboxItems containerItems targetItems model =
 {-| Returns the target item to reveal that corresponds to the container item.
 Part of unboxing. FIXDOC
 -}
-unboxTopic : ViewItem -> ViewItems -> Model -> (ViewItems, Bool)
+unboxTopic : MapItem -> MapItems -> Model -> (MapItems, Bool)
 unboxTopic containerItem targetItems model =
   let
     (topicToInsert, abort) =
@@ -107,7 +107,7 @@ unboxTopic containerItem targetItems model =
   )
 
 
-unboxAssoc : ViewItem -> ViewItems -> ViewItems
+unboxAssoc : MapItem -> MapItems -> MapItems
 unboxAssoc containerItem targetItems =
   let
     assocToInsert = targetAssocItem containerItem.id targetItems
@@ -116,7 +116,7 @@ unboxAssoc containerItem targetItems =
     |> Dict.insert assocToInsert.id assocToInsert
 
 
-setUnboxed : ViewItem -> ViewItem
+setUnboxed : MapItem -> MapItem
 setUnboxed item =
   { item | viewProps =
     case item.viewProps of
@@ -125,7 +125,7 @@ setUnboxed item =
   }
 
 
-isAbort : ViewItem -> Bool
+isAbort : MapItem -> Bool
 isAbort item =
   case item.viewProps of
     ViewTopic props ->
@@ -140,8 +140,8 @@ isAbort item =
 {-| Returns the target item to reveal that corresponds to the container item.
 Part of unboxing. FIXDOC
 -}
-targetAssocItem : Id -> ViewItems -> ViewItem
+targetAssocItem : Id -> MapItems -> MapItem
 targetAssocItem assocId targetItems =
   case targetItems |> Dict.get assocId of
     Just item -> { item | hidden = False }
-    Nothing -> ViewItem assocId False (ViewAssoc AssocProps) -1
+    Nothing -> MapItem assocId False (ViewAssoc AssocProps) -1
