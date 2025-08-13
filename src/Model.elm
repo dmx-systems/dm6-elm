@@ -170,8 +170,7 @@ type Msg
   | Edit EditMsg
   | IconMenu IconMenuMsg
   | Mouse MouseMsg
-  | Fullscreen
-  | Back
+  | Nav NavMsg
   | Delete
   | NoOp
 
@@ -198,6 +197,11 @@ type MouseMsg
   | Over Class Id MapId
   | Out Class Id MapId
   | Time Time.Posix
+
+
+type NavMsg
+  = Fullscreen
+  | Back
 
 
 

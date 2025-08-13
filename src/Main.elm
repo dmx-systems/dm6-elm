@@ -102,7 +102,7 @@ viewToolbar model =
     , viewToolbarButton "Choose Icon" (IconMenu Open) True model
     , viewMonadDisplay model
     , viewContainerDisplay model
-    , viewToolbarButton "Fullscreen" Fullscreen True model
+    , viewToolbarButton "Fullscreen" (Nav Fullscreen) True model
     , viewToolbarButton "Delete" Delete True model
     , viewFooter
     ]
@@ -116,7 +116,7 @@ viewMapNav model =
   div
     mapNavStyle
     [ button
-      [ onClick Back
+      [ onClick (Nav Back)
       , disabled backDisabled
       ]
       [ viewIcon "arrow-left" 20 ]
@@ -214,10 +214,10 @@ viewFooter =
     footerStyle
     [ div
       []
-      [ text "0.2-snapshot" ]
+      [ text version ]
     , div
       []
-      [ text "Aug 8, 2025" ]
+      [ text date ]
     , div
       []
       [ text "Source: "
@@ -266,8 +266,7 @@ update msg model =
     Edit editMsg -> updateEdit editMsg model
     IconMenu iconMenuMsg -> updateIconMenu iconMenuMsg model
     Mouse mouseMsg -> updateMouse mouseMsg model
-    Fullscreen -> fullscreen model |> storeModel
-    Back -> back model |> storeModel
+    Nav navMsg -> updateNav navMsg model |> storeModel
     Delete -> delete model |> storeModel
     NoOp -> (model, Cmd.none)
 
@@ -533,6 +532,13 @@ focus model =
 
 --
 
+updateNav : NavMsg -> Model -> Model
+updateNav navMsg model =
+  case navMsg of
+    Fullscreen -> fullscreen model
+    Back -> back model
+
+
 fullscreen : Model -> Model
 fullscreen model =
   case getSingleSelection model of
@@ -674,7 +680,8 @@ performDrag model pos =
       { model
         | maps = maps
         , dragState = Drag dragMode id mapId origPos pos target -- update lastPos
-      } |> autoSize
+      }
+      |> autoSize
     _ -> logError "performDrag"
       ("Received \"Move\" message when dragState is " ++ toString model.dragState)
       model
