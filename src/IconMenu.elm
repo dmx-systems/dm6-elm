@@ -67,45 +67,6 @@ viewIconMenu model =
     []
 
 
-viewIconList : List (Html Msg)
-viewIconList =
-  Icon.icons |> Dict.toList |> List.map
-    (\(iconName, icon) ->
-      button
-        ( [ onClick (Just iconName |> SetIcon |> IconMenu)
-          , stopPropagationOnMousedown NoOp
-          , title iconName
-          ]
-          ++ iconButtonStyle
-        )
-        [ Icon.toHtml [] icon ]
-    )
-
-
-viewTopicIcon : Id -> Model -> Html Msg
-viewTopicIcon topicId model =
-  case getTopicInfo topicId model of
-    Just topic ->
-      case topic.iconName of
-        Just iconName ->
-          case Icon.icons |> Dict.get iconName of
-            Just icon -> icon |> Icon.withSize topicIconSize |> Icon.toHtml topicIconStyle
-            Nothing -> text "??"
-        Nothing -> text ""
-    Nothing -> text "?"
-
-
-viewIcon : String -> Float -> Html Msg
-viewIcon iconName size =
-  case Icon.icons |> Dict.get iconName of
-    Just icon -> icon |> Icon.withSize size |> Icon.toHtml []
-    Nothing -> text "??"
-
-
-
--- STYLE
-
-
 iconMenuStyle : List (Attribute Msg)
 iconMenuStyle =
   [ style "position" "absolute"
@@ -126,6 +87,29 @@ iconListStyle =
   ]
 
 
+closeButtonStyle : List (Attribute Msg)
+closeButtonStyle =
+  [ style "position" "absolute"
+  , style "top" "0"
+  , style "right" "0"
+  ]
+
+
+viewIconList : List (Html Msg)
+viewIconList =
+  Icon.icons |> Dict.toList |> List.map
+    (\(iconName, icon) ->
+      button
+        ( [ onClick (Just iconName |> SetIcon |> IconMenu)
+          , stopPropagationOnMousedown NoOp
+          , title iconName
+          ]
+          ++ iconButtonStyle
+        )
+        [ Icon.toHtml [] icon ]
+    )
+
+
 iconButtonStyle : List (Attribute Msg)
 iconButtonStyle =
   [ style "border-width" "0"
@@ -133,12 +117,24 @@ iconButtonStyle =
   ]
 
 
-closeButtonStyle : List (Attribute Msg)
-closeButtonStyle =
-  [ style "position" "absolute"
-  , style "top" "0"
-  , style "right" "0"
-  ]
+viewTopicIcon : Id -> Model -> Html Msg
+viewTopicIcon topicId model =
+  case getTopicInfo topicId model of
+    Just topic ->
+      case topic.iconName of
+        Just iconName ->
+          case Icon.icons |> Dict.get iconName of
+            Just icon -> icon |> Icon.withSize topicIconSize |> Icon.toHtml topicIconStyle
+            Nothing -> text "??"
+        Nothing -> text ""
+    Nothing -> text "?"
+
+
+viewIcon : String -> Float -> Html Msg
+viewIcon iconName size =
+  case Icon.icons |> Dict.get iconName of
+    Just icon -> icon |> Icon.withSize size |> Icon.toHtml []
+    Nothing -> text "??"
 
 
 topicIconStyle : List (Attribute Msg)

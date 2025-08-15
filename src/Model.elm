@@ -16,6 +16,7 @@ type alias Model =
   , selection : Selection -- transient
   , editState : EditState -- transient
   , dragState : DragState -- transient
+  , listState : ListState -- transient
   , iconMenuState : Bool -- transient
   , searchText : String -- transient
   , measureText : String -- transient
@@ -32,6 +33,7 @@ defaultModel =
   , selection = []
   , editState = NoEdit
   , dragState = NoDrag
+  , listState = NoList
   , iconMenuState = False
   , searchText = ""
   , measureText = ""
@@ -165,17 +167,26 @@ type DragMode
   | DrawAssoc
 
 
+type ListState
+  = SearchResult (List Id)
+  | NoList
+
+
 type Msg
   = AddTopic
   | MoveTopicToMap Id MapId Point Id MapId Point -- start point, random point (for target)
   | SwitchDisplay DisplayMode
-  | SearchInput String
+  | Search SearchMsg
   | Edit EditMsg
   | IconMenu IconMenuMsg
   | Mouse MouseMsg
   | Nav NavMsg
   | Delete
   | NoOp
+
+
+type SearchMsg
+  = SearchInput String
 
 
 type EditMsg

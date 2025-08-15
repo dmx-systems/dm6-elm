@@ -2,6 +2,7 @@ module Main exposing (..)
 
 import Boxing exposing (boxContainer, unboxContainer)
 import Config exposing (..)
+import FloatingList exposing (viewSearchInput, viewFloatingList, updateSearch)
 import IconMenu exposing (viewIcon, viewIconMenu, updateIconMenu)
 import MapAutoSize exposing (autoSize)
 import MapRenderer exposing (viewMap)
@@ -14,8 +15,8 @@ import Browser.Dom as Dom
 import Browser.Events as Events
 import Dict
 import Html exposing (Html, Attribute, div, span, text, br, button, input, label, a)
-import Html.Attributes exposing (id, href, style, type_, name, value, checked, disabled)
-import Html.Events exposing (onClick, onInput, on)
+import Html.Attributes exposing (id, href, style, type_, name, checked, disabled)
+import Html.Events exposing (onClick, on)
 import Random
 import String exposing (fromInt, fromFloat)
 import Task
@@ -70,6 +71,7 @@ view model =
       ( [ viewToolbar model
         , viewMap (activeMap model) -1 model -- parentMapId = -1
         ]
+        ++ viewFloatingList model
         ++ viewIconMenu model
       )
     , div
@@ -80,6 +82,14 @@ view model =
       , br [] []
       ]
     ]
+
+
+appStyle : List (Attribute Msg)
+appStyle =
+  [ style "font-family" mainFont
+  , style "user-select" "none"
+  , style "-webkit-user-select" "none" -- Safari still needs vendor prefix
+  ]
 
 
 viewToolbar : Model -> Html Msg
@@ -109,28 +119,6 @@ toolbarStyle =
   , style "position" "fixed"
   , style "z-index" "1"
   ]
-
-
-viewSearchInput : Model -> Html Msg
-viewSearchInput model =
-  div
-    []
-    [ div
-      []
-      [ text "Search" ]
-    , input
-      ( [ value model.searchText
-        , onInput SearchInput
-        ]
-        ++searchInputStyle
-      )
-      []
-    ]
-
-
-searchInputStyle : List (Attribute Msg)
-searchInputStyle =
-  [ style "width" "100px" ]
 
 
 viewMapNav : Model -> Html Msg
@@ -314,7 +302,7 @@ update msg model =
     MoveTopicToMap topicId mapId origPos targetId targetMapId pos
       -> moveTopicToMap topicId mapId origPos targetId targetMapId pos model |> storeModel
     SwitchDisplay displayMode -> switchDisplay displayMode model |> storeModel
-    SearchInput text -> onSearchInput text model
+    Search searchMsg -> updateSearch searchMsg model
     Edit editMsg -> updateEdit editMsg model
     IconMenu iconMenuMsg -> updateIconMenu iconMenuMsg model
     Mouse mouseMsg -> updateMouse mouseMsg model
@@ -480,11 +468,6 @@ switchDisplay displayMode model =
   in
   { model | maps = maps }
   |> autoSize
-
-
-onSearchInput : String -> Model -> (Model, Cmd Msg)
-onSearchInput text model =
-  ({ model | searchText = text}, Cmd.none)
 
 
 -- Text Edit
@@ -903,14 +886,6 @@ mouseDecoder msg =
 
 
 -- STYLE
-
-
-appStyle : List (Attribute Msg)
-appStyle =
-  [ style "font-family" mainFont
-  , style "user-select" "none"
-  , style "-webkit-user-select" "none" -- Safari still needs vendor prefix
-  ]
 
 
 displayModeStyle : Bool -> List (Attribute Msg)
