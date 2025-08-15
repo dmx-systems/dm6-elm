@@ -14,8 +14,8 @@ import Browser.Dom as Dom
 import Browser.Events as Events
 import Dict
 import Html exposing (Html, Attribute, div, span, text, br, button, input, label, a)
-import Html.Attributes exposing (id, href, style, type_, name, checked, disabled)
-import Html.Events exposing (onClick, on)
+import Html.Attributes exposing (id, href, style, type_, name, value, checked, disabled)
+import Html.Events exposing (onClick, onInput, on)
 import Random
 import String exposing (fromInt, fromFloat)
 import Task
@@ -82,21 +82,12 @@ view model =
     ]
 
 
-getMapName : Model -> String
-getMapName model =
-  if isHome model then -- home map has no corresponding topic
-    homeMapName
-  else
-    case getTopicInfo (activeMap model) model of
-      Just topic -> getTopicLabel topic
-      Nothing -> "??"
-
-
 viewToolbar : Model -> Html Msg
 viewToolbar model =
   div
     toolbarStyle
     [ viewMapNav model
+    , viewSearchInput model
     , viewToolbarButton "Add Topic" AddTopic False model
     , viewToolbarButton "Edit" (Edit EditStart) True model
     , viewToolbarButton "Choose Icon" (IconMenu Open) True model
@@ -106,6 +97,40 @@ viewToolbar model =
     , viewToolbarButton "Delete" Delete True model
     , viewFooter
     ]
+
+
+toolbarStyle : List (Attribute Msg)
+toolbarStyle =
+  [ style "font-size" <| fromInt toolbarFontSize ++ "px"
+  , style "display" "flex"
+  , style "flex-direction" "column"
+  , style "align-items" "flex-start"
+  , style "gap" "28px"
+  , style "position" "fixed"
+  , style "z-index" "1"
+  ]
+
+
+viewSearchInput : Model -> Html Msg
+viewSearchInput model =
+  div
+    []
+    [ div
+      []
+      [ text "Search" ]
+    , input
+      ( [ value model.searchText
+        , onInput SearchInput
+        ]
+        ++searchInputStyle
+      )
+      []
+    ]
+
+
+searchInputStyle : List (Attribute Msg)
+searchInputStyle =
+  [ style "width" "100px" ]
 
 
 viewMapNav : Model -> Html Msg
@@ -124,6 +149,32 @@ viewMapNav model =
       mapTitleStyle
       [ text <| getMapName model ]
     ]
+
+
+mapNavStyle : List (Attribute Msg)
+mapNavStyle =
+  [ style "margin-top" "20px"
+  , style "margin-bottom" "12px"
+  ]
+
+
+mapTitleStyle : List (Attribute Msg)
+mapTitleStyle =
+  [ style "font-size" "36px"
+  , style "font-weight" "bold"
+  , style "vertical-align" "top"
+  , style "margin-left" "12px"
+  ]
+
+
+getMapName : Model -> String
+getMapName model =
+  if isHome model then -- home map has no corresponding topic
+    homeMapName
+  else
+    case getTopicInfo (activeMap model) model of
+      Just topic -> getTopicLabel topic
+      Nothing -> "??"
 
 
 viewToolbarButton : String -> Msg -> Bool -> Model -> Html Msg
@@ -263,6 +314,7 @@ update msg model =
     MoveTopicToMap topicId mapId origPos targetId targetMapId pos
       -> moveTopicToMap topicId mapId origPos targetId targetMapId pos model |> storeModel
     SwitchDisplay displayMode -> switchDisplay displayMode model |> storeModel
+    SearchInput text -> onSearchInput text model
     Edit editMsg -> updateEdit editMsg model
     IconMenu iconMenuMsg -> updateIconMenu iconMenuMsg model
     Mouse mouseMsg -> updateMouse mouseMsg model
@@ -428,6 +480,11 @@ switchDisplay displayMode model =
   in
   { model | maps = maps }
   |> autoSize
+
+
+onSearchInput : String -> Model -> (Model, Cmd Msg)
+onSearchInput text model =
+  ({ model | searchText = text}, Cmd.none)
 
 
 -- Text Edit
@@ -599,7 +656,7 @@ delete model =
 
 -- Mouse
 
-updateMouse : MouseMsg -> Model -> ( Model, Cmd Msg )
+updateMouse : MouseMsg -> Model -> (Model, Cmd Msg)
 updateMouse msg model =
   case msg of
     Down -> ( mouseDown model, Cmd.none )
@@ -616,7 +673,7 @@ mouseDown model =
   { model | selection = [] }
 
 
-mouseDownOnItem : Model -> Class -> Id -> MapId -> Point -> ( Model, Cmd Msg )
+mouseDownOnItem : Model -> Class -> Id -> MapId -> Point -> (Model, Cmd Msg)
 mouseDownOnItem model class id mapId pos =
   ( { model | dragState = WaitForStartTime class id mapId pos
     } |> select id mapId
@@ -648,7 +705,7 @@ timeArrived time model =
       model
 
 
-mouseMove : Model -> Point -> ( Model, Cmd Msg )
+mouseMove : Model -> Point -> (Model, Cmd Msg)
 mouseMove model pos =
   case model.dragState of
     DragEngaged time class id mapId pos_ ->
@@ -687,7 +744,7 @@ performDrag model pos =
       model
 
 
-mouseUp : Model -> ( Model, Cmd Msg )
+mouseUp : Model -> (Model, Cmd Msg)
 mouseUp model =
   let
     (newModel, cmd) =
@@ -853,34 +910,6 @@ appStyle =
   [ style "font-family" mainFont
   , style "user-select" "none"
   , style "-webkit-user-select" "none" -- Safari still needs vendor prefix
-  ]
-
-
-toolbarStyle : List (Attribute Msg)
-toolbarStyle =
-  [ style "font-size" <| fromInt toolbarFontSize ++ "px"
-  , style "display" "flex"
-  , style "flex-direction" "column"
-  , style "align-items" "flex-start"
-  , style "gap" "28px"
-  , style "position" "fixed"
-  , style "z-index" "1"
-  ]
-
-
-mapNavStyle : List (Attribute Msg)
-mapNavStyle =
-  [ style "margin-top" "20px"
-  , style "margin-bottom" "12px"
-  ]
-
-
-mapTitleStyle : List (Attribute Msg)
-mapTitleStyle =
-  [ style "font-size" "36px"
-  , style "font-weight" "bold"
-  , style "vertical-align" "top"
-  , style "margin-left" "12px"
   ]
 
 

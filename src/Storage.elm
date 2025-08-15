@@ -170,6 +170,7 @@ modelDecoder =
     |> hardcoded defaultModel.editState
     |> hardcoded defaultModel.dragState
     |> hardcoded defaultModel.iconMenuState
+    |> hardcoded defaultModel.searchText
     |> hardcoded defaultModel.measureText
 
 

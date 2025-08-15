@@ -17,6 +17,7 @@ type alias Model =
   , editState : EditState -- transient
   , dragState : DragState -- transient
   , iconMenuState : Bool -- transient
+  , searchText : String -- transient
   , measureText : String -- transient
   }
 
@@ -32,6 +33,7 @@ defaultModel =
   , editState = NoEdit
   , dragState = NoDrag
   , iconMenuState = False
+  , searchText = ""
   , measureText = ""
   }
 
@@ -167,6 +169,7 @@ type Msg
   = AddTopic
   | MoveTopicToMap Id MapId Point Id MapId Point -- start point, random point (for target)
   | SwitchDisplay DisplayMode
+  | SearchInput String
   | Edit EditMsg
   | IconMenu IconMenuMsg
   | Mouse MouseMsg
