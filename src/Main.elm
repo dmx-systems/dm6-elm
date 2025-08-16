@@ -864,13 +864,6 @@ dragSub =
     ]
 
 
-strToIntDecoder : String -> D.Decoder Int
-strToIntDecoder str =
-  case String.toInt str of
-    Just int -> D.succeed int
-    Nothing -> D.fail <| "\"" ++ str ++ "\" is an invalid ID"
-
-
 -- TODO: no code doubling
 mouseDecoder : (Class -> Id -> MapId -> MouseMsg) -> D.Decoder Msg
 mouseDecoder msg =

@@ -168,7 +168,7 @@ type DragMode
 
 
 type ListState
-  = SearchResult (List Id)
+  = SearchResult (List Id) (Maybe Id) -- topic Ids, hovered topic
   | NoList
 
 
@@ -187,6 +187,8 @@ type Msg
 
 type SearchMsg
   = SearchInput String
+  | OverItem Id
+  | OutItem Id
 
 
 type EditMsg

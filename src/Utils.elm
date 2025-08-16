@@ -46,6 +46,13 @@ keyDecoder key msg_ =
   keyCode |> D.andThen isKey
 
 
+strToIntDecoder : String -> D.Decoder Int
+strToIntDecoder str =
+  case String.toInt str of
+    Just int -> D.succeed int
+    Nothing -> D.fail <| "\"" ++ str ++ "\" is an invalid ID"
+
+
 stopPropagationOnMousedown : msg -> Attribute msg
 stopPropagationOnMousedown msg_ =
   stopPropagationOn "mousedown" <| D.succeed (msg_, True)
