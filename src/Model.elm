@@ -356,15 +356,15 @@ getTopicPos topicId mapId maps =
     Nothing -> fail "getTopicPos" {topicId = topicId, mapId = mapId} Nothing
 
 
-setTopicPos : Id -> MapId -> Point -> Maps -> Maps
-setTopicPos topicId mapId pos maps =
-  updateTopicProps topicId mapId maps
+setTopicPos : Id -> MapId -> Point -> Model -> Model
+setTopicPos topicId mapId pos model =
+  model |> updateTopicProps topicId mapId
     (\props -> { props | pos = pos })
 
 
-setTopicPosByDelta : Id -> MapId -> Delta -> Maps -> Maps
-setTopicPosByDelta topicId mapId delta maps =
-  updateTopicProps topicId mapId maps
+setTopicPosByDelta : Id -> MapId -> Delta -> Model -> Model
+setTopicPosByDelta topicId mapId delta model =
+  model |> updateTopicProps topicId mapId
     (\props ->
       { props | pos =
         Point
@@ -381,9 +381,9 @@ getTopicSize topicId mapId maps =
     Nothing -> fail "getTopicSize" {topicId = topicId, mapId = mapId} Nothing
 
 
-setTopicSize : Id -> MapId -> Size -> Maps -> Maps
-setTopicSize topicId mapId size maps =
-  updateTopicProps topicId mapId maps
+setTopicSize : Id -> MapId -> Size -> Model -> Model
+setTopicSize topicId mapId size model =
+  model |> updateTopicProps topicId mapId
     (\props -> { props | size = size })
 
 
@@ -394,9 +394,9 @@ getDisplayMode topicId mapId maps =
     Nothing -> fail "getDisplayMode" {topicId = topicId, mapId = mapId} Nothing
 
 
-setDisplayMode : Id -> MapId -> DisplayMode -> Model -> Maps
+setDisplayMode : Id -> MapId -> DisplayMode -> Model -> Model
 setDisplayMode topicId mapId displayMode model =
-  updateTopicProps topicId mapId model.maps
+  model |> updateTopicProps topicId mapId
     (\props -> { props | displayMode = displayMode })
 
 
@@ -410,9 +410,9 @@ getTopicProps topicId mapId maps =
     Nothing -> fail "getTopicProps" {topicId = topicId, mapId = mapId} Nothing
 
 
-updateTopicProps : Id -> MapId -> Maps -> (TopicProps -> TopicProps) -> Maps
-updateTopicProps topicId mapId maps propsFunc =
-  maps |> updateMaps mapId
+updateTopicProps : Id -> MapId -> (TopicProps -> TopicProps) -> Model -> Model
+updateTopicProps topicId mapId propsFunc model =
+  { model | maps = model.maps |> updateMaps mapId
     (\map ->
       { map | items = map.items |> Dict.update topicId
         (\mapItem_ ->
@@ -426,6 +426,7 @@ updateTopicProps topicId mapId maps propsFunc =
         )
       }
     )
+  }
 
 
 getMapItemById : Id -> MapId -> Maps -> Maybe MapItem
@@ -464,7 +465,8 @@ addItemToMap itemId props mapId model =
 
 showItem : Id -> MapId -> Model -> Model
 showItem itemId mapId model =
-  { model | maps = updateMaps mapId
+  { model | maps = updateMaps
+    mapId
     (\map ->
       { map | items = Dict.update itemId
         (\maybeItem ->
@@ -479,12 +481,12 @@ showItem itemId mapId model =
   }
 
 
-hideItem : Id -> MapId -> Maps -> Model -> Maps
-hideItem itemId mapId maps model =
-  updateMaps
+hideItem : Id -> MapId -> Model -> Model
+hideItem itemId mapId model =
+  { model | maps = model.maps |> updateMaps
     mapId
     (\map -> { map | items = hideItems itemId model map.items })
-    maps
+  }
 
 
 hideItems : Id -> Model -> MapItems -> MapItems

@@ -182,7 +182,7 @@ revealTopic topicId mapId model =
             props = ViewTopic <| TopicProps
               (Point 300 200) -- TODO
               topicSize
-              (Monad LabelOnly)
+              (Monad LabelOnly) -- TODO: container
           in
           addItemToMap topicId props mapId model
     Nothing -> model

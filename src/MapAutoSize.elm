@@ -46,14 +46,15 @@ storeMapRect mapId newRect oldRect parentMapId model =
     ( newRect, model )
   else
     ( newRect
-    , { model | maps = model.maps
-        |> updateMaps mapId (\map -> { map | rect = newRect })
-        |> setTopicPosByDelta mapId parentMapId
-          ( Point
-            ( newRect.x1 - oldRect.x1 )
-            ( newRect.y1 - oldRect.y1 )
-          )
+    , { model | maps = model.maps |> updateMaps
+        mapId
+        (\map -> { map | rect = newRect })
       }
+      |> setTopicPosByDelta mapId parentMapId
+        ( Point
+          ( newRect.x1 - oldRect.x1 )
+          ( newRect.y1 - oldRect.y1 )
+        )
     )
 
 

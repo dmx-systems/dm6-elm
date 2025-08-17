@@ -367,13 +367,12 @@ moveTopicToMap topicId mapId origPos targetId targetMapId pos model =
   in
   case viewProps_ of
     Just viewProps ->
-      addItemToMap topicId viewProps targetId
-        { newModel | maps =
-            hideItem topicId mapId newModel.maps model
-            |> setTopicPos topicId mapId origPos
-        }
-        |> select targetId targetMapId
-        |> autoSize
+      newModel
+      |> hideItem topicId mapId
+      |> setTopicPos topicId mapId origPos
+      |> addItemToMap topicId viewProps targetId
+      |> select targetId targetMapId
+      |> autoSize
     Nothing -> model
 
 
@@ -382,39 +381,29 @@ createMapIfNeeded topicId mapId model =
   if hasMap topicId model.maps then
     (model, False)
   else
-    ( { model
-      | maps = setDisplayMode topicId mapId (Container BlackBox)
-          { model
-          | maps = model.maps |>
-            Dict.insert
-              topicId
-              (Map topicId Dict.empty (Rectangle 0 0 0 0) mapId)
-          }
+    ( { model | maps = model.maps |> Dict.insert
+        topicId
+        (Map topicId Dict.empty (Rectangle 0 0 0 0) mapId)
       }
+      |> setDisplayMode topicId mapId (Container BlackBox)
     , True
     )
 
 
 switchDisplay : DisplayMode -> Model -> Model
 switchDisplay displayMode model =
-  let
-    maps =
-      case getSingleSelection model of
-        Just (containerId, targetMapId) ->
-          let
-            newModel =
-              { model | maps =
-                case displayMode of
-                  Monad _ -> model.maps
-                  Container BlackBox -> boxContainer containerId targetMapId model
-                  Container WhiteBox -> boxContainer containerId targetMapId model
-                  Container Unboxed -> unboxContainer containerId targetMapId model
-              }
-          in
-          setDisplayMode containerId targetMapId displayMode newModel
-        Nothing -> model.maps
-  in
-  { model | maps = maps }
+  ( case getSingleSelection model of
+    Just (containerId, targetMapId) ->
+      { model | maps =
+        case displayMode of
+          Monad _ -> model.maps
+          Container BlackBox -> boxContainer containerId targetMapId model
+          Container WhiteBox -> boxContainer containerId targetMapId model
+          Container Unboxed -> unboxContainer containerId targetMapId model
+      }
+      |> setDisplayMode containerId targetMapId displayMode
+    Nothing -> model
+  )
   |> autoSize
 
 
@@ -427,7 +416,8 @@ updateEdit msg model =
     OnTextInput text -> onTextInput text model |> storeModel
     OnTextareaInput text -> onTextareaInput text model |> storeModelWith
     SetTopicSize topicId mapId size ->
-      ( { model | maps = setTopicSize topicId mapId size model.maps }
+      ( model
+        |> setTopicSize topicId mapId size
         |> autoSize
       , Cmd.none
       )
@@ -449,14 +439,12 @@ startEdit model =
 
 setDetailDisplayIfMonade : Id -> MapId -> Model -> Model
 setDetailDisplayIfMonade topicId mapId model =
-  { model
-  | maps = updateTopicProps topicId mapId model.maps
+  model |> updateTopicProps topicId mapId
     (\props ->
       case props.displayMode of
         Monad _ -> { props | displayMode = Monad Detail }
         _ -> props
     )
-  }
 
 
 onTextInput : String -> Model -> Model
@@ -660,15 +648,12 @@ performDrag model pos =
         delta = Point
           (pos.x - lastPos.x)
           (pos.y - lastPos.y)
-        maps =
+        newModel =
           case dragMode of
-            DragTopic -> setTopicPosByDelta id mapId delta model.maps
-            DrawAssoc -> model.maps
+            DragTopic -> setTopicPosByDelta id mapId delta model
+            DrawAssoc -> model
       in
-      { model
-        | maps = maps
-        , dragState = Drag dragMode id mapId origPos pos target -- update lastPos
-      }
+      { newModel | dragState = Drag dragMode id mapId origPos pos target } -- update lastPos
       |> autoSize
     _ -> logError "performDrag"
       ("Received \"Move\" message when dragState is " ++ toString model.dragState)
