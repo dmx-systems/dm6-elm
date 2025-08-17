@@ -2,6 +2,7 @@ module FloatingList exposing (viewSearchInput, viewFloatingList, updateSearch)
 
 import Config exposing (..)
 import Model exposing (..)
+import Storage exposing (storeModel)
 import Utils exposing (..)
 
 import Dict
@@ -43,8 +44,9 @@ viewFloatingList model =
   case model.listState of
     SearchResult topicIds maybeId ->
       [ div
-        ( [ on "mouseover" (hoverDecoder OverItem)
-          , on "mouseout" (hoverDecoder OutItem)
+        ( [ on "click" (itemDecoder ClickItem)
+          , on "mouseover" (itemDecoder OverItem)
+          , on "mouseout" (itemDecoder OutItem)
           ]
           ++ floatingListStyle
         )
@@ -64,10 +66,12 @@ viewFloatingList model =
     NoList -> []
 
 
-hoverDecoder : (Id -> SearchMsg) -> D.Decoder Msg
-hoverDecoder msg =
+itemDecoder : (Id -> SearchMsg) -> D.Decoder Msg
+itemDecoder msg =
   D.map Search <| D.map msg
-    (D.at ["target", "dataset", "id"] D.string |> D.andThen strToIntDecoder)
+    ( D.at ["target", "dataset", "id"] D.string
+      |> D.andThen strToIntDecoder
+    )
 
 
 floatingListStyle : List (Attribute Msg)
@@ -107,33 +111,35 @@ listItemStyle topicId model =
 updateSearch : SearchMsg -> Model -> (Model, Cmd Msg)
 updateSearch msg model =
   case msg of
-    SearchInput text -> onSearchInput text model
-    OverItem topicId ->
-      case model.listState of
-        SearchResult topicIds _ ->
-          ( { model | listState = SearchResult topicIds (Just topicId) } -- update hovered topic
-          , Cmd.none
-          )
-        NoList ->
-          logError "updateSearch" "Received \"OverItem\" message when listState is NoList"
-          (model, Cmd.none)
-    OutItem topicId ->
-      case model.listState of
-        SearchResult topicIds _ ->
-          ( { model | listState = SearchResult topicIds Nothing } -- update hovered topic
-          , Cmd.none
-          )
-        NoList ->
-          logError "updateSearch" "Received \"OutItem\" message when listState is NoList"
-          (model, Cmd.none)
+    SearchInput text -> (onSearchInput text model, Cmd.none)
+    OverItem topicId -> (onOverItem topicId model, Cmd.none)
+    OutItem _ -> (onOutItem model, Cmd.none)
+    ClickItem topicId -> revealTopic topicId (activeMap model) model |> storeModel
 
 
-onSearchInput : String -> Model -> (Model, Cmd Msg)
+onSearchInput : String -> Model -> Model
 onSearchInput text model =
-  ( { model | searchText = text }
-    |> search
-  , Cmd.none
-  )
+  { model | searchText = text } |> search
+
+
+onOverItem : Id -> Model -> Model
+onOverItem topicId model =
+  case model.listState of
+    SearchResult topicIds _ ->
+      { model | listState = SearchResult topicIds (Just topicId) } -- update hovered topic
+    NoList ->
+      logError "onOverItem" "Received \"OverItem\" message when listState is NoList"
+      model
+
+
+onOutItem : Model -> Model
+onOutItem model =
+  case model.listState of
+    SearchResult topicIds _ ->
+      { model | listState = SearchResult topicIds Nothing } -- update hovered topic
+    NoList ->
+      logError "onOutItem" "Received \"OutItem\" message when listState is NoList"
+      model
 
 
 search : Model -> Model
@@ -158,3 +164,25 @@ search model =
 isMatch : String -> String -> Bool
 isMatch searchText text =
   String.contains searchText text
+
+
+revealTopic : Id -> MapId -> Model -> Model
+revealTopic topicId mapId model =
+  case getMap mapId model.maps of
+    Just map ->
+      case map.items |> Dict.get topicId of
+        Just _ ->
+          let
+            _ = info "revealTopic" (topicId, "set visible")
+          in
+          showItem topicId mapId model
+        Nothing ->
+          let
+            _ = info "revealTopic" (topicId, "add to map")
+            props = ViewTopic <| TopicProps
+              (Point 300 200) -- TODO
+              topicSize
+              (Monad LabelOnly)
+          in
+          addItemToMap topicId props mapId model
+    Nothing -> model

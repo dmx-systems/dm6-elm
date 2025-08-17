@@ -78,7 +78,7 @@ mapInfo : MapId -> MapId -> Model -> MapInfo
 mapInfo mapId parentMapId model =
   case getMap mapId model.maps of
     Just map ->
-      ( viewItems map model
+      ( mapItems map model
       , map.rect
       , if isFullscreen mapId model then
           ( { w = "100%", h = "100%" }, [] )
@@ -93,8 +93,8 @@ mapInfo mapId parentMapId model =
       ( ([], []), Rectangle 0 0 0 0, ( {w = "0", h = "0"}, [] ))
 
 
-viewItems : Map -> Model -> (List (Html Msg), List (Svg Msg))
-viewItems map model =
+mapItems : Map -> Model -> (List (Html Msg), List (Svg Msg))
+mapItems map model =
   map.items |> Dict.values |> List.filter isVisible |> List.foldr
     (\{id, viewProps} (t, a) ->
       let
@@ -103,7 +103,7 @@ viewItems map model =
       case (item, viewProps) of
         (Just (Topic topic), ViewTopic props) -> (viewTopic topic props map.id model :: t, a)
         (Just (Assoc assoc), ViewAssoc _) -> (t, viewAssoc assoc map.id model :: a)
-        _ -> logError "viewItems" ("problem with item " ++ fromInt id) (t, a)
+        _ -> logError "mapItems" ("problem with item " ++ fromInt id) (t, a)
     )
     ([], [])
 
@@ -255,7 +255,7 @@ blackBoxTopic topic props mapId model =
   ( topicPosStyle props
   , [ div
       (topicFlexboxStyle topic props mapId model ++ blackBoxStyle)
-      (labelTopicHtml topic props mapId model ++ viewItemCount topic.id props model)
+      (labelTopicHtml topic props mapId model ++ mapItemCount topic.id props model)
     , div
       (ghostTopicStyle topic mapId model)
       []
@@ -270,7 +270,7 @@ whiteBoxTopic topic props mapId model =
   in
   ( style
   , children
-    ++ viewItemCount topic.id props model
+    ++ mapItemCount topic.id props model
     ++ [ viewMap topic.id mapId model ]
   )
 
@@ -282,12 +282,12 @@ unboxedTopic topic props mapId model =
   in
   ( style
   , children
-    ++ viewItemCount topic.id props model
+    ++ mapItemCount topic.id props model
   )
 
 
-viewItemCount : Id -> TopicProps -> Model -> List (Html Msg)
-viewItemCount topicId props model =
+mapItemCount : Id -> TopicProps -> Model -> List (Html Msg)
+mapItemCount topicId props model =
   let
     itemCount =
       case props.displayMode of

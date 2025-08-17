@@ -311,27 +311,12 @@ update msg model =
     NoOp -> (model, Cmd.none)
 
 
-createTopic : Model -> (Model, Id)
-createTopic model =
-  let
-    id = model.nextId
-    topic = TopicInfo id topicDefaultText Nothing
-  in
-  ( { model
-    | items = model.items
-      |> Dict.insert id (Topic topic)
-    }
-    |> nextId
-  , id
-  )
-
-
 createTopicAndAddToMap : MapId -> Model -> Model
 createTopicAndAddToMap mapId model =
   case getMap mapId model.maps of
     Just map ->
       let
-        (newModel, topicId) = createTopic model
+        (newModel, topicId) = createTopic topicDefaultText Nothing model
         props = ViewTopic <| TopicProps
           (Point
             (newTopicPos.x + map.rect.x1)
@@ -357,18 +342,6 @@ createDefaultAssoc player1 player2 mapId model =
 
 
 -- Presumption: both players exist in same map
-createAssoc : ItemType -> Id -> RoleType -> Id -> RoleType -> Model -> (Model, Id)
-createAssoc itemType player1 role1 player2 role2 model =
-  let
-    id = model.nextId
-    assoc = AssocInfo id itemType player1 role1 player2 role2
-  in
-  ( { model | items = model.items |> Dict.insert id (Assoc assoc) } |> nextId
-  , id
-  )
-
-
--- Presumption: both players exist in same map
 createAssocAndAddToMap : ItemType -> Id -> RoleType -> Id -> RoleType -> MapId -> Model -> Model
 createAssocAndAddToMap itemType player1 role1 player2 role2 mapId model =
   let
@@ -376,11 +349,6 @@ createAssocAndAddToMap itemType player1 role1 player2 role2 mapId model =
     props = ViewAssoc AssocProps
   in
   addItemToMap assocId props mapId newModel
-
-
-nextId : Model -> Model
-nextId model =
-  { model | nextId = model.nextId + 1 }
 
 
 moveTopicToMap : Id -> MapId -> Point -> Id -> MapId -> Point -> Model -> Model
@@ -425,26 +393,6 @@ createMapIfNeeded topicId mapId model =
       }
     , True
     )
-
-
-addItemToMap : Id -> ViewProps -> MapId -> Model -> Model
-addItemToMap itemId props mapId model =
-  let
-    (newModel, parentAssocId) = createAssoc
-      "dmx.composition"
-      itemId "dmx.child"
-      mapId "dmx.parent"
-      model
-    mapItem = MapItem itemId False props parentAssocId -- hidden=False
-    _ = info "addItemToMap"
-      { itemId = itemId, props = props, mapId = mapId, parentAssocId = parentAssocId}
-  in
-  { newModel | maps =
-    updateMaps
-      mapId
-      (\map -> { map | items = map.items |> Dict.insert itemId mapItem })
-      newModel.maps
-  }
 
 
 switchDisplay : DisplayMode -> Model -> Model

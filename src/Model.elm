@@ -189,6 +189,7 @@ type SearchMsg
   = SearchInput String
   | OverItem Id
   | OutItem Id
+  | ClickItem Id
 
 
 type EditMsg
@@ -265,6 +266,39 @@ getTopicLabel topic =
   case topic.text |> String.lines |> List.head of
     Just line -> line
     Nothing -> ""
+
+
+createTopic : String -> Maybe IconName -> Model -> (Model, Id)
+createTopic text iconName model =
+  let
+    id = model.nextId
+    topic = TopicInfo id text iconName
+  in
+  ( { model
+    | items = model.items
+      |> Dict.insert id (Topic topic)
+    }
+    |> nextId
+  , id
+  )
+
+
+-- Presumption: both players exist in same map
+createAssoc : ItemType -> Id -> RoleType -> Id -> RoleType -> Model -> (Model, Id)
+createAssoc itemType player1 role1 player2 role2 model =
+  let
+    id = model.nextId
+    assoc = AssocInfo id itemType player1 role1 player2 role2
+  in
+  ( { model | items = model.items |> Dict.insert id (Assoc assoc) } |> nextId
+  , id
+  )
+
+
+nextId : Model -> Model
+nextId model =
+  { model | nextId = model.nextId + 1 }
+
 
 
 -- Maps
@@ -368,7 +402,7 @@ setDisplayMode topicId mapId displayMode model =
 
 getTopicProps : Id -> MapId -> Maps -> Maybe TopicProps
 getTopicProps topicId mapId maps =
-  case getViewItemById topicId mapId maps of
+  case getMapItemById topicId mapId maps of
     Just mapItem ->
       case mapItem.viewProps of
         ViewTopic props -> Just props
@@ -394,26 +428,55 @@ updateTopicProps topicId mapId maps propsFunc =
     )
 
 
-getViewItemById : Id -> MapId -> Maps -> Maybe MapItem
-getViewItemById itemId mapId maps =
-  getMap mapId maps |> Maybe.andThen (getViewItem itemId)
+getMapItemById : Id -> MapId -> Maps -> Maybe MapItem
+getMapItemById itemId mapId maps =
+  getMap mapId maps |> Maybe.andThen (getMapItem itemId)
 
 
-getViewItem : Id -> Map -> Maybe MapItem
-getViewItem itemId map =
+getMapItem : Id -> Map -> Maybe MapItem
+getMapItem itemId map =
   case map.items |> Dict.get itemId of
     Just mapItem -> Just mapItem
-    Nothing -> itemNotInMap "getViewItem" itemId map.id Nothing
+    Nothing -> itemNotInMap "getMapItem" itemId map.id Nothing
 
 
-updateMaps : MapId -> (Map -> Map) -> Maps -> Maps
-updateMaps mapId mapFunc maps =
-  maps |> Dict.update mapId
-    (\map_ ->
-      case map_ of
-        Just map -> Just (mapFunc map)
-        Nothing -> illegalMapId "updateMaps" mapId Nothing
+{-| Precondition: the item is not yet contained in the map
+-}
+addItemToMap : Id -> ViewProps -> MapId -> Model -> Model
+addItemToMap itemId props mapId model =
+  let
+    (newModel, parentAssocId) = createAssoc
+      "dmx.composition"
+      itemId "dmx.child"
+      mapId "dmx.parent"
+      model
+    mapItem = MapItem itemId False props parentAssocId -- hidden=False
+    _ = info "addItemToMap"
+      { itemId = itemId, props = props, mapId = mapId, parentAssocId = parentAssocId}
+  in
+  { newModel | maps =
+    updateMaps
+      mapId
+      (\map -> { map | items = map.items |> Dict.insert itemId mapItem })
+      newModel.maps
+  }
+
+
+showItem : Id -> MapId -> Model -> Model
+showItem itemId mapId model =
+  { model | maps = updateMaps mapId
+    (\map ->
+      { map | items = Dict.update itemId
+        (\maybeItem ->
+          case maybeItem of
+            Just mapItem -> Just { mapItem | hidden = False }
+            Nothing -> Nothing
+        )
+        map.items
+      }
     )
+    model.maps
+  }
 
 
 hideItem : Id -> MapId -> Maps -> Model -> Maps
@@ -440,6 +503,16 @@ hideItems itemId model items =
     (\assocId newItems_ -> hideItems assocId model newItems_)
     newItems
     assocIds
+
+
+updateMaps : MapId -> (Map -> Map) -> Maps -> Maps
+updateMaps mapId mapFunc maps =
+  maps |> Dict.update mapId
+    (\map_ ->
+      case map_ of
+        Just map -> Just (mapFunc map)
+        Nothing -> illegalMapId "updateMaps" mapId Nothing
+    )
 
 
 deleteItem : Id -> Model -> Model
