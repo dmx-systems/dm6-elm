@@ -70,8 +70,7 @@ viewIconMenu model =
 iconMenuStyle : List (Attribute Msg)
 iconMenuStyle =
   [ style "position" "absolute"
-  , style "left" "72px"
-  , style "top" "244px"
+  , style "top" "291px"
   , style "width" "320px"
   , style "height" "320px"
   , style "background-color" "white"

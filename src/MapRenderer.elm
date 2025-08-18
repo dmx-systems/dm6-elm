@@ -51,15 +51,17 @@ viewMap mapId parentMapId model =
   div
     mapStyle
     [ div
-        (topicLayerStyle mapRect)
-        topics
+        ( topicLayerStyle mapRect )
+        ( topics
+          ++ resultTopic mapId model
+        )
     , svg
         ( [ width svgSize.w, height svgSize.h ]
           ++ topicAttr mapId parentMapId model
           ++ svgStyle
         )
         [ g
-          ( gAttr mapId mapRect model)
+          ( gAttr mapId mapRect model )
           ( assocs
             ++ viewLimboAssoc mapId model
           )
@@ -106,6 +108,32 @@ mapItems map model =
         _ -> logError "mapItems" ("problem with item " ++ fromInt id) (t, a)
     )
     ([], [])
+
+
+resultTopic : MapId -> Model -> List (Html Msg)
+resultTopic mapId model =
+  let
+    activeMapId = activeMap model
+  in
+  if mapId == activeMapId then
+    case model.listState of
+      SearchResult _ (Just topicId) ->
+        if hasMapItem topicId activeMapId model then
+          let
+            _ = info "resultTopic" (topicId, "set visible")
+          in
+          [] -- TODO
+        else
+          let
+            _ = info "resultTopic" (topicId, "add to map")
+            props = defaultProps topicId topicSize model
+          in
+          case model.items |> Dict.get topicId of
+            Just (Topic topic) -> [ viewTopic topic props activeMapId model ]
+            _ -> []
+      _ -> []
+  else
+    []
 
 
 viewTopic : TopicInfo -> TopicProps -> MapId -> Model -> Html Msg

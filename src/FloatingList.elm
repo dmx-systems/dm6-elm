@@ -77,7 +77,7 @@ itemDecoder msg =
 floatingListStyle : List (Attribute Msg)
 floatingListStyle =
   [ style "position" "absolute"
-  , style "top" "145px"
+  , style "top" "144px"
   , style "width" "240px"
   , style "padding" "3px 0"
   , style "font-size" <| fromInt contentFontSize ++ "px"
@@ -168,21 +168,14 @@ isMatch searchText text =
 
 revealTopic : Id -> MapId -> Model -> Model
 revealTopic topicId mapId model =
-  case getMap mapId model.maps of
-    Just map ->
-      case map.items |> Dict.get topicId of
-        Just _ ->
-          let
-            _ = info "revealTopic" (topicId, "set visible")
-          in
-          showItem topicId mapId model
-        Nothing ->
-          let
-            _ = info "revealTopic" (topicId, "add to map")
-            props = ViewTopic <| TopicProps
-              (Point 300 200) -- TODO
-              topicSize
-              (Monad LabelOnly) -- TODO: container
-          in
-          addItemToMap topicId props mapId model
-    Nothing -> model
+  if hasMapItem topicId mapId model then
+    let
+      _ = info "revealTopic" (topicId, "set visible")
+    in
+    showItem topicId mapId model
+  else
+    let
+      _ = info "revealTopic" (topicId, "add to map")
+      props = ViewTopic <| defaultProps topicId topicSize model
+    in
+    addItemToMap topicId props mapId model

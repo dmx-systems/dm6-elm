@@ -429,6 +429,19 @@ updateTopicProps topicId mapId propsFunc model =
   }
 
 
+{-| Useful when revealing an existing topic -}
+defaultProps : Id -> Size -> Model -> TopicProps
+defaultProps topicId size model =
+  TopicProps
+    ( Point 0 0 ) -- TODO
+    size
+    ( if hasMap topicId model.maps then
+        Container BlackBox
+      else
+        Monad LabelOnly
+    )
+
+
 getMapItemById : Id -> MapId -> Maps -> Maybe MapItem
 getMapItemById itemId mapId maps =
   getMap mapId maps |> Maybe.andThen (getMapItem itemId)
@@ -439,6 +452,16 @@ getMapItem itemId map =
   case map.items |> Dict.get itemId of
     Just mapItem -> Just mapItem
     Nothing -> itemNotInMap "getMapItem" itemId map.id Nothing
+
+
+hasMapItem : Id -> MapId -> Model -> Bool
+hasMapItem itemId mapId model =
+  case getMap mapId model.maps of
+    Just map ->
+      case map.items |> Dict.get itemId of
+        Just _ -> True
+        Nothing -> False
+    Nothing -> False
 
 
 {-| Precondition: the item is not yet contained in the map
