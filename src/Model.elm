@@ -13,13 +13,16 @@ type alias Model =
   , maps : Maps
   , mapPath : List MapId
   , nextId : Id
-  , selection : Selection -- transient
-  , editState : EditState -- transient
-  , dragState : DragState -- transient
-  , listState : ListState -- transient
-  , iconMenuState : Bool -- transient
-  , searchText : String -- transient
-  , measureText : String -- transient
+  ----- transient -----
+  , selection : Selection
+  , editState : EditState
+  , dragState : DragState
+  , iconMenuState : Bool
+  , measureText : String
+  -- search
+  , searchText : String
+  , searchResult : List Id -- topic Ids
+  , searchMenu : ResultMenu
   }
 
 
@@ -30,13 +33,16 @@ defaultModel =
     <| Map 0 Dict.empty (Rectangle 0 0 0 0) -1 -- parentMapId = -1
   , mapPath = [0]
   , nextId = 1
+  ----- transient -----
   , selection = []
   , editState = NoEdit
   , dragState = NoDrag
-  , listState = NoList
   , iconMenuState = False
-  , searchText = ""
   , measureText = ""
+  -- search
+  , searchText = ""
+  , searchResult = []
+  , searchMenu = ResultClosed
   }
 
 
@@ -167,9 +173,9 @@ type DragMode
   | DrawAssoc
 
 
-type ListState
-  = SearchResult (List Id) (Maybe Id) -- topic Ids, hovered topic
-  | NoList
+type ResultMenu
+  = ResultOpen (Maybe Id) -- hovered topic
+  | ResultClosed
 
 
 type Msg

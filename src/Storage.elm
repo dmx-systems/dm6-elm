@@ -166,13 +166,16 @@ modelDecoder =
     |> required "maps" (D.dict mapDecoder |> D.andThen strToIntDictDecoder)
     |> required "mapPath" (D.list D.int)
     |> required "nextId" D.int
+    ----- transient -----
     |> hardcoded defaultModel.selection
     |> hardcoded defaultModel.editState
     |> hardcoded defaultModel.dragState
-    |> hardcoded defaultModel.listState
     |> hardcoded defaultModel.iconMenuState
-    |> hardcoded defaultModel.searchText
     |> hardcoded defaultModel.measureText
+    -- search
+    |> hardcoded defaultModel.searchText
+    |> hardcoded defaultModel.searchResult
+    |> hardcoded defaultModel.searchMenu
 
 
 mapDecoder : D.Decoder Map

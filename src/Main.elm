@@ -2,7 +2,7 @@ module Main exposing (..)
 
 import Boxing exposing (boxContainer, unboxContainer)
 import Config exposing (..)
-import FloatingList exposing (viewSearchInput, viewFloatingList, updateSearch)
+import Search exposing (viewSearchInput, viewFloatingList, updateSearch)
 import IconMenu exposing (viewIcon, viewIconMenu, updateIconMenu)
 import MapAutoSize exposing (autoSize)
 import MapRenderer exposing (viewMap)

@@ -116,8 +116,8 @@ resultTopic mapId model =
     activeMapId = activeMap model
   in
   if mapId == activeMapId then
-    case model.listState of
-      SearchResult _ (Just topicId) ->
+    case model.searchMenu of
+      ResultOpen (Just topicId) ->
         if hasMapItem topicId activeMapId model then
           let
             _ = info "resultTopic" (topicId, "set visible")

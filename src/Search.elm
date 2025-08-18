@@ -1,4 +1,4 @@
-module FloatingList exposing (viewSearchInput, viewFloatingList, updateSearch)
+module Search exposing (viewSearchInput, viewFloatingList, updateSearch)
 
 import Config exposing (..)
 import Model exposing (..)
@@ -41,8 +41,8 @@ searchInputStyle =
 
 viewFloatingList : Model -> List (Html Msg)
 viewFloatingList model =
-  case model.listState of
-    SearchResult topicIds maybeId ->
+  case model.searchMenu of
+    ResultOpen _ ->
       [ div
         ( [ on "click" (itemDecoder ClickItem)
           , on "mouseover" (itemDecoder OverItem)
@@ -50,7 +50,7 @@ viewFloatingList model =
           ]
           ++ floatingListStyle
         )
-        ( topicIds |> List.map
+        ( model.searchResult |> List.map
           (\id ->
             case getTopicInfo id model of
               Just topic ->
@@ -63,7 +63,7 @@ viewFloatingList model =
           )
         )
       ]
-    NoList -> []
+    ResultClosed -> []
 
 
 itemDecoder : (Id -> SearchMsg) -> D.Decoder Msg
@@ -92,9 +92,9 @@ floatingListStyle =
 listItemStyle : Id -> Model -> List (Attribute Msg)
 listItemStyle topicId model =
   let
-    isHover = case model.listState of
-      SearchResult _ maybeId -> maybeId == Just topicId
-      NoList -> False
+    isHover = case model.searchMenu of
+      ResultOpen maybeId -> maybeId == Just topicId
+      ResultClosed -> False
   in
   [ style "color" (if isHover then "white" else "black")
   , style "background-color" (if isHover then "black" else "white")
@@ -124,40 +124,39 @@ onSearchInput text model =
 
 onOverItem : Id -> Model -> Model
 onOverItem topicId model =
-  case model.listState of
-    SearchResult topicIds _ ->
-      { model | listState = SearchResult topicIds (Just topicId) } -- update hovered topic
-    NoList ->
-      logError "onOverItem" "Received \"OverItem\" message when listState is NoList"
+  case model.searchMenu of
+    ResultOpen _ ->
+      { model | searchMenu = ResultOpen (Just topicId) } -- update hovered topic
+    ResultClosed ->
+      logError "onOverItem" "Received \"OverItem\" message when searchMenu is ResultClosed"
       model
 
 
 onOutItem : Model -> Model
 onOutItem model =
-  case model.listState of
-    SearchResult topicIds _ ->
-      { model | listState = SearchResult topicIds Nothing } -- update hovered topic
-    NoList ->
-      logError "onOutItem" "Received \"OutItem\" message when listState is NoList"
+  case model.searchMenu of
+    ResultOpen _ ->
+      { model | searchMenu = ResultOpen Nothing } -- update hovered topic
+    ResultClosed ->
+      logError "onOutItem" "Received \"OutItem\" message when searchMenu is ResultClosed"
       model
 
 
 search : Model -> Model
 search model =
-  { model | listState = SearchResult
-    ( model.items |> Dict.foldr
-        (\id item topicIds ->
-          case item of
-            Topic {text} ->
-              if isMatch model.searchText text then
-                id :: topicIds
-              else
-                topicIds
-            Assoc _ -> topicIds
-        )
-        []
+  { model
+  | searchResult = model.items |> Dict.foldr
+    (\id item topicIds ->
+      case item of
+        Topic {text} ->
+          if isMatch model.searchText text then
+            id :: topicIds
+          else
+            topicIds
+        Assoc _ -> topicIds
     )
-    Nothing
+    []
+  , searchMenu = ResultOpen Nothing
   }
 
 
