@@ -15,26 +15,25 @@ type alias TransferFunc = MapItems -> MapItems -> Model -> MapItems
 -- UPDATE
 
 
-boxContainer : Id -> MapId -> Model -> Maps
+boxContainer : MapId -> MapId -> Model -> Maps
 boxContainer containerId targetMapId model =
   transferContent containerId targetMapId boxItems model
 
 
-unboxContainer : Id -> MapId -> Model -> Maps
+unboxContainer : MapId -> MapId -> Model -> Maps
 unboxContainer containerId targetMapId model =
   transferContent containerId targetMapId unboxItems model
 
 
-transferContent : Id -> MapId -> TransferFunc -> Model -> Maps
+transferContent : MapId -> MapId -> TransferFunc -> Model -> Maps
 transferContent containerId targetMapId transferFunc model =
   case getMap containerId model.maps of
     Just containerMap ->
-      updateMaps
+      model.maps |> updateMaps
         targetMapId
         (\targetMap ->
           { targetMap | items = transferFunc containerMap.items targetMap.items model }
         )
-        model.maps
     Nothing -> model.maps
 
 
@@ -47,7 +46,7 @@ boxItems containerItems targetItems model =
   containerItems |> Dict.values |> List.foldr
     (\containerItem targetItemsAcc ->
       let
-        items = hideItems containerItem.id model targetItemsAcc
+        items = hideItem_ containerItem.id targetItemsAcc model
       in
       case getMapIfExists containerItem.id model.maps of
         Just map -> boxItems map.items items model

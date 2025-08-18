@@ -465,7 +465,7 @@ addItemToMap itemId props mapId model =
 
 showItem : Id -> MapId -> Model -> Model
 showItem itemId mapId model =
-  { model | maps = updateMaps
+  { model | maps = model.maps |> updateMaps
     mapId
     (\map ->
       { map | items = Dict.update itemId
@@ -477,7 +477,6 @@ showItem itemId mapId model =
         map.items
       }
     )
-    model.maps
   }
 
 
@@ -485,26 +484,22 @@ hideItem : Id -> MapId -> Model -> Model
 hideItem itemId mapId model =
   { model | maps = model.maps |> updateMaps
     mapId
-    (\map -> { map | items = hideItems itemId model map.items })
+    (\map -> { map | items = hideItem_ itemId map.items model })
   }
 
 
-hideItems : Id -> Model -> MapItems -> MapItems
-hideItems itemId model items =
-  let
-    newItems = items |> Dict.update
+hideItem_ : Id -> MapItems -> Model -> MapItems
+hideItem_ itemId items model =
+  viewAssocsOfPlayer_ itemId items model |> List.foldr
+    (\assocId itemsAcc -> hideItem_ assocId itemsAcc model)
+    (items |> Dict.update
       itemId
       (\item_ ->
         case item_ of
           Just item -> Just { item | hidden = True }
           Nothing -> Nothing
       )
-    assocIds = viewAssocsOfPlayer itemId items model
-  in
-  List.foldr
-    (\assocId newItems_ -> hideItems assocId model newItems_)
-    newItems
-    assocIds
+    )
 
 
 updateMaps : MapId -> (Map -> Map) -> Maps -> Maps
@@ -536,8 +531,8 @@ assocsOfPlayer playerId model =
     |> List.filter (hasPlayer playerId model)
 
 
-viewAssocsOfPlayer : Id -> MapItems -> Model -> List Id
-viewAssocsOfPlayer playerId items model =
+viewAssocsOfPlayer_ : Id -> MapItems -> Model -> List Id
+viewAssocsOfPlayer_ playerId items model =
   items |> Dict.values
     |> List.filter isViewAssoc
     |> List.map .id
