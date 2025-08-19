@@ -163,7 +163,7 @@ search model =
 
 isMatch : String -> String -> Bool
 isMatch searchText text =
-  String.contains searchText text
+  String.contains (String.toLower searchText) (String.toLower text)
 
 
 revealTopic : Id -> MapId -> Model -> Model

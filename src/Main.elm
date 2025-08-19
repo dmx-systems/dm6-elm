@@ -23,7 +23,6 @@ import Task
 import Time exposing (posixToMillis)
 import Json.Decode as D
 import Json.Encode as E
-import Debug exposing (log, toString)
 
 
 
@@ -44,7 +43,11 @@ init : E.Value -> (Model, Cmd Msg)
 init flags =
   ( case D.decodeValue modelDecoder flags of
     Ok model ->
-      log "Reading localStorage" model
+      let
+        _ = info "init"
+          ("Read localStorage: " ++ (model |> toString |> String.length |> fromInt) ++ " bytes")
+      in
+      model
     Err e ->
       let
         _ = logError "init" "Could not read localStorage" e
@@ -695,13 +698,6 @@ mouseUp model =
         Drag _ id mapId _ _ _ ->
           let
             _ = info "mouseUp" "drag ended w/o target"
-            {- _ = case getTopicProps id mapId model.maps of
-              Just props ->
-                log "" { id = id, pos = props.pos }
-              Nothing -> { id = 0, pos = Point 0 0 }
-            _ = case getMapIfExists id model.maps of
-              Just map -> log "" { rect = map.rect }
-              Nothing -> { rect = Rectangle 0 0 0 0 } -}
           in
           (model, Cmd.none)
         DragEngaged _ _ _ _ _ ->

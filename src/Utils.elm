@@ -3,14 +3,15 @@ module Utils exposing (..)
 import Html exposing (Html, Attribute, text, br)
 import Html.Events exposing (on, stopPropagationOn, keyCode)
 import Json.Decode as D
-import Debug exposing (log, toString)
+import Debug exposing (log)
 {--
 log : String -> a -> a
 log text val = val
+-}
 
 toString : a -> String
-toString val = ""
---}
+toString val = Debug.toString val
+-- toString val = ""
 
 
 
