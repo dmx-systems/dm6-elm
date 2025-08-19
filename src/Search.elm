@@ -1,4 +1,4 @@
-module Search exposing (viewSearchInput, viewSearchResult, updateSearch)
+module Search exposing (viewSearchInput, viewResultMenu, closeResultMenu, updateSearch)
 
 import Config exposing (..)
 import Model exposing (..)
@@ -39,8 +39,8 @@ searchInputStyle =
   [ style "width" "100px" ]
 
 
-viewSearchResult : Model -> List (Html Msg)
-viewSearchResult model =
+viewResultMenu : Model -> List (Html Msg)
+viewResultMenu model =
   case model.searchMenu of
     ResultOpen _ ->
       [ div
@@ -49,7 +49,7 @@ viewSearchResult model =
           , on "mouseout" (itemDecoder OutItem)
           , stopPropagationOnMousedown NoOp
           ]
-          ++ searchResultStyle
+          ++ resultMenuStyle
         )
         ( model.searchResult |> List.map
           (\id ->
@@ -75,8 +75,8 @@ itemDecoder msg =
     )
 
 
-searchResultStyle : List (Attribute Msg)
-searchResultStyle =
+resultMenuStyle : List (Attribute Msg)
+resultMenuStyle =
   [ style "position" "absolute"
   , style "top" "144px"
   , style "width" "240px"
@@ -168,7 +168,7 @@ isMatch searchText text =
 
 revealTopic : Id -> MapId -> Model -> Model
 revealTopic topicId mapId model =
-  if hasMapItem topicId mapId model then
+  if isItemInMap topicId mapId model then
     let
       _ = info "revealTopic" (topicId, "set visible")
     in
@@ -179,3 +179,8 @@ revealTopic topicId mapId model =
       props = ViewTopic <| defaultProps topicId topicSize model
     in
     addItemToMap topicId props mapId model
+
+
+closeResultMenu : Model -> Model
+closeResultMenu model =
+  { model | searchMenu = ResultClosed }

@@ -1,4 +1,4 @@
-module IconMenu exposing (viewIcon, viewTopicIcon, viewIconMenu, updateIconMenu)
+module IconMenu exposing (viewIcon, viewTopicIcon, viewIconMenu, closeIconMenu, updateIconMenu)
 
 import Config exposing (..)
 import Model exposing (..)
@@ -11,34 +11,6 @@ import Html.Attributes exposing (title, style)
 import Html.Events exposing (onClick)
 import String exposing (fromFloat)
 import FeatherIcons as Icon
-
-
-
--- UPDATE
-
-
-updateIconMenu : IconMenuMsg -> Model -> (Model, Cmd Msg)
-updateIconMenu msg model =
-  case msg of
-    Open -> (setIconMenuState True model, Cmd.none)
-    Close -> (setIconMenuState False model, Cmd.none)
-    SetIcon maybeIcon -> setIcon maybeIcon model
-      |> setIconMenuState False
-      |> storeModel
-
-
-setIconMenuState : Bool -> Model -> Model
-setIconMenuState isOpen model =
-  { model | iconMenuState = isOpen }
-
-
-setIcon : Maybe IconName -> Model -> Model
-setIcon iconName model =
-  case getSingleSelection model of
-    Just (id, _) -> updateTopicInfo id
-      (\topic -> { topic | iconName = iconName })
-      model
-    Nothing -> model -- FIXME: illegal state -> make Edit dialog modal
 
 
 
@@ -143,3 +115,36 @@ topicIconStyle =
   , style "left" <| fromFloat ((topicSize.h - topicIconSize) / 2) ++ "px"
   , style "color" "white"
   ]
+
+
+
+-- UPDATE
+
+
+updateIconMenu : IconMenuMsg -> Model -> (Model, Cmd Msg)
+updateIconMenu msg model =
+  case msg of
+    Open -> (openIconMenu model, Cmd.none)
+    Close -> (closeIconMenu model, Cmd.none)
+    SetIcon maybeIcon -> setIcon maybeIcon model
+      |> closeIconMenu
+      |> storeModel
+
+
+openIconMenu : Model -> Model
+openIconMenu model =
+  { model | iconMenuState = True }
+
+
+closeIconMenu : Model -> Model
+closeIconMenu model =
+  { model | iconMenuState = False }
+
+
+setIcon : Maybe IconName -> Model -> Model
+setIcon iconName model =
+  case getSingleSelection model of
+    Just (id, _) -> updateTopicInfo id
+      (\topic -> { topic | iconName = iconName })
+      model
+    Nothing -> model -- FIXME: illegal state -> make Edit dialog modal

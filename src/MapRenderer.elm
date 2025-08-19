@@ -118,14 +118,26 @@ resultTopic mapId model =
   if mapId == activeMapId then
     case model.searchMenu of
       ResultOpen (Just topicId) ->
-        if hasMapItem topicId activeMapId model then
-          let
-            _ = info "resultTopic" (topicId, "set visible")
-          in
-          [] -- TODO
+        if isItemInMap topicId activeMapId model then
+          case getMapItemById topicId activeMapId model.maps of
+            Just mapItem ->
+              if mapItem.hidden then
+                let
+                  _ = info "resultTopic" (topicId, "is in map, hidden")
+                in
+                case (model.items |> Dict.get topicId, mapItem.viewProps) of
+                  (Just (Topic topic), ViewTopic props) ->
+                    [ viewTopic topic props activeMapId model ]
+                  _ -> []
+              else
+                let
+                  _ = info "resultTopic" (topicId, "is in map, already visible")
+                in
+                [] -- TODO
+            Nothing -> []
         else
           let
-            _ = info "resultTopic" (topicId, "add to map")
+            _ = info "resultTopic" (topicId, "not in map")
             props = defaultProps topicId topicSize model
           in
           case model.items |> Dict.get topicId of

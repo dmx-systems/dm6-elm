@@ -448,11 +448,13 @@ defaultProps topicId size model =
     )
 
 
+{-| Logs an error if map does not exist or item is not in map -}
 getMapItemById : Id -> MapId -> Maps -> Maybe MapItem
 getMapItemById itemId mapId maps =
   getMap mapId maps |> Maybe.andThen (getMapItem itemId)
 
 
+{-| Logs an error if item is not in map -}
 getMapItem : Id -> Map -> Maybe MapItem
 getMapItem itemId map =
   case map.items |> Dict.get itemId of
@@ -460,8 +462,9 @@ getMapItem itemId map =
     Nothing -> itemNotInMap "getMapItem" itemId map.id Nothing
 
 
-hasMapItem : Id -> MapId -> Model -> Bool
-hasMapItem itemId mapId model =
+{-| Logs an error if map does not exist -}
+isItemInMap : Id -> MapId -> Model -> Bool
+isItemInMap itemId mapId model =
   case getMap mapId model.maps of
     Just map ->
       case map.items |> Dict.get itemId of

@@ -10,7 +10,7 @@ log text val = val
 -}
 
 toString : a -> String
-toString val = Debug.toString val
+toString = Debug.toString
 -- toString val = ""
 
 

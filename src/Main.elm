@@ -2,11 +2,11 @@ module Main exposing (..)
 
 import Boxing exposing (boxContainer, unboxContainer)
 import Config exposing (..)
-import Search exposing (viewSearchInput, viewSearchResult, updateSearch)
-import IconMenu exposing (viewIcon, viewIconMenu, updateIconMenu)
+import IconMenu exposing (viewIcon, viewIconMenu, closeIconMenu, updateIconMenu)
 import MapAutoSize exposing (autoSize)
 import MapRenderer exposing (viewMap)
 import Model exposing (..)
+import Search exposing (viewSearchInput, viewResultMenu, closeResultMenu, updateSearch)
 import Storage exposing (storeModel, storeModelWith, modelDecoder)
 import Utils exposing (..)
 
@@ -74,7 +74,7 @@ view model =
       ( [ viewToolbar model
         , viewMap (activeMap model) -1 model -- parentMapId = -1
         ]
-        ++ viewSearchResult model
+        ++ viewResultMenu model
         ++ viewIconMenu model
       )
     , div
@@ -592,11 +592,9 @@ updateMouse msg model =
 
 mouseDown : Model -> Model
 mouseDown model =
-  { model
-  | selection = []
-  , iconMenuState = False
-  , searchMenu = ResultClosed
-  }
+  { model | selection = [] }
+  |> closeIconMenu
+  |> closeResultMenu
 
 
 mouseDownOnItem : Model -> Class -> Id -> MapId -> Point -> (Model, Cmd Msg)
