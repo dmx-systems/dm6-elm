@@ -1,4 +1,4 @@
-module Search exposing (viewSearchInput, viewFloatingList, updateSearch)
+module Search exposing (viewSearchInput, viewSearchResult, updateSearch)
 
 import Config exposing (..)
 import Model exposing (..)
@@ -39,16 +39,17 @@ searchInputStyle =
   [ style "width" "100px" ]
 
 
-viewFloatingList : Model -> List (Html Msg)
-viewFloatingList model =
+viewSearchResult : Model -> List (Html Msg)
+viewSearchResult model =
   case model.searchMenu of
     ResultOpen _ ->
       [ div
         ( [ on "click" (itemDecoder ClickItem)
           , on "mouseover" (itemDecoder OverItem)
           , on "mouseout" (itemDecoder OutItem)
+          , stopPropagationOnMousedown NoOp
           ]
-          ++ floatingListStyle
+          ++ searchResultStyle
         )
         ( model.searchResult |> List.map
           (\id ->
@@ -56,7 +57,7 @@ viewFloatingList model =
               Just topic ->
                 div
                   ( [ attribute "data-id" (fromInt topic.id) ]
-                    ++ listItemStyle topic.id model
+                    ++ resultItemStyle topic.id model
                   )
                   [ text topic.text ]
               Nothing -> text "??"
@@ -74,8 +75,8 @@ itemDecoder msg =
     )
 
 
-floatingListStyle : List (Attribute Msg)
-floatingListStyle =
+searchResultStyle : List (Attribute Msg)
+searchResultStyle =
   [ style "position" "absolute"
   , style "top" "144px"
   , style "width" "240px"
@@ -89,8 +90,8 @@ floatingListStyle =
   ]
 
 
-listItemStyle : Id -> Model -> List (Attribute Msg)
-listItemStyle topicId model =
+resultItemStyle : Id -> Model -> List (Attribute Msg)
+resultItemStyle topicId model =
   let
     isHover = case model.searchMenu of
       ResultOpen maybeId -> maybeId == Just topicId
