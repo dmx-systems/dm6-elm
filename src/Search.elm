@@ -115,7 +115,10 @@ updateSearch msg model =
     SearchInput text -> (onSearchInput text model, Cmd.none)
     OverItem topicId -> (onOverItem topicId model, Cmd.none)
     OutItem _ -> (onOutItem model, Cmd.none)
-    ClickItem topicId -> revealTopic topicId (activeMap model) model |> storeModel
+    ClickItem topicId -> model
+      |> revealTopic topicId (activeMap model)
+      |> closeResultMenu
+      |> storeModel
 
 
 onSearchInput : String -> Model -> Model

@@ -50,7 +50,7 @@ init flags =
       model
     Err e ->
       let
-        _ = logError "init" "Could not read localStorage" e
+        _ = logError "init" "Read localStorage" e
       in
       defaultModel
   , Cmd.none

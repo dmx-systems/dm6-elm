@@ -53,7 +53,7 @@ viewMap mapId parentMapId model =
     [ div
         ( topicLayerStyle mapRect )
         ( topics
-          ++ resultTopic mapId model
+          ++ limboTopic mapId model
         )
     , svg
         ( [ width svgSize.w, height svgSize.h ]
@@ -110,8 +110,8 @@ mapItems map model =
     ([], [])
 
 
-resultTopic : MapId -> Model -> List (Html Msg)
-resultTopic mapId model =
+limboTopic : MapId -> Model -> List (Html Msg)
+limboTopic mapId model =
   let
     activeMapId = activeMap model
   in
@@ -123,7 +123,7 @@ resultTopic mapId model =
             Just mapItem ->
               if mapItem.hidden then
                 let
-                  _ = info "resultTopic" (topicId, "is in map, hidden")
+                  _ = info "limboTopic" (topicId, "is in map, hidden")
                 in
                 case (model.items |> Dict.get topicId, mapItem.viewProps) of
                   (Just (Topic topic), ViewTopic props) ->
@@ -131,13 +131,13 @@ resultTopic mapId model =
                   _ -> []
               else
                 let
-                  _ = info "resultTopic" (topicId, "is in map, already visible")
+                  _ = info "limboTopic" (topicId, "is in map, already visible")
                 in
-                [] -- TODO
+                []
             Nothing -> []
         else
           let
-            _ = info "resultTopic" (topicId, "not in map")
+            _ = info "limboTopic" (topicId, "not in map")
             props = defaultProps topicId topicSize model
           in
           case model.items |> Dict.get topicId of
@@ -153,7 +153,7 @@ viewTopic topic props mapId model =
   let
     (style, children) = topicFunc topic props mapId model
     topicFunc =
-      case props.displayMode of
+      case effectiveDisplayMode topic.id props.displayMode model of
         Monad LabelOnly -> labelTopic
         Monad Detail -> detailTopic
         Container BlackBox -> blackBoxTopic
@@ -166,6 +166,19 @@ viewTopic topic props mapId model =
       ++ style
     )
     children
+
+
+effectiveDisplayMode : Id -> DisplayMode -> Model -> DisplayMode
+effectiveDisplayMode topicId displayMode model =
+  let
+    isLimbo = model.searchMenu == ResultOpen (Just topicId)
+  in
+  if isLimbo then
+    case displayMode of
+      Monad _ -> Monad Detail
+      Container _ -> Container WhiteBox
+  else
+    displayMode
 
 
 labelTopic : TopicInfo -> TopicProps -> MapId -> Model -> TopicRendering
@@ -440,12 +453,14 @@ absMapPos mapId posAcc model =
 topicStyle : TopicInfo -> MapId -> Model -> List (Attribute Msg)
 topicStyle ({id}) mapId model =
   let
-    dragging = case model.dragState of
+    isLimbo = model.searchMenu == ResultOpen (Just id)
+    isDragging = case model.dragState of
       Drag DragTopic id_ _ _ _ _ -> id_ == id
       _ -> False
   in
   [ style "position" "absolute"
-  , style "z-index" <| if dragging then "1" else "2"
+  , style "opacity" <| if isLimbo then ".5" else "1"
+  , style "z-index" <| if isDragging then "1" else "2"
   ]
 
 

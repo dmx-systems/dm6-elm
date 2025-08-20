@@ -15,7 +15,7 @@ autoSize model =
   calcMapRect (activeMap model) model |> Tuple.second
 
 
--- called indirect recursive
+-- called indirect recursively
 -- 1) calculate and store the map's "rect" and, based on its change,
 -- 2) calculate and store the map's "pos" adjustmennt ("delta")
 calcMapRect : MapId -> Model -> (Rectangle, Model)
