@@ -86,14 +86,14 @@ type alias Map =
 type alias MapItem =
   { id : Id
   , hidden : Bool
-  , viewProps : ViewProps
+  , props : MapProps
   , parentAssocId : Id
   }
 
 
-type ViewProps
-  = ViewTopic TopicProps
-  | ViewAssoc AssocProps
+type MapProps
+  = MapTopic TopicProps
+  | MapAssoc AssocProps
 
 
 type alias TopicProps =
@@ -411,9 +411,9 @@ getTopicProps : Id -> MapId -> Maps -> Maybe TopicProps
 getTopicProps topicId mapId maps =
   case getMapItemById topicId mapId maps of
     Just mapItem ->
-      case mapItem.viewProps of
-        ViewTopic props -> Just props
-        ViewAssoc _ -> topicMismatch "getTopicProps" topicId Nothing
+      case mapItem.props of
+        MapTopic props -> Just props
+        MapAssoc _ -> topicMismatch "getTopicProps" topicId Nothing
     Nothing -> fail "getTopicProps" {topicId = topicId, mapId = mapId} Nothing
 
 
@@ -425,10 +425,10 @@ updateTopicProps topicId mapId propsFunc model =
         (\mapItem_ ->
           case mapItem_ of
             Just mapItem ->
-              case mapItem.viewProps of
-                ViewTopic props -> Just
-                  { mapItem | viewProps = ViewTopic (propsFunc props) }
-                ViewAssoc _ -> topicMismatch "updateTopicProps" topicId Nothing
+              case mapItem.props of
+                MapTopic props -> Just
+                  { mapItem | props = MapTopic (propsFunc props) }
+                MapAssoc _ -> topicMismatch "updateTopicProps" topicId Nothing
             Nothing -> illegalItemId "updateTopicProps" topicId Nothing
         )
       }
@@ -476,7 +476,7 @@ isItemInMap itemId mapId model =
 
 {-| Precondition: the item is not yet contained in the map
 -}
-addItemToMap : Id -> ViewProps -> MapId -> Model -> Model
+addItemToMap : Id -> MapProps -> MapId -> Model -> Model
 addItemToMap itemId props mapId model =
   let
     (newModel, parentAssocId) = createAssoc
@@ -523,7 +523,7 @@ hideItem itemId mapId model =
 
 hideItem_ : Id -> MapItems -> Model -> MapItems
 hideItem_ itemId items model =
-  viewAssocsOfPlayer_ itemId items model |> List.foldr
+  mapAssocsOfPlayer_ itemId items model |> List.foldr
     (\assocId itemsAcc -> hideItem_ assocId itemsAcc model)
     (items |> Dict.update
       itemId
@@ -565,10 +565,10 @@ assocsOfPlayer playerId model =
     |> List.filter (hasPlayer playerId model)
 
 
-viewAssocsOfPlayer_ : Id -> MapItems -> Model -> List Id
-viewAssocsOfPlayer_ playerId items model =
+mapAssocsOfPlayer_ : Id -> MapItems -> Model -> List Id
+mapAssocsOfPlayer_ playerId items model =
   items |> Dict.values
-    |> List.filter isViewAssoc
+    |> List.filter isMapAssoc
     |> List.map .id
     |> List.filter (hasPlayer playerId model)
 
@@ -599,16 +599,16 @@ isAssoc item =
   not (isTopic item)
 
 
-isViewTopic : MapItem -> Bool
-isViewTopic item =
-  case item.viewProps of
-    ViewTopic _ -> True
-    ViewAssoc _ -> False
+isMapTopic : MapItem -> Bool
+isMapTopic item =
+  case item.props of
+    MapTopic _ -> True
+    MapAssoc _ -> False
 
 
-isViewAssoc : MapItem -> Bool
-isViewAssoc item =
-  not (isViewTopic item)
+isMapAssoc : MapItem -> Bool
+isMapAssoc item =
+  not (isMapTopic item)
 
 
 isVisible : MapItem -> Bool

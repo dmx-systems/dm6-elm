@@ -60,8 +60,8 @@ storeMapRect mapId newRect oldRect parentMapId model =
 
 calcItemSize : MapItem -> MapId -> Rectangle -> Model -> (Rectangle, Model)
 calcItemSize mapItem mapId rectAcc model =
-  case mapItem.viewProps of
-    ViewTopic {pos, size, displayMode} ->
+  case mapItem.props of
+    MapTopic {pos, size, displayMode} ->
       case displayMode of
         Monad LabelOnly -> (topicExtent pos rectAcc, model)
         Monad Detail -> (detailTopicExtent mapItem.id mapId pos size rectAcc model, model)
@@ -72,7 +72,7 @@ calcItemSize mapItem mapId rectAcc model =
           in
           (mapExtent pos rect rectAcc, model_)
         Container Unboxed -> (topicExtent pos rectAcc, model)
-    ViewAssoc _ -> (rectAcc, model)
+    MapAssoc _ -> (rectAcc, model)
 
 
 topicExtent : Point -> Rectangle -> Rectangle

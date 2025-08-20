@@ -63,7 +63,7 @@ unboxItems : MapItems -> MapItems -> Model -> MapItems
 unboxItems containerItems targetItems model =
   containerItems |> Dict.values |> List.filter isVisible |> List.foldr
     (\containerItem targetItemsAcc ->
-      if isViewTopic containerItem then
+      if isMapAssoc containerItem then
         let
           (items, abort) = unboxTopic containerItem targetItemsAcc model
         in
@@ -117,23 +117,23 @@ unboxAssoc containerItem targetItems =
 
 setUnboxed : MapItem -> MapItem
 setUnboxed item =
-  { item | viewProps =
-    case item.viewProps of
-      ViewTopic props -> ViewTopic { props | displayMode = Container Unboxed }
-      ViewAssoc props -> ViewAssoc props
+  { item | props =
+    case item.props of
+      MapTopic props -> MapTopic { props | displayMode = Container Unboxed }
+      MapAssoc props -> MapAssoc props
   }
 
 
 isAbort : MapItem -> Bool
 isAbort item =
-  case item.viewProps of
-    ViewTopic props ->
+  case item.props of
+    MapTopic props ->
       case props.displayMode of
         Container BlackBox -> True
         Container WhiteBox -> True
         Container Unboxed -> False
         Monad _ -> False
-    ViewAssoc _ -> False
+    MapAssoc _ -> False
 
 
 {-| Returns the target item to reveal that corresponds to the container item.
@@ -143,4 +143,4 @@ targetAssocItem : Id -> MapItems -> MapItem
 targetAssocItem assocId targetItems =
   case targetItems |> Dict.get assocId of
     Just item -> { item | hidden = False }
-    Nothing -> MapItem assocId False (ViewAssoc AssocProps) -1
+    Nothing -> MapItem assocId False (MapAssoc AssocProps) -1

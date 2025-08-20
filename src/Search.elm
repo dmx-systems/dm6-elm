@@ -179,7 +179,7 @@ revealTopic topicId mapId model =
   else
     let
       _ = info "revealTopic" (topicId, "add to map")
-      props = ViewTopic <| defaultProps topicId topicSize model
+      props = MapTopic <| defaultProps topicId topicSize model
     in
     addItemToMap topicId props mapId model
 

@@ -101,8 +101,8 @@ encodeMapItem item =
   E.object
     [ ("id", E.int item.id)
     , ("hidden", E.bool item.hidden)
-    , case item.viewProps of
-        ViewTopic topicProps ->
+    , case item.props of
+        MapTopic topicProps ->
           ( "topicProps"
           , E.object
             [ ("pos", E.object
@@ -118,7 +118,7 @@ encodeMapItem item =
             , ("displayMode", encodeDisplayName topicProps.displayMode)
             ]
           )
-        ViewAssoc assosProps ->
+        MapAssoc assosProps ->
           ( "assocProps"
           , E.object []
           )
@@ -188,7 +188,7 @@ mapDecoder =
           (D.field "id" D.int)
           (D.field "hidden" D.bool)
           (D.oneOf
-            [ D.field "topicProps" <| D.map ViewTopic <| D.map3 TopicProps
+            [ D.field "topicProps" <| D.map MapTopic <| D.map3 TopicProps
               (D.field "pos" <| D.map2 Point
                 (D.field "x" D.float)
                 (D.field "y" D.float)
@@ -198,7 +198,7 @@ mapDecoder =
                 (D.field "h" D.float)
               )
               (D.field "displayMode" D.string |> D.andThen displayModeDecoder)
-            , D.field "assocProps" <| D.succeed (ViewAssoc AssocProps)
+            , D.field "assocProps" <| D.succeed (MapAssoc AssocProps)
             ]
           )
           (D.field "parentAssocId" D.int)

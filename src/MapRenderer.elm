@@ -98,13 +98,13 @@ mapInfo mapId parentMapId model =
 mapItems : Map -> Model -> (List (Html Msg), List (Svg Msg))
 mapItems map model =
   map.items |> Dict.values |> List.filter isVisible |> List.foldr
-    (\{id, viewProps} (t, a) ->
+    (\{id, props} (t, a) ->
       let
         item = model.items |> Dict.get id
       in
-      case (item, viewProps) of
-        (Just (Topic topic), ViewTopic props) -> (viewTopic topic props map.id model :: t, a)
-        (Just (Assoc assoc), ViewAssoc _) -> (t, viewAssoc assoc map.id model :: a)
+      case (item, props) of
+        (Just (Topic topic), MapTopic tProps) -> (viewTopic topic tProps map.id model :: t, a)
+        (Just (Assoc assoc), MapAssoc _) -> (t, viewAssoc assoc map.id model :: a)
         _ -> logError "mapItems" ("problem with item " ++ fromInt id) (t, a)
     )
     ([], [])
@@ -125,8 +125,8 @@ limboTopic mapId model =
                 let
                   _ = info "limboTopic" (topicId, "is in map, hidden")
                 in
-                case (model.items |> Dict.get topicId, mapItem.viewProps) of
-                  (Just (Topic topic), ViewTopic props) ->
+                case (model.items |> Dict.get topicId, mapItem.props) of
+                  (Just (Topic topic), MapTopic props) ->
                     [ viewTopic topic props activeMapId model ]
                   _ -> []
               else

@@ -322,7 +322,7 @@ createTopicAndAddToMap mapId model =
     Just map ->
       let
         (newModel, topicId) = createTopic topicDefaultText Nothing model
-        props = ViewTopic <| TopicProps
+        props = MapTopic <| TopicProps
           (Point
             (newTopicPos.x + map.rect.x1)
             (newTopicPos.y + map.rect.y1)
@@ -351,7 +351,7 @@ createAssocAndAddToMap : ItemType -> Id -> RoleType -> Id -> RoleType -> MapId -
 createAssocAndAddToMap itemType player1 role1 player2 role2 mapId model =
   let
     (newModel, assocId) = createAssoc itemType player1 role1 player2 role2 model
-    props = ViewAssoc AssocProps
+    props = MapAssoc AssocProps
   in
   addItemToMap assocId props mapId newModel
 
@@ -366,16 +366,16 @@ moveTopicToMap topicId mapId origPos targetId targetMapId pos model =
           (topicW2 + whiteBoxPadding)
           (topicH2 + whiteBoxPadding)
         False -> pos
-    viewProps_ =
+    props_ =
       getTopicProps topicId mapId newModel.maps
-      |> Maybe.andThen (\props -> Just (ViewTopic { props | pos = newPos }))
+      |> Maybe.andThen (\props -> Just (MapTopic { props | pos = newPos }))
   in
-  case viewProps_ of
-    Just viewProps ->
+  case props_ of
+    Just props ->
       newModel
       |> hideItem topicId mapId
       |> setTopicPos topicId mapId origPos
-      |> addItemToMap topicId viewProps targetId
+      |> addItemToMap topicId props targetId
       |> select targetId targetMapId
       |> autoSize
     Nothing -> model
