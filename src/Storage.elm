@@ -204,6 +204,7 @@ mapDecoder =
             ]
           )
           (D.field "parentAssocId" D.int)
+          (D.oneOf [ D.field "pinned" D.bool, D.succeed False ])
         )
         |> D.andThen strToIntDictDecoder
       )
