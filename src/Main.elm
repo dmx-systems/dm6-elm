@@ -771,11 +771,11 @@ mouseOut model class targetId targetMapId =
 subscriptions : Model -> Sub Msg
 subscriptions model =
   case model.dragState of
-    NoDrag -> mouseDownSub
     WaitForStartTime _ _ _ _ -> Sub.none
     WaitForEndTime _ _ _ _ _ -> Sub.none
     DragEngaged _ _ _ _ _ -> dragSub
     Drag _ _ _ _ _ _ -> dragSub
+    NoDrag -> mouseDownSub
 
 
 mouseDownSub : Sub Msg

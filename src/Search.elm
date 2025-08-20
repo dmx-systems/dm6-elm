@@ -42,8 +42,8 @@ searchInputStyle =
 
 viewResultMenu : Model -> List (Html Msg)
 viewResultMenu model =
-  case model.searchMenu of
-    ResultOpen _ ->
+  case (model.searchMenu, model.searchResult |> List.isEmpty) of
+    (ResultOpen _, False) ->
       [ div
         ( [ on "click" (itemDecoder ClickItem)
           , on "mouseover" (itemDecoder OverItem)
@@ -65,7 +65,7 @@ viewResultMenu model =
           )
         )
       ]
-    ResultClosed -> []
+    _ -> []
 
 
 itemDecoder : (Id -> SearchMsg) -> D.Decoder Msg
