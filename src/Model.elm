@@ -187,6 +187,7 @@ type Msg
   | IconMenu IconMenuMsg
   | Mouse MouseMsg
   | Nav NavMsg
+  | Hide
   | Delete
   | NoOp
 
@@ -544,6 +545,7 @@ updateMaps mapId mapFunc maps =
     )
 
 
+-- TODO: move to "Items" section?
 deleteItem : Id -> Model -> Model
 deleteItem itemId model =
   assocsOfPlayer itemId model |> List.foldr

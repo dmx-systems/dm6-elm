@@ -106,6 +106,7 @@ viewToolbar model =
     , viewToolbarButton "Choose Icon" (IconMenu Open) True model
     , viewMonadDisplay model
     , viewContainerDisplay model
+    , viewToolbarButton "Hide" Hide True model
     , viewToolbarButton "Fullscreen" (Nav Fullscreen) True model
     , viewToolbarButton "Delete" Delete True model
     , viewFooter
@@ -310,6 +311,7 @@ update msg model =
     IconMenu iconMenuMsg -> updateIconMenu iconMenuMsg model
     Mouse mouseMsg -> updateMouse mouseMsg model
     Nav navMsg -> updateNav navMsg model |> storeModel
+    Hide -> hide model |> storeModel
     Delete -> delete model |> storeModel
     NoOp -> (model, Cmd.none)
 
@@ -563,13 +565,25 @@ adjustMapRect mapId factor model =
     )
 
 
+hide : Model -> Model
+hide model =
+  let
+    newModel = model.selection
+      |> List.foldr
+        (\(itemId, mapId) modelAcc -> hideItem itemId mapId modelAcc)
+        model
+  in
+  { newModel | selection = [] }
+  |> autoSize
+
+
 delete : Model -> Model
 delete model =
   let
     newModel = model.selection
       |> List.map Tuple.first
       |> List.foldr
-        (\itemId model_ -> deleteItem itemId model_)
+        (\itemId modelAcc -> deleteItem itemId modelAcc)
         model
   in
   { newModel | selection = [] }
