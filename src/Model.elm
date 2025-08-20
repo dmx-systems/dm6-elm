@@ -161,11 +161,11 @@ type EditState
 
 
 type DragState
-  = NoDrag
-  | WaitForStartTime Class Id MapId Point -- start point (mouse)
+  = WaitForStartTime Class Id MapId Point -- start point (mouse)
   | DragEngaged Time.Posix Class Id MapId Point -- start point (mouse)
   | WaitForEndTime Time.Posix Class Id MapId Point -- start point (mouse)
   | Drag DragMode Id MapId Point Point (Maybe (Id, MapId)) -- orig topic pos, last point (mouse)
+  | NoDrag
 
 
 type DragMode
