@@ -8,7 +8,7 @@ import Utils exposing (..)
 import Dict
 import Html exposing (Html, Attribute, div, text, input)
 import Html.Attributes exposing (value, style, attribute)
-import Html.Events exposing (onInput, on)
+import Html.Events exposing (onInput, onFocus, on)
 import Json.Decode as D
 import String exposing (fromInt)
 
@@ -27,6 +27,7 @@ viewSearchInput model =
     , input
       ( [ value model.searchText
         , onInput (Search << SearchInput)
+        , onFocus (Search SearchFocus)
         ]
         ++searchInputStyle
       )
@@ -113,6 +114,7 @@ updateSearch : SearchMsg -> Model -> (Model, Cmd Msg)
 updateSearch msg model =
   case msg of
     SearchInput text -> (onSearchInput text model, Cmd.none)
+    SearchFocus -> ({ model | searchMenu = ResultOpen Nothing }, Cmd.none)
     OverItem topicId -> (onOverItem topicId model, Cmd.none)
     OutItem _ -> (onOutItem model, Cmd.none)
     ClickItem topicId -> model

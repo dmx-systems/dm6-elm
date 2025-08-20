@@ -194,6 +194,7 @@ type Msg
 
 type SearchMsg
   = SearchInput String
+  | SearchFocus
   | OverItem Id
   | OutItem Id
   | ClickItem Id
