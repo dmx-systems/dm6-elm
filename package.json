@@ -21,11 +21,14 @@
   "homepage": "https://github.com/dmx-systems/dm6-elm#readme",
   "scripts": {
     "dev": "elm-live src/Main.elm --dir=public --open --debug -- --output=public/elm.js",
-    "build": "elm make src/Main.elm --optimize --output=public/elm.js",
-    "format": "elm-format --yes src tests",
-    "format:check": "elm-format --validate src tests",
+    "build": "sh build-prod.sh",
+    "build:dev": "elm make src/Main.elm --optimize --output=public/elm.js",
+    "format": "npx elm-format --yes src tests review",
+    "format:check": "npx elm-format --validate src tests review",
     "test": "elm-test",
-    "review": "elm-review"
+    "test:ci": "elm-format --validate src && elm-review && elm-test",
+    "review": "elm-review",
+    "clean": "rm -f main.js main.min.js dm6-elm.html"
   },
   "devDependencies": {
     "elm": "^0.19.1-6",
@@ -33,6 +36,7 @@
     "elm-json": "^0.2.13",
     "elm-live": "^4.0.2",
     "elm-review": "^2.13.4",
-    "elm-test": "^0.19.1-revision16"
+    "elm-test": "^0.19.1-revision16",
+    "uglify-js": "^3.19.3"
   }
 }
