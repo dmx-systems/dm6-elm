@@ -1,7 +1,5 @@
 module Toolbar exposing (viewToolbar)
 
--- components
-
 import AppModel exposing (Model, Msg(..))
 import Config exposing (date, footerFontSize, homeMapName, mainFont, toolbarFontSize, version)
 import Html exposing (Attribute, Html, a, button, div, input, label, span, text)
