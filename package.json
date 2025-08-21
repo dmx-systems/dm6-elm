@@ -25,6 +25,7 @@
     "format": "npx elm-format --yes src tests",
     "format:check": "npx elm-format --validate src tests",
     "test": "elm-test",
+    "test:ci": "elm-format --validate src && elm-review && elm-test",
     "review": "elm-review"
   },
   "devDependencies": {
