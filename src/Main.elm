@@ -41,18 +41,25 @@ main =
 
 init : E.Value -> (Model, Cmd Msg)
 init flags =
-  ( case D.decodeValue modelDecoder flags of
-    Ok model ->
+  ( case flags |> D.decodeValue (D.null True) of
+    Ok True ->
       let
-        _ = info "init"
-          ("Read localStorage: " ++ (model |> toString |> String.length |> fromInt) ++ " bytes")
-      in
-      model
-    Err e ->
-      let
-        _ = logError "init" "Read localStorage" e
+        _ = info "init" "localStorage: empty"
       in
       defaultModel
+    _ ->
+      case flags |> D.decodeValue modelDecoder of
+        Ok model ->
+          let
+            _ = info "init"
+              ("localStorage: " ++ (model |> toString |> String.length |> fromInt) ++ " bytes")
+          in
+          model
+        Err e ->
+          let
+            _ = logError "init" "localStorage" e
+          in
+          defaultModel
   , Cmd.none
   )
 
