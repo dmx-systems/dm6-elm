@@ -90,8 +90,8 @@ view model =
                 ++ viewIconMenu model
             )
         , div
-            ([ id "measure" ]
-                ++ measureStyle
+            (id "measure"
+                :: measureStyle
             )
             [ text model.measureText
             , br [] []
@@ -314,14 +314,14 @@ viewFooter =
             []
             [ text "Source: "
             , a
-                ([ href "https://github.com/dmx-systems/dm6-elm" ]
-                    ++ linkStyle
+                (href "https://github.com/dmx-systems/dm6-elm"
+                    :: linkStyle
                 )
                 [ text "GitHub" ]
             ]
         , a
-            ([ href "https://dmx.berlin" ]
-                ++ linkStyle
+            (href "https://dmx.berlin"
+                :: linkStyle
             )
             [ text "DMX Systems" ]
         ]
