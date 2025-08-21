@@ -15,11 +15,17 @@ type alias TransferFunc = MapItems -> MapItems -> Model -> MapItems
 -- UPDATE
 
 
+{-| Hides a container content from its parent map.
+  (Any target map can be given but de-facto it's the container's parent map)
+-}
 boxContainer : MapId -> MapId -> Model -> Maps
 boxContainer containerId targetMapId model =
   transferContent containerId targetMapId boxItems model
 
 
+{-| Reveals a container content on its parent map.
+  (Any target map can be given but de-facto it's the container's parent map)
+-}
 unboxContainer : MapId -> MapId -> Model -> Maps
 unboxContainer containerId targetMapId model =
   transferContent containerId targetMapId unboxItems model
