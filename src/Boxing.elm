@@ -69,7 +69,7 @@ unboxItems : MapItems -> MapItems -> Model -> MapItems
 unboxItems containerItems targetItems model =
   containerItems |> Dict.values |> List.filter isVisible |> List.foldr
     (\containerItem targetItemsAcc ->
-      if isMapAssoc containerItem then
+      if isMapTopic containerItem then
         let
           (items, abort) = unboxTopic containerItem targetItemsAcc model
         in
