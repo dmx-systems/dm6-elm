@@ -811,6 +811,12 @@ isVisible item =
 
 select : Id -> MapId -> Model -> Model
 select id mapId model =
+    let
+        _ =
+            info "selection" (prettySelection model)
+
+        -- prints like @selection: Topic @ Map (123@45)
+    in
     { model | selection = [ ( id, mapId ) ] }
 
 
@@ -856,3 +862,28 @@ illegalItemId funcName id val =
 illegalId : String -> String -> Id -> a -> a
 illegalId funcName item id val =
     logError funcName (fromInt id ++ " is an illegal " ++ item ++ " ID") val
+
+
+prettySelection : Model -> String
+prettySelection model =
+    case getSingleSelection model of
+        Nothing ->
+            "-"
+
+        Just ( topicId, mapId ) ->
+            let
+                topicName =
+                    getTopicInfo topicId model
+                        |> Maybe.map getTopicLabel
+                        |> Maybe.withDefault ("#" ++ fromInt topicId)
+
+                mapName =
+                    if mapId == 0 then
+                        "Home"
+
+                    else
+                        getTopicInfo mapId model
+                            |> Maybe.map getTopicLabel
+                            |> Maybe.withDefault ("#" ++ fromInt mapId)
+            in
+            topicName ++ " @ " ++ mapName ++ " (" ++ fromInt topicId ++ "@" ++ fromInt mapId ++ ")"

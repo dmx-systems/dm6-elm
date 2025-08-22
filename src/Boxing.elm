@@ -204,10 +204,12 @@ targetAssocItem assocId targetItems =
 
 {-| Move a single topic out of its container into the container’s parent map.
 Semantics:
-- only acts if the topic exists and is visible in the container
-- respects BlackBox / WhiteBox abort via `unboxTopic`
-- if the topic has an inner map, unboxes its inner contents too
-- hides the original inside the container (so you don’t see a duplicate)
+
+  - only acts if the topic exists and is visible in the container
+  - respects BlackBox / WhiteBox abort via `unboxTopic`
+  - if the topic has an inner map, unboxes its inner contents too
+  - hides the original inside the container (so you don’t see a duplicate)
+
 -}
 exitContainer : MapId -> Id -> Model -> Model
 exitContainer containerId topicId model =
