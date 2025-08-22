@@ -1,7 +1,6 @@
 module Main exposing (..)
 
-import AppModel exposing (..)
-import Boxing exposing (boxContainer, unboxContainer)
+import Boxing exposing (boxContainer, exitContainer, unboxContainer)
 import Browser
 import Browser.Dom as Dom
 import Browser.Events as Events
@@ -119,6 +118,7 @@ viewToolbar model =
         , viewMonadDisplay model
         , viewContainerDisplay model
         , viewToolbarButton "Hide" Hide True model
+        , viewExitButton model -- <- NEW
         , viewToolbarButton "Fullscreen" (Nav Fullscreen) True model
         , viewToolbarButton "Delete" Delete True model
         , viewFooter
@@ -384,6 +384,10 @@ update msg model =
 
         Delete ->
             delete model |> storeModel
+
+        ExitTopic containerId topicId ->
+            exitContainer containerId topicId model
+                |> storeModel
 
         NoOp ->
             ( model, Cmd.none )
@@ -1156,3 +1160,29 @@ measureStyle =
     , style "border-style" "solid"
     , style "box-sizing" "border-box"
     ]
+
+
+viewExitButton : Model -> Html Msg
+viewExitButton model =
+    let
+        ( disabled_, msg ) =
+            case getSingleSelection model of
+                Nothing ->
+                    ( True, NoOp )
+
+                Just ( topicId, mapId ) ->
+                    case getMap mapId model.maps of
+                        Nothing ->
+                            ( True, NoOp )
+
+                        Just m ->
+                            -- Only enable if this map actually has a parent
+                            if m.parentMapId /= -1 then
+                                ( False, ExitTopic mapId topicId )
+
+                            else
+                                ( True, NoOp )
+    in
+    button
+        ([ onClick msg, disabled disabled_ ] ++ buttonStyle)
+        [ text "Open Door" ]
