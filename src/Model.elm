@@ -85,7 +85,7 @@ type alias Map =
 
 type alias MapItem =
   { id : Id
-  , hidden : Bool
+  , hidden : Bool -- TODO: replace hidden/pinned by custom type: Hidden/Visible/Pinned?
   , pinned : Bool
   , props : MapProps
   , parentAssocId : Id

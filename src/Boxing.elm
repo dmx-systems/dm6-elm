@@ -1,6 +1,8 @@
 module Boxing exposing (boxContainer, unboxContainer)
 
 import Model exposing (..)
+import Utils exposing (..)
+
 import Dict
 
 
@@ -51,12 +53,19 @@ boxItems : MapItems -> MapItems -> Model -> MapItems
 boxItems containerItems targetItems model =
   containerItems |> Dict.values |> List.foldr -- FIXME: apply isVisible filter?
     (\containerItem targetItemsAcc ->
-      let
-        items = hideItem_ containerItem.id targetItemsAcc model
-      in
-      case getMapIfExists containerItem.id model.maps of
-        Just map -> boxItems map.items items model
-        Nothing -> items
+      case targetItemsAcc |> Dict.get containerItem.id of
+        Just {pinned} ->
+          if pinned then
+            -- don't box pinned items, only hide the assoc
+            hideItem_ containerItem.parentAssocId targetItemsAcc model
+          else
+            let
+              items = hideItem_ containerItem.id targetItemsAcc model
+            in
+            case getMapIfExists containerItem.id model.maps of
+              Just map -> boxItems map.items items model
+              Nothing -> items
+        Nothing -> targetItemsAcc -- FIXME: continue unboxing containers?
     )
     targetItems
 
@@ -94,9 +103,13 @@ unboxTopic containerItem targetItems model =
     (topicToInsert, abort) =
       case targetItems |> Dict.get containerItem.id of
         Just item ->
-          -- abort further unboxing if view item exists (= was unboxed before) and is set to
-          -- BlackBox or WhiteBox
-          ({ item | hidden = False }, isAbort item)
+          -- if map item exists (= was revealed before) ...
+          -- 1) set it to "pinned" unless it is hidden
+          -- 2) abort further unboxing if it's display mode is BlackBox or WhiteBox
+          let
+            _ = info "unboxTopic" { item | hidden = False, pinned = not item.hidden }
+          in
+          ({ item | hidden = False, pinned = not item.hidden }, isAbort item)
         Nothing ->
           -- by default (when no map item exists) an unboxed container will also be unboxed
           -- FIXME: set item's parentAssocId?
