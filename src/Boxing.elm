@@ -49,7 +49,7 @@ Returns the updated target items.
 -}
 boxItems : MapItems -> MapItems -> Model -> MapItems
 boxItems containerItems targetItems model =
-  containerItems |> Dict.values |> List.foldr
+  containerItems |> Dict.values |> List.foldr -- FIXME: apply isVisible filter?
     (\containerItem targetItemsAcc ->
       let
         items = hideItem_ containerItem.id targetItemsAcc model
@@ -69,7 +69,7 @@ unboxItems : MapItems -> MapItems -> Model -> MapItems
 unboxItems containerItems targetItems model =
   containerItems |> Dict.values |> List.filter isVisible |> List.foldr
     (\containerItem targetItemsAcc ->
-      if isMapTopic containerItem then
+      if isMapTopic containerItem then -- TODO: use pattern matching instead?
         let
           (items, abort) = unboxTopic containerItem targetItemsAcc model
         in
@@ -98,7 +98,8 @@ unboxTopic containerItem targetItems model =
           -- BlackBox or WhiteBox
           ({ item | hidden = False }, isAbort item)
         Nothing ->
-          -- by default (when no view item exists) an unboxed container will also be unboxed
+          -- by default (when no map item exists) an unboxed container will also be unboxed
+          -- FIXME: set item's parentAssocId?
           if hasMap containerItem.id model.maps then
             (setUnboxed containerItem, False)
           else
@@ -149,4 +150,5 @@ targetAssocItem : Id -> MapItems -> MapItem
 targetAssocItem assocId targetItems =
   case targetItems |> Dict.get assocId of
     Just item -> { item | hidden = False }
-    Nothing -> MapItem assocId False (MapAssoc AssocProps) -1
+    Nothing -> MapItem assocId False False (MapAssoc AssocProps) -1 -- hidden/pinned=False
+    -- FIXME: set item's parentAssocId?

@@ -101,6 +101,7 @@ encodeMapItem item =
   E.object
     [ ("id", E.int item.id)
     , ("hidden", E.bool item.hidden)
+    , ("pinned", E.bool item.pinned)
     , case item.props of
         MapTopic topicProps ->
           ( "topicProps"
@@ -184,9 +185,10 @@ mapDecoder =
     (D.field "id" D.int)
     (D.field "items"
       (D.dict
-        (D.map4 MapItem
+        (D.map5 MapItem
           (D.field "id" D.int)
           (D.field "hidden" D.bool)
+          (D.field "pinned" D.bool)
           (D.oneOf
             [ D.field "topicProps" <| D.map MapTopic <| D.map3 TopicProps
               (D.field "pos" <| D.map2 Point
