@@ -1,6 +1,8 @@
 module Boxing exposing (boxContainer, unboxContainer)
 
 import Model exposing (..)
+import Utils exposing (..)
+
 import Dict
 
 
@@ -20,7 +22,10 @@ type alias TransferFunc = MapItems -> MapItems -> Model -> MapItems
 -}
 boxContainer : MapId -> MapId -> Model -> Maps
 boxContainer containerId targetMapId model =
-  transferContent containerId targetMapId boxItems model
+  case getDisplayMode containerId targetMapId model.maps of
+    -- box only if currently unboxed
+    Just (Container Unboxed) -> transferContent containerId targetMapId boxItems model
+    _ -> model.maps
 
 
 {-| Reveals a container content on its parent map.
@@ -28,7 +33,11 @@ boxContainer containerId targetMapId model =
 -}
 unboxContainer : MapId -> MapId -> Model -> Maps
 unboxContainer containerId targetMapId model =
-  transferContent containerId targetMapId unboxItems model
+  case getDisplayMode containerId targetMapId model.maps of
+    -- unbox only if currently boxed
+    Just (Container BlackBox) -> transferContent containerId targetMapId unboxItems model
+    Just (Container WhiteBox) -> transferContent containerId targetMapId unboxItems model
+    _ -> model.maps
 
 
 transferContent : MapId -> MapId -> TransferFunc -> Model -> Maps
@@ -49,14 +58,21 @@ Returns the updated target items.
 -}
 boxItems : MapItems -> MapItems -> Model -> MapItems
 boxItems containerItems targetItems model =
-  containerItems |> Dict.values |> List.foldr
+  containerItems |> Dict.values |> List.foldr -- FIXME: apply isVisible filter?
     (\containerItem targetItemsAcc ->
-      let
-        items = hideItem_ containerItem.id targetItemsAcc model
-      in
-      case getMapIfExists containerItem.id model.maps of
-        Just map -> boxItems map.items items model
-        Nothing -> items
+      case targetItemsAcc |> Dict.get containerItem.id of
+        Just {pinned} ->
+          if pinned then
+            -- don't box pinned items, only hide the assoc
+            hideItem_ containerItem.parentAssocId targetItemsAcc model
+          else
+            let
+              items = hideItem_ containerItem.id targetItemsAcc model
+            in
+            case getMapIfExists containerItem.id model.maps of
+              Just map -> boxItems map.items items model
+              Nothing -> items
+        Nothing -> targetItemsAcc -- FIXME: continue unboxing containers?
     )
     targetItems
 
@@ -69,7 +85,7 @@ unboxItems : MapItems -> MapItems -> Model -> MapItems
 unboxItems containerItems targetItems model =
   containerItems |> Dict.values |> List.filter isVisible |> List.foldr
     (\containerItem targetItemsAcc ->
-      if isMapTopic containerItem then
+      if isMapTopic containerItem then -- TODO: use pattern matching instead?
         let
           (items, abort) = unboxTopic containerItem targetItemsAcc model
         in
@@ -94,11 +110,16 @@ unboxTopic containerItem targetItems model =
     (topicToInsert, abort) =
       case targetItems |> Dict.get containerItem.id of
         Just item ->
-          -- abort further unboxing if view item exists (= was unboxed before) and is set to
-          -- BlackBox or WhiteBox
-          ({ item | hidden = False }, isAbort item)
+          -- if map item exists (= was revealed before) ...
+          -- 1) set it to "pinned" unless it is hidden
+          -- 2) abort further unboxing if it's display mode is BlackBox or WhiteBox
+          let
+            _ = info "unboxTopic" { item | hidden = False, pinned = not item.hidden }
+          in
+          ({ item | hidden = False, pinned = not item.hidden }, isAbort item)
         Nothing ->
-          -- by default (when no view item exists) an unboxed container will also be unboxed
+          -- by default (when no map item exists) an unboxed container will also be unboxed
+          -- FIXME: set item's parentAssocId?
           if hasMap containerItem.id model.maps then
             (setUnboxed containerItem, False)
           else
@@ -149,4 +170,5 @@ targetAssocItem : Id -> MapItems -> MapItem
 targetAssocItem assocId targetItems =
   case targetItems |> Dict.get assocId of
     Just item -> { item | hidden = False }
-    Nothing -> MapItem assocId False (MapAssoc AssocProps) -1
+    Nothing -> MapItem assocId False False (MapAssoc AssocProps) -1 -- hidden/pinned=False
+    -- FIXME: set item's parentAssocId?
