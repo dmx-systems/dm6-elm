@@ -715,16 +715,21 @@ back model =
 
 adjustMapRect : MapId -> Float -> Model -> Model
 adjustMapRect mapId factor model =
+    let
+        dx =
+            factor * 400
+
+        dy =
+            factor * 300
+    in
     model
         |> updateMapRect mapId
             (\rect ->
                 Rectangle
-                    (rect.x1 + factor * 400)
-                    -- TODO
-                    (rect.y1 + factor * 300)
-                    -- TODO
-                    rect.x2
-                    rect.y2
+                    (rect.x1 + dx)
+                    (rect.y1 + dy)
+                    (rect.x2 + dx)
+                    (rect.y2 + dy)
             )
 
 
