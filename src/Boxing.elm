@@ -22,7 +22,10 @@ type alias TransferFunc = MapItems -> MapItems -> Model -> MapItems
 -}
 boxContainer : MapId -> MapId -> Model -> Maps
 boxContainer containerId targetMapId model =
-  transferContent containerId targetMapId boxItems model
+  case getDisplayMode containerId targetMapId model.maps of
+    -- box only if currently unboxed
+    Just (Container Unboxed) -> transferContent containerId targetMapId boxItems model
+    _ -> model.maps
 
 
 {-| Reveals a container content on its parent map.
@@ -30,7 +33,11 @@ boxContainer containerId targetMapId model =
 -}
 unboxContainer : MapId -> MapId -> Model -> Maps
 unboxContainer containerId targetMapId model =
-  transferContent containerId targetMapId unboxItems model
+  case getDisplayMode containerId targetMapId model.maps of
+    -- unbox only if currently boxed
+    Just (Container BlackBox) -> transferContent containerId targetMapId unboxItems model
+    Just (Container WhiteBox) -> transferContent containerId targetMapId unboxItems model
+    _ -> model.maps
 
 
 transferContent : MapId -> MapId -> TransferFunc -> Model -> Maps
