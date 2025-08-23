@@ -1,5 +1,6 @@
 module Feature.OpenDoor.Move exposing (move)
 
+import Config exposing (topicSize, whiteBoxPadding)
 import Dict exposing (Dict)
 import Model exposing (..)
 
@@ -19,6 +20,11 @@ Semantics:
           - if it’s a topic, drop it near the container’s position on the target map,
             or at a small default offset if the container is not visible there
           - parentAssocId = -1 (no composition wired on target yet)
+
+Additionally:
+
+  - If removing the topic empties the inner map, keep a minimal non-zero
+    rectangle so the white box does not visually collapse.
 
 -}
 move :
@@ -47,6 +53,24 @@ move { containerId, topicId, targetMapId } model0 =
                     Just itemInContainer ->
                         -- 1) Remove from container’s inner map
                         let
+                            newItemsInContainer : Dict Id MapItem
+                            newItemsInContainer =
+                                Dict.remove topicId containerMap.items
+
+                            -- Keep a minimal rect when inner map becomes empty,
+                            -- so the container’s white box is still visible.
+                            adjustedContainerRect : Rectangle
+                            adjustedContainerRect =
+                                if Dict.isEmpty newItemsInContainer then
+                                    Rectangle
+                                        0
+                                        0
+                                        (topicSize.w + 2 * whiteBoxPadding)
+                                        (topicSize.h + 2 * whiteBoxPadding)
+
+                                else
+                                    containerMap.rect
+
                             model1 : Model
                             model1 =
                                 { model0
@@ -54,7 +78,8 @@ move { containerId, topicId, targetMapId } model0 =
                                         Dict.insert
                                             containerId
                                             { containerMap
-                                                | items = Dict.remove topicId containerMap.items
+                                                | items = newItemsInContainer
+                                                , rect = adjustedContainerRect
                                             }
                                             model0.maps
                                 }
@@ -68,7 +93,7 @@ move { containerId, topicId, targetMapId } model0 =
                             Just targetMap ->
                                 let
                                     -- If the topic already exists on the target (WhiteBox case),
-                                    -- we reuse it to keep stable position and parentAssocId.
+                                    -- reuse it to keep stable position and parentAssocId.
                                     existingOnTarget : Maybe MapItem
                                     existingOnTarget =
                                         Dict.get topicId targetMap.items
@@ -91,14 +116,12 @@ move { containerId, topicId, targetMapId } model0 =
 
                                     defaultDropPos : Point
                                     defaultDropPos =
-                                        -- Generic small offset
                                         Point 40 40
 
                                     newPos : Point
                                     newPos =
                                         case containerPosOnTarget of
                                             Just cp ->
-                                                -- drop close to the container’s box on target
                                                 Point (cp.x + 24) (cp.y + 24)
 
                                             Nothing ->
