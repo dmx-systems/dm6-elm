@@ -22,8 +22,8 @@
   "scripts": {
     "dev": "elm-live src/Main.elm --dir=public --open --debug -- --output=public/elm.js",
     "build": "elm make src/Main.elm --optimize --output=public/elm.js",
-    "format": "npx elm-format --yes src tests",
-    "format:check": "npx elm-format --validate src tests",
+    "format": "npx elm-format --yes src tests review",
+    "format:check": "npx elm-format --validate src tests review",
     "test": "elm-test",
     "test:ci": "elm-format --validate src && elm-review && elm-test",
     "review": "elm-review"
