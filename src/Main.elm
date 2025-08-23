@@ -496,6 +496,10 @@ update msg model =
                         |> Maybe.map .parentMapId
                         |> Maybe.withDefault 0
 
+                wasInsideContainer =
+                    -- We are currently viewing the inner map of this container
+                    activeMap model == containerId
+
                 _ =
                     info "OpenDoor"
                         ("Moving topic "
@@ -506,26 +510,42 @@ update msg model =
                             ++ String.fromInt targetMapId
                         )
 
-                addOpenDoorLog : ( Model, Cmd Msg ) -> ( Model, Cmd Msg )
-                addOpenDoorLog =
-                    Utils.withInfo
-                        ("@OpenDoor topicId="
-                            ++ String.fromInt topicId
-                            ++ " containerId="
-                            ++ String.fromInt containerId
-                            ++ " targetMapId="
-                            ++ String.fromInt targetMapId
-                        )
+                movedModel =
+                    OpenDoor.move
+                        { containerId = containerId
+                        , topicId = topicId
+                        , targetMapId = targetMapId
+                        }
+                        model
+
+                -- If we were inside the container, navigate back to parent
+                -- and select the moved topic on the parent view.
+                modelAfterNav =
+                    if wasInsideContainer then
+                        let
+                            newPath =
+                                case movedModel.mapPath of
+                                    -- mapPath is [activeMap, ...]; drop the inner map id
+                                    _ :: rest ->
+                                        rest
+
+                                    [] ->
+                                        []
+                        in
+                        { movedModel
+                            | mapPath = newPath
+                            , selection = [ ( topicId, targetMapId ) ]
+                        }
+                            |> autoSize
+
+                    else
+                        -- WhiteBox case (we were on the parent already):
+                        -- just select the moved topic on the parent.
+                        movedModel
+                            |> select topicId targetMapId
+                            |> autoSize
             in
-            OpenDoor.move
-                { containerId = containerId
-                , topicId = topicId
-                , targetMapId = targetMapId
-                }
-                model
-                |> storeModel
-                |> addUpdateLog
-                |> addOpenDoorLog
+            modelAfterNav |> storeModel
 
         NoOp ->
             ( model, Utils.infoCmd "@update" )
