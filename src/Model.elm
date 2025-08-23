@@ -239,7 +239,7 @@ type Msg
     | Nav NavMsg
     | Hide
     | Delete
-    | ExitTopic MapId Id -- (containerId, topicId)
+    | MoveTopicToParentMap MapId Id -- (containerId, topicId)
     | NoOp
 
 

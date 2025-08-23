@@ -1,14 +1,18 @@
-module Boxing.ExitDoorTest exposing (tests)
+module Feature.OpenDoor.MoveTest exposing (tests)
 
-import Boxing exposing (exitContainer)
 import Dict
 import Expect
+import Feature.OpenDoor.Move as OpenDoor
 import Model exposing (..)
 import Test exposing (..)
 
 
-setup : ( Model, MapId, Id )
-setup =
+
+-- Build a model with a container and one child topic inside it.
+
+
+setupModel : ( Model, MapId, Id )
+setupModel =
     let
         -- start with default model
         ( m1, cId ) =
@@ -40,16 +44,23 @@ setup =
 
 tests : Test
 tests =
-    describe "exitContainer"
-        [ test "moves selected topic from container to parent map (visible outside, hidden inside)" <|
+    describe "Feature.OpenDoor.move"
+        [ test "moves topic from container to parent map (visible outside, absent inside)" <|
             \_ ->
                 let
                     ( m0, containerId, topicId ) =
-                        setup
+                        setupModel
 
+                    -- perform the move to parent map = 0 in this setup
                     m1 =
-                        exitContainer containerId topicId m0
+                        OpenDoor.move
+                            { containerId = containerId
+                            , topicId = topicId
+                            , targetMapId = 0
+                            }
+                            m0
 
+                    -- visible on the parent (home = 0), and not hidden
                     outsideVisible =
                         isItemInMap topicId 0 m1
                             && (getMapItemById topicId 0 m1.maps
@@ -58,10 +69,9 @@ tests =
                                )
                             == False
 
-                    insideHidden =
-                        getMapItemById topicId containerId m1.maps
-                            |> Maybe.map .hidden
-                            |> Maybe.withDefault False
+                    -- completely absent from the container’s inner map
+                    insideAbsent =
+                        getMapItemById topicId containerId m1.maps == Nothing
                 in
-                Expect.equal ( outsideVisible, insideHidden ) ( True, True )
+                Expect.equal ( outsideVisible, insideAbsent ) ( True, True )
         ]
