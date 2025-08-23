@@ -589,6 +589,8 @@ getItemId item =
     Assoc {id} -> id
 
 
+{-| useful as a filter predicate
+-}
 isTopic : Item -> Bool
 isTopic item =
   case item of
@@ -596,11 +598,15 @@ isTopic item =
     Assoc _ -> False
 
 
+{-| useful as a filter predicate
+-}
 isAssoc : Item -> Bool
 isAssoc item =
   not (isTopic item)
 
 
+{-| useful as a filter predicate
+-}
 isMapTopic : MapItem -> Bool
 isMapTopic item =
   case item.props of
@@ -608,6 +614,8 @@ isMapTopic item =
     MapAssoc _ -> False
 
 
+{-| useful as a filter predicate
+-}
 isMapAssoc : MapItem -> Bool
 isMapAssoc item =
   not (isMapTopic item)

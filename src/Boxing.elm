@@ -70,7 +70,7 @@ boxItems containerItems targetItems model =
               items = hideItem_ containerItem.id targetItemsAcc model
             in
             case getMapIfExists containerItem.id model.maps of
-              Just map -> boxItems map.items items model
+              Just map -> boxItems map.items items model -- recursion
               Nothing -> items
         Nothing -> targetItemsAcc -- FIXME: continue unboxing containers?
     )
@@ -85,18 +85,19 @@ unboxItems : MapItems -> MapItems -> Model -> MapItems
 unboxItems containerItems targetItems model =
   containerItems |> Dict.values |> List.filter isVisible |> List.foldr
     (\containerItem targetItemsAcc ->
-      if isMapTopic containerItem then -- TODO: use pattern matching instead?
-        let
-          (items, abort) = unboxTopic containerItem targetItemsAcc model
-        in
-        if not abort then
-          case getMapIfExists containerItem.id model.maps of
-            Just map -> unboxItems map.items items model
-            Nothing -> items
-        else
-          items
-      else
-        unboxAssoc containerItem targetItemsAcc
+      case containerItem.props of
+        MapTopic _ ->
+          let
+            (items, abort) = unboxTopic containerItem targetItemsAcc model
+          in
+          if abort then
+            items
+          else
+            case getMapIfExists containerItem.id model.maps of
+              Just map -> unboxItems map.items items model -- recursion
+              Nothing -> items
+        MapAssoc _ ->
+          unboxAssoc containerItem targetItemsAcc
     )
     targetItems
 
