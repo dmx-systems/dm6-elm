@@ -119,7 +119,7 @@ viewToolbar model =
         , viewMonadDisplay model
         , viewContainerDisplay model
         , viewToolbarButton "Hide" Hide True model
-        , viewToolbarAction "Open Door" decideOpenDoorMsg model -- <—
+        , viewToolbarAction "Cross" decideOpenDoorMsg model -- <—
         , viewToolbarButton "Fullscreen" (Nav Fullscreen) True model
         , viewToolbarButton "Delete" Delete True model
         , viewFooter

@@ -63,8 +63,8 @@ setupModel =
 
 tests : Test
 tests =
-    describe "Toolbar Open Door button"
-        [ test "Clicking 'Open Door' dispatches MoveTopicToParentMap with correct ids (and is enabled)" <|
+    describe "Toolbar Cross button"
+        [ test "Clicking 'Cross' dispatches MoveTopicToParentMap with correct ids (and is enabled)" <|
             \_ ->
                 let
                     ( model0, containerId, topicId ) =
@@ -77,7 +77,7 @@ tests =
 
                     openDoorBtn =
                         root
-                            |> Query.find [ Sel.id "btn-Open-Door" ]
+                            |> Query.find [ Sel.id "btn-Cross" ]
                 in
                 Expect.all
                     [ -- 1) The button must be enabled (no 'disabled' attribute)
