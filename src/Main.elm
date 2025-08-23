@@ -1,11 +1,12 @@
 module Main exposing (..)
 
-import Boxing exposing (boxContainer, exitContainer, unboxContainer)
+import Boxing exposing (boxContainer, unboxContainer)
 import Browser
 import Browser.Dom as Dom
 import Browser.Events as Events
 import Config exposing (..)
 import Dict
+import Feature.OpenDoor.Move as OpenDoor
 import Html exposing (Attribute, Html, a, br, button, div, input, label, span, text)
 import Html.Attributes exposing (checked, disabled, href, id, name, style, type_)
 import Html.Events exposing (on, onClick)
@@ -118,7 +119,7 @@ viewToolbar model =
         , viewMonadDisplay model
         , viewContainerDisplay model
         , viewToolbarButton "Hide" Hide True model
-        , viewExitButton model -- <- NEW
+        , viewToolbarAction "Open Door" decideOpenDoorMsg model -- <—
         , viewToolbarButton "Fullscreen" (Nav Fullscreen) True model
         , viewToolbarButton "Delete" Delete True model
         , viewFooter
@@ -209,6 +210,73 @@ viewToolbarButton label msg requireSelection model =
             ++ buttonStyle
         )
         [ text label ]
+
+
+viewToolbarAction : String -> (Model -> Maybe Msg) -> Model -> Html Msg
+viewToolbarAction label decide model =
+    let
+        ( disabled_, msg ) =
+            case decide model of
+                Just m ->
+                    ( False, m )
+
+                Nothing ->
+                    ( True, NoOp )
+    in
+    button
+        ([ stopPropagationOnMousedown NoOp -- <-- important
+         , onClick msg
+         , disabled disabled_
+         ]
+            ++ buttonStyle
+        )
+        [ text label ]
+
+
+
+-- Find the inner-map (container id) that contains `topicId`
+-- and whose parent is `parentMapId` (the map you are viewing).
+
+
+findContainerForChild : MapId -> Id -> Model -> Maybe MapId
+findContainerForChild parentMapId topicId model =
+    model.maps
+        |> Dict.values
+        |> List.filter (\m -> m.parentMapId == parentMapId)
+        |> List.filter (\m -> Dict.member topicId m.items)
+        |> List.head
+        |> Maybe.map .id
+
+
+decideOpenDoorMsg : Model -> Maybe Msg
+decideOpenDoorMsg model =
+    case getSingleSelection model of
+        Nothing ->
+            Nothing
+
+        Just ( topicId, selectionMapId ) ->
+            let
+                activeId =
+                    activeMap model
+            in
+            if selectionMapId == activeId then
+                -- Fullscreen / inner-map case: we are *inside* the container.
+                -- Enable if the inner map has a parent, and move from inner -> parent.
+                case Dict.get activeId model.maps of
+                    Just m ->
+                        if m.parentMapId /= -1 then
+                            Just (MoveTopicToParentMap activeId topicId)
+
+                        else
+                            Nothing
+
+                    Nothing ->
+                        Nothing
+
+            else
+                -- WhiteBox case: selection is on the parent; find the container that owns this topic.
+                findContainerForChild activeId topicId model
+                    |> Maybe.map (\containerId -> MoveTopicToParentMap containerId topicId)
 
 
 viewMonadDisplay : Model -> Html Msg
@@ -388,8 +456,29 @@ update msg model =
         Delete ->
             delete model |> storeModel
 
-        ExitTopic containerId topicId ->
-            exitContainer containerId topicId model
+        MoveTopicToParentMap containerId topicId ->
+            let
+                targetMapId =
+                    Dict.get containerId model.maps
+                        |> Maybe.map .parentMapId
+                        |> Maybe.withDefault 0
+
+                _ =
+                    info "OpenDoor"
+                        ("Moving topic "
+                            ++ String.fromInt topicId
+                            ++ " out of container "
+                            ++ String.fromInt containerId
+                            ++ " into map "
+                            ++ String.fromInt targetMapId
+                        )
+            in
+            OpenDoor.move
+                { containerId = containerId
+                , topicId = topicId
+                , targetMapId = targetMapId
+                }
+                model
                 |> storeModel
 
         NoOp ->
@@ -1168,29 +1257,3 @@ measureStyle =
     , style "border-style" "solid"
     , style "box-sizing" "border-box"
     ]
-
-
-viewExitButton : Model -> Html Msg
-viewExitButton model =
-    let
-        ( disabled_, msg ) =
-            case getSingleSelection model of
-                Nothing ->
-                    ( True, NoOp )
-
-                Just ( topicId, mapId ) ->
-                    case getMap mapId model.maps of
-                        Nothing ->
-                            ( True, NoOp )
-
-                        Just m ->
-                            -- Only enable if this map actually has a parent
-                            if m.parentMapId /= -1 then
-                                ( False, ExitTopic mapId topicId )
-
-                            else
-                                ( True, NoOp )
-    in
-    button
-        ([ onClick msg, disabled disabled_ ] ++ buttonStyle)
-        [ text "Open Door" ]
