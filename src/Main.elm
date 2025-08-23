@@ -224,9 +224,23 @@ viewToolbarAction label decide model =
                     ( True, NoOp )
     in
     button
-        ([ stopPropagationOnMousedown NoOp -- <-- important
+        ([ stopPropagationOnMousedown NoOp
          , onClick msg
          , disabled disabled_
+         , id
+            ("btn-"
+                ++ String.map
+                    (\c ->
+                        if c == ' ' then
+                            '-'
+
+                        else
+                            c
+                    )
+                    label
+            )
+
+         -- "btn-Open-Door"
          ]
             ++ buttonStyle
         )
