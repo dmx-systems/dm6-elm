@@ -12,11 +12,11 @@ homeMapName =
 
 
 version =
-    "0.2-snapshot"
+    "0.2.0-snapshot"
 
 
 date =
-    "Aug 21, 2025"
+    "Aug 23, 2025"
 
 
 newTopicPos =

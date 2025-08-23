@@ -290,11 +290,14 @@ viewContainerDisplay model =
 viewRadioButton : String -> Msg -> Bool -> Bool -> Html Msg
 viewRadioButton label_ msg isChecked isDisabled =
     label
-        [ onClick msg
-        , stopPropagationOnMousedown NoOp
-        ]
+        [ stopPropagationOnMousedown NoOp ]
         [ input
-            [ type_ "radio", name "display-mode", checked isChecked, disabled isDisabled ]
+            [ type_ "radio"
+            , name "display-mode"
+            , checked isChecked
+            , disabled isDisabled
+            , onClick msg
+            ]
             []
         , text label_
         ]

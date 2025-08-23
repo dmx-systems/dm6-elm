@@ -99,7 +99,8 @@ type alias Map =
 
 type alias MapItem =
     { id : Id
-    , hidden : Bool
+    , hidden : Bool -- TODO: replace hidden/pinned by custom type: Hidden/Visible/Pinned?
+    , pinned : Bool
     , props : MapProps
     , parentAssocId : Id
     }
@@ -627,9 +628,9 @@ addItemToMap itemId props mapId model =
                 model
 
         mapItem =
-            MapItem itemId False props parentAssocId
+            MapItem itemId False False props parentAssocId
 
-        -- hidden=False
+        -- hidden=False, pinned=False
         _ =
             info "addItemToMap"
                 { itemId = itemId, props = props, mapId = mapId, parentAssocId = parentAssocId }
