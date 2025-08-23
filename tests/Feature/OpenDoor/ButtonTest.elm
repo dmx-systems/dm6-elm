@@ -3,6 +3,7 @@ module Feature.OpenDoor.ButtonTest exposing (tests)
 import Dict
 import Expect
 import Html
+import Html.Attributes as Attr
 import Main exposing (view)
 import Model exposing (..)
 import Test exposing (..)
@@ -63,7 +64,7 @@ setupModel =
 tests : Test
 tests =
     describe "Toolbar Open Door button"
-        [ test "Clicking 'Open Door' dispatches MoveTopicToParentMap with correct ids" <|
+        [ test "Clicking 'Open Door' dispatches MoveTopicToParentMap with correct ids (and is enabled)" <|
             \_ ->
                 let
                     ( model0, containerId, topicId ) =
@@ -76,9 +77,17 @@ tests =
 
                     openDoorBtn =
                         root
-                            |> Query.find [ Sel.tag "button", Sel.text "Open Door" ]
+                            |> Query.find [ Sel.id "btn-Open-Door" ]
                 in
-                openDoorBtn
-                    |> Event.simulate Event.click
-                    |> Event.expect (MoveTopicToParentMap containerId topicId)
+                Expect.all
+                    [ -- 1) The button must be enabled (no 'disabled' attribute)
+                      \btn -> Query.hasNot [ Sel.attribute (Attr.disabled True) ] btn
+
+                    -- 2) Clicking it must dispatch the expected message
+                    , \btn ->
+                        btn
+                            |> Event.simulate Event.click
+                            |> Event.expect (MoveTopicToParentMap containerId topicId)
+                    ]
+                    openDoorBtn
         ]
