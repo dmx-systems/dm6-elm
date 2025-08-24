@@ -1,19 +1,32 @@
 module Search exposing (..)
 
-import Model exposing (..)
+import Model exposing (Id)
 
 
 
-type alias Model =
-  { searchText : String
-  , searchResult : List Id -- topic Ids
-  , searchMenu : ResultMenu
+type alias SearchModel =
+  { text : String
+  , result : List Id -- topic Ids
+  , menu : ResultMenu
   }
 
 
-init : Model
+init : SearchModel
 init =
-  { searchText = ""
-  , searchResult = []
-  , searchMenu = ResultClosed
+  { text = ""
+  , result = []
+  , menu = ResultClosed
   }
+
+
+type ResultMenu
+  = ResultOpen (Maybe Id) -- hovered topic
+  | ResultClosed
+
+
+type SearchMsg
+  = SearchInput String
+  | SearchFocus
+  | OverItem Id
+  | OutItem Id
+  | ClickItem Id

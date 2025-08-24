@@ -5,6 +5,7 @@ import Config exposing (..)
 import IconMenu exposing (viewTopicIcon)
 import Model exposing (..)
 import ModelAPI exposing (..)
+import Search exposing (ResultMenu(..))
 import Utils exposing (..)
 
 import Dict
@@ -118,7 +119,7 @@ limboTopic mapId model =
     activeMapId = activeMap model
   in
   if mapId == activeMapId then
-    case model.search.searchMenu of
+    case model.search.menu of
       ResultOpen (Just topicId) ->
         if isItemInMap topicId activeMapId model then
           case getMapItemById topicId activeMapId model.maps of
@@ -173,7 +174,7 @@ viewTopic topic props mapId model =
 effectiveDisplayMode : Id -> DisplayMode -> Model -> DisplayMode
 effectiveDisplayMode topicId displayMode model =
   let
-    isLimbo = model.search.searchMenu == ResultOpen (Just topicId)
+    isLimbo = model.search.menu == ResultOpen (Just topicId)
   in
   if isLimbo then
     case displayMode of
@@ -455,7 +456,7 @@ absMapPos mapId posAcc model =
 topicStyle : TopicInfo -> MapId -> Model -> List (Attribute Msg)
 topicStyle ({id}) mapId model =
   let
-    isLimbo = model.search.searchMenu == ResultOpen (Just id)
+    isLimbo = model.search.menu == ResultOpen (Just id)
     isDragging = case model.dragState of
       Drag DragTopic id_ _ _ _ _ -> id_ == id
       _ -> False

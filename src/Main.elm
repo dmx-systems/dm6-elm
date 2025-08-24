@@ -48,7 +48,7 @@ init flags =
       let
         _ = info "init" "localStorage: empty"
       in
-      defaultModel
+      default
     _ ->
       case flags |> D.decodeValue modelDecoder of
         Ok model ->
@@ -61,7 +61,7 @@ init flags =
           let
             _ = logError "init" "localStorage" e
           in
-          defaultModel
+          default
   , Cmd.none
   )
 

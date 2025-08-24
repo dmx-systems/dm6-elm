@@ -1,9 +1,10 @@
 module SearchAPI exposing (viewSearchInput, viewResultMenu, closeResultMenu, updateSearch)
 
-import AppModel exposing (..)
-import Config exposing (..)
-import Model exposing (..)
+import AppModel exposing (Model, Msg(..))
+import Config exposing (contentFontSize, topicSize)
+import Model exposing (Item(..), MapProps(..), Id, MapId)
 import ModelAPI exposing (..)
+import Search exposing (ResultMenu(..), SearchMsg(..))
 import Storage exposing (storeModel)
 import Utils exposing (..)
 
@@ -27,7 +28,7 @@ viewSearchInput model =
       []
       [ text "Search" ]
     , input
-      ( [ value model.search.searchText
+      ( [ value model.search.text
         , onInput (Search << SearchInput)
         , onFocus (Search SearchFocus)
         ]
@@ -44,7 +45,7 @@ searchInputStyle =
 
 viewResultMenu : Model -> List (Html Msg)
 viewResultMenu model =
-  case (model.search.searchMenu, model.search.searchResult |> List.isEmpty) of
+  case (model.search.menu, model.search.result |> List.isEmpty) of
     (ResultOpen _, False) ->
       [ div
         ( [ on "click" (itemDecoder ClickItem)
@@ -54,7 +55,7 @@ viewResultMenu model =
           ]
           ++ resultMenuStyle
         )
-        ( model.search.searchResult |> List.map
+        ( model.search.result |> List.map
           (\id ->
             case getTopicInfo id model of
               Just topic ->
@@ -96,7 +97,7 @@ resultMenuStyle =
 resultItemStyle : Id -> Model -> List (Attribute Msg)
 resultItemStyle topicId model =
   let
-    isHover = case model.search.searchMenu of
+    isHover = case model.search.menu of
       ResultOpen maybeId -> maybeId == Just topicId
       ResultClosed -> False
   in
@@ -126,69 +127,54 @@ updateSearch msg model =
 
 
 onSearchInput : String -> Model -> Model
-onSearchInput text model =
-  let
-    search = model.search
-  in
-  { model | search = { search | searchText = text }}
+onSearchInput text ({search} as model) =
+  { model | search = { search | text = text }}
   |> searchTopics
 
 
 onSearchFocus : Model -> Model
-onSearchFocus model =
-  let
-    search = model.search
-  in
-  { model | search = { search | searchMenu = ResultOpen Nothing }}
+onSearchFocus ({search} as model) =
+  { model | search = { search | menu = ResultOpen Nothing }}
 
 
 onOverItem : Id -> Model -> Model
-onOverItem topicId model =
-  let
-    search = model.search
-  in
-  case model.search.searchMenu of
+onOverItem topicId ({search} as model) =
+  case model.search.menu of
     ResultOpen _ ->
       -- update hovered topic
-      { model | search = { search | searchMenu = ResultOpen (Just topicId) }}
+      { model | search = { search | menu = ResultOpen (Just topicId) }}
     ResultClosed ->
-      logError "onOverItem" "Received \"OverItem\" message when searchMenu is ResultClosed"
+      logError "onOverItem" "Received \"OverItem\" message when search.menu is ResultClosed"
       model
 
 
 onOutItem : Model -> Model
-onOutItem model =
-  let
-    search = model.search
-  in
-  case model.search.searchMenu of
+onOutItem ({search} as model) =
+  case model.search.menu of
     ResultOpen _ ->
       -- update hovered topic
-      { model | search = { search | searchMenu = ResultOpen Nothing }}
+      { model | search = { search | menu = ResultOpen Nothing }}
     ResultClosed ->
-      logError "onOutItem" "Received \"OutItem\" message when searchMenu is ResultClosed"
+      logError "onOutItem" "Received \"OutItem\" message when search.menu is ResultClosed"
       model
 
 
 searchTopics : Model -> Model
-searchTopics model =
-  let
-    search = model.search
-  in
+searchTopics ({search} as model) =
   { model | search =
     { search
-    | searchResult = model.items |> Dict.foldr
+    | result = model.items |> Dict.foldr
       (\id item topicIds ->
         case item of
           Topic {text} ->
-            if isMatch model.search.searchText text then
+            if isMatch model.search.text text then
               id :: topicIds
             else
               topicIds
           Assoc _ -> topicIds
       )
       []
-    , searchMenu = ResultOpen Nothing
+    , menu = ResultOpen Nothing
     }
   }
 
@@ -215,8 +201,5 @@ revealTopic topicId mapId model =
 
 
 closeResultMenu : Model -> Model
-closeResultMenu model =
-  let
-    search = model.search
-  in
-  { model | search = { search | searchMenu = ResultClosed }}
+closeResultMenu ({search} as model) =
+  { model | search = { search | menu = ResultClosed }}

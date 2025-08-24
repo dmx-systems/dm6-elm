@@ -1,9 +1,9 @@
 module AppModel exposing (..)
 
 import Model exposing (..)
-import Search
+import Search exposing (SearchModel, SearchMsg)
 
-import Dict exposing (Dict)
+import Dict
 
 
 
@@ -19,12 +19,12 @@ type alias Model =
   , iconMenuState : Bool
   , measureText : String
   -- components
-  , search : Search.Model
+  , search : SearchModel
   }
 
 
-defaultModel : Model
-defaultModel =
+default : Model
+default =
   { items = Dict.empty
   , maps = Dict.singleton 0 -- map 0 is the "home map", it has no corresponding topic
     <| Map 0 Dict.empty (Rectangle 0 0 0 0) -1 -- parentMapId = -1

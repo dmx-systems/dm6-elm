@@ -4,7 +4,7 @@ import AppModel exposing (..)
 import Model exposing (..)
 import Utils exposing (..)
 
-import Dict exposing (Dict)
+import Dict
 import String exposing (fromInt)
 
 

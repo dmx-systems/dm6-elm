@@ -133,19 +133,6 @@ type DragMode
   | DrawAssoc
 
 
-type ResultMenu
-  = ResultOpen (Maybe Id) -- hovered topic
-  | ResultClosed
-
-
-type SearchMsg
-  = SearchInput String
-  | SearchFocus
-  | OverItem Id
-  | OutItem Id
-  | ClickItem Id
-
-
 type EditMsg
   = EditStart
   | OnTextInput String
