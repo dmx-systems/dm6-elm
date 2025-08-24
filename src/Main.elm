@@ -1,12 +1,14 @@
 module Main exposing (..)
 
+import AppModel exposing (..)
 import Boxing exposing (boxContainer, unboxContainer)
 import Config exposing (..)
 import IconMenu exposing (viewIcon, viewIconMenu, closeIconMenu, updateIconMenu)
 import MapAutoSize exposing (autoSize)
 import MapRenderer exposing (viewMap)
 import Model exposing (..)
-import Search exposing (viewSearchInput, viewResultMenu, closeResultMenu, updateSearch)
+import ModelAPI exposing (..)
+import SearchAPI exposing (viewSearchInput, viewResultMenu, closeResultMenu, updateSearch)
 import Storage exposing (storeModel, storeModelWith, modelDecoder)
 import Utils exposing (..)
 

@@ -1,10 +1,12 @@
 port module Storage exposing (storeModel, storeModelWith, modelDecoder)
 
+import AppModel exposing (..)
+import Model exposing (..)
+
 import Dict exposing (Dict)
 import Json.Decode as D
 import Json.Decode.Pipeline exposing (required, hardcoded)
 import Json.Encode as E
-import Model exposing (..)
 
 
 
@@ -173,10 +175,8 @@ modelDecoder =
     |> hardcoded defaultModel.dragState
     |> hardcoded defaultModel.iconMenuState
     |> hardcoded defaultModel.measureText
-    -- search
-    |> hardcoded defaultModel.searchText
-    |> hardcoded defaultModel.searchResult
-    |> hardcoded defaultModel.searchMenu
+    -- components
+    |> hardcoded defaultModel.search
 
 
 mapDecoder : D.Decoder Map

@@ -1,7 +1,9 @@
 module IconMenu exposing (viewIcon, viewTopicIcon, viewIconMenu, closeIconMenu, updateIconMenu)
 
+import AppModel exposing (..)
 import Config exposing (..)
 import Model exposing (..)
+import ModelAPI exposing (..)
 import Storage exposing (storeModel)
 import Utils exposing (..)
 
