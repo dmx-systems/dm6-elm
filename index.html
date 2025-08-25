@@ -2,19 +2,26 @@
 <html>
 <head>
   <meta charset="UTF-8">
-  <script src="main.js">
-  </script>
+  <script src="main.js"></script>
 </head>
 <body>
 <script>
 const storedData = localStorage.getItem('dm6-elm')
 const model = storedData ? JSON.parse(storedData) : null
+
 const app = Elm.Main.init({
   flags: model
 })
+
 app.ports.store.subscribe(function (model) {
   localStorage.setItem('dm6-elm', JSON.stringify(model))
 })
+
+if (app.ports && app.ports.log) {
+  app.ports.log.subscribe(function (msg) {
+    console.log(msg)
+  })
+}
 </script>
 </body>
 </html>
