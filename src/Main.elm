@@ -512,11 +512,11 @@ update msg model =
                 addOpenDoorLog : ( Model, Cmd Msg ) -> ( Model, Cmd Msg )
                 addOpenDoorLog =
                     Utils.withInfo
-                        ("@OpenDoor topicId="
+                        ("@OpenDoor: Moving topicId="
                             ++ String.fromInt topicId
-                            ++ " containerId="
+                            ++ " out of containerId="
                             ++ String.fromInt containerId
-                            ++ " targetMapId="
+                            ++ " into targetMapId="
                             ++ String.fromInt targetMapId
                         )
             in
