@@ -484,6 +484,16 @@ update msg model =
                         |> Maybe.map .parentMapId
                         |> Maybe.withDefault 0
 
+                _ =
+                    info "OpenDoor"
+                        ("Moving topic "
+                            ++ String.fromInt topicId
+                            ++ " out of container "
+                            ++ String.fromInt containerId
+                            ++ " into map "
+                            ++ String.fromInt targetMapId
+                        )
+
                 -- were we inside the container?
                 wasInsideContainer =
                     activeMap model == containerId
@@ -533,7 +543,6 @@ update msg model =
             in
             modelAfterNav
                 |> storeModel
-                |> logOnce
                 |> addOpenDoorLog
 
         NoOp ->
