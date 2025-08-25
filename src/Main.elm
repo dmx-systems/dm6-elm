@@ -428,6 +428,7 @@ linkStyle =
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     let
+        -- keep your existing pipe-style info (no-op in prod)
         _ =
             case msg of
                 Mouse _ ->
@@ -435,37 +436,58 @@ update msg model =
 
                 _ ->
                     info "update" msg
+
+        -- add one-liner console log in prod
+        addUpdateLog : ( Model, Cmd Msg ) -> ( Model, Cmd Msg )
+        addUpdateLog =
+            Utils.withInfo "@update"
     in
     case msg of
         AddTopic ->
-            createTopicAndAddToMap (activeMap model) model |> storeModel
+            createTopicAndAddToMap (activeMap model) model
+                |> storeModel
+                |> addUpdateLog
 
         MoveTopicToMap topicId mapId origPos targetId targetMapId pos ->
-            moveTopicToMap topicId mapId origPos targetId targetMapId pos model |> storeModel
+            moveTopicToMap topicId mapId origPos targetId targetMapId pos model
+                |> storeModel
+                |> addUpdateLog
 
         SwitchDisplay displayMode ->
-            switchDisplay displayMode model |> storeModel
+            switchDisplay displayMode model
+                |> storeModel
+                |> addUpdateLog
 
         Search searchMsg ->
             updateSearch searchMsg model
+                |> addUpdateLog
 
         Edit editMsg ->
             updateEdit editMsg model
+                |> addUpdateLog
 
         IconMenu iconMenuMsg ->
             updateIconMenu iconMenuMsg model
+                |> addUpdateLog
 
         Mouse mouseMsg ->
             updateMouse mouseMsg model
+                |> addUpdateLog
 
         Nav navMsg ->
-            updateNav navMsg model |> storeModel
+            updateNav navMsg model
+                |> storeModel
+                |> addUpdateLog
 
         Hide ->
-            hide model |> storeModel
+            hide model
+                |> storeModel
+                |> addUpdateLog
 
         Delete ->
-            delete model |> storeModel
+            delete model
+                |> storeModel
+                |> addUpdateLog
 
         MoveTopicToParentMap containerId topicId ->
             let
@@ -483,6 +505,17 @@ update msg model =
                             ++ " into map "
                             ++ String.fromInt targetMapId
                         )
+
+                addOpenDoorLog : ( Model, Cmd Msg ) -> ( Model, Cmd Msg )
+                addOpenDoorLog =
+                    Utils.withInfo
+                        ("@OpenDoor topicId="
+                            ++ String.fromInt topicId
+                            ++ " containerId="
+                            ++ String.fromInt containerId
+                            ++ " targetMapId="
+                            ++ String.fromInt targetMapId
+                        )
             in
             OpenDoor.move
                 { containerId = containerId
@@ -491,9 +524,11 @@ update msg model =
                 }
                 model
                 |> storeModel
+                |> addUpdateLog
+                |> addOpenDoorLog
 
         NoOp ->
-            ( model, Cmd.none )
+            ( model, Utils.infoCmd "@update" )
 
 
 createTopicAndAddToMap : MapId -> Model -> Model
