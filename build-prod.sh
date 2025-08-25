@@ -96,10 +96,10 @@ awk -v jsfile="$tmp_js_escaped" -v toolsfile="$tmp_tools_escaped" '
       next
     }
 
-    # Inject toolbar + tools before </body>, pinned top-right
+    # Inject toolbar + tools before </body>, pinned bottom-right
     if ($0 ~ /<\/body>/ && !injected) {
       print "  <div id=\"dm6-dev-tools\""
-      print "       style=\"position:fixed;top:10px;right:10px;"
+      print "       style=\"position:fixed;bottom:10px;right:10px;"
       print "              display:flex;gap:.5em;z-index:9999;"
       print "              background:#fff;border:1px solid #ddd;border-radius:8px;"
       print "              padding:.4em .6em;box-shadow:0 2px 10px rgba(0,0,0,.08);\">"
@@ -113,6 +113,7 @@ awk -v jsfile="$tmp_js_escaped" -v toolsfile="$tmp_tools_escaped" '
       print
       next
     }
+
     print
   }
   END {
