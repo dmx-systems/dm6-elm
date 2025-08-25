@@ -7,6 +7,7 @@ import ModelAPI exposing (..)
 import Utils exposing (..)
 -- components
 import IconMenuAPI exposing (viewTopicIcon)
+import Mouse exposing (DragState(..), DragMode(..))
 import Search exposing (ResultMenu(..))
 
 import Dict
@@ -383,7 +384,7 @@ viewAssoc assoc mapId model =
 
 viewLimboAssoc : MapId -> Model -> List (Svg Msg)
 viewLimboAssoc mapId model =
-  case model.dragState of
+  case model.mouse.dragState of
     Drag DrawAssoc topicId mapId_ _ pos _ ->
       if mapId_ == mapId then
         let
@@ -458,7 +459,7 @@ topicStyle : TopicInfo -> MapId -> Model -> List (Attribute Msg)
 topicStyle ({id}) mapId model =
   let
     isLimbo = model.search.menu == Open (Just id)
-    isDragging = case model.dragState of
+    isDragging = case model.mouse.dragState of
       Drag DragTopic id_ _ _ _ _ -> id_ == id
       _ -> False
   in
@@ -601,7 +602,7 @@ whiteBoxStyle topicId rect mapId model =
 topicBorderStyle : Id -> MapId -> Model -> List (Attribute Msg)
 topicBorderStyle id mapId model =
   let
-    targeted = case model.dragState of
+    targeted = case model.mouse.dragState of
       -- can't move a topic to a map where it is already
       -- can't create assoc when both topics are in different map
       Drag DragTopic _ mapId_ _ _ (Just target) -> target == (id, mapId) && mapId_ /= id

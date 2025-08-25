@@ -3,6 +3,7 @@ module AppModel exposing (..)
 import Model exposing (..)
 -- components
 import IconMenu exposing (IconMenuModel, IconMenuMsg)
+import Mouse exposing (MouseModel, MouseMsg)
 import Search exposing (SearchModel, SearchMsg)
 
 import Dict
@@ -10,16 +11,16 @@ import Dict
 
 
 type alias Model =
-  { items : Items
-  , maps : Maps
+  { items : Items -- the knowledge base
+  , maps : Maps -- the views
   , mapPath : List MapId
   , nextId : Id
   ----- transient -----
   , selection : Selection
   , editState : EditState
-  , dragState : DragState
   , measureText : String
   -- components
+  , mouse : MouseModel
   , search : SearchModel
   , iconMenu : IconMenuModel
   }
@@ -35,9 +36,9 @@ default =
   ----- transient -----
   , selection = []
   , editState = NoEdit
-  , dragState = NoDrag
   , measureText = ""
   -- components
+  , mouse = Mouse.init
   , search = Search.init
   , iconMenu = IconMenu.init
   }
@@ -47,11 +48,12 @@ type Msg
   = AddTopic
   | MoveTopicToMap Id MapId Point Id MapId Point -- start point, random point (for target)
   | SwitchDisplay DisplayMode
-  | Search SearchMsg
   | Edit EditMsg
-  | IconMenu IconMenuMsg
-  | Mouse MouseMsg
   | Nav NavMsg
   | Hide
   | Delete
   | NoOp
+  -- components
+  | Mouse MouseMsg
+  | Search SearchMsg
+  | IconMenu IconMenuMsg

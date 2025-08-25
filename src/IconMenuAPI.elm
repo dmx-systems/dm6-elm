@@ -2,11 +2,12 @@ module IconMenuAPI exposing (viewIcon, viewTopicIcon, viewIconMenu, closeIconMen
 
 import AppModel exposing (..)
 import Config exposing (..)
-import IconMenu exposing (IconMenuMsg(..))
 import Model exposing (..)
 import ModelAPI exposing (..)
 import Storage exposing (storeModel)
 import Utils exposing (..)
+-- components
+import IconMenu exposing (IconMenuMsg(..))
 
 import Dict
 import Html exposing (Html, Attribute, div, text, button)

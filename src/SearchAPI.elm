@@ -4,9 +4,10 @@ import AppModel exposing (Model, Msg(..))
 import Config exposing (contentFontSize, topicSize)
 import Model exposing (Item(..), MapProps(..), Id, MapId)
 import ModelAPI exposing (..)
-import Search exposing (ResultMenu(..), SearchMsg(..))
 import Storage exposing (storeModel)
 import Utils exposing (..)
+-- components
+import Search exposing (ResultMenu(..), SearchMsg(..))
 
 import Dict
 import Html exposing (Html, Attribute, div, text, input)

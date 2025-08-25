@@ -172,9 +172,9 @@ modelDecoder =
     ----- transient -----
     |> hardcoded default.selection
     |> hardcoded default.editState
-    |> hardcoded default.dragState
     |> hardcoded default.measureText
     -- components
+    |> hardcoded default.mouse
     |> hardcoded default.search
     |> hardcoded default.iconMenu
 

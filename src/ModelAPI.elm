@@ -1,6 +1,7 @@
 module ModelAPI exposing (..)
 
 import AppModel exposing (..)
+import Config exposing (..)
 import Model exposing (..)
 import Utils exposing (..)
 
@@ -252,6 +253,46 @@ isItemInMap itemId mapId model =
         Just _ -> True
         Nothing -> False
     Nothing -> False
+
+
+createTopicAndAddToMap : String -> Maybe IconName -> MapId -> Model -> Model
+createTopicAndAddToMap text iconName mapId model =
+  case getMap mapId model.maps of
+    Just map ->
+      let
+        (newModel, topicId) = createTopic text iconName model
+        props = MapTopic <| TopicProps
+          (Point
+            (newTopicPos.x + map.rect.x1)
+            (newTopicPos.y + map.rect.y1)
+          )
+          topicDetailSize
+          (Monad LabelOnly)
+      in
+      newModel
+      |> addItemToMap topicId props mapId
+      |> select topicId mapId
+    Nothing -> model
+
+
+-- Presumption: both players exist in same map
+createDefaultAssoc : Id -> Id -> MapId -> Model -> Model
+createDefaultAssoc player1 player2 mapId model =
+  createAssocAndAddToMap
+    "dmx.association"
+    player1 "dmx.default"
+    player2 "dmx.default"
+    mapId model
+
+
+-- Presumption: both players exist in same map
+createAssocAndAddToMap : ItemType -> Id -> RoleType -> Id -> RoleType -> MapId -> Model -> Model
+createAssocAndAddToMap itemType player1 role1 player2 role2 mapId model =
+  let
+    (newModel, assocId) = createAssoc itemType player1 role1 player2 role2 model
+    props = MapAssoc AssocProps
+  in
+  addItemToMap assocId props mapId newModel
 
 
 {-| Precondition: the item is not yet contained in the map
