@@ -12,43 +12,40 @@ logfile="src/Log.elm"
 backup="$logfile.bak"
 
 # --- flip Log.elm to PROD (no Debug) -----------------------------------------
-cp "$logfile" "$backup" 2>/dev/null || true
+set -euo pipefail
 
+logfile="src/Log.elm"
+
+# Ensure we're in a git worktree (so we can restore cleanly later)
+in_git() { git rev-parse --is-inside-work-tree >/dev/null 2>&1; }
+
+if ! in_git; then
+  echo "ERROR: build-prod.sh expects to run inside a git worktree." >&2
+  exit 1
+fi
+
+# We rely on HEAD having the DEV version for src/Log.elm.
+# Keep both variants in the repo:
+#   - src/Log.dev.elm  (dev logger)
+#   - src/Log.prod.elm (no-op prod logger)
+if [ ! -f src/Log.prod.elm ] || [ ! -f src/Log.dev.elm ]; then
+  echo "ERROR: Missing src/Log.prod.elm or src/Log.dev.elm." >&2
+  exit 1
+fi
+
+# Safety net: always restore Log.elm back to HEAD (worktree + index) on exit.
 restore_log() {
-  mv -f "$backup" "$logfile" 2>/dev/null || true
+  # Discard any changes to src/Log.elm in both index and worktree
+  git restore --staged --worktree -- "$logfile" 2>/dev/null || \
+  git checkout -- "$logfile" 2>/dev/null || true
 }
-# Safety net: always restore on exit (also covers failures)
 trap restore_log EXIT
 
-# 1) Comment the Debug import (idempotent)
-sed -i.bak 's/^[[:space:]]*import[[:space:]]\+Debug/-- import Debug/' "$logfile"
+# 1) Put PROD logger in place for the build
+cp -f src/Log.prod.elm "$logfile"
 
-# 2) Flip DEV/PROD blocks using markers in src/Log.elm
-#    Keep these markers exactly in Log.elm:
-#      -- DEV START / -- DEV END
-#      -- PROD START / -- PROD END
-awk '
-  BEGIN { in_dev=0; in_prod=0 }
-  {
-    if ($0 ~ /^--[[:space:]]*DEV START[[:space:]]*$/)  { in_dev=1;  print; next }
-    if ($0 ~ /^--[[:space:]]*DEV END[[:space:]]*$/)    { in_dev=0;  print; next }
-    if ($0 ~ /^--[[:space:]]*PROD START[[:space:]]*$/) { in_prod=1; print; next }
-    if ($0 ~ /^--[[:space:]]*PROD END[[:space:]]*$/)   { in_prod=0; print; next }
-
-    if (in_dev) {
-      # Force-comment every line in DEV block
-      if ($0 ~ /^[[:space:]]*--/) print $0; else print "-- " $0;
-      next
-    }
-    if (in_prod) {
-      # Force-uncomment every line in PROD block
-      sub(/^[[:space:]]*--[[:space:]]?/, "", $0); print $0; next
-    }
-    print
-  }
-' "$logfile" > "$logfile.tmp" && mv "$logfile.tmp" "$logfile"
-
-rm -f "$logfile.bak"
+# (optional) show what changed
+# git -c color.ui=always diff -- "$logfile" | sed -n '1,80p'
 
 # --- build & minify -----------------------------------------------------------
 elm make src/Main.elm --optimize --output="$js"
