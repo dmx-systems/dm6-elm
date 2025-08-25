@@ -1,9 +1,9 @@
 module Utils exposing (..)
 
-import Debug exposing (log)
 import Html exposing (Attribute, Html, br, text)
 import Html.Events exposing (keyCode, on, stopPropagationOn)
 import Json.Decode as D
+import Log exposing (log)
 
 
 
@@ -15,7 +15,7 @@ log text val = val
 
 toString : a -> String
 toString =
-    Debug.toString
+    Log.toString
 
 
 
