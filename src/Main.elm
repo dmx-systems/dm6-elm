@@ -500,9 +500,11 @@ update msg model =
                     -- We are currently viewing the inner map of this container
                     activeMap model == containerId
 
-                _ =
-                    info "OpenDoor"
-                        ("Moving topic "
+                -- pretty OpenDoor log (dev uses Debug.log, prod no-ops via build script)
+                addOpenDoorLog : ( Model, Cmd Msg ) -> ( Model, Cmd Msg )
+                addOpenDoorLog =
+                    Utils.info
+                        ("@OpenDoor: Moving topic "
                             ++ String.fromInt topicId
                             ++ " out of container "
                             ++ String.fromInt containerId
@@ -545,7 +547,9 @@ update msg model =
                             |> select topicId targetMapId
                             |> autoSize
             in
-            modelAfterNav |> storeModel
+            modelAfterNav
+                |> storeModel
+                |> addOpenDoorLog
 
         NoOp ->
             ( model, Utils.infoCmd "@update" )

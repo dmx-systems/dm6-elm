@@ -21,8 +21,8 @@
   "homepage": "https://github.com/dmx-systems/dm6-elm#readme",
   "scripts": {
     "dev": "elm-live src/Main.elm --dir=public --open --debug -- --output=public/elm.js",
-    "build": "sh build-prod.sh",
-    "build:dev": "elm make src/Main.elm --optimize --output=public/elm.js",
+    "build": "sh ./build-prod.sh",
+    "build:elm": "elm make src/Main.elm --optimize --output=public/elm.js",
     "format": "npx elm-format --yes src tests review",
     "format:check": "npx elm-format --validate src tests review",
     "test": "elm-test",

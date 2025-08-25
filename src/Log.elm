@@ -1,14 +1,30 @@
-module Log exposing (log)
+module Log exposing (log, toString)
 
--- Pure, pipe-friendly logger used by Utils.info/call/fail
--- Works under --optimize (no Debug import)
+{-| Flip-safe logging shim.
+
+In dev: uses `Debug.*`.
+In prod: build-prod.sh comments out the DEV block and uncomments the PROD block.
+-}
+
+-- import Debug
 
 
+-- DEV START
 log : String -> a -> a
 log =
     Debug.log
 
 
+toString : a -> String
+toString =
+    Debug.toString
+-- DEV END
 
+
+-- PROD START
 -- log _ x =
 --     x
+--
+-- toString _ =
+--     "<value>"
+-- PROD END

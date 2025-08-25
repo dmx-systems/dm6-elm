@@ -1,13 +1,9 @@
 module Utils exposing (..)
 
--- your pass-through, pipe-style logger (no-op in prod)
-
 import Html exposing (Attribute, Html, br, text)
 import Html.Events exposing (keyCode, on, stopPropagationOn)
 import Json.Decode as D
 import Log exposing (log)
-import Platform.Cmd as Cmd exposing (Cmd)
-import Ports.Console as Console
 
 
 
@@ -17,8 +13,8 @@ import Ports.Console as Console
 
 
 toString : a -> String
-toString _ =
-    ""
+toString =
+    Log.toString
 
 
 
