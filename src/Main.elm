@@ -425,69 +425,57 @@ linkStyle =
 -- UPDATE
 
 
-update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     let
-        -- keep your existing pipe-style info (no-op in prod)
-        _ =
-            case msg of
-                Mouse _ ->
-                    msg
-
-                _ ->
-                    info "update" msg
-
-        -- add one-liner console log in prod
-        addUpdateLog : ( Model, Cmd Msg ) -> ( Model, Cmd Msg )
-        addUpdateLog =
-            Utils.withInfo "@update"
+        logOnce =
+            Utils.withConsole (msgToString msg)
     in
     case msg of
         AddTopic ->
             createTopicAndAddToMap (activeMap model) model
                 |> storeModel
-                |> addUpdateLog
-
-        MoveTopicToMap topicId mapId origPos targetId targetMapId pos ->
-            moveTopicToMap topicId mapId origPos targetId targetMapId pos model
-                |> storeModel
-                |> addUpdateLog
+                |> logOnce
 
         SwitchDisplay displayMode ->
             switchDisplay displayMode model
                 |> storeModel
-                |> addUpdateLog
+                |> logOnce
 
         Search searchMsg ->
             updateSearch searchMsg model
-                |> addUpdateLog
+                |> logOnce
 
         Edit editMsg ->
             updateEdit editMsg model
-                |> addUpdateLog
+                |> logOnce
 
         IconMenu iconMenuMsg ->
             updateIconMenu iconMenuMsg model
-                |> addUpdateLog
+                |> logOnce
 
         Mouse mouseMsg ->
             updateMouse mouseMsg model
-                |> addUpdateLog
+                |> logOnce
 
         Nav navMsg ->
             updateNav navMsg model
                 |> storeModel
-                |> addUpdateLog
+                |> logOnce
 
         Hide ->
             hide model
                 |> storeModel
-                |> addUpdateLog
+                |> logOnce
 
         Delete ->
             delete model
                 |> storeModel
-                |> addUpdateLog
+                |> logOnce
+
+        MoveTopicToMap topicId mapId origPos targetId targetMapId pos ->
+            moveTopicToMap topicId mapId origPos targetId targetMapId pos model
+                |> storeModel
+                |> logOnce
 
         MoveTopicToParentMap containerId topicId ->
             let
@@ -496,19 +484,19 @@ update msg model =
                         |> Maybe.map .parentMapId
                         |> Maybe.withDefault 0
 
+                -- were we inside the container?
                 wasInsideContainer =
-                    -- We are currently viewing the inner map of this container
                     activeMap model == containerId
 
-                -- pretty OpenDoor log (dev uses Debug.log, prod no-ops via build script)
+                -- optional: pretty OpenDoor line via Utils.withInfo
                 addOpenDoorLog : ( Model, Cmd Msg ) -> ( Model, Cmd Msg )
                 addOpenDoorLog =
-                    Utils.info
-                        ("@OpenDoor: Moving topic "
+                    Utils.withInfo
+                        ("@OpenDoor: Moving topicId="
                             ++ String.fromInt topicId
-                            ++ " out of container "
+                            ++ " out of containerId="
                             ++ String.fromInt containerId
-                            ++ " into map "
+                            ++ " into targetMapId="
                             ++ String.fromInt targetMapId
                         )
 
@@ -520,14 +508,12 @@ update msg model =
                         }
                         model
 
-                -- If we were inside the container, navigate back to parent
-                -- and select the moved topic on the parent view.
                 modelAfterNav =
                     if wasInsideContainer then
+                        -- navigate back to parent and select moved topic
                         let
                             newPath =
                                 case movedModel.mapPath of
-                                    -- mapPath is [activeMap, ...]; drop the inner map id
                                     _ :: rest ->
                                         rest
 
@@ -541,18 +527,18 @@ update msg model =
                             |> autoSize
 
                     else
-                        -- WhiteBox case (we were on the parent already):
-                        -- just select the moved topic on the parent.
                         movedModel
                             |> select topicId targetMapId
                             |> autoSize
             in
             modelAfterNav
                 |> storeModel
+                |> logOnce
                 |> addOpenDoorLog
 
         NoOp ->
-            ( model, Utils.infoCmd "@update" )
+            ( model, Cmd.none )
+                |> logOnce
 
 
 createTopicAndAddToMap : MapId -> Model -> Model
@@ -1327,3 +1313,58 @@ measureStyle =
     , style "border-style" "solid"
     , style "box-sizing" "border-box"
     ]
+
+
+
+-- Main.elm
+
+
+msgToString : Msg -> String
+msgToString m =
+    case m of
+        Mouse _ ->
+            "@update Mouse"
+
+        Search _ ->
+            "@update Search"
+
+        IconMenu _ ->
+            "@update IconMenu"
+
+        Edit _ ->
+            "@update Edit"
+
+        MoveTopicToParentMap containerId topicId ->
+            "@OpenDoor: Moving topic "
+                ++ String.fromInt topicId
+                ++ " out of container "
+                ++ String.fromInt containerId
+
+        MoveTopicToMap topicId mapId _ targetId targetMapId _ ->
+            "@update MoveTopicToMap topic "
+                ++ String.fromInt topicId
+                ++ " from map "
+                ++ String.fromInt mapId
+                ++ " -> container "
+                ++ String.fromInt targetId
+                ++ " (map "
+                ++ String.fromInt targetMapId
+                ++ ")"
+
+        SwitchDisplay dm ->
+            "@update SwitchDisplay " ++ toString dm
+
+        Nav nav ->
+            "@update Nav " ++ toString nav
+
+        Hide ->
+            "@update Hide"
+
+        Delete ->
+            "@update Delete"
+
+        AddTopic ->
+            "@update AddTopic"
+
+        NoOp ->
+            "@update NoOp"
