@@ -15,18 +15,18 @@ init : SearchModel
 init =
   { text = ""
   , result = []
-  , menu = ResultClosed
+  , menu = Closed
   }
 
 
 type ResultMenu
-  = ResultOpen (Maybe Id) -- hovered topic
-  | ResultClosed
+  = Open (Maybe Id) -- hovered topic
+  | Closed
 
 
 type SearchMsg
-  = SearchInput String
-  | SearchFocus
-  | OverItem Id
-  | OutItem Id
+  = Input String
+  | FocusInput
+  | HoverItem Id
+  | UnhoverItem Id
   | ClickItem Id

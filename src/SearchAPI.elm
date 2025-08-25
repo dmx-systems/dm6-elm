@@ -29,8 +29,8 @@ viewSearchInput model =
       [ text "Search" ]
     , input
       ( [ value model.search.text
-        , onInput (Search << SearchInput)
-        , onFocus (Search SearchFocus)
+        , onInput (Search << Input)
+        , onFocus (Search FocusInput)
         ]
         ++searchInputStyle
       )
@@ -46,11 +46,11 @@ searchInputStyle =
 viewResultMenu : Model -> List (Html Msg)
 viewResultMenu model =
   case (model.search.menu, model.search.result |> List.isEmpty) of
-    (ResultOpen _, False) ->
+    (Open _, False) ->
       [ div
         ( [ on "click" (itemDecoder ClickItem)
-          , on "mouseover" (itemDecoder OverItem)
-          , on "mouseout" (itemDecoder OutItem)
+          , on "mouseover" (itemDecoder HoverItem)
+          , on "mouseout" (itemDecoder UnhoverItem)
           , stopPropagationOnMousedown NoOp
           ]
           ++ resultMenuStyle
@@ -98,8 +98,8 @@ resultItemStyle : Id -> Model -> List (Attribute Msg)
 resultItemStyle topicId model =
   let
     isHover = case model.search.menu of
-      ResultOpen maybeId -> maybeId == Just topicId
-      ResultClosed -> False
+      Open maybeId -> maybeId == Just topicId
+      Closed -> False
   in
   [ style "color" (if isHover then "white" else "black")
   , style "background-color" (if isHover then "black" else "white")
@@ -116,46 +116,46 @@ resultItemStyle topicId model =
 updateSearch : SearchMsg -> Model -> (Model, Cmd Msg)
 updateSearch msg model =
   case msg of
-    SearchInput text -> (onSearchInput text model, Cmd.none)
-    SearchFocus -> (onSearchFocus model, Cmd.none)
-    OverItem topicId -> (onOverItem topicId model, Cmd.none)
-    OutItem _ -> (onOutItem model, Cmd.none)
+    Input text -> (onTextInput text model, Cmd.none)
+    FocusInput -> (onFocusInput model, Cmd.none)
+    HoverItem topicId -> (onHoverItem topicId model, Cmd.none)
+    UnhoverItem _ -> (onUnhoverItem model, Cmd.none)
     ClickItem topicId -> model
       |> revealTopic topicId (activeMap model)
       |> closeResultMenu
       |> storeModel
 
 
-onSearchInput : String -> Model -> Model
-onSearchInput text ({search} as model) =
+onTextInput : String -> Model -> Model
+onTextInput text ({search} as model) =
   { model | search = { search | text = text }}
   |> searchTopics
 
 
-onSearchFocus : Model -> Model
-onSearchFocus ({search} as model) =
-  { model | search = { search | menu = ResultOpen Nothing }}
+onFocusInput : Model -> Model
+onFocusInput ({search} as model) =
+  { model | search = { search | menu = Open Nothing }}
 
 
-onOverItem : Id -> Model -> Model
-onOverItem topicId ({search} as model) =
+onHoverItem : Id -> Model -> Model
+onHoverItem topicId ({search} as model) =
   case model.search.menu of
-    ResultOpen _ ->
+    Open _ ->
       -- update hovered topic
-      { model | search = { search | menu = ResultOpen (Just topicId) }}
-    ResultClosed ->
-      logError "onOverItem" "Received \"OverItem\" message when search.menu is ResultClosed"
+      { model | search = { search | menu = Open (Just topicId) }}
+    Closed ->
+      logError "onHoverItem" "Received \"HoverItem\" message when search.menu is Closed"
       model
 
 
-onOutItem : Model -> Model
-onOutItem ({search} as model) =
+onUnhoverItem : Model -> Model
+onUnhoverItem ({search} as model) =
   case model.search.menu of
-    ResultOpen _ ->
+    Open _ ->
       -- update hovered topic
-      { model | search = { search | menu = ResultOpen Nothing }}
-    ResultClosed ->
-      logError "onOutItem" "Received \"OutItem\" message when search.menu is ResultClosed"
+      { model | search = { search | menu = Open Nothing }}
+    Closed ->
+      logError "onUnhoverItem" "Received \"UnhoverItem\" message when search.menu is Closed"
       model
 
 
@@ -174,7 +174,7 @@ searchTopics ({search} as model) =
           Assoc _ -> topicIds
       )
       []
-    , menu = ResultOpen Nothing
+    , menu = Open Nothing
     }
   }
 
@@ -202,4 +202,4 @@ revealTopic topicId mapId model =
 
 closeResultMenu : Model -> Model
 closeResultMenu ({search} as model) =
-  { model | search = { search | menu = ResultClosed }}
+  { model | search = { search | menu = Closed }}

@@ -141,12 +141,6 @@ type EditMsg
   | EditEnd
 
 
-type IconMenuMsg
-  = Open
-  | Close
-  | SetIcon (Maybe IconName)
-
-
 type MouseMsg
   = Down -- mouse down somewhere
   | DownItem Class Id MapId Point -- mouse down on an item where a drag can be engaged

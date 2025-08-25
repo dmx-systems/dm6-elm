@@ -1,6 +1,8 @@
 module AppModel exposing (..)
 
 import Model exposing (..)
+-- components
+import IconMenu exposing (IconMenuModel, IconMenuMsg)
 import Search exposing (SearchModel, SearchMsg)
 
 import Dict
@@ -16,10 +18,10 @@ type alias Model =
   , selection : Selection
   , editState : EditState
   , dragState : DragState
-  , iconMenuState : Bool
   , measureText : String
   -- components
   , search : SearchModel
+  , iconMenu : IconMenuModel
   }
 
 
@@ -34,10 +36,10 @@ default =
   , selection = []
   , editState = NoEdit
   , dragState = NoDrag
-  , iconMenuState = False
   , measureText = ""
   -- components
   , search = Search.init
+  , iconMenu = IconMenu.init
   }
 
 

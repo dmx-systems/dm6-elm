@@ -173,10 +173,10 @@ modelDecoder =
     |> hardcoded default.selection
     |> hardcoded default.editState
     |> hardcoded default.dragState
-    |> hardcoded default.iconMenuState
     |> hardcoded default.measureText
     -- components
     |> hardcoded default.search
+    |> hardcoded default.iconMenu
 
 
 mapDecoder : D.Decoder Map
