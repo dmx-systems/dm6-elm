@@ -1,10 +1,9 @@
 module Boxing.UnboxRegressionTest exposing (tests)
 
-import Boxing exposing (unboxContainer)
-import Dict
-import Expect
-import Model exposing (..)
-import Test exposing (..)
+import AppModel exposing (Model)
+import Compat.ModelAPI as M exposing (addItemToMapDefault, createTopic, defaultModel, getMapItemById, isMapTopic)
+import Model exposing (Id, Map, MapId, Point, Rectangle, Size)
+import ModelAPI exposing (addItemToMap)
 
 
 setup : ( Model, MapId, Id )
@@ -14,10 +13,7 @@ setup =
             createTopic "Container" Nothing defaultModel
 
         m2 =
-            addItemToMap cId
-                (MapTopic (TopicProps (Point 100 100) (Size 160 60) (Container BlackBox)))
-                0
-                m1
+            M.addItemToMapDefault cId 0 defaultModel
 
         m3 =
             { m2 | maps = Dict.insert cId (Map cId Dict.empty (Rectangle 0 0 0 0) 0) m2.maps }

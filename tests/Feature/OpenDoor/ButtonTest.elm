@@ -1,11 +1,14 @@
 module Feature.OpenDoor.ButtonTest exposing (tests)
 
+import AppModel exposing (Model)
+import Compat.ModelAPI as M exposing (addItemToMapDefault, createTopic, defaultModel, getMapItemById, isMapTopic)
 import Dict
 import Expect
 import Html
 import Html.Attributes as Attr
 import Main exposing (view)
-import Model exposing (..)
+import Model exposing (Id, Map, MapId, Point, Rectangle, Size)
+import ModelAPI exposing (addItemToMap)
 import Test exposing (..)
 import Test.Html.Event as Event
 import Test.Html.Query as Query
@@ -29,10 +32,7 @@ setupModel =
 
         -- container visible on home map (0) as a container
         m2 =
-            addItemToMap containerId
-                (MapTopic (TopicProps (Point 100 100) (Size 160 60) (Container BlackBox)))
-                0
-                m1
+            M.addItemToMapDefault containerId 0 m1
 
         -- give the container its inner map (parent = 0)
         m3 =
@@ -46,10 +46,7 @@ setupModel =
             createTopic "Child" Nothing m3
 
         m5 =
-            addItemToMap topicId
-                (MapTopic (TopicProps (Point 30 30) (Size 120 40) (Monad LabelOnly)))
-                containerId
-                m4
+            M.addItemToMapDefault topicId containerId m4
 
         -- We are *inside* the container and the child is selected there
         m6 =
@@ -87,7 +84,7 @@ tests =
                     , \btn ->
                         btn
                             |> Event.simulate Event.click
-                            |> Event.expect (MoveTopicToParentMap containerId topicId)
+                            |> Event.expect (CrossMsg Cross.CrossClick)
                     ]
                     openDoorBtn
         ]

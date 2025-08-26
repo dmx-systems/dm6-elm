@@ -1,8 +1,10 @@
 module Search.UpdateTest exposing (tests)
 
+import AppModel exposing (Model)
+import Compat.ModelAPI as M exposing (createTopic, defaultModel, getMapItemById, isMapTopic)
 import Expect
-import Model exposing (SearchMsg(..), defaultModel)
-import Search exposing (updateSearch)
+import Model exposing (Id, MapId)
+import SearchAPI exposing (updateSearch)
 import Test exposing (..)
 
 
@@ -13,7 +15,7 @@ tests =
             \_ ->
                 let
                     ( m2, _ ) =
-                        updateSearch (SearchInput "foo") defaultModel
+                        updateSearch (Input "foo") defaultModel
                 in
                 Expect.equal m2.searchText "foo"
         , test "SearchFocus opens the result menu (differs from default)" <|

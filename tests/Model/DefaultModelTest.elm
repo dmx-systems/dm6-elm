@@ -1,8 +1,10 @@
 module Model.DefaultModelTest exposing (tests)
 
+import AppModel exposing (Model)
+import Compat.ModelAPI as M exposing (createTopic, defaultModel, getMapItemById, isMapTopic)
 import Dict
 import Expect
-import Model exposing (defaultModel)
+import Model exposing (Id, MapId)
 import Test exposing (..)
 
 
@@ -29,7 +31,7 @@ tests =
         , test "search text and measure text are empty" <|
             \_ ->
                 Expect.all
-                    [ \_ -> Expect.equal defaultModel.searchText ""
+                    [ \_ -> Expect.equal defaultModel.search.text ""
                     , \_ -> Expect.equal defaultModel.measureText ""
                     ]
                     ()

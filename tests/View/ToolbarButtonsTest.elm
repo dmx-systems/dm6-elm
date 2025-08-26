@@ -1,10 +1,12 @@
 module View.ToolbarButtonsTest exposing (tests)
 
+import AppModel exposing (Model)
+import Compat.ModelAPI as M exposing (createTopic, defaultModel, getMapItemById, isMapTopic)
 import Expect
 import Html
 import Html.Attributes as Attr
 import Main exposing (view)
-import Model exposing (defaultModel)
+import Model exposing (Id, MapId)
 import Test exposing (..)
 import Test.Html.Query as Query
 import Test.Html.Selector as Sel
