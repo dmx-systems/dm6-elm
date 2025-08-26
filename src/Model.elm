@@ -7,7 +7,14 @@ import Dict exposing (Dict)
 type alias Items = Dict Id Item
 
 
-type Item -- TODO: make it a record with "id" field, analogue MapItem?
+type alias Item =
+  { id : Id
+  , info : ItemInfo
+  -- TODO: add "assocIds", the item's associations
+  }
+
+
+type ItemInfo
   = Topic TopicInfo
   | Assoc AssocInfo
 
@@ -21,7 +28,7 @@ type alias TopicInfo =
 
 type alias AssocInfo =
   { id : Id
-  , itemType : ItemType -- can't be named "type", a reserved word
+  , itemType : ItemType -- field can't be named "type", a reserved word
   , player1 : Id
   , role1 : RoleType
   , player2 : Id

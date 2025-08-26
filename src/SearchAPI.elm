@@ -2,7 +2,7 @@ module SearchAPI exposing (viewSearchInput, viewResultMenu, closeResultMenu, upd
 
 import AppModel exposing (Model, Msg(..))
 import Config exposing (contentFontSize, topicSize)
-import Model exposing (Item(..), MapProps(..), Id, MapId)
+import Model exposing (ItemInfo(..), MapProps(..), Id, MapId)
 import ModelAPI exposing (..)
 import Storage exposing (storeModel)
 import Utils exposing (..)
@@ -61,8 +61,8 @@ viewResultMenu model =
             case getTopicInfo id model of
               Just topic ->
                 div
-                  ( [ attribute "data-id" (fromInt topic.id) ]
-                    ++ resultItemStyle topic.id model
+                  ( [ attribute "data-id" (fromInt id) ]
+                    ++ resultItemStyle id model
                   )
                   [ text topic.text ]
               Nothing -> text "??"
@@ -166,7 +166,7 @@ searchTopics ({search} as model) =
     { search
     | result = model.items |> Dict.foldr
       (\id item topicIds ->
-        case item of
+        case item.info of
           Topic {text} ->
             if isMatch model.search.text text then
               id :: topicIds

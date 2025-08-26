@@ -40,10 +40,7 @@ storeModelWith (model, cmd) =
 encodeModel : Model -> E.Value
 encodeModel model =
   E.object
-    [ ("items", model.items |> E.dict
-        String.fromInt
-        encodeItem
-      )
+    [ ("items", model.items |> Dict.values |> E.list encodeItem)
     , ("maps", model.maps |> E.dict
         String.fromInt
         encodeMap
@@ -56,7 +53,7 @@ encodeModel model =
 encodeItem : Item -> E.Value
 encodeItem item =
   E.object
-    [ case item of
+    [ case item.info of
       Topic topic ->
         ( "topic"
         , E.object
@@ -146,26 +143,7 @@ encodeDisplayName displayMode =
 modelDecoder : D.Decoder Model
 modelDecoder =
   D.succeed Model
-    |> required "items"
-      (D.dict
-        ( D.oneOf
-          [ D.field "topic" <| D.map Topic <| D.map3 TopicInfo
-              (D.field "id" D.int)
-              (D.field "text" D.string)
-              (D.field "iconName" D.string
-                |> D.andThen maybeString
-              )
-          , D.field "assoc" <| D.map Assoc <| D.map6 AssocInfo
-              (D.field "id" D.int)
-              (D.field "itemType" D.string)
-              (D.field "player1" D.int)
-              (D.field "role1" D.string)
-              (D.field "player2" D.int)
-              (D.field "role2" D.string)
-          ]
-        )
-        |> D.andThen strToIntDictDecoder
-      )
+    |> required "items" (D.list itemDecoder |> D.andThen tupleToDictDecoder)
     |> required "maps" (D.dict mapDecoder |> D.andThen strToIntDictDecoder)
     |> required "mapPath" (D.list D.int)
     |> required "nextId" D.int
@@ -177,6 +155,43 @@ modelDecoder =
     |> hardcoded default.mouse
     |> hardcoded default.search
     |> hardcoded default.iconMenu
+
+
+itemDecoder : D.Decoder (Id, ItemInfo)
+itemDecoder =
+  D.oneOf
+    [ D.field "topic"
+      (D.map2 Tuple.pair
+        (D.field "id" D.int)
+        (D.map Topic <| D.map3 TopicInfo
+          (D.field "id" D.int)
+          (D.field "text" D.string)
+          (D.field "iconName" D.string
+            |> D.andThen maybeString
+          )
+        )
+      )
+    , D.field "assoc"
+      (D.map2 Tuple.pair
+        (D.field "id" D.int)
+        (D.map Assoc <| D.map6 AssocInfo
+          (D.field "id" D.int)
+          (D.field "itemType" D.string)
+          (D.field "player1" D.int)
+          (D.field "role1" D.string)
+          (D.field "player2" D.int)
+          (D.field "role2" D.string)
+        )
+      )
+    ]
+
+
+tupleToDictDecoder : List (Id, ItemInfo) -> D.Decoder Items
+tupleToDictDecoder tupleList =
+  tupleList
+  |> List.map (\(id, info) -> (id, Item id info))
+  |> Dict.fromList
+  |> D.succeed
 
 
 mapDecoder : D.Decoder Map

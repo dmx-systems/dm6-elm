@@ -104,12 +104,12 @@ mapItems : Map -> Model -> (List (Html Msg), List (Svg Msg))
 mapItems map model =
   map.items |> Dict.values |> List.filter isVisible |> List.foldr
     (\{id, props} (t, a) ->
-      let
-        item = model.items |> Dict.get id
-      in
-      case (item, props) of
-        (Just (Topic topic), MapTopic tProps) -> (viewTopic topic tProps map.id model :: t, a)
-        (Just (Assoc assoc), MapAssoc _) -> (t, viewAssoc assoc map.id model :: a)
+      case model.items |> Dict.get id of
+        Just {info} ->
+          case (info, props) of
+            (Topic topic, MapTopic tProps) -> (viewTopic topic tProps map.id model :: t, a)
+            (Assoc assoc, MapAssoc _) -> (t, viewAssoc assoc map.id model :: a)
+            _ -> logError "mapItems" ("problem with item " ++ fromInt id) (t, a)
         _ -> logError "mapItems" ("problem with item " ++ fromInt id) (t, a)
     )
     ([], [])
@@ -130,9 +130,12 @@ limboTopic mapId model =
                 let
                   _ = info "limboTopic" (topicId, "is in map, hidden")
                 in
-                case (model.items |> Dict.get topicId, mapItem.props) of
-                  (Just (Topic topic), MapTopic props) ->
-                    [ viewTopic topic props activeMapId model ]
+                case model.items |> Dict.get topicId of
+                  Just {info} ->
+                    case (info, mapItem.props) of
+                      (Topic topic, MapTopic props) ->
+                        [ viewTopic topic props activeMapId model ]
+                      _ -> []
                   _ -> []
               else
                 let
@@ -146,7 +149,10 @@ limboTopic mapId model =
             props = defaultProps topicId topicSize model
           in
           case model.items |> Dict.get topicId of
-            Just (Topic topic) -> [ viewTopic topic props activeMapId model ]
+            Just {info} ->
+              case info of
+                Topic topic -> [ viewTopic topic props activeMapId model ]
+                _ -> []
             _ -> []
       _ -> []
   else

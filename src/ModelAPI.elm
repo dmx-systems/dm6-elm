@@ -18,8 +18,8 @@ import String exposing (fromInt)
 getTopicInfo : Id -> Model -> Maybe TopicInfo
 getTopicInfo topicId model =
   case model.items |> Dict.get topicId of
-    Just item ->
-      case item of
+    Just {info} ->
+      case info of
         Topic topic -> Just topic
         Assoc _ -> topicMismatch "getTopicInfo" topicId Nothing
     Nothing -> illegalItemId "getTopicInfo" topicId Nothing
@@ -28,8 +28,8 @@ getTopicInfo topicId model =
 getAssocInfo : Id -> Model -> Maybe AssocInfo
 getAssocInfo assocId model =
   case model.items |> Dict.get assocId of
-    Just item ->
-      case item of
+    Just {info} ->
+      case info of
         Topic _ -> assocMismatch "getAssocInfo" assocId Nothing
         Assoc assoc -> Just assoc
     Nothing -> illegalItemId "getAssocInfo" assocId Nothing
@@ -41,8 +41,8 @@ updateTopicInfo topicId topicFunc model =
     (\maybeItem ->
       case maybeItem of
         Just item ->
-          case item of
-            Topic topic -> Just (topicFunc topic |> Topic)
+          case item.info of
+            Topic topic -> Just { item | info = topicFunc topic |> Topic }
             Assoc _  -> topicMismatch "updateTopicInfo" topicId Nothing
         Nothing -> illegalItemId "updateTopicInfo" topicId Nothing
     )
@@ -60,12 +60,9 @@ createTopic : String -> Maybe IconName -> Model -> (Model, Id)
 createTopic text iconName model =
   let
     id = model.nextId
-    topic = TopicInfo id text iconName
+    topic = Item id <| Topic <| TopicInfo id text iconName
   in
-  ( { model
-    | items = model.items
-      |> Dict.insert id (Topic topic)
-    }
+  ( { model | items = model.items |> Dict.insert id topic }
     |> nextId
   , id
   )
@@ -76,9 +73,10 @@ createAssoc : ItemType -> Id -> RoleType -> Id -> RoleType -> Model -> (Model, I
 createAssoc itemType player1 role1 player2 role2 model =
   let
     id = model.nextId
-    assoc = AssocInfo id itemType player1 role1 player2 role2
+    assoc = Item id <| Assoc <| AssocInfo id itemType player1 role1 player2 role2
   in
-  ( { model | items = model.items |> Dict.insert id (Assoc assoc) } |> nextId
+  ( { model | items = model.items |> Dict.insert id assoc }
+    |> nextId
   , id
   )
 
@@ -382,7 +380,7 @@ assocsOfPlayer : Id -> Model -> List Id
 assocsOfPlayer playerId model =
   model.items |> Dict.values
     |> List.filter isAssoc
-    |> List.map getItemId
+    |> List.map .id
     |> List.filter (hasPlayer playerId model)
 
 
@@ -401,18 +399,11 @@ hasPlayer playerId model assocId =
     Nothing -> False
 
 
-getItemId : Item -> Id
-getItemId item =
-  case item of
-    Topic {id} -> id
-    Assoc {id} -> id
-
-
 {-| useful as a filter predicate
 -}
 isTopic : Item -> Bool
 isTopic item =
-  case item of
+  case item.info of
     Topic _ -> True
     Assoc _ -> False
 
