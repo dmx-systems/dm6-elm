@@ -1,14 +1,22 @@
 module Feature.Cross exposing (Msg(..), view)
 
-import Html exposing (button, text, Html)
+import Html exposing (Html, button, text)
 import Html.Attributes as Attr
 import Html.Events exposing (onClick)
 
+
+
 -- Local message type for this feature
+
+
 type Msg
     = CrossClick
 
+
+
 -- The button view
+
+
 view : Html Msg
 view =
     button

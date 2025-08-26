@@ -1,6 +1,6 @@
 module Main exposing (..)
 
--- components
+-- for Html.map
 
 import AppModel exposing (..)
 import Boxing exposing (boxContainer, unboxContainer)
@@ -8,7 +8,9 @@ import Browser
 import Browser.Dom as Dom
 import Config exposing (..)
 import Dict
-import Html exposing (Attribute, br, div, text)
+import Feature.Cross as Cross
+import Feature.OpenDoor.Move as OpenDoor
+import Html exposing (Attribute, Html, br, div, text)
 import Html.Attributes exposing (id, style)
 import IconMenuAPI exposing (updateIconMenu, viewIconMenu)
 import Json.Decode as D
@@ -27,20 +29,29 @@ import Utils exposing (..)
 
 
 
+-- MAIN MESSAGE WRAPPER
+
+
+type MainMsg
+    = App AppModel.Msg
+    | CrossMsg Cross.Msg
+
+
+
 -- MAIN
 
 
-main : Program E.Value Model Msg
+main : Program E.Value AppModel.Model MainMsg
 main =
     Browser.document
         { init = init
         , view = view
         , update = update
-        , subscriptions = mouseSubs
+        , subscriptions = \m -> Sub.map App (mouseSubs m)
         }
 
 
-init : E.Value -> ( Model, Cmd Msg )
+init : E.Value -> ( Model, Cmd MainMsg )
 init flags =
     ( case flags |> D.decodeValue (D.null True) of
         Ok True ->
@@ -74,31 +85,33 @@ init flags =
 -- VIEW
 
 
-view : Model -> Browser.Document Msg
+view : AppModel.Model -> Browser.Document MainMsg
 view model =
     Browser.Document
         "DM6 Elm"
-        [ div
-            (mouseHoverHandler
-                ++ appStyle
-            )
-            ([ viewToolbar model
-             , viewMap (activeMap model) -1 model -- parentMapId = -1
-             ]
-                ++ viewResultMenu model
-                ++ viewIconMenu model
-            )
-        , div
-            ([ id "measure" ]
-                ++ measureStyle
-            )
-            [ text model.measureText
-            , br [] []
-            ]
+        [ -- Cross button (feature-local msg wrapped into MainMsg)
+          Html.map CrossMsg Cross.view
+        , -- Main application UI mapped as one subtree
+          Html.map App <|
+            div
+                (mouseHoverHandler ++ appStyle)
+                ([ viewToolbar model
+                 , viewMap (activeMap model) -1 model -- parentMapId = -1
+                 ]
+                    ++ viewResultMenu model
+                    ++ viewIconMenu model
+                )
+        , -- hidden measurement node (also under App mapping)
+          Html.map App <|
+            div
+                ([ id "measure" ] ++ measureStyle)
+                [ text model.measureText
+                , br [] []
+                ]
         ]
 
 
-appStyle : List (Attribute Msg)
+appStyle : List (Attribute AppModel.Msg)
 appStyle =
     [ style "font-family" mainFont
     , style "user-select" "none"
@@ -106,7 +119,7 @@ appStyle =
     ]
 
 
-measureStyle : List (Attribute Msg)
+measureStyle : List (Attribute AppModel.Msg)
 measureStyle =
     [ style "position" "fixed"
     , style "visibility" "hidden"
@@ -128,51 +141,86 @@ measureStyle =
 -- UPDATE
 
 
-update : Msg -> Model -> ( Model, Cmd Msg )
+update : MainMsg -> AppModel.Model -> ( AppModel.Model, Cmd MainMsg )
 update msg model =
     let
-        _ =
-            case msg of
-                Mouse _ ->
-                    msg
-
-                _ ->
-                    info "update" msg
+        -- map AppModel commands into MainMsg
+        mapApp : ( Model, Cmd AppModel.Msg ) -> ( Model, Cmd MainMsg )
+        mapApp =
+            Tuple.mapSecond (Cmd.map App)
     in
     case msg of
-        AddTopic ->
-            createTopicAndAddToMap topicDefaultText Nothing (activeMap model) model
-                |> storeModel
+        -- Cross button: move selected topic out of container to its parent map
+        CrossMsg Cross.CrossClick ->
+            case getSingleSelection model of
+                Just ( topicId, containerId ) ->
+                    let
+                        parentMapId =
+                            case Dict.get containerId model.maps of
+                                Just containerMap ->
+                                    containerMap.parentMapId
 
-        MoveTopicToMap topicId mapId origPos targetId targetMapId pos ->
-            moveTopicToMap topicId mapId origPos targetId targetMapId pos model |> storeModel
+                                Nothing ->
+                                    0
+                    in
+                    OpenDoor.move
+                        { containerId = containerId
+                        , topicId = topicId
+                        , targetMapId = parentMapId
+                        }
+                        model
+                        |> storeModel
+                        |> mapApp
 
-        SwitchDisplay displayMode ->
-            switchDisplay displayMode model |> storeModel
+                Nothing ->
+                    ( model, Cmd.none )
 
-        Search searchMsg ->
-            updateSearch searchMsg model
+        -- All existing app messages are handled as before, then mapped
+        App appMsg ->
+            mapApp <|
+                case appMsg of
+                    AddTopic ->
+                        createTopicAndAddToMap topicDefaultText Nothing (activeMap model) model
+                            |> storeModel
 
-        Edit editMsg ->
-            updateEdit editMsg model
+                    MoveTopicToMap topicId mapId origPos targetId targetMapId pos ->
+                        moveTopicToMap topicId mapId origPos targetId targetMapId pos model
+                            |> storeModel
 
-        IconMenu iconMenuMsg ->
-            updateIconMenu iconMenuMsg model
+                    SwitchDisplay displayMode ->
+                        switchDisplay displayMode model
+                            |> storeModel
 
-        Mouse mouseMsg ->
-            updateMouse mouseMsg model
+                    Search searchMsg ->
+                        updateSearch searchMsg model
 
-        Nav navMsg ->
-            updateNav navMsg model |> storeModel
+                    Edit editMsg ->
+                        updateEdit editMsg model
 
-        Hide ->
-            hide model |> storeModel
+                    IconMenu iconMenuMsg ->
+                        updateIconMenu iconMenuMsg model
 
-        Delete ->
-            delete model |> storeModel
+                    Mouse mouseMsg ->
+                        updateMouse mouseMsg model
 
-        NoOp ->
-            ( model, Cmd.none )
+                    Nav navMsg ->
+                        updateNav navMsg model
+                            |> storeModel
+
+                    Hide ->
+                        hide model
+                            |> storeModel
+
+                    Delete ->
+                        delete model
+                            |> storeModel
+
+                    NoOp ->
+                        ( model, Cmd.none )
+
+
+
+-- Original helpers remain unchanged (they operate on AppModel.Msg/Model)
 
 
 moveTopicToMap : Id -> MapId -> Point -> Id -> MapId -> Point -> Model -> Model
@@ -257,7 +305,7 @@ switchDisplay displayMode model =
 -- Text Edit
 
 
-updateEdit : EditMsg -> Model -> ( Model, Cmd Msg )
+updateEdit : EditMsg -> Model -> ( Model, Cmd AppModel.Msg )
 updateEdit msg model =
     case msg of
         EditStart ->
@@ -280,7 +328,7 @@ updateEdit msg model =
             ( endEdit model, Cmd.none )
 
 
-startEdit : Model -> ( Model, Cmd Msg )
+startEdit : Model -> ( Model, Cmd AppModel.Msg )
 startEdit model =
     let
         newModel =
@@ -323,7 +371,7 @@ onTextInput text model =
             logError "onTextInput" "called when editState is NoEdit" model
 
 
-onTextareaInput : String -> Model -> ( Model, Cmd Msg )
+onTextareaInput : String -> Model -> ( Model, Cmd AppModel.Msg )
 onTextareaInput text model =
     case model.editState of
         ItemEdit topicId mapId ->
@@ -336,7 +384,7 @@ onTextareaInput text model =
             logError "onTextareaInput" "called when editState is NoEdit" ( model, Cmd.none )
 
 
-measureText : String -> Id -> MapId -> Model -> ( Model, Cmd Msg )
+measureText : String -> Id -> MapId -> Model -> ( Model, Cmd AppModel.Msg )
 measureText text topicId mapId model =
     ( { model | measureText = text }
     , Dom.getElement "measure"
@@ -362,7 +410,7 @@ endEdit model =
         |> autoSize
 
 
-focus : Model -> Cmd Msg
+focus : Model -> Cmd AppModel.Msg
 focus model =
     let
         nodeId =

@@ -1,9 +1,10 @@
 module Feature.OpenDoor.StayVisibleTest exposing (tests)
 
 import AppModel exposing (Model)
-import Compat.ModelAPI as M exposing (addItemToMapDefault, createTopic, defaultModel, isItemInMap)
+import Compat.ModelAPI as M exposing (addItemToMapDefault, createTopic, defaultModel, getMapItemById, isItemInMap, isMapTopic)
 import Dict
 import Expect
+import Feature.OpenDoor.Move as OpenDoor
 import Model exposing (Id, Map, MapId, Point, Rectangle, Size)
 import Test exposing (..)
 
@@ -11,7 +12,7 @@ import Test exposing (..)
 setup : ( Model, MapId, Id )
 setup =
     let
-        ( m1, cId ) =
+        ( _, cId ) =
             createTopic "Container" Nothing defaultModel
 
         -- change the initial map placement:
@@ -25,8 +26,7 @@ setup =
             createTopic "A" Nothing m3
 
         m5 =
-            addItemToMap tId
-                (MapTopic (TopicProps (Point 30 30) (Size 120 40) (Monad LabelOnly)))
+            M.addItemToMapDefault tId
                 cId
                 m4
     in

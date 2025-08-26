@@ -8,7 +8,7 @@ module Compat.ModelAPI exposing
     )
 
 import AppModel as AM exposing (Model)
-import Config exposing (topicSize)
+import Config exposing (..)
 import Json.Encode as E
 import Main as AppMain
 import Model exposing (IconName, Id, MapId, MapItem, MapProps(..), Maps, TopicProps)

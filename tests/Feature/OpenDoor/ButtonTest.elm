@@ -1,12 +1,13 @@
 module Feature.OpenDoor.ButtonTest exposing (tests)
 
 import AppModel exposing (Model)
-import Compat.ModelAPI as M exposing (addItemToMapDefault, createTopic, defaultModel, getMapItemById, isMapTopic)
+import Compat.ModelAPI as M exposing (createTopic, defaultModel, getMapItemById, isMapTopic)
 import Dict
 import Expect
+import Feature.Cross as Cross
 import Html
 import Html.Attributes as Attr
-import Main exposing (view)
+import Main exposing (MainMsg(..), view)
 import Model exposing (Id, Map, MapId, Point, Rectangle, Size)
 import ModelAPI exposing (addItemToMap)
 import Test exposing (..)

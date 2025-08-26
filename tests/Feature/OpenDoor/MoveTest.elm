@@ -14,6 +14,7 @@ import Model
         , Rectangle
         , TopicProps
         )
+import Test exposing (..)
 
 
 
