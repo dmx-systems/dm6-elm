@@ -1,15 +1,6 @@
-module IconMenu exposing (closeIconMenu, updateIconMenu, viewIcon, viewIconMenu, viewTopicIcon)
+module IconMenu exposing (..)
 
-import Config exposing (..)
-import Dict
-import FeatherIcons as Icon
-import Html exposing (Attribute, Html, button, div, text)
-import Html.Attributes exposing (style, title)
-import Html.Events exposing (onClick)
-import Model exposing (..)
-import Storage exposing (storeModel)
-import String exposing (fromFloat)
-import Utils exposing (..)
+import Model exposing (IconName)
 
 
 
@@ -17,159 +8,12 @@ type alias IconMenuModel =
   { open : Bool }
 
 
-viewIconMenu : Model -> List (Html Msg)
-viewIconMenu model =
-    if model.iconMenuState then
-        [ div
-            iconMenuStyle
-            [ div
-                iconListStyle
-                viewIconList
-            , button
-                (onClick (IconMenu Close)
-                    :: closeButtonStyle
-                )
-                [ Icon.x
-                    |> Icon.withSize 12
-                    |> Icon.toHtml []
-                ]
-            ]
-        ]
-
-    else
-        []
+init : IconMenuModel
+init =
+  { open = False }
 
 
-iconMenuStyle : List (Attribute Msg)
-iconMenuStyle =
-    [ style "position" "absolute"
-    , style "top" "291px"
-    , style "width" "320px"
-    , style "height" "320px"
-    , style "background-color" "white"
-    , style "border" "1px solid lightgray"
-    , style "z-index" "1"
-    ]
-
-
-iconListStyle : List (Attribute Msg)
-iconListStyle =
-    [ style "height" "100%"
-    , style "overflow" "auto"
-    ]
-
-
-closeButtonStyle : List (Attribute Msg)
-closeButtonStyle =
-    [ style "position" "absolute"
-    , style "top" "0"
-    , style "right" "0"
-    ]
-
-
-viewIconList : List (Html Msg)
-viewIconList =
-    Icon.icons
-        |> Dict.toList
-        |> List.map
-            (\( iconName, icon ) ->
-                button
-                    ([ onClick (Just iconName |> SetIcon |> IconMenu)
-                     , stopPropagationOnMousedown NoOp
-                     , title iconName
-                     ]
-                        ++ iconButtonStyle
-                    )
-                    [ Icon.toHtml [] icon ]
-            )
-
-
-iconButtonStyle : List (Attribute Msg)
-iconButtonStyle =
-    [ style "border-width" "0"
-    , style "margin" "8px"
-    ]
-
-
-viewTopicIcon : Id -> Model -> Html Msg
-viewTopicIcon topicId model =
-    case getTopicInfo topicId model of
-        Just topic ->
-            case topic.iconName of
-                Just iconName ->
-                    case Icon.icons |> Dict.get iconName of
-                        Just icon ->
-                            icon |> Icon.withSize topicIconSize |> Icon.toHtml topicIconStyle
-
-                        Nothing ->
-                            text "??"
-
-                Nothing ->
-                    text ""
-
-        Nothing ->
-            text "?"
-
-
-viewIcon : String -> Float -> Html Msg
-viewIcon iconName size =
-    case Icon.icons |> Dict.get iconName of
-        Just icon ->
-            icon |> Icon.withSize size |> Icon.toHtml []
-
-        Nothing ->
-            text "??"
-
-
-topicIconStyle : List (Attribute Msg)
-topicIconStyle =
-    [ style "position" "relative"
-    , style "top" <| fromFloat ((topicSize.h - topicIconSize) / 2) ++ "px"
-    , style "left" <| fromFloat ((topicSize.h - topicIconSize) / 2) ++ "px"
-    , style "color" "white"
-    ]
-
-
-
--- UPDATE
-
-
-updateIconMenu : IconMenuMsg -> Model -> ( Model, Cmd Msg )
-updateIconMenu msg model =
-    case msg of
-        Open ->
-            ( openIconMenu model, Cmd.none )
-
-        Close ->
-            ( closeIconMenu model, Cmd.none )
-
-        SetIcon maybeIcon ->
-            setIcon maybeIcon model
-                |> closeIconMenu
-                |> storeModel
-
-
-openIconMenu : Model -> Model
-openIconMenu model =
-    { model | iconMenuState = True }
-
-
-closeIconMenu : Model -> Model
-closeIconMenu model =
-    { model | iconMenuState = False }
-
-
-setIcon : Maybe IconName -> Model -> Model
-setIcon iconName model =
-    case getSingleSelection model of
-        Just ( id, _ ) ->
-            updateTopicInfo id
-                (\topic -> { topic | iconName = iconName })
-                model
-
-        Nothing ->
-            model
-
-
-
--- FIXME: illegal state -> make Edit dialog modal
+type IconMenuMsg
+  = Open
+  | Close
+  | SetIcon (Maybe IconName)

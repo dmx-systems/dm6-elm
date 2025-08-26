@@ -4,6 +4,3 @@ main.min.js
 elm-stuff/
 review/
 .DS_Store
-build
-/node_modules
-/review/elm-stuff/
