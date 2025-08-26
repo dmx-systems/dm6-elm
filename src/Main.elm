@@ -15,6 +15,7 @@ import Html.Attributes exposing (id, style)
 import IconMenuAPI exposing (updateIconMenu, viewIconMenu)
 import Json.Decode as D
 import Json.Encode as E
+import Log
 import MapAutoSize exposing (autoSize)
 import MapRenderer exposing (viewMap)
 import Model exposing (..)
@@ -137,6 +138,16 @@ measureStyle =
     ]
 
 
+msgToString : MainMsg -> String
+msgToString m =
+    case m of
+        CrossMsg _ ->
+            "CrossMsg"
+
+        App _ ->
+            "AppMsg"
+
+
 
 -- UPDATE
 
@@ -148,6 +159,9 @@ update msg model =
         mapApp : ( Model, Cmd AppModel.Msg ) -> ( Model, Cmd MainMsg )
         mapApp =
             Tuple.mapSecond (Cmd.map App)
+
+        _ =
+            Log.withConsole ("@update " ++ msgToString msg) ()
     in
     case msg of
         -- Cross button: move selected topic out of container to its parent map

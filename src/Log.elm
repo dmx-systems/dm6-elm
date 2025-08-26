@@ -1,41 +1,40 @@
-module Log exposing
-    ( error
-    , info
-    , log
-    , toString
-    , warn
-    , withConsole
-    )
+module Log exposing (debug, info, log, warn, withConsole)
 
-{-| Production no-op logger. Same API as the dev version.
--}
-
-
-log : String -> a -> a
-log _ value =
-    value
+import Debug
 
 
 info : String -> a -> a
-info _ value =
-    value
+info label v =
+    Debug.log ("ℹ️ " ++ label) v
 
 
 warn : String -> a -> a
-warn _ value =
-    value
+warn label v =
+    Debug.log ("⚠️ " ++ label) v
 
 
-error : String -> a -> a
-error _ value =
-    value
+debug : String -> a -> a
+debug label v =
+    Debug.log ("🐛 " ++ label) v
 
 
-withConsole : String -> ( model, Cmd msg ) -> ( model, Cmd msg )
-withConsole _ tuple =
-    tuple
+
+-- value-in / value-out logger for pipelines
 
 
-toString : a -> String
-toString _ =
-    ""
+withConsole : String -> a -> a
+withConsole message v =
+    let
+        _ =
+            Debug.log message ()
+    in
+    v
+
+
+
+-- Back-compat alias
+
+
+log : String -> a -> a
+log =
+    debug
