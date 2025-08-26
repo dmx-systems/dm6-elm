@@ -1,10 +1,12 @@
 port module Storage exposing (storeModel, storeModelWith, modelDecoder)
 
+import AppModel exposing (..)
+import Model exposing (..)
+
 import Dict exposing (Dict)
 import Json.Decode as D
 import Json.Decode.Pipeline exposing (required, hardcoded)
 import Json.Encode as E
-import Model exposing (..)
 
 
 
@@ -168,15 +170,13 @@ modelDecoder =
     |> required "mapPath" (D.list D.int)
     |> required "nextId" D.int
     ----- transient -----
-    |> hardcoded defaultModel.selection
-    |> hardcoded defaultModel.editState
-    |> hardcoded defaultModel.dragState
-    |> hardcoded defaultModel.iconMenuState
-    |> hardcoded defaultModel.measureText
-    -- search
-    |> hardcoded defaultModel.searchText
-    |> hardcoded defaultModel.searchResult
-    |> hardcoded defaultModel.searchMenu
+    |> hardcoded default.selection
+    |> hardcoded default.editState
+    |> hardcoded default.measureText
+    -- components
+    |> hardcoded default.mouse
+    |> hardcoded default.search
+    |> hardcoded default.iconMenu
 
 
 mapDecoder : D.Decoder Map

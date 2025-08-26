@@ -1,6 +1,8 @@
 module Boxing exposing (boxContainer, unboxContainer)
 
+import AppModel exposing (..)
 import Model exposing (..)
+import ModelAPI exposing (..)
 import Utils exposing (..)
 
 import Dict
