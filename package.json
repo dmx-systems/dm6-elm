@@ -1,0 +1,42 @@
+{
+  "name": "dm6-elm",
+  "version": "0.2.0-snapshot",
+  "description": "Elm implementation of DM6 system",
+  "main": "public/elm.js",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/dmx-systems/dm6-elm.git"
+  },
+  "keywords": [
+    "elm",
+    "dm6",
+    "mindmap",
+    "dmx-systems"
+  ],
+  "author": "Jörg Richter",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/dmx-systems/dm6-elm/issues"
+  },
+  "homepage": "https://github.com/dmx-systems/dm6-elm#readme",
+  "scripts": {
+    "dev": "elm-live src/Main.elm --dir=public --open --debug -- --output=public/elm.js",
+    "build": "sh build-prod.sh",
+    "build:dev": "elm make src/Main.elm --optimize --output=public/elm.js",
+    "format": "npx elm-format --yes src tests review",
+    "format:check": "npx elm-format --validate src tests review",
+    "test": "elm-test",
+    "test:ci": "elm-format --validate src && elm-review && elm-test",
+    "review": "elm-review",
+    "clean": "rm -f main.js main.min.js dm6-elm.html"
+  },
+  "devDependencies": {
+    "elm": "^0.19.1-6",
+    "elm-format": "^0.8.8",
+    "elm-json": "^0.2.13",
+    "elm-live": "^4.0.2",
+    "elm-review": "^2.13.4",
+    "elm-test": "^0.19.1-revision16",
+    "uglify-js": "^3.19.3"
+  }
+}
