@@ -708,7 +708,7 @@ taxiLine assoc pos1 pos2 =
 lineStyle : Maybe AssocInfo -> List (Attribute Msg)
 lineStyle assoc =
   [ stroke assocColor
-  , strokeWidth <| fromFloat assocWith ++ "px"
+  , strokeWidth <| fromFloat assocWidth ++ "px"
   , strokeDasharray <| lineDasharray assoc
   , fill "none"
   ]

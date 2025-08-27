@@ -33,7 +33,7 @@ viewSearchInput model =
         , onInput (Search << Input)
         , onFocus (Search FocusInput)
         ]
-        ++searchInputStyle
+        ++ searchInputStyle
       )
       []
     ]

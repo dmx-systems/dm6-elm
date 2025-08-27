@@ -1,6 +1,6 @@
 module Config exposing (..)
 
-import Model exposing (..)
+import Model exposing (Point, Size)
 
 
 
@@ -9,8 +9,8 @@ import Model exposing (..)
 
 homeMapName = "DM6 Elm"
 version = "0.2-snapshot"
-date = "Aug 26, 2025"
-newTopicPos = Point 178 180
+date = "Aug 27, 2025"
+newTopicPos = Point 186 180
 
 mainFont = "sans-serif"
 toolbarFontSize = 14
@@ -22,7 +22,7 @@ topicHeight = 28 -- also width/height of square icon box
 topicW2 = topicWidth / 2
 topicH2 = topicHeight / 2
 topicSize = Size topicWidth topicHeight
-topicLabelWeight = "bold" -- or "normal"
+topicLabelWeight = "bold" -- "normal"
 topicDetailSize = Size
   (topicWidth - topicHeight) -- detail width does not include icon box
   (topicLineHeight * contentFontSize + 2 * (topicDetailPadding + topicBorderWidth))
@@ -34,8 +34,8 @@ topicIconSize = 16
 topicBorderWidth = 1
 topicRadius = 7
 
-assocWith = 1.5
-assocRadius = 14 -- should not bigger than half topicSize height
+assocWidth = 1.5
+assocRadius = 14 -- should not be bigger than half topicSize height
 assocColor = "black"
 assocDelayMillis = 200
 

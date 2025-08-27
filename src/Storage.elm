@@ -41,10 +41,7 @@ encodeModel : Model -> E.Value
 encodeModel model =
   E.object
     [ ("items", model.items |> Dict.values |> E.list encodeItem)
-    , ("maps", model.maps |> E.dict
-        String.fromInt
-        encodeMap
-      )
+    , ("maps", model.maps |> Dict.values |> E.list encodeMap)
     , ("mapPath", E.list E.int model.mapPath)
     , ("nextId", E.int model.nextId)
     ]
@@ -80,10 +77,7 @@ encodeMap : Map -> E.Value
 encodeMap map =
   E.object
     [ ("id", E.int map.id)
-    , ("items", map.items |> E.dict
-        String.fromInt
-        encodeMapItem
-      )
+    , ("items", map.items |> Dict.values |> E.list encodeMapItem)
     , ("rect", E.object
         [ ("x1", E.float map.rect.x1)
         , ("y1", E.float map.rect.y1)
@@ -144,7 +138,7 @@ modelDecoder : D.Decoder Model
 modelDecoder =
   D.succeed Model
     |> required "items" (D.list itemDecoder |> D.andThen tupleToDictDecoder)
-    |> required "maps" (D.dict mapDecoder |> D.andThen strToIntDictDecoder)
+    |> required "maps" (D.list mapDecoder |> D.andThen toDictDecoder)
     |> required "mapPath" (D.list D.int)
     |> required "nextId" D.int
     ----- transient -----
@@ -186,43 +180,11 @@ itemDecoder =
     ]
 
 
-tupleToDictDecoder : List (Id, ItemInfo) -> D.Decoder Items
-tupleToDictDecoder tupleList =
-  tupleList
-  |> List.map (\(id, info) -> (id, Item id info))
-  |> Dict.fromList
-  |> D.succeed
-
-
 mapDecoder : D.Decoder Map
 mapDecoder =
   D.map4 Map
     (D.field "id" D.int)
-    (D.field "items"
-      (D.dict
-        (D.map5 MapItem
-          (D.field "id" D.int)
-          (D.field "hidden" D.bool)
-          (D.field "pinned" D.bool)
-          (D.oneOf
-            [ D.field "topicProps" <| D.map MapTopic <| D.map3 TopicProps
-              (D.field "pos" <| D.map2 Point
-                (D.field "x" D.float)
-                (D.field "y" D.float)
-              )
-              (D.field "size" <| D.map2 Size
-                (D.field "w" D.float)
-                (D.field "h" D.float)
-              )
-              (D.field "displayMode" D.string |> D.andThen displayModeDecoder)
-            , D.field "assocProps" <| D.succeed (MapAssoc AssocProps)
-            ]
-          )
-          (D.field "parentAssocId" D.int)
-        )
-        |> D.andThen strToIntDictDecoder
-      )
-    )
+    (D.field "items" (D.list mapItemDecoder |> D.andThen toDictDecoder))
     (D.field "rect" <| D.map4 Rectangle
       (D.field "x1" D.float)
       (D.field "y1" D.float)
@@ -232,34 +194,43 @@ mapDecoder =
     (D.field "parentMapId" D.int)
 
 
-strToIntDictDecoder : Dict String v -> D.Decoder (Dict Id v)
-strToIntDictDecoder strDict =
-  case strToIntDict strDict of
-    Just dict -> D.succeed dict
-    Nothing -> D.fail "Transformation Dict String -> Int failed"
-
-
-strToIntDict : Dict String v -> Maybe (Dict Id v)
-strToIntDict strDict =
-  strDict |> Dict.foldl
-    (\k v b ->
-      case b of
-        Just b_ ->
-          case String.toInt k of
-            Just i -> Just (Dict.insert i v b_)
-            Nothing -> Nothing
-        Nothing -> Nothing
+mapItemDecoder : D.Decoder MapItem
+mapItemDecoder =
+  D.map5 MapItem
+    (D.field "id" D.int)
+    (D.field "hidden" D.bool)
+    (D.field "pinned" D.bool)
+    (D.oneOf
+      [ D.field "topicProps" <| D.map MapTopic <| D.map3 TopicProps
+        (D.field "pos" <| D.map2 Point
+          (D.field "x" D.float)
+          (D.field "y" D.float)
+        )
+        (D.field "size" <| D.map2 Size
+          (D.field "w" D.float)
+          (D.field "h" D.float)
+        )
+        (D.field "displayMode" D.string |> D.andThen displayModeDecoder)
+      , D.field "assocProps" <| D.succeed (MapAssoc AssocProps)
+      ]
     )
-    (Just Dict.empty)
+    (D.field "parentAssocId" D.int)
 
 
-maybeString : String -> D.Decoder (Maybe String)
-maybeString str =
-  D.succeed
-    ( case str of
-        "" -> Nothing
-        _ -> Just str
-    )
+tupleToDictDecoder : List (Id, ItemInfo) -> D.Decoder Items
+tupleToDictDecoder tuples =
+  tuples
+  |> List.map (\(id, info) -> (id, Item id info))
+  |> Dict.fromList
+  |> D.succeed
+
+
+toDictDecoder : List { item | id : Id } -> D.Decoder (Dict Int { item | id : Id })
+toDictDecoder items =
+  items
+  |> List.map (\item -> (item.id, item))
+  |> Dict.fromList
+  |> D.succeed
 
 
 displayModeDecoder : String -> D.Decoder DisplayMode
@@ -271,3 +242,12 @@ displayModeDecoder str =
     "WhiteBox" -> D.succeed (Container WhiteBox)
     "Unboxed" -> D.succeed (Container Unboxed)
     _ -> D.fail <| "\"" ++ str ++ "\" is an invalid display mode"
+
+
+maybeString : String -> D.Decoder (Maybe String)
+maybeString str =
+  D.succeed
+    ( case str of
+        "" -> Nothing
+        _ -> Just str
+    )
