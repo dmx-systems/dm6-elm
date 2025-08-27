@@ -62,8 +62,8 @@ viewResultMenu model =
                             case getTopicInfo id model of
                                 Just topic ->
                                     div
-                                        ([ attribute "data-id" (fromInt topic.id) ]
-                                            ++ resultItemStyle topic.id model
+                                        (attribute "data-id" (fromInt topic.id)
+                                            :: resultItemStyle topic.id model
                                         )
                                         [ text topic.text ]
 

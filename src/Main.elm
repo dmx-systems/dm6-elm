@@ -105,7 +105,7 @@ view model =
         , -- hidden measurement node (also under App mapping)
           Html.map App <|
             div
-                ([ id "measure" ] ++ measureStyle)
+                (id "measure" :: measureStyle)
                 [ text model.measureText
                 , br [] []
                 ]
