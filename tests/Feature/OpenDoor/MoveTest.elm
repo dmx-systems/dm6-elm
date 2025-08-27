@@ -1,7 +1,9 @@
 module Feature.OpenDoor.MoveTest exposing (tests)
 
 import AppModel exposing (Model)
-import Compat.ModelAPI as M exposing (addItemToMapDefault, createTopic, defaultModel, getMapItemById, isMapTopic)
+import Compat.ModelAPI exposing (createTopic, defaultModel, getMapItemById)
+import Expect
+import Feature.OpenDoor.Move as OpenDoor
 import Model
     exposing
         ( Id
@@ -9,7 +11,6 @@ import Model
           -- gives you the Topic constructor
         , Map
         , MapId
-        , MapItem
         , Point
         , Rectangle
         , TopicProps

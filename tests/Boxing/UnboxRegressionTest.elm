@@ -1,17 +1,18 @@
 module Boxing.UnboxRegressionTest exposing (tests)
 
 import AppModel exposing (Model)
-import Compat.ModelAPI as M exposing (addItemToMapDefault, createTopic, defaultModel, getMapItemById, isMapTopic)
+import Boxing exposing (unboxContainer)
+import Compat.ModelAPI as M exposing (createTopic, defaultModel, getMapItemById, isMapTopic)
 import Dict
-import Model exposing (Id, Map, MapId, Point, Rectangle, Size)
-import ModelAPI exposing (addItemToMap)
+import Expect
+import Model exposing (Id, Map, MapId, MapItem, MapProps(..), Rectangle)
 import Test exposing (..)
 
 
 setup : ( Model, MapId, Id )
 setup =
     let
-        ( m1, cId ) =
+        ( _, cId ) =
             createTopic "Container" Nothing defaultModel
 
         m2 =
@@ -24,8 +25,7 @@ setup =
             createTopic "Child" Nothing m3
 
         m5 =
-            addItemToMap tId
-                (MapTopic (TopicProps (Point 30 30) (Size 120 40) (Monad LabelOnly)))
+            M.addItemToMapDefault tId
                 cId
                 m4
     in
@@ -74,3 +74,17 @@ tests =
                 Expect.equal ( topicOnParentIsVisibleTopic, assocOnParentVisible )
                     ( True, True )
         ]
+
+
+
+-- local helper replacing the missing isMapAssoc
+
+
+isMapAssoc : MapItem -> Bool
+isMapAssoc mi =
+    case mi.props of
+        MapAssoc _ ->
+            True
+
+        _ ->
+            False

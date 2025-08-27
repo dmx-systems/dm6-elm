@@ -4,7 +4,7 @@ import AppModel exposing (Model)
 import Compat.ModelAPI as M exposing (createTopic, defaultModel, getMapItemById, isMapTopic)
 import Expect
 import Model exposing (Id, MapId)
-import Search exposing (Msg)
+import Search exposing (SearchMsg)
 import SearchAPI exposing (updateSearch)
 import Test exposing (..)
 

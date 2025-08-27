@@ -3,7 +3,7 @@ module Navigation.AdjustMapRectRegressionTest exposing (tests)
 import AppModel exposing (Model)
 import Compat.ModelAPI as M exposing (addItemToMapDefault, createTopic, defaultModel, getMapItemById, isMapTopic)
 import Model exposing (Id, Map, MapId, Point, Rectangle, Size)
-import ModelAPI exposing (addItemToMap)
+import ModelAPI exposing (addItemToMap, select)
 import Test exposing (..)
 
 
