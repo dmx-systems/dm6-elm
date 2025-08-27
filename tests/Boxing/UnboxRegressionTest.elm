@@ -2,34 +2,54 @@ module Boxing.UnboxRegressionTest exposing (tests)
 
 import AppModel exposing (Model)
 import Boxing exposing (unboxContainer)
-import Compat.ModelAPI as M exposing (createTopic, defaultModel, getMapItemById, isMapTopic)
-import Dict
+import Compat.ModelAPI as M
+    exposing
+        ( addItemToMapDefault
+        , createTopic
+        , defaultModel
+        , getMapItemById
+        , isMapTopic
+        )
 import Expect
-import Model exposing (Id, Map, MapId, MapItem, MapProps(..), Rectangle)
+import Model exposing (Id, MapItem, MapProps(..))
+import ModelAPI exposing (getMap, updateMapRect)
 import Test exposing (..)
 
 
-setup : ( Model, MapId, Id )
+type alias Setup =
+    { model : Model
+    , parentMapId : Id
+    , containerId : Id
+    , topicId : Id
+    }
+
+
+setup : Setup
 setup =
     let
-        ( _, cId ) =
-            createTopic "Container" Nothing defaultModel
+        m0 =
+            defaultModel
+
+        ( m1, containerId ) =
+            createTopic "Container" Nothing m0
 
         m2 =
-            M.addItemToMapDefault cId 0 defaultModel
+            addItemToMapDefault containerId 0 m1
 
-        m3 =
-            { m2 | maps = Dict.insert cId (Map cId Dict.empty (Rectangle 0 0 0 0) 0) m2.maps }
+        ( m3, topicId ) =
+            createTopic "Child" Nothing m2
 
-        ( m4, tId ) =
-            createTopic "Child" Nothing m3
+        m4 =
+            addItemToMapDefault topicId containerId m3
 
         m5 =
-            M.addItemToMapDefault tId
-                cId
-                m4
+            updateMapRect containerId (\_ -> { x1 = 0, y1 = 0, x2 = 300, y2 = 200 }) m4
     in
-    ( m5, cId, tId )
+    { model = m5
+    , parentMapId = 0
+    , containerId = containerId
+    , topicId = topicId
+    }
 
 
 tests : Test
@@ -38,33 +58,35 @@ tests =
         [ test "reveals a Topic (not an Assoc) on the parent map and shows its composition assoc" <|
             \_ ->
                 let
-                    ( m0, containerId, topicId ) =
+                    s =
                         setup
 
-                    maps1 =
-                        unboxContainer containerId 0 m0
+                    mapsAfterUnbox =
+                        unboxContainer s.containerId s.parentMapId s.model
 
-                    m1 =
-                        { m0 | maps = maps1 }
+                    -- FIX: record update must use a simple variable on the left
+                    baseModel =
+                        s.model
 
-                    -- The revealed item on the parent map must be a Topic and visible.
+                    mAfter =
+                        { baseModel | maps = mapsAfterUnbox }
+
                     topicOnParentIsVisibleTopic =
-                        case getMapItemById topicId 0 m1.maps of
+                        case getMapItemById s.topicId s.parentMapId mAfter.maps of
                             Just mi ->
                                 isMapTopic mi && not mi.hidden
 
                             Nothing ->
                                 False
 
-                    -- Its composition association should also be visible on the parent map.
                     assocOnParentVisible =
-                        case getMapItemById topicId containerId m0.maps of
+                        case getMapItemById s.topicId s.containerId s.model.maps of
                             Just childInContainer ->
                                 let
                                     assocId =
                                         childInContainer.parentAssocId
                                 in
-                                getMapItemById assocId 0 m1.maps
+                                getMapItemById assocId s.parentMapId mAfter.maps
                                     |> Maybe.map (\ma -> isMapAssoc ma && not ma.hidden)
                                     |> Maybe.withDefault False
 
