@@ -2,7 +2,6 @@ dm6-elm.html
 main.js
 main.min.js
 elm-stuff/
-review/
 .DS_Store
 build
 /node_modules
