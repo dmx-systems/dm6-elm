@@ -196,6 +196,7 @@ update msg model =
                     AddTopic ->
                         createTopicAndAddToMap topicDefaultText Nothing (activeMap model) model
                             |> storeModel
+                            |> Utils.withConsole "@update AddTopic"
 
                     MoveTopicToMap topicId mapId origPos targetId targetMapId pos ->
                         moveTopicToMap topicId mapId origPos targetId targetMapId pos model

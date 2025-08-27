@@ -21,10 +21,6 @@ withConsole _ v =
     v
 
 
-
--- Back-compat: some code does `import Log exposing (log)`
-
-
 log : String -> a -> a
 log =
     debug

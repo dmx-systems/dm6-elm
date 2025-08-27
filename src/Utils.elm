@@ -2,12 +2,12 @@ module Utils exposing (..)
 
 -- your pass-through, pipe-style logger (no-op in prod)
 
+import Console
 import Html exposing (Attribute, Html, br, text)
 import Html.Events exposing (keyCode, on, stopPropagationOn)
 import Json.Decode as D
 import Log exposing (log)
 import Platform.Cmd as Cmd exposing (Cmd)
-import Ports.Console as Console
 
 
 
@@ -129,6 +129,10 @@ maybeInfo m tuple =
 
         Nothing ->
             tuple
+
+
+
+-- Pipe a (model, Cmd msg) tuple through and add a console.log
 
 
 withConsole : String -> ( model, Cmd msg ) -> ( model, Cmd msg )

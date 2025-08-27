@@ -97,6 +97,7 @@ awk -v jsfile="$tmp_js_escaped" -v toolsfile="$tmp_tools_escaped" '
       replaced = 1
       next
     }
+
     if ($0 ~ /<\/body>/ && !injected) {
       print "  <div id=\"dm6-dev-tools\""
       print "       style=\"position:fixed;bottom:10px;right:10px;"
@@ -109,10 +110,24 @@ awk -v jsfile="$tmp_js_escaped" -v toolsfile="$tmp_tools_escaped" '
       print "  <script>"
       printf "%s", tools
       print "  </script>"
+
+      # >>> add this block to subscribe to Console.log port in PROD output <<<
+      print "  <script>"
+      print "    (function(){"
+      print "      try {"
+      print "        if (window.app && window.app.ports && window.app.ports.log && window.app.ports.log.subscribe) {"
+      print "          window.app.ports.log.subscribe(function(line){ console.log(line); });"
+      print "        }"
+      print "      } catch (e) { /* ignore */ }"
+      print "    })();"
+      print "  </script>"
+      # <<< end added block >>>
+
       injected = 1
       print
       next
     }
+
     print
   }
   END {
@@ -120,6 +135,7 @@ awk -v jsfile="$tmp_js_escaped" -v toolsfile="$tmp_tools_escaped" '
     if (!injected)  { print "ERROR: Could not inject tools (no </body> seen)." > "/dev/stderr"; exit 43 }
   }
 ' "$template" > "$html"
+
 
 rm -f "$tmp_js_escaped" "$tmp_tools_escaped"
 
