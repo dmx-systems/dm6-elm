@@ -1,6 +1,7 @@
 port module Storage exposing (modelDecoder, storeModel, storeModelWith)
 
 import AppModel exposing (..)
+import Defaults as Def
 import Dict exposing (Dict)
 import Json.Decode as D
 import Json.Decode.Pipeline exposing (hardcoded, required)
@@ -133,7 +134,7 @@ encodeMapItem item =
                     ]
                 )
 
-            MapAssoc assosProps ->
+            MapAssoc _ ->
                 ( "assocProps"
                 , E.object []
                 )
@@ -197,13 +198,13 @@ modelDecoder =
         |> required "mapPath" (D.list D.int)
         |> required "nextId" D.int
         ----- transient -----
-        |> hardcoded default.selection
-        |> hardcoded default.editState
-        |> hardcoded default.measureText
+        |> hardcoded Def.selection
+        |> hardcoded Def.editState
+        |> hardcoded Def.measureText
         -- components
-        |> hardcoded default.mouse
-        |> hardcoded default.search
-        |> hardcoded default.iconMenu
+        |> hardcoded Def.mouse
+        |> hardcoded Def.search
+        |> hardcoded Def.iconMenu
 
 
 mapDecoder : D.Decoder Map

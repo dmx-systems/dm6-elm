@@ -6,7 +6,6 @@ import Dict exposing (Dict)
 import Model
     exposing
         ( Id
-        , Map
         , MapId
         , MapItem
         , MapProps(..)
@@ -39,7 +38,7 @@ move { containerId, topicId, targetMapId } model0 =
                     Nothing ->
                         model0
 
-                    Just itemInContainer ->
+                    Just _ ->
                         -- ⬅️ FIX: only one arg to Just
                         let
                             newItemsInContainer : Dict Id MapItem

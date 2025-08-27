@@ -1,12 +1,16 @@
-module AppModel exposing (..)
+module AppModel exposing (Model, Msg(..))
 
--- components
+-- Core model & all the types you reference (Id, MapId, Point, Items, Maps, Map(..), Rectangle(..),
+-- Selection, EditState(..), DisplayMode, EditMsg, NavMsg, MouseMsg, SearchMsg, IconMenuMsg, etc.)
+-- Parameterized bus message; alias to avoid name collision with AppModel.Msg
+-- These three are needed if you call Mouse.init / Search.init / IconMenu.init in this file
+-- (use aliases so the `.init` calls resolve)
 
-import Dict
-import IconMenu exposing (IconMenuModel, IconMenuMsg)
+import Extensions as Ext
+import IconMenu exposing (..)
 import Model exposing (..)
-import Mouse exposing (MouseModel, MouseMsg)
-import Search exposing (SearchModel, SearchMsg)
+import Mouse exposing (..)
+import Search exposing (..)
 
 
 type alias Model =
@@ -27,31 +31,6 @@ type alias Model =
     }
 
 
-default : Model
-default =
-    { items = Dict.empty
-    , maps =
-        Dict.singleton 0
-        -- map 0 is the "home map", it has no corresponding topic
-        <|
-            Map 0 Dict.empty (Rectangle 0 0 0 0) -1
-
-    -- parentMapId = -1
-    , mapPath = [ 0 ]
-    , nextId = 1
-
-    ----- transient -----
-    , selection = []
-    , editState = NoEdit
-    , measureText = ""
-
-    -- components
-    , mouse = Mouse.init
-    , search = Search.init
-    , iconMenu = IconMenu.init
-    }
-
-
 type Msg
     = AddTopic
     | MoveTopicToMap Id MapId Point Id MapId Point -- start point, random point (for target)
@@ -61,6 +40,7 @@ type Msg
     | Hide
     | Delete
     | NoOp
+    | Ext (Ext.Msg Msg)
       -- components
     | Mouse MouseMsg
     | Search SearchMsg

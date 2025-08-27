@@ -1,10 +1,9 @@
 module Model.DefaultModelTest exposing (tests)
 
-import AppModel exposing (Model)
-import Compat.ModelAPI as M exposing (createTopic, defaultModel, getMapItemById, isMapTopic)
+import Compat.ModelAPI exposing (defaultModel)
 import Dict
 import Expect
-import Model exposing (Id, MapId)
+import Model
 import Test exposing (..)
 
 

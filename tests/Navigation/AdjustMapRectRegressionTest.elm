@@ -4,7 +4,7 @@ import AppModel exposing (Msg(..))
 import Compat.ModelAPI as M exposing (createTopic, defaultModel)
 import Expect
 import Main as AppMain exposing (MainMsg(..))
-import Model exposing (NavMsg(..), Rectangle)
+import Model exposing (..)
 import ModelAPI exposing (getMap, select, updateMapRect)
 import Test exposing (..)
 

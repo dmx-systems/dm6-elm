@@ -9,14 +9,7 @@ import Html.Attributes exposing (checked, disabled, href, name, style, type_)
 import Html.Events exposing (onClick)
 import IconMenu exposing (IconMenuMsg(..))
 import IconMenuAPI exposing (viewIcon)
-import Model
-    exposing
-        ( ContainerDisplay(..)
-        , DisplayMode(..)
-        , EditMsg(..)
-        , MonadDisplay(..)
-        , NavMsg(..)
-        )
+import Model exposing (..)
 import ModelAPI
     exposing
         ( activeMap

@@ -54,32 +54,55 @@ main =
 
 init : E.Value -> ( Model, Cmd MainMsg )
 init flags =
-    ( case flags |> D.decodeValue (D.null True) of
-        Ok True ->
-            let
-                _ =
-                    info "init" "localStorage: empty"
-            in
-            default
-
-        _ ->
-            case flags |> D.decodeValue modelDecoder of
-                Ok model ->
-                    let
-                        _ =
-                            info "init"
-                                ("localStorage: " ++ (model |> toString |> String.length |> fromInt) ++ " bytes")
-                    in
-                    model
+    let
+        -- Decode an empty object using Storage.modelDecoder.
+        -- This should always succeed because Storage provides hardcoded fallbacks.
+        emptyModel : Model
+        emptyModel =
+            case D.decodeValue modelDecoder (E.object []) of
+                Ok m ->
+                    m
 
                 Err e ->
                     let
                         _ =
-                            logError "init" "localStorage" e
+                            logError "init" "decode {} with modelDecoder failed (should not happen)" e
                     in
-                    default
-    , Cmd.none
-    )
+                    Debug.todo "modelDecoder must succeed on {} due to hardcoded fallbacks"
+
+        initialModel : Model
+        initialModel =
+            case D.decodeValue (D.null True) flags of
+                -- LocalStorage was empty
+                Ok True ->
+                    let
+                        _ =
+                            info "init" "localStorage: empty"
+                    in
+                    emptyModel
+
+                -- We have something in LocalStorage; try to decode it
+                _ ->
+                    case D.decodeValue modelDecoder flags of
+                        Ok m ->
+                            let
+                                _ =
+                                    info "init"
+                                        ("localStorage: "
+                                            ++ (m |> toString |> String.length |> fromInt)
+                                            ++ " bytes"
+                                        )
+                            in
+                            m
+
+                        Err e ->
+                            let
+                                _ =
+                                    logError "init" "localStorage decode failed; falling back to {}" e
+                            in
+                            emptyModel
+    in
+    ( initialModel, Cmd.none )
 
 
 
@@ -193,6 +216,10 @@ update msg model =
         App appMsg ->
             mapApp <|
                 case appMsg of
+                    -- Extensions bus (placeholder). Replace with Actions.handle extMsg model when you add Actions.elm.
+                    Ext _ ->
+                        ( model, Cmd.none )
+
                     AddTopic ->
                         createTopicAndAddToMap topicDefaultText Nothing (activeMap model) model
                             |> storeModel

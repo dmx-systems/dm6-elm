@@ -7,7 +7,7 @@ module Compat.ModelAPI exposing
     , isMapTopic
     )
 
-import AppModel as AM exposing (Model)
+import AppModel exposing (Model)
 import Config exposing (..)
 import Json.Encode as E
 import Main as AppMain

@@ -5,15 +5,7 @@ import Compat.ModelAPI exposing (addItemToMapDefault, createTopic, defaultModel,
 import Dict
 import Expect
 import Feature.OpenDoor.Move as OpenDoor
-import Model
-    exposing
-        ( Id
-        , Item(..)
-          -- gives you the Topic constructor
-        , Map
-        , MapId
-        , Rectangle
-        )
+import Model exposing (..)
 import Test exposing (..)
 
 

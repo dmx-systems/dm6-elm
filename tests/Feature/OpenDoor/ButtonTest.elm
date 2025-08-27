@@ -1,15 +1,15 @@
 module Feature.OpenDoor.ButtonTest exposing (tests)
 
 import AppModel exposing (Model)
-import Compat.ModelAPI as M exposing (createTopic, defaultModel, getMapItemById, isMapTopic)
+import Compat.ModelAPI as M exposing (createTopic, defaultModel)
 import Dict
 import Expect
 import Feature.Cross as Cross
 import Html
 import Html.Attributes as Attr
 import Main exposing (MainMsg(..), view)
-import Model exposing (Id, Map, MapId, Point, Rectangle, Size)
-import ModelAPI exposing (addItemToMap)
+import Model exposing (..)
+import ModelAPI
 import Test exposing (..)
 import Test.Html.Event as Event
 import Test.Html.Query as Query
@@ -65,7 +65,7 @@ tests =
         [ test "Clicking 'Cross' dispatches MoveTopicToParentMap with correct ids (and is enabled)" <|
             \_ ->
                 let
-                    ( model0, containerId, topicId ) =
+                    ( model0, _, _ ) =
                         setupModel
 
                     -- Render document body
