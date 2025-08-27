@@ -1,32 +1,21 @@
-# Node.js dependencies
+# Node
 node_modules/
-
-# Elm build artifacts
-elm-stuff/
-
-# Elm test build artifacts
-tests/elm-stuff/
-
-# Logs
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
-pnpm-debug.log*
 
-# OS-generated files
-.DS_Store
-Thumbs.db
+# Elm
+elm-stuff/
+repl-temp-*
 
-# Build outputs
+# Build output
 dist/
 build/
-public/elm.js
-public/elm.min.js
-public/main.js
-public/main.min.js
+*.log
 
-# Backup / temp files
-*.swp
-*.swo
-*.tmp
-*.bak
+# Public assets (ignore everything inside)
+public/
+
+# OS files
+.DS_Store
+Thumbs.db
