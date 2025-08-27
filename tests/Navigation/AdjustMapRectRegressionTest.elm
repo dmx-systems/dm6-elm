@@ -1,9 +1,11 @@
 module Navigation.AdjustMapRectRegressionTest exposing (tests)
 
-import AppModel exposing (Model)
+import AppModel exposing (Model, Msg(..))
 import Compat.ModelAPI as M exposing (addItemToMapDefault, createTopic, defaultModel, getMapItemById, isMapTopic)
-import Model exposing (Id, Map, MapId, Point, Rectangle, Size)
-import ModelAPI exposing (addItemToMap, select)
+import Expect
+import Main as AppMain exposing (MainMsg(..), update)
+import Model exposing (Id, Map, MapId, NavMsg(..), Point, Rectangle, Size)
+import ModelAPI exposing (addItemToMap, getMap, select, updateMapRect)
 import Test exposing (..)
 
 
@@ -26,7 +28,7 @@ tests =
 
                     -- 3) go Fullscreen (this pushes cId onto mapPath and pans its map)
                     mFs =
-                        update (Nav Fullscreen) m3 |> Tuple.first
+                        AppMain.update (App (Nav Fullscreen)) m3 |> Tuple.first
 
                     -- 4) simulate that the container's inner map has content/size now
                     --    (non-zero width/height). This is what makes the old buggy
@@ -36,7 +38,7 @@ tests =
 
                     -- 5) go Back (this calls adjustMapRect with factor=+1 on cId)
                     mBack =
-                        update (Nav Back) mSized |> Tuple.first
+                        AppMain.update (App (Nav Back)) mSized |> Tuple.first
 
                     rect =
                         case getMap cId mBack.maps of

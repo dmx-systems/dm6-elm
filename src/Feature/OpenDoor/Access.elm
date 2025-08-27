@@ -7,7 +7,8 @@ module Feature.OpenDoor.Access exposing
     )
 
 import AppModel exposing (..)
-import Dict exposing (Dict)
+import Dict
+import Model exposing (Id, Map, MapId, MapItem)
 
 
 getMap : MapId -> Model -> Maybe Map

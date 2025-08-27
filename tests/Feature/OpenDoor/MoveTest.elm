@@ -1,7 +1,8 @@
 module Feature.OpenDoor.MoveTest exposing (tests)
 
 import AppModel exposing (Model)
-import Compat.ModelAPI exposing (createTopic, defaultModel, getMapItemById)
+import Compat.ModelAPI exposing (addItemToMapDefault, createTopic, defaultModel, getMapItemById, isItemInMap)
+import Dict
 import Expect
 import Feature.OpenDoor.Move as OpenDoor
 import Model
@@ -11,9 +12,7 @@ import Model
           -- gives you the Topic constructor
         , Map
         , MapId
-        , Point
         , Rectangle
-        , TopicProps
         )
 import Test exposing (..)
 
@@ -31,8 +30,7 @@ setupModel =
 
         -- container visible on home map (0) as BlackBox
         m2 =
-            addItemToMap cId
-                (MapTopic (TopicProps (Point 100 100) (Size 160 60) (Container BlackBox)))
+            addItemToMapDefault cId
                 0
                 m1
 
@@ -45,8 +43,7 @@ setupModel =
             createTopic "Child" Nothing m3
 
         m5 =
-            addItemToMap tId
-                (MapTopic (TopicProps (Point 30 30) (Size 120 40) (Monad LabelOnly)))
+            addItemToMapDefault tId
                 cId
                 m4
     in
