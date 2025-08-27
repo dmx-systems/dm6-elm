@@ -1,11 +1,11 @@
 module Navigation.AdjustMapRectRegressionTest exposing (tests)
 
-import AppModel exposing (Model, Msg(..))
-import Compat.ModelAPI as M exposing (addItemToMapDefault, createTopic, defaultModel, getMapItemById, isMapTopic)
+import AppModel exposing (Msg(..))
+import Compat.ModelAPI as M exposing (createTopic, defaultModel)
 import Expect
-import Main as AppMain exposing (MainMsg(..), update)
-import Model exposing (Id, Map, MapId, NavMsg(..), Point, Rectangle, Size)
-import ModelAPI exposing (addItemToMap, getMap, select, updateMapRect)
+import Main as AppMain exposing (MainMsg(..))
+import Model exposing (NavMsg(..), Rectangle)
+import ModelAPI exposing (getMap, select, updateMapRect)
 import Test exposing (..)
 
 
@@ -16,7 +16,7 @@ tests =
             \_ ->
                 let
                     -- 1) start with a container topic on the home map (0)
-                    ( m1, cId ) =
+                    ( _, cId ) =
                         createTopic "Container" Nothing defaultModel
 
                     m2 =

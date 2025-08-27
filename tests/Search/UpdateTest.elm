@@ -1,9 +1,7 @@
 module Search.UpdateTest exposing (tests)
 
-import AppModel exposing (Model)
-import Compat.ModelAPI as M exposing (createTopic, defaultModel, getMapItemById, isMapTopic)
+import Compat.ModelAPI exposing (defaultModel)
 import Expect
-import Model exposing (Id, MapId)
 import Search exposing (SearchMsg(..))
 import SearchAPI exposing (updateSearch)
 import Test exposing (..)

@@ -10,7 +10,7 @@ import Config exposing (..)
 import Dict
 import Feature.Cross as Cross
 import Feature.OpenDoor.Move as OpenDoor
-import Html exposing (Attribute, Html, br, div, text)
+import Html exposing (Attribute, br, div, text)
 import Html.Attributes exposing (id, style)
 import IconMenuAPI exposing (updateIconMenu, viewIconMenu)
 import Json.Decode as D
