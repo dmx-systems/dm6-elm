@@ -55,8 +55,6 @@ main =
 init : E.Value -> ( Model, Cmd MainMsg )
 init flags =
     let
-        -- Decode an empty object using Storage.modelDecoder.
-        -- This should always succeed because Storage provides hardcoded fallbacks.
         emptyModel : Model
         emptyModel =
             case D.decodeValue modelDecoder (E.object []) of
@@ -73,7 +71,6 @@ init flags =
         initialModel : Model
         initialModel =
             case D.decodeValue (D.null True) flags of
-                -- LocalStorage was empty
                 Ok True ->
                     let
                         _ =
@@ -81,24 +78,25 @@ init flags =
                     in
                     emptyModel
 
-                -- We have something in LocalStorage; try to decode it
                 _ ->
                     case D.decodeValue modelDecoder flags of
                         Ok m ->
                             let
+                                flagsBytes =
+                                    String.fromInt (String.length (E.encode 0 flags))
+
                                 _ =
-                                    info "init"
-                                        ("localStorage: "
-                                            ++ (m |> toString |> String.length |> fromInt)
-                                            ++ " bytes"
-                                        )
+                                    info "init" ("localStorage: " ++ flagsBytes ++ " bytes")
                             in
                             m
 
                         Err e ->
                             let
+                                flagsBytes =
+                                    String.fromInt (String.length (E.encode 0 flags))
+
                                 _ =
-                                    logError "init" "localStorage decode failed; falling back to {}" e
+                                    logError "init" ("localStorage decode failed; falling back to {} | size=" ++ flagsBytes ++ " bytes") e
                             in
                             emptyModel
     in
