@@ -1,17 +1,13 @@
 module Main exposing (..)
 
--- for Html.map
+-- components
 
 import AppModel exposing (..)
 import Boxing exposing (boxContainer, unboxContainer)
 import Browser
 import Browser.Dom as Dom
 import Config exposing (..)
-import Defaults as Def
 import Dict
-import Feature.Cross as Cross
-import Feature.OpenDoor.Move as OpenDoor
-import FedWiki exposing (..)
 import Html exposing (Attribute, br, div, text)
 import Html.Attributes exposing (id, style)
 import IconMenuAPI exposing (updateIconMenu, viewIconMenu)
@@ -31,121 +27,78 @@ import Utils exposing (..)
 
 
 
--- MAIN MESSAGE WRAPPER
-
-
-type MainMsg
-    = App AppModel.Msg
-    | CrossMsg Cross.Msg
-
-
-
 -- MAIN
 
 
-main : Program E.Value AppModel.Model MainMsg
+main : Program E.Value Model Msg
 main =
     Browser.document
         { init = init
         , view = view
         , update = update
-        , subscriptions = \m -> Sub.map App (mouseSubs m)
+        , subscriptions = mouseSubs
         }
 
 
-init : E.Value -> ( Model, Cmd MainMsg )
+init : E.Value -> ( Model, Cmd Msg )
 init flags =
-    let
-        emptyModel : Model
-        emptyModel =
-            case D.decodeValue modelDecoder (E.object []) of
-                Ok m ->
-                    m
+    ( case flags |> D.decodeValue (D.null True) of
+        Ok True ->
+            let
+                _ =
+                    info "init" "localStorage: empty"
+            in
+            default
+
+        _ ->
+            case flags |> D.decodeValue modelDecoder of
+                Ok model ->
+                    let
+                        _ =
+                            info "init"
+                                ("localStorage: " ++ (model |> toString |> String.length |> fromInt) ++ " bytes")
+                    in
+                    model
 
                 Err e ->
                     let
                         _ =
-                            logError "init" "decode {} with modelDecoder failed (should not happen)" e
+                            logError "init" "localStorage" e
                     in
-                    { items = Dict.empty
-                    , maps = Dict.singleton 0 (Map 0 Dict.empty (Rectangle 0 0 0 0) -1)
-                    , mapPath = [ 0 ]
-                    , nextId = 1
-                    , selection = Def.selection
-                    , editState = Def.editState
-                    , measureText = Def.measureText
-                    , mouse = Def.mouse
-                    , search = Def.search
-                    , iconMenu = Def.iconMenu
-                    , journal = []
-                    }
-
-        initialModel : Model
-        initialModel =
-            case D.decodeValue (D.null True) flags of
-                Ok True ->
-                    let
-                        _ =
-                            info "init" "localStorage: empty"
-                    in
-                    emptyModel
-
-                _ ->
-                    case D.decodeValue modelDecoder flags of
-                        Ok m ->
-                            let
-                                flagsBytes =
-                                    String.fromInt (String.length (E.encode 0 flags))
-
-                                _ =
-                                    info "init" ("localStorage: " ++ flagsBytes ++ " bytes")
-                            in
-                            m
-
-                        Err e ->
-                            let
-                                flagsBytes =
-                                    String.fromInt (String.length (E.encode 0 flags))
-
-                                _ =
-                                    logError "init" ("localStorage decode failed; falling back to {} | size=" ++ flagsBytes ++ " bytes") e
-                            in
-                            emptyModel
-    in
-    ( initialModel, Cmd.none )
+                    default
+    , Cmd.none
+    )
 
 
 
 -- VIEW
 
 
-view : AppModel.Model -> Browser.Document MainMsg
+view : Model -> Browser.Document Msg
 view model =
     Browser.Document
         "DM6 Elm"
-        [ -- Cross button (feature-local msg wrapped into MainMsg)
-          Html.map CrossMsg Cross.view
-        , -- Main application UI mapped as one subtree
-          Html.map App <|
-            div
-                (mouseHoverHandler ++ appStyle)
-                ([ viewToolbar model
-                 , viewMap (activeMap model) -1 model -- parentMapId = -1
-                 ]
-                    ++ viewResultMenu model
-                    ++ viewIconMenu model
-                )
-        , -- hidden measurement node (also under App mapping)
-          Html.map App <|
-            div
-                (id "measure" :: measureStyle)
-                [ text model.measureText
-                , br [] []
-                ]
+        [ div
+            (mouseHoverHandler
+                ++ appStyle
+            )
+            ([ viewToolbar model
+             , viewMap (activeMap model) -1 model -- parentMapId = -1
+             ]
+                ++ viewResultMenu model
+                ++ viewIconMenu model
+            )
+        , div
+            ([ id "measure" ]
+                ++ measureStyle
+            )
+            [ text model.measureText
+            , br [] []
+            ]
         ]
 
 
-appStyle : List (Attribute AppModel.Msg)
+appStyle : List (Attribute Msg)
 appStyle =
     [ style "font-family" mainFont
     , style "user-select" "none"
@@ -153,7 +106,7 @@ appStyle =
     ]
 
 
-measureStyle : List (Attribute AppModel.Msg)
+measureStyle : List (Attribute Msg)
 measureStyle =
     [ style "position" "fixed"
     , style "visibility" "hidden"
@@ -171,119 +124,55 @@ measureStyle =
     ]
 
 
-msgToString : MainMsg -> String
-msgToString m =
-    case m of
-        CrossMsg _ ->
-            "CrossMsg"
-
-        App _ ->
-            "AppMsg"
-
-
 
 -- UPDATE
 
 
-update : MainMsg -> AppModel.Model -> ( AppModel.Model, Cmd MainMsg )
+update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     let
-        -- map AppModel commands into MainMsg
-        mapApp : ( Model, Cmd AppModel.Msg ) -> ( Model, Cmd MainMsg )
-        mapApp =
-            Tuple.mapSecond (Cmd.map App)
-
         _ =
-            info "update" (msgToString msg)
+            case msg of
+                Mouse _ ->
+                    msg
+
+                _ ->
+                    info "update" msg
     in
     case msg of
-        -- Cross button: move selected topic out of container to its parent map
-        CrossMsg Cross.CrossClick ->
-            case getSingleSelection model of
-                Just ( topicId, containerId ) ->
-                    let
-                        parentMapId =
-                            case Dict.get containerId model.maps of
-                                Just containerMap ->
-                                    containerMap.parentMapId
+        AddTopic ->
+            createTopicAndAddToMap topicDefaultText Nothing (activeMap model) model
+                |> storeModel
 
-                                Nothing ->
-                                    0
+        MoveTopicToMap topicId mapId origPos targetId targetMapId pos ->
+            moveTopicToMap topicId mapId origPos targetId targetMapId pos model |> storeModel
 
-                        -- create a journal entry for this action (timestamp=0 for now)
-                        jEntry : E.Value
-                        jEntry =
-                            FedWiki.mkCrossJournalEntry
-                                { containerId = containerId
-                                , topicId = topicId
-                                , targetMapId = parentMapId
-                                }
-                                0
-                                |> FedWiki.encodeJournalEntry
-                    in
-                    OpenDoor.move
-                        { containerId = containerId
-                        , topicId = topicId
-                        , targetMapId = parentMapId
-                        }
-                        model
-                        |> storeModel
-                        |> mapApp
+        SwitchDisplay displayMode ->
+            switchDisplay displayMode model |> storeModel
 
-                Nothing ->
-                    ( model, Cmd.none )
+        Search searchMsg ->
+            updateSearch searchMsg model
 
-        -- All existing app messages are handled as before, then mapped
-        App appMsg ->
-            mapApp <|
-                case appMsg of
-                    -- Extensions bus (placeholder). Replace with Actions.handle extMsg model when you add Actions.elm.
-                    Ext _ ->
-                        ( model, Cmd.none )
+        Edit editMsg ->
+            updateEdit editMsg model
 
-                    AddTopic ->
-                        createTopicAndAddToMap topicDefaultText Nothing (activeMap model) model
-                            |> storeModel
-                            |> Utils.withConsole "@update AddTopic"
+        IconMenu iconMenuMsg ->
+            updateIconMenu iconMenuMsg model
 
-                    MoveTopicToMap topicId mapId origPos targetId targetMapId pos ->
-                        moveTopicToMap topicId mapId origPos targetId targetMapId pos model
-                            |> storeModel
+        Mouse mouseMsg ->
+            updateMouse mouseMsg model
 
-                    SwitchDisplay displayMode ->
-                        switchDisplay displayMode model
-                            |> storeModel
+        Nav navMsg ->
+            updateNav navMsg model |> storeModel
 
-                    Search searchMsg ->
-                        updateSearch searchMsg model
+        Hide ->
+            hide model |> storeModel
 
-                    Edit editMsg ->
-                        updateEdit editMsg model
+        Delete ->
+            delete model |> storeModel
 
-                    IconMenu iconMenuMsg ->
-                        updateIconMenu iconMenuMsg model
-
-                    Mouse mouseMsg ->
-                        updateMouse mouseMsg model
-
-                    Nav navMsg ->
-                        updateNav navMsg model
-                            |> storeModel
-
-                    Hide ->
-                        hide model
-                            |> storeModel
-
-                    Delete ->
-                        delete model
-                            |> storeModel
-
-                    NoOp ->
-                        ( model, Cmd.none )
-
-
-
--- Original helpers remain unchanged (they operate on AppModel.Msg/Model)
+        NoOp ->
+            ( model, Cmd.none )
 
 
 moveTopicToMap : Id -> MapId -> Point -> Id -> MapId -> Point -> Model -> Model
@@ -330,7 +219,7 @@ createMapIfNeeded topicId mapId model =
                 model.maps
                     |> Dict.insert
                         topicId
-                        (Map topicId Dict.empty (Rectangle 0 0 0 0) mapId)
+                        (Map topicId mapId (Rectangle 0 0 0 0) Dict.empty)
           }
             |> setDisplayMode topicId mapId (Container BlackBox)
         , True
@@ -368,7 +257,7 @@ switchDisplay displayMode model =
 -- Text Edit
 
 
-updateEdit : EditMsg -> Model -> ( Model, Cmd AppModel.Msg )
+updateEdit : EditMsg -> Model -> ( Model, Cmd Msg )
 updateEdit msg model =
     case msg of
         EditStart ->
@@ -391,7 +280,7 @@ updateEdit msg model =
             ( endEdit model, Cmd.none )
 
 
-startEdit : Model -> ( Model, Cmd AppModel.Msg )
+startEdit : Model -> ( Model, Cmd Msg )
 startEdit model =
     let
         newModel =
@@ -434,7 +323,7 @@ onTextInput text model =
             logError "onTextInput" "called when editState is NoEdit" model
 
 
-onTextareaInput : String -> Model -> ( Model, Cmd AppModel.Msg )
+onTextareaInput : String -> Model -> ( Model, Cmd Msg )
 onTextareaInput text model =
     case model.editState of
         ItemEdit topicId mapId ->
@@ -447,7 +336,7 @@ onTextareaInput text model =
             logError "onTextareaInput" "called when editState is NoEdit" ( model, Cmd.none )
 
 
-measureText : String -> Id -> MapId -> Model -> ( Model, Cmd AppModel.Msg )
+measureText : String -> Id -> MapId -> Model -> ( Model, Cmd Msg )
 measureText text topicId mapId model =
     ( { model | measureText = text }
     , Dom.getElement "measure"
@@ -473,7 +362,7 @@ endEdit model =
         |> autoSize
 
 
-focus : Model -> Cmd AppModel.Msg
+focus : Model -> Cmd Msg
 focus model =
     let
         nodeId =

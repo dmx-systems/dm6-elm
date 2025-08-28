@@ -9,7 +9,7 @@ import Html exposing (Attribute, Html, div, input, text)
 import Html.Attributes exposing (attribute, style, value)
 import Html.Events exposing (on, onFocus, onInput)
 import Json.Decode as D
-import Model exposing (Id, Item(..), MapId, MapProps(..))
+import Model exposing (Id, ItemInfo(..), MapId, MapProps(..))
 import ModelAPI exposing (..)
 import Search exposing (ResultMenu(..), SearchMsg(..))
 import Storage exposing (storeModel)
@@ -62,8 +62,8 @@ viewResultMenu model =
                             case getTopicInfo id model of
                                 Just topic ->
                                     div
-                                        (attribute "data-id" (fromInt topic.id)
-                                            :: resultItemStyle topic.id model
+                                        ([ attribute "data-id" (fromInt id) ]
+                                            ++ resultItemStyle id model
                                         )
                                         [ text topic.text ]
 
@@ -204,7 +204,7 @@ searchTopics ({ search } as model) =
                     model.items
                         |> Dict.foldr
                             (\id item topicIds ->
-                                case item of
+                                case item.info of
                                     Topic { text } ->
                                         if isMatch model.search.text text then
                                             id :: topicIds

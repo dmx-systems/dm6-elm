@@ -30,8 +30,8 @@ viewIconMenu model =
                 iconListStyle
                 viewIconList
             , button
-                (onClick (IconMenu Close)
-                    :: closeButtonStyle
+                ([ onClick (IconMenu Close) ]
+                    ++ closeButtonStyle
                 )
                 [ Icon.x
                     |> Icon.withSize 12

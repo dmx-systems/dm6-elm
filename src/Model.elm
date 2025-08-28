@@ -7,9 +7,15 @@ type alias Items =
     Dict Id Item
 
 
-type
-    Item
-    -- TODO: make it a record with "id" field, analogue MapItem?
+type alias Item =
+    { id : Id
+    , info : ItemInfo
+
+    -- TODO: add "assocIds", the item's associations
+    }
+
+
+type ItemInfo
     = Topic TopicInfo
     | Assoc AssocInfo
 
@@ -17,17 +23,17 @@ type
 type alias TopicInfo =
     { id : Id
     , text : String
-    , iconName : Maybe IconName
+    , iconName : Maybe IconName -- serialzed as "icon"
     }
 
 
 type alias AssocInfo =
     { id : Id
-    , itemType : ItemType -- can't be named "type", a reserved word
-    , player1 : Id
+    , itemType : ItemType -- serialzed as "type", field can't be named "type", a reserved word
     , role1 : RoleType
-    , player2 : Id
+    , player1 : Id
     , role2 : RoleType
+    , player2 : Id
     }
 
 
@@ -35,24 +41,24 @@ type alias Maps =
     Dict Id Map
 
 
+type alias Map =
+    { id : MapId
+    , parentMapId : MapId -- FIXME: ambiguous semantics? view context vs model?
+    , rect : Rectangle
+    , items : MapItems
+    }
+
+
 type alias MapItems =
     Dict Id MapItem
 
 
-type alias Map =
-    { id : MapId
-    , items : MapItems
-    , rect : Rectangle
-    , parentMapId : MapId -- FIXME: ambiguous semantics? view context vs model?
-    }
-
-
 type alias MapItem =
     { id : Id
+    , parentAssocId : Id
     , hidden : Bool -- TODO: replace hidden/pinned by custom type: Hidden/Visible/Pinned?
     , pinned : Bool
     , props : MapProps
-    , parentAssocId : Id
     }
 
 
@@ -64,7 +70,7 @@ type MapProps
 type alias TopicProps =
     { pos : Point
     , size : Size
-    , displayMode : DisplayMode
+    , displayMode : DisplayMode -- serialized as "display"
     }
 
 

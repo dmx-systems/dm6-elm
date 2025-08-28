@@ -1,17 +1,12 @@
-module AppModel exposing (Model, Msg(..))
+module AppModel exposing (..)
 
--- Core model & all the types you reference (Id, MapId, Point, Items, Maps, Map(..), Rectangle(..),
--- Selection, EditState(..), DisplayMode, EditMsg, NavMsg, MouseMsg, SearchMsg, IconMenuMsg, etc.)
--- Parameterized bus message; alias to avoid name collision with AppModel.Msg
--- These three are needed if you call Mouse.init / Search.init / IconMenu.init in this file
--- (use aliases so the `.init` calls resolve)
+-- components
 
-import Extensions as Ext
-import IconMenu exposing (..)
-import Json.Encode as E
+import Dict
+import IconMenu exposing (IconMenuModel, IconMenuMsg)
 import Model exposing (..)
-import Mouse exposing (..)
-import Search exposing (..)
+import Mouse exposing (MouseModel, MouseMsg)
+import Search exposing (SearchModel, SearchMsg)
 
 
 type alias Model =
@@ -29,9 +24,31 @@ type alias Model =
     , mouse : MouseModel
     , search : SearchModel
     , iconMenu : IconMenuModel
+    }
 
-    -- journal buffer (raw JSON entries)
-    , journal : List E.Value
+
+default : Model
+default =
+    { items = Dict.empty
+    , maps =
+        Dict.singleton 0
+        -- map 0 is the "home map", it has no corresponding topic
+        <|
+            Map 0 -1 (Rectangle 0 0 0 0) Dict.empty
+
+    -- parentMapId = -1
+    , mapPath = [ 0 ]
+    , nextId = 1
+
+    ----- transient -----
+    , selection = []
+    , editState = NoEdit
+    , measureText = ""
+
+    -- components
+    , mouse = Mouse.init
+    , search = Search.init
+    , iconMenu = IconMenu.init
     }
 
 
@@ -44,7 +61,6 @@ type Msg
     | Hide
     | Delete
     | NoOp
-    | Ext (Ext.Msg Msg)
       -- components
     | Mouse MouseMsg
     | Search SearchMsg

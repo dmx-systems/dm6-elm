@@ -16,8 +16,8 @@ import Utils exposing (..)
 getTopicInfo : Id -> Model -> Maybe TopicInfo
 getTopicInfo topicId model =
     case model.items |> Dict.get topicId of
-        Just item ->
-            case item of
+        Just { info } ->
+            case info of
                 Topic topic ->
                     Just topic
 
@@ -31,8 +31,8 @@ getTopicInfo topicId model =
 getAssocInfo : Id -> Model -> Maybe AssocInfo
 getAssocInfo assocId model =
     case model.items |> Dict.get assocId of
-        Just item ->
-            case item of
+        Just { info } ->
+            case info of
                 Topic _ ->
                     assocMismatch "getAssocInfo" assocId Nothing
 
@@ -52,9 +52,9 @@ updateTopicInfo topicId topicFunc model =
                     (\maybeItem ->
                         case maybeItem of
                             Just item ->
-                                case item of
+                                case item.info of
                                     Topic topic ->
-                                        Just (topicFunc topic |> Topic)
+                                        Just { item | info = topicFunc topic |> Topic }
 
                                     Assoc _ ->
                                         topicMismatch "updateTopicInfo" topicId Nothing
@@ -82,32 +82,25 @@ createTopic text iconName model =
             model.nextId
 
         topic =
-            TopicInfo id text iconName
+            Item id <| Topic <| TopicInfo id text iconName
     in
-    ( { model
-        | items =
-            model.items
-                |> Dict.insert id (Topic topic)
-      }
+    ( { model | items = model.items |> Dict.insert id topic }
         |> nextId
     , id
     )
 
 
-
--- Presumption: both players exist in same map
-
-
-createAssoc : ItemType -> Id -> RoleType -> Id -> RoleType -> Model -> ( Model, Id )
-createAssoc itemType player1 role1 player2 role2 model =
+createAssoc : ItemType -> RoleType -> Id -> RoleType -> Id -> Model -> ( Model, Id )
+createAssoc itemType role1 player1 role2 player2 model =
     let
         id =
             model.nextId
 
         assoc =
-            AssocInfo id itemType player1 role1 player2 role2
+            Item id <| Assoc <| AssocInfo id itemType role1 player1 role2 player2
     in
-    ( { model | items = model.items |> Dict.insert id (Assoc assoc) } |> nextId
+    ( { model | items = model.items |> Dict.insert id assoc }
+        |> nextId
     , id
     )
 
@@ -374,10 +367,10 @@ createDefaultAssoc : Id -> Id -> MapId -> Model -> Model
 createDefaultAssoc player1 player2 mapId model =
     createAssocAndAddToMap
         "dmx.association"
+        "dmx.default"
         player1
         "dmx.default"
         player2
-        "dmx.default"
         mapId
         model
 
@@ -386,11 +379,11 @@ createDefaultAssoc player1 player2 mapId model =
 -- Presumption: both players exist in same map
 
 
-createAssocAndAddToMap : ItemType -> Id -> RoleType -> Id -> RoleType -> MapId -> Model -> Model
-createAssocAndAddToMap itemType player1 role1 player2 role2 mapId model =
+createAssocAndAddToMap : ItemType -> RoleType -> Id -> RoleType -> Id -> MapId -> Model -> Model
+createAssocAndAddToMap itemType role1 player1 role2 player2 mapId model =
     let
         ( newModel, assocId ) =
-            createAssoc itemType player1 role1 player2 role2 model
+            createAssoc itemType role1 player1 role2 player2 model
 
         props =
             MapAssoc AssocProps
@@ -406,19 +399,19 @@ addItemToMap itemId props mapId model =
         ( newModel, parentAssocId ) =
             createAssoc
                 "dmx.composition"
-                itemId
                 "dmx.child"
-                mapId
+                itemId
                 "dmx.parent"
+                mapId
                 model
 
         mapItem =
-            MapItem itemId False False props parentAssocId
+            MapItem itemId parentAssocId False False props
 
         -- hidden=False, pinned=False
         _ =
             info "addItemToMap"
-                { itemId = itemId, props = props, mapId = mapId, parentAssocId = parentAssocId }
+                { itemId = itemId, parentAssocId = parentAssocId, props = props, mapId = mapId }
     in
     { newModel
         | maps =
@@ -523,7 +516,7 @@ assocsOfPlayer playerId model =
     model.items
         |> Dict.values
         |> List.filter isAssoc
-        |> List.map getItemId
+        |> List.map .id
         |> List.filter (hasPlayer playerId model)
 
 
@@ -546,21 +539,11 @@ hasPlayer playerId model assocId =
             False
 
 
-getItemId : Item -> Id
-getItemId item =
-    case item of
-        Topic { id } ->
-            id
-
-        Assoc { id } ->
-            id
-
-
 {-| useful as a filter predicate
 -}
 isTopic : Item -> Bool
 isTopic item =
-    case item of
+    case item.info of
         Topic _ ->
             True
 

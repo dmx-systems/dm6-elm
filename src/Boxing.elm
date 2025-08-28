@@ -228,7 +228,7 @@ targetAssocItem assocId targetItems =
             { item | hidden = False }
 
         Nothing ->
-            MapItem assocId False False (MapAssoc AssocProps) -1
+            MapItem assocId -1 False False (MapAssoc AssocProps)
 
 
 
