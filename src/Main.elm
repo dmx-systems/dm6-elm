@@ -7,6 +7,7 @@ import Boxing exposing (boxContainer, unboxContainer)
 import Browser
 import Browser.Dom as Dom
 import Config exposing (..)
+import Defaults as Def
 import Dict
 import Feature.Cross as Cross
 import Feature.OpenDoor.Move as OpenDoor
@@ -65,7 +66,17 @@ init flags =
                         _ =
                             logError "init" "decode {} with modelDecoder failed (should not happen)" e
                     in
-                    Debug.todo "modelDecoder must succeed on {} due to hardcoded fallbacks"
+                    { items = Dict.empty
+                    , maps = Dict.singleton 0 (Map 0 Dict.empty (Rectangle 0 0 0 0) -1)
+                    , mapPath = [ 0 ]
+                    , nextId = 1
+                    , selection = Def.selection
+                    , editState = Def.editState
+                    , measureText = Def.measureText
+                    , mouse = Def.mouse
+                    , search = Def.search
+                    , iconMenu = Def.iconMenu
+                    }
 
         initialModel : Model
         initialModel =
