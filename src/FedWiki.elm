@@ -2,7 +2,9 @@ module FedWiki exposing
     ( JournalEntry(..)
     , Page
     , StoryItem(..)
+    , encodeJournalEntry
     , encodePage
+    , mkCrossJournalEntry
     , modelToPage
     , pageDecoder
     , pageToModel
@@ -149,6 +151,24 @@ encodeJournalEntry j =
 
         JournalUnknown v ->
             v
+
+
+mkCrossJournalEntry :
+    { containerId : Id, topicId : Id, targetMapId : MapId }
+    -> Int
+    -> JournalEntry
+mkCrossJournalEntry payload timestamp =
+    JournalEdit
+        { id = "dm6-cross"
+        , item =
+            E.object
+                [ ( "type", E.string "dm6-cross" )
+                , ( "containerId", E.int payload.containerId )
+                , ( "topicId", E.int payload.topicId )
+                , ( "targetMapId", E.int payload.targetMapId )
+                ]
+        , date = timestamp
+        }
 
 
 

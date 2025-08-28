@@ -11,6 +11,7 @@ import Defaults as Def
 import Dict
 import Feature.Cross as Cross
 import Feature.OpenDoor.Move as OpenDoor
+import FedWiki exposing (..)
 import Html exposing (Attribute, br, div, text)
 import Html.Attributes exposing (id, style)
 import IconMenuAPI exposing (updateIconMenu, viewIconMenu)
@@ -208,6 +209,17 @@ update msg model =
 
                                 Nothing ->
                                     0
+
+                        -- create a journal entry for this action (timestamp=0 for now)
+                        jEntry : E.Value
+                        jEntry =
+                            FedWiki.mkCrossJournalEntry
+                                { containerId = containerId
+                                , topicId = topicId
+                                , targetMapId = parentMapId
+                                }
+                                0
+                                |> FedWiki.encodeJournalEntry
                     in
                     OpenDoor.move
                         { containerId = containerId
