@@ -1,6 +1,7 @@
 module Feature.OpenDoor.Move exposing (move)
 
 import AppModel exposing (Model)
+import Compat.Model as CM
 import Config exposing (topicSize, whiteBoxPadding)
 import Dict exposing (Dict)
 import Model

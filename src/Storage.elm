@@ -1,6 +1,7 @@
 port module Storage exposing (modelDecoder, storeModel, storeModelWith)
 
 import AppModel as AM
+import Compat.Storage as C
 import Config exposing (homeMapName)
 import Defaults as Def
 import Dict
