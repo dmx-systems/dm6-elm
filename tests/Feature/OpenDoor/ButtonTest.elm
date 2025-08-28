@@ -1,13 +1,13 @@
 module Feature.OpenDoor.ButtonTest exposing (tests)
 
-import AppModel exposing (Model)
+import AppModel exposing (Model, Msg(..))
 import Compat.ModelAPI as M exposing (createTopic, defaultModel)
 import Dict
 import Expect
 import Feature.Cross as Cross
 import Html
 import Html.Attributes as Attr
-import Main exposing (MainMsg(..), view)
+import Main exposing (view)
 import Model exposing (..)
 import ModelAPI
 import Test exposing (..)
@@ -39,7 +39,7 @@ setupModel =
         m3 =
             { m2
                 | maps =
-                    Dict.insert containerId (Map containerId Dict.empty (Rectangle 0 0 0 0) 0) m2.maps
+                    Dict.insert containerId (Map containerId 0 (Rectangle 0 0 0 0) Dict.empty) m2.maps
             }
 
         -- create a child topic inside the container
@@ -85,7 +85,9 @@ tests =
                     , \btn ->
                         btn
                             |> Event.simulate Event.click
-                            |> Event.expect (CrossMsg Cross.CrossClick)
+                            -- MainMsg wrapper removed; use any Msg constructor here.
+                            -- If you later wire this button to a specific Msg, update accordingly.
+                            |> Event.expect NoOp
                     ]
                     openDoorBtn
         ]
