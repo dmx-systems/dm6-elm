@@ -173,5 +173,5 @@ targetAssocItem : Id -> MapItems -> MapItem
 targetAssocItem assocId targetItems =
   case targetItems |> Dict.get assocId of
     Just item -> { item | hidden = False }
-    Nothing -> MapItem assocId False False (MapAssoc AssocProps) -1 -- hidden/pinned=False
+    Nothing -> MapItem assocId -1 False False (MapAssoc AssocProps) -- hidden/pinned=False
     -- FIXME: set item's parentAssocId?

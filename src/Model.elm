@@ -22,40 +22,40 @@ type ItemInfo
 type alias TopicInfo =
   { id : Id
   , text : String
-  , iconName : Maybe IconName
+  , iconName : Maybe IconName -- serialzed as "icon"
   }
 
 
 type alias AssocInfo =
   { id : Id
-  , itemType : ItemType -- field can't be named "type", a reserved word
-  , player1 : Id
+  , itemType : ItemType -- serialzed as "type", field can't be named "type", a reserved word
   , role1 : RoleType
-  , player2 : Id
+  , player1 : Id
   , role2 : RoleType
+  , player2 : Id
   }
 
 
 type alias Maps = Dict Id Map
 
 
-type alias MapItems = Dict Id MapItem
-
-
 type alias Map =
   { id : MapId
-  , items : MapItems
-  , rect : Rectangle
   , parentMapId : MapId -- FIXME: ambiguous semantics? view context vs model?
+  , rect : Rectangle
+  , items : MapItems
   }
+
+
+type alias MapItems = Dict Id MapItem
 
 
 type alias MapItem =
   { id : Id
+  , parentAssocId : Id
   , hidden : Bool -- TODO: replace hidden/pinned by custom type: Hidden/Visible/Pinned?
   , pinned : Bool
   , props : MapProps
-  , parentAssocId : Id
   }
 
 
@@ -67,7 +67,7 @@ type MapProps
 type alias TopicProps =
   { pos : Point
   , size : Size
-  , displayMode : DisplayMode
+  , displayMode : DisplayMode -- serialized as "display"
   }
 
 

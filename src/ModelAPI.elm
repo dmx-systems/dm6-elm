@@ -68,12 +68,11 @@ createTopic text iconName model =
   )
 
 
--- Presumption: both players exist in same map
-createAssoc : ItemType -> Id -> RoleType -> Id -> RoleType -> Model -> (Model, Id)
-createAssoc itemType player1 role1 player2 role2 model =
+createAssoc : ItemType -> RoleType -> Id -> RoleType -> Id -> Model -> (Model, Id)
+createAssoc itemType role1 player1 role2 player2 model =
   let
     id = model.nextId
-    assoc = Item id <| Assoc <| AssocInfo id itemType player1 role1 player2 role2
+    assoc = Item id <| Assoc <| AssocInfo id itemType role1 player1 role2 player2
   in
   ( { model | items = model.items |> Dict.insert id assoc }
     |> nextId
@@ -278,16 +277,16 @@ createDefaultAssoc : Id -> Id -> MapId -> Model -> Model
 createDefaultAssoc player1 player2 mapId model =
   createAssocAndAddToMap
     "dmx.association"
-    player1 "dmx.default"
-    player2 "dmx.default"
+    "dmx.default" player1
+    "dmx.default" player2
     mapId model
 
 
 -- Presumption: both players exist in same map
-createAssocAndAddToMap : ItemType -> Id -> RoleType -> Id -> RoleType -> MapId -> Model -> Model
-createAssocAndAddToMap itemType player1 role1 player2 role2 mapId model =
+createAssocAndAddToMap : ItemType -> RoleType -> Id -> RoleType -> Id -> MapId -> Model -> Model
+createAssocAndAddToMap itemType role1 player1 role2 player2 mapId model =
   let
-    (newModel, assocId) = createAssoc itemType player1 role1 player2 role2 model
+    (newModel, assocId) = createAssoc itemType role1 player1 role2 player2 model
     props = MapAssoc AssocProps
   in
   addItemToMap assocId props mapId newModel
@@ -300,12 +299,12 @@ addItemToMap itemId props mapId model =
   let
     (newModel, parentAssocId) = createAssoc
       "dmx.composition"
-      itemId "dmx.child"
-      mapId "dmx.parent"
+      "dmx.child" itemId
+      "dmx.parent" mapId
       model
-    mapItem = MapItem itemId False False props parentAssocId -- hidden=False, pinned=False
+    mapItem = MapItem itemId parentAssocId False False props -- hidden=False, pinned=False
     _ = info "addItemToMap"
-      { itemId = itemId, props = props, mapId = mapId, parentAssocId = parentAssocId}
+      { itemId = itemId, parentAssocId = parentAssocId, props = props, mapId = mapId}
   in
   { newModel | maps =
     updateMaps

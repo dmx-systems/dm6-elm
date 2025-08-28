@@ -179,7 +179,7 @@ createMapIfNeeded topicId mapId model =
   else
     ( { model | maps = model.maps |> Dict.insert
         topicId
-        (Map topicId Dict.empty (Rectangle 0 0 0 0) mapId)
+        (Map topicId mapId (Rectangle 0 0 0 0) Dict.empty)
       }
       |> setDisplayMode topicId mapId (Container BlackBox)
     , True

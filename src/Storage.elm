@@ -56,18 +56,18 @@ encodeItem item =
         , E.object
           [ ("id", E.int topic.id)
           , ("text", E.string topic.text)
-          , ("iconName", E.string <| Maybe.withDefault "" topic.iconName)
+          , ("icon", E.string <| Maybe.withDefault "" topic.iconName)
           ]
         )
       Assoc assoc ->
         ( "assoc"
         , E.object
           [ ("id", E.int assoc.id)
-          , ("itemType", E.string assoc.itemType)
-          , ("player1", E.int assoc.player1)
+          , ("type", E.string assoc.itemType)
           , ("role1", E.string assoc.role1)
-          , ("player2", E.int assoc.player2)
+          , ("player1", E.int assoc.player1)
           , ("role2", E.string assoc.role2)
+          , ("player2", E.int assoc.player2)
           ]
         )
     ]
@@ -77,7 +77,7 @@ encodeMap : Map -> E.Value
 encodeMap map =
   E.object
     [ ("id", E.int map.id)
-    , ("items", map.items |> Dict.values |> E.list encodeMapItem)
+    , ("parentMapId", E.int map.parentMapId)
     , ("rect", E.object
         [ ("x1", E.float map.rect.x1)
         , ("y1", E.float map.rect.y1)
@@ -85,7 +85,7 @@ encodeMap map =
         , ("y2", E.float map.rect.y2)
         ]
       )
-    , ("parentMapId", E.int map.parentMapId)
+    , ("items", map.items |> Dict.values |> E.list encodeMapItem)
     ]
 
 
@@ -93,6 +93,7 @@ encodeMapItem : MapItem -> E.Value
 encodeMapItem item =
   E.object
     [ ("id", E.int item.id)
+    , ("parentAssocId", E.int item.parentAssocId)
     , ("hidden", E.bool item.hidden)
     , ("pinned", E.bool item.pinned)
     , case item.props of
@@ -109,14 +110,13 @@ encodeMapItem item =
                 , ("h", E.float topicProps.size.h)
                 ]
               )
-            , ("displayMode", encodeDisplayName topicProps.displayMode)
+            , ("display", encodeDisplayName topicProps.displayMode)
             ]
           )
         MapAssoc assosProps ->
           ( "assocProps"
           , E.object []
           )
-    , ("parentAssocId", E.int item.parentAssocId)
     ]
 
 
@@ -160,7 +160,7 @@ itemDecoder =
         (D.map Topic <| D.map3 TopicInfo
           (D.field "id" D.int)
           (D.field "text" D.string)
-          (D.field "iconName" D.string
+          (D.field "icon" D.string
             |> D.andThen maybeString
           )
         )
@@ -170,11 +170,11 @@ itemDecoder =
         (D.field "id" D.int)
         (D.map Assoc <| D.map6 AssocInfo
           (D.field "id" D.int)
-          (D.field "itemType" D.string)
-          (D.field "player1" D.int)
+          (D.field "type" D.string)
           (D.field "role1" D.string)
-          (D.field "player2" D.int)
+          (D.field "player1" D.int)
           (D.field "role2" D.string)
+          (D.field "player2" D.int)
         )
       )
     ]
@@ -184,20 +184,21 @@ mapDecoder : D.Decoder Map
 mapDecoder =
   D.map4 Map
     (D.field "id" D.int)
-    (D.field "items" (D.list mapItemDecoder |> D.andThen toDictDecoder))
+    (D.field "parentMapId" D.int)
     (D.field "rect" <| D.map4 Rectangle
       (D.field "x1" D.float)
       (D.field "y1" D.float)
       (D.field "x2" D.float)
       (D.field "y2" D.float)
     )
-    (D.field "parentMapId" D.int)
+    (D.field "items" (D.list mapItemDecoder |> D.andThen toDictDecoder))
 
 
 mapItemDecoder : D.Decoder MapItem
 mapItemDecoder =
   D.map5 MapItem
     (D.field "id" D.int)
+    (D.field "parentAssocId" D.int)
     (D.field "hidden" D.bool)
     (D.field "pinned" D.bool)
     (D.oneOf
@@ -210,11 +211,10 @@ mapItemDecoder =
           (D.field "w" D.float)
           (D.field "h" D.float)
         )
-        (D.field "displayMode" D.string |> D.andThen displayModeDecoder)
+        (D.field "display" D.string |> D.andThen displayModeDecoder)
       , D.field "assocProps" <| D.succeed (MapAssoc AssocProps)
       ]
     )
-    (D.field "parentAssocId" D.int)
 
 
 tupleToDictDecoder : List (Id, ItemInfo) -> D.Decoder Items

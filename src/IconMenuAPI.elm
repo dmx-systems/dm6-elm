@@ -1,4 +1,5 @@
-module IconMenuAPI exposing (viewIcon, viewTopicIcon, viewIconMenu, closeIconMenu, updateIconMenu)
+module IconMenuAPI exposing
+  (viewIcon, viewTopicIcon, viewIconMenu, closeIconMenu, updateIconMenu)
 
 import AppModel exposing (..)
 import Config exposing (..)
