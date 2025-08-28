@@ -76,6 +76,7 @@ init flags =
                     , mouse = Def.mouse
                     , search = Def.search
                     , iconMenu = Def.iconMenu
+                    , journal = []
                     }
 
         initialModel : Model
@@ -192,7 +193,7 @@ update msg model =
             Tuple.mapSecond (Cmd.map App)
 
         _ =
-            info "@update" (msgToString msg)
+            info "update" (msgToString msg)
     in
     case msg of
         -- Cross button: move selected topic out of container to its parent map

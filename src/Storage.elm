@@ -37,6 +37,7 @@ legacyDecoder =
             , mouse = Def.mouse
             , search = Def.search
             , iconMenu = Def.iconMenu
+            , journal = []
             }
         )
         |> optional "items" (D.succeed Dict.empty) Dict.empty
@@ -61,7 +62,7 @@ storeModel : AM.Model -> ( AM.Model, Cmd AM.Msg )
 storeModel model =
     let
         page =
-            modelToPage homeMapName [] model
+            modelToPage homeMapName model.journal model
     in
     ( model, store (encodePage page) )
 
@@ -70,6 +71,6 @@ storeModelWith : ( AM.Model, Cmd AM.Msg ) -> ( AM.Model, Cmd AM.Msg )
 storeModelWith ( model, cmd ) =
     let
         page =
-            modelToPage homeMapName [] model
+            modelToPage homeMapName model.journal model
     in
     ( model, Cmd.batch [ cmd, store (encodePage page) ] )

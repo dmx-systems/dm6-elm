@@ -8,6 +8,7 @@ module AppModel exposing (Model, Msg(..))
 
 import Extensions as Ext
 import IconMenu exposing (..)
+import Json.Encode as E
 import Model exposing (..)
 import Mouse exposing (..)
 import Search exposing (..)
@@ -28,6 +29,9 @@ type alias Model =
     , mouse : MouseModel
     , search : SearchModel
     , iconMenu : IconMenuModel
+
+    -- journal buffer (raw JSON entries)
+    , journal : List E.Value
     }
 
 

@@ -177,6 +177,7 @@ pageToModel page =
             , mouse = Def.mouse
             , search = Def.search
             , iconMenu = Def.iconMenu
+            , journal = List.map encodeJournalEntry page.journal
             }
 
         addParagraph : StoryItem -> AM.Model -> AM.Model
