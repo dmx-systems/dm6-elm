@@ -1,25 +1,27 @@
 module Utils exposing (..)
 
-import Debug exposing (log)
+-- your pass-through, pipe-style logger (no-op in prod)
+
 import Html exposing (Attribute, Html, br, text)
 import Html.Events exposing (keyCode, on, stopPropagationOn)
 import Json.Decode as D
+import Log exposing (log)
+import Platform.Cmd as Cmd exposing (Cmd)
+import Ports.Console as Console
 
 
 
-{--
-log : String -> a -> a
-log text val = val
--}
+-- tiny console port used for real logs in prod
+-- If you only used `toString` for logging, make it a no-op to avoid Debug.toString.
+-- (Elm has no generic to-string without Debug.)
 
 
 toString : a -> String
-toString =
-    Debug.toString
+toString _ =
+    ""
 
 
 
--- toString val = ""
 -- GENRAL ELM UTILITIES
 -- Events
 
@@ -82,7 +84,7 @@ multilineHtml str =
 
 
 
--- Debug
+-- Debug-ish helpers (pipe-style, remain pure: no console in prod)
 
 
 logError : String -> String -> v -> v
@@ -103,3 +105,36 @@ call funcName args val =
 info : String -> v -> v
 info funcName val =
     log ("@" ++ funcName) val
+
+
+
+-- Effectful companions for real console output (work under --optimize)
+
+
+infoCmd : String -> Cmd msg
+infoCmd =
+    Console.log
+
+
+withInfo : String -> ( model, Cmd msg ) -> ( model, Cmd msg )
+withInfo msg ( m, c ) =
+    ( m, Cmd.batch [ c, infoCmd msg ] )
+
+
+maybeInfo : Maybe String -> ( model, Cmd msg ) -> ( model, Cmd msg )
+maybeInfo m tuple =
+    case m of
+        Just s ->
+            withInfo s tuple
+
+        Nothing ->
+            tuple
+
+
+
+-- Pipe a (model, Cmd msg) tuple through and add a console.log
+
+
+withConsole : String -> ( model, Cmd msg ) -> ( model, Cmd msg )
+withConsole line ( model, cmd ) =
+    ( model, Cmd.batch [ cmd, Console.log line ] )

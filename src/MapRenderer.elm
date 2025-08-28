@@ -1,12 +1,18 @@
 module MapRenderer exposing (viewMap)
 
+-- components
+
+import AppModel exposing (..)
 import Config exposing (..)
 import Dict
 import Html exposing (Attribute, Html, div, input, text, textarea)
 import Html.Attributes exposing (attribute, id, style, value)
 import Html.Events exposing (onBlur, onInput)
-import IconMenu exposing (viewTopicIcon)
+import IconMenuAPI exposing (viewTopicIcon)
 import Model exposing (..)
+import ModelAPI exposing (..)
+import Mouse exposing (DragMode(..), DragState(..))
+import Search exposing (ResultMenu(..))
 import String exposing (fromFloat, fromInt)
 import Svg exposing (Svg, g, line, path, svg)
 import Svg.Attributes
@@ -149,8 +155,8 @@ limboTopic mapId model =
             activeMap model
     in
     if mapId == activeMapId then
-        case model.searchMenu of
-            ResultOpen (Just topicId) ->
+        case model.search.menu of
+            Open (Just topicId) ->
                 if isItemInMap topicId activeMapId model then
                     case getMapItemById topicId activeMapId model.maps of
                         Just mapItem ->
@@ -233,7 +239,7 @@ effectiveDisplayMode : Id -> DisplayMode -> Model -> DisplayMode
 effectiveDisplayMode topicId displayMode model =
     let
         isLimbo =
-            model.searchMenu == ResultOpen (Just topicId)
+            model.search.menu == Open (Just topicId)
     in
     if isLimbo then
         case displayMode of
@@ -473,7 +479,7 @@ viewAssoc assoc mapId model =
 
 viewLimboAssoc : MapId -> Model -> List (Svg Msg)
 viewLimboAssoc mapId model =
-    case model.dragState of
+    case model.mouse.dragState of
         Drag DrawAssoc topicId mapId_ _ pos _ ->
             if mapId_ == mapId then
                 let
@@ -568,10 +574,10 @@ topicStyle : TopicInfo -> MapId -> Model -> List (Attribute Msg)
 topicStyle { id } mapId model =
     let
         isLimbo =
-            model.searchMenu == ResultOpen (Just id)
+            model.search.menu == Open (Just id)
 
         isDragging =
-            case model.dragState of
+            case model.mouse.dragState of
                 Drag DragTopic id_ _ _ _ _ ->
                     id_ == id
 
@@ -747,7 +753,7 @@ topicBorderStyle : Id -> MapId -> Model -> List (Attribute Msg)
 topicBorderStyle id mapId model =
     let
         targeted =
-            case model.dragState of
+            case model.mouse.dragState of
                 -- can't move a topic to a map where it is already
                 -- can't create assoc when both topics are in different map
                 Drag DragTopic _ mapId_ _ _ (Just target) ->

@@ -1,8 +1,9 @@
 module Model.DefaultModelTest exposing (tests)
 
+import Compat.ModelAPI exposing (defaultModel)
 import Dict
 import Expect
-import Model exposing (defaultModel)
+import Model
 import Test exposing (..)
 
 
@@ -29,7 +30,7 @@ tests =
         , test "search text and measure text are empty" <|
             \_ ->
                 Expect.all
-                    [ \_ -> Expect.equal defaultModel.searchText ""
+                    [ \_ -> Expect.equal defaultModel.search.text ""
                     , \_ -> Expect.equal defaultModel.measureText ""
                     ]
                     ()
