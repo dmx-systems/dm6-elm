@@ -1,6 +1,8 @@
 port module Storage exposing (modelDecoder, storeModel, storeModelWith)
 
 import AppModel exposing (..)
+import Compat.CoreModel as Core
+import Compat.DmxImport as Dmx
 import Compat.Storage as C
 import Dict exposing (Dict)
 import Json.Decode as D
@@ -162,7 +164,8 @@ modelDecoder : D.Decoder Model
 modelDecoder =
     -- Try full decode; if flags are {}, fall back to AppModel.default
     D.oneOf
-        [ fullModelDecoder
+        [ dmxDecoder
+        , fullModelDecoder
         , D.succeed default
         ]
 
@@ -426,3 +429,17 @@ maybeString str =
 
         else
             Just str
+
+
+dmxDecoder : D.Decoder Model
+dmxDecoder =
+    D.value
+        |> D.andThen
+            (\v ->
+                case Dmx.decodeCoreTopicToCore v of
+                    Ok core ->
+                        Core.toAppModel core |> D.succeed
+
+                    Err _ ->
+                        D.fail "not DMX JSON"
+            )

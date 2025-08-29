@@ -5,7 +5,7 @@ set -euo pipefail
 js="main.js"
 min="main.min.js"
 template="index.html"           # HTML template containing <script src="main.js">
-html="dm6-elm.html"             # final standalone output
+html="public/dm6-elm.html"      # final standalone output
 tools_js_src="scripts/localstorage-tools.js"
 
 log_dst="src/Log.elm"
