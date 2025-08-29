@@ -7,6 +7,7 @@ import Expect
 import Generated.Fixtures as Fx
 import Json.Decode as D
 import Model exposing (..)
+import Set
 import Test exposing (..)
 
 
@@ -42,3 +43,39 @@ mapItemsBelongToItems c =
         |> Dict.values
         |> List.concatMap (\mp -> Dict.values mp.items)
         |> List.all (\mi -> Dict.member mi.id c.items)
+
+
+mapParentIdsExist : Core.CoreModel -> Bool
+mapParentIdsExist c =
+    c.maps
+        |> Dict.values
+        |> List.all (\m -> m.parentMapId == -1 || Dict.member m.parentMapId c.maps)
+
+
+mapItemsHaveValidParentAssoc : Core.CoreModel -> Bool
+mapItemsHaveValidParentAssoc c =
+    let
+        assocIds =
+            c.items
+                |> Dict.filter
+                    (\_ it ->
+                        case it.info of
+                            Assoc _ ->
+                                True
+
+                            _ ->
+                                False
+                    )
+                |> Dict.keys
+                |> Set.fromList
+
+        -- Flatten all MapItems across all maps
+        allMapItems : List MapItem
+        allMapItems =
+            c.maps
+                |> Dict.values
+                |> List.concatMap (\m -> Dict.values m.items)
+    in
+    -- parentAssocId = 0 means “no parent assoc”; otherwise it must reference an existing assoc
+    allMapItems
+        |> List.all (\mi -> mi.parentAssocId == 0 || Set.member mi.parentAssocId assocIds)
