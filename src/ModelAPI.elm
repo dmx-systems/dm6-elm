@@ -154,15 +154,29 @@ hasMap mapId maps =
     maps |> Dict.member mapId
 
 
+
+-- Ensure this stays exported, the test imports it.
+
+
 updateMapRect : MapId -> (Rectangle -> Rectangle) -> Model -> Model
-updateMapRect mapId rectFunc model =
+updateMapRect mapId rectFn model =
+    let
+        normalize : Rectangle -> Rectangle
+        normalize r =
+            { r
+                | x2 = Basics.max r.x1 r.x2
+                , y2 = Basics.max r.y1 r.y2
+            }
+
+        newRect : Rectangle -> Rectangle
+        newRect old =
+            rectFn old |> normalize
+    in
     { model
         | maps =
             updateMaps
                 mapId
-                (\map ->
-                    { map | rect = rectFunc map.rect }
-                )
+                (\m -> { m | rect = newRect m.rect })
                 model.maps
     }
 
