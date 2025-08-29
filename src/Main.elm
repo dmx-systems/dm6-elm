@@ -177,13 +177,25 @@ createMapIfNeeded topicId mapId model =
   if hasMap topicId model.maps then
     (model, False)
   else
-    ( { model | maps = model.maps |> Dict.insert
-        topicId
-        (Map topicId mapId (Rectangle 0 0 0 0) Dict.empty)
-      }
-      |> setDisplayMode topicId mapId (Container BlackBox)
+    ( model
+      |> createMap topicId mapId
+      |> setDisplayModeInAllMaps topicId (Container BlackBox)
+      -- A nested topic which becomes a container might exist in other maps as well, still as
+      -- a monad. We must set the topic's display mode to "container" in *all* maps. Otherwise
+      -- in the other maps it might be revealed still as a monad.
     , True
     )
+
+
+setDisplayModeInAllMaps : Id -> DisplayMode -> Model -> Model
+setDisplayModeInAllMaps topicId displayMode model =
+  model.maps |> Dict.foldr
+    (\mapId _ modelAcc ->
+      case isItemInMap topicId mapId model of
+        True -> setDisplayMode topicId mapId displayMode modelAcc
+        False -> modelAcc
+    )
+    model
 
 
 switchDisplay : DisplayMode -> Model -> Model

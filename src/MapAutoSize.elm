@@ -42,6 +42,23 @@ calcMapRect mapId model =
     Nothing -> (Rectangle 0 0 0 0, model)
 
 
+calcItemSize : MapItem -> MapId -> Rectangle -> Model -> (Rectangle, Model)
+calcItemSize mapItem mapId rectAcc model =
+  case mapItem.props of
+    MapTopic {pos, size, displayMode} ->
+      case displayMode of
+        Monad LabelOnly -> (topicExtent pos rectAcc, model)
+        Monad Detail -> (detailTopicExtent mapItem.id mapId pos size rectAcc model, model)
+        Container BlackBox -> (topicExtent pos rectAcc, model)
+        Container WhiteBox ->
+          let
+            (rect, model_) = calcMapRect mapItem.id model -- recursion
+          in
+          (mapExtent pos rect rectAcc, model_)
+        Container Unboxed -> (topicExtent pos rectAcc, model)
+    MapAssoc _ -> (rectAcc, model)
+
+
 storeMapRect : MapId -> Rectangle -> Rectangle -> MapId -> Model -> (Rectangle, Model)
 storeMapRect mapId newRect oldRect parentMapId model =
   if mapId == activeMap model then
@@ -58,23 +75,6 @@ storeMapRect mapId newRect oldRect parentMapId model =
           ( newRect.y1 - oldRect.y1 )
         )
     )
-
-
-calcItemSize : MapItem -> MapId -> Rectangle -> Model -> (Rectangle, Model)
-calcItemSize mapItem mapId rectAcc model =
-  case mapItem.props of
-    MapTopic {pos, size, displayMode} ->
-      case displayMode of
-        Monad LabelOnly -> (topicExtent pos rectAcc, model)
-        Monad Detail -> (detailTopicExtent mapItem.id mapId pos size rectAcc model, model)
-        Container BlackBox -> (topicExtent pos rectAcc, model)
-        Container WhiteBox ->
-          let
-            (rect, model_) = calcMapRect mapItem.id model
-          in
-          (mapExtent pos rect rectAcc, model_)
-        Container Unboxed -> (topicExtent pos rectAcc, model)
-    MapAssoc _ -> (rectAcc, model)
 
 
 topicExtent : Point -> Rectangle -> Rectangle
