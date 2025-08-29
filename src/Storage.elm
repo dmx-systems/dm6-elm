@@ -162,10 +162,10 @@ encodeDisplayName displayMode =
 
 modelDecoder : D.Decoder Model
 modelDecoder =
-    -- Try full decode; if flags are {}, fall back to AppModel.default
     D.oneOf
         [ dmxDecoder
         , fullModelDecoder
+        , legacyMapsOnlyDecoder
         , D.succeed default
         ]
 
@@ -447,3 +447,46 @@ assocInfoDecoder =
         (D.field "player1" D.int)
         (D.field "role2" D.string)
         (D.field "player2" D.int)
+
+
+
+-- legacyMapsOnlyDecoder
+
+
+legacyMapsOnlyDecoder : D.Decoder Model
+legacyMapsOnlyDecoder =
+    D.field "maps" mapsValueDecoder
+        |> D.andThen
+            (\maps0 ->
+                let
+                    maps1 =
+                        if Dict.member 0 maps0 then
+                            maps0
+
+                        else
+                            Dict.insert 0 (Map 0 -1 (Rectangle 0 0 0 0) Dict.empty) maps0
+
+                    -- collect all map item ids
+                    allIds : List Id
+                    allIds =
+                        maps1
+                            |> Dict.values
+                            |> List.concatMap (\m -> Dict.keys m.items)
+
+                    maxId =
+                        List.maximum allIds |> Maybe.withDefault 0
+
+                    itemsDict : Items
+                    itemsDict =
+                        allIds
+                            |> List.map (\i -> ( i, Item i (Topic (TopicInfo i "" Nothing)) ))
+                            |> Dict.fromList
+                in
+                D.succeed
+                    { default
+                        | items = itemsDict
+                        , maps = maps1
+                        , mapPath = [ 0 ]
+                        , nextId = maxId + 1
+                    }
+            )
