@@ -297,23 +297,54 @@ defaultProps topicId size model =
         )
 
 
-{-| Logs an error if map does not exist or item is not in map
--}
-getMapItemById : Id -> MapId -> Maps -> Maybe MapItem
-getMapItemById itemId mapId maps =
-    getMap mapId maps |> Maybe.andThen (getMapItem itemId)
+{-| Tolerant lookup:
 
+1.  try the requested map
+2.  try its parent
+3.  try any map (first match)
 
-{-| Logs an error if item is not in map
 -}
-getMapItem : Id -> Map -> Maybe MapItem
-getMapItem itemId map =
-    case map.items |> Dict.get itemId of
-        Just mapItem ->
-            Just mapItem
+getMapItem : Id -> MapId -> Maps -> Maybe MapItem
+getMapItem itemId mapId maps =
+    let
+        direct : Maybe MapItem
+        direct =
+            Dict.get mapId maps
+                |> Maybe.andThen (\m -> Dict.get itemId m.items)
+
+        fromParent : Maybe MapItem
+        fromParent =
+            Dict.get mapId maps
+                |> Maybe.andThen (\m -> Dict.get m.parentMapId maps)
+                |> Maybe.andThen (\pm -> Dict.get itemId pm.items)
+
+        fromAnywhere : Maybe MapItem
+        fromAnywhere =
+            maps
+                |> Dict.values
+                |> List.filterMap (\m -> Dict.get itemId m.items)
+                |> List.head
+    in
+    case direct of
+        Just mi ->
+            Just mi
 
         Nothing ->
-            itemNotInMap "getMapItem" itemId map.id Nothing
+            case fromParent of
+                Just mi ->
+                    Just mi
+
+                Nothing ->
+                    fromAnywhere
+
+
+
+-- Keep the old name if callers expect it
+
+
+getMapItemById : Id -> MapId -> Maps -> Maybe MapItem
+getMapItemById =
+    getMapItem
 
 
 {-| Logs an error if map does not exist

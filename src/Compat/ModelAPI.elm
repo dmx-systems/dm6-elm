@@ -2,6 +2,7 @@ module Compat.ModelAPI exposing
     ( addItemToMapDefault
     , createTopic
     , defaultModel
+    , ensureMap
     , getMapItemById
     , isItemInMap
     , isMapTopic
@@ -9,9 +10,10 @@ module Compat.ModelAPI exposing
 
 import AppModel exposing (Model)
 import Config exposing (..)
+import Dict exposing (Dict)
 import Json.Encode as E
 import Main as AppMain
-import Model exposing (IconName, Id, MapId, MapItem, MapProps(..), Maps, TopicProps)
+import Model exposing (..)
 import ModelAPI
 
 
@@ -64,12 +66,47 @@ isItemInMap id mapId model =
 -- Helper used by tests to avoid raw constructors
 
 
+{-| Ensure a map exists in `model.maps`.
+
+  - mapId 0: parentMapId = -1 (home)
+  - any other map: default parentMapId = 0
+
+-}
+ensureMap : MapId -> Model -> Model
+ensureMap mapId m =
+    if Dict.member mapId m.maps then
+        m
+
+    else
+        let
+            parent =
+                if mapId == 0 then
+                    -1
+
+                else
+                    0
+        in
+        { m
+            | maps =
+                Dict.insert
+                    mapId
+                    (Model.Map mapId parent (Model.Rectangle 0 0 0 0) Dict.empty)
+                    m.maps
+        }
+
+
 addItemToMapDefault : Id -> MapId -> Model -> Model
 addItemToMapDefault id mapId model =
     let
+        -- make sure both home and target maps exist
+        base =
+            model
+                |> ensureMap 0
+                |> ensureMap mapId
+
         tp : TopicProps
         tp =
-            ModelAPI.defaultProps id topicSize model
+            ModelAPI.defaultProps id topicSize base
     in
     -- addItemToMap needs MapProps → MapTopic tp
-    ModelAPI.addItemToMap id (MapTopic tp) mapId model
+    ModelAPI.addItemToMap id (MapTopic tp) mapId base

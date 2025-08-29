@@ -6,7 +6,7 @@ module Compat.CoreModel exposing
     )
 
 import AppModel as AM
-import Dict exposing (Dict)
+import Dict
 import Model exposing (..)
 
 
