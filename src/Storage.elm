@@ -172,122 +172,41 @@ modelDecoder =
 
 fullModelDecoder : D.Decoder Model
 fullModelDecoder =
-    D.succeed Model
+    (D.succeed Model
         |> required "items" itemsValueDecoder
         |> required "maps" mapsValueDecoder
         |> required "mapPath" (D.list D.int)
         |> required "nextId" D.int
-        -- transient state/components: fresh each init
         |> hardcoded default.selection
         |> hardcoded default.editState
         |> hardcoded default.measureText
         |> hardcoded default.mouse
         |> hardcoded default.search
         |> hardcoded default.iconMenu
+    )
+        |> D.map ensureHomeIntegrity
 
 
+ensureHomeIntegrity : Model -> Model
+ensureHomeIntegrity m0 =
+    let
+        m1 =
+            if Dict.member 0 m0.maps then
+                m0
 
--- "items" can be a LIST (new) or a DICT (legacy). Normalize to Dict Id Item.
+            else
+                { m0
+                    | maps = Dict.insert 0 (Map 0 -1 (Rectangle 0 0 0 0) Dict.empty) m0.maps
+                }
 
+        m2 =
+            if List.isEmpty m1.mapPath then
+                { m1 | mapPath = [ 0 ] }
 
-itemsValueDecoder : D.Decoder Items
-itemsValueDecoder =
-    D.oneOf
-        [ D.list itemTupleDecoder |> D.andThen tupleListToItems
-        , itemDictDecoder
-        ]
-
-
-
--- For list-form "items": decode to (Id, ItemInfo)
-
-
-itemTupleDecoder : D.Decoder ( Id, ItemInfo )
-itemTupleDecoder =
-    D.oneOf
-        [ D.field "topic"
-            (D.map2 Tuple.pair
-                (D.field "id" D.int)
-                (D.map Topic <|
-                    D.map3 TopicInfo
-                        (D.field "id" D.int)
-                        (D.field "text" D.string)
-                        (C.field2 "icon" "iconName" D.string |> D.andThen maybeString)
-                )
-            )
-        , D.field "assoc"
-            (D.map2 Tuple.pair
-                (D.field "id" D.int)
-                (D.map Assoc <|
-                    D.map6 AssocInfo
-                        (D.field "id" D.int)
-                        (C.field2 "type" "itemType" D.string)
-                        (D.field "role1" D.string)
-                        (D.field "player1" D.int)
-                        (D.field "role2" D.string)
-                        (D.field "player2" D.int)
-                )
-            )
-        ]
-
-
-
--- For dict-form "items": values carry either "topic" or "assoc"
-
-
-itemDictDecoder : D.Decoder Items
-itemDictDecoder =
-    D.dict itemInfoDecoder
-        |> D.andThen
-            (\d ->
-                d
-                    |> Dict.values
-                    |> List.map
-                        (\info ->
-                            case info of
-                                Topic t ->
-                                    ( t.id, info )
-
-                                Assoc a ->
-                                    ( a.id, info )
-                        )
-                    |> tupleListToItems
-            )
-
-
-itemInfoDecoder : D.Decoder ItemInfo
-itemInfoDecoder =
-    D.oneOf
-        [ D.field "topic"
-            (D.map Topic <|
-                D.map3 TopicInfo
-                    (D.field "id" D.int)
-                    (D.field "text" D.string)
-                    (C.field2 "icon" "iconName" D.string |> D.andThen maybeString)
-            )
-        , D.field "assoc"
-            (D.map Assoc <|
-                D.map6 AssocInfo
-                    (D.field "id" D.int)
-                    (C.field2 "type" "itemType" D.string)
-                    (D.field "role1" D.string)
-                    (D.field "player1" D.int)
-                    (D.field "role2" D.string)
-                    (D.field "player2" D.int)
-            )
-        ]
-
-
-
--- "maps" can be a LIST (new) or a DICT (legacy). Normalize to Dict Id Map.
-
-
-mapsValueDecoder : D.Decoder (Dict Int Map)
-mapsValueDecoder =
-    D.oneOf
-        [ D.list mapDecoder |> D.andThen recordsToDict
-        , dictInt mapDecoder
-        ]
+            else
+                m1
+    in
+    m2
 
 
 mapDecoder : D.Decoder Map
@@ -307,14 +226,30 @@ mapDecoder =
 
 
 
--- "map.items" can be LIST or DICT of MapItem
+-- prefer dict first, then list
+
+
+itemsValueDecoder : D.Decoder Items
+itemsValueDecoder =
+    D.oneOf
+        [ itemDictDecoder
+        , D.list itemTupleDecoder |> D.andThen tupleListToItems
+        ]
+
+
+mapsValueDecoder : D.Decoder (Dict Int Map)
+mapsValueDecoder =
+    D.oneOf
+        [ dictInt mapDecoder
+        , D.list mapDecoder |> D.andThen recordsToDict
+        ]
 
 
 mapItemsValueDecoder : D.Decoder (Dict Int MapItem)
 mapItemsValueDecoder =
     D.oneOf
-        [ D.list mapItemDecoder |> D.andThen recordsToDict
-        , dictInt mapItemDecoder
+        [ dictInt mapItemDecoder
+        , D.list mapItemDecoder |> D.andThen recordsToDict
         ]
 
 
@@ -348,6 +283,52 @@ mapItemDecoder =
             , D.field "assocProps" (D.succeed (MapAssoc AssocProps))
             ]
         )
+
+
+
+-- For list-form "items": decode to (Id, ItemInfo)
+
+
+itemTupleDecoder : D.Decoder ( Id, ItemInfo )
+itemTupleDecoder =
+    D.oneOf
+        [ D.field "topic"
+            (D.map (\ti -> ( ti.id, Topic ti )) topicInfoDecoder)
+        , D.field "assoc"
+            (D.map (\ai -> ( ai.id, Assoc ai )) assocInfoDecoder)
+        ]
+
+
+
+-- For dict-form "items": values carry either "topic" or "assoc"
+
+
+itemDictDecoder : D.Decoder Items
+itemDictDecoder =
+    D.dict itemInfoDecoder
+        |> D.andThen
+            (\d ->
+                d
+                    |> Dict.values
+                    |> List.map
+                        (\info ->
+                            case info of
+                                Topic t ->
+                                    ( t.id, info )
+
+                                Assoc a ->
+                                    ( a.id, info )
+                        )
+                    |> tupleListToItems
+            )
+
+
+itemInfoDecoder : D.Decoder ItemInfo
+itemInfoDecoder =
+    D.oneOf
+        [ D.field "topic" (D.map Topic topicInfoDecoder)
+        , D.field "assoc" (D.map Assoc assocInfoDecoder)
+        ]
 
 
 
@@ -443,3 +424,26 @@ dmxDecoder =
                     Err _ ->
                         D.fail "not DMX JSON"
             )
+
+
+
+-- Reuse these inner decoders so we don’t duplicate logic
+
+
+topicInfoDecoder : D.Decoder TopicInfo
+topicInfoDecoder =
+    D.map3 TopicInfo
+        (D.field "id" D.int)
+        (D.field "text" D.string)
+        (C.field2 "icon" "iconName" D.string |> D.andThen maybeString)
+
+
+assocInfoDecoder : D.Decoder AssocInfo
+assocInfoDecoder =
+    D.map6 AssocInfo
+        (D.field "id" D.int)
+        (C.field2 "type" "itemType" D.string)
+        (D.field "role1" D.string)
+        (D.field "player1" D.int)
+        (D.field "role2" D.string)
+        (D.field "player2" D.int)
