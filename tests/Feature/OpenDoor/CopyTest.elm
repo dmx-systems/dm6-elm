@@ -1,9 +1,11 @@
 module Feature.OpenDoor.CopyTest exposing (tests)
 
+import AppModel exposing (Model, default)
 import Dict
 import Expect
 import Feature.OpenDoor.Copy as Copy
 import Model exposing (..)
+import ModelAPI exposing (addItemToMap, createTopic, isItemInMap)
 import Test exposing (..)
 
 
@@ -15,7 +17,7 @@ setupModel : ( Model, MapId, Id )
 setupModel =
     let
         ( m1, cId ) =
-            createTopic "Container" Nothing defaultModel
+            createTopic "Container" Nothing default
 
         -- container visible on home map (0) as BlackBox
         m2 =
@@ -26,7 +28,7 @@ setupModel =
 
         -- inner map for container (parent = 0)
         m3 =
-            { m2 | maps = Dict.insert cId (Map cId Dict.empty (Rectangle 0 0 0 0) 0) m2.maps }
+            { m2 | maps = Dict.insert cId (Map cId 0 (Rectangle 0 0 0 0) Dict.empty) m2.maps }
 
         -- child topic
         ( m4, tId ) =

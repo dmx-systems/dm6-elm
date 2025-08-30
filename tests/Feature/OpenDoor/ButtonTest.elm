@@ -1,11 +1,13 @@
 module Feature.OpenDoor.ButtonTest exposing (tests)
 
+import AppModel exposing (Model, Msg(..), default)
 import Dict
 import Expect
 import Html
 import Html.Attributes as Attr
 import Main exposing (view)
 import Model exposing (..)
+import ModelAPI exposing (..)
 import Test exposing (..)
 import Test.Html.Event as Event
 import Test.Html.Query as Query
@@ -25,7 +27,7 @@ setupModel =
     let
         -- start with default model
         ( m1, containerId ) =
-            createTopic "Container" Nothing defaultModel
+            createTopic "Container" Nothing default
 
         -- container visible on home map (0) as a container
         m2 =
@@ -38,7 +40,7 @@ setupModel =
         m3 =
             { m2
                 | maps =
-                    Dict.insert containerId (Map containerId Dict.empty (Rectangle 0 0 0 0) 0) m2.maps
+                    Dict.insert containerId (Map containerId 0 (Rectangle 0 0 0 0) Dict.empty) m2.maps
             }
 
         -- create a child topic inside the container

@@ -1,11 +1,8 @@
-module Feature.OpenDoor.Copy exposing
-    ( copyFromContainer
-    , copyToMap
-    )
+module Feature.OpenDoor.Copy exposing (..)
 
 import AppModel exposing (Model)
 import Dict
-import Model exposing (Id, MapId)
+import Model exposing (Id, MapId, MapItem)
 
 
 {-| Copy a topic from `sourceMapId` to `targetMapId`.
