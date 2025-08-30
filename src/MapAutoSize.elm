@@ -1,8 +1,10 @@
 module MapAutoSize exposing (autoSize)
 
+import AppModel exposing (..)
 import Config exposing (..)
 import Dict
 import Model exposing (..)
+import ModelAPI exposing (..)
 
 
 

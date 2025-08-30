@@ -1,10 +1,9 @@
 module View.ToolbarButtonsTest exposing (tests)
 
-import Expect
+import Compat.ModelAPI exposing (defaultModel)
 import Html
 import Html.Attributes as Attr
 import Main exposing (view)
-import Model exposing (defaultModel)
 import Test exposing (..)
 import Test.Html.Query as Query
 import Test.Html.Selector as Sel

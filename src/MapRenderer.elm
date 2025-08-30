@@ -1,12 +1,18 @@
 module MapRenderer exposing (viewMap)
 
+-- components
+
+import AppModel exposing (..)
 import Config exposing (..)
 import Dict
 import Html exposing (Attribute, Html, div, input, text, textarea)
 import Html.Attributes exposing (attribute, id, style, value)
 import Html.Events exposing (onBlur, onInput)
-import IconMenu exposing (viewTopicIcon)
+import IconMenuAPI exposing (viewTopicIcon)
 import Model exposing (..)
+import ModelAPI exposing (..)
+import Mouse exposing (DragMode(..), DragState(..))
+import Search exposing (ResultMenu(..))
 import String exposing (fromFloat, fromInt)
 import Svg exposing (Svg, g, line, path, svg)
 import Svg.Attributes
@@ -125,16 +131,17 @@ mapItems map model =
         |> List.filter isVisible
         |> List.foldr
             (\{ id, props } ( t, a ) ->
-                let
-                    item =
-                        model.items |> Dict.get id
-                in
-                case ( item, props ) of
-                    ( Just (Topic topic), MapTopic tProps ) ->
-                        ( viewTopic topic tProps map.id model :: t, a )
+                case model.items |> Dict.get id of
+                    Just { info } ->
+                        case ( info, props ) of
+                            ( Topic topic, MapTopic tProps ) ->
+                                ( viewTopic topic tProps map.id model :: t, a )
 
-                    ( Just (Assoc assoc), MapAssoc _ ) ->
-                        ( t, viewAssoc assoc map.id model :: a )
+                            ( Assoc assoc, MapAssoc _ ) ->
+                                ( t, viewAssoc assoc map.id model :: a )
+
+                            _ ->
+                                logError "mapItems" ("problem with item " ++ fromInt id) ( t, a )
 
                     _ ->
                         logError "mapItems" ("problem with item " ++ fromInt id) ( t, a )
@@ -149,8 +156,8 @@ limboTopic mapId model =
             activeMap model
     in
     if mapId == activeMapId then
-        case model.searchMenu of
-            ResultOpen (Just topicId) ->
+        case model.search.menu of
+            Open (Just topicId) ->
                 if isItemInMap topicId activeMapId model then
                     case getMapItemById topicId activeMapId model.maps of
                         Just mapItem ->
@@ -159,9 +166,14 @@ limboTopic mapId model =
                                     _ =
                                         info "limboTopic" ( topicId, "is in map, hidden" )
                                 in
-                                case ( model.items |> Dict.get topicId, mapItem.props ) of
-                                    ( Just (Topic topic), MapTopic props ) ->
-                                        [ viewTopic topic props activeMapId model ]
+                                case model.items |> Dict.get topicId of
+                                    Just { info } ->
+                                        case ( info, mapItem.props ) of
+                                            ( Topic topic, MapTopic props ) ->
+                                                [ viewTopic topic props activeMapId model ]
+
+                                            _ ->
+                                                []
 
                                     _ ->
                                         []
@@ -185,8 +197,13 @@ limboTopic mapId model =
                             defaultProps topicId topicSize model
                     in
                     case model.items |> Dict.get topicId of
-                        Just (Topic topic) ->
-                            [ viewTopic topic props activeMapId model ]
+                        Just { info } ->
+                            case info of
+                                Topic topic ->
+                                    [ viewTopic topic props activeMapId model ]
+
+                                _ ->
+                                    []
 
                         _ ->
                             []
@@ -233,7 +250,7 @@ effectiveDisplayMode : Id -> DisplayMode -> Model -> DisplayMode
 effectiveDisplayMode topicId displayMode model =
     let
         isLimbo =
-            model.searchMenu == ResultOpen (Just topicId)
+            model.search.menu == Open (Just topicId)
     in
     if isLimbo then
         case displayMode of
@@ -473,7 +490,7 @@ viewAssoc assoc mapId model =
 
 viewLimboAssoc : MapId -> Model -> List (Svg Msg)
 viewLimboAssoc mapId model =
-    case model.dragState of
+    case model.mouse.dragState of
         Drag DrawAssoc topicId mapId_ _ pos _ ->
             if mapId_ == mapId then
                 let
@@ -568,10 +585,10 @@ topicStyle : TopicInfo -> MapId -> Model -> List (Attribute Msg)
 topicStyle { id } mapId model =
     let
         isLimbo =
-            model.searchMenu == ResultOpen (Just id)
+            model.search.menu == Open (Just id)
 
         isDragging =
-            case model.dragState of
+            case model.mouse.dragState of
                 Drag DragTopic id_ _ _ _ _ ->
                     id_ == id
 
@@ -747,7 +764,7 @@ topicBorderStyle : Id -> MapId -> Model -> List (Attribute Msg)
 topicBorderStyle id mapId model =
     let
         targeted =
-            case model.dragState of
+            case model.mouse.dragState of
                 -- can't move a topic to a map where it is already
                 -- can't create assoc when both topics are in different map
                 Drag DragTopic _ mapId_ _ _ (Just target) ->
@@ -939,7 +956,7 @@ taxiLine assoc pos1 pos2 =
 lineStyle : Maybe AssocInfo -> List (Attribute Msg)
 lineStyle assoc =
     [ stroke assocColor
-    , strokeWidth <| fromFloat assocWith ++ "px"
+    , strokeWidth <| fromFloat assocWidth ++ "px"
     , strokeDasharray <| lineDasharray assoc
     , fill "none"
     ]

@@ -131,6 +131,10 @@ maybeInfo m tuple =
             tuple
 
 
+
+-- Pipe a (model, Cmd msg) tuple through and add a console.log
+
+
 withConsole : String -> ( model, Cmd msg ) -> ( model, Cmd msg )
 withConsole line ( model, cmd ) =
     ( model, Cmd.batch [ cmd, Console.log line ] )

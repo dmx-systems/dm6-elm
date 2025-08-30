@@ -1,5 +1,7 @@
 module Feature.OpenDoor.StayVisibleTest exposing (tests)
 
+import AppModel exposing (Model)
+import Compat.ModelAPI as M exposing (createTopic, defaultModel, getMapItemById)
 import Dict
 import Expect
 import Feature.OpenDoor.Move as OpenDoor
@@ -10,24 +12,21 @@ import Test exposing (..)
 setup : ( Model, MapId, Id )
 setup =
     let
-        ( m1, cId ) =
+        ( _, cId ) =
             createTopic "Container" Nothing defaultModel
 
+        -- change the initial map placement:
         m2 =
-            addItemToMap cId
-                (MapTopic (TopicProps (Point 100 100) (Size 160 60) (Container WhiteBox)))
-                0
-                m1
+            M.addItemToMapDefault cId 0 defaultModel
 
         m3 =
-            { m2 | maps = Dict.insert cId (Map cId Dict.empty (Rectangle 0 0 0 0) 0) m2.maps }
+            { m2 | maps = Dict.insert cId (Map cId 0 (Rectangle 0 0 0 0) Dict.empty) m2.maps }
 
         ( m4, tId ) =
             createTopic "A" Nothing m3
 
         m5 =
-            addItemToMap tId
-                (MapTopic (TopicProps (Point 30 30) (Size 120 40) (Monad LabelOnly)))
+            M.addItemToMapDefault tId
                 cId
                 m4
     in
@@ -46,7 +45,7 @@ tests =
                     OpenDoor.move { containerId = containerId, topicId = topicId, targetMapId = 0 } m0
 
                 containerStillThere =
-                    isItemInMap containerId 0 m1
+                    M.isItemInMap containerId 0 m1
                         && (getMapItemById containerId 0 m1.maps
                                 |> Maybe.map .hidden
                                 |> Maybe.withDefault True
@@ -54,7 +53,7 @@ tests =
                         == False
 
                 topicVisibleOnParent =
-                    isItemInMap topicId 0 m1
+                    M.isItemInMap topicId 0 m1
                         && (getMapItemById topicId 0 m1.maps
                                 |> Maybe.map .hidden
                                 |> Maybe.withDefault True

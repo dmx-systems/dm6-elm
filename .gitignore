@@ -1,8 +1,21 @@
-dm6-elm.html
-main.js
-main.min.js
+# Node
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Elm
 elm-stuff/
+repl-temp-*
+
+# Build output
+dist/
+build/
+*.log
+
+# Public assets (ignore everything inside)
+public/
+
+# OS files
 .DS_Store
-build
-/node_modules
-/review/elm-stuff/
+Thumbs.db

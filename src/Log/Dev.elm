@@ -1,4 +1,4 @@
-module Log exposing (debug, info, log, warn, withConsole)
+module Log.Dev exposing (debug, info, log, warn, withConsole)
 
 import Debug
 
@@ -19,7 +19,8 @@ debug label v =
 
 
 
--- value-in / value-out logger for pipelines
+-- Log a message without dumping huge values (like the model).
+-- Works in pipelines:  foo |> withConsole "clicked"
 
 
 withConsole : String -> a -> a
@@ -32,7 +33,7 @@ withConsole message v =
 
 
 
--- Back-compat alias
+-- Back-compat
 
 
 log : String -> a -> a

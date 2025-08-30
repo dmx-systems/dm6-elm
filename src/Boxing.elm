@@ -1,7 +1,9 @@
 module Boxing exposing (boxContainer, unboxContainer)
 
+import AppModel exposing (..)
 import Dict
 import Model exposing (..)
+import ModelAPI exposing (..)
 import Utils exposing (..)
 
 
@@ -89,6 +91,7 @@ boxItems containerItems targetItems model =
                                 Just map ->
                                     boxItems map.items items model
 
+                                -- recursion
                                 Nothing ->
                                     items
 
@@ -110,25 +113,26 @@ unboxItems containerItems targetItems model =
         |> List.filter isVisible
         |> List.foldr
             (\containerItem targetItemsAcc ->
-                if isMapTopic containerItem then
-                    -- TODO: use pattern matching instead?
-                    let
-                        ( items, abort ) =
-                            unboxTopic containerItem targetItemsAcc model
-                    in
-                    if not abort then
-                        case getMapIfExists containerItem.id model.maps of
-                            Just map ->
-                                unboxItems map.items items model
+                case containerItem.props of
+                    MapTopic _ ->
+                        let
+                            ( items, abort ) =
+                                unboxTopic containerItem targetItemsAcc model
+                        in
+                        if abort then
+                            items
 
-                            Nothing ->
-                                items
+                        else
+                            case getMapIfExists containerItem.id model.maps of
+                                Just map ->
+                                    unboxItems map.items items model
 
-                    else
-                        items
+                                -- recursion
+                                Nothing ->
+                                    items
 
-                else
-                    unboxAssoc containerItem targetItemsAcc
+                    MapAssoc _ ->
+                        unboxAssoc containerItem targetItemsAcc
             )
             targetItems
 
@@ -224,4 +228,9 @@ targetAssocItem assocId targetItems =
             { item | hidden = False }
 
         Nothing ->
-            MapItem assocId False False (MapAssoc AssocProps) -1
+            MapItem assocId -1 False False (MapAssoc AssocProps)
+
+
+
+-- hidden/pinned=False
+-- FIXME: set item's parentAssocId?

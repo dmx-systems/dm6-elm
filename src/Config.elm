@@ -1,6 +1,6 @@
 module Config exposing (..)
 
-import Model exposing (..)
+import Model exposing (Point, Size)
 
 
 
@@ -12,15 +12,15 @@ homeMapName =
 
 
 version =
-    "0.2.0-snapshot"
+    "0.2-snapshot"
 
 
 date =
-    "Aug 25, 2025"
+    "Aug 28, 2025"
 
 
 newTopicPos =
-    Point 178 180
+    Point 186 180
 
 
 mainFont =
@@ -68,7 +68,7 @@ topicLabelWeight =
 
 
 
--- or "normal"
+-- "normal"
 
 
 topicDetailSize =
@@ -106,7 +106,7 @@ topicRadius =
     7
 
 
-assocWith =
+assocWidth =
     1.5
 
 
@@ -115,7 +115,7 @@ assocRadius =
 
 
 
--- should not bigger than half topicSize height
+-- should not be bigger than half topicSize height
 
 
 assocColor =
