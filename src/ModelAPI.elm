@@ -106,6 +106,14 @@ activeMap model =
     Nothing -> logError "activeMap" "mapPath is empty!" 0
 
 
+{-| Returns -1 if mapPath is empty -}
+getMapId : MapPath -> MapId
+getMapId mapPath =
+  case mapPath of
+    mapId :: _ -> mapId
+    _ -> -1
+
+
 getMap : MapId -> Maps -> Maybe Map
 getMap mapId maps =
   case getMapIfExists mapId maps of

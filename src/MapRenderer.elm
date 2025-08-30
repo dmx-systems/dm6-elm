@@ -46,12 +46,11 @@ type alias TopicRendering = (List (Attribute Msg), List (Html Msg))
 -- VIEW
 
 
--- For a fullscreen map parentMapId is -1
--- parentMapId is NOT map.parentMapId! FIXME: ambiguous semantics?
-viewMap : MapId -> MapId -> Model -> Html Msg
-viewMap mapId parentMapId model =
+-- For a fullscreen map mapPath is empty
+viewMap : MapId -> MapPath -> Model -> Html Msg
+viewMap mapId mapPath model =
   let
-    ((topics, assocs), mapRect, (svgSize, mapStyle)) = mapInfo mapId parentMapId model
+    ((topics, assocs), mapRect, (svgSize, mapStyle)) = mapInfo mapId mapPath model
   in
   div
     mapStyle
@@ -62,7 +61,7 @@ viewMap mapId parentMapId model =
         )
     , svg
         ( [ width svgSize.w, height svgSize.h ]
-          ++ topicAttr mapId parentMapId model
+          ++ topicAttr mapId mapPath model
           ++ svgStyle
         )
         [ g
@@ -81,11 +80,14 @@ gAttr mapId mapRect model =
     ]
 
 
-mapInfo : MapId -> MapId -> Model -> MapInfo
-mapInfo mapId parentMapId model =
+mapInfo : MapId -> MapPath -> Model -> MapInfo
+mapInfo mapId mapPath model =
+  let
+    parentMapId = getMapId mapPath
+  in
   case getMap mapId model.maps of
     Just map ->
-      ( mapItems map model
+      ( mapItems map mapPath model
       , map.rect
       , if isFullscreen mapId model then
           ( { w = "100%", h = "100%" }, [] )
@@ -100,14 +102,17 @@ mapInfo mapId parentMapId model =
       ( ([], []), Rectangle 0 0 0 0, ( {w = "0", h = "0"}, [] ))
 
 
-mapItems : Map -> Model -> (List (Html Msg), List (Svg Msg))
-mapItems map model =
+mapItems : Map -> MapPath -> Model -> (List (Html Msg), List (Svg Msg))
+mapItems map mapPath model =
+  let
+    newPath = map.id :: mapPath
+  in
   map.items |> Dict.values |> List.filter isVisible |> List.foldr
     (\{id, props} (t, a) ->
       case model.items |> Dict.get id of
         Just {info} ->
           case (info, props) of
-            (Topic topic, MapTopic tProps) -> (viewTopic topic tProps map.id model :: t, a)
+            (Topic topic, MapTopic tProps) -> (viewTopic topic tProps newPath model :: t, a)
             (Assoc assoc, MapAssoc _) -> (t, viewAssoc assoc map.id model :: a)
             _ -> logError "mapItems" ("problem with item " ++ fromInt id) (t, a)
         _ -> logError "mapItems" ("problem with item " ++ fromInt id) (t, a)
@@ -134,7 +139,7 @@ limboTopic mapId model =
                   Just {info} ->
                     case (info, mapItem.props) of
                       (Topic topic, MapTopic props) ->
-                        [ viewTopic topic props activeMapId model ]
+                        [ viewTopic topic props [] model ] -- FIXME: mapPath=[] ?
                       _ -> []
                   _ -> []
               else
@@ -151,7 +156,7 @@ limboTopic mapId model =
           case model.items |> Dict.get topicId of
             Just {info} ->
               case info of
-                Topic topic -> [ viewTopic topic props activeMapId model ]
+                Topic topic -> [ viewTopic topic props [] model ] -- FIXME: mapPath=[] ?
                 _ -> []
             _ -> []
       _ -> []
@@ -159,10 +164,9 @@ limboTopic mapId model =
     []
 
 
-viewTopic : TopicInfo -> TopicProps -> MapId -> Model -> Html Msg
-viewTopic topic props mapId model =
+viewTopic : TopicInfo -> TopicProps -> MapPath -> Model -> Html Msg
+viewTopic topic props mapPath model =
   let
-    (style, children) = topicFunc topic props mapId model
     topicFunc =
       case effectiveDisplayMode topic.id props.displayMode model of
         Monad LabelOnly -> labelTopic
@@ -170,10 +174,11 @@ viewTopic topic props mapId model =
         Container BlackBox -> blackBoxTopic
         Container WhiteBox -> whiteBoxTopic
         Container Unboxed -> unboxedTopic
+    (style, children) = topicFunc topic props mapPath model
   in
   div
-    ( topicAttr topic.id mapId model
-      ++ topicStyle topic mapId model
+    ( topicAttr topic.id mapPath model
+      ++ topicStyle topic.id model
       ++ style
     )
     children
@@ -192,8 +197,11 @@ effectiveDisplayMode topicId displayMode model =
     displayMode
 
 
-labelTopic : TopicInfo -> TopicProps -> MapId -> Model -> TopicRendering
-labelTopic topic props mapId model =
+labelTopic : TopicInfo -> TopicProps -> MapPath -> Model -> TopicRendering
+labelTopic topic props mapPath model =
+  let
+    mapId = getMapId mapPath
+  in
   ( topicPosStyle props
       ++ topicFlexboxStyle topic props mapId model
       ++ selectionStyle topic.id mapId model
@@ -230,9 +238,10 @@ labelTopicHtml topic props mapId model =
   ]
 
 
-detailTopic : TopicInfo -> TopicProps -> MapId -> Model -> TopicRendering
-detailTopic topic props mapId model =
+detailTopic : TopicInfo -> TopicProps -> MapPath -> Model -> TopicRendering
+detailTopic topic props mapPath model =
   let
+    mapId = getMapId mapPath
     isEdit = model.editState == ItemEdit topic.id mapId
     textElem =
       if isEdit then
@@ -314,8 +323,11 @@ detailTextEditStyle topicId mapId model =
   ]
 
 
-blackBoxTopic : TopicInfo -> TopicProps -> MapId -> Model -> TopicRendering
-blackBoxTopic topic props mapId model =
+blackBoxTopic : TopicInfo -> TopicProps -> MapPath -> Model -> TopicRendering
+blackBoxTopic topic props mapPath model =
+  let
+    mapId = getMapId mapPath
+  in
   ( topicPosStyle props
   , [ div
       (topicFlexboxStyle topic props mapId model ++ blackBoxStyle)
@@ -327,22 +339,22 @@ blackBoxTopic topic props mapId model =
   )
 
 
-whiteBoxTopic : TopicInfo -> TopicProps -> MapId -> Model -> TopicRendering
-whiteBoxTopic topic props mapId model =
+whiteBoxTopic : TopicInfo -> TopicProps -> MapPath -> Model -> TopicRendering
+whiteBoxTopic topic props mapPath model =
   let
-    (style, children) = labelTopic topic props mapId model
+    (style, children) = labelTopic topic props mapPath model
   in
   ( style
   , children
     ++ mapItemCount topic.id props model
-    ++ [ viewMap topic.id mapId model ]
+    ++ [ viewMap topic.id mapPath model ]
   )
 
 
-unboxedTopic : TopicInfo -> TopicProps -> MapId -> Model -> TopicRendering
-unboxedTopic topic props mapId model =
+unboxedTopic : TopicInfo -> TopicProps -> MapPath -> Model -> TopicRendering
+unboxedTopic topic props mapPath model =
   let
-    (style, children) = labelTopic topic props mapId model
+    (style, children) = labelTopic topic props mapPath model
   in
   ( style
   , children
@@ -367,14 +379,14 @@ mapItemCount topicId props model =
   ]
 
 
-topicAttr : Id -> MapId -> Model -> List (Attribute Msg)
-topicAttr topicId mapId model =
+topicAttr : Id -> MapPath -> Model -> List (Attribute Msg)
+topicAttr topicId mapPath model =
   if isFullscreen topicId model then
-    [] -- the fullscreen map requires dedicated event handling, TODO
+    [] -- TODO: the fullscreen map would require dedicated event handling, e.g. panning?
   else
     [ attribute "class" "dmx-topic"
     , attribute "data-id" (fromInt topicId)
-    , attribute "data-map-id" (fromInt mapId)
+    , attribute "data-path" (mapPath |> List.map fromInt |> String.join ",")
     ]
 
 
@@ -446,7 +458,7 @@ absMapPos mapId posAcc model =
       else
         getTopicPos map.id map.parentMapId model.maps |> Maybe.andThen
           (\mapPos ->
-            absMapPos
+            absMapPos -- recursion
               map.parentMapId
               (Point
                 (posAcc_.x + mapPos.x - topicW2)
@@ -461,8 +473,8 @@ absMapPos mapId posAcc model =
 -- STYLE
 
 
-topicStyle : TopicInfo -> MapId -> Model -> List (Attribute Msg)
-topicStyle ({id}) mapId model =
+topicStyle : Id -> Model -> List (Attribute Msg)
+topicStyle id model =
   let
     isLimbo = model.search.menu == Open (Just id)
     isDragging = case model.mouse.dragState of

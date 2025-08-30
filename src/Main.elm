@@ -78,7 +78,7 @@ view model =
         ++ appStyle
       )
       ( [ viewToolbar model
-        , viewMap (activeMap model) -1 model -- parentMapId = -1
+        , viewMap (activeMap model) [] model -- mapPath = []
         ]
         ++ viewResultMenu model
         ++ viewIconMenu model

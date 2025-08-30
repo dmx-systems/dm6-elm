@@ -70,9 +70,9 @@ storeMapRect mapId newRect oldRect parentMapId model =
         (\map -> { map | rect = newRect })
       }
       |> setTopicPosByDelta mapId parentMapId
-        ( Point
-          ( newRect.x1 - oldRect.x1 )
-          ( newRect.y1 - oldRect.y1 )
+        (Point
+          (newRect.x1 - oldRect.x1)
+          (newRect.y1 - oldRect.y1)
         )
     )
 

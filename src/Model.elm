@@ -36,12 +36,15 @@ type alias AssocInfo =
   }
 
 
+type alias MapPath = List MapId
+
+
 type alias Maps = Dict Id Map
 
 
 type alias Map =
   { id : MapId
-  , parentMapId : MapId -- FIXME: ambiguous semantics? view context vs model?
+  , parentMapId : MapId -- FIXME: ambiguous semantics, drop it!
   , rect : Rectangle
   , items : MapItems
   }

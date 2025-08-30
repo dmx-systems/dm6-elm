@@ -11,9 +11,9 @@ import Dict
 
 
 type alias Model =
-  { items : Items -- the knowledge base
-  , maps : Maps -- the views
-  , mapPath : List MapId
+  { items : Items -- TODO: store container content *independent* from maps? Do we want visualize
+  , maps : Maps   -- the same container in individual maps? What would reveal-topic mean then?
+  , mapPath : MapPath
   , nextId : Id
   ----- transient -----
   , selection : Selection
