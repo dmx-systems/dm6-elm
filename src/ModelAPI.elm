@@ -154,29 +154,26 @@ hasMap mapId maps =
     maps |> Dict.member mapId
 
 
-
--- Ensure this stays exported, the test imports it.
+createMap : MapId -> MapId -> Model -> Model
+createMap mapId parentMapId model =
+    { model
+        | maps =
+            model.maps
+                |> Dict.insert
+                    mapId
+                    (Map mapId parentMapId (Rectangle 0 0 0 0) Dict.empty)
+    }
 
 
 updateMapRect : MapId -> (Rectangle -> Rectangle) -> Model -> Model
-updateMapRect mapId rectFn model =
-    let
-        normalize : Rectangle -> Rectangle
-        normalize r =
-            { r
-                | x2 = Basics.max r.x1 r.x2
-                , y2 = Basics.max r.y1 r.y2
-            }
-
-        newRect : Rectangle -> Rectangle
-        newRect old =
-            rectFn old |> normalize
-    in
+updateMapRect mapId rectFunc model =
     { model
         | maps =
             updateMaps
                 mapId
-                (\m -> { m | rect = newRect m.rect })
+                (\map ->
+                    { map | rect = rectFunc map.rect }
+                )
                 model.maps
     }
 
@@ -191,6 +188,8 @@ getTopicPos topicId mapId maps =
             fail "getTopicPos" { topicId = topicId, mapId = mapId } Nothing
 
 
+{-| Logs an error if topic is not in map
+-}
 setTopicPos : Id -> MapId -> Point -> Model -> Model
 setTopicPos topicId mapId pos model =
     model
@@ -199,6 +198,8 @@ setTopicPos topicId mapId pos model =
             (\props -> { props | pos = pos })
 
 
+{-| Logs an error if topic is not in map
+-}
 setTopicPosByDelta : Id -> MapId -> Delta -> Model -> Model
 setTopicPosByDelta topicId mapId delta model =
     model
@@ -224,6 +225,8 @@ getTopicSize topicId mapId maps =
             fail "getTopicSize" { topicId = topicId, mapId = mapId } Nothing
 
 
+{-| Logs an error if topic is not in map
+-}
 setTopicSize : Id -> MapId -> Size -> Model -> Model
 setTopicSize topicId mapId size model =
     model
@@ -242,6 +245,8 @@ getDisplayMode topicId mapId maps =
             fail "getDisplayMode" { topicId = topicId, mapId = mapId } Nothing
 
 
+{-| Logs an error if topic is not in map
+-}
 setDisplayMode : Id -> MapId -> DisplayMode -> Model -> Model
 setDisplayMode topicId mapId displayMode model =
     model
@@ -265,6 +270,8 @@ getTopicProps topicId mapId maps =
             fail "getTopicProps" { topicId = topicId, mapId = mapId } Nothing
 
 
+{-| Logs an error if topic is not in map
+-}
 updateTopicProps : Id -> MapId -> (TopicProps -> TopicProps) -> Model -> Model
 updateTopicProps topicId mapId propsFunc model =
     { model
@@ -311,54 +318,23 @@ defaultProps topicId size model =
         )
 
 
-{-| Tolerant lookup:
-
-1.  try the requested map
-2.  try its parent
-3.  try any map (first match)
-
+{-| Logs an error if map does not exist or item is not in map
 -}
-getMapItem : Id -> MapId -> Maps -> Maybe MapItem
-getMapItem itemId mapId maps =
-    let
-        direct : Maybe MapItem
-        direct =
-            Dict.get mapId maps
-                |> Maybe.andThen (\m -> Dict.get itemId m.items)
+getMapItemById : Id -> MapId -> Maps -> Maybe MapItem
+getMapItemById itemId mapId maps =
+    getMap mapId maps |> Maybe.andThen (getMapItem itemId)
 
-        fromParent : Maybe MapItem
-        fromParent =
-            Dict.get mapId maps
-                |> Maybe.andThen (\m -> Dict.get m.parentMapId maps)
-                |> Maybe.andThen (\pm -> Dict.get itemId pm.items)
 
-        fromAnywhere : Maybe MapItem
-        fromAnywhere =
-            maps
-                |> Dict.values
-                |> List.filterMap (\m -> Dict.get itemId m.items)
-                |> List.head
-    in
-    case direct of
-        Just mi ->
-            Just mi
+{-| Logs an error if item is not in map
+-}
+getMapItem : Id -> Map -> Maybe MapItem
+getMapItem itemId map =
+    case map.items |> Dict.get itemId of
+        Just mapItem ->
+            Just mapItem
 
         Nothing ->
-            case fromParent of
-                Just mi ->
-                    Just mi
-
-                Nothing ->
-                    fromAnywhere
-
-
-
--- Keep the old name if callers expect it
-
-
-getMapItemById : Id -> MapId -> Maps -> Maybe MapItem
-getMapItemById =
-    getMapItem
+            itemNotInMap "getMapItem" itemId map.id Nothing
 
 
 {-| Logs an error if map does not exist
@@ -534,10 +510,6 @@ updateMaps mapId mapFunc maps =
                     Nothing ->
                         illegalMapId "updateMaps" mapId Nothing
             )
-
-
-
--- TODO: move to "Items" section?
 
 
 deleteItem : Id -> Model -> Model

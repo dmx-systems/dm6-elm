@@ -1,6 +1,24 @@
 module Feature.OpenDoor.Decide exposing (decideOpenDoorMsg)
 
-import ModelAPI exposing (getSingleSelection)
+import AppModel exposing (..)
+import Dict
+import Model exposing (Id, MapId)
+import ModelAPI exposing (activeMap, getSingleSelection)
+
+
+
+-- Find the inner-map (container id) that contains `topicId`
+-- and whose parent is `parentMapId` (the map you are viewing).
+
+
+findContainerForChild : MapId -> Id -> Model -> Maybe MapId
+findContainerForChild parentMapId topicId model =
+    model.maps
+        |> Dict.values
+        |> List.filter (\m -> m.parentMapId == parentMapId)
+        |> List.filter (\m -> Dict.member topicId m.items)
+        |> List.head
+        |> Maybe.map .id
 
 
 decideOpenDoorMsg : Model -> Maybe Msg

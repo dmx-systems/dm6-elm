@@ -4,8 +4,9 @@ module Toolbar exposing (viewToolbar)
 
 import AppModel exposing (Model, Msg(..))
 import Config exposing (date, footerFontSize, homeMapName, mainFont, toolbarFontSize, version)
+import Feature.OpenDoor.Decide exposing (decideOpenDoorMsg)
 import Html exposing (Attribute, Html, a, button, div, input, label, span, text)
-import Html.Attributes exposing (checked, disabled, href, name, style, type_)
+import Html.Attributes exposing (checked, disabled, href, id, name, style, type_)
 import Html.Events exposing (onClick)
 import IconMenu exposing (IconMenuMsg(..))
 import IconMenuAPI exposing (viewIcon)
@@ -287,3 +288,38 @@ footerStyle =
 linkStyle : List (Attribute Msg)
 linkStyle =
     [ style "color" "lightgray" ]
+
+
+viewToolbarAction : String -> (Model -> Maybe Msg) -> Model -> Html Msg
+viewToolbarAction label decide model =
+    let
+        ( disabled_, msg ) =
+            case decide model of
+                Just m ->
+                    ( False, m )
+
+                Nothing ->
+                    ( True, NoOp )
+    in
+    button
+        ([ stopPropagationOnMousedown NoOp
+         , onClick msg
+         , disabled disabled_
+         , id
+            ("btn-"
+                ++ String.map
+                    (\c ->
+                        if c == ' ' then
+                            '-'
+
+                        else
+                            c
+                    )
+                    label
+            )
+
+         -- "btn-Open-Door"
+         ]
+            ++ buttonStyle
+        )
+        [ text label ]

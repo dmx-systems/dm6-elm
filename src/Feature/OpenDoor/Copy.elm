@@ -5,6 +5,7 @@ module Feature.OpenDoor.Copy exposing
 
 import AppModel exposing (Model)
 import Dict
+import Model exposing (Id, MapId)
 
 
 {-| Copy a topic from `sourceMapId` to `targetMapId`.
