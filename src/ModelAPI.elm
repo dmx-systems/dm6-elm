@@ -118,6 +118,7 @@ fromPath mapPath =
   mapPath |> List.map fromInt |> String.join ","
 
 
+{-| Logs an error if map does not exist -}
 getMap : MapId -> Maps -> Maybe Map
 getMap mapId maps =
   case getMapIfExists mapId maps of
@@ -154,6 +155,7 @@ updateMapRect mapId rectFunc model =
   }
 
 
+{-| Logs an error if map does not exist or item is not in map or is not a topic -}
 getTopicPos : Id -> MapId -> Maps -> Maybe Point
 getTopicPos topicId mapId maps =
   case getTopicProps topicId mapId maps of
@@ -482,14 +484,14 @@ idDecoder str =
     Nothing -> D.fail <| "\"" ++ str ++ "\" is a malformed ID"
 
 
-mapPathDecoder : String -> D.Decoder MapPath
-mapPathDecoder str =
+pathDecoder : String -> D.Decoder MapPath
+pathDecoder str =
   D.succeed
     (str |> String.split "," |> List.map
       (\mapIdStr ->
         case mapIdStr |> String.toInt of
           Just mapId -> mapId
-          Nothing -> logError "mapPathDecoder" ("\"" ++ mapIdStr ++ "\" is a malformed ID") -1
+          Nothing -> logError "pathDecoder" ("\"" ++ mapIdStr ++ "\" is a malformed ID") -1
       )
     )
 

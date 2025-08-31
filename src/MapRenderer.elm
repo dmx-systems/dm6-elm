@@ -400,25 +400,6 @@ viewAssoc assoc mapId model =
     Nothing -> text "" -- TODO
 
 
-viewLimboAssoc : MapId -> Model -> List (Svg Msg)
-viewLimboAssoc mapId model =
-  case model.mouse.dragState of
-    Drag DrawAssoc topicId (mapId_ :: _) _ pos _ ->
-      if mapId_ == mapId then
-        let
-          points = Maybe.map2
-            (\pos1 pos2 -> (pos1, pos2))
-            (getTopicPos topicId mapId model.maps)
-            (relPos pos mapId model)
-        in
-        case points of
-          Just (pos1, pos2) -> [ lineFunc Nothing pos1 pos2 ]
-          Nothing -> []
-      else
-        []
-    _ -> []
-
-
 assocGeometry : AssocInfo -> MapId -> Model -> Maybe (Point, Point)
 assocGeometry assoc mapId model =
   let
@@ -430,43 +411,63 @@ assocGeometry assoc mapId model =
     Nothing -> fail "assocGeometry" { assoc = assoc, mapId = mapId } Nothing
 
 
+viewLimboAssoc : MapId -> Model -> List (Svg Msg)
+viewLimboAssoc mapId model =
+  case model.mouse.dragState of
+    Drag DrawAssoc _ mapPath origPos pos _ ->
+      case getMapId mapPath == mapId of
+        True -> [ lineFunc Nothing origPos (relPos pos mapPath model) ]
+        False -> []
+    _ -> []
+
+
 {-| Transforms an absolute screen position to a map-relative position.
 -}
-relPos : Point -> MapId -> Model -> Maybe Point
-relPos pos mapId model =
-  absMapPos mapId (Point 0 0) model |> Maybe.andThen
-    (\posAbs -> Just <| Point
-      (pos.x - posAbs.x)
-      (pos.y - posAbs.y)
-    )
+relPos : Point -> MapPath -> Model -> Point
+relPos pos mapPath model =
+  let
+    posAbs = absMapPos mapPath (Point 0 0) model
+  in
+  Point
+    (pos.x - posAbs.x)
+    (pos.y - posAbs.y)
 
 
 {-| Recursively calculates the absolute position of a map.
-    "posAcc" is the position accumulated so far.
+"posAcc" is the position accumulated so far.
 -}
-absMapPos : MapId -> Point -> Model -> Maybe Point
-absMapPos mapId posAcc model =
-  getMap mapId model.maps |> Maybe.andThen
-    (\map ->
-      let
-        posAcc_ = Point
-          (posAcc.x - map.rect.x1)
-          (posAcc.y - map.rect.y1)
-      in
-      if isFullscreen mapId model then
-        Just posAcc_
-      else
-        getTopicPos map.id map.parentMapId model.maps |> Maybe.andThen
-          (\mapPos ->
-            absMapPos -- recursion
-              map.parentMapId
-              (Point
-                (posAcc_.x + mapPos.x - topicW2)
-                (posAcc_.y + mapPos.y + topicH2)
-              )
-              model
-          )
-    )
+absMapPos : MapPath -> Point -> Model -> Point
+absMapPos mapPath posAcc model =
+  case mapPath of
+    [ mapId ] -> accMapRect posAcc mapId model
+    mapId :: parentMapId :: mapIds -> accMapPos posAcc mapId parentMapId mapIds model
+    [] -> logError "absMapPos" "mapPath is empty!" (Point 0 0)
+
+
+accMapPos : Point -> MapId -> MapId -> MapPath -> Model -> Point
+accMapPos posAcc mapId parentMapId mapIds model =
+  let
+    {x, y} = accMapRect posAcc mapId model
+  in
+  case getTopicPos mapId parentMapId model.maps of
+    Just mapPos ->
+      absMapPos -- recursion
+        (parentMapId :: mapIds)
+        (Point
+          (x + mapPos.x - topicW2)
+          (y + mapPos.y + topicH2)
+        )
+        model
+    Nothing -> Point 0 0 -- error is already logged
+
+
+accMapRect : Point -> MapId -> Model -> Point
+accMapRect posAcc mapId model =
+  case getMap mapId model.maps of
+    Just map -> Point
+      (posAcc.x - map.rect.x1)
+      (posAcc.y - map.rect.y1)
+    Nothing -> Point 0 0 -- error is already logged
 
 
 
