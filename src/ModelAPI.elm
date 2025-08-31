@@ -6,6 +6,7 @@ import Model exposing (..)
 import Utils exposing (..)
 
 import Dict
+import Json.Decode as D
 import String exposing (fromInt)
 
 
@@ -85,9 +86,7 @@ nextId model =
   { model | nextId = model.nextId + 1 }
 
 
-
 -- Maps
-
 
 isHome : Model -> Bool
 isHome model =
@@ -112,6 +111,11 @@ getMapId mapPath =
   case mapPath of
     mapId :: _ -> mapId
     _ -> -1
+
+
+fromPath : MapPath -> String
+fromPath mapPath =
+  mapPath |> List.map fromInt |> String.join ","
 
 
 getMap : MapId -> Maps -> Maybe Map
@@ -467,6 +471,27 @@ getSingleSelection model =
   case model.selection of
     [ selItem ] -> Just selItem
     _ -> Nothing
+
+
+-- Decoder
+
+idDecoder : String -> D.Decoder Id
+idDecoder str =
+  case String.toInt str of
+    Just int -> D.succeed int
+    Nothing -> D.fail <| "\"" ++ str ++ "\" is a malformed ID"
+
+
+mapPathDecoder : String -> D.Decoder MapPath
+mapPathDecoder str =
+  D.succeed
+    (str |> String.split "," |> List.map
+      (\mapIdStr ->
+        case mapIdStr |> String.toInt of
+          Just mapId -> mapId
+          Nothing -> logError "mapPathDecoder" ("\"" ++ mapIdStr ++ "\" is a malformed ID") -1
+      )
+    )
 
 
 

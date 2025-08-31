@@ -386,7 +386,7 @@ topicAttr topicId mapPath model =
   else
     [ attribute "class" "dmx-topic"
     , attribute "data-id" (fromInt topicId)
-    , attribute "data-path" (mapPath |> List.map fromInt |> String.join ",")
+    , attribute "data-path" (fromPath mapPath)
     ]
 
 
@@ -403,7 +403,7 @@ viewAssoc assoc mapId model =
 viewLimboAssoc : MapId -> Model -> List (Svg Msg)
 viewLimboAssoc mapId model =
   case model.mouse.dragState of
-    Drag DrawAssoc topicId mapId_ _ pos _ ->
+    Drag DrawAssoc topicId (mapId_ :: _) _ pos _ ->
       if mapId_ == mapId then
         let
           points = Maybe.map2
@@ -623,8 +623,10 @@ topicBorderStyle id mapId model =
     targeted = case model.mouse.dragState of
       -- can't move a topic to a map where it is already
       -- can't create assoc when both topics are in different map
-      Drag DragTopic _ mapId_ _ _ (Just target) -> target == (id, mapId) && mapId_ /= id
-      Drag DrawAssoc _ mapId_ _ _ (Just target) -> target == (id, mapId) && mapId_ == mapId
+      Drag DragTopic _ (mapId_ :: _) _ _ (Just target) ->
+        target == (id, mapId) && mapId_ /= id
+      Drag DrawAssoc _ (mapId_ :: _) _ _ (Just target) ->
+        target == (id, mapId) && mapId_ == mapId
       _ -> False
   in
   [ style "border-width" <| fromFloat topicBorderWidth ++ "px"
