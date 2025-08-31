@@ -438,31 +438,35 @@ createAssocAndAddToMap itemType role1 player1 role2 player2 mapId model =
 -}
 addItemToMap : Id -> MapProps -> MapId -> Model -> Model
 addItemToMap itemId props mapId model =
-    let
-        ( newModel, parentAssocId ) =
-            createAssoc
-                "dmx.composition"
-                "dmx.child"
-                itemId
-                "dmx.parent"
-                mapId
-                model
+    if itemId == mapId then
+        -- Guard against self-containment: a map must not contain itself.
+        logError "addItemToMap" "refusing to add a map to itself" model
 
-        mapItem =
-            MapItem itemId parentAssocId False False props
+    else
+        let
+            ( newModel, parentAssocId ) =
+                createAssoc
+                    "dmx.composition"
+                    "dmx.child"
+                    itemId
+                    "dmx.parent"
+                    mapId
+                    model
 
-        -- hidden=False, pinned=False
-        _ =
-            info "addItemToMap"
-                { itemId = itemId, parentAssocId = parentAssocId, props = props, mapId = mapId }
-    in
-    { newModel
-        | maps =
-            updateMaps
-                mapId
-                (\map -> { map | items = map.items |> Dict.insert itemId mapItem })
-                newModel.maps
-    }
+            mapItem =
+                MapItem itemId parentAssocId False False props
+
+            _ =
+                info "addItemToMap"
+                    { itemId = itemId, parentAssocId = parentAssocId, props = props, mapId = mapId }
+        in
+        { newModel
+            | maps =
+                updateMaps
+                    mapId
+                    (\map -> { map | items = map.items |> Dict.insert itemId mapItem })
+                    newModel.maps
+        }
 
 
 showItem : Id -> MapId -> Model -> Model
