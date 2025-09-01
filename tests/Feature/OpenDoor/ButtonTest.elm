@@ -40,7 +40,7 @@ setupModel =
         m3 =
             { m2
                 | maps =
-                    Dict.insert containerId (Map containerId 0 (Rectangle 0 0 0 0) Dict.empty) m2.maps
+                    Dict.insert containerId (Map containerId (Rectangle 0 0 0 0) Dict.empty) m2.maps
             }
 
         -- create a child topic inside the container

@@ -63,7 +63,7 @@ coreTopicToCore t =
 
         home : Map
         home =
-            Map 0 -1 (Rectangle 0 0 0 0) (Dict.fromList [ ( t.id, mapItem ) ])
+            Map 0 (Rectangle 0 0 0 0) (Dict.fromList [ ( t.id, mapItem ) ])
     in
     { items = Dict.fromList [ ( t.id, topicItem ) ]
     , maps = Dict.fromList [ ( 0, home ) ]

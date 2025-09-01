@@ -36,9 +36,9 @@ tests =
                             0
                             m1
 
-                    -- 2) create its inner map (parent = 0)
+                    -- 2) create its inner map
                     m3 =
-                        createMap cId 0 m2
+                        createMap cId m2
 
                     -- 3) (INTENTIONALLY BAD) add the container topic to its own inner map
                     badModel =

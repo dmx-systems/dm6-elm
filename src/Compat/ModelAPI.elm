@@ -10,7 +10,7 @@ module Compat.ModelAPI exposing
 
 import AppModel exposing (Model)
 import Config exposing (..)
-import Dict exposing (Dict)
+import Dict
 import Json.Encode as E
 import Main as AppMain
 import Model exposing (..)
@@ -78,19 +78,11 @@ ensureMap mapId m =
         m
 
     else
-        let
-            parent =
-                if mapId == 0 then
-                    -1
-
-                else
-                    0
-        in
         { m
             | maps =
                 Dict.insert
                     mapId
-                    (Model.Map mapId parent (Model.Rectangle 0 0 0 0) Dict.empty)
+                    (Model.Map mapId (Model.Rectangle 0 0 0 0) Dict.empty)
                     m.maps
         }
 

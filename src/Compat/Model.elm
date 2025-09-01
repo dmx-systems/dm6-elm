@@ -17,16 +17,16 @@ import ModelAPI
 
 
 -- MAP ------------------------------------------------------------------------
+-- Upstream (Sep 2025): Map id rect items
 
 
-{-| Upstream (Aug 2025): Map id parentMapId rect items
--}
-makeMap id parentMapId rect items =
-    Map id parentMapId rect items
+makeMap : MapId -> Rectangle -> MapItems -> Map
+makeMap id rect items =
+    Map id rect items
 
 
 makeMapR r =
-    Map r.id r.parentMapId r.rect r.items
+    Map r.id r.rect r.items
 
 
 

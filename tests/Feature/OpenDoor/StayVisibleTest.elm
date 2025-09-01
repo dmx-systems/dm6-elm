@@ -20,7 +20,7 @@ setup =
             M.addItemToMapDefault cId 0 defaultModel
 
         m3 =
-            { m2 | maps = Dict.insert cId (Map cId 0 (Rectangle 0 0 0 0) Dict.empty) m2.maps }
+            { m2 | maps = Dict.insert cId (Map cId (Rectangle 0 0 0 0) Dict.empty) m2.maps }
 
         ( m4, tId ) =
             createTopic "A" Nothing m3

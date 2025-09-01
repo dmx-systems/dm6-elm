@@ -83,8 +83,7 @@ legacyDictJson =
               "parentAssocId": 0
             }
           },
-          "rect": { "x1": 0, "y1": 0, "x2": 0, "y2": 0 },
-          "parentMapId": -1
+          "rect": { "x1": 0, "y1": 0, "x2": 0, "y2": 0 }
         }
       },
       "mapPath": [0],
@@ -120,8 +119,7 @@ listJson =
               "parentAssocId": 0
             }
           ],
-          "rect": { "x1": 0, "y1": 0, "x2": 0, "y2": 0 },
-          "parentMapId": -1
+          "rect": { "x1": 0, "y1": 0, "x2": 0, "y2": 0 }
         }
       ],
       "mapPath": [0],

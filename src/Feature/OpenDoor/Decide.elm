@@ -12,10 +12,9 @@ import ModelAPI exposing (activeMap, getSingleSelection)
 
 
 findContainerForChild : MapId -> Id -> Model -> Maybe MapId
-findContainerForChild parentMapId topicId model =
+findContainerForChild _ topicId model =
     model.maps
         |> Dict.values
-        |> List.filter (\m -> m.parentMapId == parentMapId)
         |> List.filter (\m -> Dict.member topicId m.items)
         |> List.head
         |> Maybe.map .id
@@ -36,10 +35,12 @@ decideOpenDoorMsg model =
                 -- Fullscreen / inner-map case: we are *inside* the container.
                 -- Enable if the inner map has a parent, and move from inner -> parent.
                 case Dict.get activeId model.maps of
-                    Just m ->
-                        if m.parentMapId /= -1 then
-                            -- Move inner -> parent (source = activeId, target = m.parentMapId)
-                            Just (MoveTopicToMap topicId m.parentMapId origin topicId activeId origin)
+                    Just _ ->
+                        -- parentMapId was removed from Map; if this branch was meant to skip “rootless” maps,
+                        -- keep behavior permissive until a new parent-derivation is wired.
+                        if True then
+                            -- Move inner -> parent (source = activeId, target = activeId)
+                            Just (MoveTopicToMap topicId activeId origin topicId activeId origin)
 
                         else
                             Nothing

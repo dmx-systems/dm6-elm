@@ -28,7 +28,7 @@ setupModel =
 
         -- inner map for container (parent = 0)
         m3 =
-            { m2 | maps = Dict.insert cId (Map cId 0 (Rectangle 0 0 0 0) Dict.empty) m2.maps }
+            { m2 | maps = Dict.insert cId (Map cId (Rectangle 0 0 0 0) Dict.empty) m2.maps }
 
         -- child topic
         ( m4, tId ) =

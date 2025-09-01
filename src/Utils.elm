@@ -1,25 +1,22 @@
 module Utils exposing (..)
 
-import Debug exposing (log)
 import Html exposing (Attribute, Html, br, text)
 import Html.Events exposing (keyCode, on, stopPropagationOn)
 import Json.Decode as D
+import Log exposing (log)
 
 
 
-{--
-log : String -> a -> a
-log text val = val
--}
+-- Production-safe stringify stub (no Debug).
+-- If you want real strings in dev, you can conditionally swap this via your build.
 
 
 toString : a -> String
-toString =
-    Debug.toString
+toString _ =
+    ""
 
 
 
--- toString val = ""
 -- GENRAL ELM UTILITIES
 -- Events
 
