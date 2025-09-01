@@ -47,7 +47,7 @@ mapItemsBelongToItems c =
 
 mapParentIdsExist : Core.CoreModel -> Bool
 mapParentIdsExist c =
-    -- With parentMapId removed, assert a stable invariant:
+    -- With the old parentMapId field removed, assert a stable invariant:
     -- each map's internal id matches its key in the dict.
     c.maps
         |> Dict.toList

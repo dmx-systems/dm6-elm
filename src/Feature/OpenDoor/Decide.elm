@@ -117,16 +117,16 @@ findParentOf childId model =
         |> Maybe.map .id
 
 
-{-| Find the container (its inner-map id equals the container topic id) under `parentMapId`
+{-| Find the container (its inner-map id equals the container topic id) under `parentId`
 that contains `topicId` in its inner map.
 -}
 findContainerForChild : MapId -> Id -> Model -> Maybe MapId
-findContainerForChild parentMapId topicId model =
+findContainerForChild parentId topicId model =
     model.maps
         |> Dict.values
         |> List.filter (\m -> Dict.member topicId m.items)
         -- inner map contains the topic
-        |> List.filter (\m -> isChildOf m.id parentMapId model)
+        |> List.filter (\m -> isChildOf m.id parentId model)
         -- and that inner map belongs to the parent view
         |> List.head
         |> Maybe.map .id

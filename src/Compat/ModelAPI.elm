@@ -68,8 +68,7 @@ isItemInMap id mapId model =
 
 {-| Ensure a map exists in `model.maps`.
 
-  - mapId 0: parentMapId = -1 (home)
-  - any other map: default parentMapId = 0
+root is id 0; other maps default to being children of 0 by containment
 
 -}
 ensureMap : MapId -> Model -> Model
