@@ -38,7 +38,8 @@ decideOpenDoorMsg model =
                 case Dict.get activeId model.maps of
                     Just m ->
                         if m.parentMapId /= -1 then
-                            Just (MoveTopicToParentMap activeId topicId)
+                            -- Move inner -> parent (source = activeId, target = m.parentMapId)
+                            Just (MoveTopicToMap topicId m.parentMapId origin topicId activeId origin)
 
                         else
                             Nothing
@@ -49,4 +50,17 @@ decideOpenDoorMsg model =
             else
                 -- WhiteBox case: selection is on the parent; find the container that owns this topic.
                 findContainerForChild activeId topicId model
-                    |> Maybe.map (\containerId -> MoveTopicToParentMap containerId topicId)
+                    |> Maybe.map
+                        (\containerId ->
+                            -- Move parent -> inner (source = activeId, target = containerId)
+                            MoveTopicToMap topicId containerId origin topicId activeId origin
+                        )
+
+
+
+-- Neutral point for non-drag moves
+
+
+origin : Model.Point
+origin =
+    { x = 0, y = 0 }

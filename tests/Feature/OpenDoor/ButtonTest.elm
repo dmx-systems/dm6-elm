@@ -66,7 +66,7 @@ setupModel =
 tests : Test
 tests =
     describe "Toolbar Cross button"
-        [ test "Clicking 'Cross' dispatches MoveTopicToParentMap with correct ids (and is enabled)" <|
+        [ test "Clicking 'Cross' dispatches MoveTopicToMap with correct ids (and is enabled)" <|
             \_ ->
                 let
                     ( model0, containerId, topicId ) =
@@ -85,11 +85,24 @@ tests =
                     [ -- 1) The button must be enabled (no 'disabled' attribute)
                       \btn -> Query.hasNot [ Sel.attribute (Attr.disabled True) ] btn
 
-                    -- 2) Clicking it must dispatch the expected message
+                    -- 2) Clicking it must dispatch the expected 6-arg message
                     , \btn ->
+                        let
+                            origin : Point
+                            origin =
+                                { x = 0, y = 0 }
+                        in
                         btn
                             |> Event.simulate Event.click
-                            |> Event.expect (MoveTopicToParentMap containerId topicId)
+                            |> Event.expect
+                                (MoveTopicToMap
+                                    topicId
+                                    containerId
+                                    origin
+                                    topicId
+                                    (activeMap model0)
+                                    origin
+                                )
                     ]
                     openDoorBtn
         ]
