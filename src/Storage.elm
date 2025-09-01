@@ -3,9 +3,9 @@ port module Storage exposing (modelDecoder, storeModel, storeModelWith)
 import AppModel exposing (..)
 import Dict exposing (Dict)
 import Json.Decode as D
+import Json.Decode.Pipeline exposing (hardcoded, required)
 import Json.Encode as E
 import Model exposing (..)
-import String
 
 
 
@@ -148,66 +148,23 @@ encodeDisplayName displayMode =
 
 
 -- Decode
--- Public decoder: accepts "{}" via emptyObjectDefault, otherwise full schema
 
 
 modelDecoder : D.Decoder Model
 modelDecoder =
-    D.oneOf
-        [ emptyObjectDefault
-        , modelDecoderFull
-        ]
-
-
-modelDecoderFull : D.Decoder Model
-modelDecoderFull =
-    D.map4 build
-        itemsDecoder
-        (D.oneOf
-            [ D.field "maps" (D.list mapDecoder)
-            , D.field "maps" (D.dict mapDecoder) |> D.map (Dict.values >> List.sortBy .id)
-            , D.succeed []
-            ]
-        )
-        (D.oneOf
-            [ D.field "mapPath" (D.list D.int)
-            , D.succeed [ 0 ]
-            ]
-        )
-        (D.oneOf
-            [ D.field "nextId" D.int
-            , D.succeed 1
-            ]
-        )
-
-
-build :
-    Items
-    -> List Map
-    -> List MapId
-    -> Id
-    -> Model
-build items mapsRaw mapPath nextId =
-    let
-        base =
-            default
-
-        mapsDict : Dict MapId Map
-        mapsDict =
-            mapsRaw
-                |> List.map (\m -> ( m.id, m ))
-                |> Dict.fromList
-
-        m0 =
-            { base
-                | items = items
-                , maps = mapsDict
-                , mapPath = mapPath
-                , nextId = nextId
-            }
-    in
-    -- guarantee the home map exists even if {} was given
-    ensureMapLocal 0 m0
+    D.succeed Model
+        |> required "items" (D.list itemDecoder |> D.andThen tupleToDictDecoder)
+        |> required "maps" (D.list mapDecoder |> D.andThen toDictDecoder)
+        |> required "mapPath" (D.list D.int)
+        |> required "nextId" D.int
+        ----- transient -----
+        |> hardcoded default.selection
+        |> hardcoded default.editState
+        |> hardcoded default.measureText
+        -- components
+        |> hardcoded default.mouse
+        |> hardcoded default.search
+        |> hardcoded default.iconMenu
 
 
 itemDecoder : D.Decoder ( Id, ItemInfo )
@@ -252,12 +209,7 @@ mapDecoder =
                 (D.field "x2" D.float)
                 (D.field "y2" D.float)
         )
-        (D.oneOf
-            [ D.field "items" (D.list mapItemDecoder |> D.andThen toDictDecoder)
-            , D.field "items" (D.dict mapItemDecoder) |> D.map mapKeysStringToInt
-            , D.succeed Dict.empty
-            ]
-        )
+        (D.field "items" (D.list mapItemDecoder |> D.andThen toDictDecoder))
 
 
 mapItemDecoder : D.Decoder MapItem
@@ -281,12 +233,7 @@ mapItemDecoder =
                                 (D.field "w" D.float)
                                 (D.field "h" D.float)
                         )
-                        (D.oneOf
-                            [ D.field "display" D.string
-                            , D.field "displayMode" D.string
-                            ]
-                            |> D.andThen displayModeDecoder
-                        )
+                        (D.field "display" D.string |> D.andThen displayModeDecoder)
             , D.field "assocProps" <| D.succeed (MapAssoc AssocProps)
             ]
         )
@@ -340,114 +287,3 @@ maybeString str =
             _ ->
                 Just str
         )
-
-
-
--- If the JSON root is `{}`, yield Defaults.default with a guaranteed home map (id 0)
-
-
-emptyObjectDefault : D.Decoder Model
-emptyObjectDefault =
-    D.dict D.value
-        |> D.andThen
-            (\root ->
-                if Dict.isEmpty root then
-                    D.succeed (ensureMapLocal 0 default)
-
-                else
-                    D.fail "not empty"
-            )
-
-
-
--- Local: guarantee that a map exists (used to ensure home map on {} decode)
-
-
-ensureMapLocal : MapId -> Model -> Model
-ensureMapLocal mapId m =
-    if Dict.member mapId m.maps then
-        m
-
-    else
-        { m
-            | maps =
-                Dict.insert
-                    mapId
-                    (Model.Map mapId (Model.Rectangle 0 0 0 0) Dict.empty)
-                    m.maps
-        }
-
-
-
--- turn Dict String v into Dict Int v (drops non-int keys)
-
-
-mapKeysStringToInt : Dict.Dict String v -> Dict.Dict Int v
-mapKeysStringToInt =
-    Dict.foldl
-        (\k v acc ->
-            case String.toInt k of
-                Just i ->
-                    Dict.insert i v acc
-
-                Nothing ->
-                    acc
-        )
-        Dict.empty
-
-
-itemsDecoder : D.Decoder Items
-itemsDecoder =
-    D.oneOf
-        [ D.field "items" (D.dict itemInfoDecoder)
-            |> D.map mapKeysStringToIntItems
-        , D.field "items" (D.list itemTupleDecoder)
-            |> D.andThen tupleToDictDecoder
-        , D.succeed Dict.empty
-        ]
-
-
-itemTupleDecoder : D.Decoder ( Id, ItemInfo )
-itemTupleDecoder =
-    itemDecoder
-
-
-itemInfoDecoder : D.Decoder ItemInfo
-itemInfoDecoder =
-    D.oneOf
-        [ D.field "topic"
-            (D.map Topic <|
-                D.map3 TopicInfo
-                    (D.field "id" D.int)
-                    (D.field "text" D.string)
-                    (D.field "icon" D.string |> D.andThen maybeString)
-            )
-        , D.field "assoc"
-            (D.map Assoc <|
-                D.map6 AssocInfo
-                    (D.field "id" D.int)
-                    (D.field "type" D.string)
-                    (D.field "role1" D.string)
-                    (D.field "player1" D.int)
-                    (D.field "role2" D.string)
-                    (D.field "player2" D.int)
-            )
-        ]
-
-
-
--- turn Dict String ItemInfo into Items (Dict Int Item)
-
-
-mapKeysStringToIntItems : Dict.Dict String ItemInfo -> Items
-mapKeysStringToIntItems =
-    Dict.foldl
-        (\k info acc ->
-            case String.toInt k of
-                Just i ->
-                    Dict.insert i (Item i info) acc
-
-                Nothing ->
-                    acc
-        )
-        Dict.empty
