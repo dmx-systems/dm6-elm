@@ -11,9 +11,9 @@ import Dict
 
 
 type alias Model =
-  { items : Items -- the knowledge base
-  , maps : Maps -- the views
-  , mapPath : List MapId
+  { items : Items -- TODO: represent container content independent from maps?
+  , maps : Maps
+  , mapPath : MapPath
   , nextId : Id
   ----- transient -----
   , selection : Selection
@@ -30,7 +30,7 @@ default : Model
 default =
   { items = Dict.empty
   , maps = Dict.singleton 0 -- map 0 is the "home map", it has no corresponding topic
-    <| Map 0 -1 (Rectangle 0 0 0 0) Dict.empty -- parentMapId = -1
+    <| Map 0 (Rectangle 0 0 0 0) Dict.empty
   , mapPath = [0]
   , nextId = 1
   ----- transient -----

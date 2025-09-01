@@ -78,7 +78,7 @@ view model =
         ++ appStyle
       )
       ( [ viewToolbar model
-        , viewMap (activeMap model) -1 model -- parentMapId = -1
+        , viewMap (activeMap model) [] model -- mapPath = []
         ]
         ++ viewResultMenu model
         ++ viewIconMenu model
@@ -150,7 +150,7 @@ update msg model =
 moveTopicToMap : Id -> MapId -> Point -> Id -> MapId -> Point -> Model -> Model
 moveTopicToMap topicId mapId origPos targetId targetMapId pos model =
   let
-    (newModel, created) = createMapIfNeeded targetId targetMapId model
+    (newModel, created) = createMapIfNeeded targetId model
     newPos =
       case created of
         True -> Point
@@ -172,13 +172,13 @@ moveTopicToMap topicId mapId origPos targetId targetMapId pos model =
     Nothing -> model
 
 
-createMapIfNeeded : Id -> MapId -> Model -> (Model, Bool)
-createMapIfNeeded topicId mapId model =
+createMapIfNeeded : Id -> Model -> (Model, Bool)
+createMapIfNeeded topicId model =
   if hasMap topicId model.maps then
     (model, False)
   else
     ( model
-      |> createMap topicId mapId
+      |> createMap topicId
       |> setDisplayModeInAllMaps topicId (Container BlackBox)
       -- A nested topic which becomes a container might exist in other maps as well, still as
       -- a monad. We must set the topic's display mode to "container" in *all* maps. Otherwise
@@ -326,12 +326,12 @@ updateNav navMsg model =
 fullscreen : Model -> Model
 fullscreen model =
   case getSingleSelection model of
-    Just (topicId, mapId) ->
+    Just (topicId, _) ->
       { model
       | mapPath = topicId :: model.mapPath
       , selection = []
       }
-      |> createMapIfNeeded topicId mapId
+      |> createMapIfNeeded topicId
       |> Tuple.first
       |> adjustMapRect topicId -1
     Nothing -> model

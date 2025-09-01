@@ -6,6 +6,7 @@ import Model exposing (..)
 import Utils exposing (..)
 
 import Dict
+import Json.Decode as D
 import String exposing (fromInt)
 
 
@@ -85,9 +86,7 @@ nextId model =
   { model | nextId = model.nextId + 1 }
 
 
-
 -- Maps
-
 
 isHome : Model -> Bool
 isHome model =
@@ -106,6 +105,20 @@ activeMap model =
     Nothing -> logError "activeMap" "mapPath is empty!" 0
 
 
+{-| Returns -1 if mapPath is empty -}
+getMapId : MapPath -> MapId
+getMapId mapPath =
+  case mapPath of
+    mapId :: _ -> mapId
+    _ -> -1
+
+
+fromPath : MapPath -> String
+fromPath mapPath =
+  mapPath |> List.map fromInt |> String.join ","
+
+
+{-| Logs an error if map does not exist -}
 getMap : MapId -> Maps -> Maybe Map
 getMap mapId maps =
   case getMapIfExists mapId maps of
@@ -123,11 +136,11 @@ hasMap mapId maps =
   maps |> Dict.member mapId
 
 
-createMap : MapId -> MapId -> Model -> Model
-createMap mapId parentMapId model =
+createMap : MapId -> Model -> Model
+createMap mapId model =
   { model | maps = model.maps |> Dict.insert
     mapId
-    (Map mapId parentMapId (Rectangle 0 0 0 0) Dict.empty)
+    (Map mapId (Rectangle 0 0 0 0) Dict.empty)
   }
 
 
@@ -142,6 +155,7 @@ updateMapRect mapId rectFunc model =
   }
 
 
+{-| Logs an error if map does not exist or item is not in map or is not a topic -}
 getTopicPos : Id -> MapId -> Maps -> Maybe Point
 getTopicPos topicId mapId maps =
   case getTopicProps topicId mapId maps of
@@ -459,6 +473,27 @@ getSingleSelection model =
   case model.selection of
     [ selItem ] -> Just selItem
     _ -> Nothing
+
+
+-- Decoder
+
+idDecoder : String -> D.Decoder Id
+idDecoder str =
+  case String.toInt str of
+    Just int -> D.succeed int
+    Nothing -> D.fail <| "\"" ++ str ++ "\" is a malformed ID"
+
+
+pathDecoder : String -> D.Decoder MapPath
+pathDecoder str =
+  D.succeed
+    (str |> String.split "," |> List.map
+      (\mapIdStr ->
+        case mapIdStr |> String.toInt of
+          Just mapId -> mapId
+          Nothing -> logError "pathDecoder" ("\"" ++ mapIdStr ++ "\" is a malformed ID") -1
+      )
+    )
 
 
 

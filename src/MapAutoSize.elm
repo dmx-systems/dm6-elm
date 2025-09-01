@@ -14,14 +14,13 @@ import Dict
 
 autoSize : Model -> Model
 autoSize model =
-  calcMapRect (activeMap model) model |> Tuple.second
+  calcMapRect (activeMap model) -1 model |> Tuple.second -- parentMapId = -1
 
 
--- called indirect recursively
--- 1) calculate and store the map's "rect" and, based on its change,
--- 2) calculate and store the map's "pos" adjustmennt ("delta")
-calcMapRect : MapId -> Model -> (Rectangle, Model)
-calcMapRect mapId model =
+{-| Calculates (recursively) the map's "rect"
+-}
+calcMapRect : MapId -> MapId -> Model -> (Rectangle, Model)
+calcMapRect mapId parentMapId model =
   case getMap mapId model.maps of
     Just map ->
       let
@@ -38,7 +37,7 @@ calcMapRect mapId model =
           (rect.x2 + whiteBoxPadding)
           (rect.y2 + whiteBoxPadding)
       in
-      storeMapRect mapId newRect map.rect map.parentMapId model_
+      storeMapRect mapId newRect map.rect parentMapId model_
     Nothing -> (Rectangle 0 0 0 0, model)
 
 
@@ -52,27 +51,28 @@ calcItemSize mapItem mapId rectAcc model =
         Container BlackBox -> (topicExtent pos rectAcc, model)
         Container WhiteBox ->
           let
-            (rect, model_) = calcMapRect mapItem.id model -- recursion
+            (rect, model_) = calcMapRect mapItem.id mapId model -- recursion
           in
           (mapExtent pos rect rectAcc, model_)
         Container Unboxed -> (topicExtent pos rectAcc, model)
     MapAssoc _ -> (rectAcc, model)
 
 
+{-| Store the map's "newRect" and, based on its change, calculate and stores the map's "pos"
+adjustmennt ("delta")
+-}
 storeMapRect : MapId -> Rectangle -> Rectangle -> MapId -> Model -> (Rectangle, Model)
 storeMapRect mapId newRect oldRect parentMapId model =
-  if mapId == activeMap model then
-    ( newRect, model )
+  if isFullscreen mapId model then
+    (newRect, model)
   else
-    ( newRect
-    , { model | maps = model.maps |> updateMaps
-        mapId
-        (\map -> { map | rect = newRect })
-      }
+    (newRect
+    , model
+      |> updateMapRect mapId (\rect -> newRect)
       |> setTopicPosByDelta mapId parentMapId
-        ( Point
-          ( newRect.x1 - oldRect.x1 )
-          ( newRect.y1 - oldRect.y1 )
+        (Point
+          (newRect.x1 - oldRect.x1)
+          (newRect.y1 - oldRect.y1)
         )
     )
 
