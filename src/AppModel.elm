@@ -30,7 +30,7 @@ default : Model
 default =
   { items = Dict.empty
   , maps = Dict.singleton 0 -- map 0 is the "home map", it has no corresponding topic
-    <| Map 0 -1 (Rectangle 0 0 0 0) Dict.empty -- parentMapId = -1
+    <| Map 0 (Rectangle 0 0 0 0) Dict.empty
   , mapPath = [0]
   , nextId = 1
   ----- transient -----

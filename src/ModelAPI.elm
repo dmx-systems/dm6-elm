@@ -136,11 +136,11 @@ hasMap mapId maps =
   maps |> Dict.member mapId
 
 
-createMap : MapId -> MapId -> Model -> Model
-createMap mapId parentMapId model =
+createMap : MapId -> Model -> Model
+createMap mapId model =
   { model | maps = model.maps |> Dict.insert
     mapId
-    (Map mapId parentMapId (Rectangle 0 0 0 0) Dict.empty)
+    (Map mapId (Rectangle 0 0 0 0) Dict.empty)
   }
 
 

@@ -77,7 +77,6 @@ encodeMap : Map -> E.Value
 encodeMap map =
   E.object
     [ ("id", E.int map.id)
-    , ("parentMapId", E.int map.parentMapId)
     , ("rect", E.object
         [ ("x1", E.float map.rect.x1)
         , ("y1", E.float map.rect.y1)
@@ -182,9 +181,8 @@ itemDecoder =
 
 mapDecoder : D.Decoder Map
 mapDecoder =
-  D.map4 Map
+  D.map3 Map
     (D.field "id" D.int)
-    (D.field "parentMapId" D.int)
     (D.field "rect" <| D.map4 Rectangle
       (D.field "x1" D.float)
       (D.field "y1" D.float)
