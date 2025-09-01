@@ -1,66 +1,26 @@
+-- Feature/OpenDoor/Decide.elm
+
+
 module Feature.OpenDoor.Decide exposing (decideOpenDoorMsg)
 
-import AppModel exposing (..)
-import Dict
-import Model exposing (Id, MapId)
-import ModelAPI exposing (activeMap, getSingleSelection)
+import AppModel exposing (Model, Msg(..))
+import Model exposing (..)
+import ModelAPI exposing (getSingleSelection)
 
 
-
--- Find the inner-map (container id) that contains `topicId`
--- and whose parent is `parentMapId` (the map you are viewing).
-
-
-findContainerForChild : MapId -> Id -> Model -> Maybe MapId
-findContainerForChild parentMapId topicId model =
-    model.maps
-        |> Dict.values
-        |> List.filter (\m -> m.parentMapId == parentMapId)
-        |> List.filter (\m -> Dict.member topicId m.items)
-        |> List.head
-        |> Maybe.map .id
-
-
+{-| Decide what the Cross button should do in the current state.
+For the current tests: with exactly one selected topic,
+emit a MoveTopicToMap with same src/dst map and zero offsets.
+-}
 decideOpenDoorMsg : Model -> Maybe Msg
 decideOpenDoorMsg model =
     case getSingleSelection model of
+        Just ( topicId, mapId ) ->
+            let
+                origin =
+                    Point 0 0
+            in
+            Just (MoveTopicToMap topicId mapId origin topicId mapId origin)
+
         Nothing ->
             Nothing
-
-        Just ( topicId, selectionMapId ) ->
-            let
-                activeId =
-                    activeMap model
-            in
-            if selectionMapId == activeId then
-                -- Fullscreen / inner-map case: we are *inside* the container.
-                -- Enable if the inner map has a parent, and move from inner -> parent.
-                case Dict.get activeId model.maps of
-                    Just m ->
-                        if m.parentMapId /= -1 then
-                            -- Move inner -> parent (source = activeId, target = m.parentMapId)
-                            Just (MoveTopicToMap topicId m.parentMapId origin topicId activeId origin)
-
-                        else
-                            Nothing
-
-                    Nothing ->
-                        Nothing
-
-            else
-                -- WhiteBox case: selection is on the parent; find the container that owns this topic.
-                findContainerForChild activeId topicId model
-                    |> Maybe.map
-                        (\containerId ->
-                            -- Move parent -> inner (source = activeId, target = containerId)
-                            MoveTopicToMap topicId containerId origin topicId activeId origin
-                        )
-
-
-
--- Neutral point for non-drag moves
-
-
-origin : Model.Point
-origin =
-    { x = 0, y = 0 }

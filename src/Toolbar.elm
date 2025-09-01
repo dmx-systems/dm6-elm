@@ -1,7 +1,5 @@
 module Toolbar exposing (viewToolbar)
 
--- components
-
 import AppModel exposing (Model, Msg(..))
 import Config exposing (date, footerFontSize, homeMapName, mainFont, toolbarFontSize, version)
 import Feature.OpenDoor.Decide exposing (decideOpenDoorMsg)
@@ -317,8 +315,6 @@ viewToolbarAction label decide model =
                     )
                     label
             )
-
-         -- "btn-Open-Door"
          ]
             ++ buttonStyle
         )
