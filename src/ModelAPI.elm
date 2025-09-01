@@ -438,9 +438,16 @@ createAssocAndAddToMap itemType role1 player1 role2 player2 mapId model =
 -}
 addItemToMap : Id -> MapProps -> MapId -> Model -> Model
 addItemToMap itemId props mapId model =
-    if itemId == mapId then
-        -- Guard against self-containment: a map must not contain itself.
-        logError "addItemToMap" "refusing to add a map to itself" model
+    if (itemId == mapId) || isInAncestry itemId mapId model then
+        -- Guard against self/ancestral containment: a map must not contain itself or its ancestors.
+        logError "addItemToMap"
+            ("refusing to add item "
+                ++ fromInt itemId
+                ++ " into its own ancestry (map "
+                ++ fromInt mapId
+                ++ ")"
+            )
+            model
 
     else
         let
@@ -464,9 +471,36 @@ addItemToMap itemId props mapId model =
             | maps =
                 updateMaps
                     mapId
-                    (\map -> { map | items = map.items |> Dict.insert itemId mapItem })
+                    (\mp -> { mp | items = mp.items |> Dict.insert itemId mapItem })
                     newModel.maps
         }
+
+
+{-| True iff `candidate` is in the ancestry (including self) of `mapId`.
+Walks parentMapId up to the root. Safe if a map is missing.
+-}
+isInAncestry : Id -> MapId -> Model -> Bool
+isInAncestry candidate mapId model =
+    let
+        go currentId =
+            if currentId == candidate then
+                True
+
+            else
+                case Dict.get currentId model.maps of
+                    Just mp ->
+                        if mp.parentMapId == currentId then
+                            -- extra safety: broken parent pointers
+                            False
+
+                        else
+                            go mp.parentMapId
+
+                    Nothing ->
+                        -- no such map: treat as root reached
+                        False
+    in
+    go mapId
 
 
 showItem : Id -> MapId -> Model -> Model
