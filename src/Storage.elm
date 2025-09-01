@@ -252,7 +252,12 @@ mapDecoder =
                 (D.field "x2" D.float)
                 (D.field "y2" D.float)
         )
-        (D.field "items" (D.list mapItemDecoder |> D.andThen toDictDecoder))
+        (D.oneOf
+            [ D.field "items" (D.list mapItemDecoder |> D.andThen toDictDecoder)
+            , D.field "items" (D.dict mapItemDecoder) |> D.map mapKeysStringToInt
+            , D.succeed Dict.empty
+            ]
+        )
 
 
 mapItemDecoder : D.Decoder MapItem
@@ -276,7 +281,12 @@ mapItemDecoder =
                                 (D.field "w" D.float)
                                 (D.field "h" D.float)
                         )
-                        (D.field "display" D.string |> D.andThen displayModeDecoder)
+                        (D.oneOf
+                            [ D.field "display" D.string
+                            , D.field "displayMode" D.string
+                            ]
+                            |> D.andThen displayModeDecoder
+                        )
             , D.field "assocProps" <| D.succeed (MapAssoc AssocProps)
             ]
         )

@@ -23,7 +23,7 @@ selfContainedMaps m =
 tests : Test
 tests =
     describe "Global invariant: no map contains itself"
-        [ test "deliberate self-containment is detected (RED)" <|
+        [ test "deliberate self-containment is detected" <|
             \_ ->
                 let
                     -- 1) create a container topic and show it on the home map (0)
@@ -47,6 +47,6 @@ tests =
                             cId
                             m3
                 in
-                -- RED on purpose: invariant should hold (no self-contained maps), but it doesn't.
-                Expect.equal [] (selfContainedMaps badModel)
+                -- Expect the violation: map cId contains itself
+                Expect.equal [ cId ] (selfContainedMaps badModel)
         ]
