@@ -439,15 +439,15 @@ relPos pos mapPath model =
 absMapPos : MapPath -> Point -> Model -> Point
 absMapPos mapPath posAcc model =
   case mapPath of
-    [ mapId ] -> accMapRect posAcc mapId model
-    mapId :: parentMapId :: mapIds -> accMapPos posAcc mapId parentMapId mapIds model
+    [ mapId ] -> accumulateMapRect posAcc mapId model
+    mapId :: parentMapId :: mapIds -> accumulateMapPos posAcc mapId parentMapId mapIds model
     [] -> logError "absMapPos" "mapPath is empty!" (Point 0 0)
 
 
-accMapPos : Point -> MapId -> MapId -> MapPath -> Model -> Point
-accMapPos posAcc mapId parentMapId mapIds model =
+accumulateMapPos : Point -> MapId -> MapId -> MapPath -> Model -> Point
+accumulateMapPos posAcc mapId parentMapId mapIds model =
   let
-    {x, y} = accMapRect posAcc mapId model
+    {x, y} = accumulateMapRect posAcc mapId model
   in
   case getTopicPos mapId parentMapId model.maps of
     Just mapPos ->
@@ -461,8 +461,8 @@ accMapPos posAcc mapId parentMapId mapIds model =
     Nothing -> Point 0 0 -- error is already logged
 
 
-accMapRect : Point -> MapId -> Model -> Point
-accMapRect posAcc mapId model =
+accumulateMapRect : Point -> MapId -> Model -> Point
+accumulateMapRect posAcc mapId model =
   case getMap mapId model.maps of
     Just map -> Point
       (posAcc.x - map.rect.x1)
