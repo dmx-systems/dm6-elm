@@ -118,7 +118,7 @@ encodeMapItem item =
                     ]
                 )
 
-            MapAssoc assosProps ->
+            MapAssoc _ ->
                 ( "assocProps"
                 , E.object []
                 )
@@ -150,8 +150,8 @@ encodeDisplayName displayMode =
 -- Decode
 
 
-modelDecoder : D.Decoder Model
-modelDecoder =
+fullModelDecoder : D.Decoder Model
+fullModelDecoder =
     D.succeed Model
         |> required "items" (D.list itemDecoder |> D.andThen tupleToDictDecoder)
         |> required "maps" (D.list mapDecoder |> D.andThen toDictDecoder)
@@ -165,6 +165,14 @@ modelDecoder =
         |> hardcoded default.mouse
         |> hardcoded default.search
         |> hardcoded default.iconMenu
+
+
+modelDecoder : D.Decoder AppModel.Model
+modelDecoder =
+    D.oneOf
+        [ fullModelDecoder
+        , D.succeed default
+        ]
 
 
 itemDecoder : D.Decoder ( Id, ItemInfo )
