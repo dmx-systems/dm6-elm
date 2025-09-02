@@ -442,9 +442,68 @@ createAssocAndAddToMap itemType role1 player1 role2 player2 mapId model =
 
 addItemToMap : Id -> MapProps -> MapId -> AM.Model -> AM.Model
 addItemToMap itemId props mapId model =
+    -- 0) Trivial guard: never allow "map contains itself"
+    if itemId == mapId then
+        let
+            _ =
+                info "addItemToMap (blocked)"
+                    { itemId = itemId
+                    , mapId = mapId
+                    , reason = "Cannot make a map contain itself."
+                    }
+        in
+        model
+
+    else
+        -- 1) Idempotence: if the item is already on target map, unhide/unpin & update props
+        case Dict.get mapId model.maps of
+            Just targetMap ->
+                case Dict.get itemId targetMap.items of
+                    Just existing ->
+                        let
+                            updated =
+                                case ( existing.props, props ) of
+                                    -- If both are topics, keep existing fields but update position
+                                    ( MapTopic tpOld, MapTopic tpNew ) ->
+                                        { existing
+                                            | hidden = False
+                                            , pinned = False
+                                            , props = MapTopic { tpOld | pos = tpNew.pos }
+                                        }
+
+                                    -- Otherwise prefer incoming props but keep assoc id
+                                    _ ->
+                                        { existing
+                                            | hidden = False
+                                            , pinned = False
+                                            , props = props
+                                        }
+                        in
+                        { model
+                            | maps =
+                                updateMaps
+                                    mapId
+                                    (\m -> { m | items = Dict.insert itemId updated m.items })
+                                    model.maps
+                        }
+
+                    -- Not present yet → do the normal reparent + assoc creation
+                    Nothing ->
+                        addFresh itemId props mapId model
+
+            -- Target map not found → no-op
+            Nothing ->
+                model
+
+
+
+-- Helper for the fresh insertion path (passes the reparent check, creates assoc, inserts)
+
+
+addFresh : Id -> MapProps -> MapId -> AM.Model -> AM.Model
+addFresh itemId props mapId model =
     case R.canReparent itemId (Just mapId) (parentsOf model) of
         Err reason ->
-            -- refuse illegal containment; leave model unchanged
             let
                 _ =
                     info "addItemToMap (blocked)"
@@ -469,7 +528,6 @@ addItemToMap itemId props mapId model =
                 mapItem =
                     MapItem itemId parentAssocId False False props
 
-                -- hidden=False, pinned=False
                 _ =
                     info "addItemToMap"
                         { itemId = itemId

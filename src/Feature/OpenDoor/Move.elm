@@ -9,7 +9,6 @@ import Model
         , MapId
         , MapItem
         , MapProps(..)
-          -- ⬅️ gives MapTopic constructor
         , Point
         , Rectangle
         , TopicProps
