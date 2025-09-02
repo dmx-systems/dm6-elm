@@ -143,26 +143,23 @@ update msg model =
                 |> storeModel
 
         AM.MoveTopicToMap topicId fromMapId origPos targetId targetMapId dropPos ->
-            if (fromMapId == targetMapId) && (targetId == topicId) then
-                -- same map, dropped onto itself -> just reposition
-                let
-                    m2 =
-                        repositionInSameMap topicId targetMapId dropPos model
-                in
-                ( m2, Cmd.none )
+            let
+                -- Fix bad “inner→parent” messages where targetId==topicId.
+                ( dstId, dstMap ) =
+                    if targetId == topicId then
+                        ( targetMapId, targetMapId )
+                        -- e.g. background => (0,0)
 
-            else
-                -- either different maps OR dropped onto another topic in same map -> OpenDoor move
-                let
-                    m2 =
-                        Feature.OpenDoor.Move.move
-                            { containerId = targetId
-                            , topicId = topicId
-                            , targetMapId = targetMapId
-                            }
-                            model
-                in
-                ( m2, Cmd.none )
+                    else
+                        ( targetId, targetMapId )
+
+                ( model1, created ) =
+                    createMapIfNeeded dstId model
+
+                -- ... continue with props, hideItem, addItemToMap, select, autoSize ...
+            in
+            moveTopicToMap topicId fromMapId origPos targetId targetMapId dropPos model
+                |> storeModel
 
         AM.SwitchDisplay displayMode ->
             switchDisplay displayMode model |> storeModel
