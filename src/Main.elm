@@ -7,6 +7,7 @@ import Browser.Dom as Dom
 import Config exposing (..)
 import Dict
 import Domain.Reparent as R
+import Feature.OpenDoor.Move
 import Html exposing (Attribute, br, div, text)
 import Html.Attributes exposing (id, style)
 import IconMenuAPI exposing (updateIconMenu, viewIconMenu)
@@ -141,8 +142,27 @@ update msg model =
             createTopicAndAddToMap topicDefaultText Nothing (activeMap model) model
                 |> storeModel
 
-        AM.MoveTopicToMap topicId mapId origPos targetId targetMapId pos ->
-            moveTopicToMap topicId mapId origPos targetId targetMapId pos model |> storeModel
+        AM.MoveTopicToMap topicId fromMapId origPos targetId targetMapId dropPos ->
+            if fromMapId == targetMapId then
+                -- same map → just reposition
+                let
+                    m2 =
+                        repositionInSameMap topicId targetMapId dropPos model
+                in
+                ( m2, Cmd.none )
+
+            else
+                -- different maps → real move via OpenDoor
+                let
+                    m2 =
+                        Feature.OpenDoor.Move.move
+                            { containerId = targetId
+                            , topicId = topicId
+                            , targetMapId = targetMapId
+                            }
+                            model
+                in
+                ( m2, Cmd.none )
 
         AM.SwitchDisplay displayMode ->
             switchDisplay displayMode model |> storeModel
@@ -170,6 +190,40 @@ update msg model =
 
         AM.NoOp ->
             ( model, Cmd.none )
+
+
+
+-- Reposition a topic inside the same map (no assoc changes)
+
+
+repositionInSameMap : Id -> MapId -> Point -> AM.Model -> AM.Model
+repositionInSameMap topicId mapId newPos model =
+    case Dict.get mapId model.maps of
+        Nothing ->
+            model
+
+        Just mp ->
+            case Dict.get topicId mp.items of
+                Nothing ->
+                    model
+
+                Just mi ->
+                    let
+                        mi2 =
+                            case mi.props of
+                                MapTopic tp ->
+                                    { mi | hidden = False, props = MapTopic { tp | pos = newPos } }
+
+                                _ ->
+                                    mi
+                    in
+                    { model
+                        | maps =
+                            Dict.insert
+                                mapId
+                                { mp | items = Dict.insert topicId mi2 mp.items }
+                                model.maps
+                    }
 
 
 moveTopicToMap : Id -> MapId -> Point -> Id -> MapId -> Point -> AM.Model -> AM.Model
