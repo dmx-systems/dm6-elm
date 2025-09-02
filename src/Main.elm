@@ -143,8 +143,8 @@ update msg model =
                 |> storeModel
 
         AM.MoveTopicToMap topicId fromMapId origPos targetId targetMapId dropPos ->
-            if fromMapId == targetMapId then
-                -- same map → just reposition
+            if (fromMapId == targetMapId) && (targetId == topicId) then
+                -- same map, dropped onto itself -> just reposition
                 let
                     m2 =
                         repositionInSameMap topicId targetMapId dropPos model
@@ -152,7 +152,7 @@ update msg model =
                 ( m2, Cmd.none )
 
             else
-                -- different maps → real move via OpenDoor
+                -- either different maps OR dropped onto another topic in same map -> OpenDoor move
                 let
                     m2 =
                         Feature.OpenDoor.Move.move
