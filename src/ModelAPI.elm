@@ -1,8 +1,9 @@
 module ModelAPI exposing (..)
 
-import AppModel exposing (..)
+import AppModel as AM
 import Config exposing (..)
 import Dict
+import Domain.Reparent as R
 import Json.Decode as D
 import Model exposing (..)
 import String exposing (fromInt)
@@ -14,7 +15,7 @@ import Utils exposing (..)
 -- Items
 
 
-getTopicInfo : Id -> Model -> Maybe TopicInfo
+getTopicInfo : Id -> AM.Model -> Maybe TopicInfo
 getTopicInfo topicId model =
     case model.items |> Dict.get topicId of
         Just { info } ->
@@ -29,7 +30,7 @@ getTopicInfo topicId model =
             illegalItemId "getTopicInfo" topicId Nothing
 
 
-getAssocInfo : Id -> Model -> Maybe AssocInfo
+getAssocInfo : Id -> AM.Model -> Maybe AssocInfo
 getAssocInfo assocId model =
     case model.items |> Dict.get assocId of
         Just { info } ->
@@ -44,7 +45,7 @@ getAssocInfo assocId model =
             illegalItemId "getAssocInfo" assocId Nothing
 
 
-updateTopicInfo : Id -> (TopicInfo -> TopicInfo) -> Model -> Model
+updateTopicInfo : Id -> (TopicInfo -> TopicInfo) -> AM.Model -> AM.Model
 updateTopicInfo topicId topicFunc model =
     { model
         | items =
@@ -76,7 +77,7 @@ getTopicLabel topic =
             ""
 
 
-createTopic : String -> Maybe IconName -> Model -> ( Model, Id )
+createTopic : String -> Maybe IconName -> AM.Model -> ( AM.Model, Id )
 createTopic text iconName model =
     let
         id =
@@ -91,7 +92,7 @@ createTopic text iconName model =
     )
 
 
-createAssoc : ItemType -> RoleType -> Id -> RoleType -> Id -> Model -> ( Model, Id )
+createAssoc : ItemType -> RoleType -> Id -> RoleType -> Id -> AM.Model -> ( AM.Model, Id )
 createAssoc itemType role1 player1 role2 player2 model =
     let
         id =
@@ -106,7 +107,7 @@ createAssoc itemType role1 player1 role2 player2 model =
     )
 
 
-nextId : Model -> Model
+nextId : AM.Model -> AM.Model
 nextId model =
     { model | nextId = model.nextId + 1 }
 
@@ -115,17 +116,17 @@ nextId model =
 -- Maps
 
 
-isHome : Model -> Bool
+isHome : AM.Model -> Bool
 isHome model =
     activeMap model == 0
 
 
-isFullscreen : MapId -> Model -> Bool
+isFullscreen : MapId -> AM.Model -> Bool
 isFullscreen mapId model =
     activeMap model == mapId
 
 
-activeMap : Model -> MapId
+activeMap : AM.Model -> MapId
 activeMap model =
     case List.head model.mapPath of
         Just mapId ->
@@ -174,7 +175,7 @@ hasMap mapId maps =
     maps |> Dict.member mapId
 
 
-createMap : MapId -> Model -> Model
+createMap : MapId -> AM.Model -> AM.Model
 createMap mapId model =
     { model
         | maps =
@@ -185,7 +186,7 @@ createMap mapId model =
     }
 
 
-updateMapRect : MapId -> (Rectangle -> Rectangle) -> Model -> Model
+updateMapRect : MapId -> (Rectangle -> Rectangle) -> AM.Model -> AM.Model
 updateMapRect mapId rectFunc model =
     { model
         | maps =
@@ -212,7 +213,7 @@ getTopicPos topicId mapId maps =
 
 {-| Logs an error if topic is not in map
 -}
-setTopicPos : Id -> MapId -> Point -> Model -> Model
+setTopicPos : Id -> MapId -> Point -> AM.Model -> AM.Model
 setTopicPos topicId mapId pos model =
     model
         |> updateTopicProps topicId
@@ -222,7 +223,7 @@ setTopicPos topicId mapId pos model =
 
 {-| Logs an error if topic is not in map
 -}
-setTopicPosByDelta : Id -> MapId -> Delta -> Model -> Model
+setTopicPosByDelta : Id -> MapId -> Delta -> AM.Model -> AM.Model
 setTopicPosByDelta topicId mapId delta model =
     model
         |> updateTopicProps topicId
@@ -249,7 +250,7 @@ getTopicSize topicId mapId maps =
 
 {-| Logs an error if topic is not in map
 -}
-setTopicSize : Id -> MapId -> Size -> Model -> Model
+setTopicSize : Id -> MapId -> Size -> AM.Model -> AM.Model
 setTopicSize topicId mapId size model =
     model
         |> updateTopicProps topicId
@@ -269,7 +270,7 @@ getDisplayMode topicId mapId maps =
 
 {-| Logs an error if topic is not in map
 -}
-setDisplayMode : Id -> MapId -> DisplayMode -> Model -> Model
+setDisplayMode : Id -> MapId -> DisplayMode -> AM.Model -> AM.Model
 setDisplayMode topicId mapId displayMode model =
     model
         |> updateTopicProps topicId
@@ -294,7 +295,7 @@ getTopicProps topicId mapId maps =
 
 {-| Logs an error if topic is not in map
 -}
-updateTopicProps : Id -> MapId -> (TopicProps -> TopicProps) -> Model -> Model
+updateTopicProps : Id -> MapId -> (TopicProps -> TopicProps) -> AM.Model -> AM.Model
 updateTopicProps topicId mapId propsFunc model =
     { model
         | maps =
@@ -326,7 +327,7 @@ updateTopicProps topicId mapId propsFunc model =
 
 {-| Useful when revealing an existing topic
 -}
-defaultProps : Id -> Size -> Model -> TopicProps
+defaultProps : Id -> Size -> AM.Model -> TopicProps
 defaultProps topicId size model =
     TopicProps
         (Point 0 0)
@@ -361,7 +362,7 @@ getMapItem itemId map =
 
 {-| Logs an error if map does not exist
 -}
-isItemInMap : Id -> MapId -> Model -> Bool
+isItemInMap : Id -> MapId -> AM.Model -> Bool
 isItemInMap itemId mapId model =
     case getMap mapId model.maps of
         Just map ->
@@ -376,7 +377,7 @@ isItemInMap itemId mapId model =
             False
 
 
-createTopicAndAddToMap : String -> Maybe IconName -> MapId -> Model -> Model
+createTopicAndAddToMap : String -> Maybe IconName -> MapId -> AM.Model -> AM.Model
 createTopicAndAddToMap text iconName mapId model =
     case getMap mapId model.maps of
         Just map ->
@@ -406,7 +407,7 @@ createTopicAndAddToMap text iconName mapId model =
 -- Presumption: both players exist in same map
 
 
-createDefaultAssoc : Id -> Id -> MapId -> Model -> Model
+createDefaultAssoc : Id -> Id -> MapId -> AM.Model -> AM.Model
 createDefaultAssoc player1 player2 mapId model =
     createAssocAndAddToMap
         "dmx.association"
@@ -422,7 +423,7 @@ createDefaultAssoc player1 player2 mapId model =
 -- Presumption: both players exist in same map
 
 
-createAssocAndAddToMap : ItemType -> RoleType -> Id -> RoleType -> Id -> MapId -> Model -> Model
+createAssocAndAddToMap : ItemType -> RoleType -> Id -> RoleType -> Id -> MapId -> AM.Model -> AM.Model
 createAssocAndAddToMap itemType role1 player1 role2 player2 mapId model =
     let
         ( newModel, assocId ) =
@@ -434,38 +435,92 @@ createAssocAndAddToMap itemType role1 player1 role2 player2 mapId model =
     addItemToMap assocId props mapId newModel
 
 
-{-| Precondition: the item is not yet contained in the map
--}
-addItemToMap : Id -> MapProps -> MapId -> Model -> Model
+
+-- Prevent self/descendant cycles before creating the assoc and map item.
+-- Precondition: the item is not yet contained in the map
+
+
+addItemToMap : Id -> MapProps -> MapId -> AM.Model -> AM.Model
 addItemToMap itemId props mapId model =
-    let
-        ( newModel, parentAssocId ) =
-            createAssoc
-                "dmx.composition"
-                "dmx.child"
-                itemId
-                "dmx.parent"
-                mapId
-                model
+    case R.canReparent itemId (Just mapId) (parentsOf model) of
+        Err reason ->
+            -- refuse illegal containment; leave model unchanged
+            let
+                _ =
+                    info "addItemToMap (blocked)"
+                        { itemId = itemId
+                        , mapId = mapId
+                        , reason = reason
+                        }
+            in
+            model
 
-        mapItem =
-            MapItem itemId parentAssocId False False props
+        Ok _ ->
+            let
+                ( newModel, parentAssocId ) =
+                    createAssoc
+                        "dmx.composition"
+                        "dmx.child"
+                        itemId
+                        "dmx.parent"
+                        mapId
+                        model
 
-        -- hidden=False, pinned=False
-        _ =
-            info "addItemToMap"
-                { itemId = itemId, parentAssocId = parentAssocId, props = props, mapId = mapId }
-    in
-    { newModel
-        | maps =
-            updateMaps
-                mapId
-                (\map -> { map | items = map.items |> Dict.insert itemId mapItem })
-                newModel.maps
-    }
+                mapItem =
+                    MapItem itemId parentAssocId False False props
+
+                -- hidden=False, pinned=False
+                _ =
+                    info "addItemToMap"
+                        { itemId = itemId
+                        , parentAssocId = parentAssocId
+                        , props = props
+                        , mapId = mapId
+                        }
+            in
+            { newModel
+                | maps =
+                    updateMaps
+                        mapId
+                        (\m -> { m | items = Dict.insert itemId mapItem m.items })
+                        newModel.maps
+            }
 
 
-showItem : Id -> MapId -> Model -> Model
+
+-- Direct parents of a child via dmx.composition assocs
+-- (used by Domain.Reparent to compute ancestry)
+
+
+parentsOf : AM.Model -> Id -> List MapId
+parentsOf model childId =
+    model.items
+        |> Dict.values
+        |> List.filterMap
+            (\item ->
+                case item.info of
+                    Assoc assoc ->
+                        if
+                            assoc.itemType
+                                == "dmx.composition"
+                                && assoc.role1
+                                == "dmx.child"
+                                && assoc.role2
+                                == "dmx.parent"
+                                && assoc.player1
+                                == childId
+                        then
+                            Just assoc.player2
+
+                        else
+                            Nothing
+
+                    _ ->
+                        Nothing
+            )
+
+
+showItem : Id -> MapId -> AM.Model -> AM.Model
 showItem itemId mapId model =
     { model
         | maps =
@@ -490,7 +545,7 @@ showItem itemId mapId model =
     }
 
 
-hideItem : Id -> MapId -> Model -> Model
+hideItem : Id -> MapId -> AM.Model -> AM.Model
 hideItem itemId mapId model =
     { model
         | maps =
@@ -501,7 +556,7 @@ hideItem itemId mapId model =
     }
 
 
-hideItem_ : Id -> MapItems -> Model -> MapItems
+hideItem_ : Id -> MapItems -> AM.Model -> MapItems
 hideItem_ itemId items model =
     mapAssocsOfPlayer_ itemId items model
         |> List.foldr
@@ -534,7 +589,7 @@ updateMaps mapId mapFunc maps =
             )
 
 
-deleteItem : Id -> Model -> Model
+deleteItem : Id -> AM.Model -> AM.Model
 deleteItem itemId model =
     assocsOfPlayer itemId model
         |> List.foldr
@@ -550,7 +605,7 @@ deleteItem itemId model =
             }
 
 
-assocsOfPlayer : Id -> Model -> List Id
+assocsOfPlayer : Id -> AM.Model -> List Id
 assocsOfPlayer playerId model =
     model.items
         |> Dict.values
@@ -559,7 +614,7 @@ assocsOfPlayer playerId model =
         |> List.filter (hasPlayer playerId model)
 
 
-mapAssocsOfPlayer_ : Id -> MapItems -> Model -> List Id
+mapAssocsOfPlayer_ : Id -> MapItems -> AM.Model -> List Id
 mapAssocsOfPlayer_ playerId items model =
     items
         |> Dict.values
@@ -568,7 +623,7 @@ mapAssocsOfPlayer_ playerId items model =
         |> List.filter (hasPlayer playerId model)
 
 
-hasPlayer : Id -> Model -> Id -> Bool
+hasPlayer : Id -> AM.Model -> Id -> Bool
 hasPlayer playerId model assocId =
     case getAssocInfo assocId model of
         Just assoc ->
@@ -625,12 +680,12 @@ isVisible item =
 -- Selection
 
 
-select : Id -> MapId -> Model -> Model
+select : Id -> MapId -> AM.Model -> AM.Model
 select id mapId model =
     { model | selection = [ ( id, mapId ) ] }
 
 
-getSingleSelection : Model -> Maybe ( Id, MapId )
+getSingleSelection : AM.Model -> Maybe ( Id, MapId )
 getSingleSelection model =
     case model.selection of
         [ selItem ] ->
