@@ -11,6 +11,7 @@ module Compat.ModelAPI exposing
 import AppModel exposing (Model)
 import Config exposing (..)
 import Dict
+import Json.Encode as E
 import Main
 import Model exposing (..)
 import ModelAPI
@@ -21,7 +22,7 @@ import ModelAPI
 
 
 defaultModel =
-    Tuple.first (Main.init ())
+    Tuple.first (Main.init E.null)
 
 
 
