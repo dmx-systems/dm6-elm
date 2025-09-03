@@ -73,11 +73,4 @@ move { containerId, topicId, targetMapId } model0 =
                                 [ targetMapId ]
                         in
                         -- Delegate to upstream move logic
-                        Main.moveTopicToMap
-                            topicId
-                            containerId
-                            origPos
-                            targetMapId
-                            targetMapPath
-                            newPos
-                            model0
+                        Main.moveTopicToMap topicId containerId origPos 0 [ 0 ] newPos model0

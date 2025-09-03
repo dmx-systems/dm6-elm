@@ -5,6 +5,7 @@ import Config exposing (..)
 import Dict
 import Json.Decode as D
 import Model exposing (..)
+import Model.Reparent as R
 import String exposing (fromInt)
 import Utils exposing (..)
 
@@ -442,31 +443,52 @@ createAssocIn itemType role1 player1 role2 player2 mapId model =
 -}
 addItemToMap : Id -> MapProps -> MapId -> Model -> Model
 addItemToMap itemId props mapId model =
-    let
-        ( newModel, parentAssocId ) =
-            createAssoc
-                "dmx.composition"
-                "dmx.child"
-                itemId
-                "dmx.parent"
-                mapId
+    -- ✅ explicit self-cycle guard (fast path)
+    if itemId == mapId then
+        let
+            _ =
+                info "addItemToMap (blocked self)" { itemId = itemId, mapId = mapId }
+        in
+        model
+
+    else
+        case R.canReparent itemId (Just mapId) model of
+            Err reason ->
+                let
+                    _ =
+                        info "addItemToMap (blocked)" { itemId = itemId, mapId = mapId, reason = reason }
+                in
                 model
 
-        mapItem =
-            MapItem itemId parentAssocId False False props
+            Ok _ ->
+                let
+                    ( newModel, parentAssocId ) =
+                        createAssoc
+                            "dmx.composition"
+                            "dmx.child"
+                            itemId
+                            "dmx.parent"
+                            mapId
+                            model
 
-        -- hidden=False, pinned=False
-        _ =
-            info "addItemToMap"
-                { itemId = itemId, parentAssocId = parentAssocId, props = props, mapId = mapId }
-    in
-    { newModel
-        | maps =
-            updateMaps
-                mapId
-                (\map -> { map | items = map.items |> Dict.insert itemId mapItem })
-                newModel.maps
-    }
+                    mapItem =
+                        MapItem itemId parentAssocId False False props
+
+                    _ =
+                        info "addItemToMap"
+                            { itemId = itemId
+                            , parentAssocId = parentAssocId
+                            , props = props
+                            , mapId = mapId
+                            }
+                in
+                { newModel
+                    | maps =
+                        updateMaps
+                            mapId
+                            (\m -> { m | items = Dict.insert itemId mapItem m.items })
+                            newModel.maps
+                }
 
 
 showItem : Id -> MapId -> Model -> Model

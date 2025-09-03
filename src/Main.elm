@@ -172,6 +172,10 @@ update msg model =
             ( model, Cmd.none )
 
 
+
+-- keep the upstream signature
+
+
 moveTopicToMap : Id -> MapId -> Point -> Id -> MapPath -> Point -> Model -> Model
 moveTopicToMap topicId mapId origPos targetId targetMapPath pos model =
     let
@@ -179,25 +183,27 @@ moveTopicToMap topicId mapId origPos targetId targetMapPath pos model =
             createMapIfNeeded targetId model
 
         newPos =
-            case created of
-                True ->
-                    Point
-                        (topicW2 + whiteBoxPadding)
-                        (topicH2 + whiteBoxPadding)
+            if created then
+                Point (topicW2 + whiteBoxPadding) (topicH2 + whiteBoxPadding)
 
-                False ->
-                    pos
+            else
+                pos
+
+        -- ✅ destination is ALWAYS the drop target
+        destMapId : MapId
+        destMapId =
+            targetId
 
         props_ =
             getTopicProps topicId mapId newModel.maps
-                |> Maybe.andThen (\props -> Just (MapTopic { props | pos = newPos }))
+                |> Maybe.map (\props -> MapTopic { props | pos = newPos })
     in
     case props_ of
         Just props ->
             newModel
                 |> hideItem topicId mapId
                 |> setTopicPos topicId mapId origPos
-                |> addItemToMap topicId props targetId
+                |> addItemToMap topicId props destMapId
                 |> select targetId targetMapPath
                 |> autoSize
 

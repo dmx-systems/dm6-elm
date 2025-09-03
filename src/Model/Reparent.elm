@@ -1,17 +1,58 @@
-module Model.Reparent exposing (canReparent)
+module Model.Reparent exposing (canReparent, parentsOf)
 
 import AppModel as AM
-import Domain.Reparent as R
-import Model exposing (MapId)
+import Dict
+import Domain.Reparent as DR
+import Model exposing (..)
 
 
-canReparent : MapId -> Maybe MapId -> AM.Model -> Result String ()
-canReparent a b model =
-    R.canReparent a b (parentsOf model)
+{-| Check whether `childId` may be reparented under `maybeNewParent`.
+
+    * Fast guard against A→A self-containment.
+    * Defers full cycle/ancestry validation to Domain.Reparent.canReparent,
+      wiring it up with our local `parentsOf` lookup.
+
+-}
+canReparent : Id -> Maybe MapId -> AM.Model -> Result String ()
+canReparent child maybeNewParent model =
+    DR.canReparent child maybeNewParent (parentsOf model)
 
 
-parentsOf : AM.Model -> MapId -> List MapId
+{-| Direct parent maps of a child, derived from `dmx.composition` assocs:
+
+    itemType =
+        "dmx.composition"
+
+    role1 =
+        "dmx.child" (player1 == child)
+
+    role2 =
+        "dmx.parent" (player2 == parent map id)
+
+-}
+parentsOf : AM.Model -> Id -> List MapId
 parentsOf model childId =
-    -- derive direct parent map IDs of childId from dmx.composition assocs
-    -- TODO: implement using your existing assoc graph
-    []
+    model.items
+        |> Dict.values
+        |> List.filterMap
+            (\item ->
+                case item.info of
+                    Assoc assoc ->
+                        if
+                            assoc.itemType
+                                == "dmx.composition"
+                                && assoc.role1
+                                == "dmx.child"
+                                && assoc.role2
+                                == "dmx.parent"
+                                && assoc.player1
+                                == childId
+                        then
+                            Just assoc.player2
+
+                        else
+                            Nothing
+
+                    _ ->
+                        Nothing
+            )
