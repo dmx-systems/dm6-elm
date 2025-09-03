@@ -163,14 +163,14 @@ getTopicPos topicId mapId maps =
     Nothing -> fail "getTopicPos" {topicId = topicId, mapId = mapId} Nothing
 
 
-{-| Logs an error if topic is not in map -}
+{-| Logs an error if map does not exist or if topic is not in map -}
 setTopicPos : Id -> MapId -> Point -> Model -> Model
 setTopicPos topicId mapId pos model =
   model |> updateTopicProps topicId mapId
     (\props -> { props | pos = pos })
 
 
-{-| Logs an error if topic is not in map -}
+{-| Logs an error if map does not exist or if topic is not in map -}
 setTopicPosByDelta : Id -> MapId -> Delta -> Model -> Model
 setTopicPosByDelta topicId mapId delta model =
   model |> updateTopicProps topicId mapId
@@ -190,7 +190,7 @@ getTopicSize topicId mapId maps =
     Nothing -> fail "getTopicSize" {topicId = topicId, mapId = mapId} Nothing
 
 
-{-| Logs an error if topic is not in map -}
+{-| Logs an error if map does not exist or if topic is not in map -}
 setTopicSize : Id -> MapId -> Size -> Model -> Model
 setTopicSize topicId mapId size model =
   model |> updateTopicProps topicId mapId
@@ -204,7 +204,7 @@ getDisplayMode topicId mapId maps =
     Nothing -> fail "getDisplayMode" {topicId = topicId, mapId = mapId} Nothing
 
 
-{-| Logs an error if topic is not in map -}
+{-| Logs an error if map does not exist or if topic is not in map -}
 setDisplayMode : Id -> MapId -> DisplayMode -> Model -> Model
 setDisplayMode topicId mapId displayMode model =
   model |> updateTopicProps topicId mapId
@@ -221,7 +221,7 @@ getTopicProps topicId mapId maps =
     Nothing -> fail "getTopicProps" {topicId = topicId, mapId = mapId} Nothing
 
 
-{-| Logs an error if topic is not in map -}
+{-| Logs an error if map does not exist or if topic is not in map -}
 updateTopicProps : Id -> MapId -> (TopicProps -> TopicProps) -> Model -> Model
 updateTopicProps topicId mapId propsFunc model =
   { model | maps = model.maps |> updateMaps mapId
@@ -383,6 +383,7 @@ hideItem_ itemId items model =
     )
 
 
+{-| Logs an error if map does not exist -}
 updateMaps : MapId -> (Map -> Map) -> Maps -> Maps
 updateMaps mapId mapFunc maps =
   maps |> Dict.update mapId

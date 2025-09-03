@@ -4,6 +4,7 @@ import AppModel exposing (..)
 import Config exposing (..)
 import Model exposing (..)
 import ModelAPI exposing (..)
+import Utils exposing (logError)
 
 import Dict
 
@@ -14,22 +15,35 @@ import Dict
 
 autoSize : Model -> Model
 autoSize model =
-  calcMapRect (activeMap model) -1 model |> Tuple.second -- parentMapId = -1
+  case getSingleSelection model of
+    Just (_, mapPath) -> autoSizeMap mapPath model
+    Nothing -> model
 
 
-{-| Calculates (recursively) the map's "rect"
+autoSizeMap : MapPath -> Model -> Model
+autoSizeMap mapPath model =
+  case mapPath of
+    [ mapId ] -> model
+    mapId :: parentMapId :: mapIds ->
+      model
+      |> calcMapRect mapId parentMapId
+      |> autoSizeMap (parentMapId :: mapIds) -- recursion
+    [] -> logError "autoSizeMap" "mapPath is empty!" model
+
+
+{-| Calculates the map's "rect"
 -}
-calcMapRect : MapId -> MapId -> Model -> (Rectangle, Model)
+calcMapRect : MapId -> MapId -> Model -> Model
 calcMapRect mapId parentMapId model =
   case getMap mapId model.maps of
     Just map ->
       let
-        (rect, model_) =
+        rect =
           (map.items |> Dict.values |> List.filter isVisible |> List.foldr
-            (\mapItem (rectAcc, modelAcc) ->
-              calcItemSize mapItem mapId rectAcc modelAcc
+            (\mapItem rectAcc ->
+              accumulateSize mapItem mapId rectAcc model
             )
-            (Rectangle 5000 5000 -5000 -5000, model) -- x-min y-min x-max y-max
+            (Rectangle 5000 5000 -5000 -5000) -- x-min y-min x-max y-max
           )
         newRect = Rectangle
           (rect.x1 - whiteBoxPadding)
@@ -37,43 +51,37 @@ calcMapRect mapId parentMapId model =
           (rect.x2 + whiteBoxPadding)
           (rect.y2 + whiteBoxPadding)
       in
-      storeMapRect mapId newRect map.rect parentMapId model_
-    Nothing -> (Rectangle 0 0 0 0, model)
+      storeMapRect mapId newRect map.rect parentMapId model
+    Nothing -> model
 
 
-calcItemSize : MapItem -> MapId -> Rectangle -> Model -> (Rectangle, Model)
-calcItemSize mapItem mapId rectAcc model =
+accumulateSize : MapItem -> MapId -> Rectangle -> Model -> Rectangle
+accumulateSize mapItem mapId rectAcc model =
   case mapItem.props of
     MapTopic {pos, size, displayMode} ->
       case displayMode of
-        Monad LabelOnly -> (topicExtent pos rectAcc, model)
-        Monad Detail -> (detailTopicExtent mapItem.id mapId pos size rectAcc model, model)
-        Container BlackBox -> (topicExtent pos rectAcc, model)
+        Monad LabelOnly -> topicExtent pos rectAcc
+        Monad Detail -> detailTopicExtent mapItem.id mapId pos size rectAcc model
+        Container BlackBox -> topicExtent pos rectAcc
         Container WhiteBox ->
-          let
-            (rect, model_) = calcMapRect mapItem.id mapId model -- recursion
-          in
-          (mapExtent pos rect rectAcc, model_)
-        Container Unboxed -> (topicExtent pos rectAcc, model)
-    MapAssoc _ -> (rectAcc, model)
+          case getMap mapItem.id model.maps of
+            Just map -> mapExtent pos map.rect rectAcc
+            Nothing -> Rectangle 0 0 0 0 -- error is already logged
+        Container Unboxed -> topicExtent pos rectAcc
+    MapAssoc _ -> rectAcc
 
 
 {-| Store the map's "newRect" and, based on its change, calculate and stores the map's "pos"
 adjustmennt ("delta")
 -}
-storeMapRect : MapId -> Rectangle -> Rectangle -> MapId -> Model -> (Rectangle, Model)
+storeMapRect : MapId -> Rectangle -> Rectangle -> MapId -> Model -> Model
 storeMapRect mapId newRect oldRect parentMapId model =
-  if isFullscreen mapId model then
-    (newRect, model)
-  else
-    (newRect
-    , model
-      |> updateMapRect mapId (\rect -> newRect)
-      |> setTopicPosByDelta mapId parentMapId
-        (Point
-          (newRect.x1 - oldRect.x1)
-          (newRect.y1 - oldRect.y1)
-        )
+  model
+  |> updateMapRect mapId (\rect -> newRect)
+  |> setTopicPosByDelta mapId parentMapId
+    (Point
+      (newRect.x1 - oldRect.x1)
+      (newRect.y1 - oldRect.y1)
     )
 
 
