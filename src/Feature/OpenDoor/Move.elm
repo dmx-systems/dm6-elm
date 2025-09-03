@@ -1,17 +1,16 @@
 module Feature.OpenDoor.Move exposing (move)
 
+-- needs `moveTopicToMap` exposed
+
 import AppModel exposing (Model)
-import Config exposing (topicSize, whiteBoxPadding)
-import Dict exposing (Dict)
+import Dict
+import Main
 import Model
     exposing
         ( Id
         , MapId
-        , MapItem
         , MapProps(..)
         , Point
-        , Rectangle
-        , TopicProps
         )
 import ModelAPI
 
@@ -24,6 +23,7 @@ move :
     -> Model
     -> Model
 move { containerId, topicId, targetMapId } model0 =
+    -- no-op guards: same container/child, missing container, or child not in container
     if containerId == topicId then
         model0
 
@@ -38,94 +38,46 @@ move { containerId, topicId, targetMapId } model0 =
                         model0
 
                     Just _ ->
-                        -- ⬅️ FIX: only one arg to Just
                         let
-                            newItemsInContainer : Dict Id MapItem
-                            newItemsInContainer =
-                                Dict.remove topicId containerMap.items
-
-                            adjustedContainerRect : Rectangle
-                            adjustedContainerRect =
-                                if Dict.isEmpty newItemsInContainer then
-                                    Rectangle
-                                        0
-                                        0
-                                        (topicSize.w + 2 * whiteBoxPadding)
-                                        (topicSize.h + 2 * whiteBoxPadding)
-
-                                else
-                                    containerMap.rect
-
-                            model1 : Model
-                            model1 =
-                                { model0
-                                    | maps =
-                                        Dict.insert
-                                            containerId
-                                            { containerMap
-                                                | items = newItemsInContainer
-                                                , rect = adjustedContainerRect
-                                            }
-                                            model0.maps
-                                }
-                        in
-                        case Dict.get targetMapId model1.maps of
-                            Nothing ->
-                                model1
-
-                            Just targetMap ->
-                                let
-                                    existingOnTarget : Maybe MapItem
-                                    existingOnTarget =
-                                        Dict.get topicId targetMap.items
-
-                                    containerPosOnTarget : Maybe Point
-                                    containerPosOnTarget =
-                                        case ModelAPI.getTopicProps containerId targetMapId model1.maps of
-                                            Just tp ->
-                                                Just tp.pos
-
-                                            Nothing ->
-                                                Nothing
-
-                                    defaultDropPos : Point
-                                    defaultDropPos =
-                                        Point 40 40
-
-                                    newPos : Point
-                                    newPos =
-                                        case containerPosOnTarget of
-                                            Just cp ->
-                                                Point (cp.x + 24) (cp.y + 24)
-
-                                            Nothing ->
-                                                defaultDropPos
-                                in
-                                case existingOnTarget of
-                                    Just existing ->
-                                        { model1
-                                            | maps =
-                                                Dict.insert
-                                                    targetMapId
-                                                    { targetMap
-                                                        | items =
-                                                            Dict.insert
-                                                                topicId
-                                                                { existing | hidden = False, pinned = False }
-                                                                targetMap.items
-                                                    }
-                                                    model1.maps
-                                        }
+                            -- original position of the topic inside its current container
+                            origPos : Point
+                            origPos =
+                                case ModelAPI.getTopicProps topicId containerId model0.maps of
+                                    Just tp ->
+                                        tp.pos
 
                                     Nothing ->
-                                        -- Build props via API and insert as MapTopic
-                                        let
-                                            tp0 : TopicProps
-                                            tp0 =
-                                                ModelAPI.defaultProps topicId topicSize model1
+                                        Point 0 0
 
-                                            tp1 : TopicProps
-                                            tp1 =
-                                                { tp0 | pos = newPos }
-                                        in
-                                        ModelAPI.addItemToMap topicId (MapTopic tp1) targetMapId model1
+                            -- try to place the dropped topic near the container's position
+                            containerPosOnTarget : Maybe Point
+                            containerPosOnTarget =
+                                ModelAPI.getTopicProps containerId targetMapId model0.maps
+                                    |> Maybe.map .pos
+
+                            defaultDropPos : Point
+                            defaultDropPos =
+                                Point 40 40
+
+                            newPos : Point
+                            newPos =
+                                case containerPosOnTarget of
+                                    Just { x, y } ->
+                                        Point (x + 24) (y + 24)
+
+                                    Nothing ->
+                                        defaultDropPos
+
+                            -- active view path when dropping; keep it simple: focus the target map
+                            targetMapPath =
+                                [ targetMapId ]
+                        in
+                        -- Delegate to upstream move logic
+                        Main.moveTopicToMap
+                            topicId
+                            containerId
+                            origPos
+                            targetMapId
+                            targetMapPath
+                            newPos
+                            model0

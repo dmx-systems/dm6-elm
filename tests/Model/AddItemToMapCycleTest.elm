@@ -49,7 +49,7 @@ tests =
 
                     -- try to place map 1 into map 1
                     model1 =
-                        addItemToMap 1 props 1 model0
+                        ModelAPI.addItemToMap 1 props 1 model0
                 in
                 -- must be rejected -> model unchanged
                 Expect.equal model1 model0
