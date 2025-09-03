@@ -7,6 +7,26 @@ import Model exposing (..)
 import ModelAPI exposing (activeMap, getSingleSelection)
 
 
+mapIdOf : MapPath -> MapId
+mapIdOf path =
+    case path of
+        id :: _ ->
+            id
+
+        [] ->
+            0
+
+
+parentPathOf : MapPath -> Maybe MapPath
+parentPathOf path =
+    case path of
+        _ :: rest ->
+            Just rest
+
+        [] ->
+            Nothing
+
+
 {-| Decide what the Cross button should do.
 
     - Containers (topicId is also a map id): navigate (enter/exit).
@@ -27,7 +47,7 @@ decideOpenDoorMsg model =
             in
             Nothing
 
-        Just ( topicId, selectionMapId ) ->
+        Just ( topicId, selectionPath ) ->
             let
                 here : MapId
                 here =
@@ -36,6 +56,10 @@ decideOpenDoorMsg model =
                 origin : Point
                 origin =
                     Point 0 0
+
+                selectionMapId : MapId
+                selectionMapId =
+                    mapIdOf selectionPath
 
                 -- A topic is a container iff there is a map with the same id
                 isContainer : Bool
@@ -59,14 +83,14 @@ decideOpenDoorMsg model =
                     Just (Nav Back)
 
             else if selectionMapId == here then
-                -- Monad on parent → move into its owning container if present.
+                -- parent → inner (into owning container if any)
                 case findContainerForChild here topicId model of
                     Just containerId ->
                         let
                             _ =
                                 info "Cross (parent→inner)" { topicId = topicId, src = here, dst = containerId }
                         in
-                        Just (MoveTopicToMap topicId here origin topicId containerId origin)
+                        Just (MoveTopicToMap topicId here origin topicId (containerId :: model.mapPath) origin)
 
                     Nothing ->
                         -- no container on parent; do a no-op move for consistency
@@ -74,17 +98,20 @@ decideOpenDoorMsg model =
                             _ =
                                 info "Cross (no-op)" { reason = "no owning container on parent", topicId = topicId, parent = here }
                         in
-                        Just (MoveTopicToMap topicId here origin topicId here origin)
+                        Just (MoveTopicToMap topicId here origin topicId model.mapPath origin)
 
             else
-                -- Monad inside an inner map → move to that inner map's parent.
-                case findParentOf selectionMapId model of
-                    Just parentId ->
+                -- inner → parent
+                case parentPathOf selectionPath of
+                    Just parentPath ->
                         let
+                            parentId =
+                                mapIdOf parentPath
+
                             _ =
                                 info "Cross (inner→parent)" { topicId = topicId, src = selectionMapId, dst = parentId }
                         in
-                        Just (MoveTopicToMap topicId selectionMapId origin topicId parentId origin)
+                        Just (MoveTopicToMap topicId selectionMapId origin topicId parentPath origin)
 
                     Nothing ->
                         let

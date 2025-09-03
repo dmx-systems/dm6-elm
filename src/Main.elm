@@ -1,7 +1,5 @@
 module Main exposing (..)
 
--- components
-
 import AppModel exposing (..)
 import Boxing exposing (boxContainer, unboxContainer)
 import Browser
@@ -22,7 +20,7 @@ import SearchAPI exposing (updateSearch, viewResultMenu)
 import Storage exposing (modelDecoder, storeModel, storeModelWith)
 import String exposing (fromFloat, fromInt)
 import Task
-import Toolbar exposing (viewToolbar)
+import UI.Toolbar exposing (viewToolbar)
 import Utils exposing (..)
 
 
