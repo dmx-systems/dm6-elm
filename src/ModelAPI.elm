@@ -279,8 +279,11 @@ isItemInMap itemId mapId model =
     Nothing -> False
 
 
-createTopicAndAddToMap : String -> Maybe IconName -> MapId -> Model -> Model
-createTopicAndAddToMap text iconName mapId model =
+createTopicIn : String -> Maybe IconName -> MapPath -> Model -> Model
+createTopicIn text iconName mapPath model =
+  let
+    mapId = getMapId mapPath
+  in
   case getMap mapId model.maps of
     Just map ->
       let
@@ -295,14 +298,14 @@ createTopicAndAddToMap text iconName mapId model =
       in
       newModel
       |> addItemToMap topicId props mapId
-      |> select topicId mapId
+      |> select topicId mapPath
     Nothing -> model
 
 
 -- Presumption: both players exist in same map
-createDefaultAssoc : Id -> Id -> MapId -> Model -> Model
-createDefaultAssoc player1 player2 mapId model =
-  createAssocAndAddToMap
+createDefaultAssocIn : Id -> Id -> MapId -> Model -> Model
+createDefaultAssocIn player1 player2 mapId model =
+  createAssocIn
     "dmx.association"
     "dmx.default" player1
     "dmx.default" player2
@@ -310,8 +313,8 @@ createDefaultAssoc player1 player2 mapId model =
 
 
 -- Presumption: both players exist in same map
-createAssocAndAddToMap : ItemType -> RoleType -> Id -> RoleType -> Id -> MapId -> Model -> Model
-createAssocAndAddToMap itemType role1 player1 role2 player2 mapId model =
+createAssocIn : ItemType -> RoleType -> Id -> RoleType -> Id -> MapId -> Model -> Model
+createAssocIn itemType role1 player1 role2 player2 mapId model =
   let
     (newModel, assocId) = createAssoc itemType role1 player1 role2 player2 model
     props = MapAssoc AssocProps
@@ -463,12 +466,22 @@ isVisible item =
 
 -- Selection
 
-select : Id -> MapId -> Model -> Model
-select id mapId model =
-  { model | selection = [ (id, mapId) ] }
+select : Id -> MapPath -> Model -> Model
+select itemId mapPath model =
+  { model | selection = [ (itemId, mapPath) ] }
 
 
-getSingleSelection : Model -> Maybe (Id, MapId)
+isSelected : Id -> MapId -> Model -> Bool
+isSelected itemId mapId model =
+  model.selection |> List.any
+    (\(id, mapPath) ->
+      case mapPath of
+        mapId_ :: _ -> itemId == id && mapId == mapId_
+        [] -> False
+    )
+
+
+getSingleSelection : Model -> Maybe (Id, MapPath)
 getSingleSelection model =
   case model.selection of
     [ selItem ] -> Just selItem

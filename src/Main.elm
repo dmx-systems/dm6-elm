@@ -132,10 +132,9 @@ update msg model =
         _ -> info "update" msg
   in
   case msg of
-    AddTopic -> createTopicAndAddToMap topicDefaultText Nothing (activeMap model) model
-      |> storeModel
-    MoveTopicToMap topicId mapId origPos targetId targetMapId pos
-      -> moveTopicToMap topicId mapId origPos targetId targetMapId pos model |> storeModel
+    AddTopic -> createTopicIn topicDefaultText Nothing [ activeMap model ] model |> storeModel
+    MoveTopicToMap topicId mapId origPos targetId targetMapPath pos
+      -> moveTopicToMap topicId mapId origPos targetId targetMapPath pos model |> storeModel
     SwitchDisplay displayMode -> switchDisplay displayMode model |> storeModel
     Search searchMsg -> updateSearch searchMsg model
     Edit editMsg -> updateEdit editMsg model
@@ -147,8 +146,8 @@ update msg model =
     NoOp -> (model, Cmd.none)
 
 
-moveTopicToMap : Id -> MapId -> Point -> Id -> MapId -> Point -> Model -> Model
-moveTopicToMap topicId mapId origPos targetId targetMapId pos model =
+moveTopicToMap : Id -> MapId -> Point -> Id -> MapPath -> Point -> Model -> Model
+moveTopicToMap topicId mapId origPos targetId targetMapPath pos model =
   let
     (newModel, created) = createMapIfNeeded targetId model
     newPos =
@@ -167,7 +166,7 @@ moveTopicToMap topicId mapId origPos targetId targetMapId pos model =
       |> hideItem topicId mapId
       |> setTopicPos topicId mapId origPos
       |> addItemToMap topicId props targetId
-      |> select targetId targetMapId
+      |> select targetId targetMapPath
       |> autoSize
     Nothing -> model
 
@@ -201,15 +200,18 @@ setDisplayModeInAllMaps topicId displayMode model =
 switchDisplay : DisplayMode -> Model -> Model
 switchDisplay displayMode model =
   ( case getSingleSelection model of
-    Just (containerId, targetMapId) ->
+    Just (containerId, mapPath) ->
+      let
+        mapId = getMapId mapPath
+      in
       { model | maps =
         case displayMode of
           Monad _ -> model.maps
-          Container BlackBox -> boxContainer containerId targetMapId model
-          Container WhiteBox -> boxContainer containerId targetMapId model
-          Container Unboxed -> unboxContainer containerId targetMapId model
+          Container BlackBox -> boxContainer containerId mapId model
+          Container WhiteBox -> boxContainer containerId mapId model
+          Container Unboxed -> unboxContainer containerId mapId model
       }
-      |> setDisplayMode containerId targetMapId displayMode
+      |> setDisplayMode containerId mapId displayMode
     Nothing -> model
   )
   |> autoSize
@@ -236,9 +238,9 @@ startEdit : Model -> (Model, Cmd Msg)
 startEdit model =
   let
     newModel = case getSingleSelection model of
-      Just (topicId, mapId) ->
-        { model | editState = ItemEdit topicId mapId }
-        |> setDetailDisplayIfMonade topicId mapId
+      Just (topicId, mapPath) ->
+        { model | editState = ItemEdit topicId (getMapId mapPath) }
+        |> setDetailDisplayIfMonade topicId (getMapId mapPath)
         |> autoSize
       Nothing -> model
   in
@@ -351,7 +353,7 @@ back model =
   in
   { model
   | mapPath = mapPath
-  , selection = selection
+  -- , selection = selection -- TODO
   }
   |> adjustMapRect mapId 1
   |> autoSize
@@ -373,7 +375,7 @@ hide model =
   let
     newModel = model.selection
       |> List.foldr
-        (\(itemId, mapId) modelAcc -> hideItem itemId mapId modelAcc)
+        (\(itemId, mapPath) modelAcc -> hideItem itemId (getMapId mapPath) modelAcc)
         model
   in
   { newModel | selection = [] }

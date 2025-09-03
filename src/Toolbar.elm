@@ -4,8 +4,8 @@ import AppModel exposing (Model, Msg(..))
 import Config exposing (homeMapName, version, date, mainFont, toolbarFontSize, footerFontSize)
 import Model exposing (EditMsg(..), NavMsg(..), DisplayMode(..), MonadDisplay(..),
   ContainerDisplay(..))
-import ModelAPI exposing (getTopicInfo, getTopicLabel, isHome, activeMap, getDisplayMode,
-  getSingleSelection)
+import ModelAPI exposing (getTopicInfo, getTopicLabel, getMapId, isHome, activeMap,
+  getDisplayMode, getSingleSelection)
 import Utils exposing (stopPropagationOnMousedown)
 -- components
 import IconMenu exposing (IconMenuMsg(..))
@@ -126,7 +126,7 @@ viewMonadDisplay : Model -> Html Msg
 viewMonadDisplay model =
   let
     displayMode = case getSingleSelection model of
-      Just (topicId, mapId) -> getDisplayMode topicId mapId model.maps
+      Just (topicId, mapPath) -> getDisplayMode topicId (getMapId mapPath) model.maps
       Nothing -> Nothing
     (checked1, checked2, disabled_) =
       case displayMode of
@@ -148,7 +148,7 @@ viewContainerDisplay : Model -> Html Msg
 viewContainerDisplay model =
   let
     displayMode = case getSingleSelection model of
-      Just (topicId, mapId) -> getDisplayMode topicId mapId model.maps
+      Just (topicId, mapPath) -> getDisplayMode topicId (getMapId mapPath) model.maps
       Nothing -> Nothing
     (checked1, checked2, checked3) =
       case displayMode of

@@ -46,7 +46,7 @@ default =
 
 type Msg
   = AddTopic
-  | MoveTopicToMap Id MapId Point Id MapId Point -- start point, random point (for target)
+  | MoveTopicToMap Id MapId Point Id MapPath Point -- start point, random point (for target)
   | SwitchDisplay DisplayMode
   | Edit EditMsg
   | Nav NavMsg

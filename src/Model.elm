@@ -113,7 +113,7 @@ type alias Size =
   }
 
 
-type alias Selection = List (Id, MapId)
+type alias Selection = List (Id, MapPath)
 
 
 type alias Id = Int

@@ -330,8 +330,12 @@ blackBoxTopic topic props mapPath model =
   in
   ( topicPosStyle props
   , [ div
-      (topicFlexboxStyle topic props mapId model ++ blackBoxStyle)
-      (labelTopicHtml topic props mapId model ++ mapItemCount topic.id props model)
+      (topicFlexboxStyle topic props mapId model
+        ++ blackBoxStyle
+      )
+      (labelTopicHtml topic props mapId model
+        ++ mapItemCount topic.id props model
+      )
     , div
       (ghostTopicStyle topic mapId model)
       []
@@ -490,13 +494,9 @@ topicStyle id model =
 
 selectionStyle : Id -> MapId -> Model -> List (Attribute Msg)
 selectionStyle topicId mapId model =
-  let
-    selected = model.selection |> List.member (topicId, mapId)
-  in
-  if selected then
-    [ style "box-shadow" "gray 5px 5px 5px" ]
-  else
-    []
+  case isSelected topicId mapId model of
+    True -> [ style "box-shadow" "gray 5px 5px 5px" ]
+    False -> []
 
 
 topicFlexboxStyle : TopicInfo -> TopicProps -> MapId -> Model -> List (Attribute Msg)
@@ -624,10 +624,8 @@ topicBorderStyle id mapId model =
     targeted = case model.mouse.dragState of
       -- can't move a topic to a map where it is already
       -- can't create assoc when both topics are in different map
-      Drag DragTopic _ (mapId_ :: _) _ _ (Just target) ->
-        target == (id, mapId) && mapId_ /= id
-      Drag DrawAssoc _ (mapId_ :: _) _ _ (Just target) ->
-        target == (id, mapId) && mapId_ == mapId
+      Drag DragTopic _ (mapId_ :: _) _ _ target -> isTarget id mapId target && mapId_ /= id
+      Drag DrawAssoc _ (mapId_ :: _) _ _ target -> isTarget id mapId target && mapId_ == mapId
       _ -> False
   in
   [ style "border-width" <| fromFloat topicBorderWidth ++ "px"
@@ -635,6 +633,16 @@ topicBorderStyle id mapId model =
   , style "box-sizing" "border-box"
   , style "background-color" "white"
   ]
+
+
+isTarget : Id -> MapId -> Maybe (Id, MapPath) -> Bool
+isTarget topicId mapId target =
+  case target of
+    Just (targetId, targetMapPath) ->
+      case targetMapPath of
+        targetMapId :: _ -> topicId == targetId && mapId == targetMapId
+        [] -> False
+    Nothing -> False
 
 
 topicLayerStyle : Rectangle -> List (Attribute Msg)

@@ -1,6 +1,6 @@
 module Mouse exposing (..)
 
-import Model exposing (Class, Id, MapId, MapPath, Point)
+import Model exposing (Class, Id, MapPath, Point)
 import Time
 
 
@@ -18,8 +18,8 @@ type DragState
   = WaitForStartTime Class Id MapPath Point -- start point (mouse)
   | DragEngaged Time.Posix Class Id MapPath Point -- start point (mouse)
   | WaitForEndTime Time.Posix Class Id MapPath Point -- start point (mouse)
-  | Drag DragMode Id MapPath Point Point (Maybe (Id, MapId)) -- orig topic pos,
-                                                             -- last point (mouse)
+  | Drag DragMode Id MapPath Point Point (Maybe (Id, MapPath)) -- orig topic pos,
+                                                               -- last point (mouse)
   | NoDrag
 
 

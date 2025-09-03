@@ -4,8 +4,8 @@ import AppModel exposing (Model, Msg(..))
 import Config exposing (topicW2, topicH2, assocDelayMillis, whiteBoxRange, whiteBoxPadding)
 import MapAutoSize exposing (autoSize)
 import Model exposing (Class, Id, MapPath, Point)
-import ModelAPI exposing (getTopicPos, setTopicPosByDelta, createDefaultAssoc, select, getMapId,
-  idDecoder, pathDecoder, fromPath)
+import ModelAPI exposing (getTopicPos, setTopicPosByDelta, createDefaultAssocIn, getMapId,
+  select, idDecoder, pathDecoder, fromPath)
 import Storage exposing (storeModelWith)
 import Utils exposing (logError, info, toString)
 -- components
@@ -60,7 +60,7 @@ mouseDown model =
 mouseDownOnItem : Model -> Class -> Id -> MapPath -> Point -> (Model, Cmd Msg)
 mouseDownOnItem model class id mapPath pos =
   (updateDragState model (WaitForStartTime class id mapPath pos)
-    |> select id (getMapId mapPath)
+    |> select id mapPath
   , Task.perform (Mouse << Time) Time.now
   )
 
@@ -132,29 +132,29 @@ mouseUp model =
   let
     (newModel, cmd) =
       case model.mouse.dragState of
-        Drag DragTopic id mapPath origPos _ (Just (targetId, targetMapId)) ->
+        Drag DragTopic id mapPath origPos _ (Just (targetId, targetMapPath)) ->
           let
             _ = info "mouseUp" ("dropped " ++ fromInt id ++ " (map " ++ fromPath mapPath
-              ++ ") on " ++ fromInt targetId ++ " (map " ++ fromInt targetMapId ++ ") --> "
+              ++ ") on " ++ fromInt targetId ++ " (map " ++ fromPath targetMapPath ++ ") --> "
               ++ if notDroppedOnOwnMap then "move topic" else "abort")
             mapId = getMapId mapPath
             notDroppedOnOwnMap = mapId /= targetId
-            msg = MoveTopicToMap id mapId origPos targetId targetMapId
+            msg = MoveTopicToMap id mapId origPos targetId targetMapPath
           in
           if notDroppedOnOwnMap then
             (model, Random.generate msg point)
           else
             (model, Cmd.none)
-        Drag DrawAssoc id mapPath _ _ (Just (targetId, targetMapId)) ->
+        Drag DrawAssoc id mapPath _ _ (Just (targetId, targetMapPath)) ->
           let
             _ = info "mouseUp" ("assoc drawn from " ++ fromInt id ++ " (map " ++ fromPath
-              mapPath ++ ") to " ++ fromInt targetId ++ " (map " ++ fromInt targetMapId
+              mapPath ++ ") to " ++ fromInt targetId ++ " (map " ++ fromPath targetMapPath
               ++ ") --> " ++ if isSameMap then "create assoc" else "abort")
             mapId = getMapId mapPath
-            isSameMap = mapId == targetMapId
+            isSameMap = mapId == getMapId targetMapPath
           in
           if isSameMap then
-            (createDefaultAssoc id targetId mapId model, Cmd.none)
+            (createDefaultAssocIn id targetId mapId model, Cmd.none)
           else
             (model, Cmd.none)
         Drag _ _ _ _ _ _ ->
@@ -197,8 +197,8 @@ mouseOver model class targetId targetMapPath =
         mapId = getMapId mapPath
         targetMapId = getMapId targetMapPath
         target =
-          if (id, mapId) /= (targetId, targetMapId) then
-            Just (targetId, targetMapId)
+          if (id, mapId) /= (targetId, targetMapId) then -- TODO: mapId comparison needed?
+            Just (targetId, targetMapPath)
           else
             Nothing
       in
@@ -212,9 +212,9 @@ mouseOver model class targetId targetMapPath =
 mouseOut : Model -> Class -> Id -> MapPath -> Model
 mouseOut model class targetId targetMapPath =
   case model.mouse.dragState of
-    Drag dragMode id mapId origPos lastPos _ ->
+    Drag dragMode id mapPath origPos lastPos _ ->
       -- reset target
-      updateDragState model <| Drag dragMode id mapId origPos lastPos Nothing
+      updateDragState model <| Drag dragMode id mapPath origPos lastPos Nothing
     _ -> model
 
 
