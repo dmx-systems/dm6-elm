@@ -4,7 +4,7 @@ import AppModel exposing (..)
 import Config exposing (..)
 import Model exposing (..)
 import ModelAPI exposing (..)
-import Utils exposing (logError)
+import Utils exposing (info, logError)
 
 import Dict
 
@@ -15,9 +15,50 @@ import Dict
 
 autoSize : Model -> Model
 autoSize model =
+  let
+    paths = findPaths model
+    _ = info "autoSize" paths
+  in
+  paths |> List.foldl autoSizeMap model -- left-fold resizes maps in selection path first
+
+
+{-| Finds the paths of the maps that might need resizing, based on current selection. Maps
+might occur in several paths, the "pos adjustment" though (see storeMapRect) must be applied
+only to the selection path (where interaction took place). This is done by returning the
+selection path first, the other map occurrences will calculate a zero adjustment then.
+-}
+findPaths : Model -> List MapPath
+findPaths model =
   case getSingleSelection model of
-    Just (_, mapPath) -> autoSizeMap mapPath model
-    Nothing -> model
+    Just (_, selPath) ->
+      case selPath of
+        mapId :: _ :: _ ->
+          let
+            activeMapId = activeMap model
+          in
+          selPath :: -- put selection path at front
+            (findPaths_ activeMapId [ activeMapId ] mapId [] model
+              |> List.filter ((/=) selPath)
+            )
+        [_] -> []
+        [] -> logError "findPaths" "selPath is empty!" []
+    Nothing -> []
+
+
+findPaths_ : Id -> MapPath -> MapId -> List MapPath -> Model -> List MapPath
+findPaths_ itemId pathToItem searchMapId foundPaths model =
+  case itemId == searchMapId of
+    True -> pathToItem :: foundPaths
+    False ->
+      case getMapIfExists itemId model.maps of
+        Just map ->
+          map.items |> Dict.values |> List.filter isVisible |> List.foldr -- TODO: filter topics
+            (\mapItem foundPathsAcc ->
+              -- recursion
+              findPaths_ mapItem.id (mapItem.id :: pathToItem) searchMapId foundPathsAcc model
+            )
+            foundPaths
+        Nothing -> foundPaths
 
 
 autoSizeMap : MapPath -> Model -> Model
