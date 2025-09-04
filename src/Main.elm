@@ -173,42 +173,47 @@ update msg model =
 
 
 
--- keep the upstream signature
+-- Derive targetMapId from the path; upstream createMapIfNeeded takes 2 args
 
 
-moveTopicToMap : Id -> MapId -> Point -> Id -> MapPath -> Point -> Model -> Model
-moveTopicToMap topicId mapId origPos targetId targetMapPath pos model =
+moveTopicToMap : Id -> MapId -> Point -> Id -> List MapId -> Point -> Model -> Model
+moveTopicToMap topicId containerId origPos targetId targetMapPath newPos model0 =
     let
-        ( newModel, created ) =
-            createMapIfNeeded targetId model
+        targetMapId =
+            targetMapPath |> List.reverse |> List.head |> Maybe.withDefault 0
 
-        newPos =
+        isSelfTarget =
+            targetId == topicId
+
+        ( model1, created ) =
+            createMapIfNeeded targetId model0
+
+        actualPos =
             if created then
                 Point (topicW2 + whiteBoxPadding) (topicH2 + whiteBoxPadding)
 
             else
-                pos
-
-        -- ✅ destination is ALWAYS the drop target
-        destMapId : MapId
-        destMapId =
-            targetId
+                newPos
 
         props_ =
-            getTopicProps topicId mapId newModel.maps
-                |> Maybe.map (\props -> MapTopic { props | pos = newPos })
+            getTopicProps topicId containerId model1.maps
+                |> Maybe.map (\p -> MapTopic { p | pos = actualPos })
     in
-    case props_ of
-        Just props ->
-            newModel
-                |> hideItem topicId mapId
-                |> setTopicPos topicId mapId origPos
-                |> addItemToMap topicId props destMapId
-                |> select targetId targetMapPath
-                |> autoSize
+    if isSelfTarget then
+        model0
 
-        Nothing ->
-            model
+    else
+        case props_ of
+            Just props ->
+                model1
+                    |> hideItem topicId containerId
+                    |> setTopicPos topicId containerId origPos
+                    |> addItemToMap topicId props targetId
+                    |> select targetId targetMapPath
+                    |> autoSize
+
+            Nothing ->
+                model0
 
 
 createMapIfNeeded : Id -> Model -> ( Model, Bool )

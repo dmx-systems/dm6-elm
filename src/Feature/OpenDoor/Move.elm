@@ -1,18 +1,24 @@
 module Feature.OpenDoor.Move exposing (move)
 
--- needs `moveTopicToMap` exposed
-
 import AppModel exposing (Model)
 import Dict
 import Main
-import Model
-    exposing
-        ( Id
-        , MapId
-        , MapProps(..)
-        , Point
-        )
+import Model exposing (Id, MapId, MapPath, Point)
 import ModelAPI
+
+
+
+-- Helper: parent map path of a container/topic (fallback to [0])
+
+
+parentPathOf : Id -> Model -> MapPath
+parentPathOf containerId model =
+    model.maps
+        |> Dict.toList
+        |> List.filter (\( _, m ) -> Dict.member containerId m.items)
+        |> List.head
+        |> Maybe.map (\( mapId, _ ) -> [ mapId ])
+        |> Maybe.withDefault [ 0 ]
 
 
 move :
@@ -39,6 +45,15 @@ move { containerId, topicId, targetMapId } model0 =
 
                     Just _ ->
                         let
+                            -- derive parent (target for "move out")
+                            parentPath : MapPath
+                            parentPath =
+                                parentPathOf containerId model0
+
+                            parentId : MapId
+                            parentId =
+                                List.head parentPath |> Maybe.withDefault 0
+
                             -- original position of the topic inside its current container
                             origPos : Point
                             origPos =
@@ -49,10 +64,10 @@ move { containerId, topicId, targetMapId } model0 =
                                     Nothing ->
                                         Point 0 0
 
-                            -- try to place the dropped topic near the container's position
-                            containerPosOnTarget : Maybe Point
-                            containerPosOnTarget =
-                                ModelAPI.getTopicProps containerId targetMapId model0.maps
+                            -- try to place the dropped topic near the container's position on its parent map
+                            containerPosOnParent : Maybe Point
+                            containerPosOnParent =
+                                ModelAPI.getTopicProps containerId parentId model0.maps
                                     |> Maybe.map .pos
 
                             defaultDropPos : Point
@@ -61,16 +76,12 @@ move { containerId, topicId, targetMapId } model0 =
 
                             newPos : Point
                             newPos =
-                                case containerPosOnTarget of
+                                case containerPosOnParent of
                                     Just { x, y } ->
                                         Point (x + 24) (y + 24)
 
                                     Nothing ->
                                         defaultDropPos
-
-                            -- active view path when dropping; keep it simple: focus the target map
-                            targetMapPath =
-                                [ targetMapId ]
                         in
-                        -- Delegate to upstream move logic
-                        Main.moveTopicToMap topicId containerId origPos 0 [ 0 ] newPos model0
+                        -- Cross the boundary: move topic from container into its parent map
+                        Main.moveTopicToMap topicId containerId origPos parentId parentPath newPos model0
