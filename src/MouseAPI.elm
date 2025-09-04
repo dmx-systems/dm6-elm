@@ -11,17 +11,7 @@ import IconMenuAPI exposing (closeIconMenu)
 import Json.Decode as D
 import MapAutoSize exposing (autoSize)
 import Model exposing (Class, Id, MapPath, Point)
-import ModelAPI
-    exposing
-        ( createDefaultAssocIn
-        , fromPath
-        , getMapId
-        , getTopicPos
-        , idDecoder
-        , pathDecoder
-        , select
-        , setTopicPosByDelta
-        )
+import ModelAPI exposing (createDefaultAssocIn, fromPath, getMapId, getTopicPos, idDecoder, pathDecoder, select, setTopicPosByDelta)
 import Mouse exposing (DragMode(..), DragState(..), MouseMsg(..))
 import Random
 import SearchAPI exposing (closeResultMenu)

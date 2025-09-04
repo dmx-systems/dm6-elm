@@ -8,11 +8,16 @@ module Compat.Model exposing
     )
 
 {-| A tiny compatibility layer to isolate upstream refactors.
+
+A constructor/record convenience layer so
+your app/tests don’t use raw constructors or upstream argument ordering directly.
+
 Use these helpers instead of calling constructors / ModelAPI directly.
+
 -}
 
+import Compat.ModelAPI as ModelAPI
 import Model exposing (..)
-import ModelAPI
 
 
 

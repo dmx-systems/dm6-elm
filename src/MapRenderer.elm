@@ -1,8 +1,7 @@
 module MapRenderer exposing (viewMap)
 
--- components
-
 import AppModel exposing (..)
+import Compat.ModelAPI as ModelAPI exposing (getMapItemById)
 import Config exposing (..)
 import Dict
 import Html exposing (Attribute, Html, div, input, text, textarea)
@@ -10,7 +9,21 @@ import Html.Attributes exposing (attribute, id, style, value)
 import Html.Events exposing (onBlur, onInput)
 import IconMenuAPI exposing (viewTopicIcon)
 import Model exposing (..)
-import ModelAPI exposing (..)
+import ModelAPI
+    exposing
+        ( activeMap
+        , defaultProps
+        , fromPath
+        , getMap
+        , getMapId
+        , getTopicLabel
+        , getTopicPos
+        , getTopicSize
+        , isFullscreen
+        , isItemInMap
+        , isSelected
+        , isVisible
+        )
 import Mouse exposing (DragMode(..), DragState(..))
 import Search exposing (ResultMenu(..))
 import String exposing (fromFloat, fromInt)

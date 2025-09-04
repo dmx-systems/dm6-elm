@@ -1,6 +1,6 @@
 module Model.DefaultModelTest exposing (tests)
 
-import Compat.ModelAPI exposing (defaultModel)
+import Compat.TestDefault exposing (defaultModel)
 import Dict
 import Expect
 import Model

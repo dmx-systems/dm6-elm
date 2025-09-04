@@ -3,7 +3,16 @@ module Boxing exposing (boxContainer, unboxContainer)
 import AppModel exposing (..)
 import Dict
 import Model exposing (..)
-import ModelAPI exposing (..)
+import ModelAPI
+    exposing
+        ( getDisplayMode
+        , getMap
+        , getMapIfExists
+        , hasMap
+        , hideItem_
+        , isVisible
+        , updateMaps
+        )
 import Utils exposing (..)
 
 

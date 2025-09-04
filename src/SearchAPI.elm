@@ -1,8 +1,7 @@
 module SearchAPI exposing (closeResultMenu, updateSearch, viewResultMenu, viewSearchInput)
 
--- components
-
 import AppModel exposing (Model, Msg(..))
+import Compat.ModelAPI as ModelAPI exposing (addItemToMap)
 import Config exposing (contentFontSize, topicSize)
 import Dict
 import Html exposing (Attribute, Html, div, input, text)
@@ -10,7 +9,15 @@ import Html.Attributes exposing (attribute, style, value)
 import Html.Events exposing (on, onFocus, onInput)
 import Json.Decode as D
 import Model exposing (Id, ItemInfo(..), MapId, MapProps(..))
-import ModelAPI exposing (..)
+import ModelAPI
+    exposing
+        ( activeMap
+        , defaultProps
+        , getTopicInfo
+        , idDecoder
+        , isItemInMap
+        , showItem
+        )
 import Search exposing (ResultMenu(..), SearchMsg(..))
 import Storage exposing (storeModel)
 import String exposing (fromInt)

@@ -1,7 +1,8 @@
 module Feature.OpenDoor.StayVisibleTest exposing (tests)
 
 import AppModel exposing (Model)
-import Compat.ModelAPI as M exposing (createTopic, defaultModel, getMapItemById)
+import Compat.ModelAPI as M exposing (createTopic, getMapItemById)
+import Compat.TestDefault exposing (defaultModel)
 import Dict
 import Expect
 import Feature.OpenDoor.Move as OpenDoor

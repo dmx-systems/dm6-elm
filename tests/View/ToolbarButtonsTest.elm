@@ -1,6 +1,6 @@
 module View.ToolbarButtonsTest exposing (tests)
 
-import Compat.ModelAPI exposing (defaultModel)
+import Compat.TestDefault exposing (defaultModel)
 import Html
 import Html.Attributes as Attr
 import Main exposing (view)

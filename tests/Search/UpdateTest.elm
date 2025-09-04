@@ -1,6 +1,6 @@
 module Search.UpdateTest exposing (tests)
 
-import Compat.ModelAPI exposing (defaultModel)
+import Compat.TestDefault exposing (defaultModel)
 import Expect
 import Search exposing (SearchMsg(..))
 import SearchAPI exposing (updateSearch)

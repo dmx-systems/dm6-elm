@@ -4,7 +4,14 @@ import AppModel exposing (..)
 import Config exposing (..)
 import Dict
 import Model exposing (..)
-import ModelAPI exposing (..)
+import ModelAPI
+    exposing
+        ( getMap
+        , getSingleSelection
+        , isVisible
+        , setTopicPosByDelta
+        , updateMapRect
+        )
 import Utils exposing (logError)
 
 
