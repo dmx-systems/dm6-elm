@@ -19,7 +19,7 @@ autoSize model =
     paths = findPaths model
     _ = info "autoSize" paths
   in
-  paths |> List.foldl autoSizeMap model -- left-fold resizes maps in selection path first
+  paths |> List.foldl resizeMaps model -- left-fold resizes maps in selection path first
 
 
 {-| Finds the paths of the maps that might need resizing, based on current selection. Maps
@@ -36,7 +36,7 @@ findPaths model =
           let
             activeMapId = activeMap model
           in
-          selPath :: -- put selection path at front
+          selPath :: -- put selection path at begin
             (findPaths_ activeMapId [ activeMapId ] mapId [] model
               |> List.filter ((/=) selPath)
             )
@@ -45,6 +45,7 @@ findPaths model =
     Nothing -> []
 
 
+{-| "itemId" is not necessarily a map Id -}
 findPaths_ : Id -> MapPath -> MapId -> List MapPath -> Model -> List MapPath
 findPaths_ itemId pathToItem searchMapId foundPaths model =
   case itemId == searchMapId of
@@ -61,21 +62,22 @@ findPaths_ itemId pathToItem searchMapId foundPaths model =
         Nothing -> foundPaths
 
 
-autoSizeMap : MapPath -> Model -> Model
-autoSizeMap mapPath model =
+resizeMaps : MapPath -> Model -> Model
+resizeMaps mapPath model =
   case mapPath of
     [ mapId ] -> model
     mapId :: parentMapId :: mapIds ->
       model
-      |> calcMapRect mapId parentMapId
-      |> autoSizeMap (parentMapId :: mapIds) -- recursion
-    [] -> logError "autoSizeMap" "mapPath is empty!" model
+      |> resizeMap mapId parentMapId
+      |> resizeMaps (parentMapId :: mapIds) -- recursion
+    [] -> logError "resizeMaps" "mapPath is empty!" model
 
 
-{-| Calculates the map's "rect"
+{-| Based on its content calculates the map's size (its "rect") and its position adjustment.
+Nested maps are expected to be sized already. Returns the updated model.
 -}
-calcMapRect : MapId -> MapId -> Model -> Model
-calcMapRect mapId parentMapId model =
+resizeMap : MapId -> MapId -> Model -> Model
+resizeMap mapId parentMapId model =
   case getMap mapId model.maps of
     Just map ->
       let
@@ -93,7 +95,7 @@ calcMapRect mapId parentMapId model =
           (rect.y2 + whiteBoxPadding)
       in
       storeMapRect mapId newRect map.rect parentMapId model
-    Nothing -> model
+    Nothing -> model -- error is already logged
 
 
 accumulateSize : MapItem -> MapId -> Rectangle -> Model -> Rectangle

@@ -378,8 +378,9 @@ hide model =
         (\(itemId, mapPath) modelAcc -> hideItem itemId (getMapId mapPath) modelAcc)
         model
   in
-  { newModel | selection = [] }
+  newModel
   |> autoSize
+  |> resetSelection
 
 
 delete : Model -> Model
@@ -391,5 +392,6 @@ delete model =
         (\itemId modelAcc -> deleteItem itemId modelAcc)
         model
   in
-  { newModel | selection = [] }
+  newModel
   |> autoSize
+  |> resetSelection
