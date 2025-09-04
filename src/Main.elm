@@ -1,12 +1,13 @@
-module Main exposing (..)
+module Main exposing (init, main, moveTopicToMap, update, view)
 
-import AppModel exposing (..)
+import AppModel as AM exposing (..)
 import Boxing exposing (boxContainer, unboxContainer)
 import Browser
 import Browser.Dom as Dom
 import Compat.ModelAPI
 import Config exposing (..)
 import Dict
+import Feature.Connection.Channel as Channel
 import Html exposing (Attribute, br, div, text)
 import Html.Attributes exposing (id, style)
 import IconMenuAPI exposing (updateIconMenu, viewIconMenu)
@@ -14,7 +15,7 @@ import Json.Decode as D
 import Json.Encode as E
 import MapAutoSize exposing (autoSize)
 import MapRenderer exposing (viewMap)
-import Model exposing (..)
+import Model as M exposing (..)
 import ModelAPI
     exposing
         ( activeMap
@@ -141,6 +142,52 @@ measureStyle =
     ]
 
 
+{-| Compatibility wrapper used by Feature.OpenDoor.\* and tests.
+
+    moveTopicToMap topicId fromId origPos targetId parentPath pos model
+
+-}
+moveTopicToMap :
+    Id
+    -> Id
+    -> Point
+    -> Id
+    -> List Id
+    -> Point
+    -> AM.Model
+    -> AM.Model
+moveTopicToMap topicId fromId origPos targetId parentPath pos model =
+    let
+        fromBoundary =
+            if fromId == 0 then
+                Channel.Root
+
+            else
+                Channel.Container fromId
+
+        toBoundary =
+            if targetId == 0 then
+                Channel.Root
+
+            else
+                Channel.Container targetId
+
+        req =
+            { topicId = topicId
+            , from = fromBoundary
+            , to = toBoundary
+            , pos = pos
+            , permit = Channel.defaultPermit
+            }
+    in
+    case Channel.cross req model of
+        Ok ( model1, _, _ ) ->
+            model1
+
+        Err _ ->
+            model
+
+
 
 -- UPDATE
 
@@ -160,8 +207,43 @@ update msg model =
         AddTopic ->
             createTopicIn topicDefaultText Nothing [ activeMap model ] model |> storeModel
 
-        MoveTopicToMap topicId mapId origPos targetId targetMapPath pos ->
-            moveTopicToMap topicId mapId origPos targetId targetMapPath pos model |> storeModel
+        MoveTopicToMap topicId containerId origPos targetId targetMapId pos ->
+            let
+                req =
+                    if targetId == 0 then
+                        -- cross OUT to root
+                        { topicId = topicId
+                        , from = Channel.Container containerId
+                        , to = Channel.Root
+                        , pos = pos
+                        , permit = Channel.defaultPermit
+                        }
+
+                    else
+                        -- cross IN to container targetId
+                        { topicId = topicId
+                        , from = Channel.Root
+                        , to = Channel.Container targetId
+                        , pos = pos
+                        , permit = Channel.defaultPermit
+                        }
+            in
+            case Channel.cross req model of
+                Ok ( model1, _, eff ) ->
+                    let
+                        cmd =
+                            case eff of
+                                Channel.None ->
+                                    Cmd.none
+
+                                Channel.Out_Crossed _ ->
+                                    -- no ports in tests; emit nothing
+                                    Cmd.none
+                    in
+                    ( model1, cmd )
+
+                Err _ ->
+                    ( model, Cmd.none )
 
         SwitchDisplay displayMode ->
             switchDisplay displayMode model |> storeModel
@@ -189,106 +271,6 @@ update msg model =
 
         NoOp ->
             ( model, Cmd.none )
-
-
-
--- Derive targetMapId from the path; upstream createMapIfNeeded takes 2 args
-
-
-moveTopicToMap : Id -> MapId -> Point -> Id -> List MapId -> Point -> Model -> Model
-moveTopicToMap topicId sourceMapId origPos targetId targetMapPath newPos model0 =
-    let
-        -- destination is ALWAYS the drop target (root=0 or a container’s inner map = its topic id)
-        destMapId : MapId
-        destMapId =
-            targetId
-
-        isSelfTarget : Bool
-        isSelfTarget =
-            targetId == topicId
-
-        isRootTarget : Bool
-        isRootTarget =
-            targetId == 0
-
-        -- Only create an inner map when dropping on a container (never for root)
-        ( model1, created ) =
-            if isRootTarget then
-                ( model0, False )
-
-            else
-                createMapIfNeeded targetId model0
-
-        actualPos : Point
-        actualPos =
-            if created then
-                -- nice default when a new inner map was just created
-                Point (topicW2 + whiteBoxPadding) (topicH2 + whiteBoxPadding)
-
-            else
-                newPos
-
-        -- find the real source map where the topic currently lives
-        findSourceAndProps : Maybe ( MapId, TopicProps )
-        findSourceAndProps =
-            case getTopicProps topicId sourceMapId model1.maps of
-                Just tp ->
-                    Just ( sourceMapId, tp )
-
-                Nothing ->
-                    model1.maps
-                        |> Dict.toList
-                        |> List.filterMap
-                            (\( mid, _ ) ->
-                                getTopicProps topicId mid model1.maps
-                                    |> Maybe.map (\tp -> ( mid, tp ))
-                            )
-                        |> List.head
-    in
-    if isSelfTarget then
-        model0
-
-    else
-        case findSourceAndProps of
-            Just ( realSourceMapId, tp ) ->
-                let
-                    props : MapProps
-                    props =
-                        MapTopic { tp | pos = actualPos }
-                in
-                model1
-                    |> hideItem topicId realSourceMapId
-                    |> setTopicPos topicId realSourceMapId origPos
-                    |> (if isRootTarget then
-                            -- for root (0) rely on upstream addItemToMap
-                            ModelAPI.addItemToMap topicId props destMapId
-
-                        else
-                            -- for containers, keep guarded Compat path
-                            Compat.ModelAPI.addItemToMap topicId props destMapId
-                       )
-                    |> select targetId targetMapPath
-                    |> autoSize
-
-            Nothing ->
-                -- Fallback: still move the topic using default props if we cannot find source props.
-                let
-                    baseTp =
-                        defaultProps topicId topicSize model1
-
-                    props : MapProps
-                    props =
-                        MapTopic { baseTp | pos = actualPos }
-                in
-                model1
-                    |> (if isRootTarget then
-                            ModelAPI.addItemToMap topicId props destMapId
-
-                        else
-                            Compat.ModelAPI.addItemToMap topicId props destMapId
-                       )
-                    |> select targetId targetMapPath
-                    |> autoSize
 
 
 createMapIfNeeded : Id -> Model -> ( Model, Bool )
