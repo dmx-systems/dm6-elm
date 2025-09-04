@@ -329,10 +329,8 @@ fullscreen : Model -> Model
 fullscreen model =
   case getSingleSelection model of
     Just (topicId, _) ->
-      { model
-      | mapPath = topicId :: model.mapPath
-      , selection = []
-      }
+      { model | mapPath = topicId :: model.mapPath }
+      |> resetSelection
       |> createMapIfNeeded topicId
       |> Tuple.first
       |> adjustMapRect topicId -1
@@ -378,7 +376,8 @@ hide model =
         (\(itemId, mapPath) modelAcc -> hideItem itemId (getMapId mapPath) modelAcc)
         model
   in
-  { newModel | selection = [] }
+  newModel
+  |> resetSelection
   |> autoSize
 
 
@@ -391,5 +390,6 @@ delete model =
         (\itemId modelAcc -> deleteItem itemId modelAcc)
         model
   in
-  { newModel | selection = [] }
+  newModel
+  |> resetSelection
   |> autoSize

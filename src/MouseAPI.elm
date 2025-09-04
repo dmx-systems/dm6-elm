@@ -5,7 +5,7 @@ import Config exposing (topicW2, topicH2, assocDelayMillis, whiteBoxRange, white
 import MapAutoSize exposing (autoSize)
 import Model exposing (Class, Id, MapPath, Point)
 import ModelAPI exposing (getTopicPos, setTopicPosByDelta, createDefaultAssocIn, getMapId,
-  select, idDecoder, pathDecoder, fromPath)
+  select, resetSelection, idDecoder, pathDecoder, fromPath)
 import Storage exposing (storeModelWith)
 import Utils exposing (logError, info, toString)
 -- components
@@ -52,7 +52,8 @@ updateMouse msg model =
 
 mouseDown : Model -> Model
 mouseDown model =
-  { model | selection = [] }
+  model
+  |> resetSelection
   |> closeIconMenu
   |> closeResultMenu
 
