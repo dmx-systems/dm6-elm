@@ -6,6 +6,7 @@ module Compat.ModelAPI exposing
     , createAssocAndAddToMap
     , createTopic
     , createTopicAndAddToMap
+    , defaultProps
     , ensureMap
     , getMap
     , getMapItem
@@ -30,6 +31,14 @@ import ModelAPI as U
       Thin forwards to upstream
    -==============================
 -}
+
+
+defaultProps : Id -> Size -> Model -> TopicProps
+defaultProps =
+    U.defaultProps
+
+
+
 -- Forward when present on upstream
 
 
@@ -106,13 +115,15 @@ getMapItem =
       Test/useful helpers (local, no upstream)
    -========================================
 -}
+-- Visible membership helper used by tests:
+-- return True only if a (non-hidden) map item exists in the given map.
 
 
 isItemInMap : Id -> MapId -> Model -> Bool
 isItemInMap id mapId model =
     case getMapItemById id mapId model.maps of
-        Just _ ->
-            True
+        Just mi ->
+            not mi.hidden
 
         Nothing ->
             False

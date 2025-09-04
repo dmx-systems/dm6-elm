@@ -29,59 +29,63 @@ move :
     -> Model
     -> Model
 move { containerId, topicId, targetMapId } model0 =
-    -- no-op guards: same container/child, missing container, or child not in container
     if containerId == topicId then
         model0
 
     else
-        case Dict.get containerId model0.maps of
-            Nothing ->
-                model0
+        let
+            -- where the container (topic) currently lives (the parent map path)
+            parentPath : MapPath
+            parentPath =
+                parentPathOf containerId model0
 
-            Just containerMap ->
-                case Dict.get topicId containerMap.items of
-                    Nothing ->
-                        model0
+            parentId : MapId
+            parentId =
+                List.head parentPath |> Maybe.withDefault 0
+        in
+        if targetMapId == parentId then
+            -- OUT of container: move topic from container’s inner map → parent map
+            let
+                -- topic’s original position *inside* the container
+                origPosInside : Point
+                origPosInside =
+                    case ModelAPI.getTopicProps topicId containerId model0.maps of
+                        Just tp ->
+                            tp.pos
 
-                    Just _ ->
-                        let
-                            -- derive parent (target for "move out")
-                            parentPath : MapPath
-                            parentPath =
-                                parentPathOf containerId model0
+                        Nothing ->
+                            Point 0 0
 
-                            parentId : MapId
-                            parentId =
-                                List.head parentPath |> Maybe.withDefault 0
+                dropNearContainerOnParent : Point
+                dropNearContainerOnParent =
+                    case ModelAPI.getTopicProps containerId parentId model0.maps |> Maybe.map .pos of
+                        Just { x, y } ->
+                            Point (x + 24) (y + 24)
 
-                            -- original position of the topic inside its current container
-                            origPos : Point
-                            origPos =
-                                case ModelAPI.getTopicProps topicId containerId model0.maps of
-                                    Just tp ->
-                                        tp.pos
+                        Nothing ->
+                            Point 40 40
+            in
+            Main.moveTopicToMap topicId containerId origPosInside parentId parentPath dropNearContainerOnParent model0
 
-                                    Nothing ->
-                                        Point 0 0
+        else if targetMapId == containerId then
+            -- INTO container: move topic from parent map → container’s inner map
+            let
+                -- topic’s original position on the parent map
+                origPosOnParent : Point
+                origPosOnParent =
+                    case ModelAPI.getTopicProps topicId parentId model0.maps of
+                        Just tp ->
+                            tp.pos
 
-                            -- try to place the dropped topic near the container's position on its parent map
-                            containerPosOnParent : Maybe Point
-                            containerPosOnParent =
-                                ModelAPI.getTopicProps containerId parentId model0.maps
-                                    |> Maybe.map .pos
+                        Nothing ->
+                            Point 0 0
 
-                            defaultDropPos : Point
-                            defaultDropPos =
-                                Point 40 40
+                defaultInsidePos : Point
+                defaultInsidePos =
+                    Point 24 24
+            in
+            Main.moveTopicToMap topicId parentId origPosOnParent containerId [ containerId ] defaultInsidePos model0
 
-                            newPos : Point
-                            newPos =
-                                case containerPosOnParent of
-                                    Just { x, y } ->
-                                        Point (x + 24) (y + 24)
-
-                                    Nothing ->
-                                        defaultDropPos
-                        in
-                        -- Cross the boundary: move topic from container into its parent map
-                        Main.moveTopicToMap topicId containerId origPos parentId parentPath newPos model0
+        else
+            -- neither into nor out (defensive no-op)
+            model0

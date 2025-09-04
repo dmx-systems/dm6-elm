@@ -1,10 +1,10 @@
 module Model.AddItemToMapCycleTest exposing (tests)
 
 import AppModel exposing (Model, default)
+import Compat.ModelAPI as ModelAPI exposing (addItemToMap, createAssoc, defaultProps)
 import Dict
 import Expect
 import Model exposing (MapProps(..), Size)
-import ModelAPI exposing (addItemToMap, defaultProps)
 import Test exposing (..)
 
 

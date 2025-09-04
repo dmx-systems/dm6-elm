@@ -178,14 +178,12 @@ update msg model =
 
 
 moveTopicToMap : Id -> MapId -> Point -> Id -> List MapId -> Point -> Model -> Model
-moveTopicToMap topicId containerId origPos targetId targetMapPath newPos model0 =
+moveTopicToMap topicId sourceMapId origPos targetId targetMapPath newPos model0 =
     let
-        targetMapId =
-            targetMapPath |> List.reverse |> List.head |> Maybe.withDefault 0
-
         isSelfTarget =
             targetId == topicId
 
+        -- ensure destination map exists (container’s inner map or background)
         ( model1, created ) =
             createMapIfNeeded targetId model0
 
@@ -196,19 +194,36 @@ moveTopicToMap topicId containerId origPos targetId targetMapPath newPos model0 
             else
                 newPos
 
-        props_ =
-            getTopicProps topicId containerId model1.maps
-                |> Maybe.map (\p -> MapTopic { p | pos = actualPos })
+        -- find the real source map that currently holds the topic
+        findSourceAndProps : Maybe ( MapId, TopicProps )
+        findSourceAndProps =
+            case getTopicProps topicId sourceMapId model1.maps of
+                Just tp ->
+                    Just ( sourceMapId, tp )
+
+                Nothing ->
+                    model1.maps
+                        |> Dict.toList
+                        |> List.filterMap
+                            (\( mid, _ ) ->
+                                getTopicProps topicId mid model1.maps
+                                    |> Maybe.map (\tp -> ( mid, tp ))
+                            )
+                        |> List.head
     in
     if isSelfTarget then
         model0
 
     else
-        case props_ of
-            Just props ->
+        case findSourceAndProps of
+            Just ( realSourceMapId, tp ) ->
+                let
+                    props =
+                        MapTopic { tp | pos = actualPos }
+                in
                 model1
-                    |> hideItem topicId containerId
-                    |> setTopicPos topicId containerId origPos
+                    |> hideItem topicId realSourceMapId
+                    |> setTopicPos topicId realSourceMapId origPos
                     |> addItemToMap topicId props targetId
                     |> select targetId targetMapPath
                     |> autoSize
