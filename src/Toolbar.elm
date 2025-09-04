@@ -121,20 +121,16 @@ viewToolbarButton label msg requireSelection model =
             List.isEmpty model.selection
 
         buttonAttr =
-            case requireSelection of
-                True ->
-                    [ stopPropagationOnMousedown NoOp
-                    , disabled hasNoSelection
-                    ]
+            if requireSelection then
+                [ stopPropagationOnMousedown NoOp
+                , disabled hasNoSelection
+                ]
 
-                False ->
-                    []
+            else
+                []
     in
     button
-        ([ onClick msg ]
-            ++ buttonAttr
-            ++ buttonStyle
-        )
+        (onClick msg :: buttonAttr ++ buttonStyle)
         [ text label ]
 
 
@@ -149,12 +145,9 @@ viewMonadDisplay : Model -> Html Msg
 viewMonadDisplay model =
     let
         displayMode =
-            case getSingleSelection model of
-                Just ( topicId, mapPath ) ->
-                    getDisplayMode topicId (getMapId mapPath) model.maps
-
-                Nothing ->
-                    Nothing
+            Maybe.andThen
+                (\( topicId, mapPath ) -> getDisplayMode topicId (getMapId mapPath) model.maps)
+                (getSingleSelection model)
 
         ( checked1, checked2, disabled_ ) =
             case displayMode of
@@ -181,12 +174,9 @@ viewContainerDisplay : Model -> Html Msg
 viewContainerDisplay model =
     let
         displayMode =
-            case getSingleSelection model of
-                Just ( topicId, mapPath ) ->
-                    getDisplayMode topicId (getMapId mapPath) model.maps
-
-                Nothing ->
-                    Nothing
+            Maybe.andThen
+                (\( topicId, mapPath ) -> getDisplayMode topicId (getMapId mapPath) model.maps)
+                (getSingleSelection model)
 
         ( checked1, checked2, checked3 ) =
             case displayMode of
@@ -269,15 +259,11 @@ viewFooter =
             []
             [ text "Source: "
             , a
-                ([ href "https://github.com/dmx-systems/dm6-elm" ]
-                    ++ linkStyle
-                )
+                (href "https://github.com/dmx-systems/dm6-elm" :: linkStyle)
                 [ text "GitHub" ]
             ]
         , a
-            ([ href "https://dmx.berlin" ]
-                ++ linkStyle
-            )
+            (href "https://dmx.berlin" :: linkStyle)
             [ text "DMX Systems" ]
         ]
 

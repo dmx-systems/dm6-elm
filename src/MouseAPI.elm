@@ -292,7 +292,7 @@ point =
 
 
 mouseOver : Model -> Class -> Id -> MapPath -> Model
-mouseOver model class targetId targetMapPath =
+mouseOver model _ targetId targetMapPath =
     case model.mouse.dragState of
         Drag dragMode id mapPath origPos lastPos _ ->
             let
@@ -321,7 +321,7 @@ mouseOver model class targetId targetMapPath =
 
 
 mouseOut : Model -> Class -> Id -> MapPath -> Model
-mouseOut model class targetId targetMapPath =
+mouseOut model _ _ _ =
     case model.mouse.dragState of
         Drag dragMode id mapPath origPos lastPos _ ->
             -- reset target

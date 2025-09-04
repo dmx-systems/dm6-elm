@@ -4,7 +4,7 @@ import AppModel exposing (..)
 import Boxing exposing (boxContainer, unboxContainer)
 import Browser
 import Browser.Dom as Dom
-import Compat.ModelAPI as CompatAPI
+import Compat.ModelAPI
 import Config exposing (..)
 import Dict
 import Html exposing (Attribute, br, div, text)
@@ -31,7 +31,6 @@ import ModelAPI
         , setDisplayMode
         , setTopicPos
         , setTopicSize
-          --, showItem
         , updateMapRect
         , updateTopicInfo
         , updateTopicProps
@@ -108,9 +107,7 @@ view model =
                 ++ viewIconMenu model
             )
         , div
-            ([ id "measure" ]
-                ++ measureStyle
-            )
+            (id "measure" :: measureStyle)
             [ text model.measureText
             , br [] []
             ]
@@ -200,7 +197,7 @@ update msg model =
 moveTopicToMap : Id -> MapId -> Point -> Id -> List MapId -> Point -> Model -> Model
 moveTopicToMap topicId sourceMapId origPos targetId targetMapPath newPos model0 =
     let
-        -- destination is ALWAYS the drop target (container's inner map or root 0)
+        -- destination is ALWAYS the drop target (root=0 or a container’s inner map = its topic id)
         destMapId : MapId
         destMapId =
             targetId
@@ -209,9 +206,17 @@ moveTopicToMap topicId sourceMapId origPos targetId targetMapPath newPos model0 
         isSelfTarget =
             targetId == topicId
 
-        -- ensure destination exists (create inner map when dropping on a container)
+        isRootTarget : Bool
+        isRootTarget =
+            targetId == 0
+
+        -- Only create an inner map when dropping on a container (never for root)
         ( model1, created ) =
-            createMapIfNeeded targetId model0
+            if isRootTarget then
+                ( model0, False )
+
+            else
+                createMapIfNeeded targetId model0
 
         actualPos : Point
         actualPos =
@@ -221,7 +226,7 @@ moveTopicToMap topicId sourceMapId origPos targetId targetMapPath newPos model0 
             else
                 newPos
 
-        -- find the real source map that currently holds the topic
+        -- find the real source map where the topic currently lives
         findSourceAndProps : Maybe ( MapId, TopicProps )
         findSourceAndProps =
             case getTopicProps topicId sourceMapId model1.maps of
@@ -255,7 +260,14 @@ moveTopicToMap topicId sourceMapId origPos targetId targetMapPath newPos model0 
                 model1
                     |> hideItem topicId realSourceMapId
                     |> setTopicPos topicId realSourceMapId origPos
-                    |> CompatAPI.addItemToMap topicId props destMapId
+                    |> (if isRootTarget then
+                            -- for root (0) rely on upstream addItemToMap
+                            ModelAPI.addItemToMap topicId props destMapId
+
+                        else
+                            -- for containers, keep guarded Compat path
+                            Compat.ModelAPI.addItemToMap topicId props destMapId
+                       )
                     |> select targetId targetMapPath
                     |> autoSize
 
@@ -281,12 +293,11 @@ setDisplayModeInAllMaps topicId displayMode model =
     model.maps
         |> Dict.foldr
             (\mapId _ modelAcc ->
-                case isItemInMap topicId mapId model of
-                    True ->
-                        setDisplayMode topicId mapId displayMode modelAcc
+                if isItemInMap topicId mapId model then
+                    setDisplayMode topicId mapId displayMode modelAcc
 
-                    False ->
-                        modelAcc
+                else
+                    modelAcc
             )
             model
 
@@ -487,7 +498,7 @@ fullscreen model =
 back : Model -> Model
 back model =
     let
-        ( mapId, mapPath, selection ) =
+        ( mapId, mapPath, _ ) =
             case model.mapPath of
                 prevMapId :: nextMapId :: mapIds ->
                     ( prevMapId

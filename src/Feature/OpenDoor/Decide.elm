@@ -133,17 +133,6 @@ isChildOf childId parentId model =
             False
 
 
-{-| Find the parent map of an inner map by containment (first match).
--}
-findParentOf : MapId -> Model -> Maybe MapId
-findParentOf childId model =
-    model.maps
-        |> Dict.values
-        |> List.filter (\pm -> Dict.member childId pm.items)
-        |> List.head
-        |> Maybe.map .id
-
-
 {-| Find the container (its inner-map id equals the container topic id) under `parentId`
 that contains `topicId` in its inner map.
 -}

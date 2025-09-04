@@ -1,7 +1,7 @@
 module MapRenderer exposing (viewMap)
 
 import AppModel exposing (..)
-import Compat.ModelAPI as ModelAPI exposing (getMapItemById)
+import Compat.ModelAPI exposing (getMapItemById)
 import Config exposing (..)
 import Dict
 import Html exposing (Attribute, Html, div, input, text, textarea)
@@ -27,7 +27,7 @@ import ModelAPI
 import Mouse exposing (DragMode(..), DragState(..))
 import Search exposing (ResultMenu(..))
 import String exposing (fromFloat, fromInt)
-import Svg exposing (Svg, g, line, path, svg)
+import Svg exposing (Svg, g, path, svg)
 import Svg.Attributes
     exposing
         ( d
@@ -50,6 +50,7 @@ import Utils exposing (..)
 -- CONFIG
 
 
+lineFunc : Maybe AssocInfo -> Point -> Point -> Svg Msg
 lineFunc =
     taxiLine
 
@@ -105,7 +106,7 @@ viewMap mapId mapPath model =
 
 
 gAttr : MapId -> Rectangle -> Model -> List (Attribute Msg)
-gAttr mapId mapRect model =
+gAttr _ mapRect _ =
     [ transform <|
         "translate("
             ++ fromFloat -mapRect.x1
@@ -546,12 +547,11 @@ viewLimboAssoc : MapId -> Model -> List (Svg Msg)
 viewLimboAssoc mapId model =
     case model.mouse.dragState of
         Drag DrawAssoc _ mapPath origPos pos _ ->
-            case getMapId mapPath == mapId of
-                True ->
-                    [ lineFunc Nothing origPos (relPos pos mapPath model) ]
+            if getMapId mapPath == mapId then
+                [ lineFunc Nothing origPos (relPos pos mapPath model) ]
 
-                False ->
-                    []
+            else
+                []
 
         _ ->
             []
@@ -660,12 +660,11 @@ topicStyle id model =
 
 selectionStyle : Id -> MapId -> Model -> List (Attribute Msg)
 selectionStyle topicId mapId model =
-    case isSelected topicId mapId model of
-        True ->
-            [ style "box-shadow" "gray 5px 5px 5px" ]
+    if isSelected topicId mapId model then
+        [ style "box-shadow" "gray 5px 5px 5px" ]
 
-        False ->
-            []
+    else
+        []
 
 
 topicFlexboxStyle : TopicInfo -> TopicProps -> MapId -> Model -> List (Attribute Msg)
@@ -865,22 +864,6 @@ svgStyle =
 
 
 -- One possible line func
-
-
-directLine : Maybe AssocInfo -> Point -> Point -> Svg Msg
-directLine assoc pos1 pos2 =
-    line
-        ([ x1 <| fromFloat pos1.x
-         , y1 <| fromFloat pos1.y
-         , x2 <| fromFloat pos2.x
-         , y2 <| fromFloat pos2.y
-         ]
-            ++ lineStyle assoc
-        )
-        []
-
-
-
 -- One possible line func
 
 
@@ -893,9 +876,8 @@ taxiLine assoc pos1 pos2 =
                 (pos1.x + pos2.x) / 2
         in
         path
-            ([ d ("M " ++ fromFloat xm ++ " " ++ fromFloat pos1.y ++ " V " ++ fromFloat pos2.y)
-             ]
-                ++ lineStyle assoc
+            (d ("M " ++ fromFloat xm ++ " " ++ fromFloat pos1.y ++ " V " ++ fromFloat pos2.y)
+                :: lineStyle assoc
             )
             []
 
@@ -906,9 +888,8 @@ taxiLine assoc pos1 pos2 =
                 (pos1.y + pos2.y) / 2
         in
         path
-            ([ d ("M " ++ fromFloat pos1.x ++ " " ++ fromFloat ym ++ " H " ++ fromFloat pos2.x)
-             ]
-                ++ lineStyle assoc
+            (d ("M " ++ fromFloat pos1.x ++ " " ++ fromFloat ym ++ " H " ++ fromFloat pos2.x)
+                :: lineStyle assoc
             )
             []
 
@@ -974,7 +955,7 @@ taxiLine assoc pos1 pos2 =
                 fromFloat assocRadius
         in
         path
-            ([ d
+            (d
                 ("M "
                     ++ fromFloat pos1.x
                     ++ " "
@@ -1006,8 +987,7 @@ taxiLine assoc pos1 pos2 =
                     ++ " V "
                     ++ fromFloat pos2.y
                 )
-             ]
-                ++ lineStyle assoc
+                :: lineStyle assoc
             )
             []
 

@@ -47,6 +47,29 @@ createAssoc =
     U.createAssoc
 
 
+createTopicAndAddToMap : String -> Maybe IconName -> MapId -> Model -> ( Model, Id )
+createTopicAndAddToMap title icon mapId model0 =
+    let
+        -- 1) create the topic to get its id
+        ( model1, topicId ) =
+            U.createTopic title icon model0
+
+        -- 2) build default map props for the new topic
+        props : MapProps
+        props =
+            MapTopic (U.defaultProps topicId topicSize model1)
+
+        -- 3) add the topic to the requested map
+        model2 =
+            U.addItemToMap topicId props mapId model1
+
+        -- 4) select it on that map (nested-maps-fix uses MapPath)
+        model3 =
+            U.select topicId [ mapId ] model2
+    in
+    ( model3, topicId )
+
+
 
 -- Polyfill: upstream removed this on nested-maps-fix.
 -- We re-create it by (1) creating the assoc, then (2) adding its MapAssoc item to mapId.
@@ -163,18 +186,6 @@ addItemToMapDefault id mapId model =
             U.defaultProps id topicSize base
     in
     addItemToMap id (MapTopic tp) mapId base
-
-
-createTopicAndAddToMap : String -> Maybe IconName -> MapId -> Model -> ( Model, Id )
-createTopicAndAddToMap title icon mapId model0 =
-    let
-        ( model1, newId ) =
-            createTopic title icon model0
-
-        model2 =
-            addItemToMapDefault newId mapId model1
-    in
-    ( model2, newId )
 
 
 

@@ -1,7 +1,7 @@
 module SearchAPI exposing (closeResultMenu, updateSearch, viewResultMenu, viewSearchInput)
 
 import AppModel exposing (Model, Msg(..))
-import Compat.ModelAPI as ModelAPI exposing (addItemToMap)
+import Compat.ModelAPI exposing (addItemToMap)
 import Config exposing (contentFontSize, topicSize)
 import Dict
 import Html exposing (Attribute, Html, div, input, text)
@@ -69,8 +69,8 @@ viewResultMenu model =
                             case getTopicInfo id model of
                                 Just topic ->
                                     div
-                                        ([ attribute "data-id" (fromInt id) ]
-                                            ++ resultItemStyle id model
+                                        (attribute "data-id" (fromInt id)
+                                            :: resultItemStyle id model
                                         )
                                         [ text topic.text ]
 

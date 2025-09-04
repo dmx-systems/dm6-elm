@@ -1,10 +1,10 @@
 module Feature.OpenDoor.Move exposing (move)
 
 import AppModel exposing (Model)
-import Compat.ModelAPI as ModelAPI
 import Dict
 import Main
 import Model exposing (Id, MapId, MapPath, Point)
+import ModelAPI
 
 
 

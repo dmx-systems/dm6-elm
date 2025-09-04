@@ -1,7 +1,7 @@
 module Feature.OpenDoor.MoveTopicIntoContainerTest exposing (tests)
 
 import AppModel as AM
-import Compat.ModelAPI as ModelAPI exposing (addItemToMap, createAssoc, defaultProps)
+import Compat.ModelAPI as ModelAPI exposing (defaultProps)
 import Expect
 import Json.Decode as D
 import Main

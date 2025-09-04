@@ -18,12 +18,8 @@ getMap mapId model =
 
 getMapItem : MapId -> Id -> Model -> Maybe MapItem
 getMapItem mapId itemId model =
-    case getMap mapId model of
-        Just m ->
-            Dict.get itemId m.items
-
-        Nothing ->
-            Nothing
+    getMap mapId model
+        |> Maybe.andThen (\m -> Dict.get itemId m.items)
 
 
 updateMap : MapId -> (Map -> Map) -> Model -> Model

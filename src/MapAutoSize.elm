@@ -32,7 +32,7 @@ autoSize model =
 autoSizeMap : MapPath -> Model -> Model
 autoSizeMap mapPath model =
     case mapPath of
-        [ mapId ] ->
+        [ _ ] ->
             model
 
         mapId :: parentMapId :: mapIds ->
@@ -113,7 +113,7 @@ adjustmennt ("delta")
 storeMapRect : MapId -> Rectangle -> Rectangle -> MapId -> Model -> Model
 storeMapRect mapId newRect oldRect parentMapId model =
     model
-        |> updateMapRect mapId (\rect -> newRect)
+        |> updateMapRect mapId (\_ -> newRect)
         |> setTopicPosByDelta mapId
             parentMapId
             (Point
