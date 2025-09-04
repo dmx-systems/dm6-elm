@@ -20,6 +20,7 @@ import ModelAPI
         ( activeMap
         , createMap
         , createTopicIn
+        , defaultProps
         , deleteItem
         , getMapId
         , getSingleSelection
@@ -221,6 +222,7 @@ moveTopicToMap topicId sourceMapId origPos targetId targetMapPath newPos model0 
         actualPos : Point
         actualPos =
             if created then
+                -- nice default when a new inner map was just created
                 Point (topicW2 + whiteBoxPadding) (topicH2 + whiteBoxPadding)
 
             else
@@ -248,9 +250,6 @@ moveTopicToMap topicId sourceMapId origPos targetId targetMapPath newPos model0 
 
     else
         case findSourceAndProps of
-            Nothing ->
-                model0
-
             Just ( realSourceMapId, tp ) ->
                 let
                     props : MapProps
@@ -266,6 +265,26 @@ moveTopicToMap topicId sourceMapId origPos targetId targetMapPath newPos model0 
 
                         else
                             -- for containers, keep guarded Compat path
+                            Compat.ModelAPI.addItemToMap topicId props destMapId
+                       )
+                    |> select targetId targetMapPath
+                    |> autoSize
+
+            Nothing ->
+                -- Fallback: still move the topic using default props if we cannot find source props.
+                let
+                    baseTp =
+                        defaultProps topicId topicSize model1
+
+                    props : MapProps
+                    props =
+                        MapTopic { baseTp | pos = actualPos }
+                in
+                model1
+                    |> (if isRootTarget then
+                            ModelAPI.addItemToMap topicId props destMapId
+
+                        else
                             Compat.ModelAPI.addItemToMap topicId props destMapId
                        )
                     |> select targetId targetMapPath

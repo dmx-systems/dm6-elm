@@ -1,14 +1,15 @@
 module Feature.OpenDoor.MoveTopicOutOfContainerTest exposing (tests)
 
 import AppModel as AM
-import Compat.ModelAPI exposing (createTopicAndAddToMap)
 import Expect
 import Json.Decode as D
 import Main exposing (moveTopicToMap)
 import Model exposing (Point)
 import ModelAPI
     exposing
-        ( getMap
+        ( createMap
+        , createTopicIn
+        , getMap
         , getMapItem
         )
 import Storage exposing (modelDecoder)
@@ -40,14 +41,16 @@ emptyRootModel =
 
 testModelWithNestedTopic : AM.Model
 testModelWithNestedTopic =
-    let
-        ( m1, _ ) =
-            createTopicAndAddToMap "A" Nothing 0 emptyRootModel
+    emptyRootModel
+        |> createTopicIn "A" Nothing [ 0 ]
+        -- A gets id 1
+        |> createMap 1
+        -- ensure A's inner map exists
+        |> createTopicIn "B" Nothing [ 1 ]
 
-        ( m2, _ ) =
-            createTopicAndAddToMap "B" Nothing 1 m1
-    in
-    m2
+
+
+-- B gets id 2, placed inside A (map 1)
 
 
 tests : Test

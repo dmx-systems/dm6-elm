@@ -49,21 +49,30 @@ createAssoc =
 
 createTopicAndAddToMap : String -> Maybe IconName -> MapId -> Model -> ( Model, Id )
 createTopicAndAddToMap title icon mapId model0 =
+    -- Ensure the destination map exists first, so the add definitely succeeds.
     let
-        -- 1) create the topic to get its id
-        ( model1, topicId ) =
-            U.createTopic title icon model0
+        prepped0 : Model
+        prepped0 =
+            model0
+                |> ensureMap 0
+                |> ensureMap mapId
 
-        -- 2) build default map props for the new topic
+        -- 1) create the topic
+        ( model1, topicId ) =
+            U.createTopic title icon prepped0
+
+        -- 2) default props for the new topic
         props : MapProps
         props =
             MapTopic (U.defaultProps topicId topicSize model1)
 
-        -- 3) add the topic to the requested map
+        -- 3) add to requested map
+        model2 : Model
         model2 =
             U.addItemToMap topicId props mapId model1
 
-        -- 4) select it on that map (nested-maps-fix uses MapPath)
+        -- 4) select it on that map-path (nested maps = [mapId])
+        model3 : Model
         model3 =
             U.select topicId [ mapId ] model2
     in
