@@ -4,7 +4,7 @@ import AppModel exposing (..)
 import Boxing exposing (boxContainer, unboxContainer)
 import Browser
 import Browser.Dom as Dom
-import Compat.ModelAPI as ModelAPI exposing (addItemToMap)
+import Compat.ModelAPI as CompatAPI
 import Config exposing (..)
 import Dict
 import Html exposing (Attribute, br, div, text)
@@ -15,7 +15,27 @@ import Json.Encode as E
 import MapAutoSize exposing (autoSize)
 import MapRenderer exposing (viewMap)
 import Model exposing (..)
-import ModelAPI exposing (activeMap, createMap, createTopicIn, deleteItem, getMapId, getSingleSelection, getTopicProps, hasMap, hideItem, isItemInMap, select, setDisplayMode, setTopicPos, setTopicSize, updateMapRect, updateTopicInfo, updateTopicProps)
+import ModelAPI
+    exposing
+        ( activeMap
+        , createMap
+        , createTopicIn
+        , deleteItem
+        , getMapId
+        , getSingleSelection
+        , getTopicProps
+        , hasMap
+        , hideItem
+        , isItemInMap
+        , select
+        , setDisplayMode
+        , setTopicPos
+        , setTopicSize
+          --, showItem
+        , updateMapRect
+        , updateTopicInfo
+        , updateTopicProps
+        )
 import MouseAPI exposing (mouseHoverHandler, mouseSubs, updateMouse)
 import SearchAPI exposing (updateSearch, viewResultMenu)
 import Storage exposing (modelDecoder, storeModel, storeModelWith)
@@ -180,13 +200,20 @@ update msg model =
 moveTopicToMap : Id -> MapId -> Point -> Id -> List MapId -> Point -> Model -> Model
 moveTopicToMap topicId sourceMapId origPos targetId targetMapPath newPos model0 =
     let
+        -- destination is ALWAYS the drop target (container's inner map or root 0)
+        destMapId : MapId
+        destMapId =
+            targetId
+
+        isSelfTarget : Bool
         isSelfTarget =
             targetId == topicId
 
-        -- ensure destination map exists (container’s inner map or background)
+        -- ensure destination exists (create inner map when dropping on a container)
         ( model1, created ) =
             createMapIfNeeded targetId model0
 
+        actualPos : Point
         actualPos =
             if created then
                 Point (topicW2 + whiteBoxPadding) (topicH2 + whiteBoxPadding)
@@ -216,20 +243,21 @@ moveTopicToMap topicId sourceMapId origPos targetId targetMapPath newPos model0 
 
     else
         case findSourceAndProps of
+            Nothing ->
+                model0
+
             Just ( realSourceMapId, tp ) ->
                 let
+                    props : MapProps
                     props =
                         MapTopic { tp | pos = actualPos }
                 in
                 model1
                     |> hideItem topicId realSourceMapId
                     |> setTopicPos topicId realSourceMapId origPos
-                    |> addItemToMap topicId props targetId
+                    |> CompatAPI.addItemToMap topicId props destMapId
                     |> select targetId targetMapPath
                     |> autoSize
-
-            Nothing ->
-                model0
 
 
 createMapIfNeeded : Id -> Model -> ( Model, Bool )
