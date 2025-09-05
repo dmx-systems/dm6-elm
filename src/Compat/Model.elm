@@ -1,6 +1,8 @@
 module Compat.Model exposing
-    ( createAssoc
+    ( Ext
+    , createAssoc
     , createAssocAndAddToMap
+    , defaultExt
     , makeMap
     , makeMapItem
     , makeMapItemR
@@ -67,3 +69,14 @@ createAssocAndAddToMap : { a | itemType : String, role1 : String, player1 : Id, 
 createAssocAndAddToMap r model =
     -- Upstream: createAssocAndAddToMap itemType role1 player1 role2 player2 mapId model
     ModelAPI.createAssocAndAddToMap r.itemType r.role1 r.player1 r.role2 r.player2 r.mapId model
+
+
+type alias Ext =
+    { journal : List Journal.Entry
+    , showJournal : Bool
+    }
+
+
+defaultExt : Ext
+defaultExt =
+    { journal = [], showJournal = False }

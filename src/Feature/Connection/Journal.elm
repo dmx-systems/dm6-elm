@@ -1,4 +1,4 @@
-module Journal exposing (Entry(..), Path, record, viewList, viewSketch)
+module Feature.Connection.Journal exposing (Entry(..), Path, record, viewList, viewSketch)
 
 import Html exposing (..)
 import Html.Attributes exposing (..)

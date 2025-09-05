@@ -165,6 +165,8 @@ fullModelDecoder =
         |> hardcoded default.mouse
         |> hardcoded default.search
         |> hardcoded default.iconMenu
+        -- display (added field in AppModel.Model)
+        |> hardcoded default.display
 
 
 modelDecoder : D.Decoder AppModel.Model
