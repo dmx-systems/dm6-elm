@@ -169,10 +169,16 @@ mapItems map mapPath model =
                         case ( info, props ) of
                             ( Topic topic, MapTopic tProps ) ->
                                 case effectiveDisplayMode topic.id tProps.displayMode model of
-                                    Monad _ ->
+                                    Monad LabelOnly ->
                                         ( htmlTopics
                                         , assocs
                                         , viewTopicSvg topic tProps newPath model :: topicsSvg
+                                        )
+
+                                    Monad Detail ->
+                                        ( viewTopic topic tProps newPath model :: htmlTopics
+                                        , assocs
+                                        , topicsSvg
                                         )
 
                                     _ ->
@@ -180,12 +186,6 @@ mapItems map mapPath model =
                                         , assocs
                                         , topicsSvg
                                         )
-
-                            ( Assoc assoc, MapAssoc _ ) ->
-                                ( htmlTopics
-                                , viewAssoc assoc map.id model :: assocs
-                                , topicsSvg
-                                )
 
                             _ ->
                                 logError "mapItems" ("problem with item " ++ fromInt id) ( htmlTopics, assocs, topicsSvg )
@@ -214,11 +214,14 @@ limboTopic mapId model =
                                         case ( info, mapItem.props ) of
                                             ( Topic topic, MapTopic props ) ->
                                                 case effectiveDisplayMode topic.id props.displayMode model of
-                                                    -- monads are handled in SVG layer now
-                                                    Monad _ ->
+                                                    Monad LabelOnly ->
                                                         []
 
-                                                    -- containers still render as HTML here
+                                                    -- circle handled in SVG layer
+                                                    Monad Detail ->
+                                                        [ viewTopic topic props [] model ]
+
+                                                    -- keep rich HTML detail
                                                     _ ->
                                                         [ viewTopic topic props [] model ]
 
@@ -246,9 +249,14 @@ limboTopic mapId model =
                             case info of
                                 Topic topic ->
                                     case effectiveDisplayMode topic.id props.displayMode model of
-                                        Monad _ ->
+                                        Monad LabelOnly ->
                                             []
 
+                                        -- circle handled in SVG layer
+                                        Monad Detail ->
+                                            [ viewTopic topic props [] model ]
+
+                                        -- keep rich HTML detail
                                         _ ->
                                             [ viewTopic topic props [] model ]
 
