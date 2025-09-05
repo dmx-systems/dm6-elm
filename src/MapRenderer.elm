@@ -35,8 +35,10 @@ import Svg.Attributes
         , d
         , dominantBaseline
         , fill
+        , fillOpacity
         , fontFamily
         , fontSize
+        , fontWeight
         , height
         , r
         , stroke
@@ -276,6 +278,9 @@ viewTopicSvg topic props mapPath model =
         rVal =
             (topicSize.h / 2) - topicBorderWidth
 
+        rStr =
+            fromFloat rVal
+
         cxStr =
             fromFloat props.pos.x
 
@@ -288,31 +293,56 @@ viewTopicSvg topic props mapPath model =
 
             else
                 "0"
+
+        selected =
+            isSelected topic.id mapId model
+
+        shadowNodes : List (Svg Msg)
+        shadowNodes =
+            if selected then
+                [ circle
+                    [ cx cxStr
+                    , cy cyStr
+                    , r rStr
+                    , fill "black"
+                    , fillOpacity "0.20"
+                    , transform "translate(5,5)"
+                    ]
+                    []
+                ]
+
+            else
+                []
+
+        mainNodes : List (Svg Msg)
+        mainNodes =
+            [ circle
+                [ cx cxStr
+                , cy cyStr
+                , r rStr
+                , fill "white"
+                , stroke "black"
+                , strokeWidth (fromFloat topicBorderWidth ++ "px")
+                , strokeDasharray dash
+                ]
+                []
+            , Svg.text_
+                [ x cxStr
+                , y cyStr
+                , textAnchor "middle"
+                , dominantBaseline "central"
+                , fontFamily mainFont
+                , fontSize (fromInt contentFontSize ++ "px")
+                , fontWeight topicLabelWeight
+                , fill "black"
+                ]
+                [ Svg.text mark ]
+            , Svg.title [] [ Svg.text (getTopicLabel topic) ]
+            ]
     in
     g
         (topicAttr topic.id mapPath model)
-        [ circle
-            [ cx cxStr
-            , cy cyStr
-            , r (fromFloat rVal)
-            , fill "white"
-            , stroke "black"
-            , strokeWidth (fromFloat topicBorderWidth ++ "px")
-            , strokeDasharray dash
-            ]
-            []
-        , Svg.text_
-            [ x cxStr
-            , y cyStr
-            , textAnchor "middle"
-            , dominantBaseline "central"
-            , fontFamily "ui-monospace, SFMono-Regular, Menlo, Consolas, monospace"
-            , fontSize "12px"
-            , fill "black"
-            ]
-            [ Svg.text mark ]
-        , Svg.title [] [ Svg.text (getTopicLabel topic) ]
-        ]
+        (shadowNodes ++ mainNodes)
 
 
 isTargeted : Id -> MapId -> Model -> Bool
