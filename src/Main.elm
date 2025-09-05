@@ -1,9 +1,11 @@
-module Main exposing (Flags, Model, Msg, init, main, subscriptions, update, view)
+module Main exposing (Flags, Model, Msg, init, main, moveTopicToMap, subscriptions, update, view)
 
 import AppModel as AM
 import Browser
+import Feature.Connection.Channel as Channel
 import Html exposing (text)
 import Json.Decode as D
+import Model exposing (Id, Point)
 import Storage exposing (modelDecoder)
 
 
@@ -97,3 +99,49 @@ main =
         , subscriptions = subscriptions
         , view = view
         }
+
+
+{-| Compatibility wrapper used by Feature.OpenDoor.\* and tests.
+
+    moveTopicToMap topicId fromId origPos targetId parentPath pos model
+
+-}
+moveTopicToMap :
+    Id
+    -> Id
+    -> Point
+    -> Id
+    -> List Id
+    -> Point
+    -> Model
+    -> Model
+moveTopicToMap topicId fromId origPos targetId parentPath pos model =
+    let
+        fromBoundary =
+            if fromId == 0 then
+                Channel.Root
+
+            else
+                Channel.Container fromId
+
+        toBoundary =
+            if targetId == 0 then
+                Channel.Root
+
+            else
+                Channel.Container targetId
+
+        req =
+            { topicId = topicId
+            , from = fromBoundary
+            , to = toBoundary
+            , pos = pos
+            , permit = Channel.defaultPermit
+            }
+    in
+    case Channel.cross req model of
+        Ok ( model1, _, _ ) ->
+            model1
+
+        Err _ ->
+            model
