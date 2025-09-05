@@ -3,6 +3,7 @@ module Main exposing (Flags, Model, Msg, init, main, moveTopicToMap, subscriptio
 import AppModel as AM
 import Browser
 import Feature.Connection.Channel as Channel
+import FedWiki
 import Html exposing (Html, div, h4, pre, text)
 import Html.Attributes exposing (style)
 import Json.Decode as D
@@ -68,7 +69,13 @@ update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
         AM.FedWikiPage raw ->
-            ( { model | fedWikiRaw = raw }, Cmd.none )
+            ( model
+                |> FedWiki.renderAsMonad raw
+                -- ensure a monad exists
+                |> (\m -> { m | fedWikiRaw = raw })
+              -- keep raw for the panel
+            , Cmd.none
+            )
 
         _ ->
             ( model, Cmd.none )
