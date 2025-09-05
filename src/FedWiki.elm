@@ -2,11 +2,11 @@ module FedWiki exposing (renderAsMonad)
 
 import AppModel as AM
 import Json.Decode as D
+import MapAutoSize exposing (autoSize)
 import ModelAPI exposing (createTopicIn)
 
 
 
--- optional: import MapAutoSize exposing (autoSize)
 -- decode just the FedWiki page title
 
 

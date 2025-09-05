@@ -7,7 +7,10 @@ import FedWiki
 import Html exposing (Html, div, h4, pre, text)
 import Html.Attributes exposing (style)
 import Json.Decode as D
+import MapRenderer exposing (viewMap)
 import Model exposing (Id, Point)
+import ModelAPI exposing (activeMap)
+import MouseAPI exposing (mouseHoverHandler, mouseSubs, updateMouse)
 import Storage exposing (modelDecoder)
 import String
 
@@ -86,8 +89,8 @@ update msg model =
 
 
 subscriptions : Model -> Sub Msg
-subscriptions _ =
-    Sub.none
+subscriptions model =
+    mouseSubs model
 
 
 
@@ -98,9 +101,16 @@ view : Model -> Browser.Document Msg
 view model =
     { title = "DM6 Elm"
     , body =
-        [ -- your existing UI goes here (toolbar, map, etc.)
-          -- For now, keep it minimal and add a tiny viewer at the bottom:
-          div [ style "padding" "8px" ]
+        [ -- SVG map
+          div
+            [ style "position" "relative"
+            , style "width" "100%"
+            , style "height" "50vh"
+            ]
+            [ viewMap (activeMap model) [] model ]
+
+        -- optional: keep the JSON panel for debugging
+        , div [ style "padding" "8px" ]
             [ h4 [ style "margin" "0 0 6px 0", style "font-family" "system-ui" ] [ text "FedWiki page JSON" ]
             , if String.isEmpty model.fedWikiRaw then
                 div [ style "color" "#666", style "font-family" "system-ui", style "font-size" "12px" ]
