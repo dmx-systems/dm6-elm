@@ -4,6 +4,7 @@ import AppModel exposing (..)
 import Config exposing (..)
 import Model exposing (..)
 import ModelAPI exposing (..)
+import Mouse exposing (DragState(..), DragMode(..))
 import Utils exposing (logError)
 
 import Dict
@@ -74,15 +75,44 @@ storeMapGeometry : MapPath -> Rectangle -> Rectangle -> Model -> Model
 storeMapGeometry mapPath newRect oldRect model =
   case mapPath of
     mapId :: parentMapId :: _ ->
-      model
-      |> updateMapRect mapId (\rect -> newRect)
-      |> setTopicPosByDelta mapId parentMapId
-        (Point
-          (newRect.x1 - oldRect.x1)
-          (newRect.y1 - oldRect.y1)
-        )
-    [_] -> model
+      let
+        (isDragInProgress, isOnDragPath, isMapInDragPath) =
+          case model.mouse.dragState of
+            Drag DragTopic _ dragPath _ _ _ ->
+              (True
+              , (dragPath |> List.drop (List.length dragPath - List.length mapPath)) == mapPath
+              , List.member mapId dragPath
+              )
+            _ -> (False, False, False)
+      in
+      if isDragInProgress then
+        if isOnDragPath then
+          model
+          |> storeMapRect mapId newRect
+          |> adjustMapPos mapId parentMapId newRect oldRect
+        else
+          if isMapInDragPath then
+            model -- do nothing, postpone map's geometry update when reaching drag-path
+          else
+            model |> storeMapRect mapId newRect
+      else
+        model |> storeMapRect mapId newRect
+    [_] -> model -- do nothing, fullscreen map's geometry is not updated
     [] -> logError "storeMapGeometry" "mapPath is empty!" model
+
+
+storeMapRect : MapId -> Rectangle -> Model -> Model
+storeMapRect mapId newRect model =
+  model |> updateMapRect mapId (\rect -> newRect)
+
+
+adjustMapPos : MapId -> MapId -> Rectangle -> Rectangle -> Model -> Model
+adjustMapPos mapId parentMapId newRect oldRect model =
+  model |> setTopicPosByDelta mapId parentMapId
+    (Point
+      (newRect.x1 - oldRect.x1)
+      (newRect.y1 - oldRect.y1)
+    )
 
 
 topicExtent : Point -> Rectangle -> Rectangle
