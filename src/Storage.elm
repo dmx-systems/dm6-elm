@@ -167,6 +167,8 @@ fullModelDecoder =
         |> hardcoded default.iconMenu
         -- display (added field in AppModel.Model)
         |> hardcoded default.display
+        -- fedwiki (NEW)
+        |> hardcoded default.fedWikiRaw
 
 
 modelDecoder : D.Decoder AppModel.Model

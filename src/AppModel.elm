@@ -24,8 +24,9 @@ type alias Model =
     , search : SearchModel
     , iconMenu : IconMenuModel
 
-    --
+    -- display + fedwiki
     , display : Disp.DisplayConfig
+    , fedWikiRaw : String
     }
 
 
@@ -50,8 +51,9 @@ default =
     , search = Search.init
     , iconMenu = IconMenu.init
 
-    --
+    -- display + fedwiki
     , display = Disp.default
+    , fedWikiRaw = ""
     }
 
 
@@ -68,3 +70,5 @@ type Msg
     | Mouse MouseMsg
     | Search SearchMsg
     | IconMenu IconMenuMsg
+      -- Federated Wiki
+    | FedWikiPage String

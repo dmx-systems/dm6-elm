@@ -62,4 +62,5 @@ toAppModel c =
     , search = AM.default.search
     , iconMenu = AM.default.iconMenu
     , display = AM.default.display
+    , fedWikiRaw = AM.default.fedWikiRaw
     }
