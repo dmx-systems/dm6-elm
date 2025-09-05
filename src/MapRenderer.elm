@@ -244,7 +244,7 @@ viewTopic topic props mapPath model =
         topicFunc =
             case effectiveDisplayMode topic.id props.displayMode model of
                 Monad LabelOnly ->
-                    labelTopic
+                    circleTopic
 
                 Monad Detail ->
                     detailTopic
@@ -285,6 +285,39 @@ effectiveDisplayMode topicId displayMode model =
 
     else
         displayMode
+
+
+circleTopic : TopicInfo -> TopicProps -> MapPath -> Model -> TopicRendering
+circleTopic topic props mapPath model =
+    let
+        mapId =
+            getMapId mapPath
+
+        mark =
+            monadMark topic.text
+    in
+    ( topicPosStyle props
+        ++ [ style "display" "flex"
+           , style "align-items" "center"
+           , style "justify-content" "center"
+           , style "width" <| fromFloat topicSize.h ++ "px"
+           , style "height" <| fromFloat topicSize.h ++ "px"
+           , style "border-radius" "50%"
+           , style "background-color" "white"
+           ]
+        ++ topicBorderStyle topic.id mapId model
+        ++ selectionStyle topic.id mapId model
+    , [ div
+            [ style "font-family" "ui-monospace, SFMono-Regular, Menlo, Consolas, monospace"
+            , style "font-size" "12px"
+            , style "line-height" "1"
+            , style "pointer-events" "none"
+            , style "user-select" "none"
+            , style "text-align" "center"
+            ]
+            [ text mark ]
+      ]
+    )
 
 
 labelTopic : TopicInfo -> TopicProps -> MapPath -> Model -> TopicRendering
@@ -1022,5 +1055,34 @@ lineDasharray maybeAssoc =
             "5 0"
 
 
+{-| Pick a short “mark” for the monad interior.
+Strategy:
 
--- solid
+  - prefer the first non-space “word” up to 3 chars
+  - else first 2 visible chars
+  - else "•"
+
+-}
+monadMark : String -> String
+monadMark title =
+    let
+        trimmed =
+            String.trim title
+
+        word =
+            trimmed
+                |> String.words
+                |> List.head
+                |> Maybe.withDefault trimmed
+
+        take n s =
+            String.left n s
+    in
+    if String.isEmpty trimmed then
+        "•"
+
+    else if String.length word >= 1 then
+        word |> take (min 3 (String.length word))
+
+    else
+        take (min 2 (String.length trimmed)) trimmed
