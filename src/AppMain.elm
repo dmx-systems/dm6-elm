@@ -1,27 +1,11 @@
-port module AppMain exposing
-    ( Flags
-    , Model
-    , Msg
-    , init
-    , main
-    , subscriptions
-    , update
-    , view
-    )
+port module AppMain exposing (Model, Msg, init, main, subscriptions, update, view)
 
 import Browser exposing (Document)
+import Json.Decode as D
 import Main
 
 
-
--- Ports
-
-
 port persist : String -> Cmd msg
-
-
-
--- Types
 
 
 type alias Model =
@@ -32,17 +16,27 @@ type alias Msg =
     Main.Msg
 
 
-type alias Flags =
-    Main.Flags
-
-
-init : Flags -> ( Model, Cmd Msg )
-init flags =
+init : D.Value -> ( Model, Cmd Msg )
+init flagsVal =
     let
-        ( model, cmd ) =
-            Main.init flags
+        flagsDecoder : D.Decoder Main.Flags
+        flagsDecoder =
+            D.map2 Main.Flags
+                (D.field "slug" D.string)
+                (D.field "stored" D.string)
+
+        coldBoot : ( Model, Cmd Msg )
+        coldBoot =
+            Main.init { slug = "dm6-elm-demo", stored = "{}" }
     in
-    ( model, Cmd.map identity cmd )
+    case D.decodeValue flagsDecoder flagsVal of
+        Ok flags ->
+            -- New path with explicit {slug,stored}
+            Main.init flags
+
+        Err _ ->
+            -- Anything else (legacy full-model JSON, {}, null, numbers, etc.) → cold boot
+            coldBoot
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
@@ -60,7 +54,11 @@ view =
     Main.view
 
 
-main : Program Flags Model Msg
+
+-- Accept Json.Value so {} and null are valid and legacy callers don't crash
+
+
+main : Program D.Value Model Msg
 main =
     Browser.document
         { init = init
