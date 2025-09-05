@@ -27,19 +27,28 @@ import ModelAPI
 import Mouse exposing (DragMode(..), DragState(..))
 import Search exposing (ResultMenu(..))
 import String exposing (fromFloat, fromInt)
-import Svg exposing (Svg, g, path, svg)
+import Svg exposing (Svg, circle, g, path, svg, text)
 import Svg.Attributes
     exposing
-        ( d
+        ( cx
+        , cy
+        , d
+        , dominantBaseline
         , fill
+        , fontFamily
+        , fontSize
         , height
+        , r
         , stroke
         , strokeDasharray
         , strokeWidth
+        , textAnchor
         , transform
         , width
+        , x
         , x1
         , x2
+        , y
         , y1
         , y2
         )
@@ -61,7 +70,7 @@ lineFunc =
 
 
 type alias MapInfo =
-    ( ( List (Html Msg), List (Svg Msg) )
+    ( ( List (Html Msg), List (Svg Msg), List (Svg Msg) )
     , Rectangle
     , ( { w : String, h : String }
       , List (Attribute Msg)
@@ -81,14 +90,14 @@ type alias TopicRendering =
 viewMap : MapId -> MapPath -> Model -> Html Msg
 viewMap mapId mapPath model =
     let
-        ( ( topics, assocs ), mapRect, ( svgSize, mapStyle ) ) =
+        ( ( topicsHtml, assocsSvg, topicsSvg ), mapRect, ( svgSize, mapStyle ) ) =
             mapInfo mapId mapPath model
     in
     div
         mapStyle
         [ div
             (topicLayerStyle mapRect)
-            (topics
+            (topicsHtml
                 ++ limboTopic mapId model
             )
         , svg
@@ -98,7 +107,8 @@ viewMap mapId mapPath model =
             )
             [ g
                 (gAttr mapId mapRect model)
-                (assocs
+                (assocsSvg
+                    ++ topicsSvg
                     ++ viewLimboAssoc mapId model
                 )
             ]
@@ -138,10 +148,10 @@ mapInfo mapId mapPath model =
             )
 
         Nothing ->
-            ( ( [], [] ), Rectangle 0 0 0 0, ( { w = "0", h = "0" }, [] ) )
+            ( ( [], [], [] ), Rectangle 0 0 0 0, ( { w = "0", h = "0" }, [] ) )
 
 
-mapItems : Map -> MapPath -> Model -> ( List (Html Msg), List (Svg Msg) )
+mapItems : Map -> MapPath -> Model -> ( List (Html Msg), List (Svg Msg), List (Svg Msg) )
 mapItems map mapPath model =
     let
         newPath =
@@ -151,23 +161,37 @@ mapItems map mapPath model =
         |> Dict.values
         |> List.filter isVisible
         |> List.foldr
-            (\{ id, props } ( t, a ) ->
+            (\{ id, props } ( htmlTopics, assocs, topicsSvg ) ->
                 case model.items |> Dict.get id of
                     Just { info } ->
                         case ( info, props ) of
                             ( Topic topic, MapTopic tProps ) ->
-                                ( viewTopic topic tProps newPath model :: t, a )
+                                case effectiveDisplayMode topic.id tProps.displayMode model of
+                                    Monad _ ->
+                                        ( htmlTopics
+                                        , assocs
+                                        , viewTopicSvg topic tProps newPath model :: topicsSvg
+                                        )
+
+                                    _ ->
+                                        ( viewTopic topic tProps newPath model :: htmlTopics
+                                        , assocs
+                                        , topicsSvg
+                                        )
 
                             ( Assoc assoc, MapAssoc _ ) ->
-                                ( t, viewAssoc assoc map.id model :: a )
+                                ( htmlTopics
+                                , viewAssoc assoc map.id model :: assocs
+                                , topicsSvg
+                                )
 
                             _ ->
-                                logError "mapItems" ("problem with item " ++ fromInt id) ( t, a )
+                                logError "mapItems" ("problem with item " ++ fromInt id) ( htmlTopics, assocs, topicsSvg )
 
                     _ ->
-                        logError "mapItems" ("problem with item " ++ fromInt id) ( t, a )
+                        logError "mapItems" ("problem with item " ++ fromInt id) ( htmlTopics, assocs, topicsSvg )
             )
-            ( [], [] )
+            ( [], [], [] )
 
 
 limboTopic : MapId -> Model -> List (Html Msg)
@@ -183,17 +207,19 @@ limboTopic mapId model =
                     case getMapItemById topicId activeMapId model.maps of
                         Just mapItem ->
                             if mapItem.hidden then
-                                let
-                                    _ =
-                                        info "limboTopic" ( topicId, "is in map, hidden" )
-                                in
                                 case model.items |> Dict.get topicId of
                                     Just { info } ->
                                         case ( info, mapItem.props ) of
                                             ( Topic topic, MapTopic props ) ->
-                                                [ viewTopic topic props [] model ]
+                                                case effectiveDisplayMode topic.id props.displayMode model of
+                                                    -- monads are handled in SVG layer now
+                                                    Monad _ ->
+                                                        []
 
-                                            -- FIXME: mapPath=[] ?
+                                                    -- containers still render as HTML here
+                                                    _ ->
+                                                        [ viewTopic topic props [] model ]
+
                                             _ ->
                                                 []
 
@@ -201,20 +227,15 @@ limboTopic mapId model =
                                         []
 
                             else
-                                let
-                                    _ =
-                                        info "limboTopic" ( topicId, "is in map, already visible" )
-                                in
+                                -- already visible → nothing in limbo
                                 []
 
                         Nothing ->
                             []
 
                 else
+                    -- not yet in map: render a preview for containers only
                     let
-                        _ =
-                            info "limboTopic" ( topicId, "not in map" )
-
                         props =
                             defaultProps topicId topicSize model
                     in
@@ -222,9 +243,13 @@ limboTopic mapId model =
                         Just { info } ->
                             case info of
                                 Topic topic ->
-                                    [ viewTopic topic props [] model ]
+                                    case effectiveDisplayMode topic.id props.displayMode model of
+                                        Monad _ ->
+                                            []
 
-                                -- FIXME: mapPath=[] ?
+                                        _ ->
+                                            [ viewTopic topic props [] model ]
+
                                 _ ->
                                     []
 
@@ -238,14 +263,76 @@ limboTopic mapId model =
         []
 
 
+viewTopicSvg : TopicInfo -> TopicProps -> MapPath -> Model -> Svg Msg
+viewTopicSvg topic props mapPath model =
+    let
+        mapId =
+            getMapId mapPath
+
+        mark =
+            monadMark topic.text
+
+        rVal : Float
+        rVal =
+            (topicSize.h / 2) - topicBorderWidth
+
+        cxStr =
+            fromFloat props.pos.x
+
+        cyStr =
+            fromFloat props.pos.y
+
+        dash =
+            if isTargeted topic.id mapId model then
+                "4 2"
+
+            else
+                "0"
+    in
+    g
+        (topicAttr topic.id mapPath model)
+        [ circle
+            [ cx cxStr
+            , cy cyStr
+            , r (fromFloat rVal)
+            , fill "white"
+            , stroke "black"
+            , strokeWidth (fromFloat topicBorderWidth ++ "px")
+            , strokeDasharray dash
+            ]
+            []
+        , Svg.text_
+            [ x cxStr
+            , y cyStr
+            , textAnchor "middle"
+            , dominantBaseline "central"
+            , fontFamily "ui-monospace, SFMono-Regular, Menlo, Consolas, monospace"
+            , fontSize "12px"
+            , fill "black"
+            ]
+            [ Svg.text mark ]
+        , Svg.title [] [ Svg.text (getTopicLabel topic) ]
+        ]
+
+
+isTargeted : Id -> MapId -> Model -> Bool
+isTargeted topicId mapId model =
+    case model.mouse.dragState of
+        Drag DragTopic _ (mapId_ :: _) _ _ target ->
+            isTarget topicId mapId target && mapId_ /= topicId
+
+        Drag DrawAssoc _ (mapId_ :: _) _ _ target ->
+            isTarget topicId mapId target && mapId_ == mapId
+
+        _ ->
+            False
+
+
 viewTopic : TopicInfo -> TopicProps -> MapPath -> Model -> Html Msg
 viewTopic topic props mapPath model =
     let
         topicFunc =
             case effectiveDisplayMode topic.id props.displayMode model of
-                Monad LabelOnly ->
-                    circleTopic
-
                 Monad Detail ->
                     detailTopic
 
@@ -257,6 +344,10 @@ viewTopic topic props mapPath model =
 
                 Container Unboxed ->
                     unboxedTopic
+
+                _ ->
+                    -- fallback if ever called; keep labelTopic safe
+                    labelTopic
 
         ( style, children ) =
             topicFunc topic props mapPath model
@@ -315,7 +406,7 @@ circleTopic topic props mapPath model =
             , style "user-select" "none"
             , style "text-align" "center"
             ]
-            [ text mark ]
+            [ Html.text mark ]
       ]
     )
 
@@ -356,7 +447,7 @@ labelTopicHtml topic props mapId model =
             else
                 div
                     topicLabelStyle
-                    [ text <| getTopicLabel topic ]
+                    [ Html.text <| getTopicLabel topic ]
     in
     [ div
         (topicIconBoxStyle props)
@@ -386,7 +477,7 @@ detailTopic topic props mapPath model =
                         ++ detailTextStyle topic.id mapId model
                         ++ detailTextEditStyle topic.id mapId model
                     )
-                    [ text topic.text ]
+                    [ Html.text topic.text ]
 
             else
                 div
@@ -524,7 +615,7 @@ mapItemCount topicId props model =
     in
     [ div
         itemCountStyle
-        [ text <| fromInt itemCount ]
+        [ Html.text <| fromInt itemCount ]
     ]
 
 
@@ -552,7 +643,7 @@ viewAssoc assoc mapId model =
             lineFunc (Just assoc) pos1 pos2
 
         Nothing ->
-            text ""
+            Html.text ""
 
 
 
