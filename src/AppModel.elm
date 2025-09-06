@@ -52,6 +52,7 @@ type Msg
   | Nav NavMsg
   | Hide
   | Delete
+  | Export
   | NoOp
   -- components
   | Mouse MouseMsg

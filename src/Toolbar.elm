@@ -36,6 +36,7 @@ viewToolbar model =
     , viewToolbarButton "Hide" Hide True model
     , viewToolbarButton "Fullscreen" (Nav Fullscreen) True model
     , viewToolbarButton "Delete" Delete True model
+    , viewToolbarButton "Export JSON" Export False model
     , viewFooter
     ]
 
@@ -46,7 +47,7 @@ toolbarStyle =
   , style "display" "flex"
   , style "flex-direction" "column"
   , style "align-items" "flex-start"
-  , style "gap" "28px"
+  , style "gap" "24px"
   , style "position" "fixed"
   , style "z-index" "1"
   ]

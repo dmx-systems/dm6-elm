@@ -7,13 +7,30 @@
 </head>
 <body>
 <script>
-const storedData = localStorage.getItem('dm6-elm')
-const model = storedData ? JSON.parse(storedData) : null
+const key = 'dm6-elm'
+const modelStr = localStorage.getItem(key)
+const model = modelStr ? JSON.parse(modelStr) : null
 const app = Elm.Main.init({
   flags: model
 })
 app.ports.store.subscribe(function (model) {
-  localStorage.setItem('dm6-elm', JSON.stringify(model))
+  localStorage.setItem(key, JSON.stringify(model))
+})
+app.ports.export.subscribe(function () {
+  const id = "dm6-elm-exporter"
+  const modelStr = localStorage.getItem(key)
+  const anchor = document.getElementById(id) || document.createElement('a')
+  const file = new File([modelStr], 'not used')
+  const url = URL.createObjectURL(file)
+  if (!anchor.id) {
+    anchor.id = id
+    anchor.download = 'dm6-elm-export.json'
+    anchor.style.display = 'none'
+    document.body.appendChild(anchor)
+  }
+  anchor.setAttribute('href', url)
+  anchor.click()
+  URL.revokeObjectURL(url)
 })
 </script>
 </body>

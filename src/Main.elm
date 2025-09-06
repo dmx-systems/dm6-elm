@@ -1,4 +1,4 @@
-module Main exposing (..)
+port module Main exposing (..)
 
 import AppModel exposing (..)
 import Boxing exposing (boxContainer, unboxContainer)
@@ -24,6 +24,13 @@ import String exposing (fromInt, fromFloat)
 import Task
 import Json.Decode as D
 import Json.Encode as E
+
+
+
+-- PORTS
+
+
+port export : () -> Cmd msg
 
 
 
@@ -143,6 +150,7 @@ update msg model =
     Nav navMsg -> updateNav navMsg model |> storeModel
     Hide -> hide model |> storeModel
     Delete -> delete model |> storeModel
+    Export -> (model, export ())
     NoOp -> (model, Cmd.none)
 
 
