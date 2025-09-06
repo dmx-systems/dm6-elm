@@ -163,14 +163,14 @@ getTopicPos topicId mapId maps =
     Nothing -> fail "getTopicPos" {topicId = topicId, mapId = mapId} Nothing
 
 
-{-| Logs an error if topic is not in map -}
+{-| Logs an error if map does not exist or if topic is not in map -}
 setTopicPos : Id -> MapId -> Point -> Model -> Model
 setTopicPos topicId mapId pos model =
   model |> updateTopicProps topicId mapId
     (\props -> { props | pos = pos })
 
 
-{-| Logs an error if topic is not in map -}
+{-| Logs an error if map does not exist or if topic is not in map -}
 setTopicPosByDelta : Id -> MapId -> Delta -> Model -> Model
 setTopicPosByDelta topicId mapId delta model =
   model |> updateTopicProps topicId mapId
@@ -190,7 +190,7 @@ getTopicSize topicId mapId maps =
     Nothing -> fail "getTopicSize" {topicId = topicId, mapId = mapId} Nothing
 
 
-{-| Logs an error if topic is not in map -}
+{-| Logs an error if map does not exist or if topic is not in map -}
 setTopicSize : Id -> MapId -> Size -> Model -> Model
 setTopicSize topicId mapId size model =
   model |> updateTopicProps topicId mapId
@@ -204,7 +204,7 @@ getDisplayMode topicId mapId maps =
     Nothing -> fail "getDisplayMode" {topicId = topicId, mapId = mapId} Nothing
 
 
-{-| Logs an error if topic is not in map -}
+{-| Logs an error if map does not exist or if topic is not in map -}
 setDisplayMode : Id -> MapId -> DisplayMode -> Model -> Model
 setDisplayMode topicId mapId displayMode model =
   model |> updateTopicProps topicId mapId
@@ -221,7 +221,7 @@ getTopicProps topicId mapId maps =
     Nothing -> fail "getTopicProps" {topicId = topicId, mapId = mapId} Nothing
 
 
-{-| Logs an error if topic is not in map -}
+{-| Logs an error if map does not exist or if topic is not in map -}
 updateTopicProps : Id -> MapId -> (TopicProps -> TopicProps) -> Model -> Model
 updateTopicProps topicId mapId propsFunc model =
   { model | maps = model.maps |> updateMaps mapId
@@ -279,8 +279,11 @@ isItemInMap itemId mapId model =
     Nothing -> False
 
 
-createTopicAndAddToMap : String -> Maybe IconName -> MapId -> Model -> Model
-createTopicAndAddToMap text iconName mapId model =
+createTopicIn : String -> Maybe IconName -> MapPath -> Model -> Model
+createTopicIn text iconName mapPath model =
+  let
+    mapId = getMapId mapPath
+  in
   case getMap mapId model.maps of
     Just map ->
       let
@@ -295,14 +298,14 @@ createTopicAndAddToMap text iconName mapId model =
       in
       newModel
       |> addItemToMap topicId props mapId
-      |> select topicId mapId
+      |> select topicId mapPath
     Nothing -> model
 
 
 -- Presumption: both players exist in same map
-createDefaultAssoc : Id -> Id -> MapId -> Model -> Model
-createDefaultAssoc player1 player2 mapId model =
-  createAssocAndAddToMap
+createDefaultAssocIn : Id -> Id -> MapId -> Model -> Model
+createDefaultAssocIn player1 player2 mapId model =
+  createAssocIn
     "dmx.association"
     "dmx.default" player1
     "dmx.default" player2
@@ -310,8 +313,8 @@ createDefaultAssoc player1 player2 mapId model =
 
 
 -- Presumption: both players exist in same map
-createAssocAndAddToMap : ItemType -> RoleType -> Id -> RoleType -> Id -> MapId -> Model -> Model
-createAssocAndAddToMap itemType role1 player1 role2 player2 mapId model =
+createAssocIn : ItemType -> RoleType -> Id -> RoleType -> Id -> MapId -> Model -> Model
+createAssocIn itemType role1 player1 role2 player2 mapId model =
   let
     (newModel, assocId) = createAssoc itemType role1 player1 role2 player2 model
     props = MapAssoc AssocProps
@@ -380,6 +383,7 @@ hideItem_ itemId items model =
     )
 
 
+{-| Logs an error if map does not exist -}
 updateMaps : MapId -> (Map -> Map) -> Maps -> Maps
 updateMaps mapId mapFunc maps =
   maps |> Dict.update mapId
@@ -463,12 +467,27 @@ isVisible item =
 
 -- Selection
 
-select : Id -> MapId -> Model -> Model
-select id mapId model =
-  { model | selection = [ (id, mapId) ] }
+select : Id -> MapPath -> Model -> Model
+select itemId mapPath model =
+  { model | selection = [ (itemId, mapPath) ] }
 
 
-getSingleSelection : Model -> Maybe (Id, MapId)
+resetSelection : Model -> Model
+resetSelection model =
+  { model | selection = [] }
+
+
+isSelected : Id -> MapId -> Model -> Bool
+isSelected itemId mapId model =
+  model.selection |> List.any
+    (\(id, mapPath) ->
+      case mapPath of
+        mapId_ :: _ -> itemId == id && mapId == mapId_
+        [] -> False
+    )
+
+
+getSingleSelection : Model -> Maybe (Id, MapPath)
 getSingleSelection model =
   case model.selection of
     [ selItem ] -> Just selItem

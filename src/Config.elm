@@ -9,7 +9,7 @@ import Model exposing (Point, Size)
 
 homeMapName = "DM6 Elm"
 version = "0.2-snapshot"
-date = "Sep 1, 2025"
+date = "Sep 5, 2025"
 newTopicPos = Point 186 180
 
 mainFont = "sans-serif"
