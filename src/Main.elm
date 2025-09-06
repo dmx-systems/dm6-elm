@@ -30,7 +30,8 @@ import Json.Encode as E
 -- PORTS
 
 
-port export : () -> Cmd msg
+port importJSON : () -> Cmd msg
+port exportJSON : () -> Cmd msg
 
 
 
@@ -150,7 +151,8 @@ update msg model =
     Nav navMsg -> updateNav navMsg model |> storeModel
     Hide -> hide model |> storeModel
     Delete -> delete model |> storeModel
-    Export -> (model, export ())
+    Import -> (model, importJSON ())
+    Export -> (model, exportJSON ())
     NoOp -> (model, Cmd.none)
 
 

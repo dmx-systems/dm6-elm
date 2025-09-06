@@ -36,7 +36,8 @@ viewToolbar model =
     , viewToolbarButton "Hide" Hide True model
     , viewToolbarButton "Fullscreen" (Nav Fullscreen) True model
     , viewToolbarButton "Delete" Delete True model
-    , viewToolbarButton "Export JSON" Export False model
+    , viewToolbarButton "Import" Import False model
+    , viewToolbarButton "Export" Export False model
     , viewFooter
     ]
 
