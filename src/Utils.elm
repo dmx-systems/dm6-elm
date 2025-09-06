@@ -3,15 +3,7 @@ module Utils exposing (..)
 import Html exposing (Html, Attribute, text, br)
 import Html.Events exposing (on, stopPropagationOn, keyCode)
 import Json.Decode as D
-import Debug exposing (log)
-{--
-log : String -> a -> a
-log text val = val
--}
-
-toString : a -> String
-toString = Debug.toString
--- toString val = ""
+import Logger
 
 
 
@@ -67,19 +59,23 @@ multilineHtml str =
 
 logError : String -> String -> v -> v
 logError funcName text val =
-  log ("### ERROR @" ++ funcName ++ ": " ++ text) val
+  Logger.log ("### ERROR @" ++ funcName ++ ": " ++ text) val
 
 
 fail : String -> a -> v -> v
 fail funcName args val =
-  log ("--> @" ++ funcName ++ " failed " ++ toString args) val
+  Logger.log ("--> @" ++ funcName ++ " failed " ++ Logger.toString args) val
 
 
 call : String -> a -> v -> v
 call funcName args val =
-  log ("@" ++ funcName ++ " " ++ toString args ++ " -->") val
+  Logger.log ("@" ++ funcName ++ " " ++ Logger.toString args ++ " -->") val
 
 
 info : String -> v -> v
 info funcName val =
-  log ("@" ++ funcName) val
+  Logger.log ("@" ++ funcName) val
+
+
+toString : a -> String
+toString = Logger.toString

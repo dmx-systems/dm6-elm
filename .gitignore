@@ -1,6 +1,7 @@
 dm6-elm.html
 main.js
 main.min.js
+src/Logger.elm
 elm-stuff/
 review/
 .DS_Store
