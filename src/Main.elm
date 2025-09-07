@@ -144,27 +144,27 @@ update msg ({present} as undoModel) =
       case msg of
         Mouse _ -> msg
         _ -> info "update" msg
-    (model, cmd) =
-      case msg of
-        AddTopic -> createTopicIn topicDefaultText Nothing [ activeMap present ] present
-          |> storeModel
-        MoveTopicToMap topicId mapId origPos targetId targetMapPath pos -> moveTopicToMap
-          topicId mapId origPos targetId targetMapPath pos present |> storeModel
-        SwitchDisplay displayMode -> switchDisplay displayMode present |> storeModel
-        Search searchMsg -> updateSearch searchMsg present
-        Edit editMsg -> updateEdit editMsg present
-        IconMenu iconMenuMsg -> updateIconMenu iconMenuMsg present
-        Mouse mouseMsg -> updateMouse mouseMsg present
-        Nav navMsg -> updateNav navMsg present |> storeModel
-        Hide -> hide present |> storeModel
-        Delete -> delete present |> storeModel
-        Undo -> (present, Cmd.none) -- TODO
-        Redo -> (present, Cmd.none) -- TODO
-        Import -> (present, importJSON ())
-        Export -> (present, exportJSON ())
-        NoOp -> (present, Cmd.none)
   in
-  (UndoList.new model undoModel, cmd) -- TODO: not every single model change is undoable
+  case msg of
+    AddTopic -> createTopicIn topicDefaultText Nothing [ activeMap present ] present
+      |> storeModel |> push undoModel
+    MoveTopicToMap topicId mapId origPos targetId targetMapPath pos
+      -> moveTopicToMap topicId mapId origPos targetId targetMapPath pos present
+      |> storeModel |> push undoModel
+    SwitchDisplay displayMode -> switchDisplay displayMode present
+      |> storeModel |> swap undoModel
+    Search searchMsg -> updateSearch searchMsg present |> swap undoModel
+    Edit editMsg -> updateEdit editMsg present |> swap undoModel
+    IconMenu iconMenuMsg -> updateIconMenu iconMenuMsg present |> swap undoModel
+    Mouse mouseMsg -> updateMouse mouseMsg present |> swap undoModel
+    Nav navMsg -> updateNav navMsg present |> storeModel |> swap undoModel
+    Hide -> hide present |> storeModel |> push undoModel
+    Delete -> delete present |> storeModel |> push undoModel
+    Undo -> (UndoList.undo undoModel, Cmd.none)
+    Redo -> (UndoList.redo undoModel, Cmd.none)
+    Import -> (present, importJSON ()) |> swap undoModel
+    Export -> (present, exportJSON ()) |> swap undoModel
+    NoOp -> (present, Cmd.none) |> swap undoModel
 
 
 moveTopicToMap : Id -> MapId -> Point -> Id -> MapPath -> Point -> Model -> Model
@@ -414,3 +414,16 @@ delete model =
   newModel
   |> resetSelection
   |> autoSize
+
+
+
+-- Undo / Redo
+
+push : UndoModel -> (Model, Cmd Msg) -> (UndoModel, Cmd Msg)
+push undoModel (model, cmd) =
+  (UndoList.new model undoModel, cmd)
+
+
+swap : UndoModel -> (Model, Cmd Msg) -> (UndoModel, Cmd Msg)
+swap undoModel (model, cmd) =
+  (UndoList.mapPresent (\_ -> model) undoModel, cmd)

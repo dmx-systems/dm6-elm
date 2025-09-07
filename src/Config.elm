@@ -13,7 +13,7 @@ date = "Sep 7, 2025"
 newTopicPos = Point 186 180
 
 mainFont = "sans-serif"
-toolbarFontSize = 14
+toolbarFontSize = 13
 contentFontSize = 13
 footerFontSize = 13
 

@@ -56,7 +56,7 @@ toolbarStyle =
   , style "display" "flex"
   , style "flex-direction" "column"
   , style "align-items" "flex-start"
-  , style "gap" "18px"
+  , style "gap" "20px"
   , style "position" "fixed"
   , style "z-index" "1"
   ]
