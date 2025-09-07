@@ -1,6 +1,6 @@
 module MouseAPI exposing (mouseHoverHandler, mouseSubs, updateMouse)
 
-import AppModel exposing (Model, Msg(..))
+import AppModel exposing (UndoModel, Model, Msg(..))
 import Config exposing (topicW2, topicH2, assocDelayMillis, whiteBoxRange, whiteBoxPadding)
 import MapAutoSize exposing (autoSize)
 import Model exposing (Class, Id, MapPath, Point)
@@ -228,9 +228,9 @@ updateDragState ({mouse} as model) dragState =
 -- SUBSCRIPTIONS
 
 
-mouseSubs : Model -> Sub Msg
-mouseSubs model =
-  case model.mouse.dragState of
+mouseSubs : UndoModel -> Sub Msg
+mouseSubs {present} =
+  case present.mouse.dragState of
     WaitForStartTime _ _ _ _ -> Sub.none
     WaitForEndTime _ _ _ _ _ -> Sub.none
     DragEngaged _ _ _ _ _ -> dragSub

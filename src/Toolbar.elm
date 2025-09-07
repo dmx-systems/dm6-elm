@@ -38,6 +38,11 @@ viewToolbar model =
     , viewToolbarButton "Delete" Delete True model
     , div
       []
+      [ viewToolbarButton "Undo" Undo False model
+      , viewToolbarButton "Redo" Redo False model
+      ]
+    , div
+      []
       [ viewToolbarButton "Import" Import False model
       , viewToolbarButton "Export" Export False model
       ]
@@ -51,7 +56,7 @@ toolbarStyle =
   , style "display" "flex"
   , style "flex-direction" "column"
   , style "align-items" "flex-start"
-  , style "gap" "24px"
+  , style "gap" "18px"
   , style "position" "fixed"
   , style "z-index" "1"
   ]

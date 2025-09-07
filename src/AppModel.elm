@@ -7,7 +7,11 @@ import Mouse exposing (MouseModel, MouseMsg)
 import Search exposing (SearchModel, SearchMsg)
 
 import Dict
+import UndoList exposing (UndoList)
 
+
+
+type alias UndoModel = UndoList Model
 
 
 type alias Model =
@@ -52,6 +56,8 @@ type Msg
   | Nav NavMsg
   | Hide
   | Delete
+  | Undo
+  | Redo
   | Import
   | Export
   | NoOp

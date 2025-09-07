@@ -20,10 +20,11 @@ import Browser.Dom as Dom
 import Dict
 import Html exposing (Attribute, div, text, br)
 import Html.Attributes exposing (id, style)
-import String exposing (fromInt, fromFloat)
-import Task
 import Json.Decode as D
 import Json.Encode as E
+import String exposing (fromInt, fromFloat)
+import Task
+import UndoList exposing (UndoList)
 
 
 
@@ -38,7 +39,7 @@ port exportJSON : () -> Cmd msg
 -- MAIN
 
 
-main : Program E.Value Model Msg
+main : Program E.Value UndoModel Msg
 main =
   Browser.document
     { init = init
@@ -48,9 +49,16 @@ main =
     }
 
 
-init : E.Value -> (Model, Cmd Msg)
+init : E.Value -> (UndoModel, Cmd Msg)
 init flags =
-  ( case flags |> D.decodeValue (D.null True) of
+  ( UndoList.fresh <| initModel flags
+  , Cmd.none
+  )
+
+
+initModel : E.Value -> Model
+initModel flags =
+  case flags |> D.decodeValue (D.null True) of
     Ok True ->
       let
         _ = info "init" "localStorage: empty"
@@ -69,33 +77,31 @@ init flags =
             _ = logError "init" "localStorage" e
           in
           default
-  , Cmd.none
-  )
 
 
 
 -- VIEW
 
 
-view : Model -> Browser.Document Msg
-view model =
+view : UndoModel -> Browser.Document Msg
+view {present} =
   Browser.Document
     "DM6 Elm"
     [ div
       ( mouseHoverHandler
         ++ appStyle
       )
-      ( [ viewToolbar model
-        , viewMap (activeMap model) [] model -- mapPath = []
+      ( [ viewToolbar present
+        , viewMap (activeMap present) [] present -- mapPath = []
         ]
-        ++ viewResultMenu model
-        ++ viewIconMenu model
+        ++ viewResultMenu present
+        ++ viewIconMenu present
       )
     , div
       ( [ id "measure" ]
         ++ measureStyle
       )
-      [ text model.measureText
+      [ text present.measureText
       , br [] []
       ]
     ]
@@ -131,29 +137,34 @@ measureStyle =
 -- UPDATE
 
 
-update : Msg -> Model -> (Model, Cmd Msg)
-update msg model =
+update : Msg -> UndoModel -> (UndoModel, Cmd Msg)
+update msg ({present} as undoModel) =
   let
     _ =
       case msg of
         Mouse _ -> msg
         _ -> info "update" msg
+    (model, cmd) =
+      case msg of
+        AddTopic -> createTopicIn topicDefaultText Nothing [ activeMap present ] present
+          |> storeModel
+        MoveTopicToMap topicId mapId origPos targetId targetMapPath pos -> moveTopicToMap
+          topicId mapId origPos targetId targetMapPath pos present |> storeModel
+        SwitchDisplay displayMode -> switchDisplay displayMode present |> storeModel
+        Search searchMsg -> updateSearch searchMsg present
+        Edit editMsg -> updateEdit editMsg present
+        IconMenu iconMenuMsg -> updateIconMenu iconMenuMsg present
+        Mouse mouseMsg -> updateMouse mouseMsg present
+        Nav navMsg -> updateNav navMsg present |> storeModel
+        Hide -> hide present |> storeModel
+        Delete -> delete present |> storeModel
+        Undo -> (present, Cmd.none) -- TODO
+        Redo -> (present, Cmd.none) -- TODO
+        Import -> (present, importJSON ())
+        Export -> (present, exportJSON ())
+        NoOp -> (present, Cmd.none)
   in
-  case msg of
-    AddTopic -> createTopicIn topicDefaultText Nothing [ activeMap model ] model |> storeModel
-    MoveTopicToMap topicId mapId origPos targetId targetMapPath pos
-      -> moveTopicToMap topicId mapId origPos targetId targetMapPath pos model |> storeModel
-    SwitchDisplay displayMode -> switchDisplay displayMode model |> storeModel
-    Search searchMsg -> updateSearch searchMsg model
-    Edit editMsg -> updateEdit editMsg model
-    IconMenu iconMenuMsg -> updateIconMenu iconMenuMsg model
-    Mouse mouseMsg -> updateMouse mouseMsg model
-    Nav navMsg -> updateNav navMsg model |> storeModel
-    Hide -> hide model |> storeModel
-    Delete -> delete model |> storeModel
-    Import -> (model, importJSON ())
-    Export -> (model, exportJSON ())
-    NoOp -> (model, Cmd.none)
+  (UndoList.new model undoModel, cmd) -- TODO: not every single model change is undoable
 
 
 moveTopicToMap : Id -> MapId -> Point -> Id -> MapPath -> Point -> Model -> Model
