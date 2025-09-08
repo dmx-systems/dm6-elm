@@ -153,7 +153,7 @@ update msg ({present} as undoModel) =
       |> storeModel |> push undoModel
     SwitchDisplay displayMode -> switchDisplay displayMode present
       |> storeModel |> swap undoModel
-    Search searchMsg -> updateSearch searchMsg present |> swap undoModel
+    Search searchMsg -> updateSearch searchMsg undoModel
     Edit editMsg -> updateEdit editMsg present |> swap undoModel
     IconMenu iconMenuMsg -> updateIconMenu iconMenuMsg present |> swap undoModel
     Mouse mouseMsg -> updateMouse mouseMsg present |> swap undoModel
@@ -415,15 +415,3 @@ delete model =
   |> resetSelection
   |> autoSize
 
-
-
--- Undo / Redo
-
-push : UndoModel -> (Model, Cmd Msg) -> (UndoModel, Cmd Msg)
-push undoModel (model, cmd) =
-  (UndoList.new model undoModel, cmd)
-
-
-swap : UndoModel -> (Model, Cmd Msg) -> (UndoModel, Cmd Msg)
-swap undoModel (model, cmd) =
-  (UndoList.mapPresent (\_ -> model) undoModel, cmd)
