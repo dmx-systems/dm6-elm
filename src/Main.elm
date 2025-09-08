@@ -160,8 +160,8 @@ update msg ({present} as undoModel) =
     Nav navMsg -> updateNav navMsg present |> storeModel |> swap undoModel
     Hide -> hide present |> storeModel |> push undoModel
     Delete -> delete present |> storeModel |> push undoModel
-    Undo -> (UndoList.undo undoModel, Cmd.none)
-    Redo -> (UndoList.redo undoModel, Cmd.none)
+    Undo -> undo undoModel
+    Redo -> redo undoModel
     Import -> (present, importJSON ()) |> swap undoModel
     Export -> (present, exportJSON ()) |> swap undoModel
     NoOp -> (present, Cmd.none) |> swap undoModel
@@ -415,3 +415,26 @@ delete model =
   |> resetSelection
   |> autoSize
 
+
+-- Undo / Redo
+
+undo : UndoModel -> (UndoModel, Cmd Msg)
+undo undoModel =
+  let
+    newUndoModel = UndoList.undo undoModel
+    newModel = resetTransientState newUndoModel.present
+  in
+  newModel
+  |> storeModel
+  |> swap newUndoModel
+
+
+redo : UndoModel -> (UndoModel, Cmd Msg)
+redo undoModel =
+  let
+    newUndoModel = UndoList.redo undoModel
+    newModel = resetTransientState newUndoModel.present
+  in
+  newModel
+  |> storeModel
+  |> swap newUndoModel
