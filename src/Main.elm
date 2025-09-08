@@ -24,7 +24,7 @@ import Json.Decode as D
 import Json.Encode as E
 import String exposing (fromInt, fromFloat)
 import Task
-import UndoList exposing (UndoList)
+import UndoList
 
 
 
@@ -84,14 +84,14 @@ initModel flags =
 
 
 view : UndoModel -> Browser.Document Msg
-view {present} =
+view ({present} as undoModel) =
   Browser.Document
     "DM6 Elm"
     [ div
       ( mouseHoverHandler
         ++ appStyle
       )
-      ( [ viewToolbar present
+      ( [ viewToolbar undoModel
         , viewMap (activeMap present) [] present -- mapPath = []
         ]
         ++ viewResultMenu present
