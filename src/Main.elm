@@ -155,8 +155,8 @@ update msg ({present} as undoModel) =
       |> storeModel |> swap undoModel
     Search searchMsg -> updateSearch searchMsg undoModel
     Edit editMsg -> updateEdit editMsg undoModel
-    IconMenu iconMenuMsg -> updateIconMenu iconMenuMsg present |> swap undoModel
-    Mouse mouseMsg -> updateMouse mouseMsg present |> swap undoModel
+    IconMenu iconMenuMsg -> updateIconMenu iconMenuMsg undoModel
+    Mouse mouseMsg -> updateMouse mouseMsg undoModel
     Nav navMsg -> updateNav navMsg present |> storeModel |> swap undoModel
     Hide -> hide present |> storeModel |> push undoModel
     Delete -> delete present |> storeModel |> push undoModel
