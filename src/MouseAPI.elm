@@ -20,7 +20,7 @@ import Json.Decode as D
 import Random
 import String exposing (fromInt)
 import Task
-import Time exposing (posixToMillis)
+import Time exposing (Posix, posixToMillis)
 
 
 
@@ -43,12 +43,12 @@ updateMouse msg ({present} as undoModel) =
   case msg of
     Down -> (mouseDown present, Cmd.none) |> swap undoModel
     DownItem class id mapPath pos -> mouseDownOnItem present class id mapPath pos
-      |> push undoModel
+      |> swap undoModel
     Move pos -> mouseMove present pos |> swap undoModel
     Up -> mouseUp present |> storeModelWith |> swap undoModel
     Over class id mapPath -> (mouseOver present class id mapPath, Cmd.none) |> swap undoModel
     Out class id mapPath -> (mouseOut present class id mapPath, Cmd.none) |> swap undoModel
-    Time time -> (timeArrived time present, Cmd.none) |> swap undoModel
+    Time time -> timeArrived time undoModel
 
 
 mouseDown : Model -> Model
@@ -67,28 +67,42 @@ mouseDownOnItem model class id mapPath pos =
   )
 
 
-timeArrived : Time.Posix -> Model -> Model
-timeArrived time model =
-  case model.mouse.dragState of
+timeArrived : Posix -> UndoModel -> (UndoModel, Cmd Msg)
+timeArrived time ({present} as undoModel) =
+  case present.mouse.dragState of
     WaitForStartTime class id mapPath pos ->
-      updateDragState model <| DragEngaged time class id mapPath pos
+      ( updateDragState present <| DragEngaged time class id mapPath pos
+      , Cmd.none
+      )
+      |> swap undoModel
     WaitForEndTime startTime class id mapPath pos ->
-      updateDragState model <|
-        case class of
-          "dmx-topic" ->
-            let
-              delay = posixToMillis time - posixToMillis startTime > assocDelayMillis
-              dragMode = if delay then DrawAssoc else DragTopic
-              mapId = getMapId mapPath
-              origPos_ = getTopicPos id mapId model.maps
-            in
-            case origPos_ of
-              Just origPos -> Drag dragMode id mapPath origPos pos Nothing
-              Nothing -> NoDrag
-          _ -> NoDrag -- the error will be logged in performDrag
+      let
+        newDragState = enterDrag time startTime class id mapPath pos present
+        newModel = updateDragState present <| newDragState
+      in
+      case newDragState of
+        Drag DragTopic _ _ _ _ _ -> push undoModel (newModel, Cmd.none)
+        Drag DrawAssoc _ _ _ _ _ -> swap undoModel (newModel, Cmd.none)
+        _ -> logError "timeArrived" "problem with enterDrag" swap undoModel (newModel, Cmd.none)
     _ -> logError "timeArrived"
       "Received \"Time\" message when dragState is not WaitForTime"
-      model
+      ( present, Cmd.none ) |> swap undoModel
+
+
+enterDrag : Posix -> Posix -> Class -> Id -> MapPath -> Point -> Model -> DragState
+enterDrag time startTime class id mapPath pos model =
+  let
+    delay = posixToMillis time - posixToMillis startTime > assocDelayMillis
+    dragMode = if delay then DrawAssoc else DragTopic
+    mapId = getMapId mapPath
+    maybeOrigPos = getTopicPos id mapId model.maps
+  in
+  case class of
+    "dmx-topic" ->
+      case maybeOrigPos of
+        Just origPos -> Drag dragMode id mapPath origPos pos Nothing
+        Nothing -> NoDrag -- error is already logged
+    _ -> NoDrag -- the error will be logged in performDrag
 
 
 mouseMove : Model -> Point -> (Model, Cmd Msg)
