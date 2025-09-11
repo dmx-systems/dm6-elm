@@ -1,6 +1,6 @@
 module SearchAPI exposing (viewSearchInput, viewResultMenu, closeResultMenu, updateSearch)
 
-import AppModel exposing (Model, Msg(..))
+import AppModel exposing (UndoModel, Model, Msg(..))
 import Config exposing (contentFontSize, topicSize)
 import Model exposing (ItemInfo(..), MapProps(..), Id, MapId)
 import ModelAPI exposing (..)
@@ -114,17 +114,19 @@ resultItemStyle topicId model =
 -- UPDATE
 
 
-updateSearch : SearchMsg -> Model -> (Model, Cmd Msg)
-updateSearch msg model =
+updateSearch : SearchMsg -> UndoModel -> (UndoModel, Cmd Msg)
+updateSearch msg ({present} as undoModel) =
   case msg of
-    Input text -> (onTextInput text model, Cmd.none)
-    FocusInput -> (onFocusInput model, Cmd.none)
-    HoverItem topicId -> (onHoverItem topicId model, Cmd.none)
-    UnhoverItem _ -> (onUnhoverItem model, Cmd.none)
-    ClickItem topicId -> model
-      |> revealTopic topicId (activeMap model)
+    Input text -> (onTextInput text present, Cmd.none) |> swap undoModel
+    FocusInput -> (onFocusInput present, Cmd.none) |> swap undoModel
+    HoverItem topicId -> (onHoverItem topicId present, Cmd.none) |> swap undoModel
+    UnhoverItem _ -> (onUnhoverItem present, Cmd.none) |> swap undoModel
+    ClickItem topicId ->
+      present
+      |> revealTopic topicId (activeMap present)
       |> closeResultMenu
       |> storeModel
+      |> push undoModel
 
 
 onTextInput : String -> Model -> Model

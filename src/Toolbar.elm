@@ -1,12 +1,12 @@
 module Toolbar exposing (viewToolbar)
 
-import AppModel exposing (Model, Msg(..))
+import AppModel exposing (UndoModel, Model, Msg(..))
 import Config exposing (homeMapName, version, date, mainFont, toolbarFontSize, footerFontSize)
 import Model exposing (EditMsg(..), NavMsg(..), DisplayMode(..), MonadDisplay(..),
   ContainerDisplay(..))
 import ModelAPI exposing (getTopicInfo, getTopicLabel, getMapId, isHome, activeMap,
   getDisplayMode, getSingleSelection)
-import Utils exposing (stopPropagationOnMousedown)
+import Utils exposing (stopPropagationOnMousedown, info)
 -- components
 import IconMenu exposing (IconMenuMsg(..))
 import IconMenuAPI exposing (viewIcon)
@@ -16,30 +16,39 @@ import Html exposing (Html, Attribute, div, span, text, button, input, label, a)
 import Html.Attributes exposing (href, style, type_, name, checked, disabled)
 import Html.Events exposing (onClick)
 import String exposing (fromInt)
+import UndoList
 
 
 
 -- VIEW
 
 
-viewToolbar : Model -> Html Msg
-viewToolbar model =
+viewToolbar : UndoModel -> Html Msg
+viewToolbar ({present} as undoModel) =
+  let
+    _ = info "viewToolbar" [ UndoList.lengthPast undoModel, UndoList.lengthFuture undoModel ]
+  in
   div
     toolbarStyle
-    [ viewMapNav model
-    , viewSearchInput model
-    , viewToolbarButton "Add Topic" AddTopic False model
-    , viewToolbarButton "Edit" (Edit EditStart) True model
-    , viewToolbarButton "Choose Icon" (IconMenu Open) True model
-    , viewMonadDisplay model
-    , viewContainerDisplay model
-    , viewToolbarButton "Hide" Hide True model
-    , viewToolbarButton "Fullscreen" (Nav Fullscreen) True model
-    , viewToolbarButton "Delete" Delete True model
+    [ viewMapNav present
+    , viewSearchInput present
+    , viewToolbarButton "Add Topic" AddTopic always undoModel
+    , viewToolbarButton "Edit" (Edit EditStart) hasSelection undoModel
+    , viewToolbarButton "Choose Icon" (IconMenu Open) hasSelection undoModel
+    , viewMonadDisplay present
+    , viewContainerDisplay present
+    , viewToolbarButton "Hide" Hide hasSelection undoModel
+    , viewToolbarButton "Fullscreen" (Nav Fullscreen) hasSelection undoModel
+    , viewToolbarButton "Delete" Delete hasSelection undoModel
     , div
       []
-      [ viewToolbarButton "Import" Import False model
-      , viewToolbarButton "Export" Export False model
+      [ viewToolbarButton "Undo" Undo hasPast undoModel
+      , viewToolbarButton "Redo" Redo hasFuture undoModel
+      ]
+    , div
+      []
+      [ viewToolbarButton "Import" Import always undoModel
+      , viewToolbarButton "Export" Export always undoModel
       ]
     , viewFooter
     ]
@@ -51,7 +60,7 @@ toolbarStyle =
   , style "display" "flex"
   , style "flex-direction" "column"
   , style "align-items" "flex-start"
-  , style "gap" "24px"
+  , style "gap" "20px"
   , style "position" "fixed"
   , style "z-index" "1"
   ]
@@ -101,16 +110,13 @@ getMapName model =
       Nothing -> "??"
 
 
-viewToolbarButton : String -> Msg -> Bool -> Model -> Html Msg
-viewToolbarButton label msg requireSelection model =
+viewToolbarButton : String -> Msg -> (UndoModel -> Bool) -> UndoModel -> Html Msg
+viewToolbarButton label msg isEnabled undoModel =
   let
-    hasNoSelection = List.isEmpty model.selection
-    buttonAttr = case requireSelection of
-      True ->
-        [ stopPropagationOnMousedown NoOp
-        , disabled hasNoSelection
-        ]
-      False -> []
+    buttonAttr =
+      [ stopPropagationOnMousedown NoOp
+      , disabled <| not <| isEnabled undoModel
+      ]
   in
   button
     ( [ onClick msg ]
@@ -118,6 +124,30 @@ viewToolbarButton label msg requireSelection model =
       ++ buttonStyle
     )
     [ text label ]
+
+
+{-| isEnabled predicate -}
+hasSelection : UndoModel -> Bool
+hasSelection undoModel =
+  not (undoModel.present.selection |> List.isEmpty)
+
+
+{-| isEnabled predicate -}
+hasPast : UndoModel -> Bool
+hasPast undoModel =
+  undoModel |> UndoList.hasPast
+
+
+{-| isEnabled predicate -}
+hasFuture : UndoModel -> Bool
+hasFuture undoModel =
+  undoModel |> UndoList.hasFuture
+
+
+{-| isEnabled predicate -}
+always : UndoModel -> Bool
+always undoModel =
+  True
 
 
 buttonStyle : List (Attribute Msg)

@@ -20,10 +20,11 @@ import Browser.Dom as Dom
 import Dict
 import Html exposing (Attribute, div, text, br)
 import Html.Attributes exposing (id, style)
-import String exposing (fromInt, fromFloat)
-import Task
 import Json.Decode as D
 import Json.Encode as E
+import String exposing (fromInt, fromFloat)
+import Task
+import UndoList
 
 
 
@@ -38,7 +39,7 @@ port exportJSON : () -> Cmd msg
 -- MAIN
 
 
-main : Program E.Value Model Msg
+main : Program E.Value UndoModel Msg
 main =
   Browser.document
     { init = init
@@ -48,9 +49,14 @@ main =
     }
 
 
-init : E.Value -> (Model, Cmd Msg)
+init : E.Value -> (UndoModel, Cmd Msg)
 init flags =
-  ( case flags |> D.decodeValue (D.null True) of
+  (initModel flags, Cmd.none) |> reset
+
+
+initModel : E.Value -> Model
+initModel flags =
+  case flags |> D.decodeValue (D.null True) of
     Ok True ->
       let
         _ = info "init" "localStorage: empty"
@@ -69,33 +75,31 @@ init flags =
             _ = logError "init" "localStorage" e
           in
           default
-  , Cmd.none
-  )
 
 
 
 -- VIEW
 
 
-view : Model -> Browser.Document Msg
-view model =
+view : UndoModel -> Browser.Document Msg
+view ({present} as undoModel) =
   Browser.Document
     "DM6 Elm"
     [ div
       ( mouseHoverHandler
         ++ appStyle
       )
-      ( [ viewToolbar model
-        , viewMap (activeMap model) [] model -- mapPath = []
+      ( [ viewToolbar undoModel
+        , viewMap (activeMap present) [] present -- mapPath = []
         ]
-        ++ viewResultMenu model
-        ++ viewIconMenu model
+        ++ viewResultMenu present
+        ++ viewIconMenu present
       )
     , div
       ( [ id "measure" ]
         ++ measureStyle
       )
-      [ text model.measureText
+      [ text present.measureText
       , br [] []
       ]
     ]
@@ -131,8 +135,8 @@ measureStyle =
 -- UPDATE
 
 
-update : Msg -> Model -> (Model, Cmd Msg)
-update msg model =
+update : Msg -> UndoModel -> (UndoModel, Cmd Msg)
+update msg ({present} as undoModel) =
   let
     _ =
       case msg of
@@ -140,20 +144,25 @@ update msg model =
         _ -> info "update" msg
   in
   case msg of
-    AddTopic -> createTopicIn topicDefaultText Nothing [ activeMap model ] model |> storeModel
+    AddTopic -> createTopicIn topicDefaultText Nothing [ activeMap present ] present
+      |> storeModel |> push undoModel
     MoveTopicToMap topicId mapId origPos targetId targetMapPath pos
-      -> moveTopicToMap topicId mapId origPos targetId targetMapPath pos model |> storeModel
-    SwitchDisplay displayMode -> switchDisplay displayMode model |> storeModel
-    Search searchMsg -> updateSearch searchMsg model
-    Edit editMsg -> updateEdit editMsg model
-    IconMenu iconMenuMsg -> updateIconMenu iconMenuMsg model
-    Mouse mouseMsg -> updateMouse mouseMsg model
-    Nav navMsg -> updateNav navMsg model |> storeModel
-    Hide -> hide model |> storeModel
-    Delete -> delete model |> storeModel
-    Import -> (model, importJSON ())
-    Export -> (model, exportJSON ())
-    NoOp -> (model, Cmd.none)
+      -> moveTopicToMap topicId mapId origPos targetId targetMapPath pos present
+      |> storeModel |> push undoModel
+    SwitchDisplay displayMode -> switchDisplay displayMode present
+      |> storeModel |> swap undoModel
+    Search searchMsg -> updateSearch searchMsg undoModel
+    Edit editMsg -> updateEdit editMsg undoModel
+    IconMenu iconMenuMsg -> updateIconMenu iconMenuMsg undoModel
+    Mouse mouseMsg -> updateMouse mouseMsg undoModel
+    Nav navMsg -> updateNav navMsg present |> storeModel |> reset
+    Hide -> hide present |> storeModel |> push undoModel
+    Delete -> delete present |> storeModel |> push undoModel
+    Undo -> undo undoModel
+    Redo -> redo undoModel
+    Import -> (present, importJSON ()) |> swap undoModel
+    Export -> (present, exportJSON ()) |> swap undoModel
+    NoOp -> (present, Cmd.none) |> swap undoModel
 
 
 moveTopicToMap : Id -> MapId -> Point -> Id -> MapPath -> Point -> Model -> Model
@@ -229,19 +238,22 @@ switchDisplay displayMode model =
 
 -- Text Edit
 
-updateEdit : EditMsg -> Model -> (Model, Cmd Msg)
-updateEdit msg model =
+updateEdit : EditMsg -> UndoModel -> (UndoModel, Cmd Msg)
+updateEdit msg ({present} as undoModel) =
   case msg of
-    EditStart -> startEdit model
-    OnTextInput text -> onTextInput text model |> storeModel
-    OnTextareaInput text -> onTextareaInput text model |> storeModelWith
+    EditStart -> startEdit present |> push undoModel
+    OnTextInput text -> onTextInput text present |> storeModel |> swap undoModel
+    OnTextareaInput text -> onTextareaInput text present |> storeModelWith |> swap undoModel
     SetTopicSize topicId mapId size ->
-      ( model
+      ( present
         |> setTopicSize topicId mapId size
         |> autoSize
       , Cmd.none
       )
-    EditEnd -> (endEdit model, Cmd.none)
+      |> swap undoModel
+    EditEnd ->
+      (endEdit present, Cmd.none)
+      |> swap undoModel
 
 
 startEdit : Model -> (Model, Cmd Msg)
@@ -403,3 +415,27 @@ delete model =
   newModel
   |> resetSelection
   |> autoSize
+
+
+-- Undo / Redo
+
+undo : UndoModel -> (UndoModel, Cmd Msg)
+undo undoModel =
+  let
+    newUndoModel = UndoList.undo undoModel
+    newModel = resetTransientState newUndoModel.present
+  in
+  newModel
+  |> storeModel
+  |> swap newUndoModel
+
+
+redo : UndoModel -> (UndoModel, Cmd Msg)
+redo undoModel =
+  let
+    newUndoModel = UndoList.redo undoModel
+    newModel = resetTransientState newUndoModel.present
+  in
+  newModel
+  |> storeModel
+  |> swap newUndoModel

@@ -126,14 +126,15 @@ topicIconStyle =
 -- UPDATE
 
 
-updateIconMenu : IconMenuMsg -> Model -> (Model, Cmd Msg)
-updateIconMenu msg model =
+updateIconMenu : IconMenuMsg -> UndoModel -> (UndoModel, Cmd Msg)
+updateIconMenu msg ({present} as undoModel) =
   case msg of
-    Open -> (openIconMenu model, Cmd.none)
-    Close -> (closeIconMenu model, Cmd.none)
-    SetIcon maybeIcon -> setIcon maybeIcon model
+    Open -> (openIconMenu present, Cmd.none) |> swap undoModel
+    Close -> (closeIconMenu present, Cmd.none) |> swap undoModel
+    SetIcon maybeIcon -> setIcon maybeIcon present
       |> closeIconMenu
       |> storeModel
+      |> push undoModel
 
 
 openIconMenu : Model -> Model
