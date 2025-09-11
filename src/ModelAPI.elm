@@ -6,7 +6,6 @@ import Model exposing (..)
 import Utils exposing (..)
 
 import Dict
-import Json.Decode as D
 import String exposing (fromInt)
 import UndoList
 
@@ -510,27 +509,6 @@ swap undoModel (model, cmd) =
 reset : (Model, Cmd Msg) -> (UndoModel, Cmd Msg)
 reset (model, cmd) =
   (UndoList.fresh model, cmd)
-
-
--- Decoder
-
-idDecoder : String -> D.Decoder Id
-idDecoder str =
-  case String.toInt str of
-    Just int -> D.succeed int
-    Nothing -> D.fail <| "\"" ++ str ++ "\" is a malformed ID"
-
-
-pathDecoder : String -> D.Decoder MapPath
-pathDecoder str =
-  D.succeed
-    (str |> String.split "," |> List.map
-      (\mapIdStr ->
-        case mapIdStr |> String.toInt of
-          Just mapId -> mapId
-          Nothing -> logError "pathDecoder" ("\"" ++ mapIdStr ++ "\" is a malformed ID") -1
-      )
-    )
 
 
 

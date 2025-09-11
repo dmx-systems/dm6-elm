@@ -5,7 +5,7 @@ import Config exposing (contentFontSize, topicSize)
 import Model exposing (ItemInfo(..), MapProps(..), Id, MapId)
 import ModelAPI exposing (..)
 import Storage exposing (storeModel)
-import Utils exposing (..)
+import Utils exposing (idDecoder, stopPropagationOnMousedown, logError, info)
 -- components
 import Search exposing (ResultMenu(..), SearchMsg(..))
 
@@ -74,10 +74,7 @@ viewResultMenu model =
 
 itemDecoder : (Id -> SearchMsg) -> D.Decoder Msg
 itemDecoder msg =
-  D.map Search <| D.map msg
-    ( D.at ["target", "dataset", "id"] D.string
-      |> D.andThen idDecoder
-    )
+  D.map Search <| D.map msg idDecoder
 
 
 resultMenuStyle : List (Attribute Msg)

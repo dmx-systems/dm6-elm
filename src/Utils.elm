@@ -1,13 +1,11 @@
 module Utils exposing (..)
 
+import Model exposing (Class, Id, MapPath, Point)
+
 import Html exposing (Html, Attribute, text, br)
 import Html.Events exposing (on, stopPropagationOn, keyCode)
 import Json.Decode as D
 import Logger
-
-
-
--- GENRAL ELM UTILITIES
 
 
 -- Events
@@ -42,6 +40,56 @@ keyDecoder key msg_ =
 stopPropagationOnMousedown : msg -> Attribute msg
 stopPropagationOnMousedown msg_ =
   stopPropagationOn "mousedown" <| D.succeed (msg_, True)
+
+
+-- Decoder
+
+classDecoder : D.Decoder Class
+classDecoder =
+  D.oneOf
+    [ D.at ["target", "className"] D.string -- HTML elements
+    , D.at ["target", "className", "baseVal"] D.string -- SVG elements
+    ]
+
+
+idDecoder : D.Decoder Id
+idDecoder =
+  D.at ["target", "dataset", "id"] D.string
+  |> D.andThen toIntDecoder
+
+
+pathDecoder : D.Decoder MapPath
+pathDecoder =
+  D.at ["target", "dataset", "path"] D.string
+  |> D.andThen toIntListDecoder
+
+
+pointDecoder : D.Decoder Point
+pointDecoder =
+  D.map2 Point
+    (D.field "clientX" D.float)
+    (D.field "clientY" D.float)
+
+
+--
+
+toIntDecoder : String -> D.Decoder Int
+toIntDecoder str =
+  case String.toInt str of
+    Just int -> D.succeed int
+    Nothing -> D.fail <| "\"" ++ str ++ "\" is not an Int"
+
+
+toIntListDecoder : String -> D.Decoder (List Int)
+toIntListDecoder str =
+  D.succeed
+    (str |> String.split "," |> List.map
+      (\mapIdStr ->
+        case mapIdStr |> String.toInt of
+          Just mapId -> mapId
+          Nothing -> logError "toIntListDecoder" ("\"" ++ mapIdStr ++ "\" is not an Int") -1
+      )
+    )
 
 
 -- HTML

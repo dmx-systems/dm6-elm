@@ -30,7 +30,7 @@ type DragMode
 
 type MouseMsg
   = Down -- mouse down somewhere
-  | DownItem Class Id MapPath Point -- mouse down on an item where a drag can be engaged
+  | DownOnItem Class Id MapPath Point -- mouse down on an item where a drag can be engaged
   | Move Point
   | Up
   | Over Class Id MapPath
