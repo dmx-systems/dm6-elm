@@ -51,9 +51,7 @@ main =
 
 init : E.Value -> (UndoModel, Cmd Msg)
 init flags =
-  ( UndoList.fresh <| initModel flags
-  , Cmd.none
-  )
+  (initModel flags, Cmd.none) |> reset
 
 
 initModel : E.Value -> Model
@@ -157,7 +155,7 @@ update msg ({present} as undoModel) =
     Edit editMsg -> updateEdit editMsg undoModel
     IconMenu iconMenuMsg -> updateIconMenu iconMenuMsg undoModel
     Mouse mouseMsg -> updateMouse mouseMsg undoModel
-    Nav navMsg -> updateNav navMsg present |> storeModel |> swap undoModel
+    Nav navMsg -> updateNav navMsg present |> storeModel |> reset
     Hide -> hide present |> storeModel |> push undoModel
     Delete -> delete present |> storeModel |> push undoModel
     Undo -> undo undoModel

@@ -507,6 +507,11 @@ swap undoModel (model, cmd) =
   (UndoList.mapPresent (\_ -> model) undoModel, cmd)
 
 
+reset : (Model, Cmd Msg) -> (UndoModel, Cmd Msg)
+reset (model, cmd) =
+  (UndoList.fresh model, cmd)
+
+
 -- Decoder
 
 idDecoder : String -> D.Decoder Id
