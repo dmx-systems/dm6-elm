@@ -7,7 +7,7 @@ import ModelAPI exposing (..)
 import Storage exposing (storeModel)
 import Utils exposing (idDecoder, stopPropagationOnMousedown, logError, info)
 -- components
-import Search exposing (ResultMenu(..), SearchMsg(..))
+import Search exposing (ResultMenu(..))
 
 import Dict
 import Html exposing (Html, Attribute, div, text, input)
@@ -30,8 +30,8 @@ viewSearchInput model =
       [ text "Search" ]
     , input
       ( [ value model.search.text
-        , onInput (Search << Input)
-        , onFocus (Search FocusInput)
+        , onInput (Search << Search.Input)
+        , onFocus (Search Search.FocusInput)
         ]
         ++ searchInputStyle
       )
@@ -49,9 +49,9 @@ viewResultMenu model =
   case (model.search.menu, model.search.result |> List.isEmpty) of
     (Open _, False) ->
       [ div
-        ( [ on "click" (itemDecoder ClickItem)
-          , on "mouseover" (itemDecoder HoverItem)
-          , on "mouseout" (itemDecoder UnhoverItem)
+        ( [ on "click" (itemDecoder Search.ClickItem)
+          , on "mouseover" (itemDecoder Search.HoverItem)
+          , on "mouseout" (itemDecoder Search.UnhoverItem)
           , stopPropagationOnMousedown NoOp
           ]
           ++ resultMenuStyle
@@ -72,7 +72,7 @@ viewResultMenu model =
     _ -> []
 
 
-itemDecoder : (Id -> SearchMsg) -> D.Decoder Msg
+itemDecoder : (Id -> Search.Msg) -> D.Decoder Msg
 itemDecoder msg =
   D.map Search <| D.map msg idDecoder
 
@@ -111,14 +111,14 @@ resultItemStyle topicId model =
 -- UPDATE
 
 
-updateSearch : SearchMsg -> UndoModel -> (UndoModel, Cmd Msg)
+updateSearch : Search.Msg -> UndoModel -> (UndoModel, Cmd Msg)
 updateSearch msg ({present} as undoModel) =
   case msg of
-    Input text -> (onTextInput text present, Cmd.none) |> swap undoModel
-    FocusInput -> (onFocusInput present, Cmd.none) |> swap undoModel
-    HoverItem topicId -> (onHoverItem topicId present, Cmd.none) |> swap undoModel
-    UnhoverItem _ -> (onUnhoverItem present, Cmd.none) |> swap undoModel
-    ClickItem topicId ->
+    Search.Input text -> (onTextInput text present, Cmd.none) |> swap undoModel
+    Search.FocusInput -> (onFocusInput present, Cmd.none) |> swap undoModel
+    Search.HoverItem topicId -> (onHoverItem topicId present, Cmd.none) |> swap undoModel
+    Search.UnhoverItem _ -> (onUnhoverItem present, Cmd.none) |> swap undoModel
+    Search.ClickItem topicId ->
       present
       |> revealTopic topicId (activeMap present)
       |> closeResultMenu

@@ -8,7 +8,7 @@ import ModelAPI exposing (getTopicInfo, getTopicLabel, getMapId, isHome, activeM
   getDisplayMode, getSingleSelection)
 import Utils exposing (stopPropagationOnMousedown, info)
 -- components
-import IconMenu exposing (IconMenuMsg(..))
+import IconMenu
 import IconMenuAPI exposing (viewIcon)
 import SearchAPI exposing (viewSearchInput)
 
@@ -34,7 +34,7 @@ viewToolbar ({present} as undoModel) =
     , viewSearchInput present
     , viewToolbarButton "Add Topic" AddTopic always undoModel
     , viewToolbarButton "Edit" (Edit EditStart) hasSelection undoModel
-    , viewToolbarButton "Choose Icon" (IconMenu Open) hasSelection undoModel
+    , viewToolbarButton "Choose Icon" (IconMenu IconMenu.Open) hasSelection undoModel
     , viewMonadDisplay present
     , viewContainerDisplay present
     , viewToolbarButton "Hide" Hide hasSelection undoModel

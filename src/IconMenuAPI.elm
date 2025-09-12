@@ -8,7 +8,7 @@ import ModelAPI exposing (..)
 import Storage exposing (storeModel)
 import Utils exposing (..)
 -- components
-import IconMenu exposing (IconMenuMsg(..))
+import IconMenu
 
 import Dict
 import Html exposing (Html, Attribute, div, text, button)
@@ -31,7 +31,7 @@ viewIconMenu model =
         iconListStyle
         viewIconList
       , button
-        ( [onClick (IconMenu Close)]
+        ( [onClick (IconMenu IconMenu.Close)]
           ++ closeButtonStyle
         )
         [ Icon.x
@@ -76,7 +76,7 @@ viewIconList =
   Icon.icons |> Dict.toList |> List.map
     (\(iconName, icon) ->
       button
-        ( [ onClick (Just iconName |> SetIcon |> IconMenu)
+        ( [ onClick (Just iconName |> IconMenu.SetIcon |> IconMenu)
           , stopPropagationOnMousedown NoOp
           , title iconName
           ]
@@ -126,12 +126,12 @@ topicIconStyle =
 -- UPDATE
 
 
-updateIconMenu : IconMenuMsg -> UndoModel -> (UndoModel, Cmd Msg)
+updateIconMenu : IconMenu.Msg -> UndoModel -> (UndoModel, Cmd Msg)
 updateIconMenu msg ({present} as undoModel) =
   case msg of
-    Open -> (openIconMenu present, Cmd.none) |> swap undoModel
-    Close -> (closeIconMenu present, Cmd.none) |> swap undoModel
-    SetIcon maybeIcon -> setIcon maybeIcon present
+    IconMenu.Open -> (openIconMenu present, Cmd.none) |> swap undoModel
+    IconMenu.Close -> (closeIconMenu present, Cmd.none) |> swap undoModel
+    IconMenu.SetIcon maybeIcon -> setIcon maybeIcon present
       |> closeIconMenu
       |> storeModel
       |> push undoModel
