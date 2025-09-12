@@ -7,7 +7,7 @@ import MapAutoSize exposing (autoSize)
 import MapRenderer exposing (viewMap)
 import Model exposing (..)
 import ModelAPI exposing (..)
-import Storage exposing (store, storeWith, importModel, exportModel, modelDecoder)
+import Storage exposing (store, storeWith, modelDecoder, importJSON, exportJSON)
 import Toolbar exposing (viewToolbar)
 import Utils exposing (..)
 -- components
@@ -152,8 +152,8 @@ update msg ({present} as undoModel) =
     Delete -> delete present |> store |> push undoModel
     Undo -> undo undoModel
     Redo -> redo undoModel
-    Import -> (present, importModel ()) |> swap undoModel
-    Export -> (present, exportModel ()) |> swap undoModel
+    Import -> (present, importJSON ()) |> swap undoModel
+    Export -> (present, exportJSON ()) |> swap undoModel
     NoOp -> (present, Cmd.none) |> swap undoModel
 
 
