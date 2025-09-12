@@ -4,7 +4,7 @@ import AppModel exposing (UndoModel, Model, Msg(..))
 import Config exposing (contentFontSize, topicSize)
 import Model exposing (ItemInfo(..), MapProps(..), Id, MapId)
 import ModelAPI exposing (..)
-import Storage exposing (storeModel)
+import Storage exposing (store)
 import Utils exposing (idDecoder, stopPropagationOnMousedown, logError, info)
 -- components
 import Search exposing (ResultMenu(..))
@@ -122,7 +122,7 @@ updateSearch msg ({present} as undoModel) =
       present
       |> revealTopic topicId (activeMap present)
       |> closeResultMenu
-      |> storeModel
+      |> store
       |> push undoModel
 
 

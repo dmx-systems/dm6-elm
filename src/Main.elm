@@ -1,4 +1,4 @@
-port module Main exposing (..)
+module Main exposing (..)
 
 import AppModel exposing (..)
 import Boxing exposing (boxContainer, unboxContainer)
@@ -7,7 +7,7 @@ import MapAutoSize exposing (autoSize)
 import MapRenderer exposing (viewMap)
 import Model exposing (..)
 import ModelAPI exposing (..)
-import Storage exposing (storeModel, storeModelWith, modelDecoder)
+import Storage exposing (store, storeWith, importModel, exportModel, modelDecoder)
 import Toolbar exposing (viewToolbar)
 import Utils exposing (..)
 -- components
@@ -25,14 +25,6 @@ import Json.Encode as E
 import String exposing (fromInt, fromFloat)
 import Task
 import UndoList
-
-
-
--- PORTS
-
-
-port importJSON : () -> Cmd msg
-port exportJSON : () -> Cmd msg
 
 
 
@@ -145,23 +137,23 @@ update msg ({present} as undoModel) =
   in
   case msg of
     AddTopic -> createTopicIn topicDefaultText Nothing [ activeMap present ] present
-      |> storeModel |> push undoModel
+      |> store |> push undoModel
     MoveTopicToMap topicId mapId origPos targetId targetMapPath pos
       -> moveTopicToMap topicId mapId origPos targetId targetMapPath pos present
-      |> storeModel |> push undoModel
+      |> store |> push undoModel
     SwitchDisplay displayMode -> switchDisplay displayMode present
-      |> storeModel |> swap undoModel
+      |> store |> swap undoModel
     Search searchMsg -> updateSearch searchMsg undoModel
     Edit editMsg -> updateEdit editMsg undoModel
     IconMenu iconMenuMsg -> updateIconMenu iconMenuMsg undoModel
     Mouse mouseMsg -> updateMouse mouseMsg undoModel
-    Nav navMsg -> updateNav navMsg present |> storeModel |> reset
-    Hide -> hide present |> storeModel |> push undoModel
-    Delete -> delete present |> storeModel |> push undoModel
+    Nav navMsg -> updateNav navMsg present |> store |> reset
+    Hide -> hide present |> store |> push undoModel
+    Delete -> delete present |> store |> push undoModel
     Undo -> undo undoModel
     Redo -> redo undoModel
-    Import -> (present, importJSON ()) |> swap undoModel
-    Export -> (present, exportJSON ()) |> swap undoModel
+    Import -> (present, importModel ()) |> swap undoModel
+    Export -> (present, exportModel ()) |> swap undoModel
     NoOp -> (present, Cmd.none) |> swap undoModel
 
 
@@ -242,8 +234,8 @@ updateEdit : EditMsg -> UndoModel -> (UndoModel, Cmd Msg)
 updateEdit msg ({present} as undoModel) =
   case msg of
     EditStart -> startEdit present |> push undoModel
-    OnTextInput text -> onTextInput text present |> storeModel |> swap undoModel
-    OnTextareaInput text -> onTextareaInput text present |> storeModelWith |> swap undoModel
+    OnTextInput text -> onTextInput text present |> store |> swap undoModel
+    OnTextareaInput text -> onTextareaInput text present |> storeWith |> swap undoModel
     SetTopicSize topicId mapId size ->
       ( present
         |> setTopicSize topicId mapId size
@@ -426,7 +418,7 @@ undo undoModel =
     newModel = resetTransientState newUndoModel.present
   in
   newModel
-  |> storeModel
+  |> store
   |> swap newUndoModel
 
 
@@ -437,5 +429,5 @@ redo undoModel =
     newModel = resetTransientState newUndoModel.present
   in
   newModel
-  |> storeModel
+  |> store
   |> swap newUndoModel

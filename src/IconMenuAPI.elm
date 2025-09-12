@@ -5,7 +5,7 @@ import AppModel exposing (..)
 import Config exposing (..)
 import Model exposing (..)
 import ModelAPI exposing (..)
-import Storage exposing (storeModel)
+import Storage exposing (store)
 import Utils exposing (..)
 -- components
 import IconMenu
@@ -133,7 +133,7 @@ updateIconMenu msg ({present} as undoModel) =
     IconMenu.Close -> (closeIconMenu present, Cmd.none) |> swap undoModel
     IconMenu.SetIcon maybeIcon -> setIcon maybeIcon present
       |> closeIconMenu
-      |> storeModel
+      |> store
       |> push undoModel
 
 

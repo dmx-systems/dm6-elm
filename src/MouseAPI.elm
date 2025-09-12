@@ -6,7 +6,7 @@ import MapAutoSize exposing (autoSize)
 import Model exposing (Class, Id, MapPath, Point)
 import ModelAPI exposing (getTopicPos, setTopicPosByDelta, createDefaultAssocIn, getMapId,
   select, resetSelection, fromPath, push, swap)
-import Storage exposing (storeModelWith)
+import Storage exposing (storeWith)
 import Utils exposing (classDecoder, idDecoder, pathDecoder, pointDecoder, logError, info,
   toString)
 -- components
@@ -183,7 +183,7 @@ mouseUp ({present} as undoModel) =
             (present, Cmd.none, swap)
   in
   (updateDragState model NoDrag, cmd)
-  |> storeModelWith
+  |> storeWith
   |> historyFunc undoModel
 
 

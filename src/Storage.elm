@@ -1,4 +1,4 @@
-port module Storage exposing (storeModel, storeModelWith, modelDecoder)
+port module Storage exposing (store, storeWith, importModel, exportModel, modelDecoder)
 
 import AppModel exposing (..)
 import Model exposing (..)
@@ -13,26 +13,38 @@ import Json.Encode as E
 -- PORTS
 
 
-port store : E.Value -> Cmd msg
+port storeJSON : E.Value -> Cmd msg
+port importJSON : () -> Cmd msg
+port exportJSON : () -> Cmd msg
 
 
 
 -- ENCODE/DECODE MODEL <-> JS VALUE (for storage)
 
 
-storeModel : Model -> (Model, Cmd Msg)
-storeModel model =
-  (model, encodeModel model |> store)
+store : Model -> (Model, Cmd Msg)
+store model =
+  (model, encodeModel model |> storeJSON)
 
 
-storeModelWith : (Model, Cmd Msg) -> (Model, Cmd Msg)
-storeModelWith (model, cmd) =
+storeWith : (Model, Cmd Msg) -> (Model, Cmd Msg)
+storeWith (model, cmd) =
   ( model
   , Cmd.batch
     [ cmd
-    , encodeModel model |> store
+    , encodeModel model |> storeJSON
     ]
   )
+
+
+importModel : () -> Cmd Msg
+importModel () =
+  importJSON ()
+
+
+exportModel : () -> Cmd Msg
+exportModel () =
+  exportJSON ()
 
 
 -- Encode
