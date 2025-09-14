@@ -6,6 +6,7 @@ import Model exposing (..)
 import Utils exposing (..)
 
 import Dict
+import Set
 import String exposing (fromInt)
 import UndoList
 
@@ -61,7 +62,7 @@ createTopic : String -> Maybe IconName -> Model -> (Model, Id)
 createTopic text iconName model =
   let
     id = model.nextId
-    topic = Item id <| Topic <| TopicInfo id text iconName
+    topic = Item id (Topic <| TopicInfo id text iconName) Set.empty
   in
   ( { model | items = model.items |> Dict.insert id topic }
     |> nextId
@@ -73,7 +74,7 @@ createAssoc : ItemType -> RoleType -> Id -> RoleType -> Id -> Model -> (Model, I
 createAssoc itemType role1 player1 role2 player2 model =
   let
     id = model.nextId
-    assoc = Item id <| Assoc <| AssocInfo id itemType role1 player1 role2 player2
+    assoc = Item id (Assoc <| AssocInfo id itemType role1 player1 role2 player2) Set.empty
   in
   ( { model | items = model.items |> Dict.insert id assoc }
     |> nextId

@@ -1,6 +1,7 @@
 module Model exposing (..)
 
 import Dict exposing (Dict)
+import Set exposing (Set)
 
 
 
@@ -10,7 +11,7 @@ type alias Items = Dict Id Item
 type alias Item =
   { id : Id
   , info : ItemInfo
-  -- TODO: add "assocIds", the item's associations
+  , assocIds : AssocIds
   }
 
 
@@ -113,11 +114,12 @@ type alias Size =
   }
 
 
-type alias Selection = List (Id, MapPath)
+type alias Selection = List (Id, MapPath) -- TODO: make it a Set?
 
 
 type alias Id = Int
 type alias MapId = Id
+type alias AssocIds = Set Id
 type alias Class = String -- a CSS class, e.g. "dmx-topic"
 type alias ItemType = String -- a type URI, e.g. "dmx.association"
 type alias RoleType = String -- a role type URI, e.g. "dmx.default"

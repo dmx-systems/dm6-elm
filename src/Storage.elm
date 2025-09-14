@@ -7,6 +7,7 @@ import Dict exposing (Dict)
 import Json.Decode as D
 import Json.Decode.Pipeline exposing (required, hardcoded)
 import Json.Encode as E
+import Set
 
 
 
@@ -61,6 +62,7 @@ encodeItem item =
           [ ("id", E.int topic.id)
           , ("text", E.string topic.text)
           , ("icon", E.string <| Maybe.withDefault "" topic.iconName)
+          , ("assocIds", E.set E.int item.assocIds)
           ]
         )
       Assoc assoc ->
@@ -72,6 +74,7 @@ encodeItem item =
           , ("player1", E.int assoc.player1)
           , ("role2", E.string assoc.role2)
           , ("player2", E.int assoc.player2)
+          , ("assocIds", E.set E.int item.assocIds)
           ]
         )
     ]
@@ -140,7 +143,7 @@ encodeDisplayName displayMode =
 modelDecoder : D.Decoder Model
 modelDecoder =
   D.succeed Model
-    |> required "items" (D.list itemDecoder |> D.andThen tupleToDictDecoder)
+    |> required "items" (D.list itemDecoder |> D.andThen toDictDecoder)
     |> required "maps" (D.list mapDecoder |> D.andThen toDictDecoder)
     |> required "mapPath" (D.list D.int)
     |> required "nextId" D.int
@@ -154,11 +157,11 @@ modelDecoder =
     |> hardcoded default.iconMenu
 
 
-itemDecoder : D.Decoder (Id, ItemInfo)
+itemDecoder : D.Decoder Item
 itemDecoder =
   D.oneOf
     [ D.field "topic"
-      (D.map2 Tuple.pair
+      (D.map3 Item
         (D.field "id" D.int)
         (D.map Topic <| D.map3 TopicInfo
           (D.field "id" D.int)
@@ -167,9 +170,10 @@ itemDecoder =
             |> D.andThen maybeString
           )
         )
+        assocIdsDecoder
       )
     , D.field "assoc"
-      (D.map2 Tuple.pair
+      (D.map3 Item
         (D.field "id" D.int)
         (D.map Assoc <| D.map6 AssocInfo
           (D.field "id" D.int)
@@ -179,8 +183,15 @@ itemDecoder =
           (D.field "role2" D.string)
           (D.field "player2" D.int)
         )
+        assocIdsDecoder
       )
     ]
+
+
+assocIdsDecoder : D.Decoder AssocIds
+assocIdsDecoder =
+  D.field "assocIds" (D.list D.int)
+  |> D.andThen (Set.fromList >> D.succeed)
 
 
 mapDecoder : D.Decoder Map
@@ -217,14 +228,6 @@ mapItemDecoder =
       , D.field "assocProps" <| D.succeed (MapAssoc AssocProps)
       ]
     )
-
-
-tupleToDictDecoder : List (Id, ItemInfo) -> D.Decoder Items
-tupleToDictDecoder tuples =
-  tuples
-  |> List.map (\(id, info) -> (id, Item id info))
-  |> Dict.fromList
-  |> D.succeed
 
 
 toDictDecoder : List { item | id : Id } -> D.Decoder (Dict Int { item | id : Id })
