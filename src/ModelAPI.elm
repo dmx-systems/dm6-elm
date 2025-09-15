@@ -19,36 +19,29 @@ import UndoList
 
 getTopicInfo : Id -> Model -> Maybe TopicInfo
 getTopicInfo topicId model =
-  case model.items |> Dict.get topicId of
+  case getItem topicId model of
     Just {info} ->
       case info of
         Topic topic -> Just topic
         Assoc _ -> topicMismatch "getTopicInfo" topicId Nothing
-    Nothing -> illegalItemId "getTopicInfo" topicId Nothing
+    Nothing -> fail "getTopicInfo" topicId Nothing
 
 
 getAssocInfo : Id -> Model -> Maybe AssocInfo
 getAssocInfo assocId model =
-  case model.items |> Dict.get assocId of
+  case getItem assocId model of
     Just {info} ->
       case info of
         Topic _ -> assocMismatch "getAssocInfo" assocId Nothing
         Assoc assoc -> Just assoc
-    Nothing -> illegalItemId "getAssocInfo" assocId Nothing
+    Nothing -> fail "getAssocInfo" assocId Nothing
 
 
-updateTopicInfo : Id -> (TopicInfo -> TopicInfo) -> Model -> Model
-updateTopicInfo topicId topicFunc model =
-  { model | items = model.items |> Dict.update topicId
-    (\maybeItem ->
-      case maybeItem of
-        Just item ->
-          case item.info of
-            Topic topic -> Just { item | info = topicFunc topic |> Topic }
-            Assoc _  -> topicMismatch "updateTopicInfo" topicId Nothing
-        Nothing -> illegalItemId "updateTopicInfo" topicId Nothing
-    )
-  }
+getItem : Id -> Model -> Maybe Item
+getItem itemId model =
+  case model.items |> Dict.get itemId of
+    Just item -> Just item
+    Nothing -> illegalItemId "getItem" itemId Nothing
 
 
 getTopicLabel : TopicInfo -> String
@@ -77,9 +70,88 @@ createAssoc itemType role1 player1 role2 player2 model =
     assoc = Item id (Assoc <| AssocInfo id itemType role1 player1 role2 player2) Set.empty
   in
   ( { model | items = model.items |> Dict.insert id assoc }
+    |> insertAssocId_ id player1
+    |> insertAssocId_ id player2
     |> nextId
   , id
   )
+
+
+deleteItem : Id -> Model -> Model
+deleteItem itemId model =
+  getItemAssocs itemId model |> Set.foldr
+    deleteItem -- recursion
+    model
+    |> removeAssocRefs_ itemId
+    |> deleteItem_ itemId
+
+
+removeAssocRefs_ : Id -> Model -> Model
+removeAssocRefs_ itemId model =
+  case getItem itemId model of
+    Just {info} ->
+      case info of
+        Assoc assoc ->
+          model
+          |> removeAssocId_ assoc.id assoc.player1
+          |> removeAssocId_ assoc.id assoc.player2
+        Topic _ -> model
+    Nothing -> model -- error is already logged
+
+
+deleteItem_ : Id -> Model -> Model
+deleteItem_ itemId model =
+  { model
+    | items = model.items |> Dict.remove itemId -- delete item
+    , maps = model.maps |> Dict.map -- delete item from all maps
+      (\_ map -> { map | items = map.items |> Dict.remove itemId })
+  }
+
+
+getItemAssocs : Id -> Model -> AssocIds
+getItemAssocs itemId model =
+  case getItem itemId model of
+    Just {assocIds} -> assocIds
+    Nothing -> Set.empty -- error is already logged
+
+
+insertAssocId_ : Id -> Id -> Model -> Model
+insertAssocId_ assocId itemId model =
+  case not <| isHomeMap itemId of
+    True ->
+      model
+      |> updateItem itemId (\item -> {item | assocIds = item.assocIds |> Set.insert assocId})
+    False -> model
+
+
+removeAssocId_ : Id -> Id -> Model -> Model
+removeAssocId_ assocId itemId model =
+  case not <| isHomeMap itemId of
+    True ->
+      model
+      |> updateItem itemId (\item -> {item | assocIds = item.assocIds |> Set.remove assocId})
+    False -> model
+
+
+updateTopicInfo : Id -> (TopicInfo -> TopicInfo) -> Model -> Model
+updateTopicInfo topicId topicFunc model =
+  model |> updateItem topicId
+    (\item ->
+      case item.info of
+        Topic topic -> { item | info = Topic <| topicFunc topic }
+        Assoc _  -> topicMismatch "updateTopicInfo" topicId item
+    )
+
+
+updateItem : Id -> (Item -> Item) -> Model -> Model
+updateItem itemId itemFunc model =
+  { model | items = model.items |> Dict.update itemId
+    (\maybeItem ->
+      case maybeItem of
+        Just item -> Just <| itemFunc item
+        Nothing -> illegalItemId "updateItem" itemId Nothing
+    )
+  }
 
 
 nextId : Model -> Model
@@ -91,7 +163,12 @@ nextId model =
 
 isHome : Model -> Bool
 isHome model =
-  activeMap model == 0
+  model |> activeMap |> isHomeMap
+
+
+isHomeMap : Id -> Bool
+isHomeMap id =
+  id == 0
 
 
 isFullscreen : MapId -> Model -> Bool
@@ -393,25 +470,6 @@ updateMaps mapId mapFunc maps =
         Just map -> Just (mapFunc map)
         Nothing -> illegalMapId "updateMaps" mapId Nothing
     )
-
-
-deleteItem : Id -> Model -> Model
-deleteItem itemId model =
-  assocsOfPlayer itemId model |> List.foldr
-    deleteItem -- recursion
-    { model
-      | items = model.items |> Dict.remove itemId -- delete item
-      , maps = model.maps |> Dict.map -- delete item from all maps
-        (\_ map -> { map | items = map.items |> Dict.remove itemId })
-    }
-
-
-assocsOfPlayer : Id -> Model -> List Id
-assocsOfPlayer playerId model =
-  model.items |> Dict.values
-    |> List.filter isAssoc
-    |> List.map .id
-    |> List.filter (hasPlayer playerId model)
 
 
 mapAssocsOfPlayer_ : Id -> MapItems -> Model -> List Id

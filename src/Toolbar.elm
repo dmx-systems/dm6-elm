@@ -25,9 +25,11 @@ import UndoList
 
 viewToolbar : UndoModel -> Html Msg
 viewToolbar ({present} as undoModel) =
+  {--
   let
     _ = info "viewToolbar" [ UndoList.lengthPast undoModel, UndoList.lengthFuture undoModel ]
   in
+  --}
   div
     toolbarStyle
     [ viewMapNav present
