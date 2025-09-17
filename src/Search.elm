@@ -6,21 +6,19 @@ import Model exposing (Id)
 
 type alias Model =
   { text : String
-  , result : List Id -- topic Ids
-  , menu : ResultMenu
+  , menu : Menu
   }
 
 
 init : Model
 init =
   { text = ""
-  , result = []
   , menu = Closed
   }
 
 
-type ResultMenu
-  = Open (Maybe Id) -- hovered topic
+type Menu
+  = Topics (List Id) (Maybe Id) -- hovered topic
   | Closed
 
 

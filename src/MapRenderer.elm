@@ -8,7 +8,7 @@ import Utils exposing (..)
 -- components
 import IconMenuAPI exposing (viewTopicIcon)
 import Mouse exposing (DragState(..), DragMode(..))
-import Search exposing (ResultMenu(..))
+import Search exposing (Menu(..))
 
 import Dict
 import Html exposing (Html, Attribute, div, text, input, textarea)
@@ -127,7 +127,7 @@ limboTopic mapId model =
   in
   if mapId == activeMapId then
     case model.search.menu of
-      Open (Just topicId) ->
+      Topics _ (Just topicId) ->
         if isItemInMap topicId activeMapId model then
           case getMapItemById topicId activeMapId model.maps of
             Just mapItem ->
@@ -144,7 +144,7 @@ limboTopic mapId model =
                   _ -> []
               else
                 let
-                  _ = info "limboTopic" (topicId, "is in map, already visible")
+                  _ = info "limboTopic" (topicId, "is in map, visible")
                 in
                 []
             Nothing -> []
@@ -186,10 +186,7 @@ viewTopic topic props mapPath model =
 
 effectiveDisplayMode : Id -> DisplayMode -> Model -> DisplayMode
 effectiveDisplayMode topicId displayMode model =
-  let
-    isLimbo = model.search.menu == Open (Just topicId)
-  in
-  if isLimbo then
+  if isLimbo topicId model then
     case displayMode of
       Monad _ -> Monad Detail
       Container _ -> Container WhiteBox
@@ -474,6 +471,13 @@ accumulateMapRect posAcc mapId model =
     Nothing -> Point 0 0 -- error is already logged
 
 
+isLimbo : Id -> Model -> Bool
+isLimbo topicId model =
+  case model.search.menu of
+    Topics _ (Just topicId_) -> topicId_ == topicId
+    _ -> False
+
+
 
 -- STYLE
 
@@ -481,13 +485,12 @@ accumulateMapRect posAcc mapId model =
 topicStyle : Id -> Model -> List (Attribute Msg)
 topicStyle id model =
   let
-    isLimbo = model.search.menu == Open (Just id)
     isDragging = case model.mouse.dragState of
       Drag DragTopic id_ _ _ _ _ -> id_ == id
       _ -> False
   in
   [ style "position" "absolute"
-  , style "opacity" <| if isLimbo then ".5" else "1"
+  , style "opacity" <| if isLimbo id model then ".5" else "1"
   , style "z-index" <| if isDragging then "1" else "2"
   ]
 

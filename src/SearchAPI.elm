@@ -7,7 +7,7 @@ import ModelAPI exposing (..)
 import Storage exposing (store)
 import Utils exposing (idDecoder, stopPropagationOnMousedown, logError, info)
 -- components
-import Search exposing (ResultMenu(..))
+import Search exposing (Menu(..))
 
 import Dict
 import Html exposing (Html, Attribute, div, text, input)
@@ -46,29 +46,32 @@ searchInputStyle =
 
 viewResultMenu : Model -> List (Html Msg)
 viewResultMenu model =
-  case (model.search.menu, model.search.result |> List.isEmpty) of
-    (Open _, False) ->
-      [ div
-        ( [ on "click" (itemDecoder Search.ClickItem)
-          , on "mouseover" (itemDecoder Search.HoverItem)
-          , on "mouseout" (itemDecoder Search.UnhoverItem)
-          , stopPropagationOnMousedown NoOp
-          ]
-          ++ resultMenuStyle
-        )
-        ( model.search.result |> List.map
-          (\id ->
-            case getTopicInfo id model of
-              Just topic ->
-                div
-                  ( [ attribute "data-id" (fromInt id) ]
-                    ++ resultItemStyle id model
-                  )
-                  [ text topic.text ]
-              Nothing -> text "??"
+  case model.search.menu of
+    Topics topicIds _ ->
+      if not (topicIds |> List.isEmpty) then
+        [ div
+          ( [ on "click" (itemDecoder Search.ClickItem)
+            , on "mouseover" (itemDecoder Search.HoverItem)
+            , on "mouseout" (itemDecoder Search.UnhoverItem)
+            , stopPropagationOnMousedown NoOp
+            ]
+            ++ resultMenuStyle
           )
-        )
-      ]
+          (topicIds |> List.map
+            (\id ->
+              case getTopicInfo id model of
+                Just topic ->
+                  div
+                    ( [ attribute "data-id" (fromInt id) ]
+                      ++ resultItemStyle id model
+                    )
+                    [ text topic.text ]
+                Nothing -> text "??"
+            )
+          )
+        ]
+      else
+        []
     _ -> []
 
 
@@ -95,9 +98,10 @@ resultMenuStyle =
 resultItemStyle : Id -> Model -> List (Attribute Msg)
 resultItemStyle topicId model =
   let
-    isHover = case model.search.menu of
-      Open maybeId -> maybeId == Just topicId
-      Closed -> False
+    isHover =
+      case model.search.menu of
+        Topics _ (Just topicId_) -> topicId_ == topicId
+        _ -> False
   in
   [ style "color" (if isHover then "white" else "black")
   , style "background-color" (if isHover then "black" else "white")
@@ -133,16 +137,15 @@ onTextInput text ({search} as model) =
 
 
 onFocusInput : Model -> Model
-onFocusInput ({search} as model) =
-  { model | search = { search | menu = Open Nothing }}
+onFocusInput = searchTopics
 
 
 onHoverItem : Id -> Model -> Model
 onHoverItem topicId ({search} as model) =
   case model.search.menu of
-    Open _ ->
-      -- update hovered topic
-      { model | search = { search | menu = Open (Just topicId) }}
+    Topics topicIds _ ->
+      -- update hover state
+      { model | search = { search | menu = Topics topicIds (Just topicId) }}
     Closed ->
       logError "onHoverItem" "Received \"HoverItem\" message when search.menu is Closed"
       model
@@ -151,9 +154,9 @@ onHoverItem topicId ({search} as model) =
 onUnhoverItem : Model -> Model
 onUnhoverItem ({search} as model) =
   case model.search.menu of
-    Open _ ->
-      -- update hovered topic
-      { model | search = { search | menu = Open Nothing }}
+    Topics topicIds _ ->
+      -- update hover state
+      { model | search = { search | menu = Topics topicIds Nothing }}
     Closed ->
       logError "onUnhoverItem" "Received \"UnhoverItem\" message when search.menu is Closed"
       model
@@ -161,22 +164,20 @@ onUnhoverItem ({search} as model) =
 
 searchTopics : Model -> Model
 searchTopics ({search} as model) =
-  { model | search =
-    { search
-    | result = model.items |> Dict.foldr
-      (\id item topicIds ->
+  let
+    topicIds = model.items |> Dict.foldr
+      (\id item topicIdsAcc ->
         case item.info of
           Topic {text} ->
             if isMatch model.search.text text then
-              id :: topicIds
+              id :: topicIdsAcc
             else
-              topicIds
-          Assoc _ -> topicIds
+              topicIdsAcc
+          Assoc _ -> topicIdsAcc
       )
       []
-    , menu = Open Nothing
-    }
-  }
+  in
+  { model | search = { search | menu = Topics topicIds Nothing }}
 
 
 isMatch : String -> String -> Bool
