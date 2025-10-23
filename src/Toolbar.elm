@@ -10,6 +10,7 @@ import Utils exposing (stopPropagationOnMousedown, info)
 -- components
 import IconMenu
 import IconMenuAPI exposing (viewIcon)
+import Search
 import SearchAPI exposing (viewSearchInput)
 
 import Html exposing (Html, Attribute, div, span, text, button, input, label, a)
@@ -35,12 +36,19 @@ viewToolbar ({present} as undoModel) =
     [ viewMapNav present
     , viewSearchInput present
     , viewToolbarButton "Add Topic" AddTopic always undoModel
-    , viewToolbarButton "Edit" (Edit EditStart) hasSelection undoModel
-    , viewToolbarButton "Choose Icon" (IconMenu IconMenu.Open) hasSelection undoModel
+    , div
+      []
+      [ viewToolbarButton "Edit" (Edit EditStart) hasSelection undoModel
+      , viewToolbarButton "Set Icon" (IconMenu IconMenu.Open) hasSelection undoModel
+      ]
     , viewMonadDisplay present
     , viewContainerDisplay present
-    , viewToolbarButton "Hide" Hide hasSelection undoModel
-    , viewToolbarButton "Fullscreen" (Nav Fullscreen) hasSelection undoModel
+    , viewToolbarButton "Show Related" (Search Search.ShowRelated) hasSelection undoModel
+    , div
+      []
+      [ viewToolbarButton "Hide" Hide hasSelection undoModel
+      , viewToolbarButton "Fullscreen" (Nav Fullscreen) hasSelection undoModel
+      ]
     , viewToolbarButton "Delete" Delete hasSelection undoModel
     , div
       []
@@ -62,7 +70,7 @@ toolbarStyle =
   , style "display" "flex"
   , style "flex-direction" "column"
   , style "align-items" "flex-start"
-  , style "gap" "20px"
+  , style "gap" "22px"
   , style "position" "fixed"
   , style "z-index" "1"
   ]

@@ -5,7 +5,7 @@ import Config exposing (contentFontSize, topicSize)
 import Model exposing (ItemInfo(..), MapProps(..), Id, MapId)
 import ModelAPI exposing (..)
 import Storage exposing (store)
-import Utils exposing (idDecoder, stopPropagationOnMousedown, logError, info)
+import Utils exposing (idDecoder, idTupleDecoder, stopPropagationOnMousedown, logError, info)
 -- components
 import Search exposing (Menu(..))
 
@@ -49,35 +49,73 @@ viewResultMenu model =
   case model.search.menu of
     Topics topicIds _ ->
       if not (topicIds |> List.isEmpty) then
-        [ div
-          ( [ on "click" (itemDecoder Search.ClickItem)
-            , on "mouseover" (itemDecoder Search.HoverItem)
-            , on "mouseout" (itemDecoder Search.UnhoverItem)
-            , stopPropagationOnMousedown NoOp
-            ]
-            ++ resultMenuStyle
-          )
-          (topicIds |> List.map
-            (\id ->
-              case getTopicInfo id model of
-                Just topic ->
-                  div
-                    ( [ attribute "data-id" (fromInt id) ]
-                      ++ resultItemStyle id model
-                    )
-                    [ text topic.text ]
-                Nothing -> text "??"
-            )
-          )
-        ]
+        [ viewTopicsMenu topicIds model ]
       else
         []
-    _ -> []
+    RelTopics relTopicIds _ ->
+      if not (relTopicIds |> List.isEmpty) then
+        [ viewRelTopicsMenu relTopicIds model ]
+      else
+        []
+    Closed -> []
 
 
-itemDecoder : (Id -> Search.Msg) -> D.Decoder Msg
-itemDecoder msg =
+viewTopicsMenu : List Id -> Model -> Html Msg
+viewTopicsMenu topicIds model =
+  div
+    ( [ on "click" (topicDecoder Search.ClickTopic)
+      , on "mouseover" (topicDecoder Search.HoverTopic)
+      , on "mouseout" (topicDecoder Search.UnhoverTopic)
+      , stopPropagationOnMousedown NoOp
+      ]
+      ++ resultMenuStyle
+    )
+    (topicIds |> List.map
+      (\id ->
+        case getTopicInfo id model of
+          Just topic ->
+            div
+              ( [ attribute "data-id" (fromInt id) ]
+                ++ resultItemStyle id model
+              )
+              [ text topic.text ]
+          Nothing -> text "??"
+      )
+    )
+
+
+viewRelTopicsMenu : List (Id, Id) -> Model -> Html Msg
+viewRelTopicsMenu relTopicIds model =
+  div
+    ( [ on "click" (relTopicDecoder Search.ClickRelTopic)
+      , on "mouseover" (relTopicDecoder Search.HoverRelTopic)
+      , on "mouseout" (relTopicDecoder Search.UnhoverRelTopic)
+      , stopPropagationOnMousedown NoOp
+      ]
+      ++ resultMenuStyle
+    )
+    (relTopicIds |> List.map
+      (\(id, assocId) ->
+        case getTopicInfo id model of
+          Just topic ->
+            div
+              ( [ attribute "data-id" <| fromInt id ++ "," ++ fromInt assocId ]
+                ++ resultItemStyle id model
+              )
+              [ text topic.text ]
+          Nothing -> text "??"
+      )
+    )
+
+
+topicDecoder : (Id -> Search.Msg) -> D.Decoder Msg
+topicDecoder msg =
   D.map Search <| D.map msg idDecoder
+
+
+relTopicDecoder : ((Id, Id) -> Search.Msg) -> D.Decoder Msg
+relTopicDecoder msg =
+  D.map Search <| D.map msg idTupleDecoder
 
 
 resultMenuStyle : List (Attribute Msg)
@@ -120,13 +158,15 @@ updateSearch msg ({present} as undoModel) =
   case msg of
     Search.Input text -> (onTextInput text present, Cmd.none) |> swap undoModel
     Search.FocusInput -> (onFocusInput present, Cmd.none) |> swap undoModel
-    Search.HoverItem topicId -> (onHoverItem topicId present, Cmd.none) |> swap undoModel
-    Search.UnhoverItem _ -> (onUnhoverItem present, Cmd.none) |> swap undoModel
-    Search.ClickItem topicId ->
-      present
-      |> revealTopic topicId (activeMap present)
-      |> closeResultMenu
-      |> store
+    Search.HoverTopic topicId -> (onHoverTopic topicId present, Cmd.none) |> swap undoModel
+    Search.UnhoverTopic _ -> (onUnhoverTopic present, Cmd.none) |> swap undoModel
+    Search.ClickTopic topicId -> onClickTopic topicId present |> store |> push undoModel
+    -- Traverse
+    Search.ShowRelated -> (onShowRelated present, Cmd.none) |> swap undoModel
+    Search.HoverRelTopic relTopicId -> (onHoverRelTopic relTopicId present, Cmd.none)
+      |> swap undoModel
+    Search.UnhoverRelTopic _ -> (onUnhoverRelTopic present, Cmd.none) |> swap undoModel
+    Search.ClickRelTopic relTopicId -> onClickRelTopic relTopicId present |> store
       |> push undoModel
 
 
@@ -140,26 +180,60 @@ onFocusInput : Model -> Model
 onFocusInput = searchTopics
 
 
-onHoverItem : Id -> Model -> Model
-onHoverItem topicId ({search} as model) =
+onHoverTopic : Id -> Model -> Model
+onHoverTopic topicId ({search} as model) =
   case model.search.menu of
     Topics topicIds _ ->
       -- update hover state
       { model | search = { search | menu = Topics topicIds (Just topicId) }}
-    Closed ->
-      logError "onHoverItem" "Received \"HoverItem\" message when search.menu is Closed"
+    _ ->
+      logError "onHoverTopic" "Received \"HoverTopic\" when search.menu is not Topics" model
+
+
+onHoverRelTopic : (Id, Id) -> Model -> Model
+onHoverRelTopic relTopicId ({search} as model) =
+  case model.search.menu of
+    RelTopics relTopicIds _ ->
+      -- update hover state
+      { model | search = { search | menu = RelTopics relTopicIds (Just relTopicId) }}
+    _ ->
+      logError "onHoverRelTopic" "Received \"HoverRelTopic\" when search.menu is not RelTopics"
       model
 
 
-onUnhoverItem : Model -> Model
-onUnhoverItem ({search} as model) =
+onUnhoverTopic : Model -> Model
+onUnhoverTopic ({search} as model) =
   case model.search.menu of
     Topics topicIds _ ->
       -- update hover state
       { model | search = { search | menu = Topics topicIds Nothing }}
-    Closed ->
-      logError "onUnhoverItem" "Received \"UnhoverItem\" message when search.menu is Closed"
-      model
+    _ ->
+      logError "onUnhoverTopic" "Received \"UnhoverTopic\" when search.menu is not Topics" model
+
+
+onUnhoverRelTopic : Model -> Model
+onUnhoverRelTopic ({search} as model) =
+  case model.search.menu of
+    RelTopics relTopicIds _ ->
+      -- update hover state
+      { model | search = { search | menu = RelTopics relTopicIds Nothing }}
+    _ ->
+      logError "onUnhoverRelTopic"
+        "Received \"UnhoverRelTopic\" when search.menu is not RelTopics" model
+
+
+onClickTopic : Id -> Model -> Model
+onClickTopic topicId model =
+  model
+  |> revealTopic topicId (activeMap model)
+  |> closeResultMenu
+
+
+onClickRelTopic : (Id, Id) -> Model -> Model
+onClickRelTopic (topicId, assocId) model =
+  model
+  |> revealTopic topicId (activeMap model) -- TODO: reveal assoc
+  |> closeResultMenu
 
 
 searchTopics : Model -> Model
@@ -204,3 +278,13 @@ revealTopic topicId mapId model =
 closeResultMenu : Model -> Model
 closeResultMenu ({search} as model) =
   { model | search = { search | menu = Closed }}
+
+
+-- Traverse
+
+onShowRelated : Model -> Model
+onShowRelated ({search} as model) =
+  let
+    relTopicIds = [] -- TODO
+  in
+  { model | search = { search | menu = RelTopics relTopicIds Nothing }}

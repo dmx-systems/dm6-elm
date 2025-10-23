@@ -19,12 +19,19 @@ init =
 
 type Menu
   = Topics (List Id) (Maybe Id) -- hovered topic
+  | RelTopics (List (Id, Id)) (Maybe (Id, Id)) -- (topic ID, assoc ID)
   | Closed
 
 
 type Msg
+  -- Search
   = Input String
   | FocusInput
-  | HoverItem Id
-  | UnhoverItem Id
-  | ClickItem Id
+  | HoverTopic Id
+  | UnhoverTopic Id
+  | ClickTopic Id
+  -- Traverse
+  | ShowRelated
+  | HoverRelTopic (Id, Id)
+  | UnhoverRelTopic (Id, Id)
+  | ClickRelTopic (Id, Id)

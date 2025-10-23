@@ -58,6 +58,12 @@ idDecoder =
   |> D.andThen toIntDecoder
 
 
+idTupleDecoder : D.Decoder (Id, Id)
+idTupleDecoder =
+  D.at ["target", "dataset", "id"] D.string
+  |> D.andThen toIntTupleDecoder
+
+
 pathDecoder : D.Decoder MapPath
 pathDecoder =
   D.at ["target", "dataset", "path"] D.string
@@ -80,15 +86,26 @@ toIntDecoder str =
     Nothing -> D.fail <| "\"" ++ str ++ "\" is not an Int"
 
 
+toIntTupleDecoder : String -> D.Decoder (Int, Int)
+toIntTupleDecoder string =
+  D.succeed <|
+    case toIntList string of
+      int1 :: int2 :: [] -> (int1, int2)
+      _ -> logError "toIntTupleDecoder" ("\"" ++ string ++ "\" is not a pair") (-1, -1)
+
+
 toIntListDecoder : String -> D.Decoder (List Int)
-toIntListDecoder str =
-  D.succeed
-    (str |> String.split "," |> List.map
-      (\mapIdStr ->
-        case mapIdStr |> String.toInt of
-          Just mapId -> mapId
-          Nothing -> logError "toIntListDecoder" ("\"" ++ mapIdStr ++ "\" is not an Int") -1
-      )
+toIntListDecoder string =
+  D.succeed <| toIntList string
+
+
+toIntList : String -> List Int
+toIntList string =
+  string |> String.split "," |> List.map
+    (\str ->
+      case str |> String.toInt of
+        Just int -> int
+        Nothing -> logError "toIntList" ("\"" ++ str ++ "\" is not an Int") -1
     )
 
 
