@@ -102,7 +102,7 @@ viewRelTopicsMenu relTopicIds model =
               ( [ attribute "data-id" <| fromInt id ++ "," ++ fromInt assocId ]
                 ++ resultItemStyle id model
               )
-              [ text topic.text ]
+              [ text topic.text ] -- TODO: render assoc info
           Nothing -> text "??"
       )
     )
@@ -254,6 +254,18 @@ searchTopics ({search} as model) =
   { model | search = { search | menu = Topics topicIds Nothing }}
 
 
+onShowRelated : Model -> Model
+onShowRelated ({search} as model) =
+  let
+    relTopicIds =
+      case singleSelection model of
+        Just (itemId, _) ->
+          relatedItems itemId model
+        Nothing -> [] -- TODO: log error
+  in
+  { model | search = { search | menu = RelTopics relTopicIds Nothing }}
+
+
 isMatch : String -> String -> Bool
 isMatch searchText text =
   not (searchText |> String.isEmpty)
@@ -278,13 +290,3 @@ revealTopic topicId mapId model =
 closeResultMenu : Model -> Model
 closeResultMenu ({search} as model) =
   { model | search = { search | menu = Closed }}
-
-
--- Traverse
-
-onShowRelated : Model -> Model
-onShowRelated ({search} as model) =
-  let
-    relTopicIds = [] -- TODO
-  in
-  { model | search = { search | menu = RelTopics relTopicIds Nothing }}

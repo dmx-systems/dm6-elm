@@ -5,7 +5,7 @@ import Config exposing (homeMapName, version, date, mainFont, toolbarFontSize, f
 import Model exposing (EditMsg(..), NavMsg(..), DisplayMode(..), MonadDisplay(..),
   ContainerDisplay(..))
 import ModelAPI exposing (getTopicInfo, getTopicLabel, getMapId, isHome, activeMap,
-  getDisplayMode, getSingleSelection)
+  getDisplayMode, singleSelection)
 import Utils exposing (stopPropagationOnMousedown, info)
 -- components
 import IconMenu
@@ -170,7 +170,7 @@ buttonStyle =
 viewMonadDisplay : Model -> Html Msg
 viewMonadDisplay model =
   let
-    displayMode = case getSingleSelection model of
+    displayMode = case singleSelection model of
       Just (topicId, mapPath) -> getDisplayMode topicId (getMapId mapPath) model.maps
       Nothing -> Nothing
     (checked1, checked2, disabled_) =
@@ -192,7 +192,7 @@ viewMonadDisplay model =
 viewContainerDisplay : Model -> Html Msg
 viewContainerDisplay model =
   let
-    displayMode = case getSingleSelection model of
+    displayMode = case singleSelection model of
       Just (topicId, mapPath) -> getDisplayMode topicId (getMapId mapPath) model.maps
       Nothing -> Nothing
     (checked1, checked2, checked3) =

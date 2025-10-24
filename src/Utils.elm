@@ -90,7 +90,7 @@ toIntTupleDecoder : String -> D.Decoder (Int, Int)
 toIntTupleDecoder string =
   D.succeed <|
     case toIntList string of
-      int1 :: int2 :: [] -> (int1, int2)
+      [int1, int2] -> (int1, int2)
       _ -> logError "toIntTupleDecoder" ("\"" ++ string ++ "\" is not a pair") (-1, -1)
 
 

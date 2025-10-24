@@ -17,6 +17,7 @@ import UndoList
 
 -- Items
 
+-- TODO: rename to "topicById"
 getTopicInfo : Id -> Model -> Maybe TopicInfo
 getTopicInfo topicId model =
   case getItem topicId model of
@@ -27,6 +28,7 @@ getTopicInfo topicId model =
     Nothing -> fail "getTopicInfo" topicId Nothing
 
 
+-- TODO: rename to "assocById"
 getAssocInfo : Id -> Model -> Maybe AssocInfo
 getAssocInfo assocId model =
   case getItem assocId model of
@@ -37,6 +39,7 @@ getAssocInfo assocId model =
     Nothing -> fail "getAssocInfo" assocId Nothing
 
 
+-- TODO: rename to "itemById"
 getItem : Id -> Model -> Maybe Item
 getItem itemId model =
   case model.items |> Dict.get itemId of
@@ -79,7 +82,7 @@ createAssoc itemType role1 player1 role2 player2 model =
 
 deleteItem : Id -> Model -> Model
 deleteItem itemId model =
-  getItemAssocs itemId model |> Set.foldr
+  itemAssocIds itemId model |> Set.foldr
     deleteItem -- recursion
     model
     |> removeAssocRefs_ itemId
@@ -108,8 +111,31 @@ deleteItem_ itemId model =
   }
 
 
-getItemAssocs : Id -> Model -> AssocIds
-getItemAssocs itemId model =
+relatedItems : Id -> Model -> List (Id, Id)
+relatedItems itemId model =
+  itemAssocIds itemId model |> Set.foldr
+    (\assocId relItemsAcc ->
+      (otherPlayerId assocId itemId model, assocId) :: relItemsAcc
+    )
+    []
+
+
+otherPlayerId : Id -> Id -> Model -> Id
+otherPlayerId assocId playerId model =
+  case getAssocInfo assocId model of
+    Just {player1, player2} ->
+      if playerId == player1 then
+        player2
+      else if playerId == player2 then
+        player1
+      else
+        logError "otherPlayerId"
+          (fromInt playerId ++ " is not a player in assoc " ++ fromInt assocId) -1
+    Nothing -> -1 -- error is already logged
+
+
+itemAssocIds : Id -> Model -> AssocIds
+itemAssocIds itemId model =
   case getItem itemId model of
     Just {assocIds} -> assocIds
     Nothing -> Set.empty -- error is already logged
@@ -117,7 +143,7 @@ getItemAssocs itemId model =
 
 insertAssocId_ : Id -> Id -> Model -> Model
 insertAssocId_ assocId itemId model =
-  case not <| isHomeMap itemId of
+  case not <| isHomeMap itemId of -- FIXME: add topic 0 and remove this condition
     True ->
       model
       |> updateItem itemId (\item -> {item | assocIds = item.assocIds |> Set.insert assocId})
@@ -546,8 +572,8 @@ isSelected itemId mapId model =
     )
 
 
-getSingleSelection : Model -> Maybe (Id, MapPath)
-getSingleSelection model =
+singleSelection : Model -> Maybe (Id, MapPath)
+singleSelection model =
   case model.selection of
     [ selItem ] -> Just selItem
     _ -> Nothing
