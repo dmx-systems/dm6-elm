@@ -143,20 +143,14 @@ itemAssocIds itemId model =
 
 insertAssocId_ : Id -> Id -> Model -> Model
 insertAssocId_ assocId itemId model =
-  case not <| isHomeMap itemId of -- FIXME: add topic 0 and remove this condition
-    True ->
-      model
-      |> updateItem itemId (\item -> {item | assocIds = item.assocIds |> Set.insert assocId})
-    False -> model
+  model
+  |> updateItem itemId (\item -> {item | assocIds = item.assocIds |> Set.insert assocId})
 
 
 removeAssocId_ : Id -> Id -> Model -> Model
 removeAssocId_ assocId itemId model =
-  case not <| isHomeMap itemId of
-    True ->
-      model
-      |> updateItem itemId (\item -> {item | assocIds = item.assocIds |> Set.remove assocId})
-    False -> model
+  model
+  |> updateItem itemId (\item -> {item | assocIds = item.assocIds |> Set.remove assocId})
 
 
 updateTopicInfo : Id -> (TopicInfo -> TopicInfo) -> Model -> Model

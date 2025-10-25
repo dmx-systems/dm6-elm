@@ -76,7 +76,7 @@ viewTopicsMenu topicIds model =
           Just topic ->
             div
               ( [ attribute "data-id" (fromInt id) ]
-                ++ resultItemStyle id model
+                ++ (resultItemStyle <| isTopicHover id model)
               )
               [ text topic.text ]
           Nothing -> text "??"
@@ -95,12 +95,12 @@ viewRelTopicsMenu relTopicIds model =
       ++ resultMenuStyle
     )
     (relTopicIds |> List.map
-      (\(id, assocId) ->
+      (\((id, assocId) as relTopic) ->
         case getTopicInfo id model of
           Just topic ->
             div
               ( [ attribute "data-id" <| fromInt id ++ "," ++ fromInt assocId ]
-                ++ resultItemStyle id model
+                ++ (resultItemStyle <| isRelTopicHover relTopic model)
               )
               [ text topic.text ] -- TODO: render assoc info
           Nothing -> text "??"
@@ -118,10 +118,24 @@ relTopicDecoder msg =
   D.map Search <| D.map msg idTupleDecoder
 
 
+isTopicHover : Id -> Model -> Bool
+isTopicHover topicId model =
+  case model.search.menu of
+    Topics _ (Just topicId_) -> topicId_ == topicId
+    _ -> False
+
+
+isRelTopicHover : (Id, Id) -> Model -> Bool
+isRelTopicHover relTopic model =
+  case model.search.menu of
+    RelTopics _ (Just relTopic_) -> relTopic_ == relTopic
+    _ -> False
+
+
 resultMenuStyle : List (Attribute Msg)
 resultMenuStyle =
   [ style "position" "absolute"
-  , style "top" "144px"
+  , style "top" "138px"
   , style "width" "240px"
   , style "padding" "3px 0"
   , style "font-size" <| fromInt contentFontSize ++ "px"
@@ -133,14 +147,8 @@ resultMenuStyle =
   ]
 
 
-resultItemStyle : Id -> Model -> List (Attribute Msg)
-resultItemStyle topicId model =
-  let
-    isHover =
-      case model.search.menu of
-        Topics _ (Just topicId_) -> topicId_ == topicId
-        _ -> False
-  in
+resultItemStyle : Bool -> List (Attribute Msg)
+resultItemStyle isHover =
   [ style "color" (if isHover then "white" else "black")
   , style "background-color" (if isHover then "black" else "white")
   , style "overflow" "hidden"

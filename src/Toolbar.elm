@@ -112,12 +112,9 @@ mapTitleStyle =
 
 getMapName : Model -> String
 getMapName model =
-  if isHome model then -- home map has no corresponding topic
-    homeMapName
-  else
-    case getTopicInfo (activeMap model) model of
-      Just topic -> getTopicLabel topic
-      Nothing -> "??"
+  case getTopicInfo (activeMap model) model of
+    Just topic -> getTopicLabel topic
+    Nothing -> "??"
 
 
 viewToolbarButton : String -> Msg -> (UndoModel -> Bool) -> UndoModel -> Html Msg
