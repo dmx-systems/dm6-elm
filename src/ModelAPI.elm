@@ -339,12 +339,22 @@ updateTopicProps topicId mapId propsFunc model =
   }
 
 
+defaultItemProps : Id -> Model -> MapProps
+defaultItemProps itemId model =
+  case getItem itemId model of
+    Just item ->
+      case item.info of
+        Topic _ -> MapTopic <| defaultTopicProps itemId model
+        Assoc _ -> MapAssoc {}
+    Nothing -> MapAssoc {} -- error is already logged
+
+
 {-| Useful when revealing an existing topic -}
-defaultProps : Id -> Size -> Model -> TopicProps
-defaultProps topicId size model =
+defaultTopicProps : Id -> Model -> TopicProps
+defaultTopicProps topicId model =
   TopicProps
     ( Point 0 0 ) -- TODO
-    size
+    topicSize
     ( if hasMap topicId model.maps then
         Container BlackBox
       else
@@ -420,7 +430,10 @@ createAssocIn itemType role1 player1 role2 player2 mapId model =
   addItemToMap assocId props mapId newModel
 
 
-{-| Precondition: the item is not yet contained in the map
+{-| Adds an item to a map and creates a connecting association.
+Presumption: the item is not yet contained in the map. Otherwise the existing map-item would be
+overridden and another association still be created. This is not what you want.
+Can be used for both, topics and associations.
 -}
 addItemToMap : Id -> MapProps -> MapId -> Model -> Model
 addItemToMap itemId props mapId model =
@@ -434,26 +447,27 @@ addItemToMap itemId props mapId model =
     _ = info "addItemToMap"
       { itemId = itemId, parentAssocId = parentAssocId, props = props, mapId = mapId}
   in
-  { newModel | maps =
-    updateMaps
+  { newModel | maps = newModel.maps |> updateMaps
       mapId
       (\map -> { map | items = map.items |> Dict.insert itemId mapItem })
-      newModel.maps
   }
 
 
+{-| Presumption: the item *is* contained in the map. Its "hidden" is set to False then.
+If the item is *not* contained in the map, or its hidden flag is False already, its a no-op.
+Can be used for both, topics and associations.
+-}
 showItem : Id -> MapId -> Model -> Model
 showItem itemId mapId model =
   { model | maps = model.maps |> updateMaps
     mapId
     (\map ->
-      { map | items = Dict.update itemId
+      { map | items = map.items |> Dict.update itemId
         (\maybeItem ->
           case maybeItem of
             Just mapItem -> Just { mapItem | hidden = False }
             Nothing -> Nothing
         )
-        map.items
       }
     )
   }

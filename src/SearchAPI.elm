@@ -233,14 +233,18 @@ onUnhoverRelTopic ({search} as model) =
 onClickTopic : Id -> Model -> Model
 onClickTopic topicId model =
   model
-  |> revealTopic topicId (activeMap model)
+  |> revealItem topicId (activeMap model)
   |> closeResultMenu
 
 
 onClickRelTopic : (Id, Id) -> Model -> Model
 onClickRelTopic (topicId, assocId) model =
+  let
+    mapId = activeMap model
+  in
   model
-  |> revealTopic topicId (activeMap model) -- TODO: reveal assoc
+  |> revealItem topicId mapId
+  |> revealItem assocId mapId
   |> closeResultMenu
 
 
@@ -280,19 +284,19 @@ isMatch searchText text =
   && String.contains (String.toLower searchText) (String.toLower text)
 
 
-revealTopic : Id -> MapId -> Model -> Model
-revealTopic topicId mapId model =
-  if isItemInMap topicId mapId model then
+revealItem : Id -> MapId -> Model -> Model
+revealItem itemId mapId model =
+  if isItemInMap itemId mapId model then
     let
-      _ = info "revealTopic" (topicId, "set visible")
+      _ = info "revealItem" <| fromInt itemId ++ " is in " ++ fromInt mapId
     in
-    showItem topicId mapId model
+    showItem itemId mapId model
   else
     let
-      _ = info "revealTopic" (topicId, "add to map")
-      props = MapTopic <| defaultProps topicId topicSize model
+      _ = info "revealItem" <| fromInt itemId ++ " not in " ++ fromInt mapId
+      props = defaultItemProps itemId model
     in
-    addItemToMap topicId props mapId model
+    addItemToMap itemId props mapId model
 
 
 closeResultMenu : Model -> Model

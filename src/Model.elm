@@ -62,7 +62,7 @@ type alias MapItem =
   }
 
 
-type MapProps
+type MapProps -- TODO: rename to "ItemProps"?
   = MapTopic TopicProps
   | MapAssoc AssocProps
 

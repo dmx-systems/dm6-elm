@@ -151,7 +151,7 @@ limboTopic mapId model =
         else
           let
             _ = info "limboTopic" (topicId, "not in map")
-            props = defaultProps topicId topicSize model
+            props = defaultTopicProps topicId model
           in
           case model.items |> Dict.get topicId of
             Just {info} ->
