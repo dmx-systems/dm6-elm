@@ -208,7 +208,7 @@ getMapId : MapPath -> MapId
 getMapId mapPath =
   case mapPath of
     mapId :: _ -> mapId
-    _ -> -1
+    [] -> -1
 
 
 fromPath : MapPath -> String
@@ -585,6 +585,16 @@ singleSelection model =
   case model.selection of
     [ selItem ] -> Just selItem
     _ -> Nothing
+
+
+singleSelectionMapId : Model -> Maybe MapId
+singleSelectionMapId model =
+  case singleSelection model of
+    Just (_, mapPath) ->
+      case mapPath of
+        mapId :: _ -> Just mapId
+        [] -> Nothing
+    Nothing -> Nothing
 
 
 -- Undo / Redo
