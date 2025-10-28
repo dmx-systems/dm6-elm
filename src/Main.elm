@@ -210,7 +210,7 @@ setDisplayModeInAllMaps topicId displayMode model =
 
 switchDisplay : DisplayMode -> Model -> Model
 switchDisplay displayMode model =
-  ( case getSingleSelection model of
+  ( case singleSelection model of
     Just (containerId, mapPath) ->
       let
         mapId = getMapId mapPath
@@ -251,7 +251,7 @@ updateEdit msg ({present} as undoModel) =
 startEdit : Model -> (Model, Cmd Msg)
 startEdit model =
   let
-    newModel = case getSingleSelection model of
+    newModel = case singleSelection model of
       Just (topicId, mapPath) ->
         { model | editState = ItemEdit topicId (getMapId mapPath) }
         |> setDetailDisplayIfMonade topicId (getMapId mapPath)
@@ -341,7 +341,7 @@ updateNav navMsg model =
 
 fullscreen : Model -> Model
 fullscreen model =
-  case getSingleSelection model of
+  case singleSelection model of
     Just (topicId, _) ->
       { model | mapPath = topicId :: model.mapPath }
       |> resetSelection

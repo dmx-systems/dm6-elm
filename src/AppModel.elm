@@ -1,5 +1,6 @@
 module AppModel exposing (..)
 
+import Config exposing (homeMapName)
 import Model exposing (..)
 -- components
 import IconMenu
@@ -7,6 +8,7 @@ import Mouse
 import Search
 
 import Dict
+import Set
 import UndoList exposing (UndoList)
 
 
@@ -32,8 +34,8 @@ type alias Model =
 
 default : Model
 default =
-  { items = Dict.empty
-  , maps = Dict.singleton 0 -- map 0 is the "home map", it has no corresponding topic
+  { items = Dict.singleton 0 <| Item 0 (Topic (TopicInfo 0 homeMapName Nothing)) Set.empty
+  , maps = Dict.singleton 0 -- map 0 is the "home map"
     <| Map 0 (Rectangle 0 0 0 0) Dict.empty
   , mapPath = [0]
   , nextId = 1

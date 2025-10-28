@@ -5,9 +5,9 @@ import Config exposing (contentFontSize, topicSize)
 import Model exposing (ItemInfo(..), MapProps(..), Id, MapId)
 import ModelAPI exposing (..)
 import Storage exposing (store)
-import Utils exposing (idDecoder, stopPropagationOnMousedown, logError, info)
+import Utils exposing (idDecoder, idTupleDecoder, stopPropagationOnMousedown, logError, info)
 -- components
-import Search exposing (ResultMenu(..))
+import Search exposing (Menu(..))
 
 import Dict
 import Html exposing (Html, Attribute, div, text, input)
@@ -46,41 +46,96 @@ searchInputStyle =
 
 viewResultMenu : Model -> List (Html Msg)
 viewResultMenu model =
-  case (model.search.menu, model.search.result |> List.isEmpty) of
-    (Open _, False) ->
-      [ div
-        ( [ on "click" (itemDecoder Search.ClickItem)
-          , on "mouseover" (itemDecoder Search.HoverItem)
-          , on "mouseout" (itemDecoder Search.UnhoverItem)
-          , stopPropagationOnMousedown NoOp
-          ]
-          ++ resultMenuStyle
-        )
-        ( model.search.result |> List.map
-          (\id ->
-            case getTopicInfo id model of
-              Just topic ->
-                div
-                  ( [ attribute "data-id" (fromInt id) ]
-                    ++ resultItemStyle id model
-                  )
-                  [ text topic.text ]
-              Nothing -> text "??"
-          )
-        )
+  case model.search.menu of
+    Topics topicIds _ ->
+      if not (topicIds |> List.isEmpty) then
+        [ viewTopicsMenu topicIds model ]
+      else
+        []
+    RelTopics relTopicIds _ ->
+      if not (relTopicIds |> List.isEmpty) then
+        [ viewRelTopicsMenu relTopicIds model ]
+      else
+        []
+    Closed -> []
+
+
+viewTopicsMenu : List Id -> Model -> Html Msg
+viewTopicsMenu topicIds model =
+  div
+    ( [ on "click" (topicDecoder Search.ClickTopic)
+      , on "mouseover" (topicDecoder Search.HoverTopic)
+      , on "mouseout" (topicDecoder Search.UnhoverTopic)
+      , stopPropagationOnMousedown NoOp
       ]
-    _ -> []
+      ++ resultMenuStyle
+    )
+    (topicIds |> List.map
+      (\id ->
+        case getTopicInfo id model of
+          Just topic ->
+            div
+              ( [ attribute "data-id" (fromInt id) ]
+                ++ (resultItemStyle <| isTopicHover id model)
+              )
+              [ text topic.text ]
+          Nothing -> text "??"
+      )
+    )
 
 
-itemDecoder : (Id -> Search.Msg) -> D.Decoder Msg
-itemDecoder msg =
+viewRelTopicsMenu : List (Id, Id) -> Model -> Html Msg
+viewRelTopicsMenu relTopicIds model =
+  div
+    ( [ on "click" (relTopicDecoder Search.ClickRelTopic)
+      , on "mouseover" (relTopicDecoder Search.HoverRelTopic)
+      , on "mouseout" (relTopicDecoder Search.UnhoverRelTopic)
+      , stopPropagationOnMousedown NoOp
+      ]
+      ++ resultMenuStyle
+    )
+    (relTopicIds |> List.map
+      (\((id, assocId) as relTopic) ->
+        case getTopicInfo id model of
+          Just topic ->
+            div
+              ( [ attribute "data-id" <| fromInt id ++ "," ++ fromInt assocId ]
+                ++ (resultItemStyle <| isRelTopicHover relTopic model)
+              )
+              [ text topic.text ] -- TODO: render assoc info
+          Nothing -> text "??"
+      )
+    )
+
+
+topicDecoder : (Id -> Search.Msg) -> D.Decoder Msg
+topicDecoder msg =
   D.map Search <| D.map msg idDecoder
+
+
+relTopicDecoder : ((Id, Id) -> Search.Msg) -> D.Decoder Msg
+relTopicDecoder msg =
+  D.map Search <| D.map msg idTupleDecoder
+
+
+isTopicHover : Id -> Model -> Bool
+isTopicHover topicId model =
+  case model.search.menu of
+    Topics _ (Just topicId_) -> topicId_ == topicId
+    _ -> False
+
+
+isRelTopicHover : (Id, Id) -> Model -> Bool
+isRelTopicHover relTopic model =
+  case model.search.menu of
+    RelTopics _ (Just relTopic_) -> relTopic_ == relTopic
+    _ -> False
 
 
 resultMenuStyle : List (Attribute Msg)
 resultMenuStyle =
   [ style "position" "absolute"
-  , style "top" "144px"
+  , style "top" "138px"
   , style "width" "240px"
   , style "padding" "3px 0"
   , style "font-size" <| fromInt contentFontSize ++ "px"
@@ -92,13 +147,8 @@ resultMenuStyle =
   ]
 
 
-resultItemStyle : Id -> Model -> List (Attribute Msg)
-resultItemStyle topicId model =
-  let
-    isHover = case model.search.menu of
-      Open maybeId -> maybeId == Just topicId
-      Closed -> False
-  in
+resultItemStyle : Bool -> List (Attribute Msg)
+resultItemStyle isHover =
   [ style "color" (if isHover then "white" else "black")
   , style "background-color" (if isHover then "black" else "white")
   , style "overflow" "hidden"
@@ -116,13 +166,15 @@ updateSearch msg ({present} as undoModel) =
   case msg of
     Search.Input text -> (onTextInput text present, Cmd.none) |> swap undoModel
     Search.FocusInput -> (onFocusInput present, Cmd.none) |> swap undoModel
-    Search.HoverItem topicId -> (onHoverItem topicId present, Cmd.none) |> swap undoModel
-    Search.UnhoverItem _ -> (onUnhoverItem present, Cmd.none) |> swap undoModel
-    Search.ClickItem topicId ->
-      present
-      |> revealTopic topicId (activeMap present)
-      |> closeResultMenu
-      |> store
+    Search.HoverTopic topicId -> (onHoverTopic topicId present, Cmd.none) |> swap undoModel
+    Search.UnhoverTopic _ -> (onUnhoverTopic present, Cmd.none) |> swap undoModel
+    Search.ClickTopic topicId -> onClickTopic topicId present |> store |> push undoModel
+    -- Traverse
+    Search.ShowRelated -> (onShowRelated present, Cmd.none) |> swap undoModel
+    Search.HoverRelTopic relTopicId -> (onHoverRelTopic relTopicId present, Cmd.none)
+      |> swap undoModel
+    Search.UnhoverRelTopic _ -> (onUnhoverRelTopic present, Cmd.none) |> swap undoModel
+    Search.ClickRelTopic relTopicId -> onClickRelTopic relTopicId present |> store
       |> push undoModel
 
 
@@ -133,50 +185,97 @@ onTextInput text ({search} as model) =
 
 
 onFocusInput : Model -> Model
-onFocusInput ({search} as model) =
-  { model | search = { search | menu = Open Nothing }}
+onFocusInput = searchTopics
 
 
-onHoverItem : Id -> Model -> Model
-onHoverItem topicId ({search} as model) =
+onHoverTopic : Id -> Model -> Model
+onHoverTopic topicId ({search} as model) =
   case model.search.menu of
-    Open _ ->
-      -- update hovered topic
-      { model | search = { search | menu = Open (Just topicId) }}
-    Closed ->
-      logError "onHoverItem" "Received \"HoverItem\" message when search.menu is Closed"
+    Topics topicIds _ ->
+      -- update hover state
+      { model | search = { search | menu = Topics topicIds (Just topicId) }}
+    _ ->
+      logError "onHoverTopic" "Received \"HoverTopic\" when search.menu is not Topics" model
+
+
+onHoverRelTopic : (Id, Id) -> Model -> Model
+onHoverRelTopic relTopicId ({search} as model) =
+  case model.search.menu of
+    RelTopics relTopicIds _ ->
+      -- update hover state
+      { model | search = { search | menu = RelTopics relTopicIds (Just relTopicId) }}
+    _ ->
+      logError "onHoverRelTopic" "Received \"HoverRelTopic\" when search.menu is not RelTopics"
       model
 
 
-onUnhoverItem : Model -> Model
-onUnhoverItem ({search} as model) =
+onUnhoverTopic : Model -> Model
+onUnhoverTopic ({search} as model) =
   case model.search.menu of
-    Open _ ->
-      -- update hovered topic
-      { model | search = { search | menu = Open Nothing }}
-    Closed ->
-      logError "onUnhoverItem" "Received \"UnhoverItem\" message when search.menu is Closed"
-      model
+    Topics topicIds _ ->
+      -- update hover state
+      { model | search = { search | menu = Topics topicIds Nothing }}
+    _ ->
+      logError "onUnhoverTopic" "Received \"UnhoverTopic\" when search.menu is not Topics" model
+
+
+onUnhoverRelTopic : Model -> Model
+onUnhoverRelTopic ({search} as model) =
+  case model.search.menu of
+    RelTopics relTopicIds _ ->
+      -- update hover state
+      { model | search = { search | menu = RelTopics relTopicIds Nothing }}
+    _ ->
+      logError "onUnhoverRelTopic"
+        "Received \"UnhoverRelTopic\" when search.menu is not RelTopics" model
+
+
+onClickTopic : Id -> Model -> Model
+onClickTopic topicId model =
+  model
+  |> revealItem topicId (activeMap model)
+  |> closeResultMenu
+
+
+onClickRelTopic : (Id, Id) -> Model -> Model
+onClickRelTopic (topicId, assocId) model =
+  let
+    mapId = activeMap model
+  in
+  model
+  |> revealItem topicId mapId
+  |> revealItem assocId mapId
+  |> closeResultMenu
 
 
 searchTopics : Model -> Model
 searchTopics ({search} as model) =
-  { model | search =
-    { search
-    | result = model.items |> Dict.foldr
-      (\id item topicIds ->
+  let
+    topicIds = model.items |> Dict.foldr
+      (\id item topicIdsAcc ->
         case item.info of
           Topic {text} ->
             if isMatch model.search.text text then
-              id :: topicIds
+              id :: topicIdsAcc
             else
-              topicIds
-          Assoc _ -> topicIds
+              topicIdsAcc
+          Assoc _ -> topicIdsAcc
       )
       []
-    , menu = Open Nothing
-    }
-  }
+  in
+  { model | search = { search | menu = Topics topicIds Nothing }}
+
+
+onShowRelated : Model -> Model
+onShowRelated ({search} as model) =
+  let
+    relTopicIds =
+      case singleSelection model of
+        Just (itemId, _) ->
+          relatedItems itemId model
+        Nothing -> [] -- TODO: log error
+  in
+  { model | search = { search | menu = RelTopics relTopicIds Nothing }}
 
 
 isMatch : String -> String -> Bool
@@ -185,19 +284,19 @@ isMatch searchText text =
   && String.contains (String.toLower searchText) (String.toLower text)
 
 
-revealTopic : Id -> MapId -> Model -> Model
-revealTopic topicId mapId model =
-  if isItemInMap topicId mapId model then
+revealItem : Id -> MapId -> Model -> Model
+revealItem itemId mapId model =
+  if isItemInMap itemId mapId model then
     let
-      _ = info "revealTopic" (topicId, "set visible")
+      _ = info "revealItem" <| fromInt itemId ++ " is in " ++ fromInt mapId
     in
-    showItem topicId mapId model
+    showItem itemId mapId model
   else
     let
-      _ = info "revealTopic" (topicId, "add to map")
-      props = MapTopic <| defaultProps topicId topicSize model
+      _ = info "revealItem" <| fromInt itemId ++ " not in " ++ fromInt mapId
+      props = defaultItemProps itemId model
     in
-    addItemToMap topicId props mapId model
+    addItemToMap itemId props mapId model
 
 
 closeResultMenu : Model -> Model

@@ -6,6 +6,7 @@ import Model exposing (..)
 import Utils exposing (..)
 
 import Dict
+import Set
 import String exposing (fromInt)
 import UndoList
 
@@ -16,38 +17,34 @@ import UndoList
 
 -- Items
 
+-- TODO: rename to "topicById"
 getTopicInfo : Id -> Model -> Maybe TopicInfo
 getTopicInfo topicId model =
-  case model.items |> Dict.get topicId of
+  case getItem topicId model of
     Just {info} ->
       case info of
         Topic topic -> Just topic
         Assoc _ -> topicMismatch "getTopicInfo" topicId Nothing
-    Nothing -> illegalItemId "getTopicInfo" topicId Nothing
+    Nothing -> fail "getTopicInfo" topicId Nothing
 
 
+-- TODO: rename to "assocById"
 getAssocInfo : Id -> Model -> Maybe AssocInfo
 getAssocInfo assocId model =
-  case model.items |> Dict.get assocId of
+  case getItem assocId model of
     Just {info} ->
       case info of
         Topic _ -> assocMismatch "getAssocInfo" assocId Nothing
         Assoc assoc -> Just assoc
-    Nothing -> illegalItemId "getAssocInfo" assocId Nothing
+    Nothing -> fail "getAssocInfo" assocId Nothing
 
 
-updateTopicInfo : Id -> (TopicInfo -> TopicInfo) -> Model -> Model
-updateTopicInfo topicId topicFunc model =
-  { model | items = model.items |> Dict.update topicId
-    (\maybeItem ->
-      case maybeItem of
-        Just item ->
-          case item.info of
-            Topic topic -> Just { item | info = topicFunc topic |> Topic }
-            Assoc _  -> topicMismatch "updateTopicInfo" topicId Nothing
-        Nothing -> illegalItemId "updateTopicInfo" topicId Nothing
-    )
-  }
+-- TODO: rename to "itemById"
+getItem : Id -> Model -> Maybe Item
+getItem itemId model =
+  case model.items |> Dict.get itemId of
+    Just item -> Just item
+    Nothing -> illegalItemId "getItem" itemId Nothing
 
 
 getTopicLabel : TopicInfo -> String
@@ -61,7 +58,7 @@ createTopic : String -> Maybe IconName -> Model -> (Model, Id)
 createTopic text iconName model =
   let
     id = model.nextId
-    topic = Item id <| Topic <| TopicInfo id text iconName
+    topic = Item id (Topic <| TopicInfo id text iconName) Set.empty
   in
   ( { model | items = model.items |> Dict.insert id topic }
     |> nextId
@@ -73,12 +70,108 @@ createAssoc : ItemType -> RoleType -> Id -> RoleType -> Id -> Model -> (Model, I
 createAssoc itemType role1 player1 role2 player2 model =
   let
     id = model.nextId
-    assoc = Item id <| Assoc <| AssocInfo id itemType role1 player1 role2 player2
+    assoc = Item id (Assoc <| AssocInfo id itemType role1 player1 role2 player2) Set.empty
   in
   ( { model | items = model.items |> Dict.insert id assoc }
+    |> insertAssocId_ id player1
+    |> insertAssocId_ id player2
     |> nextId
   , id
   )
+
+
+deleteItem : Id -> Model -> Model
+deleteItem itemId model =
+  itemAssocIds itemId model |> Set.foldr
+    deleteItem -- recursion
+    model
+    |> removeAssocRefs_ itemId
+    |> deleteItem_ itemId
+
+
+removeAssocRefs_ : Id -> Model -> Model
+removeAssocRefs_ itemId model =
+  case getItem itemId model of
+    Just {info} ->
+      case info of
+        Assoc assoc ->
+          model
+          |> removeAssocId_ assoc.id assoc.player1
+          |> removeAssocId_ assoc.id assoc.player2
+        Topic _ -> model
+    Nothing -> model -- error is already logged
+
+
+deleteItem_ : Id -> Model -> Model
+deleteItem_ itemId model =
+  { model
+    | items = model.items |> Dict.remove itemId -- delete item
+    , maps = model.maps |> Dict.map -- delete item from all maps
+      (\_ map -> { map | items = map.items |> Dict.remove itemId })
+  }
+
+
+relatedItems : Id -> Model -> List (Id, Id)
+relatedItems itemId model =
+  itemAssocIds itemId model |> Set.foldr
+    (\assocId relItemsAcc ->
+      (otherPlayerId assocId itemId model, assocId) :: relItemsAcc
+    )
+    []
+
+
+otherPlayerId : Id -> Id -> Model -> Id
+otherPlayerId assocId playerId model =
+  case getAssocInfo assocId model of
+    Just {player1, player2} ->
+      if playerId == player1 then
+        player2
+      else if playerId == player2 then
+        player1
+      else
+        logError "otherPlayerId"
+          (fromInt playerId ++ " is not a player in assoc " ++ fromInt assocId) -1
+    Nothing -> -1 -- error is already logged
+
+
+itemAssocIds : Id -> Model -> AssocIds
+itemAssocIds itemId model =
+  case getItem itemId model of
+    Just {assocIds} -> assocIds
+    Nothing -> Set.empty -- error is already logged
+
+
+insertAssocId_ : Id -> Id -> Model -> Model
+insertAssocId_ assocId itemId model =
+  model
+  |> updateItem itemId (\item -> {item | assocIds = item.assocIds |> Set.insert assocId})
+
+
+removeAssocId_ : Id -> Id -> Model -> Model
+removeAssocId_ assocId itemId model =
+  model
+  |> updateItem itemId (\item -> {item | assocIds = item.assocIds |> Set.remove assocId})
+
+
+updateTopicInfo : Id -> (TopicInfo -> TopicInfo) -> Model -> Model
+updateTopicInfo topicId topicFunc model =
+  model |> updateItem topicId
+    (\item ->
+      case item.info of
+        Topic topic -> { item | info = Topic <| topicFunc topic }
+        Assoc _  -> topicMismatch "updateTopicInfo" topicId item
+    )
+
+
+updateItem : Id -> (Item -> Item) -> Model -> Model
+updateItem itemId itemFunc model =
+  { model | items = model.items |> Dict.update itemId
+    (\maybeItem ->
+      case maybeItem of
+        Just item -> Just <| itemFunc item
+        Nothing -> illegalItemId "updateItem" itemId Nothing
+    )
+  }
 
 
 nextId : Model -> Model
@@ -90,7 +183,12 @@ nextId model =
 
 isHome : Model -> Bool
 isHome model =
-  activeMap model == 0
+  model |> activeMap |> isHomeMap
+
+
+isHomeMap : Id -> Bool
+isHomeMap id =
+  id == 0
 
 
 isFullscreen : MapId -> Model -> Bool
@@ -110,7 +208,7 @@ getMapId : MapPath -> MapId
 getMapId mapPath =
   case mapPath of
     mapId :: _ -> mapId
-    _ -> -1
+    [] -> -1
 
 
 fromPath : MapPath -> String
@@ -241,12 +339,22 @@ updateTopicProps topicId mapId propsFunc model =
   }
 
 
+defaultItemProps : Id -> Model -> MapProps
+defaultItemProps itemId model =
+  case getItem itemId model of
+    Just item ->
+      case item.info of
+        Topic _ -> MapTopic <| defaultTopicProps itemId model
+        Assoc _ -> MapAssoc {}
+    Nothing -> MapAssoc {} -- error is already logged
+
+
 {-| Useful when revealing an existing topic -}
-defaultProps : Id -> Size -> Model -> TopicProps
-defaultProps topicId size model =
+defaultTopicProps : Id -> Model -> TopicProps
+defaultTopicProps topicId model =
   TopicProps
     ( Point 0 0 ) -- TODO
-    size
+    topicSize
     ( if hasMap topicId model.maps then
         Container BlackBox
       else
@@ -322,7 +430,10 @@ createAssocIn itemType role1 player1 role2 player2 mapId model =
   addItemToMap assocId props mapId newModel
 
 
-{-| Precondition: the item is not yet contained in the map
+{-| Adds an item to a map and creates a connecting association.
+Presumption: the item is not yet contained in the map. Otherwise the existing map-item would be
+overridden and another association still be created. This is not what you want.
+Can be used for both, topics and associations.
 -}
 addItemToMap : Id -> MapProps -> MapId -> Model -> Model
 addItemToMap itemId props mapId model =
@@ -336,26 +447,27 @@ addItemToMap itemId props mapId model =
     _ = info "addItemToMap"
       { itemId = itemId, parentAssocId = parentAssocId, props = props, mapId = mapId}
   in
-  { newModel | maps =
-    updateMaps
+  { newModel | maps = newModel.maps |> updateMaps
       mapId
       (\map -> { map | items = map.items |> Dict.insert itemId mapItem })
-      newModel.maps
   }
 
 
+{-| Presumption: the item *is* contained in the map. Its "hidden" is set to False then.
+If the item is *not* contained in the map, or its hidden flag is False already, its a no-op.
+Can be used for both, topics and associations.
+-}
 showItem : Id -> MapId -> Model -> Model
 showItem itemId mapId model =
   { model | maps = model.maps |> updateMaps
     mapId
     (\map ->
-      { map | items = Dict.update itemId
+      { map | items = map.items |> Dict.update itemId
         (\maybeItem ->
           case maybeItem of
             Just mapItem -> Just { mapItem | hidden = False }
             Nothing -> Nothing
         )
-        map.items
       }
     )
   }
@@ -392,25 +504,6 @@ updateMaps mapId mapFunc maps =
         Just map -> Just (mapFunc map)
         Nothing -> illegalMapId "updateMaps" mapId Nothing
     )
-
-
-deleteItem : Id -> Model -> Model
-deleteItem itemId model =
-  assocsOfPlayer itemId model |> List.foldr
-    deleteItem -- recursion
-    { model
-      | items = model.items |> Dict.remove itemId -- delete item
-      , maps = model.maps |> Dict.map -- delete item from all maps
-        (\_ map -> { map | items = map.items |> Dict.remove itemId })
-    }
-
-
-assocsOfPlayer : Id -> Model -> List Id
-assocsOfPlayer playerId model =
-  model.items |> Dict.values
-    |> List.filter isAssoc
-    |> List.map .id
-    |> List.filter (hasPlayer playerId model)
 
 
 mapAssocsOfPlayer_ : Id -> MapItems -> Model -> List Id
@@ -487,11 +580,21 @@ isSelected itemId mapId model =
     )
 
 
-getSingleSelection : Model -> Maybe (Id, MapPath)
-getSingleSelection model =
+singleSelection : Model -> Maybe (Id, MapPath)
+singleSelection model =
   case model.selection of
     [ selItem ] -> Just selItem
     _ -> Nothing
+
+
+singleSelectionMapId : Model -> Maybe MapId
+singleSelectionMapId model =
+  case singleSelection model of
+    Just (_, mapPath) ->
+      case mapPath of
+        mapId :: _ -> Just mapId
+        [] -> Nothing
+    Nothing -> Nothing
 
 
 -- Undo / Redo

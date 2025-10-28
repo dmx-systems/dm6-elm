@@ -8,7 +8,7 @@ import Utils exposing (..)
 -- components
 import IconMenuAPI exposing (viewTopicIcon)
 import Mouse exposing (DragState(..), DragMode(..))
-import Search exposing (ResultMenu(..))
+import Search exposing (Menu(..))
 
 import Dict
 import Html exposing (Html, Attribute, div, text, input, textarea)
@@ -57,7 +57,7 @@ viewMap mapId mapPath model =
     [ div
         ( topicLayerStyle mapRect )
         ( topics
-          ++ limboTopic mapId model
+          ++ viewLimboTopic mapId model
         )
     , svg
         ( [ width svgSize.w, height svgSize.h ]
@@ -87,7 +87,7 @@ mapInfo mapId mapPath model =
   in
   case getMap mapId model.maps of
     Just map ->
-      ( mapItems map mapPath model
+      ( viewItems map mapPath model
       , map.rect
       , if isFullscreen mapId model then
           ( { w = "100%", h = "100%" }, [] )
@@ -102,8 +102,8 @@ mapInfo mapId mapPath model =
       ( ([], []), Rectangle 0 0 0 0, ( {w = "0", h = "0"}, [] ))
 
 
-mapItems : Map -> MapPath -> Model -> (List (Html Msg), List (Svg Msg))
-mapItems map mapPath model =
+viewItems : Map -> MapPath -> Model -> (List (Html Msg), List (Svg Msg))
+viewItems map mapPath model =
   let
     newPath = map.id :: mapPath
   in
@@ -114,26 +114,23 @@ mapItems map mapPath model =
           case (info, props) of
             (Topic topic, MapTopic tProps) -> (viewTopic topic tProps newPath model :: t, a)
             (Assoc assoc, MapAssoc _) -> (t, viewAssoc assoc map.id model :: a)
-            _ -> logError "mapItems" ("problem with item " ++ fromInt id) (t, a)
-        _ -> logError "mapItems" ("problem with item " ++ fromInt id) (t, a)
+            _ -> logError "viewItems" ("problem with item " ++ fromInt id) (t, a)
+        _ -> logError "viewItems" ("problem with item " ++ fromInt id) (t, a)
     )
     ([], [])
 
 
-limboTopic : MapId -> Model -> List (Html Msg)
-limboTopic mapId model =
-  let
-    activeMapId = activeMap model
-  in
-  if mapId == activeMapId then
-    case model.search.menu of
-      Open (Just topicId) ->
-        if isItemInMap topicId activeMapId model then
-          case getMapItemById topicId activeMapId model.maps of
+viewLimboTopic : MapId -> Model -> List (Html Msg)
+viewLimboTopic mapId model =
+  case limboInfo model of
+    Just (topicId, limboMapId) ->
+      if mapId == limboMapId then
+        if isItemInMap topicId limboMapId model then
+          case getMapItemById topicId limboMapId model.maps of
             Just mapItem ->
               if mapItem.hidden then
                 let
-                  _ = info "limboTopic" (topicId, "is in map, hidden")
+                  _ = info "viewLimboTopic" (topicId, "is in map, hidden")
                 in
                 case model.items |> Dict.get topicId of
                   Just {info} ->
@@ -144,14 +141,14 @@ limboTopic mapId model =
                   _ -> []
               else
                 let
-                  _ = info "limboTopic" (topicId, "is in map, already visible")
+                  _ = info "viewLimboTopic" (topicId, "is in map, visible")
                 in
                 []
             Nothing -> []
         else
           let
-            _ = info "limboTopic" (topicId, "not in map")
-            props = defaultProps topicId topicSize model
+            _ = info "viewLimboTopic" (topicId, "not in map")
+            props = defaultTopicProps topicId model
           in
           case model.items |> Dict.get topicId of
             Just {info} ->
@@ -159,16 +156,39 @@ limboTopic mapId model =
                 Topic topic -> [ viewTopic topic props [] model ] -- FIXME: mapPath=[] ?
                 _ -> []
             _ -> []
-      _ -> []
-  else
-    []
+      else
+        []
+    Nothing -> []
+
+
+{-| *What* to render additionally? Which topic in which map?
+-}
+limboInfo : Model -> Maybe (Id, MapId)
+limboInfo model =
+  case model.search.menu of
+    Topics _ (Just topicId) -> Just (topicId, activeMap model)
+    RelTopics _ (Just (topicId, assocId)) ->
+      case singleSelectionMapId model of
+        Just mapId -> Just (topicId, mapId)
+        Nothing -> Nothing
+    _ -> Nothing
+
+
+{-| *How* to render a certain topic in a certain map?
+-}
+isLimbo : Id -> MapId -> Model -> Bool
+isLimbo topicId mapId model =
+  case limboInfo model of
+    Just limboInfo_ -> limboInfo_ == (topicId, mapId)
+    Nothing -> False
 
 
 viewTopic : TopicInfo -> TopicProps -> MapPath -> Model -> Html Msg
 viewTopic topic props mapPath model =
   let
+    mapId = getMapId mapPath
     topicFunc =
-      case effectiveDisplayMode topic.id props.displayMode model of
+      case effectiveDisplayMode topic.id mapId props.displayMode model of
         Monad LabelOnly -> labelTopic
         Monad Detail -> detailTopic
         Container BlackBox -> blackBoxTopic
@@ -178,18 +198,15 @@ viewTopic topic props mapPath model =
   in
   div
     ( topicAttr topic.id mapPath model
-      ++ topicStyle topic.id model
+      ++ topicStyle topic.id mapId model
       ++ style
     )
     children
 
 
-effectiveDisplayMode : Id -> DisplayMode -> Model -> DisplayMode
-effectiveDisplayMode topicId displayMode model =
-  let
-    isLimbo = model.search.menu == Open (Just topicId)
-  in
-  if isLimbo then
+effectiveDisplayMode : Id -> MapId -> DisplayMode -> Model -> DisplayMode
+effectiveDisplayMode topicId mapId displayMode model =
+  if isLimbo topicId mapId model then
     case displayMode of
       Monad _ -> Monad Detail
       Container _ -> Container WhiteBox
@@ -478,16 +495,15 @@ accumulateMapRect posAcc mapId model =
 -- STYLE
 
 
-topicStyle : Id -> Model -> List (Attribute Msg)
-topicStyle id model =
+topicStyle : Id -> MapId -> Model -> List (Attribute Msg)
+topicStyle id mapId model =
   let
-    isLimbo = model.search.menu == Open (Just id)
     isDragging = case model.mouse.dragState of
       Drag DragTopic id_ _ _ _ _ -> id_ == id
       _ -> False
   in
   [ style "position" "absolute"
-  , style "opacity" <| if isLimbo then ".5" else "1"
+  , style "opacity" <| if isLimbo id mapId model then ".5" else "1"
   , style "z-index" <| if isDragging then "1" else "2"
   ]
 

@@ -5,11 +5,12 @@ import Config exposing (homeMapName, version, date, mainFont, toolbarFontSize, f
 import Model exposing (EditMsg(..), NavMsg(..), DisplayMode(..), MonadDisplay(..),
   ContainerDisplay(..))
 import ModelAPI exposing (getTopicInfo, getTopicLabel, getMapId, isHome, activeMap,
-  getDisplayMode, getSingleSelection)
+  getDisplayMode, singleSelection)
 import Utils exposing (stopPropagationOnMousedown, info)
 -- components
 import IconMenu
 import IconMenuAPI exposing (viewIcon)
+import Search
 import SearchAPI exposing (viewSearchInput)
 
 import Html exposing (Html, Attribute, div, span, text, button, input, label, a)
@@ -25,20 +26,29 @@ import UndoList
 
 viewToolbar : UndoModel -> Html Msg
 viewToolbar ({present} as undoModel) =
+  {--
   let
     _ = info "viewToolbar" [ UndoList.lengthPast undoModel, UndoList.lengthFuture undoModel ]
   in
+  --}
   div
     toolbarStyle
     [ viewMapNav present
     , viewSearchInput present
     , viewToolbarButton "Add Topic" AddTopic always undoModel
-    , viewToolbarButton "Edit" (Edit EditStart) hasSelection undoModel
-    , viewToolbarButton "Choose Icon" (IconMenu IconMenu.Open) hasSelection undoModel
+    , div
+      []
+      [ viewToolbarButton "Edit" (Edit EditStart) hasSelection undoModel
+      , viewToolbarButton "Set Icon" (IconMenu IconMenu.Open) hasSelection undoModel
+      ]
     , viewMonadDisplay present
     , viewContainerDisplay present
-    , viewToolbarButton "Hide" Hide hasSelection undoModel
-    , viewToolbarButton "Fullscreen" (Nav Fullscreen) hasSelection undoModel
+    , viewToolbarButton "Show Related" (Search Search.ShowRelated) hasSelection undoModel
+    , div
+      []
+      [ viewToolbarButton "Hide" Hide hasSelection undoModel
+      , viewToolbarButton "Fullscreen" (Nav Fullscreen) hasSelection undoModel
+      ]
     , viewToolbarButton "Delete" Delete hasSelection undoModel
     , div
       []
@@ -60,7 +70,7 @@ toolbarStyle =
   , style "display" "flex"
   , style "flex-direction" "column"
   , style "align-items" "flex-start"
-  , style "gap" "20px"
+  , style "gap" "22px"
   , style "position" "fixed"
   , style "z-index" "1"
   ]
@@ -102,12 +112,9 @@ mapTitleStyle =
 
 getMapName : Model -> String
 getMapName model =
-  if isHome model then -- home map has no corresponding topic
-    homeMapName
-  else
-    case getTopicInfo (activeMap model) model of
-      Just topic -> getTopicLabel topic
-      Nothing -> "??"
+  case getTopicInfo (activeMap model) model of
+    Just topic -> getTopicLabel topic
+    Nothing -> "??"
 
 
 viewToolbarButton : String -> Msg -> (UndoModel -> Bool) -> UndoModel -> Html Msg
@@ -160,7 +167,7 @@ buttonStyle =
 viewMonadDisplay : Model -> Html Msg
 viewMonadDisplay model =
   let
-    displayMode = case getSingleSelection model of
+    displayMode = case singleSelection model of
       Just (topicId, mapPath) -> getDisplayMode topicId (getMapId mapPath) model.maps
       Nothing -> Nothing
     (checked1, checked2, disabled_) =
@@ -182,7 +189,7 @@ viewMonadDisplay model =
 viewContainerDisplay : Model -> Html Msg
 viewContainerDisplay model =
   let
-    displayMode = case getSingleSelection model of
+    displayMode = case singleSelection model of
       Just (topicId, mapPath) -> getDisplayMode topicId (getMapId mapPath) model.maps
       Nothing -> Nothing
     (checked1, checked2, checked3) =

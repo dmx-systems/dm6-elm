@@ -149,8 +149,8 @@ closeIconMenu ({iconMenu} as model) =
 
 setIcon : Maybe IconName -> Model -> Model
 setIcon iconName model =
-  case getSingleSelection model of
+  case singleSelection model of
     Just (id, _) -> updateTopicInfo id
       (\topic -> { topic | iconName = iconName })
       model
-    Nothing -> model -- FIXME: illegal state -> make Edit dialog modal
+    Nothing -> model -- FIXME: illegal state -> make Edit dialog modal?
