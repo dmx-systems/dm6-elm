@@ -72,7 +72,7 @@ viewTopicsMenu topicIds model =
     )
     (topicIds |> List.map
       (\id ->
-        case getTopicInfo id model of
+        case topicById id model of
           Just topic ->
             div
               ( [ attribute "data-id" (fromInt id) ]
@@ -96,7 +96,7 @@ viewRelTopicsMenu relTopicIds model =
     )
     (relTopicIds |> List.map
       (\((id, assocId) as relTopic) ->
-        case getTopicInfo id model of
+        case topicById id model of
           Just topic ->
             div
               ( [ attribute "data-id" <| fromInt id ++ "," ++ fromInt assocId ]

@@ -17,45 +17,42 @@ import UndoList
 
 -- Items
 
--- TODO: rename to "topicById"
-getTopicInfo : Id -> Model -> Maybe TopicInfo
-getTopicInfo topicId model =
-  case getItem topicId model of
+topicById : Id -> Model -> Maybe TopicInfo
+topicById topicId model =
+  case itemById topicId model of
     Just {info} ->
       case info of
         Topic topic -> Just topic
-        Assoc _ -> topicMismatch "getTopicInfo" topicId Nothing
-    Nothing -> fail "getTopicInfo" topicId Nothing
+        Assoc _ -> topicMismatch "topicById" topicId Nothing
+    Nothing -> fail "topicById" topicId Nothing
 
 
--- TODO: rename to "assocById"
-getAssocInfo : Id -> Model -> Maybe AssocInfo
-getAssocInfo assocId model =
-  case getItem assocId model of
+assocById : Id -> Model -> Maybe AssocInfo
+assocById assocId model =
+  case itemById assocId model of
     Just {info} ->
       case info of
-        Topic _ -> assocMismatch "getAssocInfo" assocId Nothing
+        Topic _ -> assocMismatch "assocById" assocId Nothing
         Assoc assoc -> Just assoc
-    Nothing -> fail "getAssocInfo" assocId Nothing
+    Nothing -> fail "assocById" assocId Nothing
 
 
--- TODO: rename to "itemById"
-getItem : Id -> Model -> Maybe Item
-getItem itemId model =
+itemById : Id -> Model -> Maybe Item
+itemById itemId model =
   case model.items |> Dict.get itemId of
     Just item -> Just item
-    Nothing -> illegalItemId "getItem" itemId Nothing
+    Nothing -> illegalItemId "itemById" itemId Nothing
 
 
-getTopicLabel : TopicInfo -> String
-getTopicLabel topic =
+topicLabel : TopicInfo -> String
+topicLabel topic =
   case topic.text |> String.lines |> List.head of
     Just line -> line
     Nothing -> ""
 
 
-createTopic : String -> Maybe IconName -> Model -> (Model, Id)
-createTopic text iconName model =
+addTopic : String -> Maybe IconName -> Model -> (Model, Id)
+addTopic text iconName model =
   let
     id = model.nextId
     topic = Item id (Topic <| TopicInfo id text iconName) Set.empty
@@ -66,8 +63,8 @@ createTopic text iconName model =
   )
 
 
-createAssoc : ItemType -> RoleType -> Id -> RoleType -> Id -> Model -> (Model, Id)
-createAssoc itemType role1 player1 role2 player2 model =
+addAssoc : ItemType -> RoleType -> Id -> RoleType -> Id -> Model -> (Model, Id)
+addAssoc itemType role1 player1 role2 player2 model =
   let
     id = model.nextId
     assoc = Item id (Assoc <| AssocInfo id itemType role1 player1 role2 player2) Set.empty
@@ -80,18 +77,18 @@ createAssoc itemType role1 player1 role2 player2 model =
   )
 
 
-deleteItem : Id -> Model -> Model
-deleteItem itemId model =
+removeItem : Id -> Model -> Model
+removeItem itemId model =
   itemAssocIds itemId model |> Set.foldr
-    deleteItem -- recursion
+    removeItem -- recursion
     model
     |> removeAssocRefs_ itemId
-    |> deleteItem_ itemId
+    |> removeItem_ itemId
 
 
 removeAssocRefs_ : Id -> Model -> Model
 removeAssocRefs_ itemId model =
-  case getItem itemId model of
+  case itemById itemId model of
     Just {info} ->
       case info of
         Assoc assoc ->
@@ -102,8 +99,8 @@ removeAssocRefs_ itemId model =
     Nothing -> model -- error is already logged
 
 
-deleteItem_ : Id -> Model -> Model
-deleteItem_ itemId model =
+removeItem_ : Id -> Model -> Model
+removeItem_ itemId model =
   { model
     | items = model.items |> Dict.remove itemId -- delete item
     , maps = model.maps |> Dict.map -- delete item from all maps
@@ -122,7 +119,7 @@ relatedItems itemId model =
 
 otherPlayerId : Id -> Id -> Model -> Id
 otherPlayerId assocId playerId model =
-  case getAssocInfo assocId model of
+  case assocById assocId model of
     Just {player1, player2} ->
       if playerId == player1 then
         player2
@@ -136,7 +133,7 @@ otherPlayerId assocId playerId model =
 
 itemAssocIds : Id -> Model -> AssocIds
 itemAssocIds itemId model =
-  case getItem itemId model of
+  case itemById itemId model of
     Just {assocIds} -> assocIds
     Nothing -> Set.empty -- error is already logged
 
@@ -203,7 +200,8 @@ activeMap model =
     Nothing -> logError "activeMap" "mapPath is empty!" 0
 
 
-{-| Returns -1 if mapPath is empty -}
+{-| Returns -1 if mapPath is empty. This is not treated as an error! TODO: why?
+-}
 getMapId : MapPath -> MapId
 getMapId mapPath =
   case mapPath of
@@ -341,7 +339,7 @@ updateTopicProps topicId mapId propsFunc model =
 
 defaultItemProps : Id -> Model -> MapProps
 defaultItemProps itemId model =
-  case getItem itemId model of
+  case itemById itemId model of
     Just item ->
       case item.info of
         Topic _ -> MapTopic <| defaultTopicProps itemId model
@@ -395,7 +393,7 @@ createTopicIn text iconName mapPath model =
   case getMap mapId model.maps of
     Just map ->
       let
-        (newModel, topicId) = createTopic text iconName model
+        (newModel, topicId) = addTopic text iconName model
         props = MapTopic <| TopicProps
           (Point
             (newTopicPos.x + map.rect.x1)
@@ -424,7 +422,7 @@ createDefaultAssocIn player1 player2 mapId model =
 createAssocIn : ItemType -> RoleType -> Id -> RoleType -> Id -> MapId -> Model -> Model
 createAssocIn itemType role1 player1 role2 player2 mapId model =
   let
-    (newModel, assocId) = createAssoc itemType role1 player1 role2 player2 model
+    (newModel, assocId) = addAssoc itemType role1 player1 role2 player2 model
     props = MapAssoc AssocProps
   in
   addItemToMap assocId props mapId newModel
@@ -438,7 +436,7 @@ Can be used for both, topics and associations.
 addItemToMap : Id -> MapProps -> MapId -> Model -> Model
 addItemToMap itemId props mapId model =
   let
-    (newModel, parentAssocId) = createAssoc
+    (newModel, parentAssocId) = addAssoc
       "dmx.composition"
       "dmx.child" itemId
       "dmx.parent" mapId
@@ -516,7 +514,7 @@ mapAssocsOfPlayer_ playerId items model =
 
 hasPlayer : Id -> Model -> Id -> Bool
 hasPlayer playerId model assocId =
-  case getAssocInfo assocId model of
+  case assocById assocId model of
     Just assoc -> assoc.player1 == playerId || assoc.player2 == playerId
     Nothing -> False
 

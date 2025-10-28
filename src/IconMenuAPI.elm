@@ -95,7 +95,7 @@ iconButtonStyle =
 
 viewTopicIcon : Id -> Model -> Html Msg
 viewTopicIcon topicId model =
-  case getTopicInfo topicId model of
+  case topicById topicId model of
     Just topic ->
       case topic.iconName of
         Just iconName ->

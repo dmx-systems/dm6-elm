@@ -4,7 +4,7 @@ import AppModel exposing (UndoModel, Model, Msg(..))
 import Config exposing (homeMapName, version, date, mainFont, toolbarFontSize, footerFontSize)
 import Model exposing (EditMsg(..), NavMsg(..), DisplayMode(..), MonadDisplay(..),
   ContainerDisplay(..))
-import ModelAPI exposing (getTopicInfo, getTopicLabel, getMapId, isHome, activeMap,
+import ModelAPI exposing (topicById, topicLabel, getMapId, isHome, activeMap,
   getDisplayMode, singleSelection)
 import Utils exposing (stopPropagationOnMousedown, info)
 -- components
@@ -112,8 +112,8 @@ mapTitleStyle =
 
 getMapName : Model -> String
 getMapName model =
-  case getTopicInfo (activeMap model) model of
-    Just topic -> getTopicLabel topic
+  case topicById (activeMap model) model of
+    Just topic -> topicLabel topic
     Nothing -> "??"
 
 

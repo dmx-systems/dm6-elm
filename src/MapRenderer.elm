@@ -246,7 +246,7 @@ labelTopicHtml topic props mapId model =
       else
         div
           topicLabelStyle
-          [ text <| getTopicLabel topic ]
+          [ text <| topicLabel topic ]
   in
   [ div
     (topicIconBoxStyle props)
