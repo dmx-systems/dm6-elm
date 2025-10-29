@@ -2,7 +2,7 @@ module Main exposing (..)
 
 import AppModel exposing (..)
 import Boxing exposing (boxContainer, unboxContainer)
-import Config exposing (..)
+import Config as C
 import MapAutoSize exposing (autoSize)
 import MapRenderer exposing (viewMap)
 import Model exposing (..)
@@ -99,7 +99,7 @@ view ({present} as undoModel) =
 
 appStyle : List (Attribute Msg)
 appStyle =
-  [ style "font-family" mainFont
+  [ style "font-family" C.mainFont
   , style "user-select" "none"
   , style "-webkit-user-select" "none" -- Safari still needs vendor prefix
   ]
@@ -110,14 +110,14 @@ measureStyle =
   [ style "position" "fixed"
   , style "visibility" "hidden"
   , style "white-space" "pre-wrap"
-  , style "font-family" mainFont
-  , style "font-size" <| fromInt contentFontSize ++ "px"
-  , style "line-height" <| fromFloat topicLineHeight
-  , style "padding" <| fromInt topicDetailPadding ++ "px"
-  , style "width" <| fromFloat topicDetailMaxWidth ++ "px"
-  , style "min-width" <| fromFloat (topicSize.w - topicSize.h) ++ "px"
+  , style "font-family" C.mainFont
+  , style "font-size" <| fromInt C.contentFontSize ++ "px"
+  , style "line-height" <| fromFloat C.topicLineHeight
+  , style "padding" <| fromInt C.topicDetailPadding ++ "px"
+  , style "width" <| fromFloat C.topicDetailMaxWidth ++ "px"
+  , style "min-width" <| fromFloat (C.topicSize.w - C.topicSize.h) ++ "px"
   , style "max-width" "max-content"
-  , style "border-width" <| fromFloat topicBorderWidth ++ "px"
+  , style "border-width" <| fromFloat C.topicBorderWidth ++ "px"
   , style "border-style" "solid"
   , style "box-sizing" "border-box"
   ]
@@ -136,7 +136,7 @@ update msg ({present} as undoModel) =
         _ -> info "update" msg
   in
   case msg of
-    AddTopic -> createTopicIn topicDefaultText Nothing [ activeMap present ] present
+    AddTopic -> createTopicIn C.topicDefaultText Nothing [ activeMap present ] present
       |> store |> push undoModel
     MoveTopicToMap topicId mapId origPos targetId targetMapPath pos
       -> moveTopicToMap topicId mapId origPos targetId targetMapPath pos present
@@ -164,8 +164,8 @@ moveTopicToMap topicId mapId origPos targetId targetMapPath pos model =
     newPos =
       case created of
         True -> Point
-          (topicW2 + whiteBoxPadding)
-          (topicH2 + whiteBoxPadding)
+          (C.topicW2 + C.whiteBoxPadding)
+          (C.topicH2 + C.whiteBoxPadding)
         False -> pos
     props_ =
       getTopicProps topicId mapId newModel.maps

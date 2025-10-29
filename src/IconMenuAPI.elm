@@ -2,7 +2,7 @@ module IconMenuAPI exposing
   (viewIcon, viewTopicIcon, viewIconMenu, closeIconMenu, updateIconMenu)
 
 import AppModel exposing (..)
-import Config exposing (..)
+import Config as C
 import Model exposing (..)
 import ModelAPI exposing (..)
 import Storage exposing (store)
@@ -100,7 +100,7 @@ viewTopicIcon topicId model =
       case topic.iconName of
         Just iconName ->
           case Icon.icons |> Dict.get iconName of
-            Just icon -> icon |> Icon.withSize topicIconSize |> Icon.toHtml topicIconStyle
+            Just icon -> icon |> Icon.withSize C.topicIconSize |> Icon.toHtml topicIconStyle
             Nothing -> text "??"
         Nothing -> text ""
     Nothing -> text "?"
@@ -116,8 +116,8 @@ viewIcon iconName size =
 topicIconStyle : List (Attribute Msg)
 topicIconStyle =
   [ style "position" "relative"
-  , style "top" <| fromFloat ((topicSize.h - topicIconSize) / 2) ++ "px"
-  , style "left" <| fromFloat ((topicSize.h - topicIconSize) / 2) ++ "px"
+  , style "top" <| fromFloat ((C.topicSize.h - C.topicIconSize) / 2) ++ "px"
+  , style "left" <| fromFloat ((C.topicSize.h - C.topicIconSize) / 2) ++ "px"
   , style "color" "white"
   ]
 

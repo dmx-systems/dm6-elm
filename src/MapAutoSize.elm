@@ -1,7 +1,7 @@
 module MapAutoSize exposing (autoSize)
 
 import AppModel exposing (..)
-import Config exposing (..)
+import Config as C
 import Model exposing (..)
 import ModelAPI exposing (..)
 import Mouse exposing (DragState(..), DragMode(..))
@@ -37,10 +37,10 @@ calcMapRect mapPath model =
             (Rectangle 5000 5000 -5000 -5000, model) -- x-min y-min x-max y-max
           )
         newRect = Rectangle
-          (rect.x1 - whiteBoxPadding)
-          (rect.y1 - whiteBoxPadding)
-          (rect.x2 + whiteBoxPadding)
-          (rect.y2 + whiteBoxPadding)
+          (rect.x1 - C.whiteBoxPadding)
+          (rect.y1 - C.whiteBoxPadding)
+          (rect.x2 + C.whiteBoxPadding)
+          (rect.y2 + C.whiteBoxPadding)
       in
       ( newRect
       , storeMapGeometry mapPath newRect map.rect model_
@@ -123,10 +123,10 @@ adjustMapPos mapId parentMapId newRect oldRect model =
 topicExtent : Point -> Rectangle -> Rectangle
 topicExtent pos rectAcc =
   Rectangle
-    (min rectAcc.x1 (pos.x - topicW2))
-    (min rectAcc.y1 (pos.y - topicH2))
-    (max rectAcc.x2 (pos.x + topicW2 + 2 * topicBorderWidth))
-    (max rectAcc.y2 (pos.y + topicH2 + 2 * topicBorderWidth))
+    (min rectAcc.x1 (pos.x - C.topicW2))
+    (min rectAcc.y1 (pos.y - C.topicH2))
+    (max rectAcc.x2 (pos.x + C.topicW2 + 2 * C.topicBorderWidth))
+    (max rectAcc.y2 (pos.y + C.topicH2 + 2 * C.topicBorderWidth))
 
 
 detailTopicExtent : Id -> MapId -> Point -> Size -> Rectangle -> Model -> Rectangle
@@ -134,15 +134,15 @@ detailTopicExtent topicId mapId pos size rectAcc model =
   let
     textWidth =
       if model.editState == ItemEdit topicId mapId then
-        topicDetailMaxWidth
+        C.topicDetailMaxWidth
       else
         size.w
   in
   Rectangle
-    (min rectAcc.x1 (pos.x - topicW2))
-    (min rectAcc.y1 (pos.y - topicH2))
-    (max rectAcc.x2 (pos.x - topicW2 + textWidth + topicSize.h + 2 * topicBorderWidth))
-    (max rectAcc.y2 (pos.y - topicH2 + size.h + 2 * topicBorderWidth))
+    (min rectAcc.x1 (pos.x - C.topicW2))
+    (min rectAcc.y1 (pos.y - C.topicH2))
+    (max rectAcc.x2 (pos.x - C.topicW2 + textWidth + C.topicSize.h + 2 * C.topicBorderWidth))
+    (max rectAcc.y2 (pos.y - C.topicH2 + size.h + 2 * C.topicBorderWidth))
 
 
 mapExtent : Point -> Rectangle -> Rectangle -> Rectangle
@@ -152,7 +152,7 @@ mapExtent pos rect rectAcc =
     mapHeight = rect.y2 - rect.y1
   in
   Rectangle
-    (min rectAcc.x1 (pos.x - topicW2))
-    (min rectAcc.y1 (pos.y - topicH2))
-    (max rectAcc.x2 (pos.x - topicW2 + mapWidth))
-    (max rectAcc.y2 (pos.y + topicH2 + mapHeight))
+    (min rectAcc.x1 (pos.x - C.topicW2))
+    (min rectAcc.y1 (pos.y - C.topicH2))
+    (max rectAcc.x2 (pos.x - C.topicW2 + mapWidth))
+    (max rectAcc.y2 (pos.y + C.topicH2 + mapHeight))

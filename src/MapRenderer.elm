@@ -1,7 +1,7 @@
 module MapRenderer exposing (viewMap)
 
 import AppModel exposing (..)
-import Config exposing (..)
+import Config as C
 import Model exposing (..)
 import ModelAPI exposing (..)
 import Utils exposing (..)
@@ -295,20 +295,20 @@ detailTopic topic props mapPath model =
 detailTopicStyle : TopicProps -> List (Attribute Msg)
 detailTopicStyle {pos} =
   [ style "display" "flex"
-  , style "left" <| fromFloat (pos.x - topicW2) ++ "px"
-  , style "top" <| fromFloat (pos.y - topicH2) ++ "px"
+  , style "left" <| fromFloat (pos.x - C.topicW2) ++ "px"
+  , style "top" <| fromFloat (pos.y - C.topicH2) ++ "px"
   ]
 
 
 detailTextStyle : Id -> MapId -> Model -> List (Attribute Msg)
 detailTextStyle topicId mapId model =
   let
-    r = fromInt topicRadius ++ "px"
+    r = fromInt C.topicRadius ++ "px"
   in
-  [ style "font-size" <| fromInt contentFontSize ++ "px"
-  , style "width" <| fromFloat topicDetailMaxWidth ++ "px"
-  , style "line-height" <| fromFloat topicLineHeight
-  , style "padding" <| fromInt topicDetailPadding ++ "px"
+  [ style "font-size" <| fromInt C.contentFontSize ++ "px"
+  , style "width" <| fromFloat C.topicDetailMaxWidth ++ "px"
+  , style "line-height" <| fromFloat C.topicLineHeight
+  , style "padding" <| fromInt C.topicDetailPadding ++ "px"
   , style "border-radius" <| "0 " ++ r ++ " " ++ r ++ " " ++ r
   ]
   ++ topicBorderStyle topicId mapId model
@@ -317,7 +317,7 @@ detailTextStyle topicId mapId model =
 
 detailTextViewStyle : List (Attribute Msg)
 detailTextViewStyle =
-  [ style "min-width" <| fromFloat (topicSize.w - topicSize.h) ++ "px"
+  [ style "min-width" <| fromFloat (C.topicSize.w - C.topicSize.h) ++ "px"
   , style "max-width" "max-content"
   , style "white-space" "pre-wrap"
   , style "pointer-events" "none"
@@ -327,14 +327,14 @@ detailTextViewStyle =
 detailTextEditStyle : Id -> MapId -> Model -> List (Attribute Msg)
 detailTextEditStyle topicId mapId model =
   let
-    height = case getTopicSize topicId mapId model.maps of
+    height = case topicSize topicId mapId model.maps of
       Just size -> size.h
       Nothing -> 0
   in
   [ style "position" "relative"
-  , style "top" <| fromFloat -topicBorderWidth ++ "px"
+  , style "top" <| fromFloat -C.topicBorderWidth ++ "px"
   , style "height" <| fromFloat height ++ "px"
-  , style "font-family" mainFont -- <textarea> default is "monospace"
+  , style "font-family" C.mainFont -- <textarea> default is "monospace"
   , style "border-color" "black" -- <textarea> default is some lightgray
   , style "resize" "none"
   ]
@@ -424,8 +424,8 @@ viewAssoc assoc mapId model =
 assocGeometry : AssocInfo -> MapId -> Model -> Maybe (Point, Point)
 assocGeometry assoc mapId model =
   let
-    pos1 = getTopicPos assoc.player1 mapId model.maps
-    pos2 = getTopicPos assoc.player2 mapId model.maps
+    pos1 = topicPos assoc.player1 mapId model.maps
+    pos2 = topicPos assoc.player2 mapId model.maps
   in
   case Maybe.map2 (\p1 p2 -> ( p1, p2 )) pos1 pos2 of
     Just geometry -> Just geometry
@@ -470,13 +470,13 @@ accumulateMapPos posAcc mapId parentMapId mapIds model =
   let
     {x, y} = accumulateMapRect posAcc mapId model
   in
-  case getTopicPos mapId parentMapId model.maps of
+  case topicPos mapId parentMapId model.maps of
     Just mapPos ->
       absMapPos -- recursion
         (parentMapId :: mapIds)
         (Point
-          (x + mapPos.x - topicW2)
-          (y + mapPos.y + topicH2)
+          (x + mapPos.x - C.topicW2)
+          (y + mapPos.y + C.topicH2)
         )
         model
     Nothing -> Point 0 0 -- error is already logged
@@ -518,7 +518,7 @@ selectionStyle topicId mapId model =
 topicFlexboxStyle : TopicInfo -> TopicProps -> MapId -> Model -> List (Attribute Msg)
 topicFlexboxStyle topic props mapId model =
   let
-    r12 = fromInt topicRadius ++ "px"
+    r12 = fromInt C.topicRadius ++ "px"
     r34 = case props.displayMode of
       Container WhiteBox -> "0"
       _ -> r12
@@ -526,8 +526,8 @@ topicFlexboxStyle topic props mapId model =
   [ style "display" "flex"
   , style "align-items" "center"
   , style "gap" "8px"
-  , style "width" <| fromFloat topicSize.w ++ "px"
-  , style "height" <| fromFloat topicSize.h ++ "px"
+  , style "width" <| fromFloat C.topicSize.w ++ "px"
+  , style "height" <| fromFloat C.topicSize.h ++ "px"
   , style "border-radius" <| r12 ++ " " ++ r12 ++ " " ++ r34 ++ " " ++ r34
   ]
   ++ topicBorderStyle topic.id mapId model
@@ -535,22 +535,22 @@ topicFlexboxStyle topic props mapId model =
 
 topicPosStyle : TopicProps -> List (Attribute Msg)
 topicPosStyle { pos } =
-  [ style "left" <| fromFloat (pos.x - topicW2) ++ "px"
-  , style "top" <| fromFloat (pos.y - topicH2) ++ "px"
+  [ style "left" <| fromFloat (pos.x - C.topicW2) ++ "px"
+  , style "top" <| fromFloat (pos.y - C.topicH2) ++ "px"
   ]
 
 
 topicIconBoxStyle : TopicProps -> List (Attribute Msg)
 topicIconBoxStyle props =
   let
-    r1 = fromInt topicRadius ++ "px"
+    r1 = fromInt C.topicRadius ++ "px"
     r4 = case props.displayMode of
       Container WhiteBox -> "0"
       _ -> r1
   in
   [ style "flex" "none"
-  , style "width" <| fromFloat topicSize.h ++ "px"
-  , style "height" <| fromFloat topicSize.h ++ "px"
+  , style "width" <| fromFloat C.topicSize.h ++ "px"
+  , style "height" <| fromFloat C.topicSize.h ++ "px"
   , style "border-radius" <| r1 ++ " 0 0 " ++ r4
   , style "background-color" "black"
   , style "pointer-events" "none"
@@ -560,15 +560,15 @@ topicIconBoxStyle props =
 detailTopicIconBoxStyle : List (Attribute Msg)
 detailTopicIconBoxStyle =
   -- icon box correction as detail topic has no border, in contrast to label topic
-  [ style "padding-left" <| fromFloat topicBorderWidth ++ "px"
-  , style "width" <| fromFloat (topicSize.h - topicBorderWidth) ++ "px"
+  [ style "padding-left" <| fromFloat C.topicBorderWidth ++ "px"
+  , style "width" <| fromFloat (C.topicSize.h - C.topicBorderWidth) ++ "px"
   ]
 
 
 topicLabelStyle : List (Attribute Msg)
 topicLabelStyle =
-  [ style "font-size" <| fromInt contentFontSize ++ "px"
-  , style "font-weight" topicLabelWeight
+  [ style "font-size" <| fromInt C.contentFontSize ++ "px"
+  , style "font-weight" C.topicLabelWeight
   , style "overflow" "hidden"
   , style "text-overflow" "ellipsis"
   , style "white-space" "nowrap"
@@ -578,9 +578,9 @@ topicLabelStyle =
 
 topicInputStyle : List (Attribute Msg)
 topicInputStyle =
-  [ style "font-family" mainFont -- Default for <input> is "-apple-system" (on Mac)
-  , style "font-size" <| fromInt contentFontSize ++ "px"
-  , style "font-weight" topicLabelWeight
+  [ style "font-family" C.mainFont -- Default for <input> is "-apple-system" (on Mac)
+  , style "font-size" <| fromInt C.contentFontSize ++ "px"
+  , style "font-weight" C.topicLabelWeight
   , style "width" "100%"
   , style "position" "relative"
   , style "left" "-4px"
@@ -596,11 +596,11 @@ blackBoxStyle =
 ghostTopicStyle : TopicInfo -> MapId -> Model -> List (Attribute Msg)
 ghostTopicStyle topic mapId model =
   [ style "position" "absolute"
-  , style "left" <| fromInt blackBoxOffset ++ "px"
-  , style "top" <| fromInt blackBoxOffset ++ "px"
-  , style "width" <| fromFloat topicSize.w ++ "px"
-  , style "height" <| fromFloat topicSize.h ++ "px"
-  , style "border-radius" <| fromInt topicRadius ++ "px"
+  , style "left" <| fromInt C.blackBoxOffset ++ "px"
+  , style "top" <| fromInt C.blackBoxOffset ++ "px"
+  , style "width" <| fromFloat C.topicSize.w ++ "px"
+  , style "height" <| fromFloat C.topicSize.h ++ "px"
+  , style "border-radius" <| fromInt C.topicRadius ++ "px"
   , style "pointer-events" "none"
   , style "z-index" "-1" -- behind topic
   ]
@@ -610,7 +610,7 @@ ghostTopicStyle topic mapId model =
 
 itemCountStyle : List (Attribute Msg)
 itemCountStyle =
-  [ style "font-size" <| fromInt contentFontSize ++ "px"
+  [ style "font-size" <| fromInt C.contentFontSize ++ "px"
   , style "position" "absolute"
   , style "left" "calc(100% + 12px)"
   ]
@@ -621,11 +621,11 @@ whiteBoxStyle topicId rect mapId model =
   let
     width = rect.x2 - rect.x1
     height = rect.y2 - rect.y1
-    r = fromInt whiteBoxRadius ++ "px"
+    r = fromInt C.whiteBoxRadius ++ "px"
   in
   [ style "position" "absolute"
-  , style "left" <| fromFloat -topicBorderWidth ++ "px"
-  , style "top" <| fromFloat (topicSize.h - 2 * topicBorderWidth) ++ "px"
+  , style "left" <| fromFloat -C.topicBorderWidth ++ "px"
+  , style "top" <| fromFloat (C.topicSize.h - 2 * C.topicBorderWidth) ++ "px"
   , style "width" <| fromFloat width ++ "px"
   , style "height" <| fromFloat height ++ "px"
   , style "border-radius" <| "0 " ++ r ++ " " ++ r ++ " " ++ r
@@ -644,7 +644,7 @@ topicBorderStyle id mapId model =
       Drag DrawAssoc _ (mapId_ :: _) _ _ target -> isTarget id mapId target && mapId_ == mapId
       _ -> False
   in
-  [ style "border-width" <| fromFloat topicBorderWidth ++ "px"
+  [ style "border-width" <| fromFloat C.topicBorderWidth ++ "px"
   , style "border-style" <| if targeted then "dashed" else "solid"
   , style "box-sizing" "border-box"
   , style "background-color" "white"
@@ -693,7 +693,7 @@ directLine assoc pos1 pos2 =
 -- One possible line func
 taxiLine : Maybe AssocInfo -> Point -> Point -> Svg Msg
 taxiLine assoc pos1 pos2 =
-  if abs (pos2.x - pos1.x) < 2 * assocRadius then -- straight vertical
+  if abs (pos2.x - pos1.x) < 2 * C.assocRadius then -- straight vertical
     let
       xm = (pos1.x + pos2.x) / 2
     in
@@ -702,7 +702,7 @@ taxiLine assoc pos1 pos2 =
         ] ++ lineStyle assoc
       )
       []
-  else if abs (pos2.y - pos1.y) < 2 * assocRadius then -- straight horizontal
+  else if abs (pos2.y - pos1.y) < 2 * C.assocRadius then -- straight horizontal
     let
       ym = (pos1.y + pos2.y) / 2
     in
@@ -716,10 +716,10 @@ taxiLine assoc pos1 pos2 =
       sx = if pos2.x > pos1.x then 1 else -1 -- sign x
       sy = if pos2.y > pos1.y then -1 else 1 -- sign y
       ym = (pos1.y + pos2.y) / 2 -- y mean
-      x1 = fromFloat (pos1.x + sx * assocRadius)
-      x2 = fromFloat (pos2.x - sx * assocRadius)
-      y1 = fromFloat (ym + sy * assocRadius)
-      y2 = fromFloat (ym - sy * assocRadius)
+      x1 = fromFloat (pos1.x + sx * C.assocRadius)
+      x2 = fromFloat (pos2.x - sx * C.assocRadius)
+      y1 = fromFloat (ym + sy * C.assocRadius)
+      y2 = fromFloat (ym - sy * C.assocRadius)
       sweep1 =
         if sy == 1 then
           if sx == 1 then 1 else 0
@@ -728,7 +728,7 @@ taxiLine assoc pos1 pos2 =
       sweep2 = 1 - sweep1
       sw1 = fromInt sweep1
       sw2 = fromInt sweep2
-      r = fromFloat assocRadius
+      r = fromFloat C.assocRadius
     in
     path
       ( [ d
@@ -746,8 +746,8 @@ taxiLine assoc pos1 pos2 =
 
 lineStyle : Maybe AssocInfo -> List (Attribute Msg)
 lineStyle assoc =
-  [ stroke assocColor
-  , strokeWidth <| fromFloat assocWidth ++ "px"
+  [ stroke C.assocColor
+  , strokeWidth <| fromFloat C.assocWidth ++ "px"
   , strokeDasharray <| lineDasharray assoc
   , fill "none"
   ]

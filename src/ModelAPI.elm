@@ -1,7 +1,7 @@
 module ModelAPI exposing (..)
 
 import AppModel exposing (..)
-import Config exposing (..)
+import Config as C
 import Model exposing (..)
 import Utils exposing (..)
 
@@ -252,11 +252,11 @@ updateMapRect mapId rectFunc model =
 
 
 {-| Logs an error if map does not exist or item is not in map or is not a topic -}
-getTopicPos : Id -> MapId -> Maps -> Maybe Point
-getTopicPos topicId mapId maps =
+topicPos : Id -> MapId -> Maps -> Maybe Point
+topicPos topicId mapId maps =
   case getTopicProps topicId mapId maps of
     Just { pos } -> Just pos
-    Nothing -> fail "getTopicPos" {topicId = topicId, mapId = mapId} Nothing
+    Nothing -> fail "topicPos" {topicId = topicId, mapId = mapId} Nothing
 
 
 {-| Logs an error if map does not exist or if topic is not in map -}
@@ -279,11 +279,11 @@ setTopicPosByDelta topicId mapId delta model =
     )
 
 
-getTopicSize : Id -> MapId -> Maps -> Maybe Size
-getTopicSize topicId mapId maps =
+topicSize : Id -> MapId -> Maps -> Maybe Size
+topicSize topicId mapId maps =
   case getTopicProps topicId mapId maps of
     Just { size } -> Just size
-    Nothing -> fail "getTopicSize" {topicId = topicId, mapId = mapId} Nothing
+    Nothing -> fail "topicSize" {topicId = topicId, mapId = mapId} Nothing
 
 
 {-| Logs an error if map does not exist or if topic is not in map -}
@@ -352,7 +352,7 @@ defaultTopicProps : Id -> Model -> TopicProps
 defaultTopicProps topicId model =
   TopicProps
     ( Point 0 0 ) -- TODO
-    topicSize
+    C.topicSize
     ( if hasMap topicId model.maps then
         Container BlackBox
       else
@@ -396,10 +396,10 @@ createTopicIn text iconName mapPath model =
         (newModel, topicId) = addTopic text iconName model
         props = MapTopic <| TopicProps
           (Point
-            (newTopicPos.x + map.rect.x1)
-            (newTopicPos.y + map.rect.y1)
+            (C.newTopicPos.x + map.rect.x1)
+            (C.newTopicPos.y + map.rect.y1)
           )
-          topicDetailSize
+          C.topicDetailSize
           (Monad LabelOnly)
       in
       newModel

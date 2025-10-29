@@ -4,7 +4,7 @@ import AppModel exposing (UndoModel, Model, Msg(..))
 import Config exposing (topicW2, topicH2, assocDelayMillis, whiteBoxRange, whiteBoxPadding)
 import MapAutoSize exposing (autoSize)
 import Model exposing (Class, Id, MapPath, Point)
-import ModelAPI exposing (getTopicPos, setTopicPosByDelta, createDefaultAssocIn, firstId,
+import ModelAPI exposing (topicPos, setTopicPosByDelta, createDefaultAssocIn, firstId,
   select, resetSelection, fromPath, push, swap)
 import Storage exposing (storeWith)
 import Utils exposing (classDecoder, idDecoder, pathDecoder, pointDecoder, logError, info,
@@ -83,7 +83,7 @@ timeArrived time ({present} as undoModel) =
       let
         delay = posixToMillis time - posixToMillis startTime > assocDelayMillis
         (dragMode, historyFunc) = if delay then (DrawAssoc, swap) else (DragTopic, push)
-        maybeOrigPos = getTopicPos id (firstId mapPath) present.maps
+        maybeOrigPos = topicPos id (firstId mapPath) present.maps
         dragState =
           case class of
             "dmx-topic" ->
