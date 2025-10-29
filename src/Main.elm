@@ -188,7 +188,7 @@ createMapIfNeeded topicId model =
     (model, False)
   else
     ( model
-      |> createMap topicId
+      |> addMap topicId
       |> setDisplayModeInAllMaps topicId (Container BlackBox)
       -- A nested topic which becomes a container might exist in other maps as well, still as
       -- a monad. We must set the topic's display mode to "container" in *all* maps. Otherwise
@@ -213,7 +213,7 @@ switchDisplay displayMode model =
   ( case singleSelection model of
     Just (containerId, mapPath) ->
       let
-        mapId = getMapId mapPath
+        mapId = firstId mapPath
       in
       { model | maps =
         case displayMode of
@@ -253,8 +253,8 @@ startEdit model =
   let
     newModel = case singleSelection model of
       Just (topicId, mapPath) ->
-        { model | editState = ItemEdit topicId (getMapId mapPath) }
-        |> setDetailDisplayIfMonade topicId (getMapId mapPath)
+        { model | editState = ItemEdit topicId (firstId mapPath) }
+        |> setDetailDisplayIfMonade topicId (firstId mapPath)
         |> autoSize
       Nothing -> model
   in
@@ -387,7 +387,7 @@ hide model =
   let
     newModel = model.selection
       |> List.foldr
-        (\(itemId, mapPath) modelAcc -> hideItem itemId (getMapId mapPath) modelAcc)
+        (\(itemId, mapPath) modelAcc -> hideItem itemId (firstId mapPath) modelAcc)
         model
   in
   newModel

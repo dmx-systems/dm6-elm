@@ -83,9 +83,9 @@ gAttr mapId mapRect model =
 mapInfo : MapId -> MapPath -> Model -> MapInfo
 mapInfo mapId mapPath model =
   let
-    parentMapId = getMapId mapPath
+    parentMapId = firstId mapPath
   in
-  case getMap mapId model.maps of
+  case mapByIdOrLog mapId model.maps of
     Just map ->
       ( viewItems map mapPath model
       , map.rect
@@ -186,7 +186,7 @@ isLimbo topicId mapId model =
 viewTopic : TopicInfo -> TopicProps -> MapPath -> Model -> Html Msg
 viewTopic topic props mapPath model =
   let
-    mapId = getMapId mapPath
+    mapId = firstId mapPath
     topicFunc =
       case effectiveDisplayMode topic.id mapId props.displayMode model of
         Monad LabelOnly -> labelTopic
@@ -217,7 +217,7 @@ effectiveDisplayMode topicId mapId displayMode model =
 labelTopic : TopicInfo -> TopicProps -> MapPath -> Model -> TopicRendering
 labelTopic topic props mapPath model =
   let
-    mapId = getMapId mapPath
+    mapId = firstId mapPath
   in
   ( topicPosStyle props
       ++ topicFlexboxStyle topic props mapId model
@@ -258,7 +258,7 @@ labelTopicHtml topic props mapId model =
 detailTopic : TopicInfo -> TopicProps -> MapPath -> Model -> TopicRendering
 detailTopic topic props mapPath model =
   let
-    mapId = getMapId mapPath
+    mapId = firstId mapPath
     isEdit = model.editState == ItemEdit topic.id mapId
     textElem =
       if isEdit then
@@ -343,7 +343,7 @@ detailTextEditStyle topicId mapId model =
 blackBoxTopic : TopicInfo -> TopicProps -> MapPath -> Model -> TopicRendering
 blackBoxTopic topic props mapPath model =
   let
-    mapId = getMapId mapPath
+    mapId = firstId mapPath
   in
   ( topicPosStyle props
   , [ div
@@ -390,7 +390,7 @@ mapItemCount topicId props model =
       case props.displayMode of
         Monad _ -> 0
         Container _ ->
-          case getMap topicId model.maps of
+          case mapByIdOrLog topicId model.maps of
             Just map -> map.items |> Dict.values |> List.filter isVisible |> List.length
             Nothing -> 0
   in
@@ -436,7 +436,7 @@ viewLimboAssoc : MapId -> Model -> List (Svg Msg)
 viewLimboAssoc mapId model =
   case model.mouse.dragState of
     Drag DrawAssoc _ mapPath origPos pos _ ->
-      case getMapId mapPath == mapId of
+      case firstId mapPath == mapId of
         True -> [ lineFunc Nothing origPos (relPos pos mapPath model) ]
         False -> []
     _ -> []
@@ -484,7 +484,7 @@ accumulateMapPos posAcc mapId parentMapId mapIds model =
 
 accumulateMapRect : Point -> MapId -> Model -> Point
 accumulateMapRect posAcc mapId model =
-  case getMap mapId model.maps of
+  case mapByIdOrLog mapId model.maps of
     Just map -> Point
       (posAcc.x - map.rect.x1)
       (posAcc.y - map.rect.y1)

@@ -44,7 +44,7 @@ unboxContainer containerId targetMapId model =
 
 transferContent : MapId -> MapId -> TransferFunc -> Model -> Maps
 transferContent containerId targetMapId transferFunc model =
-  case getMap containerId model.maps of
+  case mapByIdOrLog containerId model.maps of
     Just containerMap ->
       model.maps |> updateMaps
         targetMapId
@@ -71,7 +71,7 @@ boxItems containerItems targetItems model =
             let
               items = hideItem_ containerItem.id targetItemsAcc model
             in
-            case getMapIfExists containerItem.id model.maps of
+            case mapById containerItem.id model.maps of
               Just map -> boxItems map.items items model -- recursion
               Nothing -> items
         Nothing -> targetItemsAcc -- FIXME: continue unboxing containers?
@@ -95,7 +95,7 @@ unboxItems containerItems targetItems model =
           if abort then
             items
           else
-            case getMapIfExists containerItem.id model.maps of
+            case mapById containerItem.id model.maps of
               Just map -> unboxItems map.items items model -- recursion
               Nothing -> items
         MapAssoc _ ->

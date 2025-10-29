@@ -24,9 +24,9 @@ autoSize model =
 calcMapRect : MapPath -> Model -> (Rectangle, Model)
 calcMapRect mapPath model =
   let
-    mapId = getMapId mapPath
+    mapId = firstId mapPath
   in
-  case getMap mapId model.maps of
+  case mapByIdOrLog mapId model.maps of
     Just map ->
       let
         (rect, model_) =
@@ -51,7 +51,7 @@ calcMapRect mapPath model =
 calcItemSize : MapItem -> MapPath -> Rectangle -> Model -> (Rectangle, Model)
 calcItemSize mapItem pathToParent rectAcc model =
   let
-    mapId = getMapId pathToParent
+    mapId = firstId pathToParent
   in
   case mapItem.props of
     MapTopic {pos, size, displayMode} ->

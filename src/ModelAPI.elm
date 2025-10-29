@@ -202,8 +202,8 @@ activeMap model =
 
 {-| Returns -1 if mapPath is empty. This is not treated as an error! TODO: why?
 -}
-getMapId : MapPath -> MapId
-getMapId mapPath =
+firstId : MapPath -> MapId
+firstId mapPath =
   case mapPath of
     mapId :: _ -> mapId
     [] -> -1
@@ -215,15 +215,15 @@ fromPath mapPath =
 
 
 {-| Logs an error if map does not exist -}
-getMap : MapId -> Maps -> Maybe Map
-getMap mapId maps =
-  case getMapIfExists mapId maps of
+mapByIdOrLog : MapId -> Maps -> Maybe Map
+mapByIdOrLog mapId maps =
+  case mapById mapId maps of
     Just map -> Just map
-    Nothing -> illegalMapId "getMap" mapId Nothing
+    Nothing -> illegalMapId "mapByIdOrLog" mapId Nothing
 
 
-getMapIfExists : MapId -> Maps -> Maybe Map
-getMapIfExists mapId maps =
+mapById : MapId -> Maps -> Maybe Map
+mapById mapId maps =
   maps |> Dict.get mapId
 
 
@@ -232,8 +232,8 @@ hasMap mapId maps =
   maps |> Dict.member mapId
 
 
-createMap : MapId -> Model -> Model
-createMap mapId model =
+addMap : MapId -> Model -> Model
+addMap mapId model =
   { model | maps = model.maps |> Dict.insert
     mapId
     (Map mapId (Rectangle 0 0 0 0) Dict.empty)
@@ -363,7 +363,7 @@ defaultTopicProps topicId model =
 {-| Logs an error if map does not exist or item is not in map -}
 getMapItemById : Id -> MapId -> Maps -> Maybe MapItem
 getMapItemById itemId mapId maps =
-  getMap mapId maps |> Maybe.andThen (getMapItem itemId)
+  mapByIdOrLog mapId maps |> Maybe.andThen (getMapItem itemId)
 
 
 {-| Logs an error if item is not in map -}
@@ -377,7 +377,7 @@ getMapItem itemId map =
 {-| Logs an error if map does not exist -}
 isItemInMap : Id -> MapId -> Model -> Bool
 isItemInMap itemId mapId model =
-  case getMap mapId model.maps of
+  case mapByIdOrLog mapId model.maps of
     Just map ->
       case map.items |> Dict.get itemId of
         Just _ -> True
@@ -388,9 +388,9 @@ isItemInMap itemId mapId model =
 createTopicIn : String -> Maybe IconName -> MapPath -> Model -> Model
 createTopicIn text iconName mapPath model =
   let
-    mapId = getMapId mapPath
+    mapId = firstId mapPath
   in
-  case getMap mapId model.maps of
+  case mapByIdOrLog mapId model.maps of
     Just map ->
       let
         (newModel, topicId) = addTopic text iconName model
