@@ -1,8 +1,8 @@
 module SearchAPI exposing (viewSearchInput, viewResultMenu, closeResultMenu, updateSearch)
 
 import AppModel exposing (UndoModel, Model, Msg(..))
-import Config exposing (contentFontSize, topicSize)
-import Model exposing (ItemInfo(..), MapProps(..), Id, MapId)
+import Config exposing (contentFontSize)
+import Model exposing (ItemInfo(..), Id, MapId)
 import ModelAPI exposing (..)
 import Storage exposing (store)
 import Utils exposing (idDecoder, idTupleDecoder, stopPropagationOnMousedown, logError, info)
@@ -296,7 +296,7 @@ revealItem itemId mapId model =
       _ = info "revealItem" <| fromInt itemId ++ " not in " ++ fromInt mapId
       props = defaultItemProps itemId model
     in
-    addItemToMap itemId props mapId model
+    putItemOnMap itemId props mapId model
 
 
 closeResultMenu : Model -> Model

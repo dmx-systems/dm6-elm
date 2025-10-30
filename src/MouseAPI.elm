@@ -3,9 +3,10 @@ module MouseAPI exposing (mouseHoverHandler, mouseSubs, updateMouse)
 import AppModel exposing (UndoModel, Model, Msg(..))
 import Config exposing (topicW2, topicH2, assocDelayMillis, whiteBoxRange, whiteBoxPadding)
 import MapAutoSize exposing (autoSize)
-import Model exposing (Class, Id, MapPath, Point)
-import ModelAPI exposing (topicPos, setTopicPosByDelta, createDefaultAssocIn, firstId,
-  select, resetSelection, fromPath, push, swap)
+import Model exposing (Class, Id, MapId, MapPath, Point, ItemType, RoleType, MapProps(..),
+  AssocProps)
+import ModelAPI exposing (topicPos, setTopicPosByDelta, addAssoc, putItemOnMap, firstId, select,
+  resetSelection, fromPath, push, swap)
 import Storage exposing (storeWith)
 import Utils exposing (classDecoder, idDecoder, pathDecoder, pointDecoder, logError, info,
   toString)
@@ -164,7 +165,7 @@ mouseUp ({present} as undoModel) =
             isSameMap = mapId == firstId targetMapPath
           in
           if isSameMap then
-            (createDefaultAssocIn id targetId mapId present, Cmd.none, push)
+            (addDefaultAssocAndPutOnMap id targetId mapId present, Cmd.none, push)
           else
             (present, Cmd.none, swap)
         Drag _ _ _ _ _ _ ->
@@ -233,6 +234,26 @@ mouseOut model class targetId targetMapPath =
 updateDragState : Model -> DragState -> Model
 updateDragState ({mouse} as model) dragState =
   { model | mouse = { mouse | dragState = dragState }}
+
+
+-- Presumption: both players exist in same map
+addDefaultAssocAndPutOnMap : Id -> Id -> MapId -> Model -> Model
+addDefaultAssocAndPutOnMap player1 player2 mapId model =
+  addAssocAndPutOnMap
+    "dmx.association"
+    "dmx.default" player1
+    "dmx.default" player2
+    mapId model
+
+
+-- Presumption: both players exist in same map
+addAssocAndPutOnMap : ItemType -> RoleType -> Id -> RoleType -> Id -> MapId -> Model -> Model
+addAssocAndPutOnMap itemType role1 player1 role2 player2 mapId model =
+  let
+    (newModel, assocId) = addAssoc itemType role1 player1 role2 player2 model
+    props = MapAssoc AssocProps
+  in
+  putItemOnMap assocId props mapId newModel
 
 
 

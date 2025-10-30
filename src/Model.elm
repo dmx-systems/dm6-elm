@@ -69,8 +69,8 @@ type MapProps -- TODO: rename to "ItemProps"?
 
 type alias TopicProps =
   { pos : Point
-  , size : Size
-  , displayMode : DisplayMode -- serialized as "display"
+  , size : Size -- TODO: really per-map?
+  , displayMode : DisplayMode -- serialized as "display", TODO: rename to "display"?
   }
 
 

@@ -136,7 +136,7 @@ update msg ({present} as undoModel) =
         _ -> info "update" msg
   in
   case msg of
-    AddTopic -> createTopicIn C.topicDefaultText Nothing [ activeMap present ] present
+    AddTopic -> addTopicAndPutOnMap C.topicDefaultText Nothing [ activeMap present ] present
       |> store |> push undoModel
     MoveTopicToMap topicId mapId origPos targetId targetMapPath pos
       -> moveTopicToMap topicId mapId origPos targetId targetMapPath pos present
@@ -157,6 +157,29 @@ update msg ({present} as undoModel) =
     NoOp -> (present, Cmd.none) |> swap undoModel
 
 
+addTopicAndPutOnMap : String -> Maybe IconName -> MapPath -> Model -> Model
+addTopicAndPutOnMap text iconName mapPath model =
+  let
+    mapId = firstId mapPath
+  in
+  case mapByIdOrLog mapId model.maps of
+    Just map ->
+      let
+        (newModel, topicId) = addTopic text iconName model
+        props = MapTopic <| TopicProps
+          (Point
+            (C.newTopicPos.x + map.rect.x1)
+            (C.newTopicPos.y + map.rect.y1)
+          )
+          C.topicDetailSize
+          (Monad LabelOnly)
+      in
+      newModel
+      |> putItemOnMap topicId props mapId
+      |> select topicId mapPath
+    Nothing -> model
+
+
 moveTopicToMap : Id -> MapId -> Point -> Id -> MapPath -> Point -> Model -> Model
 moveTopicToMap topicId mapId origPos targetId targetMapPath pos model =
   let
@@ -168,7 +191,7 @@ moveTopicToMap topicId mapId origPos targetId targetMapPath pos model =
           (C.topicH2 + C.whiteBoxPadding)
         False -> pos
     props_ =
-      getTopicProps topicId mapId newModel.maps
+      topicProps topicId mapId newModel.maps
       |> Maybe.andThen (\props -> Just (MapTopic { props | pos = newPos }))
   in
   case props_ of
@@ -176,7 +199,7 @@ moveTopicToMap topicId mapId origPos targetId targetMapPath pos model =
       newModel
       |> hideItem topicId mapId
       |> setTopicPos topicId mapId origPos
-      |> addItemToMap topicId props targetId
+      |> putItemOnMap topicId props targetId
       |> select targetId targetMapPath
       |> autoSize
     Nothing -> model

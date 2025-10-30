@@ -214,7 +214,9 @@ fromPath mapPath =
   mapPath |> List.map fromInt |> String.join ","
 
 
-{-| Logs an error if map does not exist -}
+{-| Logs an error if map does not exist.
+TODO: replace Maps parameter by Model?
+-}
 mapByIdOrLog : MapId -> Maps -> Maybe Map
 mapByIdOrLog mapId maps =
   case mapById mapId maps of
@@ -222,11 +224,13 @@ mapByIdOrLog mapId maps =
     Nothing -> illegalMapId "mapByIdOrLog" mapId Nothing
 
 
+{-| TODO: replace Maps parameter by Model? -}
 mapById : MapId -> Maps -> Maybe Map
 mapById mapId maps =
   maps |> Dict.get mapId
 
 
+{-| TODO: replace Maps parameter by Model? -}
 hasMap : MapId -> Maps -> Bool
 hasMap mapId maps =
   maps |> Dict.member mapId
@@ -251,10 +255,12 @@ updateMapRect mapId rectFunc model =
   }
 
 
-{-| Logs an error if map does not exist or item is not in map or is not a topic -}
+{-| Logs an error if map does not exist or item is not in map or is not a topic.
+TODO: replace Maps parameter by Model?
+-}
 topicPos : Id -> MapId -> Maps -> Maybe Point
 topicPos topicId mapId maps =
-  case getTopicProps topicId mapId maps of
+  case topicProps topicId mapId maps of
     Just { pos } -> Just pos
     Nothing -> fail "topicPos" {topicId = topicId, mapId = mapId} Nothing
 
@@ -279,9 +285,10 @@ setTopicPosByDelta topicId mapId delta model =
     )
 
 
+{-| TODO: replace Maps parameter by Model? -}
 topicSize : Id -> MapId -> Maps -> Maybe Size
 topicSize topicId mapId maps =
-  case getTopicProps topicId mapId maps of
+  case topicProps topicId mapId maps of
     Just { size } -> Just size
     Nothing -> fail "topicSize" {topicId = topicId, mapId = mapId} Nothing
 
@@ -293,28 +300,30 @@ setTopicSize topicId mapId size model =
     (\props -> { props | size = size })
 
 
-getDisplayMode : Id -> MapId -> Maps -> Maybe DisplayMode
-getDisplayMode topicId mapId maps =
-  case getTopicProps topicId mapId maps of
-    Just { displayMode } -> Just displayMode
-    Nothing -> fail "getDisplayMode" {topicId = topicId, mapId = mapId} Nothing
+{-| TODO: replace Maps parameter by Model? -}
+displayMode : Id -> MapId -> Maps -> Maybe DisplayMode
+displayMode topicId mapId maps =
+  case topicProps topicId mapId maps of
+    Just props -> Just props.displayMode
+    Nothing -> fail "displayMode" {topicId = topicId, mapId = mapId} Nothing
 
 
 {-| Logs an error if map does not exist or if topic is not in map -}
 setDisplayMode : Id -> MapId -> DisplayMode -> Model -> Model
-setDisplayMode topicId mapId displayMode model =
+setDisplayMode topicId mapId display model =
   model |> updateTopicProps topicId mapId
-    (\props -> { props | displayMode = displayMode })
+    (\props -> { props | displayMode = display })
 
 
-getTopicProps : Id -> MapId -> Maps -> Maybe TopicProps
-getTopicProps topicId mapId maps =
-  case getMapItemById topicId mapId maps of
+{-| TODO: replace Maps parameter by Model? -}
+topicProps : Id -> MapId -> Maps -> Maybe TopicProps
+topicProps topicId mapId maps =
+  case mapItemById topicId mapId maps of
     Just mapItem ->
       case mapItem.props of
         MapTopic props -> Just props
-        MapAssoc _ -> topicMismatch "getTopicProps" topicId Nothing
-    Nothing -> fail "getTopicProps" {topicId = topicId, mapId = mapId} Nothing
+        MapAssoc _ -> topicMismatch "topicProps" topicId Nothing
+    Nothing -> fail "topicProps" {topicId = topicId, mapId = mapId} Nothing
 
 
 {-| Logs an error if map does not exist or if topic is not in map -}
@@ -360,21 +369,22 @@ defaultTopicProps topicId model =
     )
 
 
-{-| Logs an error if map does not exist or item is not in map -}
-getMapItemById : Id -> MapId -> Maps -> Maybe MapItem
-getMapItemById itemId mapId maps =
-  mapByIdOrLog mapId maps |> Maybe.andThen (getMapItem itemId)
+{-| Logs an error if map does not exist or item is not in map.
+TODO: replace Maps parameter by Model?
+-}
+mapItemById : Id -> MapId -> Maps -> Maybe MapItem
+mapItemById itemId mapId maps =
+  mapByIdOrLog mapId maps |> Maybe.andThen
+    (\map ->
+      case map.items |> Dict.get itemId of
+        Just mapItem -> Just mapItem
+        Nothing -> itemNotInMap "mapItemById" itemId map.id Nothing
+    )
 
 
-{-| Logs an error if item is not in map -}
-getMapItem : Id -> Map -> Maybe MapItem
-getMapItem itemId map =
-  case map.items |> Dict.get itemId of
-    Just mapItem -> Just mapItem
-    Nothing -> itemNotInMap "getMapItem" itemId map.id Nothing
-
-
-{-| Logs an error if map does not exist -}
+{-| Logs an error if map does not exist.
+TODO: really useful? Better return "Maybe MapItem" but don't treat not-exist as error?
+-}
 isItemInMap : Id -> MapId -> Model -> Bool
 isItemInMap itemId mapId model =
   case mapByIdOrLog mapId model.maps of
@@ -385,56 +395,13 @@ isItemInMap itemId mapId model =
     Nothing -> False
 
 
-createTopicIn : String -> Maybe IconName -> MapPath -> Model -> Model
-createTopicIn text iconName mapPath model =
-  let
-    mapId = firstId mapPath
-  in
-  case mapByIdOrLog mapId model.maps of
-    Just map ->
-      let
-        (newModel, topicId) = addTopic text iconName model
-        props = MapTopic <| TopicProps
-          (Point
-            (C.newTopicPos.x + map.rect.x1)
-            (C.newTopicPos.y + map.rect.y1)
-          )
-          C.topicDetailSize
-          (Monad LabelOnly)
-      in
-      newModel
-      |> addItemToMap topicId props mapId
-      |> select topicId mapPath
-    Nothing -> model
-
-
--- Presumption: both players exist in same map
-createDefaultAssocIn : Id -> Id -> MapId -> Model -> Model
-createDefaultAssocIn player1 player2 mapId model =
-  createAssocIn
-    "dmx.association"
-    "dmx.default" player1
-    "dmx.default" player2
-    mapId model
-
-
--- Presumption: both players exist in same map
-createAssocIn : ItemType -> RoleType -> Id -> RoleType -> Id -> MapId -> Model -> Model
-createAssocIn itemType role1 player1 role2 player2 mapId model =
-  let
-    (newModel, assocId) = addAssoc itemType role1 player1 role2 player2 model
-    props = MapAssoc AssocProps
-  in
-  addItemToMap assocId props mapId newModel
-
-
 {-| Adds an item to a map and creates a connecting association.
 Presumption: the item is not yet contained in the map. Otherwise the existing map-item would be
 overridden and another association still be created. This is not what you want.
 Can be used for both, topics and associations.
 -}
-addItemToMap : Id -> MapProps -> MapId -> Model -> Model
-addItemToMap itemId props mapId model =
+putItemOnMap : Id -> MapProps -> MapId -> Model -> Model
+putItemOnMap itemId props mapId model =
   let
     (newModel, parentAssocId) = addAssoc
       "dmx.composition"
@@ -442,7 +409,7 @@ addItemToMap itemId props mapId model =
       "dmx.parent" mapId
       model
     mapItem = MapItem itemId parentAssocId False False props -- hidden=False, pinned=False
-    _ = info "addItemToMap"
+    _ = info "putItemOnMap"
       { itemId = itemId, parentAssocId = parentAssocId, props = props, mapId = mapId}
   in
   { newModel | maps = newModel.maps |> updateMaps
@@ -493,7 +460,9 @@ hideItem_ itemId items model =
     )
 
 
-{-| Logs an error if map does not exist -}
+{-| Logs an error if map does not exist.
+TODO: replace Maps parameter by Model?
+-}
 updateMaps : MapId -> (Map -> Map) -> Maps -> Maps
 updateMaps mapId mapFunc maps =
   maps |> Dict.update mapId

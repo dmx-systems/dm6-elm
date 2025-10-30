@@ -126,7 +126,7 @@ viewLimboTopic mapId model =
     Just (topicId, limboMapId) ->
       if mapId == limboMapId then
         if isItemInMap topicId limboMapId model then
-          case getMapItemById topicId limboMapId model.maps of
+          case mapItemById topicId limboMapId model.maps of
             Just mapItem ->
               if mapItem.hidden then
                 let

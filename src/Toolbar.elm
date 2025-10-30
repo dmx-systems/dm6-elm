@@ -1,12 +1,12 @@
 module Toolbar exposing (viewToolbar)
 
 import AppModel exposing (UndoModel, Model, Msg(..))
-import Config exposing (homeMapName, version, date, mainFont, toolbarFontSize, footerFontSize)
+import Config exposing (version, date, mainFont, toolbarFontSize, footerFontSize)
 import Model exposing (EditMsg(..), NavMsg(..), DisplayMode(..), MonadDisplay(..),
   ContainerDisplay(..))
 import ModelAPI exposing (topicById, topicLabel, firstId, isHome, activeMap,
-  getDisplayMode, singleSelection)
-import Utils exposing (stopPropagationOnMousedown, info)
+  displayMode, singleSelection)
+import Utils exposing (stopPropagationOnMousedown)
 -- components
 import IconMenu
 import IconMenuAPI exposing (viewIcon)
@@ -26,11 +26,6 @@ import UndoList
 
 viewToolbar : UndoModel -> Html Msg
 viewToolbar ({present} as undoModel) =
-  {--
-  let
-    _ = info "viewToolbar" [ UndoList.lengthPast undoModel, UndoList.lengthFuture undoModel ]
-  in
-  --}
   div
     toolbarStyle
     [ viewMapNav present
@@ -167,11 +162,11 @@ buttonStyle =
 viewMonadDisplay : Model -> Html Msg
 viewMonadDisplay model =
   let
-    displayMode = case singleSelection model of
-      Just (topicId, mapPath) -> getDisplayMode topicId (firstId mapPath) model.maps
+    display = case singleSelection model of
+      Just (topicId, mapPath) -> displayMode topicId (firstId mapPath) model.maps
       Nothing -> Nothing
     (checked1, checked2, disabled_) =
-      case displayMode of
+      case display of
         Just (Monad LabelOnly) -> (True, False, False)
         Just (Monad Detail) -> (False, True, False)
         _ -> (False, False, True)
@@ -189,17 +184,17 @@ viewMonadDisplay model =
 viewContainerDisplay : Model -> Html Msg
 viewContainerDisplay model =
   let
-    displayMode = case singleSelection model of
-      Just (topicId, mapPath) -> getDisplayMode topicId (firstId mapPath) model.maps
+    display = case singleSelection model of
+      Just (topicId, mapPath) -> displayMode topicId (firstId mapPath) model.maps
       Nothing -> Nothing
     (checked1, checked2, checked3) =
-      case displayMode of
+      case display of
         Just (Container BlackBox) -> (True, False, False)
         Just (Container WhiteBox) -> (False, True, False)
         Just (Container Unboxed) -> (False, False, True)
         _ -> (False, False, False)
     disabled_ =
-      case displayMode of
+      case display of
         Just (Container _) -> False
         _ -> True
   in

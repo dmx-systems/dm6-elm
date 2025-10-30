@@ -24,7 +24,7 @@ type alias TransferFunc = MapItems -> MapItems -> Model -> MapItems
 -}
 boxContainer : MapId -> MapId -> Model -> Maps
 boxContainer containerId targetMapId model =
-  case getDisplayMode containerId targetMapId model.maps of
+  case displayMode containerId targetMapId model.maps of
     -- box only if currently unboxed
     Just (Container Unboxed) -> transferContent containerId targetMapId boxItems model
     _ -> model.maps
@@ -35,7 +35,7 @@ boxContainer containerId targetMapId model =
 -}
 unboxContainer : MapId -> MapId -> Model -> Maps
 unboxContainer containerId targetMapId model =
-  case getDisplayMode containerId targetMapId model.maps of
+  case displayMode containerId targetMapId model.maps of
     -- unbox only if currently boxed
     Just (Container BlackBox) -> transferContent containerId targetMapId unboxItems model
     Just (Container WhiteBox) -> transferContent containerId targetMapId unboxItems model
