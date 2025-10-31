@@ -197,7 +197,7 @@ activeMap : Model -> MapId
 activeMap model =
   case List.head model.mapPath of
     Just mapId -> mapId
-    Nothing -> logError "activeMap" "mapPath is empty!" 0
+    Nothing -> logError "activeMap" "mapPath is empty!" 0 -- TODO: return -1? return Maybe?
 
 
 {-| Returns -1 if mapPath is empty. This is not treated as an error! TODO: why?
@@ -418,9 +418,10 @@ putItemOnMap itemId props mapId model =
   }
 
 
-{-| Presumption: the item *is* contained in the map. Its "hidden" is set to False then.
-If the item is *not* contained in the map, or its hidden flag is False already, its a no-op.
+{-| Presumption: the item *is* contained in the map. Sets its "hidden" flag to False.
 Can be used for both, topics and associations.
+If the item is *not* contained in the map, or its "hidden" flag is False already, its a no-op.
+Logs an error if map does not exist.
 -}
 showItem : Id -> MapId -> Model -> Model
 showItem itemId mapId model =

@@ -2,8 +2,10 @@ module SearchAPI exposing (viewSearchInput, viewResultMenu, closeResultMenu, upd
 
 import AppModel exposing (UndoModel, Model, Msg(..))
 import Config exposing (contentFontSize)
+import MapAutoSize exposing (autoSize)
 import Model exposing (ItemInfo(..), Id, MapId)
-import ModelAPI exposing (..)
+import ModelAPI exposing (topicById, relatedItems, activeMap, defaultItemProps, isItemInMap,
+  showItem, putItemOnMap, singleSelection, singleSelectionMapId, push, swap)
 import Storage exposing (store)
 import Utils exposing (idDecoder, idTupleDecoder, stopPropagationOnMousedown, logError, info)
 -- components
@@ -168,13 +170,13 @@ updateSearch msg ({present} as undoModel) =
     Search.FocusInput -> (onFocusInput present, Cmd.none) |> swap undoModel
     Search.HoverTopic topicId -> (onHoverTopic topicId present, Cmd.none) |> swap undoModel
     Search.UnhoverTopic _ -> (onUnhoverTopic present, Cmd.none) |> swap undoModel
-    Search.ClickTopic topicId -> onClickTopic topicId present |> store |> push undoModel
+    Search.ClickTopic topicId -> revealTopic topicId present |> store |> push undoModel
     -- Traverse
-    Search.ShowRelated -> (onShowRelated present, Cmd.none) |> swap undoModel
+    Search.ShowRelated -> (showRelatedTopics present, Cmd.none) |> swap undoModel
     Search.HoverRelTopic relTopicId -> (onHoverRelTopic relTopicId present, Cmd.none)
       |> swap undoModel
     Search.UnhoverRelTopic _ -> (onUnhoverRelTopic present, Cmd.none) |> swap undoModel
-    Search.ClickRelTopic relTopicId -> onClickRelTopic relTopicId present |> store
+    Search.ClickRelTopic relTopicId -> revealRelTopic relTopicId present |> store
       |> push undoModel
 
 
@@ -230,22 +232,23 @@ onUnhoverRelTopic ({search} as model) =
         "Received \"UnhoverRelTopic\" when search.menu is not RelTopics" model
 
 
-onClickTopic : Id -> Model -> Model
-onClickTopic topicId model =
+revealTopic : Id -> Model -> Model
+revealTopic topicId model =
   model
   |> revealItem topicId (activeMap model)
   |> closeResultMenu
 
 
-onClickRelTopic : (Id, Id) -> Model -> Model
-onClickRelTopic (topicId, assocId) model =
-  let
-    mapId = activeMap model
-  in
-  model
-  |> revealItem topicId mapId
-  |> revealItem assocId mapId
-  |> closeResultMenu
+revealRelTopic : (Id, Id) -> Model -> Model
+revealRelTopic (topicId, assocId) model =
+  case singleSelectionMapId model of
+    Just mapId ->
+      model
+      |> revealItem topicId mapId
+      |> revealItem assocId mapId
+      |> closeResultMenu
+      |> autoSize
+    Nothing -> model
 
 
 searchTopics : Model -> Model
@@ -266,8 +269,8 @@ searchTopics ({search} as model) =
   { model | search = { search | menu = Topics topicIds Nothing }}
 
 
-onShowRelated : Model -> Model
-onShowRelated ({search} as model) =
+showRelatedTopics : Model -> Model
+showRelatedTopics ({search} as model) =
   let
     relTopicIds =
       case singleSelection model of
