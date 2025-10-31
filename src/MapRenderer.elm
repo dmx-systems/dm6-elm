@@ -122,6 +122,9 @@ viewItems map mapPath model =
 
 viewLimboTopic : MapId -> Model -> List (Html Msg)
 viewLimboTopic mapId model =
+  let
+    mapPath = [mapId] -- Needed by limbo style calculation; single ID is sufficient;
+  in
   case limboInfo model of
     Just (topicId, limboMapId) ->
       if mapId == limboMapId then
@@ -136,7 +139,7 @@ viewLimboTopic mapId model =
                   Just {info} ->
                     case (info, mapItem.props) of
                       (Topic topic, MapTopic props) ->
-                        [ viewTopic topic props [] model ] -- FIXME: mapPath=[] ?
+                        [ viewTopic topic props mapPath model ]
                       _ -> []
                   _ -> []
               else
@@ -153,7 +156,7 @@ viewLimboTopic mapId model =
           case model.items |> Dict.get topicId of
             Just {info} ->
               case info of
-                Topic topic -> [ viewTopic topic props [] model ] -- FIXME: mapPath=[] ?
+                Topic topic -> [ viewTopic topic props mapPath model ]
                 _ -> []
             _ -> []
       else
