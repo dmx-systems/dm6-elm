@@ -1,7 +1,7 @@
 module SearchAPI exposing (viewSearchInput, viewResultMenu, closeResultMenu, updateSearch)
 
 import AppModel exposing (UndoModel, Model, Msg(..))
-import Config exposing (contentFontSize)
+import Config as C
 import MapAutoSize exposing (autoSize)
 import Model exposing (ItemInfo(..), Id, MapId)
 import ModelAPI exposing (topicById, relatedItems, activeMap, defaultItemProps, isItemInMap,
@@ -78,7 +78,7 @@ viewTopicsMenu topicIds model =
           Just topic ->
             div
               ( [ attribute "data-id" (fromInt id) ]
-                ++ (resultItemStyle <| isTopicHover id model)
+                ++ (resultItemStyle False <| isTopicHover id model)
               )
               [ text topic.text ]
           Nothing -> text "??"
@@ -98,16 +98,27 @@ viewRelTopicsMenu relTopicIds model =
     )
     (relTopicIds |> List.map
       (\((id, assocId) as relTopic) ->
+        let
+          isDisabled = isItemDisabled id model
+        in
         case topicById id model of
           Just topic ->
             div
               ( [ attribute "data-id" <| fromInt id ++ "," ++ fromInt assocId ]
-                ++ (resultItemStyle <| isRelTopicHover relTopic model)
+                ++ (resultItemStyle isDisabled <| isRelTopicHover relTopic model)
               )
               [ text topic.text ] -- TODO: render assoc info
           Nothing -> text "??"
       )
     )
+
+
+isItemDisabled : Id -> Model -> Bool
+isItemDisabled topicId model =
+  case singleSelection model of
+    Just (_, mapPath) ->
+      List.member topicId mapPath
+    Nothing -> False
 
 
 topicDecoder : (Id -> Search.Msg) -> D.Decoder Msg
@@ -140,7 +151,7 @@ resultMenuStyle =
   , style "top" "138px"
   , style "width" "240px"
   , style "padding" "3px 0"
-  , style "font-size" <| fromInt contentFontSize ++ "px"
+  , style "font-size" <| fromInt C.contentFontSize ++ "px"
   , style "line-height" "2"
   , style "white-space" "nowrap"
   , style "background-color" "white"
@@ -149,13 +160,24 @@ resultMenuStyle =
   ]
 
 
-resultItemStyle : Bool -> List (Attribute Msg)
-resultItemStyle isHover =
-  [ style "color" (if isHover then "white" else "black")
-  , style "background-color" (if isHover then "black" else "white")
+resultItemStyle : Bool -> Bool -> List (Attribute Msg)
+resultItemStyle isDisabled isHover =
+  let
+    (color, bgColor, pointerEvents) =
+      if isDisabled then
+        (C.disabledColor, "unset", "none")
+      else
+        ( if isHover then "white" else "black"
+        , if isHover then "black" else "white"
+        , "unset"
+        )
+  in
+  [ style "color" color
+  , style "background-color" bgColor
   , style "overflow" "hidden"
   , style "text-overflow" "ellipsis"
   , style "padding" "0 8px"
+  , style "pointer-events" pointerEvents
   ]
 
 

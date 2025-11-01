@@ -9,13 +9,14 @@ import Model exposing (Point, Size)
 
 homeMapName = "DM6 Elm"
 version = "0.2-snapshot"
-date = "Oct 31, 2025"
+date = "Nov 1, 2025"
 newTopicPos = Point 186 180
 
 mainFont = "sans-serif"
 toolbarFontSize = 13
 contentFontSize = 13
 footerFontSize = 13
+disabledColor = "gray" -- TODO
 
 topicWidth = 156
 topicHeight = 28 -- also width/height of square icon box
