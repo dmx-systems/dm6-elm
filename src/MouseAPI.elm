@@ -83,7 +83,7 @@ timeArrived time ({present} as undoModel) =
     WaitForEndTime startTime class id mapPath pos ->
       let
         delay = posixToMillis time - posixToMillis startTime > assocDelayMillis
-        (dragMode, historyFunc) = if delay then (DrawAssoc, swap) else (DragTopic, push)
+        (dragMode, historyFunc) = if delay then (DraftAssoc, swap) else (DragTopic, push)
         maybeOrigPos = topicPos id (firstId mapPath) present.maps
         dragState =
           case class of
@@ -128,7 +128,7 @@ performDrag model pos =
         newModel =
           case dragMode of
             DragTopic -> setTopicPosByDelta id mapId delta model
-            DrawAssoc -> model
+            DraftAssoc -> model
       in
       -- update lastPos
       updateDragState newModel (Drag dragMode id mapPath origPos pos target)
@@ -156,7 +156,7 @@ mouseUp ({present} as undoModel) =
             (present, Random.generate msg point, swap)
           else
             (present, Cmd.none, swap)
-        Drag DrawAssoc id mapPath _ _ (Just (targetId, targetMapPath)) ->
+        Drag DraftAssoc id mapPath _ _ (Just (targetId, targetMapPath)) ->
           let
             _ = info "mouseUp" ("assoc drawn from " ++ fromInt id ++ " (map " ++ fromPath
               mapPath ++ ") to " ++ fromInt targetId ++ " (map " ++ fromPath targetMapPath

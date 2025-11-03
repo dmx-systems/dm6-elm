@@ -197,16 +197,16 @@ activeMap : Model -> MapId
 activeMap model =
   case List.head model.mapPath of
     Just mapId -> mapId
-    Nothing -> logError "activeMap" "mapPath is empty!" 0 -- TODO: return -1? return Maybe?
+    Nothing -> logError "activeMap" "mapPath is empty!" -1
 
 
-{-| Returns -1 if mapPath is empty. This is not treated as an error! TODO: why?
+{-| Logs an error (and returns -1) if mapPath is empty.
 -}
 firstId : MapPath -> MapId
 firstId mapPath =
   case mapPath of
     mapId :: _ -> mapId
-    [] -> -1
+    [] -> logError "firstId" "mapPath is empty!" -1
 
 
 fromPath : MapPath -> String
@@ -521,6 +521,8 @@ isMapAssoc item =
   not (isMapTopic item)
 
 
+{-| useful as a filter predicate
+-}
 isVisible : MapItem -> Bool
 isVisible item =
   not item.hidden

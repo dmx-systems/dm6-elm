@@ -67,7 +67,7 @@ viewMap mapId mapPath model =
         [ g
           ( gAttr mapId mapRect model )
           ( assocs
-            ++ viewLimboAssoc mapId model
+            ++ viewAssocDraft mapId model
           )
         ]
     ]
@@ -80,11 +80,9 @@ gAttr mapId mapRect model =
     ]
 
 
+-- For a fullscreen map mapPath is empty
 mapInfo : MapId -> MapPath -> Model -> MapInfo
 mapInfo mapId mapPath model =
-  let
-    parentMapId = firstId mapPath
-  in
   case mapByIdOrLog mapId model.maps of
     Just map ->
       ( viewItems map mapPath model
@@ -95,19 +93,20 @@ mapInfo mapId mapPath model =
           ( { w = (map.rect.x2 - map.rect.x1) |> round |> fromInt
             , h = (map.rect.y2 - map.rect.y1) |> round |> fromInt
             }
-          , whiteBoxStyle mapId map.rect parentMapId model
+          , whiteBoxStyle mapId map.rect (firstId mapPath) model
           )
       )
     Nothing ->
       ( ([], []), Rectangle 0 0 0 0, ( {w = "0", h = "0"}, [] ))
 
 
+-- For a fullscreen map mapPath is empty
 viewItems : Map -> MapPath -> Model -> (List (Html Msg), List (Svg Msg))
 viewItems map mapPath model =
   let
     newPath = map.id :: mapPath
   in
-  map.items |> Dict.values |> List.filter isVisible |> List.foldr
+  map.items |> Dict.values |> List.filter (shouldItemRender map.id model) |> List.foldr
     (\{id, props} (t, a) ->
       case model.items |> Dict.get id of
         Just {info} ->
@@ -120,52 +119,42 @@ viewItems map mapPath model =
     ([], [])
 
 
+shouldItemRender : MapId -> Model -> MapItem -> Bool
+shouldItemRender mapId model item =
+  isVisible item || isLimbo item.id mapId model
+
+
 viewLimboTopic : MapId -> Model -> List (Html Msg)
 viewLimboTopic mapId model =
-  let
-    mapPath = [mapId] -- Needed by limbo style calculation; single ID is sufficient;
-  in
   case limboInfo model of
     Just (topicId, limboMapId) ->
       if mapId == limboMapId then
         if isItemInMap topicId limboMapId model then
-          case mapItemById topicId limboMapId model.maps of
-            Just mapItem ->
-              if mapItem.hidden then
-                let
-                  _ = info "viewLimboTopic" (topicId, "is in map, hidden")
-                in
-                case model.items |> Dict.get topicId of
-                  Just {info} ->
-                    case (info, mapItem.props) of
-                      (Topic topic, MapTopic props) ->
-                        [ viewTopic topic props mapPath model ]
-                      _ -> []
-                  _ -> []
-              else
-                let
-                  _ = info "viewLimboTopic" (topicId, "is in map, visible")
-                in
-                []
-            Nothing -> []
+          let
+            _ = info "viewLimboTopic" (topicId, "is in map", mapId)
+          in
+          [] -- rendered already (viewItems())
         else
           let
-            _ = info "viewLimboTopic" (topicId, "not in map")
+            _ = info "viewLimboTopic" (topicId, "not in map", mapId)
             props = defaultTopicProps topicId model
+            mapPath = [mapId] -- Needed by limbo style calculation; single ID is sufficient;
           in
-          case model.items |> Dict.get topicId of
-            Just {info} ->
-              case info of
-                Topic topic -> [ viewTopic topic props mapPath model ]
-                _ -> []
+          case topicById topicId model of
+            Just topic -> [ viewTopic topic props mapPath model ]
             _ -> []
       else
         []
     Nothing -> []
 
 
-{-| *What* to render additionally? Which topic in which map?
--}
+isLimbo : Id -> MapId -> Model -> Bool
+isLimbo topicId mapId model =
+  case limboInfo model of
+    Just limboInfo_ -> limboInfo_ == (topicId, mapId)
+    Nothing -> False
+
+
 limboInfo : Model -> Maybe (Id, MapId)
 limboInfo model =
   case model.search.menu of
@@ -175,15 +164,6 @@ limboInfo model =
         Just mapId -> Just (topicId, mapId)
         Nothing -> Nothing
     _ -> Nothing
-
-
-{-| *How* to render a certain topic in a certain map?
--}
-isLimbo : Id -> MapId -> Model -> Bool
-isLimbo topicId mapId model =
-  case limboInfo model of
-    Just limboInfo_ -> limboInfo_ == (topicId, mapId)
-    Nothing -> False
 
 
 viewTopic : TopicInfo -> TopicProps -> MapPath -> Model -> Html Msg
@@ -435,10 +415,10 @@ assocGeometry assoc mapId model =
     Nothing -> fail "assocGeometry" { assoc = assoc, mapId = mapId } Nothing
 
 
-viewLimboAssoc : MapId -> Model -> List (Svg Msg)
-viewLimboAssoc mapId model =
+viewAssocDraft : MapId -> Model -> List (Svg Msg)
+viewAssocDraft mapId model =
   case model.mouse.dragState of
-    Drag DrawAssoc _ mapPath origPos pos _ ->
+    Drag DraftAssoc _ mapPath origPos pos _ ->
       case firstId mapPath == mapId of
         True -> [ lineFunc Nothing origPos (relPos pos mapPath model) ]
         False -> []
@@ -644,7 +624,7 @@ topicBorderStyle id mapId model =
       -- can't move a topic to a map where it is already
       -- can't create assoc when both topics are in different map
       Drag DragTopic _ (mapId_ :: _) _ _ target -> isTarget id mapId target && mapId_ /= id
-      Drag DrawAssoc _ (mapId_ :: _) _ _ target -> isTarget id mapId target && mapId_ == mapId
+      Drag DraftAssoc _ (mapId_ :: _) _ _ target -> isTarget id mapId target && mapId_ == mapId
       _ -> False
   in
   [ style "border-width" <| fromFloat C.topicBorderWidth ++ "px"

@@ -25,7 +25,7 @@ type DragState
 
 type DragMode
   = DragTopic
-  | DrawAssoc
+  | DraftAssoc
 
 
 type Msg
