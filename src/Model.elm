@@ -55,7 +55,7 @@ type alias MapItems = Dict Id MapItem
 
 type alias MapItem =
   { id : Id
-  , parentAssocId : Id
+  , parentAssocId : Id -- TODO: drop it? Compute from Item's "assocIds" field instead?
   , hidden : Bool -- TODO: replace hidden/pinned by custom type: Hidden/Visible/Pinned?
   , pinned : Bool
   , props : MapProps

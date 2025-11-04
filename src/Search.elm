@@ -19,7 +19,7 @@ init =
 
 type Menu
   = Topics (List Id) (Maybe Id) -- hovered topic
-  | RelTopics (List (Id, Id)) (Maybe (Id, Id)) -- (topic ID, assoc ID)
+  | RelTopics (List (Id, Id)) (Maybe (Id, Id)) -- hovered related topic (topic ID, assoc ID)
   | Closed
 
 

@@ -67,6 +67,7 @@ viewMap mapId mapPath model =
         [ g
           ( gAttr mapId mapRect model )
           ( assocs
+            ++ viewLimboAssoc mapId model
             ++ viewAssocDraft mapId model
           )
         ]
@@ -108,28 +109,28 @@ viewItems map mapPath model =
   in
   map.items |> Dict.values |> List.filter (shouldItemRender map.id model) |> List.foldr
     (\{id, props} (t, a) ->
-      case model.items |> Dict.get id of
+      case itemById id model of
         Just {info} ->
           case (info, props) of
             (Topic topic, MapTopic tProps) -> (viewTopic topic tProps newPath model :: t, a)
             (Assoc assoc, MapAssoc _) -> (t, viewAssoc assoc map.id model :: a)
             _ -> logError "viewItems" ("problem with item " ++ fromInt id) (t, a)
-        _ -> logError "viewItems" ("problem with item " ++ fromInt id) (t, a)
+        Nothing -> logError "viewItems" ("problem with item " ++ fromInt id) (t, a)
     )
     ([], [])
 
 
 shouldItemRender : MapId -> Model -> MapItem -> Bool
 shouldItemRender mapId model item =
-  isVisible item || isLimbo item.id mapId model
+  isVisible item || isLimboItem item mapId model
 
 
 viewLimboTopic : MapId -> Model -> List (Html Msg)
 viewLimboTopic mapId model =
-  case limboInfo model of
-    Just (topicId, limboMapId) ->
+  case limboState model of
+    Just (topicId, _, limboMapId) ->
       if mapId == limboMapId then
-        if isItemInMap topicId limboMapId model then
+        if isItemInMap topicId mapId model then
           let
             _ = info "viewLimboTopic" (topicId, "is in map", mapId)
           in
@@ -142,26 +143,66 @@ viewLimboTopic mapId model =
           in
           case topicById topicId model of
             Just topic -> [ viewTopic topic props mapPath model ]
-            _ -> []
+            Nothing -> []
       else
         []
     Nothing -> []
 
 
-isLimbo : Id -> MapId -> Model -> Bool
-isLimbo topicId mapId model =
-  case limboInfo model of
-    Just limboInfo_ -> limboInfo_ == (topicId, mapId)
+viewLimboAssoc : MapId -> Model -> List (Html Msg)
+viewLimboAssoc mapId model =
+  case limboState model of
+    Just (_, Just assocId, limboMapId) ->
+      if mapId == limboMapId then
+        if isItemInMap assocId mapId model then
+          let
+            _ = info "viewLimboAssoc" (assocId, "is in map", mapId)
+          in
+          [] -- rendered already (viewItems())
+        else
+          let
+            _ = info "viewLimboAssoc" (assocId, "not in map", mapId)
+          in
+          case assocById assocId model of
+            Just assoc -> [ viewAssoc assoc mapId model ]
+            Nothing -> []
+      else
+        []
+    _ -> []
+
+
+isLimboItem : MapItem -> MapId -> Model -> Bool
+isLimboItem item mapId model =
+  let
+    isLimbo =
+      case item.props of
+        MapTopic _ -> isLimboTopic
+        MapAssoc _ -> isLimboAssoc
+  in
+  isLimbo item.id mapId model
+
+
+isLimboTopic : Id -> MapId -> Model -> Bool
+isLimboTopic topicId mapId model =
+  case limboState model of
+    Just (topicId_, _, mapId_) -> topicId == topicId_ && mapId == mapId_
     Nothing -> False
 
 
-limboInfo : Model -> Maybe (Id, MapId)
-limboInfo model =
+isLimboAssoc : Id -> MapId -> Model -> Bool
+isLimboAssoc assocId mapId model =
+  case limboState model of
+    Just (_, Just assocId_, mapId_) -> assocId == assocId_ && mapId == mapId_
+    _ -> False
+
+
+limboState : Model -> Maybe (Id, Maybe Id, MapId) -- (topic ID, assoc ID, map ID)
+limboState model =
   case model.search.menu of
-    Topics _ (Just topicId) -> Just (topicId, activeMap model)
+    Topics _ (Just topicId) -> Just (topicId, Nothing, activeMap model)
     RelTopics _ (Just (topicId, assocId)) ->
       case singleSelectionMapId model of
-        Just mapId -> Just (topicId, mapId)
+        Just mapId -> Just (topicId, Just assocId, mapId)
         Nothing -> Nothing
     _ -> Nothing
 
@@ -189,7 +230,7 @@ viewTopic topic props mapPath model =
 
 effectiveDisplayMode : Id -> MapId -> DisplayMode -> Model -> DisplayMode
 effectiveDisplayMode topicId mapId displayMode model =
-  if isLimbo topicId mapId model then
+  if isLimboTopic topicId mapId model then
     case displayMode of
       Monad _ -> Monad Detail
       Container _ -> Container WhiteBox
@@ -486,7 +527,7 @@ topicStyle id mapId model =
       _ -> False
   in
   [ style "position" "absolute"
-  , style "opacity" <| if isLimbo id mapId model then ".5" else "1"
+  , style "opacity" <| if isLimboTopic id mapId model then ".5" else "1"
   , style "z-index" <| if isDragging then "1" else "2"
   ]
 
