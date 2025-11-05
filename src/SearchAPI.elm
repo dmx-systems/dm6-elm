@@ -4,7 +4,7 @@ import AppModel exposing (UndoModel, Model, Msg(..))
 import Config as C
 import MapAutoSize exposing (autoSize)
 import Model exposing (ItemInfo(..), Id, MapId)
-import ModelAPI exposing (topicById, relatedItems, activeMap, defaultItemProps, isItemInMap,
+import ModelAPI exposing (topicById, relatedItems, activeMap, initItemProps, isItemInMap,
   showItem, putItemOnMap, singleSelection, singleSelectionMapId, push, swap)
 import Storage exposing (store)
 import Utils exposing (idDecoder, idTupleDecoder, stopPropagationOnMousedown, logError, info)
@@ -319,7 +319,7 @@ revealItem itemId mapId model =
   else
     let
       _ = info "revealItem" <| fromInt itemId ++ " not in " ++ fromInt mapId
-      props = defaultItemProps itemId model
+      props = initItemProps itemId model
     in
     putItemOnMap itemId props mapId model
 

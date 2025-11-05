@@ -138,7 +138,7 @@ viewLimboTopic mapId model =
         else
           let
             _ = info "viewLimboTopic" (topicId, "not in map", mapId)
-            props = defaultTopicProps topicId model
+            props = initTopicProps topicId model
             mapPath = [mapId] -- Needed by limbo style calculation; single ID is sufficient;
           in
           case topicById topicId model of
@@ -152,7 +152,7 @@ viewLimboTopic mapId model =
 viewLimboAssoc : MapId -> Model -> List (Html Msg)
 viewLimboAssoc mapId model =
   case limboState model of
-    Just (_, Just assocId, limboMapId) ->
+    Just (topicId, Just assocId, limboMapId) ->
       if mapId == limboMapId then
         if isItemInMap assocId mapId model then
           let
@@ -164,7 +164,16 @@ viewLimboAssoc mapId model =
             _ = info "viewLimboAssoc" (assocId, "not in map", mapId)
           in
           case assocById assocId model of
-            Just assoc -> [ viewAssoc assoc mapId model ]
+            Just assoc ->
+              if isItemInMap topicId mapId model then
+                -- only if related topic is in map we can call high-level viewAssoc()
+                [ viewAssoc assoc mapId model ]
+              else
+                -- otherwise we call low-level lineFunc() with topic default position,
+                -- see also ModelAPI's initTopicProps()
+                case topicPos (otherPlayerId assocId topicId model) mapId model.maps of
+                  Just pos -> [ lineFunc pos (Point 0 0) (Just assoc) mapId model ]
+                  Nothing -> []
             Nothing -> []
       else
         []
@@ -451,7 +460,7 @@ assocGeometry assoc mapId model =
     pos1 = topicPos assoc.player1 mapId model.maps
     pos2 = topicPos assoc.player2 mapId model.maps
   in
-  case Maybe.map2 (\p1 p2 -> ( p1, p2 )) pos1 pos2 of
+  case Maybe.map2 (\p1 p2 -> (p1, p2)) pos1 pos2 of
     Just geometry -> Just geometry
     Nothing -> fail "assocGeometry" { assoc = assoc, mapId = mapId } Nothing
 
@@ -701,7 +710,7 @@ svgStyle =
   ]
 
 
--- One possible line func
+-- One possible lineFunc
 directLine : Point -> Point -> Maybe AssocInfo -> MapId -> Model -> Svg Msg
 directLine pos1 pos2 assoc mapId model =
   line
@@ -714,7 +723,7 @@ directLine pos1 pos2 assoc mapId model =
     []
 
 
--- One possible line func
+-- One possible lineFunc
 taxiLine : Point -> Point -> Maybe AssocInfo -> MapId -> Model -> Svg Msg
 taxiLine pos1 pos2 assoc mapId model =
   if abs (pos2.x - pos1.x) < 2 * C.assocRadius then -- straight vertical

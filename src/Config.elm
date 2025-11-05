@@ -18,7 +18,7 @@ footerFontSize = 13
 
 disabledColor = "gray"
 limboColor = "gray"
-newTopicPos = Point 186 180
+newTopicPos = Point 212 166
 
 topicWidth = 156
 topicHeight = 28 -- also width/height of square icon box

@@ -346,21 +346,22 @@ updateTopicProps topicId mapId propsFunc model =
   }
 
 
-defaultItemProps : Id -> Model -> MapProps
-defaultItemProps itemId model =
+{-| Initial props for a newly revealed topic -}
+initItemProps : Id -> Model -> MapProps
+initItemProps itemId model =
   case itemById itemId model of
     Just item ->
       case item.info of
-        Topic _ -> MapTopic <| defaultTopicProps itemId model
+        Topic _ -> MapTopic <| initTopicProps itemId model
         Assoc _ -> MapAssoc {}
     Nothing -> MapAssoc {} -- error is already logged
 
 
-{-| Useful when revealing an existing topic -}
-defaultTopicProps : Id -> Model -> TopicProps
-defaultTopicProps topicId model =
+{-| Initial props for a newly revealed topic -}
+initTopicProps : Id -> Model -> TopicProps
+initTopicProps topicId model =
   TopicProps
-    ( Point 0 0 ) -- TODO
+    ( Point 0 0 ) -- TODO, see also MapRenderer's viewLimboAssoc()
     C.topicSize
     ( if hasMap topicId model.maps then
         Container BlackBox
@@ -532,6 +533,9 @@ isVisible item =
 
 select : Id -> MapPath -> Model -> Model
 select itemId mapPath model =
+  let
+    _ = info "select" (itemId, mapPath)
+  in
   { model | selection = [ (itemId, mapPath) ] }
 
 
