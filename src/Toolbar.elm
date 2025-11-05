@@ -1,7 +1,7 @@
 module Toolbar exposing (viewToolbar)
 
 import AppModel exposing (UndoModel, Model, Msg(..))
-import Config exposing (version, date, mainFont, toolbarFontSize, footerFontSize)
+import Config as C
 import Model exposing (EditMsg(..), NavMsg(..), DisplayMode(..), MonadDisplay(..),
   ContainerDisplay(..))
 import ModelAPI exposing (topicById, topicLabel, firstId, isHome, activeMap,
@@ -36,15 +36,15 @@ viewToolbar ({present} as undoModel) =
       [ viewToolbarButton "Edit" (Edit EditStart) hasSelection undoModel
       , viewToolbarButton "Set Icon" (IconMenu IconMenu.Open) hasSelection undoModel
       ]
+    , viewToolbarButton "Show Related" (Search Search.ShowRelated) hasSelection undoModel
     , viewMonadDisplay present
     , viewContainerDisplay present
-    , viewToolbarButton "Show Related" (Search Search.ShowRelated) hasSelection undoModel
+    , viewToolbarButton "Fullscreen" (Nav Fullscreen) hasSelection undoModel
     , div
       []
       [ viewToolbarButton "Hide" Hide hasSelection undoModel
-      , viewToolbarButton "Fullscreen" (Nav Fullscreen) hasSelection undoModel
+      , viewToolbarButton "Delete" Delete hasSelection undoModel
       ]
-    , viewToolbarButton "Delete" Delete hasSelection undoModel
     , div
       []
       [ viewToolbarButton "Undo" Undo hasPast undoModel
@@ -61,7 +61,7 @@ viewToolbar ({present} as undoModel) =
 
 toolbarStyle : List (Attribute Msg)
 toolbarStyle =
-  [ style "font-size" <| fromInt toolbarFontSize ++ "px"
+  [ style "font-size" <| fromInt C.toolbarFontSize ++ "px"
   , style "display" "flex"
   , style "flex-direction" "column"
   , style "align-items" "flex-start"
@@ -154,8 +154,8 @@ always undoModel =
 
 buttonStyle : List (Attribute Msg)
 buttonStyle =
-  [ style "font-family" mainFont
-  , style "font-size" <| fromInt toolbarFontSize ++ "px"
+  [ style "font-family" C.mainFont
+  , style "font-size" <| fromInt C.toolbarFontSize ++ "px"
   ]
 
 
@@ -214,7 +214,7 @@ displayModeStyle disabled =
   let
     (color, pointerEvents) =
       if disabled then
-        ("gray", "none")
+        (C.disabledColor, "none")
       else
         ("unset", "unset")
   in
@@ -245,10 +245,10 @@ viewFooter =
     footerStyle
     [ div
       []
-      [ text version ]
+      [ text C.version ]
     , div
       []
-      [ text date ]
+      [ text C.date ]
     , div
       []
       [ text "Source: "
@@ -268,7 +268,7 @@ viewFooter =
 
 footerStyle : List (Attribute Msg)
 footerStyle =
-  [ style "font-size" <| fromInt footerFontSize ++ "px"
+  [ style "font-size" <| fromInt C.footerFontSize ++ "px"
   , style "color" "lightgray"
   ]
 

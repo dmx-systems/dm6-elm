@@ -441,7 +441,7 @@ viewAssoc assoc mapId model =
     geom = assocGeometry assoc mapId model
   in
   case geom of
-    Just (pos1, pos2) -> lineFunc (Just assoc) pos1 pos2
+    Just (pos1, pos2) -> lineFunc pos1 pos2 (Just assoc) mapId model
     Nothing -> text "" -- TODO
 
 
@@ -461,7 +461,7 @@ viewAssocDraft mapId model =
   case model.mouse.dragState of
     Drag DraftAssoc _ mapPath origPos pos _ ->
       case firstId mapPath == mapId of
-        True -> [ lineFunc Nothing origPos (relPos pos mapPath model) ]
+        True -> [ lineFunc origPos (relPos pos mapPath model) Nothing mapId model ]
         False -> []
     _ -> []
 
@@ -702,28 +702,28 @@ svgStyle =
 
 
 -- One possible line func
-directLine : Maybe AssocInfo -> Point -> Point -> Svg Msg
-directLine assoc pos1 pos2 =
+directLine : Point -> Point -> Maybe AssocInfo -> MapId -> Model -> Svg Msg
+directLine pos1 pos2 assoc mapId model =
   line
     ( [ x1 <| fromFloat pos1.x
       , y1 <| fromFloat pos1.y
       , x2 <| fromFloat pos2.x
       , y2 <| fromFloat pos2.y
-      ] ++ lineStyle assoc
+      ] ++ lineStyle assoc mapId model
     )
     []
 
 
 -- One possible line func
-taxiLine : Maybe AssocInfo -> Point -> Point -> Svg Msg
-taxiLine assoc pos1 pos2 =
+taxiLine : Point -> Point -> Maybe AssocInfo -> MapId -> Model -> Svg Msg
+taxiLine pos1 pos2 assoc mapId model =
   if abs (pos2.x - pos1.x) < 2 * C.assocRadius then -- straight vertical
     let
       xm = (pos1.x + pos2.x) / 2
     in
     path
       ( [ d ("M " ++ fromFloat xm ++ " " ++ fromFloat pos1.y ++ " V " ++ fromFloat pos2.y)
-        ] ++ lineStyle assoc
+        ] ++ lineStyle assoc mapId model
       )
       []
   else if abs (pos2.y - pos1.y) < 2 * C.assocRadius then -- straight horizontal
@@ -732,7 +732,7 @@ taxiLine assoc pos1 pos2 =
     in
     path
       ( [ d ("M " ++ fromFloat pos1.x ++ " " ++ fromFloat ym ++ " H " ++ fromFloat pos2.x)
-        ] ++ lineStyle assoc
+        ] ++ lineStyle assoc mapId model
       )
       []
   else -- 5 segment taxi line
@@ -763,14 +763,20 @@ taxiLine assoc pos1 pos2 =
             " A " ++ r ++ " " ++ r ++ " 0 0 " ++ sw2 ++ " " ++ fromFloat pos2.x ++ " " ++ y2 ++
             " V " ++ fromFloat pos2.y
           )
-        ] ++ lineStyle assoc
+        ] ++ lineStyle assoc mapId model
       )
       []
 
 
-lineStyle : Maybe AssocInfo -> List (Attribute Msg)
-lineStyle assoc =
-  [ stroke C.assocColor
+lineStyle : Maybe AssocInfo -> MapId -> Model -> List (Attribute Msg)
+lineStyle assoc mapId model =
+  let
+    color =
+      case assoc of
+        Just {id} -> if isLimboAssoc id mapId model then C.limboColor else C.assocColor
+        Nothing -> C.limboColor
+  in
+  [ stroke color
   , strokeWidth <| fromFloat C.assocWidth ++ "px"
   , strokeDasharray <| lineDasharray assoc
   , fill "none"
@@ -778,9 +784,9 @@ lineStyle assoc =
 
 
 lineDasharray : Maybe AssocInfo -> String
-lineDasharray maybeAssoc =
-  case maybeAssoc of
-    Just { itemType } ->
+lineDasharray assoc =
+  case assoc of
+    Just {itemType} ->
       case itemType of
         "dmx.association" -> "5 0" -- solid
         "dmx.composition" -> "5" -- dotted
