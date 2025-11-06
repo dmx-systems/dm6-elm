@@ -383,16 +383,26 @@ mapItemById itemId mapId maps =
     )
 
 
-{-| Logs an error if map does not exist.
-TODO: really useful? Better return "Maybe MapItem" but don't treat not-exist as error?
--}
+isItemInMapDeep : Id -> MapId -> Model -> Bool
+isItemInMapDeep itemId mapId model =
+  if itemId == mapId then
+    True
+  else
+    case mapById mapId model.maps of
+      Just map ->
+        let
+          ids = map.items |> Dict.keys |> List.filter
+            (\id -> isItemInMapDeep itemId id model)
+        in
+        ids |> List.isEmpty |> not
+      Nothing -> False
+
+
+{-| Logs an error if map does not exist. -}
 isItemInMap : Id -> MapId -> Model -> Bool
 isItemInMap itemId mapId model =
   case mapByIdOrLog mapId model.maps of
-    Just map ->
-      case map.items |> Dict.get itemId of
-        Just _ -> True
-        Nothing -> False
+    Just map -> map.items |> Dict.member itemId
     Nothing -> False
 
 

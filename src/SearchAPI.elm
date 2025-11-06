@@ -5,7 +5,7 @@ import Config as C
 import MapAutoSize exposing (autoSize)
 import Model exposing (ItemInfo(..), Id, MapId)
 import ModelAPI exposing (topicById, relatedItems, activeMap, initItemProps, isItemInMap,
-  showItem, putItemOnMap, singleSelection, singleSelectionMapId, push, swap)
+  isItemInMapDeep, showItem, putItemOnMap, singleSelection, singleSelectionMapId, push, swap)
 import Storage exposing (store)
 import Utils exposing (idDecoder, idTupleDecoder, stopPropagationOnMousedown, logError, info)
 -- components
@@ -74,11 +74,15 @@ viewTopicsMenu topicIds model =
     )
     (topicIds |> List.map
       (\id ->
+        let
+          isDisabled = isItemDisabled id model
+          isHover = isTopicHover id model
+        in
         case topicById id model of
           Just topic ->
             div
               ( [ attribute "data-id" (fromInt id) ]
-                ++ (resultItemStyle False <| isTopicHover id model)
+                ++ resultItemStyle isDisabled isHover
               )
               [ text topic.text ]
           Nothing -> text "??"
@@ -100,12 +104,13 @@ viewRelTopicsMenu relTopicIds model =
       (\((id, assocId) as relTopic) ->
         let
           isDisabled = isItemDisabled id model
+          isHover = isRelTopicHover relTopic model
         in
         case topicById id model of
           Just topic ->
             div
               ( [ attribute "data-id" <| fromInt id ++ "," ++ fromInt assocId ]
-                ++ (resultItemStyle isDisabled <| isRelTopicHover relTopic model)
+                ++ resultItemStyle isDisabled isHover
               )
               [ text topic.text ] -- TODO: render assoc info
           Nothing -> text "??"
@@ -115,10 +120,21 @@ viewRelTopicsMenu relTopicIds model =
 
 isItemDisabled : Id -> Model -> Bool
 isItemDisabled topicId model =
-  case singleSelection model of
-    Just (_, mapPath) ->
-      List.member topicId mapPath
+  case revealMapId model of
+    Just mapId -> isItemInMapDeep mapId topicId model
     Nothing -> False
+
+
+{- The map where to reveal search/related results -}
+revealMapId : Model -> Maybe Id
+revealMapId model =
+  case model.search.menu of
+    Topics _ _ -> Just (activeMap model)
+    RelTopics _ _ ->
+      case singleSelectionMapId model of
+        Just mapId -> Just mapId
+        Nothing -> Nothing
+    Closed -> Nothing
 
 
 topicDecoder : (Id -> Search.Msg) -> D.Decoder Msg
