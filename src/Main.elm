@@ -6,7 +6,7 @@ import Config as C
 import MapAutoSize exposing (autoSize)
 import MapRenderer exposing (viewMap)
 import Model exposing (..)
-import ModelAPI exposing (..)
+import ModelAPI as A
 import Storage exposing (store, storeWith, modelDecoder, importJSON, exportJSON)
 import Toolbar exposing (viewToolbar)
 import Utils exposing (..)
@@ -43,7 +43,7 @@ main =
 
 init : E.Value -> (UndoModel, Cmd Msg)
 init flags =
-  (initModel flags, Cmd.none) |> reset
+  (initModel flags, Cmd.none) |> A.reset
 
 
 initModel : E.Value -> Model
@@ -82,7 +82,7 @@ view ({present} as undoModel) =
         ++ appStyle
       )
       ( [ viewToolbar undoModel
-        , viewMap (activeMap present) [] present -- mapPath = []
+        , viewMap (A.activeMap present) [] present -- mapPath = []
         ]
         ++ viewResultMenu present
         ++ viewIconMenu present
@@ -136,47 +136,72 @@ update msg ({present} as undoModel) =
         _ -> info "update" msg
   in
   case msg of
-    AddTopic -> addTopicAndPutOnMap C.topicDefaultText Nothing [ activeMap present ] present
-      |> store |> push undoModel
+    AddTopic -> addTopic present |> store |> A.push undoModel
+    AddBox -> addBox present |> store |> A.push undoModel
     MoveTopicToMap topicId mapId origPos targetId targetMapPath pos
       -> moveTopicToMap topicId mapId origPos targetId targetMapPath pos present
-      |> store |> push undoModel
+      |> store |> A.push undoModel
     SwitchDisplay displayMode -> switchDisplay displayMode present
-      |> store |> swap undoModel
+      |> store |> A.swap undoModel
     Search searchMsg -> updateSearch searchMsg undoModel
     Edit editMsg -> updateEdit editMsg undoModel
     IconMenu iconMenuMsg -> updateIconMenu iconMenuMsg undoModel
     Mouse mouseMsg -> updateMouse mouseMsg undoModel
-    Nav navMsg -> updateNav navMsg present |> store |> reset
-    Hide -> hide present |> store |> push undoModel
-    Delete -> delete present |> store |> push undoModel
+    Nav navMsg -> updateNav navMsg present |> store |> A.reset
+    Hide -> hide present |> store |> A.push undoModel
+    Delete -> delete present |> store |> A.push undoModel
     Undo -> undo undoModel
     Redo -> redo undoModel
-    Import -> (present, importJSON ()) |> swap undoModel
-    Export -> (present, exportJSON ()) |> swap undoModel
-    NoOp -> (present, Cmd.none) |> swap undoModel
+    Import -> (present, importJSON ()) |> A.swap undoModel
+    Export -> (present, exportJSON ()) |> A.swap undoModel
+    NoOp -> (present, Cmd.none) |> A.swap undoModel
 
 
-addTopicAndPutOnMap : String -> Maybe IconName -> MapPath -> Model -> Model
-addTopicAndPutOnMap text iconName mapPath model =
+addTopic : Model -> Model
+addTopic model =
   let
-    mapId = firstId mapPath
+    mapId = A.activeMap model
   in
-  case mapByIdOrLog mapId model.maps of
+  case A.mapByIdOrLog mapId model.maps of
     Just map ->
       let
-        (newModel, topicId) = addTopic text iconName model
+        (newModel, topicId) = A.addTopic C.initTopicText Nothing model
         props = MapTopic <| TopicProps
           (Point
-            (C.newTopicPos.x + map.rect.x1)
-            (C.newTopicPos.y + map.rect.y1)
+            (C.initTopicPos.x + map.rect.x1)
+            (C.initTopicPos.y + map.rect.y1)
           )
           C.topicDetailSize
           (Monad LabelOnly)
       in
       newModel
-      |> putItemOnMap topicId props mapId
-      |> select topicId mapPath
+      |> A.putItemOnMap topicId props mapId
+      |> A.select topicId [ mapId ]
+    Nothing -> model
+
+
+-- TODO: factor out addTopic() common code
+addBox : Model -> Model
+addBox model =
+  let
+    mapId = A.activeMap model
+  in
+  case A.mapByIdOrLog mapId model.maps of
+    Just map ->
+      let
+        (newModel, topicId) = A.addTopic C.initBoxText Nothing model
+        props = MapTopic <| TopicProps
+          (Point
+            (C.initTopicPos.x + map.rect.x1)
+            (C.initTopicPos.y + map.rect.y1)
+          )
+          C.topicDetailSize
+          (Container BlackBox)
+      in
+      newModel
+      |> A.addMap topicId
+      |> A.putItemOnMap topicId props mapId
+      |> A.select topicId [ mapId ]
     Nothing -> model
 
 
@@ -191,27 +216,28 @@ moveTopicToMap topicId mapId origPos targetId targetMapPath pos model =
           (C.topicH2 + C.whiteBoxPadding)
         False -> pos
     props_ =
-      topicProps topicId mapId newModel.maps
+      A.topicProps topicId mapId newModel.maps
       |> Maybe.andThen (\props -> Just (MapTopic { props | pos = newPos }))
   in
   case props_ of
     Just props ->
       newModel
-      |> hideItem topicId mapId
-      |> setTopicPos topicId mapId origPos
-      |> putItemOnMap topicId props targetId
-      |> select targetId targetMapPath
+      |> A.hideItem topicId mapId
+      |> A.setTopicPos topicId mapId origPos
+      |> A.putItemOnMap topicId props targetId
+      |> A.select targetId targetMapPath
       |> autoSize
     Nothing -> model
 
 
+-- TODO: drop it
 createMapIfNeeded : Id -> Model -> (Model, Bool)
 createMapIfNeeded topicId model =
-  if hasMap topicId model.maps then
+  if A.hasMap topicId model.maps then
     (model, False)
   else
     ( model
-      |> addMap topicId
+      |> A.addMap topicId
       |> setDisplayModeInAllMaps topicId (Container BlackBox)
       -- A nested topic which becomes a container might exist in other maps as well, still as
       -- a monad. We must set the topic's display mode to "container" in *all* maps. Otherwise
@@ -220,12 +246,13 @@ createMapIfNeeded topicId model =
     )
 
 
+-- TODO: drop it
 setDisplayModeInAllMaps : Id -> DisplayMode -> Model -> Model
 setDisplayModeInAllMaps topicId displayMode model =
   model.maps |> Dict.foldr
     (\mapId _ modelAcc ->
-      case isItemInMap topicId mapId model of
-        True -> setDisplayMode topicId mapId displayMode modelAcc
+      case A.isItemInMap topicId mapId model of
+        True -> A.setDisplayMode topicId mapId displayMode modelAcc
         False -> modelAcc
     )
     model
@@ -233,10 +260,10 @@ setDisplayModeInAllMaps topicId displayMode model =
 
 switchDisplay : DisplayMode -> Model -> Model
 switchDisplay displayMode model =
-  ( case singleSelection model of
+  ( case A.singleSelection model of
     Just (containerId, mapPath) ->
       let
-        mapId = firstId mapPath
+        mapId = A.firstId mapPath
       in
       { model | maps =
         case displayMode of
@@ -245,7 +272,7 @@ switchDisplay displayMode model =
           Container WhiteBox -> boxContainer containerId mapId model
           Container Unboxed -> unboxContainer containerId mapId model
       }
-      |> setDisplayMode containerId mapId displayMode
+      |> A.setDisplayMode containerId mapId displayMode
     Nothing -> model
   )
   |> autoSize
@@ -256,28 +283,28 @@ switchDisplay displayMode model =
 updateEdit : EditMsg -> UndoModel -> (UndoModel, Cmd Msg)
 updateEdit msg ({present} as undoModel) =
   case msg of
-    EditStart -> startEdit present |> push undoModel
-    OnTextInput text -> onTextInput text present |> store |> swap undoModel
-    OnTextareaInput text -> onTextareaInput text present |> storeWith |> swap undoModel
+    EditStart -> startEdit present |> A.push undoModel
+    OnTextInput text -> onTextInput text present |> store |> A.swap undoModel
+    OnTextareaInput text -> onTextareaInput text present |> storeWith |> A.swap undoModel
     SetTopicSize topicId mapId size ->
       ( present
-        |> setTopicSize topicId mapId size
+        |> A.setTopicSize topicId mapId size
         |> autoSize
       , Cmd.none
       )
-      |> swap undoModel
+      |> A.swap undoModel
     EditEnd ->
       (endEdit present, Cmd.none)
-      |> swap undoModel
+      |> A.swap undoModel
 
 
 startEdit : Model -> (Model, Cmd Msg)
 startEdit model =
   let
-    newModel = case singleSelection model of
+    newModel = case A.singleSelection model of
       Just (topicId, mapPath) ->
-        { model | editState = ItemEdit topicId (firstId mapPath) }
-        |> setDetailDisplayIfMonade topicId (firstId mapPath)
+        { model | editState = ItemEdit topicId (A.firstId mapPath) }
+        |> setDetailDisplayIfMonade topicId (A.firstId mapPath)
         |> autoSize
       Nothing -> model
   in
@@ -286,7 +313,7 @@ startEdit model =
 
 setDetailDisplayIfMonade : Id -> MapId -> Model -> Model
 setDetailDisplayIfMonade topicId mapId model =
-  model |> updateTopicProps topicId mapId
+  model |> A.updateTopicProps topicId mapId
     (\props ->
       case props.displayMode of
         Monad _ -> { props | displayMode = Monad Detail }
@@ -298,7 +325,7 @@ onTextInput : String -> Model -> Model
 onTextInput text model =
   case model.editState of
     ItemEdit topicId _ ->
-      updateTopicInfo topicId
+      A.updateTopicInfo topicId
         (\topic -> { topic | text = text })
         model
     NoEdit -> logError "onTextInput" "called when editState is NoEdit" model
@@ -308,7 +335,7 @@ onTextareaInput : String -> Model -> (Model, Cmd Msg)
 onTextareaInput text model =
   case model.editState of
     ItemEdit topicId mapId ->
-      updateTopicInfo topicId
+      A.updateTopicInfo topicId
         (\topic -> { topic | text = text })
         model
       |> measureText text topicId mapId
@@ -364,10 +391,10 @@ updateNav navMsg model =
 
 fullscreen : Model -> Model
 fullscreen model =
-  case singleSelection model of
+  case A.singleSelection model of
     Just (topicId, _) ->
       { model | mapPath = topicId :: model.mapPath }
-      |> resetSelection
+      |> A.resetSelection
       |> createMapIfNeeded topicId
       |> Tuple.first
       |> adjustMapRect topicId -1
@@ -396,7 +423,7 @@ back model =
 
 adjustMapRect : MapId -> Float -> Model -> Model
 adjustMapRect mapId factor model =
-  model |> updateMapRect mapId
+  model |> A.updateMapRect mapId
     (\rect -> Rectangle
       (rect.x1 + factor * 400) -- TODO
       (rect.y1 + factor * 300) -- TODO
@@ -410,11 +437,11 @@ hide model =
   let
     newModel = model.selection
       |> List.foldr
-        (\(itemId, mapPath) modelAcc -> hideItem itemId (firstId mapPath) modelAcc)
+        (\(itemId, mapPath) modelAcc -> A.hideItem itemId (A.firstId mapPath) modelAcc)
         model
   in
   newModel
-  |> resetSelection
+  |> A.resetSelection
   |> autoSize
 
 
@@ -424,11 +451,11 @@ delete model =
     newModel = model.selection
       |> List.map Tuple.first
       |> List.foldr
-        (\itemId modelAcc -> removeItem itemId modelAcc)
+        (\itemId modelAcc -> A.removeItem itemId modelAcc)
         model
   in
   newModel
-  |> resetSelection
+  |> A.resetSelection
   |> autoSize
 
 
@@ -442,7 +469,7 @@ undo undoModel =
   in
   newModel
   |> store
-  |> swap newUndoModel
+  |> A.swap newUndoModel
 
 
 redo : UndoModel -> (UndoModel, Cmd Msg)
@@ -453,4 +480,4 @@ redo undoModel =
   in
   newModel
   |> store
-  |> swap newUndoModel
+  |> A.swap newUndoModel

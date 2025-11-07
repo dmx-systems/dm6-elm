@@ -195,9 +195,7 @@ isFullscreen mapId model =
 
 activeMap : Model -> MapId
 activeMap model =
-  case List.head model.mapPath of
-    Just mapId -> mapId
-    Nothing -> logError "activeMap" "mapPath is empty!" -1
+  firstId model.mapPath
 
 
 {-| Logs an error (and returns -1) if mapPath is empty.

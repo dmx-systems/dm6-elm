@@ -8,7 +8,7 @@ import Model exposing (Point, Size)
 
 
 homeMapName = "DM6 Elm"
-version = "Version 0.2"
+version = "0.3-snapshot"
 date = "Nov 7, 2025"
 
 mainFont = "sans-serif"
@@ -18,7 +18,10 @@ footerFontSize = 13
 
 disabledColor = "gray"
 limboColor = "gray"
-newTopicPos = Point 212 166
+
+initTopicPos = Point 232 167
+initTopicText = "New Topic"
+initBoxText = "New Box"
 
 topicWidth = 156
 topicHeight = 28 -- also width/height of square icon box
@@ -32,7 +35,6 @@ topicDetailSize = Size
 topicDetailMaxWidth = 300
 topicDetailPadding = 8
 topicLineHeight = 1.5
-topicDefaultText = "New Topic"
 topicIconSize = 16
 topicBorderWidth = 1
 topicRadius = 7

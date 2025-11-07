@@ -30,7 +30,11 @@ viewToolbar ({present} as undoModel) =
     toolbarStyle
     [ viewMapNav present
     , viewSearchInput present
-    , viewToolbarButton "Add Topic" AddTopic always undoModel
+    , div
+      []
+      [ viewToolbarButton "Add Topic" AddTopic always undoModel
+      , viewToolbarButton "Add Box" AddBox always undoModel
+      ]
     , div
       []
       [ viewToolbarButton "Edit" (Edit EditStart) hasSelection undoModel
