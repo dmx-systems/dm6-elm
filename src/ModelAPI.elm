@@ -389,12 +389,8 @@ isItemInMapDeep itemId mapId model =
     True
   else
     case mapById mapId model.maps of
-      Just map ->
-        let
-          ids = map.items |> Dict.keys |> List.filter
-            (\id -> isItemInMapDeep itemId id model)
-        in
-        ids |> List.isEmpty |> not
+      Just map -> map.items |> Dict.keys |> List.any
+        (\id -> isItemInMapDeep itemId id model)
       Nothing -> False
 
 
