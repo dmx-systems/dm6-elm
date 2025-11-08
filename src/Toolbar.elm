@@ -179,7 +179,7 @@ viewMonadDisplay model =
     (displayModeStyle disabled_)
     [ div
         []
-        [ text "Monad Display" ]
+        [ text "Topic Display" ]
     , viewRadioButton "Label Only" (SwitchDisplay <| Monad LabelOnly) checked1 disabled_
     , viewRadioButton "Detail" (SwitchDisplay <| Monad Detail) checked2 disabled_
     ]
@@ -206,7 +206,7 @@ viewContainerDisplay model =
     (displayModeStyle disabled_)
     [ div
         []
-        [ text "Container Display" ]
+        [ text "Box Display" ]
     , viewRadioButton "Black Box" (SwitchDisplay <| Container BlackBox) checked1 disabled_
     , viewRadioButton "White Box" (SwitchDisplay <| Container WhiteBox) checked2 disabled_
     , viewRadioButton "Unboxed" (SwitchDisplay <| Container Unboxed) checked3 disabled_
