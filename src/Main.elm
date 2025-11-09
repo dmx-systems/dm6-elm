@@ -208,54 +208,19 @@ addBox model =
 moveTopicToMap : Id -> MapId -> Point -> Id -> MapPath -> Point -> Model -> Model
 moveTopicToMap topicId mapId origPos targetId targetMapPath pos model =
   let
-    (newModel, created) = createMapIfNeeded targetId model
-    newPos =
-      case created of
-        True -> Point
-          (C.topicW2 + C.whiteBoxPadding)
-          (C.topicH2 + C.whiteBoxPadding)
-        False -> pos
     props_ =
-      A.topicProps topicId mapId newModel.maps
-      |> Maybe.andThen (\props -> Just (MapTopic { props | pos = newPos }))
+      A.topicProps topicId mapId model.maps
+      |> Maybe.andThen (\props -> Just (MapTopic { props | pos = pos }))
   in
   case props_ of
     Just props ->
-      newModel
+      model
       |> A.hideItem topicId mapId
       |> A.setTopicPos topicId mapId origPos
       |> A.putItemOnMap topicId props targetId
       |> A.select targetId targetMapPath
       |> autoSize
     Nothing -> model
-
-
--- TODO: drop it
-createMapIfNeeded : Id -> Model -> (Model, Bool)
-createMapIfNeeded topicId model =
-  if A.hasMap topicId model.maps then
-    (model, False)
-  else
-    ( model
-      |> A.addMap topicId
-      |> setDisplayModeInAllMaps topicId (Container BlackBox)
-      -- A nested topic which becomes a container might exist in other maps as well, still as
-      -- a monad. We must set the topic's display mode to "container" in *all* maps. Otherwise
-      -- in the other maps it might be revealed still as a monad.
-    , True
-    )
-
-
--- TODO: drop it
-setDisplayModeInAllMaps : Id -> DisplayMode -> Model -> Model
-setDisplayModeInAllMaps topicId displayMode model =
-  model.maps |> Dict.foldr
-    (\mapId _ modelAcc ->
-      case A.isItemInMap topicId mapId model of
-        True -> A.setDisplayMode topicId mapId displayMode modelAcc
-        False -> modelAcc
-    )
-    model
 
 
 switchDisplay : DisplayMode -> Model -> Model
@@ -395,8 +360,6 @@ fullscreen model =
     Just (topicId, _) ->
       { model | mapPath = topicId :: model.mapPath }
       |> A.resetSelection
-      |> createMapIfNeeded topicId
-      |> Tuple.first
       |> adjustMapRect topicId -1
     Nothing -> model
 

@@ -4,9 +4,8 @@ import AppModel exposing (UndoModel, Model, Msg(..))
 import Config as C
 import Model exposing (EditMsg(..), NavMsg(..), DisplayMode(..), MonadDisplay(..),
   ContainerDisplay(..))
-import ModelAPI exposing (topicById, topicLabel, firstId, isHome, activeMap,
-  displayMode, singleSelection)
-import Utils exposing (stopPropagationOnMousedown)
+import ModelAPI as A
+import Utils as U
 -- components
 import IconMenu
 import IconMenuAPI exposing (viewIcon)
@@ -43,7 +42,7 @@ viewToolbar ({present} as undoModel) =
     , viewToolbarButton "Show Related" (Search Search.ShowRelated) hasSelection undoModel
     , viewMonadDisplay present
     , viewContainerDisplay present
-    , viewToolbarButton "Fullscreen" (Nav Fullscreen) hasSelection undoModel
+    , viewToolbarButton "Fullscreen" (Nav Fullscreen) hasBoxSelection undoModel
     , div
       []
       [ viewToolbarButton "Hide" Hide hasSelection undoModel
@@ -78,7 +77,7 @@ toolbarStyle =
 viewMapNav : Model -> Html Msg
 viewMapNav model =
   let
-    backDisabled = isHome model
+    backDisabled = A.isHome model
   in
   div
     mapNavStyle
@@ -111,8 +110,8 @@ mapTitleStyle =
 
 getMapName : Model -> String
 getMapName model =
-  case topicById (activeMap model) model of
-    Just topic -> topicLabel topic
+  case A.topicById (A.activeMap model) model of
+    Just topic -> A.topicLabel topic
     Nothing -> "??"
 
 
@@ -120,7 +119,7 @@ viewToolbarButton : String -> Msg -> (UndoModel -> Bool) -> UndoModel -> Html Ms
 viewToolbarButton label msg isEnabled undoModel =
   let
     buttonAttr =
-      [ stopPropagationOnMousedown NoOp
+      [ U.stopPropagationOnMousedown NoOp
       , disabled <| not <| isEnabled undoModel
       ]
   in
@@ -136,6 +135,14 @@ viewToolbarButton label msg isEnabled undoModel =
 hasSelection : UndoModel -> Bool
 hasSelection undoModel =
   not (undoModel.present.selection |> List.isEmpty)
+
+
+{-| isEnabled predicate -}
+hasBoxSelection : UndoModel -> Bool
+hasBoxSelection {present} =
+  case A.singleSelection present of
+    Just (id, _) -> A.hasMap id present.maps
+    Nothing -> False
 
 
 {-| isEnabled predicate -}
@@ -166,8 +173,8 @@ buttonStyle =
 viewMonadDisplay : Model -> Html Msg
 viewMonadDisplay model =
   let
-    display = case singleSelection model of
-      Just (topicId, mapPath) -> displayMode topicId (firstId mapPath) model.maps
+    display = case A.singleSelection model of
+      Just (topicId, mapPath) -> A.displayMode topicId (A.firstId mapPath) model.maps
       Nothing -> Nothing
     (checked1, checked2, disabled_) =
       case display of
@@ -188,8 +195,8 @@ viewMonadDisplay model =
 viewContainerDisplay : Model -> Html Msg
 viewContainerDisplay model =
   let
-    display = case singleSelection model of
-      Just (topicId, mapPath) -> displayMode topicId (firstId mapPath) model.maps
+    display = case A.singleSelection model of
+      Just (topicId, mapPath) -> A.displayMode topicId (A.firstId mapPath) model.maps
       Nothing -> Nothing
     (checked1, checked2, checked3) =
       case display of
@@ -233,7 +240,7 @@ displayModeStyle disabled =
 viewRadioButton : String -> Msg -> Bool -> Bool -> Html Msg
 viewRadioButton label_ msg isChecked isDisabled =
   label
-    [ stopPropagationOnMousedown NoOp ]
+    [ U.stopPropagationOnMousedown NoOp ]
     [ input
       [ type_ "radio", name "display-mode", checked isChecked, disabled isDisabled
       , onClick msg
