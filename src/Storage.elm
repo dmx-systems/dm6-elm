@@ -132,9 +132,9 @@ encodeDisplayName displayMode =
     (case displayMode of
       Monad LabelOnly -> "LabelOnly"
       Monad Detail -> "Detail"
-      Container BlackBox -> "BlackBox"
-      Container WhiteBox -> "WhiteBox"
-      Container Unboxed -> "Unboxed"
+      Box BlackBox -> "BlackBox"
+      Box WhiteBox -> "WhiteBox"
+      Box Unboxed -> "Unboxed"
     )
 
 
@@ -243,9 +243,9 @@ displayModeDecoder str =
   case str of
     "LabelOnly" -> D.succeed (Monad LabelOnly)
     "Detail" -> D.succeed (Monad Detail)
-    "BlackBox" -> D.succeed (Container BlackBox)
-    "WhiteBox" -> D.succeed (Container WhiteBox)
-    "Unboxed" -> D.succeed (Container Unboxed)
+    "BlackBox" -> D.succeed (Box BlackBox)
+    "WhiteBox" -> D.succeed (Box WhiteBox)
+    "Unboxed" -> D.succeed (Box Unboxed)
     _ -> D.fail <| "\"" ++ str ++ "\" is an invalid display mode"
 
 

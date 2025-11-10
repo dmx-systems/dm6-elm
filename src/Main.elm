@@ -1,7 +1,7 @@
 module Main exposing (..)
 
 import AppModel exposing (..)
-import Boxing exposing (boxContainer, unboxContainer)
+import Boxing exposing (box, unbox)
 import Config as C
 import MapAutoSize exposing (autoSize)
 import MapRenderer exposing (viewMap)
@@ -196,7 +196,7 @@ addBox model =
             (C.initTopicPos.y + map.rect.y1)
           )
           C.topicDetailSize
-          (Container BlackBox)
+          (Box BlackBox)
       in
       newModel
       |> A.addMap topicId
@@ -226,18 +226,18 @@ moveTopicToMap topicId mapId origPos targetId targetMapPath pos model =
 switchDisplay : DisplayMode -> Model -> Model
 switchDisplay displayMode model =
   ( case A.singleSelection model of
-    Just (containerId, mapPath) ->
+    Just (boxId, mapPath) ->
       let
         mapId = A.firstId mapPath
       in
       { model | maps =
         case displayMode of
           Monad _ -> model.maps
-          Container BlackBox -> boxContainer containerId mapId model
-          Container WhiteBox -> boxContainer containerId mapId model
-          Container Unboxed -> unboxContainer containerId mapId model
+          Box BlackBox -> box boxId mapId model
+          Box WhiteBox -> box boxId mapId model
+          Box Unboxed -> unbox boxId mapId model
       }
-      |> A.setDisplayMode containerId mapId displayMode
+      |> A.setDisplayMode boxId mapId displayMode
     Nothing -> model
   )
   |> autoSize

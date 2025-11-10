@@ -80,7 +80,7 @@ type alias AssocProps =
 
 type DisplayMode
   = Monad MonadDisplay
-  | Container ContainerDisplay
+  | Box BoxDisplay
 
 
 type MonadDisplay
@@ -88,7 +88,7 @@ type MonadDisplay
   | Detail
 
 
-type ContainerDisplay
+type BoxDisplay
   = BlackBox
   | WhiteBox
   | Unboxed

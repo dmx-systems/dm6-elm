@@ -17,7 +17,7 @@ type alias UndoModel = UndoList Model
 
 
 type alias Model =
-  { items : Items -- TODO: represent container content independent from maps?
+  { items : Items -- TODO: represent box content independent from maps?
   , maps : Maps
   , mapPath : MapPath
   , nextId : Id

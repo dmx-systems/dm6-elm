@@ -58,13 +58,13 @@ calcItemSize mapItem pathToParent rectAcc model =
       case displayMode of
         Monad LabelOnly -> (topicExtent pos rectAcc, model)
         Monad Detail -> (detailTopicExtent mapItem.id mapId pos size rectAcc model, model)
-        Container BlackBox -> (topicExtent pos rectAcc, model)
-        Container WhiteBox ->
+        Box BlackBox -> (topicExtent pos rectAcc, model)
+        Box WhiteBox ->
           let
             (rect, model_) = calcMapRect (mapItem.id :: pathToParent) model -- recursion
           in
           (mapExtent pos rect rectAcc, model_)
-        Container Unboxed -> (topicExtent pos rectAcc, model)
+        Box Unboxed -> (topicExtent pos rectAcc, model)
     MapAssoc _ -> (rectAcc, model)
 
 

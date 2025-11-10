@@ -362,7 +362,7 @@ initTopicProps topicId model =
     ( Point 0 0 ) -- TODO, see also MapRenderer's viewLimboAssoc()
     C.topicSize
     ( if hasMap topicId model.maps then
-        Container BlackBox
+        Box BlackBox
       else
         Monad LabelOnly
     )

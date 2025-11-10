@@ -1,4 +1,4 @@
-module Boxing exposing (boxContainer, unboxContainer)
+module Boxing exposing (box, unbox)
 
 import AppModel exposing (..)
 import Model exposing (..)
@@ -19,99 +19,99 @@ type alias TransferFunc = MapItems -> MapItems -> Model -> MapItems
 -- UPDATE
 
 
-{-| Hides a container content from its parent map.
-  (Any target map can be given but de-facto it's the container's parent map)
+{-| Hides box content from its parent map.
+  (Any target map can be given but de-facto it's the box's parent map)
 -}
-boxContainer : MapId -> MapId -> Model -> Maps
-boxContainer containerId targetMapId model =
-  case displayMode containerId targetMapId model.maps of
+box : MapId -> MapId -> Model -> Maps
+box boxId targetMapId model =
+  case displayMode boxId targetMapId model.maps of
     -- box only if currently unboxed
-    Just (Container Unboxed) -> transferContent containerId targetMapId boxItems model
+    Just (Box Unboxed) -> transferContent boxId targetMapId boxItems_ model
     _ -> model.maps
 
 
-{-| Reveals a container content on its parent map.
-  (Any target map can be given but de-facto it's the container's parent map)
+{-| Reveals box content on its parent map.
+  (Any target map can be given but de-facto it's the box's parent map)
 -}
-unboxContainer : MapId -> MapId -> Model -> Maps
-unboxContainer containerId targetMapId model =
-  case displayMode containerId targetMapId model.maps of
+unbox : MapId -> MapId -> Model -> Maps
+unbox boxId targetMapId model =
+  case displayMode boxId targetMapId model.maps of
     -- unbox only if currently boxed
-    Just (Container BlackBox) -> transferContent containerId targetMapId unboxItems model
-    Just (Container WhiteBox) -> transferContent containerId targetMapId unboxItems model
+    Just (Box BlackBox) -> transferContent boxId targetMapId unboxItems_ model
+    Just (Box WhiteBox) -> transferContent boxId targetMapId unboxItems_ model
     _ -> model.maps
 
 
 transferContent : MapId -> MapId -> TransferFunc -> Model -> Maps
-transferContent containerId targetMapId transferFunc model =
-  case mapByIdOrLog containerId model.maps of
-    Just containerMap ->
+transferContent boxId targetMapId transferFunc model =
+  case mapByIdOrLog boxId model.maps of
+    Just map ->
       model.maps |> updateMaps
         targetMapId
         (\targetMap ->
-          { targetMap | items = transferFunc containerMap.items targetMap.items model }
+          { targetMap | items = transferFunc map.items targetMap.items model }
         )
     Nothing -> model.maps
 
 
 {-| Transfer function, Boxing.
-Iterates the container items (recursively) and sets corresponding target items to hidden.
+Iterates the box items (recursively) and sets corresponding target items to hidden.
 Returns the updated target items.
 -}
-boxItems : MapItems -> MapItems -> Model -> MapItems
-boxItems containerItems targetItems model =
-  containerItems |> Dict.values |> List.foldr -- FIXME: apply isVisible filter?
-    (\containerItem targetItemsAcc ->
-      case targetItemsAcc |> Dict.get containerItem.id of
+boxItems_ : MapItems -> MapItems -> Model -> MapItems
+boxItems_ boxItems targetItems model =
+  boxItems |> Dict.values |> List.foldr -- FIXME: apply isVisible filter?
+    (\boxItem targetItemsAcc ->
+      case targetItemsAcc |> Dict.get boxItem.id of
         Just {pinned} ->
           if pinned then
             -- don't box pinned items, only hide the assoc
-            hideItem_ containerItem.parentAssocId targetItemsAcc model
+            hideItem_ boxItem.parentAssocId targetItemsAcc model
           else
             let
-              items = hideItem_ containerItem.id targetItemsAcc model
+              items = hideItem_ boxItem.id targetItemsAcc model
             in
-            case mapById containerItem.id model.maps of
-              Just map -> boxItems map.items items model -- recursion
+            case mapById boxItem.id model.maps of
+              Just map -> boxItems_ map.items items model -- recursion
               Nothing -> items
-        Nothing -> targetItemsAcc -- FIXME: continue unboxing containers?
+        Nothing -> targetItemsAcc -- FIXME: continue unboxing boxes?
     )
     targetItems
 
 
 {-| Transfer function, Unboxing.
-Iterates the container items (recursively) and reveals corresponding target items.
+Iterates the box items (recursively) and reveals corresponding target items.
 Returns the updated target items.
 -}
-unboxItems : MapItems -> MapItems -> Model -> MapItems
-unboxItems containerItems targetItems model =
-  containerItems |> Dict.values |> List.filter isVisible |> List.foldr
-    (\containerItem targetItemsAcc ->
-      case containerItem.props of
+unboxItems_ : MapItems -> MapItems -> Model -> MapItems
+unboxItems_ boxItems targetItems model =
+  boxItems |> Dict.values |> List.filter isVisible |> List.foldr
+    (\boxItem targetItemsAcc ->
+      case boxItem.props of
         MapTopic _ ->
           let
-            (items, abort) = unboxTopic containerItem targetItemsAcc model
+            (items, abort) = unboxTopic boxItem targetItemsAcc model
           in
           if abort then
             items
           else
-            case mapById containerItem.id model.maps of
-              Just map -> unboxItems map.items items model -- recursion
+            case mapById boxItem.id model.maps of
+              Just map -> unboxItems_ map.items items model -- recursion
               Nothing -> items
         MapAssoc _ ->
-          unboxAssoc containerItem targetItemsAcc
+          unboxAssoc boxItem targetItemsAcc
     )
     targetItems
 
 
-{-| Returns the target item to reveal that corresponds to the container item.
+{-| Returns the target item to reveal that corresponds to the box item.
 Part of unboxing. FIXDOC
 -}
 unboxTopic : MapItem -> MapItems -> Model -> (MapItems, Bool)
-unboxTopic containerItem targetItems model =
+unboxTopic boxItem targetItems model =
   let
     (topicToInsert, abort) =
-      case targetItems |> Dict.get containerItem.id of
+      case targetItems |> Dict.get boxItem.id of
         Just item ->
           -- if map item exists (= was revealed before) ...
           -- 1) set it to "pinned" unless it is hidden
@@ -121,13 +121,13 @@ unboxTopic containerItem targetItems model =
           in
           ({ item | hidden = False, pinned = not item.hidden }, isAbort item)
         Nothing ->
-          -- by default (when no map item exists) an unboxed container will also be unboxed
+          -- by default (when no map item exists) an unboxed box will also be unboxed
           -- FIXME: set item's parentAssocId?
-          if hasMap containerItem.id model.maps then
-            (setUnboxed containerItem, False)
+          if hasMap boxItem.id model.maps then
+            (setUnboxed boxItem, False)
           else
-            (containerItem, False)
-    assocToInsert = targetAssocItem containerItem.parentAssocId targetItems
+            (boxItem, False)
+    assocToInsert = targetAssocItem boxItem.parentAssocId targetItems
   in
   ( targetItems
     |> Dict.insert topicToInsert.id topicToInsert
@@ -137,9 +137,9 @@ unboxTopic containerItem targetItems model =
 
 
 unboxAssoc : MapItem -> MapItems -> MapItems
-unboxAssoc containerItem targetItems =
+unboxAssoc boxItem targetItems =
   let
-    assocToInsert = targetAssocItem containerItem.id targetItems
+    assocToInsert = targetAssocItem boxItem.id targetItems
   in
   targetItems
     |> Dict.insert assocToInsert.id assocToInsert
@@ -149,7 +149,7 @@ setUnboxed : MapItem -> MapItem
 setUnboxed item =
   { item | props =
     case item.props of
-      MapTopic props -> MapTopic { props | displayMode = Container Unboxed }
+      MapTopic props -> MapTopic { props | displayMode = Box Unboxed }
       MapAssoc props -> MapAssoc props
   }
 
@@ -159,14 +159,14 @@ isAbort item =
   case item.props of
     MapTopic props ->
       case props.displayMode of
-        Container BlackBox -> True
-        Container WhiteBox -> True
-        Container Unboxed -> False
+        Box BlackBox -> True
+        Box WhiteBox -> True
+        Box Unboxed -> False
         Monad _ -> False
     MapAssoc _ -> False
 
 
-{-| Returns the target item to reveal that corresponds to the container item.
+{-| Returns the target item to reveal that corresponds to the box item.
 Part of unboxing. FIXDOC
 -}
 targetAssocItem : Id -> MapItems -> MapItem

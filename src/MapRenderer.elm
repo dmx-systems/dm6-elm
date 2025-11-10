@@ -224,9 +224,9 @@ viewTopic topic props mapPath model =
       case effectiveDisplayMode topic.id mapId props.displayMode model of
         Monad LabelOnly -> labelTopic
         Monad Detail -> detailTopic
-        Container BlackBox -> blackBoxTopic
-        Container WhiteBox -> whiteBoxTopic
-        Container Unboxed -> unboxedTopic
+        Box BlackBox -> blackBoxTopic
+        Box WhiteBox -> whiteBoxTopic
+        Box Unboxed -> unboxedTopic
     (style, children) = topicFunc topic props mapPath model
   in
   div
@@ -242,7 +242,7 @@ effectiveDisplayMode topicId mapId displayMode model =
   if isLimboTopic topicId mapId model then
     case displayMode of
       Monad _ -> Monad Detail
-      Container _ -> Container WhiteBox
+      Box _ -> Box WhiteBox
   else
     displayMode
 
@@ -422,7 +422,7 @@ mapItemCount topicId props model =
     itemCount =
       case props.displayMode of
         Monad _ -> 0
-        Container _ ->
+        Box _ ->
           case mapByIdOrLog topicId model.maps of
             Just map -> map.items |> Dict.values |> List.filter isVisible |> List.length
             Nothing -> 0
@@ -553,7 +553,7 @@ topicFlexboxStyle topic props mapId model =
   let
     r12 = fromInt C.topicRadius ++ "px"
     r34 = case props.displayMode of
-      Container WhiteBox -> "0"
+      Box WhiteBox -> "0"
       _ -> r12
   in
   [ style "display" "flex"
@@ -578,7 +578,7 @@ topicIconBoxStyle props =
   let
     r1 = fromInt C.topicRadius ++ "px"
     r4 = case props.displayMode of
-      Container WhiteBox -> "0"
+      Box WhiteBox -> "0"
       _ -> r1
   in
   [ style "flex" "none"
