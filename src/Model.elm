@@ -29,7 +29,7 @@ type alias TopicInfo =
 
 type alias AssocInfo =
   { id : Id
-  , itemType : ItemType -- serialzed as "type", field can't be named "type", a reserved word
+  , itemType : ItemType -- serialized as "type", field can't be named "type", a reserved word
   , role1 : RoleType
   , player1 : Id
   , role2 : RoleType
@@ -37,14 +37,14 @@ type alias AssocInfo =
   }
 
 
-type alias MapPath = List MapId
+type alias BoxPath = List BoxId
 
 
-type alias Maps = Dict Id Map
+type alias Boxes = Dict Id Map
 
 
 type alias Map =
-  { id : MapId
+  { id : BoxId
   , rect : Rectangle
   , items : MapItems
   }
@@ -114,11 +114,11 @@ type alias Size =
   }
 
 
-type alias Selection = List (Id, MapPath) -- TODO: make it a Set?
+type alias Selection = List (Id, BoxPath) -- TODO: make it a Set?
 
 
 type alias Id = Int
-type alias MapId = Id
+type alias BoxId = Id
 type alias AssocIds = Set Id
 type alias Class = String -- a CSS class, e.g. "dmx-topic"
 type alias ItemType = String -- a type URI, e.g. "dmx.association"
@@ -128,7 +128,7 @@ type alias IconName = String -- name of feather icon, https://feathericons.com
 
 
 type EditState
-  = ItemEdit Id MapId
+  = ItemEdit Id BoxId
   | NoEdit
 
 
@@ -136,7 +136,7 @@ type EditMsg
   = EditStart
   | OnTextInput String
   | OnTextareaInput String
-  | SetTopicSize Id MapId Size
+  | SetTopicSize Id BoxId Size
   | EditEnd
 
 

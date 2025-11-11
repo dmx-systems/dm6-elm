@@ -1,6 +1,6 @@
 module Utils exposing (..)
 
-import Model exposing (Class, Id, MapPath, Point)
+import Model exposing (Class, Id, BoxPath, Point)
 
 import Html exposing (Html, Attribute, text, br)
 import Html.Events exposing (on, stopPropagationOn, keyCode)
@@ -64,7 +64,7 @@ idTupleDecoder =
   |> D.andThen toIntTupleDecoder
 
 
-pathDecoder : D.Decoder MapPath
+pathDecoder : D.Decoder BoxPath
 pathDecoder =
   D.at ["target", "dataset", "path"] D.string
   |> D.andThen toIntListDecoder

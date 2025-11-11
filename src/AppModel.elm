@@ -17,9 +17,9 @@ type alias UndoModel = UndoList Model
 
 
 type alias Model =
-  { items : Items -- TODO: represent box content independent from maps?
-  , maps : Maps
-  , mapPath : MapPath
+  { items : Items
+  , boxes : Boxes
+  , boxPath : BoxPath
   , nextId : Id
   ----- transient -----
   , selection : Selection
@@ -35,9 +35,9 @@ type alias Model =
 default : Model
 default =
   { items = Dict.singleton 0 <| Item 0 (Topic (TopicInfo 0 homeMapName Nothing)) Set.empty
-  , maps = Dict.singleton 0 -- map 0 is the "home map"
+  , boxes = Dict.singleton 0 -- map 0 is the "home map"
     <| Map 0 (Rectangle 0 0 0 0) Dict.empty
-  , mapPath = [0]
+  , boxPath = [0]
   , nextId = 1
   ----- transient -----
   , selection = []
@@ -67,7 +67,7 @@ resetTransientState model =
 type Msg
   = AddTopic
   | AddBox
-  | MoveTopicToMap Id MapId Point Id MapPath Point -- start point, random point (for target)
+  | MoveTopicToMap Id BoxId Point Id BoxPath Point -- start point, random point (for target)
   | SwitchDisplay DisplayMode
   | Edit EditMsg
   | Nav NavMsg

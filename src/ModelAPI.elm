@@ -103,7 +103,7 @@ removeItem_ : Id -> Model -> Model
 removeItem_ itemId model =
   { model
     | items = model.items |> Dict.remove itemId -- delete item
-    , maps = model.maps |> Dict.map -- delete item from all maps
+    , boxes = model.boxes |> Dict.map -- delete item from all boxes
       (\_ map -> { map | items = map.items |> Dict.remove itemId })
   }
 
@@ -176,7 +176,7 @@ nextId model =
   { model | nextId = model.nextId + 1 }
 
 
--- Maps
+-- Boxes
 
 isHome : Model -> Bool
 isHome model =
@@ -188,90 +188,90 @@ isHomeMap id =
   id == 0
 
 
-isFullscreen : MapId -> Model -> Bool
+isFullscreen : BoxId -> Model -> Bool
 isFullscreen mapId model =
   activeMap model == mapId
 
 
-activeMap : Model -> MapId
+activeMap : Model -> BoxId
 activeMap model =
-  firstId model.mapPath
+  firstId model.boxPath
 
 
-{-| Logs an error (and returns -1) if mapPath is empty.
+{-| Logs an error (and returns -1) if boxPath is empty.
 -}
-firstId : MapPath -> MapId
-firstId mapPath =
-  case mapPath of
+firstId : BoxPath -> BoxId
+firstId boxPath =
+  case boxPath of
     mapId :: _ -> mapId
-    [] -> logError "firstId" "mapPath is empty!" -1
+    [] -> logError "firstId" "boxPath is empty!" -1
 
 
-fromPath : MapPath -> String
-fromPath mapPath =
-  mapPath |> List.map fromInt |> String.join ","
+fromPath : BoxPath -> String
+fromPath boxPath =
+  boxPath |> List.map fromInt |> String.join ","
 
 
 {-| Logs an error if map does not exist.
-TODO: replace Maps parameter by Model?
+TODO: replace Boxes parameter by Model?
 -}
-mapByIdOrLog : MapId -> Maps -> Maybe Map
-mapByIdOrLog mapId maps =
-  case mapById mapId maps of
+mapByIdOrLog : BoxId -> Boxes -> Maybe Map
+mapByIdOrLog mapId boxes =
+  case mapById mapId boxes of
     Just map -> Just map
     Nothing -> illegalMapId "mapByIdOrLog" mapId Nothing
 
 
-{-| TODO: replace Maps parameter by Model? -}
-mapById : MapId -> Maps -> Maybe Map
-mapById mapId maps =
-  maps |> Dict.get mapId
+{-| TODO: replace Boxes parameter by Model? -}
+mapById : BoxId -> Boxes -> Maybe Map
+mapById mapId boxes =
+  boxes |> Dict.get mapId
 
 
-{-| TODO: replace Maps parameter by Model? -}
-hasMap : MapId -> Maps -> Bool
-hasMap mapId maps =
-  maps |> Dict.member mapId
+{-| TODO: replace Boxes parameter by Model? -}
+hasMap : BoxId -> Boxes -> Bool
+hasMap mapId boxes =
+  boxes |> Dict.member mapId
 
 
-addMap : MapId -> Model -> Model
+addMap : BoxId -> Model -> Model
 addMap mapId model =
-  { model | maps = model.maps |> Dict.insert
+  { model | boxes = model.boxes |> Dict.insert
     mapId
     (Map mapId (Rectangle 0 0 0 0) Dict.empty)
   }
 
 
-updateMapRect : MapId -> (Rectangle -> Rectangle) -> Model -> Model
+updateMapRect : BoxId -> (Rectangle -> Rectangle) -> Model -> Model
 updateMapRect mapId rectFunc model =
-  { model | maps = updateMaps
+  { model | boxes = updateMaps
     mapId
     (\map ->
       { map | rect = rectFunc map.rect }
     )
-    model.maps
+    model.boxes
   }
 
 
 {-| Logs an error if map does not exist or item is not in map or is not a topic.
-TODO: replace Maps parameter by Model?
+TODO: replace Boxes parameter by Model?
 -}
-topicPos : Id -> MapId -> Maps -> Maybe Point
-topicPos topicId mapId maps =
-  case topicProps topicId mapId maps of
+topicPos : Id -> BoxId -> Boxes -> Maybe Point
+topicPos topicId mapId boxes =
+  case topicProps topicId mapId boxes of
     Just { pos } -> Just pos
     Nothing -> fail "topicPos" {topicId = topicId, mapId = mapId} Nothing
 
 
 {-| Logs an error if map does not exist or if topic is not in map -}
-setTopicPos : Id -> MapId -> Point -> Model -> Model
+setTopicPos : Id -> BoxId -> Point -> Model -> Model
 setTopicPos topicId mapId pos model =
   model |> updateTopicProps topicId mapId
     (\props -> { props | pos = pos })
 
 
 {-| Logs an error if map does not exist or if topic is not in map -}
-setTopicPosByDelta : Id -> MapId -> Delta -> Model -> Model
+setTopicPosByDelta : Id -> BoxId -> Delta -> Model -> Model
 setTopicPosByDelta topicId mapId delta model =
   model |> updateTopicProps topicId mapId
     (\props ->
@@ -283,40 +283,40 @@ setTopicPosByDelta topicId mapId delta model =
     )
 
 
-{-| TODO: replace Maps parameter by Model? -}
-topicSize : Id -> MapId -> Maps -> Maybe Size
-topicSize topicId mapId maps =
-  case topicProps topicId mapId maps of
+{-| TODO: replace Boxes parameter by Model? -}
+topicSize : Id -> BoxId -> Boxes -> Maybe Size
+topicSize topicId mapId boxes =
+  case topicProps topicId mapId boxes of
     Just { size } -> Just size
     Nothing -> fail "topicSize" {topicId = topicId, mapId = mapId} Nothing
 
 
 {-| Logs an error if map does not exist or if topic is not in map -}
-setTopicSize : Id -> MapId -> Size -> Model -> Model
+setTopicSize : Id -> BoxId -> Size -> Model -> Model
 setTopicSize topicId mapId size model =
   model |> updateTopicProps topicId mapId
     (\props -> { props | size = size })
 
 
-{-| TODO: replace Maps parameter by Model? -}
-displayMode : Id -> MapId -> Maps -> Maybe DisplayMode
-displayMode topicId mapId maps =
-  case topicProps topicId mapId maps of
+{-| TODO: replace Boxes parameter by Model? -}
+displayMode : Id -> BoxId -> Boxes -> Maybe DisplayMode
+displayMode topicId mapId boxes =
+  case topicProps topicId mapId boxes of
     Just props -> Just props.displayMode
     Nothing -> fail "displayMode" {topicId = topicId, mapId = mapId} Nothing
 
 
 {-| Logs an error if map does not exist or if topic is not in map -}
-setDisplayMode : Id -> MapId -> DisplayMode -> Model -> Model
+setDisplayMode : Id -> BoxId -> DisplayMode -> Model -> Model
 setDisplayMode topicId mapId display model =
   model |> updateTopicProps topicId mapId
     (\props -> { props | displayMode = display })
 
 
-{-| TODO: replace Maps parameter by Model? -}
-topicProps : Id -> MapId -> Maps -> Maybe TopicProps
-topicProps topicId mapId maps =
-  case mapItemById topicId mapId maps of
+{-| TODO: replace Boxes parameter by Model? -}
+topicProps : Id -> BoxId -> Boxes -> Maybe TopicProps
+topicProps topicId mapId boxes =
+  case mapItemById topicId mapId boxes of
     Just mapItem ->
       case mapItem.props of
         MapTopic props -> Just props
@@ -325,9 +325,9 @@ topicProps topicId mapId maps =
 
 
 {-| Logs an error if map does not exist or if topic is not in map -}
-updateTopicProps : Id -> MapId -> (TopicProps -> TopicProps) -> Model -> Model
+updateTopicProps : Id -> BoxId -> (TopicProps -> TopicProps) -> Model -> Model
 updateTopicProps topicId mapId propsFunc model =
-  { model | maps = model.maps |> updateMaps mapId
+  { model | boxes = model.boxes |> updateMaps mapId
     (\map ->
       { map | items = map.items |> Dict.update topicId
         (\mapItem_ ->
@@ -361,7 +361,7 @@ initTopicProps topicId model =
   TopicProps
     ( Point 0 0 ) -- TODO, see also MapRenderer's viewLimboAssoc()
     C.topicSize
-    ( if hasMap topicId model.maps then
+    ( if hasMap topicId model.boxes then
         Box BlackBox
       else
         Monad LabelOnly
@@ -369,11 +369,11 @@ initTopicProps topicId model =
 
 
 {-| Logs an error if map does not exist or item is not in map.
-TODO: replace Maps parameter by Model?
+TODO: replace Boxes parameter by Model?
 -}
-mapItemById : Id -> MapId -> Maps -> Maybe MapItem
-mapItemById itemId mapId maps =
-  mapByIdOrLog mapId maps |> Maybe.andThen
+mapItemById : Id -> BoxId -> Boxes -> Maybe MapItem
+mapItemById itemId mapId boxes =
+  mapByIdOrLog mapId boxes |> Maybe.andThen
     (\map ->
       case map.items |> Dict.get itemId of
         Just mapItem -> Just mapItem
@@ -381,21 +381,21 @@ mapItemById itemId mapId maps =
     )
 
 
-isItemInMapDeep : Id -> MapId -> Model -> Bool
+isItemInMapDeep : Id -> BoxId -> Model -> Bool
 isItemInMapDeep itemId mapId model =
   if itemId == mapId then
     True
   else
-    case mapById mapId model.maps of
+    case mapById mapId model.boxes of
       Just map -> map.items |> Dict.keys |> List.any
         (\id -> isItemInMapDeep itemId id model)
       Nothing -> False
 
 
 {-| Logs an error if map does not exist. -}
-isItemInMap : Id -> MapId -> Model -> Bool
+isItemInMap : Id -> BoxId -> Model -> Bool
 isItemInMap itemId mapId model =
-  case mapByIdOrLog mapId model.maps of
+  case mapByIdOrLog mapId model.boxes of
     Just map -> map.items |> Dict.member itemId
     Nothing -> False
 
@@ -405,7 +405,7 @@ Presumption: the item is not yet contained in the map. Otherwise the existing ma
 overridden and another association still be created. This is not what you want.
 Can be used for both, topics and associations.
 -}
-putItemOnMap : Id -> MapProps -> MapId -> Model -> Model
+putItemOnMap : Id -> MapProps -> BoxId -> Model -> Model
 putItemOnMap itemId props mapId model =
   let
     (newModel, parentAssocId) = addAssoc
@@ -417,7 +417,7 @@ putItemOnMap itemId props mapId model =
     _ = info "putItemOnMap"
       { itemId = itemId, parentAssocId = parentAssocId, props = props, mapId = mapId}
   in
-  { newModel | maps = newModel.maps |> updateMaps
+  { newModel | boxes = newModel.boxes |> updateMaps
       mapId
       (\map -> { map | items = map.items |> Dict.insert itemId mapItem })
   }
@@ -428,9 +428,9 @@ Can be used for both, topics and associations.
 If the item is *not* contained in the map, or its "hidden" flag is False already, its a no-op.
 Logs an error if map does not exist.
 -}
-showItem : Id -> MapId -> Model -> Model
+showItem : Id -> BoxId -> Model -> Model
 showItem itemId mapId model =
-  { model | maps = model.maps |> updateMaps
+  { model | boxes = model.boxes |> updateMaps
     mapId
     (\map ->
       { map | items = map.items |> Dict.update itemId
@@ -444,9 +444,9 @@ showItem itemId mapId model =
   }
 
 
-hideItem : Id -> MapId -> Model -> Model
+hideItem : Id -> BoxId -> Model -> Model
 hideItem itemId mapId model =
-  { model | maps = model.maps |> updateMaps
+  { model | boxes = model.boxes |> updateMaps
     mapId
     (\map -> { map | items = hideItem_ itemId map.items model })
   }
@@ -467,11 +467,11 @@ hideItem_ itemId items model =
 
 
 {-| Logs an error if map does not exist.
-TODO: replace Maps parameter by Model?
+TODO: replace Boxes parameter by Model?
 -}
-updateMaps : MapId -> (Map -> Map) -> Maps -> Maps
-updateMaps mapId mapFunc maps =
-  maps |> Dict.update mapId
+updateMaps : BoxId -> (Map -> Map) -> Boxes -> Boxes
+updateMaps mapId mapFunc boxes =
+  boxes |> Dict.update mapId
     (\map_ ->
       case map_ of
         Just map -> Just (mapFunc map)
@@ -535,12 +535,12 @@ isVisible item =
 
 -- Selection
 
-select : Id -> MapPath -> Model -> Model
-select itemId mapPath model =
+select : Id -> BoxPath -> Model -> Model
+select itemId boxPath model =
   let
-    _ = info "select" (itemId, mapPath)
+    _ = info "select" (itemId, boxPath)
   in
-  { model | selection = [ (itemId, mapPath) ] }
+  { model | selection = [ (itemId, boxPath) ] }
 
 
 resetSelection : Model -> Model
@@ -548,28 +548,28 @@ resetSelection model =
   { model | selection = [] }
 
 
-isSelected : Id -> MapId -> Model -> Bool
+isSelected : Id -> BoxId -> Model -> Bool
 isSelected itemId mapId model =
   model.selection |> List.any
-    (\(id, mapPath) ->
-      case mapPath of
+    (\(id, boxPath) ->
+      case boxPath of
         mapId_ :: _ -> itemId == id && mapId == mapId_
         [] -> False
     )
 
 
-singleSelection : Model -> Maybe (Id, MapPath)
+singleSelection : Model -> Maybe (Id, BoxPath)
 singleSelection model =
   case model.selection of
     [ selItem ] -> Just selItem
     _ -> Nothing
 
 
-singleSelectionMapId : Model -> Maybe MapId
+singleSelectionMapId : Model -> Maybe BoxId
 singleSelectionMapId model =
   case singleSelection model of
-    Just (_, mapPath) ->
-      case mapPath of
+    Just (_, boxPath) ->
+      case boxPath of
         mapId :: _ -> Just mapId
         [] -> Nothing
     Nothing -> Nothing

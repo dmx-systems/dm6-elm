@@ -3,7 +3,7 @@ module SearchAPI exposing (viewSearchInput, viewResultMenu, closeResultMenu, upd
 import AppModel exposing (UndoModel, Model, Msg(..))
 import Config as C
 import MapAutoSize exposing (autoSize)
-import Model exposing (ItemInfo(..), Id, MapId)
+import Model exposing (ItemInfo(..), Id, BoxId)
 import ModelAPI exposing (topicById, relatedItems, activeMap, initItemProps, isItemInMap,
   isItemInMapDeep, showItem, putItemOnMap, singleSelection, singleSelectionMapId, push, swap)
 import Storage exposing (store)
@@ -325,7 +325,7 @@ isMatch searchText text =
   && String.contains (String.toLower searchText) (String.toLower text)
 
 
-revealItem : Id -> MapId -> Model -> Model
+revealItem : Id -> BoxId -> Model -> Model
 revealItem itemId mapId model =
   if isItemInMap itemId mapId model then
     let

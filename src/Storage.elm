@@ -46,8 +46,8 @@ encodeModel : Model -> E.Value
 encodeModel model =
   E.object
     [ ("items", model.items |> Dict.values |> E.list encodeItem)
-    , ("maps", model.maps |> Dict.values |> E.list encodeMap)
-    , ("mapPath", E.list E.int model.mapPath)
+    , ("boxes", model.boxes |> Dict.values |> E.list encodeMap)
+    , ("boxPath", E.list E.int model.boxPath)
     , ("nextId", E.int model.nextId)
     ]
 
@@ -144,8 +144,8 @@ modelDecoder : D.Decoder Model
 modelDecoder =
   D.succeed Model
     |> required "items" (D.list itemDecoder |> D.andThen toDictDecoder)
-    |> required "maps" (D.list mapDecoder |> D.andThen toDictDecoder)
-    |> required "mapPath" (D.list D.int)
+    |> required "boxes" (D.list mapDecoder |> D.andThen toDictDecoder)
+    |> required "boxPath" (D.list D.int)
     |> required "nextId" D.int
     ----- transient -----
     |> hardcoded default.selection

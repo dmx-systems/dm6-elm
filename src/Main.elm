@@ -82,7 +82,7 @@ view ({present} as undoModel) =
         ++ appStyle
       )
       ( [ viewToolbar undoModel
-        , viewMap (A.activeMap present) [] present -- mapPath = []
+        , viewMap (A.activeMap present) [] present -- boxPath = []
         ]
         ++ viewResultMenu present
         ++ viewIconMenu present
@@ -162,7 +162,7 @@ addTopic model =
   let
     mapId = A.activeMap model
   in
-  case A.mapByIdOrLog mapId model.maps of
+  case A.mapByIdOrLog mapId model.boxes of
     Just map ->
       let
         (newModel, topicId) = A.addTopic C.initTopicText Nothing model
@@ -186,7 +186,7 @@ addBox model =
   let
     mapId = A.activeMap model
   in
-  case A.mapByIdOrLog mapId model.maps of
+  case A.mapByIdOrLog mapId model.boxes of
     Just map ->
       let
         (newModel, topicId) = A.addTopic C.initBoxText Nothing model
@@ -205,11 +205,11 @@ addBox model =
     Nothing -> model
 
 
-moveTopicToMap : Id -> MapId -> Point -> Id -> MapPath -> Point -> Model -> Model
+moveTopicToMap : Id -> BoxId -> Point -> Id -> BoxPath -> Point -> Model -> Model
 moveTopicToMap topicId mapId origPos targetId targetMapPath pos model =
   let
     props_ =
-      A.topicProps topicId mapId model.maps
+      A.topicProps topicId mapId model.boxes
       |> Maybe.andThen (\props -> Just (MapTopic { props | pos = pos }))
   in
   case props_ of
@@ -226,13 +226,13 @@ moveTopicToMap topicId mapId origPos targetId targetMapPath pos model =
 switchDisplay : DisplayMode -> Model -> Model
 switchDisplay displayMode model =
   ( case A.singleSelection model of
-    Just (boxId, mapPath) ->
+    Just (boxId, boxPath) ->
       let
-        mapId = A.firstId mapPath
+        mapId = A.firstId boxPath
       in
-      { model | maps =
+      { model | boxes =
         case displayMode of
-          Monad _ -> model.maps
+          Monad _ -> model.boxes
           Box BlackBox -> box boxId mapId model
           Box WhiteBox -> box boxId mapId model
           Box Unboxed -> unbox boxId mapId model
@@ -267,16 +267,16 @@ startEdit : Model -> (Model, Cmd Msg)
 startEdit model =
   let
     newModel = case A.singleSelection model of
-      Just (topicId, mapPath) ->
-        { model | editState = ItemEdit topicId (A.firstId mapPath) }
-        |> setDetailDisplayIfMonade topicId (A.firstId mapPath)
+      Just (topicId, boxPath) ->
+        { model | editState = ItemEdit topicId (A.firstId boxPath) }
+        |> setDetailDisplayIfMonade topicId (A.firstId boxPath)
         |> autoSize
       Nothing -> model
   in
   (newModel, focus newModel)
 
 
-setDetailDisplayIfMonade : Id -> MapId -> Model -> Model
+setDetailDisplayIfMonade : Id -> BoxId -> Model -> Model
 setDetailDisplayIfMonade topicId mapId model =
   model |> A.updateTopicProps topicId mapId
     (\props ->
@@ -307,7 +307,7 @@ onTextareaInput text model =
     NoEdit -> logError "onTextareaInput" "called when editState is NoEdit" (model, Cmd.none)
 
 
-measureText : String -> Id -> MapId -> Model -> (Model, Cmd Msg)
+measureText : String -> Id -> BoxId -> Model -> (Model, Cmd Msg)
 measureText text topicId mapId model =
   ( { model | measureText = text }
   , Dom.getElement "measure"
@@ -358,7 +358,7 @@ fullscreen : Model -> Model
 fullscreen model =
   case A.singleSelection model of
     Just (topicId, _) ->
-      { model | mapPath = topicId :: model.mapPath }
+      { model | boxPath = topicId :: model.boxPath }
       |> A.resetSelection
       |> adjustMapRect topicId -1
     Nothing -> model
@@ -367,24 +367,24 @@ fullscreen model =
 back : Model -> Model
 back model =
   let
-    (mapId, mapPath, selection) =
-      case model.mapPath of
+    (mapId, boxPath, selection) =
+      case model.boxPath of
         prevMapId :: nextMapId :: mapIds ->
           ( prevMapId
           , nextMapId :: mapIds
           , [(prevMapId, nextMapId)]
           )
-        _ -> logError "back" "model.mapPath has a problem" (0, [0], [])
+        _ -> logError "back" "model.boxPath has a problem" (0, [0], [])
   in
   { model
-  | mapPath = mapPath
+  | boxPath = boxPath
   -- , selection = selection -- TODO
   }
   |> adjustMapRect mapId 1
   |> autoSize
 
 
-adjustMapRect : MapId -> Float -> Model -> Model
+adjustMapRect : BoxId -> Float -> Model -> Model
 adjustMapRect mapId factor model =
   model |> A.updateMapRect mapId
     (\rect -> Rectangle
@@ -400,7 +400,7 @@ hide model =
   let
     newModel = model.selection
       |> List.foldr
-        (\(itemId, mapPath) modelAcc -> A.hideItem itemId (A.firstId mapPath) modelAcc)
+        (\(itemId, boxPath) modelAcc -> A.hideItem itemId (A.firstId boxPath) modelAcc)
         model
   in
   newModel

@@ -22,36 +22,36 @@ type alias TransferFunc = MapItems -> MapItems -> Model -> MapItems
 {-| Hides box content from its parent map.
   (Any target map can be given but de-facto it's the box's parent map)
 -}
-box : MapId -> MapId -> Model -> Maps
+box : BoxId -> BoxId -> Model -> Boxes
 box boxId targetMapId model =
-  case displayMode boxId targetMapId model.maps of
+  case displayMode boxId targetMapId model.boxes of
     -- box only if currently unboxed
     Just (Box Unboxed) -> transferContent boxId targetMapId boxItems_ model
-    _ -> model.maps
+    _ -> model.boxes
 
 
 {-| Reveals box content on its parent map.
   (Any target map can be given but de-facto it's the box's parent map)
 -}
-unbox : MapId -> MapId -> Model -> Maps
+unbox : BoxId -> BoxId -> Model -> Boxes
 unbox boxId targetMapId model =
-  case displayMode boxId targetMapId model.maps of
+  case displayMode boxId targetMapId model.boxes of
     -- unbox only if currently boxed
     Just (Box BlackBox) -> transferContent boxId targetMapId unboxItems_ model
     Just (Box WhiteBox) -> transferContent boxId targetMapId unboxItems_ model
-    _ -> model.maps
+    _ -> model.boxes
 
 
-transferContent : MapId -> MapId -> TransferFunc -> Model -> Maps
+transferContent : BoxId -> BoxId -> TransferFunc -> Model -> Boxes
 transferContent boxId targetMapId transferFunc model =
-  case mapByIdOrLog boxId model.maps of
+  case mapByIdOrLog boxId model.boxes of
     Just map ->
-      model.maps |> updateMaps
+      model.boxes |> updateMaps
         targetMapId
         (\targetMap ->
           { targetMap | items = transferFunc map.items targetMap.items model }
         )
-    Nothing -> model.maps
+    Nothing -> model.boxes
 
 
 {-| Transfer function, Boxing.
@@ -71,7 +71,7 @@ boxItems_ boxItems targetItems model =
             let
               items = hideItem_ boxItem.id targetItemsAcc model
             in
-            case mapById boxItem.id model.maps of
+            case mapById boxItem.id model.boxes of
               Just map -> boxItems_ map.items items model -- recursion
               Nothing -> items
         Nothing -> targetItemsAcc -- FIXME: continue unboxing boxes?
@@ -95,7 +95,7 @@ unboxItems_ boxItems targetItems model =
           if abort then
             items
           else
-            case mapById boxItem.id model.maps of
+            case mapById boxItem.id model.boxes of
               Just map -> unboxItems_ map.items items model -- recursion
               Nothing -> items
         MapAssoc _ ->
@@ -123,7 +123,7 @@ unboxTopic boxItem targetItems model =
         Nothing ->
           -- by default (when no map item exists) an unboxed box will also be unboxed
           -- FIXME: set item's parentAssocId?
-          if hasMap boxItem.id model.maps then
+          if hasMap boxItem.id model.boxes then
             (setUnboxed boxItem, False)
           else
             (boxItem, False)

@@ -141,7 +141,7 @@ hasSelection undoModel =
 hasBoxSelection : UndoModel -> Bool
 hasBoxSelection {present} =
   case A.singleSelection present of
-    Just (id, _) -> A.hasMap id present.maps
+    Just (id, _) -> A.hasMap id present.boxes
     Nothing -> False
 
 
@@ -174,7 +174,7 @@ viewMonadDisplay : Model -> Html Msg
 viewMonadDisplay model =
   let
     display = case A.singleSelection model of
-      Just (topicId, mapPath) -> A.displayMode topicId (A.firstId mapPath) model.maps
+      Just (topicId, boxPath) -> A.displayMode topicId (A.firstId boxPath) model.boxes
       Nothing -> Nothing
     (checked1, checked2, disabled_) =
       case display of
@@ -196,7 +196,7 @@ viewBoxDisplay : Model -> Html Msg
 viewBoxDisplay model =
   let
     display = case A.singleSelection model of
-      Just (topicId, mapPath) -> A.displayMode topicId (A.firstId mapPath) model.maps
+      Just (topicId, boxPath) -> A.displayMode topicId (A.firstId boxPath) model.boxes
       Nothing -> Nothing
     (checked1, checked2, checked3) =
       case display of

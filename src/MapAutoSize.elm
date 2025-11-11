@@ -21,18 +21,18 @@ autoSize model =
 
 {-| Calculates (recursively) the map's "rect"
 -}
-calcMapRect : MapPath -> Model -> (Rectangle, Model)
-calcMapRect mapPath model =
+calcMapRect : BoxPath -> Model -> (Rectangle, Model)
+calcMapRect boxPath model =
   let
-    mapId = firstId mapPath
+    mapId = firstId boxPath
   in
-  case mapByIdOrLog mapId model.maps of
+  case mapByIdOrLog mapId model.boxes of
     Just map ->
       let
         (rect, model_) =
           (map.items |> Dict.values |> List.filter isVisible |> List.foldr
             (\mapItem (rectAcc, modelAcc) ->
-              calcItemSize mapItem mapPath rectAcc modelAcc
+              calcItemSize mapItem boxPath rectAcc modelAcc
             )
             (Rectangle 5000 5000 -5000 -5000, model) -- x-min y-min x-max y-max
           )
@@ -43,12 +43,12 @@ calcMapRect mapPath model =
           (rect.y2 + C.whiteBoxPadding)
       in
       ( newRect
-      , storeMapGeometry mapPath newRect map.rect model_
+      , storeMapGeometry boxPath newRect map.rect model_
       )
     Nothing -> (Rectangle 0 0 0 0, model)
 
 
-calcItemSize : MapItem -> MapPath -> Rectangle -> Model -> (Rectangle, Model)
+calcItemSize : MapItem -> BoxPath -> Rectangle -> Model -> (Rectangle, Model)
 calcItemSize mapItem pathToParent rectAcc model =
   let
     mapId = firstId pathToParent
@@ -71,16 +71,16 @@ calcItemSize mapItem pathToParent rectAcc model =
 {-| Stores the map's "newRect" and, based on its change, calculates and stores the map's "pos"
 adjustmennt ("delta")
 -}
-storeMapGeometry : MapPath -> Rectangle -> Rectangle -> Model -> Model
-storeMapGeometry mapPath newRect oldRect model =
-  case mapPath of
+storeMapGeometry : BoxPath -> Rectangle -> Rectangle -> Model -> Model
+storeMapGeometry boxPath newRect oldRect model =
+  case boxPath of
     mapId :: parentMapId :: _ ->
       let
         (isDragInProgress, isOnDragPath, isMapInDragPath) =
           case model.mouse.dragState of
             Drag DragTopic _ dragPath _ _ _ ->
               (True
-              , (dragPath |> List.drop (List.length dragPath - List.length mapPath)) == mapPath
+              , (dragPath |> List.drop (List.length dragPath - List.length boxPath)) == boxPath
               , List.member mapId dragPath
               )
             _ -> (False, False, False)
@@ -90,7 +90,7 @@ storeMapGeometry mapPath newRect oldRect model =
           model
           |> storeMapRect mapId newRect
           |> adjustMapPos mapId parentMapId newRect oldRect
-          -- if maps are revealed more than once only those within the drag-path
+          -- if boxes are revealed more than once only those within the drag-path
           -- get the position adjustment, the other map's positions remain stable
         else
           if isMapInDragPath then
@@ -103,15 +103,15 @@ storeMapGeometry mapPath newRect oldRect model =
       else
         model |> storeMapRect mapId newRect
     [_] -> model -- do nothing, for the fullscreen map there is no geometry update
-    [] -> logError "storeMapGeometry" "mapPath is empty!" model
+    [] -> logError "storeMapGeometry" "boxPath is empty!" model
 
 
-storeMapRect : MapId -> Rectangle -> Model -> Model
+storeMapRect : BoxId -> Rectangle -> Model -> Model
 storeMapRect mapId newRect model =
   model |> updateMapRect mapId (\rect -> newRect)
 
 
-adjustMapPos : MapId -> MapId -> Rectangle -> Rectangle -> Model -> Model
+adjustMapPos : BoxId -> BoxId -> Rectangle -> Rectangle -> Model -> Model
 adjustMapPos mapId parentMapId newRect oldRect model =
   model |> setTopicPosByDelta mapId parentMapId
     (Point
@@ -129,7 +129,7 @@ topicExtent pos rectAcc =
     (max rectAcc.y2 (pos.y + C.topicH2 + 2 * C.topicBorderWidth))
 
 
-detailTopicExtent : Id -> MapId -> Point -> Size -> Rectangle -> Model -> Rectangle
+detailTopicExtent : Id -> BoxId -> Point -> Size -> Rectangle -> Model -> Rectangle
 detailTopicExtent topicId mapId pos size rectAcc model =
   let
     textWidth =
