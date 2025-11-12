@@ -1,6 +1,6 @@
 module AppModel exposing (..)
 
-import Config exposing (homeMapName)
+import Config exposing (rootBoxName)
 import Model exposing (..)
 -- components
 import IconMenu
@@ -34,7 +34,7 @@ type alias Model =
 
 default : Model
 default =
-  { items = Dict.singleton 0 <| Item 0 (Topic (TopicInfo 0 homeMapName Nothing)) Set.empty
+  { items = Dict.singleton 0 <| Item 0 (Topic (TopicInfo 0 rootBoxName Nothing)) Set.empty
   , boxes = Dict.singleton 0 -- box 0 is the "root box"
     <| Box 0 (Rectangle 0 0 0 0) Dict.empty
   , boxPath = [0]
@@ -67,7 +67,7 @@ resetTransientState model =
 type Msg
   = AddTopic
   | AddBox
-  | MoveTopicToMap Id BoxId Point Id BoxPath Point -- start point, random point (for target)
+  | MoveTopicIntoBox Id BoxId Point Id BoxPath Point -- start point, random point (for target)
   | SwitchDisplay DisplayMode
   | Edit EditMsg
   | Nav NavMsg

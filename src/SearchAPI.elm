@@ -121,18 +121,18 @@ viewRelTopicsMenu relTopicIds model =
 isItemDisabled : Id -> Model -> Bool
 isItemDisabled topicId model =
   case revealMapId model of
-    Just mapId -> isItemInMapDeep mapId topicId model
+    Just boxId -> isItemInMapDeep boxId topicId model
     Nothing -> False
 
 
-{- The map where to reveal search/related results -}
+{- The box where to reveal search/related results -}
 revealMapId : Model -> Maybe Id
 revealMapId model =
   case model.search.menu of
     Topics _ _ -> Just (activeMap model)
     RelTopics _ _ ->
       case singleSelectionMapId model of
-        Just mapId -> Just mapId
+        Just boxId -> Just boxId
         Nothing -> Nothing
     Closed -> Nothing
 
@@ -280,10 +280,10 @@ revealTopic topicId model =
 revealRelTopic : (Id, Id) -> Model -> Model
 revealRelTopic (topicId, assocId) model =
   case singleSelectionMapId model of
-    Just mapId ->
+    Just boxId ->
       model
-      |> revealItem topicId mapId
-      |> revealItem assocId mapId
+      |> revealItem topicId boxId
+      |> revealItem assocId boxId
       |> closeResultMenu
       |> autoSize
     Nothing -> model
@@ -326,18 +326,18 @@ isMatch searchText text =
 
 
 revealItem : Id -> BoxId -> Model -> Model
-revealItem itemId mapId model =
-  if isItemInMap itemId mapId model then
+revealItem itemId boxId model =
+  if isItemInMap itemId boxId model then
     let
-      _ = info "revealItem" <| fromInt itemId ++ " is in " ++ fromInt mapId
+      _ = info "revealItem" <| fromInt itemId ++ " is in " ++ fromInt boxId
     in
-    showItem itemId mapId model
+    showItem itemId boxId model
   else
     let
-      _ = info "revealItem" <| fromInt itemId ++ " not in " ++ fromInt mapId
+      _ = info "revealItem" <| fromInt itemId ++ " not in " ++ fromInt boxId
       props = initItemProps itemId model
     in
-    putItemOnMap itemId props mapId model
+    putItemOnMap itemId props boxId model
 
 
 closeResultMenu : Model -> Model

@@ -46,74 +46,74 @@ type alias TopicRendering = (List (Attribute Msg), List (Html Msg))
 -- VIEW
 
 
--- For a fullscreen map boxPath is empty
+-- For a fullscreen box boxPath is empty
 viewMap : BoxId -> BoxPath -> Model -> Html Msg
-viewMap mapId boxPath model =
+viewMap boxId boxPath model =
   let
-    ((topics, assocs), mapRect, (svgSize, mapStyle)) = mapInfo mapId boxPath model
+    ((topics, assocs), mapRect, (svgSize, mapStyle)) = mapInfo boxId boxPath model
   in
   div
     mapStyle
     [ div
         ( topicLayerStyle mapRect )
         ( topics
-          ++ viewLimboTopic mapId model
+          ++ viewLimboTopic boxId model
         )
     , svg
         ( [ width svgSize.w, height svgSize.h ]
-          ++ topicAttr mapId boxPath model
+          ++ topicAttr boxId boxPath model
           ++ svgStyle
         )
         [ g
-          ( gAttr mapId mapRect model )
+          ( gAttr boxId mapRect model )
           ( assocs
-            ++ viewLimboAssoc mapId model
-            ++ viewAssocDraft mapId model
+            ++ viewLimboAssoc boxId model
+            ++ viewAssocDraft boxId model
           )
         ]
     ]
 
 
 gAttr : BoxId -> Rectangle -> Model -> List (Attribute Msg)
-gAttr mapId mapRect model =
+gAttr boxId mapRect model =
     [ transform
       <| "translate(" ++ fromFloat -mapRect.x1 ++ " " ++ fromFloat -mapRect.y1 ++ ")"
     ]
 
 
--- For a fullscreen map boxPath is empty
+-- For a fullscreen box boxPath is empty
 mapInfo : BoxId -> BoxPath -> Model -> MapInfo
-mapInfo mapId boxPath model =
-  case mapByIdOrLog mapId model.boxes of
-    Just map ->
-      ( viewItems map boxPath model
-      , map.rect
-      , if isFullscreen mapId model then
+mapInfo boxId boxPath model =
+  case mapByIdOrLog boxId model.boxes of
+    Just box ->
+      ( viewItems box boxPath model
+      , box.rect
+      , if isFullscreen boxId model then
           ( { w = "100%", h = "100%" }, [] )
         else
-          ( { w = (map.rect.x2 - map.rect.x1) |> round |> fromInt
-            , h = (map.rect.y2 - map.rect.y1) |> round |> fromInt
+          ( { w = (box.rect.x2 - box.rect.x1) |> round |> fromInt
+            , h = (box.rect.y2 - box.rect.y1) |> round |> fromInt
             }
-          , whiteBoxStyle mapId map.rect (firstId boxPath) model
+          , whiteBoxStyle boxId box.rect (firstId boxPath) model
           )
       )
     Nothing ->
       ( ([], []), Rectangle 0 0 0 0, ( {w = "0", h = "0"}, [] ))
 
 
--- For a fullscreen map boxPath is empty
+-- For a fullscreen box boxPath is empty
 viewItems : Box -> BoxPath -> Model -> (List (Html Msg), List (Svg Msg))
-viewItems map boxPath model =
+viewItems box boxPath model =
   let
-    newPath = map.id :: boxPath
+    newPath = box.id :: boxPath
   in
-  map.items |> Dict.values |> List.filter (shouldItemRender map.id model) |> List.foldr
+  box.items |> Dict.values |> List.filter (shouldItemRender box.id model) |> List.foldr
     (\{id, props} (t, a) ->
       case itemById id model of
         Just {info} ->
           case (info, props) of
             (Topic topic, TopicV tProps) -> (viewTopic topic tProps newPath model :: t, a)
-            (Assoc assoc, AssocV _) -> (t, viewAssoc assoc map.id model :: a)
+            (Assoc assoc, AssocV _) -> (t, viewAssoc assoc box.id model :: a)
             _ -> logError "viewItems" ("problem with item " ++ fromInt id) (t, a)
         Nothing -> logError "viewItems" ("problem with item " ++ fromInt id) (t, a)
     )
@@ -121,25 +121,25 @@ viewItems map boxPath model =
 
 
 shouldItemRender : BoxId -> Model -> BoxItem -> Bool
-shouldItemRender mapId model item =
-  isVisible item || isLimboItem item mapId model
+shouldItemRender boxId model item =
+  isVisible item || isLimboItem item boxId model
 
 
 viewLimboTopic : BoxId -> Model -> List (Html Msg)
-viewLimboTopic mapId model =
+viewLimboTopic boxId model =
   case limboState model of
     Just (topicId, _, limboMapId) ->
-      if mapId == limboMapId then
-        if isItemInMap topicId mapId model then
+      if boxId == limboMapId then
+        if isItemInMap topicId boxId model then
           let
-            _ = info "viewLimboTopic" (topicId, "is in map", mapId)
+            _ = info "viewLimboTopic" (topicId, "is in box", boxId)
           in
           [] -- rendered already (viewItems())
         else
           let
-            _ = info "viewLimboTopic" (topicId, "not in map", mapId)
+            _ = info "viewLimboTopic" (topicId, "not in box", boxId)
             props = initTopicProps topicId model
-            boxPath = [mapId] -- Needed by limbo style calculation; single ID is sufficient;
+            boxPath = [boxId] -- Needed by limbo style calculation; single ID is sufficient;
           in
           case topicById topicId model of
             Just topic -> [ viewTopic topic props boxPath model ]
@@ -150,29 +150,29 @@ viewLimboTopic mapId model =
 
 
 viewLimboAssoc : BoxId -> Model -> List (Html Msg)
-viewLimboAssoc mapId model =
+viewLimboAssoc boxId model =
   case limboState model of
     Just (topicId, Just assocId, limboMapId) ->
-      if mapId == limboMapId then
-        if isItemInMap assocId mapId model then
+      if boxId == limboMapId then
+        if isItemInMap assocId boxId model then
           let
-            _ = info "viewLimboAssoc" (assocId, "is in map", mapId)
+            _ = info "viewLimboAssoc" (assocId, "is in box", boxId)
           in
           [] -- rendered already (viewItems())
         else
           let
-            _ = info "viewLimboAssoc" (assocId, "not in map", mapId)
+            _ = info "viewLimboAssoc" (assocId, "not in box", boxId)
           in
           case assocById assocId model of
             Just assoc ->
-              if isItemInMap topicId mapId model then
-                -- only if related topic is in map we can call high-level viewAssoc()
-                [ viewAssoc assoc mapId model ]
+              if isItemInMap topicId boxId model then
+                -- only if related topic is in box we can call high-level viewAssoc()
+                [ viewAssoc assoc boxId model ]
               else
                 -- otherwise we call low-level lineFunc() with topic default position,
                 -- see also ModelAPI's initTopicProps()
-                case topicPos (otherPlayerId assocId topicId model) mapId model.boxes of
-                  Just pos -> [ lineFunc pos (Point 0 0) (Just assoc) mapId model ]
+                case topicPos (otherPlayerId assocId topicId model) boxId model.boxes of
+                  Just pos -> [ lineFunc pos (Point 0 0) (Just assoc) boxId model ]
                   Nothing -> []
             Nothing -> []
       else
@@ -181,37 +181,37 @@ viewLimboAssoc mapId model =
 
 
 isLimboItem : BoxItem -> BoxId -> Model -> Bool
-isLimboItem item mapId model =
+isLimboItem item boxId model =
   let
     isLimbo =
       case item.props of
         TopicV _ -> isLimboTopic
         AssocV _ -> isLimboAssoc
   in
-  isLimbo item.id mapId model
+  isLimbo item.id boxId model
 
 
 isLimboTopic : Id -> BoxId -> Model -> Bool
-isLimboTopic topicId mapId model =
+isLimboTopic topicId boxId model =
   case limboState model of
-    Just (topicId_, _, mapId_) -> topicId == topicId_ && mapId == mapId_
+    Just (topicId_, _, mapId_) -> topicId == topicId_ && boxId == mapId_
     Nothing -> False
 
 
 isLimboAssoc : Id -> BoxId -> Model -> Bool
-isLimboAssoc assocId mapId model =
+isLimboAssoc assocId boxId model =
   case limboState model of
-    Just (_, Just assocId_, mapId_) -> assocId == assocId_ && mapId == mapId_
+    Just (_, Just assocId_, mapId_) -> assocId == assocId_ && boxId == mapId_
     _ -> False
 
 
-limboState : Model -> Maybe (Id, Maybe Id, BoxId) -- (topic ID, assoc ID, map ID)
+limboState : Model -> Maybe (Id, Maybe Id, BoxId) -- (topic ID, assoc ID, box ID)
 limboState model =
   case model.search.menu of
     Topics _ (Just topicId) -> Just (topicId, Nothing, activeMap model)
     RelTopics _ (Just (topicId, assocId)) ->
       case singleSelectionMapId model of
-        Just mapId -> Just (topicId, Just assocId, mapId)
+        Just boxId -> Just (topicId, Just assocId, boxId)
         Nothing -> Nothing
     _ -> Nothing
 
@@ -219,9 +219,9 @@ limboState model =
 viewTopic : TopicInfo -> TopicProps -> BoxPath -> Model -> Html Msg
 viewTopic topic props boxPath model =
   let
-    mapId = firstId boxPath
+    boxId = firstId boxPath
     topicFunc =
-      case effectiveDisplayMode topic.id mapId props.displayMode model of
+      case effectiveDisplayMode topic.id boxId props.displayMode model of
         TopicD LabelOnly -> labelTopic
         TopicD Detail -> detailTopic
         BoxD BlackBox -> blackBoxTopic
@@ -231,15 +231,15 @@ viewTopic topic props boxPath model =
   in
   div
     ( topicAttr topic.id boxPath model
-      ++ topicStyle topic.id mapId model
+      ++ topicStyle topic.id boxId model
       ++ style
     )
     children
 
 
 effectiveDisplayMode : Id -> BoxId -> DisplayMode -> Model -> DisplayMode
-effectiveDisplayMode topicId mapId displayMode model =
-  if isLimboTopic topicId mapId model then
+effectiveDisplayMode topicId boxId displayMode model =
+  if isLimboTopic topicId boxId model then
     case displayMode of
       TopicD _ -> TopicD Detail
       BoxD _ -> BoxD WhiteBox
@@ -250,23 +250,23 @@ effectiveDisplayMode topicId mapId displayMode model =
 labelTopic : TopicInfo -> TopicProps -> BoxPath -> Model -> TopicRendering
 labelTopic topic props boxPath model =
   let
-    mapId = firstId boxPath
+    boxId = firstId boxPath
   in
   ( topicPosStyle props
-      ++ topicFlexboxStyle topic props mapId model
-      ++ selectionStyle topic.id mapId model
-  , labelTopicHtml topic props mapId model
+      ++ topicFlexboxStyle topic props boxId model
+      ++ selectionStyle topic.id boxId model
+  , labelTopicHtml topic props boxId model
   )
 
 
 labelTopicHtml : TopicInfo -> TopicProps -> BoxId -> Model -> List (Html Msg)
-labelTopicHtml topic props mapId model =
+labelTopicHtml topic props boxId model =
   let
-    isEdit = model.editState == ItemEdit topic.id mapId
+    isEdit = model.editState == ItemEdit topic.id boxId
     textElem =
       if isEdit then
         input
-          ( [ id <| "dmx-input-" ++ fromInt topic.id ++ "-" ++ fromInt mapId
+          ( [ id <| "dmx-input-" ++ fromInt topic.id ++ "-" ++ fromInt boxId
             , value topic.text
             , onInput (Edit << OnTextInput)
             , onBlur (Edit EditEnd)
@@ -291,24 +291,24 @@ labelTopicHtml topic props mapId model =
 detailTopic : TopicInfo -> TopicProps -> BoxPath -> Model -> TopicRendering
 detailTopic topic props boxPath model =
   let
-    mapId = firstId boxPath
-    isEdit = model.editState == ItemEdit topic.id mapId
+    boxId = firstId boxPath
+    isEdit = model.editState == ItemEdit topic.id boxId
     textElem =
       if isEdit then
         textarea
-          ( [ id <| "dmx-input-" ++ fromInt topic.id ++ "-" ++ fromInt mapId
+          ( [ id <| "dmx-input-" ++ fromInt topic.id ++ "-" ++ fromInt boxId
             , onInput (Edit << OnTextareaInput)
             , onBlur (Edit EditEnd)
             , onEsc (Edit EditEnd)
             , stopPropagationOnMousedown NoOp
             ]
-            ++ detailTextStyle topic.id mapId model
-            ++ detailTextEditStyle topic.id mapId model
+            ++ detailTextStyle topic.id boxId model
+            ++ detailTextEditStyle topic.id boxId model
           )
           [ text topic.text ]
       else
         div
-          ( detailTextStyle topic.id mapId model
+          ( detailTextStyle topic.id boxId model
             ++ detailTextViewStyle
           )
           ( multilineHtml topic.text )
@@ -317,7 +317,7 @@ detailTopic topic props boxPath model =
   , [ div
       ( topicIconBoxStyle props
         ++ detailTopicIconBoxStyle
-        ++ selectionStyle topic.id mapId model
+        ++ selectionStyle topic.id boxId model
       )
       [ viewTopicIcon topic.id model ]
     , textElem
@@ -334,7 +334,7 @@ detailTopicStyle {pos} =
 
 
 detailTextStyle : Id -> BoxId -> Model -> List (Attribute Msg)
-detailTextStyle topicId mapId model =
+detailTextStyle topicId boxId model =
   let
     r = fromInt C.topicRadius ++ "px"
   in
@@ -344,8 +344,8 @@ detailTextStyle topicId mapId model =
   , style "padding" <| fromInt C.topicDetailPadding ++ "px"
   , style "border-radius" <| "0 " ++ r ++ " " ++ r ++ " " ++ r
   ]
-  ++ topicBorderStyle topicId mapId model
-  ++ selectionStyle topicId mapId model
+  ++ topicBorderStyle topicId boxId model
+  ++ selectionStyle topicId boxId model
 
 
 detailTextViewStyle : List (Attribute Msg)
@@ -358,9 +358,9 @@ detailTextViewStyle =
 
 
 detailTextEditStyle : Id -> BoxId -> Model -> List (Attribute Msg)
-detailTextEditStyle topicId mapId model =
+detailTextEditStyle topicId boxId model =
   let
-    height = case topicSize topicId mapId model.boxes of
+    height = case topicSize topicId boxId model.boxes of
       Just size -> size.h
       Nothing -> 0
   in
@@ -376,18 +376,18 @@ detailTextEditStyle topicId mapId model =
 blackBoxTopic : TopicInfo -> TopicProps -> BoxPath -> Model -> TopicRendering
 blackBoxTopic topic props boxPath model =
   let
-    mapId = firstId boxPath
+    boxId = firstId boxPath
   in
   ( topicPosStyle props
   , [ div
-      (topicFlexboxStyle topic props mapId model
+      (topicFlexboxStyle topic props boxId model
         ++ blackBoxStyle
       )
-      (labelTopicHtml topic props mapId model
+      (labelTopicHtml topic props boxId model
         ++ mapItemCount topic.id props model
       )
     , div
-      (ghostTopicStyle topic mapId model)
+      (ghostTopicStyle topic boxId model)
       []
     ]
   )
@@ -424,7 +424,7 @@ mapItemCount topicId props model =
         TopicD _ -> 0
         BoxD _ ->
           case mapByIdOrLog topicId model.boxes of
-            Just map -> map.items |> Dict.values |> List.filter isVisible |> List.length
+            Just box -> box.items |> Dict.values |> List.filter isVisible |> List.length
             Nothing -> 0
   in
   [ div
@@ -436,7 +436,7 @@ mapItemCount topicId props model =
 topicAttr : Id -> BoxPath -> Model -> List (Attribute Msg)
 topicAttr topicId boxPath model =
   if isFullscreen topicId model then
-    [] -- TODO: the fullscreen map would require dedicated event handling, e.g. panning?
+    [] -- TODO: the fullscreen box would require dedicated event handling, e.g. panning?
   else
     [ attribute "class" "dmx-topic"
     , attribute "data-id" (fromInt topicId)
@@ -445,37 +445,37 @@ topicAttr topicId boxPath model =
 
 
 viewAssoc : AssocInfo -> BoxId -> Model -> Svg Msg
-viewAssoc assoc mapId model =
+viewAssoc assoc boxId model =
   let
-    geom = assocGeometry assoc mapId model
+    geom = assocGeometry assoc boxId model
   in
   case geom of
-    Just (pos1, pos2) -> lineFunc pos1 pos2 (Just assoc) mapId model
+    Just (pos1, pos2) -> lineFunc pos1 pos2 (Just assoc) boxId model
     Nothing -> text "" -- TODO
 
 
 assocGeometry : AssocInfo -> BoxId -> Model -> Maybe (Point, Point)
-assocGeometry assoc mapId model =
+assocGeometry assoc boxId model =
   let
-    pos1 = topicPos assoc.player1 mapId model.boxes
-    pos2 = topicPos assoc.player2 mapId model.boxes
+    pos1 = topicPos assoc.player1 boxId model.boxes
+    pos2 = topicPos assoc.player2 boxId model.boxes
   in
   case Maybe.map2 (\p1 p2 -> (p1, p2)) pos1 pos2 of
     Just geometry -> Just geometry
-    Nothing -> fail "assocGeometry" { assoc = assoc, mapId = mapId } Nothing
+    Nothing -> fail "assocGeometry" { assoc = assoc, boxId = boxId } Nothing
 
 
 viewAssocDraft : BoxId -> Model -> List (Svg Msg)
-viewAssocDraft mapId model =
+viewAssocDraft boxId model =
   case model.mouse.dragState of
     Drag DraftAssoc _ boxPath origPos pos _ ->
-      case firstId boxPath == mapId of
-        True -> [ lineFunc origPos (relPos pos boxPath model) Nothing mapId model ]
+      case firstId boxPath == boxId of
+        True -> [ lineFunc origPos (relPos pos boxPath model) Nothing boxId model ]
         False -> []
     _ -> []
 
 
-{-| Transforms an absolute screen position to a map-relative position.
+{-| Transforms an absolute screen position to a box-relative position.
 -}
 relPos : Point -> BoxPath -> Model -> Point
 relPos pos boxPath model =
@@ -487,26 +487,26 @@ relPos pos boxPath model =
     (pos.y - posAbs.y)
 
 
-{-| Recursively calculates the absolute position of a map.
+{-| Recursively calculates the absolute position of a box.
 "posAcc" is the position accumulated so far.
 -}
 absMapPos : BoxPath -> Point -> Model -> Point
 absMapPos boxPath posAcc model =
   case boxPath of
-    [ mapId ] -> accumulateMapRect posAcc mapId model
-    mapId :: parentMapId :: mapIds -> accumulateMapPos posAcc mapId parentMapId mapIds model
+    [ boxId ] -> accumulateMapRect posAcc boxId model
+    boxId :: parentMapId :: boxIds -> accumulateMapPos posAcc boxId parentMapId boxIds model
     [] -> logError "absMapPos" "boxPath is empty!" (Point 0 0)
 
 
 accumulateMapPos : Point -> BoxId -> BoxId -> BoxPath -> Model -> Point
-accumulateMapPos posAcc mapId parentMapId mapIds model =
+accumulateMapPos posAcc boxId parentMapId boxIds model =
   let
-    {x, y} = accumulateMapRect posAcc mapId model
+    {x, y} = accumulateMapRect posAcc boxId model
   in
-  case topicPos mapId parentMapId model.boxes of
+  case topicPos boxId parentMapId model.boxes of
     Just mapPos ->
       absMapPos -- recursion
-        (parentMapId :: mapIds)
+        (parentMapId :: boxIds)
         (Point
           (x + mapPos.x - C.topicW2)
           (y + mapPos.y + C.topicH2)
@@ -516,11 +516,11 @@ accumulateMapPos posAcc mapId parentMapId mapIds model =
 
 
 accumulateMapRect : Point -> BoxId -> Model -> Point
-accumulateMapRect posAcc mapId model =
-  case mapByIdOrLog mapId model.boxes of
-    Just map -> Point
-      (posAcc.x - map.rect.x1)
-      (posAcc.y - map.rect.y1)
+accumulateMapRect posAcc boxId model =
+  case mapByIdOrLog boxId model.boxes of
+    Just box -> Point
+      (posAcc.x - box.rect.x1)
+      (posAcc.y - box.rect.y1)
     Nothing -> Point 0 0 -- error is already logged
 
 
@@ -529,27 +529,27 @@ accumulateMapRect posAcc mapId model =
 
 
 topicStyle : Id -> BoxId -> Model -> List (Attribute Msg)
-topicStyle id mapId model =
+topicStyle id boxId model =
   let
     isDragging = case model.mouse.dragState of
       Drag DragTopic id_ _ _ _ _ -> id_ == id
       _ -> False
   in
   [ style "position" "absolute"
-  , style "opacity" <| if isLimboTopic id mapId model then ".5" else "1"
+  , style "opacity" <| if isLimboTopic id boxId model then ".5" else "1"
   , style "z-index" <| if isDragging then "1" else "2"
   ]
 
 
 selectionStyle : Id -> BoxId -> Model -> List (Attribute Msg)
-selectionStyle topicId mapId model =
-  case isSelected topicId mapId model of
+selectionStyle topicId boxId model =
+  case isSelected topicId boxId model of
     True -> [ style "box-shadow" "gray 5px 5px 5px" ]
     False -> []
 
 
 topicFlexboxStyle : TopicInfo -> TopicProps -> BoxId -> Model -> List (Attribute Msg)
-topicFlexboxStyle topic props mapId model =
+topicFlexboxStyle topic props boxId model =
   let
     r12 = fromInt C.topicRadius ++ "px"
     r34 = case props.displayMode of
@@ -563,7 +563,7 @@ topicFlexboxStyle topic props mapId model =
   , style "height" <| fromFloat C.topicSize.h ++ "px"
   , style "border-radius" <| r12 ++ " " ++ r12 ++ " " ++ r34 ++ " " ++ r34
   ]
-  ++ topicBorderStyle topic.id mapId model
+  ++ topicBorderStyle topic.id boxId model
 
 
 topicPosStyle : TopicProps -> List (Attribute Msg)
@@ -627,7 +627,7 @@ blackBoxStyle =
 
 
 ghostTopicStyle : TopicInfo -> BoxId -> Model -> List (Attribute Msg)
-ghostTopicStyle topic mapId model =
+ghostTopicStyle topic boxId model =
   [ style "position" "absolute"
   , style "left" <| fromInt C.blackBoxOffset ++ "px"
   , style "top" <| fromInt C.blackBoxOffset ++ "px"
@@ -637,8 +637,8 @@ ghostTopicStyle topic mapId model =
   , style "pointer-events" "none"
   , style "z-index" "-1" -- behind topic
   ]
-  ++ topicBorderStyle topic.id mapId model
-  ++ selectionStyle topic.id mapId model
+  ++ topicBorderStyle topic.id boxId model
+  ++ selectionStyle topic.id boxId model
 
 
 itemCountStyle : List (Attribute Msg)
@@ -650,7 +650,7 @@ itemCountStyle =
 
 
 whiteBoxStyle : Id -> Rectangle -> BoxId -> Model -> List (Attribute Msg)
-whiteBoxStyle topicId rect mapId model =
+whiteBoxStyle topicId rect boxId model =
   let
     width = rect.x2 - rect.x1
     height = rect.y2 - rect.y1
@@ -663,18 +663,18 @@ whiteBoxStyle topicId rect mapId model =
   , style "height" <| fromFloat height ++ "px"
   , style "border-radius" <| "0 " ++ r ++ " " ++ r ++ " " ++ r
   ]
-  ++ topicBorderStyle topicId mapId model
-  ++ selectionStyle topicId mapId model
+  ++ topicBorderStyle topicId boxId model
+  ++ selectionStyle topicId boxId model
 
 
 topicBorderStyle : Id -> BoxId -> Model -> List (Attribute Msg)
-topicBorderStyle id mapId model =
+topicBorderStyle id boxId model =
   let
     targeted = case model.mouse.dragState of
-      -- can't move a topic to a map where it is already
-      -- can't create assoc when both topics are in different map
-      Drag DragTopic _ (mapId_ :: _) _ _ target -> isTarget id mapId target && mapId_ /= id
-      Drag DraftAssoc _ (mapId_ :: _) _ _ target -> isTarget id mapId target && mapId_ == mapId
+      -- can't move a topic to a box where it is already
+      -- can't create assoc when both topics are in different box
+      Drag DragTopic _ (mapId_ :: _) _ _ target -> isTarget id boxId target && mapId_ /= id
+      Drag DraftAssoc _ (mapId_ :: _) _ _ target -> isTarget id boxId target && mapId_ == boxId
       _ -> False
   in
   [ style "border-width" <| fromFloat C.topicBorderWidth ++ "px"
@@ -685,11 +685,11 @@ topicBorderStyle id mapId model =
 
 
 isTarget : Id -> BoxId -> Maybe (Id, BoxPath) -> Bool
-isTarget topicId mapId target =
+isTarget topicId boxId target =
   case target of
     Just (targetId, targetMapPath) ->
       case targetMapPath of
-        targetMapId :: _ -> topicId == targetId && mapId == targetMapId
+        targetBoxId :: _ -> topicId == targetId && boxId == targetBoxId
         [] -> False
     Nothing -> False
 
@@ -712,27 +712,27 @@ svgStyle =
 
 -- One possible lineFunc
 directLine : Point -> Point -> Maybe AssocInfo -> BoxId -> Model -> Svg Msg
-directLine pos1 pos2 assoc mapId model =
+directLine pos1 pos2 assoc boxId model =
   line
     ( [ x1 <| fromFloat pos1.x
       , y1 <| fromFloat pos1.y
       , x2 <| fromFloat pos2.x
       , y2 <| fromFloat pos2.y
-      ] ++ lineStyle assoc mapId model
+      ] ++ lineStyle assoc boxId model
     )
     []
 
 
 -- One possible lineFunc
 taxiLine : Point -> Point -> Maybe AssocInfo -> BoxId -> Model -> Svg Msg
-taxiLine pos1 pos2 assoc mapId model =
+taxiLine pos1 pos2 assoc boxId model =
   if abs (pos2.x - pos1.x) < 2 * C.assocRadius then -- straight vertical
     let
       xm = (pos1.x + pos2.x) / 2
     in
     path
       ( [ d ("M " ++ fromFloat xm ++ " " ++ fromFloat pos1.y ++ " V " ++ fromFloat pos2.y)
-        ] ++ lineStyle assoc mapId model
+        ] ++ lineStyle assoc boxId model
       )
       []
   else if abs (pos2.y - pos1.y) < 2 * C.assocRadius then -- straight horizontal
@@ -741,7 +741,7 @@ taxiLine pos1 pos2 assoc mapId model =
     in
     path
       ( [ d ("M " ++ fromFloat pos1.x ++ " " ++ fromFloat ym ++ " H " ++ fromFloat pos2.x)
-        ] ++ lineStyle assoc mapId model
+        ] ++ lineStyle assoc boxId model
       )
       []
   else -- 5 segment taxi line
@@ -772,17 +772,17 @@ taxiLine pos1 pos2 assoc mapId model =
             " A " ++ r ++ " " ++ r ++ " 0 0 " ++ sw2 ++ " " ++ fromFloat pos2.x ++ " " ++ y2 ++
             " V " ++ fromFloat pos2.y
           )
-        ] ++ lineStyle assoc mapId model
+        ] ++ lineStyle assoc boxId model
       )
       []
 
 
 lineStyle : Maybe AssocInfo -> BoxId -> Model -> List (Attribute Msg)
-lineStyle assoc mapId model =
+lineStyle assoc boxId model =
   let
     color =
       case assoc of
-        Just {id} -> if isLimboAssoc id mapId model then C.limboColor else C.assocColor
+        Just {id} -> if isLimboAssoc id boxId model then C.limboColor else C.assocColor
         Nothing -> C.limboColor
   in
   [ stroke color

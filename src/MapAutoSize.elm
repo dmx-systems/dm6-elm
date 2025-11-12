@@ -19,18 +19,18 @@ autoSize model =
   calcMapRect [ activeMap model ] model |> Tuple.second
 
 
-{-| Calculates (recursively) the map's "rect"
+{-| Calculates (recursively) the box's "rect"
 -}
 calcMapRect : BoxPath -> Model -> (Rectangle, Model)
 calcMapRect boxPath model =
   let
-    mapId = firstId boxPath
+    boxId = firstId boxPath
   in
-  case mapByIdOrLog mapId model.boxes of
-    Just map ->
+  case mapByIdOrLog boxId model.boxes of
+    Just box ->
       let
         (rect, model_) =
-          (map.items |> Dict.values |> List.filter isVisible |> List.foldr
+          (box.items |> Dict.values |> List.filter isVisible |> List.foldr
             (\mapItem (rectAcc, modelAcc) ->
               calcItemSize mapItem boxPath rectAcc modelAcc
             )
@@ -43,7 +43,7 @@ calcMapRect boxPath model =
           (rect.y2 + C.whiteBoxPadding)
       in
       ( newRect
-      , storeMapGeometry boxPath newRect map.rect model_
+      , storeMapGeometry boxPath newRect box.rect model_
       )
     Nothing -> (Rectangle 0 0 0 0, model)
 
@@ -51,13 +51,13 @@ calcMapRect boxPath model =
 calcItemSize : BoxItem -> BoxPath -> Rectangle -> Model -> (Rectangle, Model)
 calcItemSize mapItem pathToParent rectAcc model =
   let
-    mapId = firstId pathToParent
+    boxId = firstId pathToParent
   in
   case mapItem.props of
     TopicV {pos, size, displayMode} ->
       case displayMode of
         TopicD LabelOnly -> (topicExtent pos rectAcc, model)
-        TopicD Detail -> (detailTopicExtent mapItem.id mapId pos size rectAcc model, model)
+        TopicD Detail -> (detailTopicExtent mapItem.id boxId pos size rectAcc model, model)
         BoxD BlackBox -> (topicExtent pos rectAcc, model)
         BoxD WhiteBox ->
           let
@@ -68,52 +68,52 @@ calcItemSize mapItem pathToParent rectAcc model =
     AssocV _ -> (rectAcc, model)
 
 
-{-| Stores the map's "newRect" and, based on its change, calculates and stores the map's "pos"
+{-| Stores the box's "newRect" and, based on its change, calculates and stores the box's "pos"
 adjustmennt ("delta")
 -}
 storeMapGeometry : BoxPath -> Rectangle -> Rectangle -> Model -> Model
 storeMapGeometry boxPath newRect oldRect model =
   case boxPath of
-    mapId :: parentMapId :: _ ->
+    boxId :: parentMapId :: _ ->
       let
         (isDragInProgress, isOnDragPath, isMapInDragPath) =
           case model.mouse.dragState of
             Drag DragTopic _ dragPath _ _ _ ->
               (True
               , (dragPath |> List.drop (List.length dragPath - List.length boxPath)) == boxPath
-              , List.member mapId dragPath
+              , List.member boxId dragPath
               )
             _ -> (False, False, False)
       in
       if isDragInProgress then
         if isOnDragPath then
           model
-          |> storeMapRect mapId newRect
-          |> adjustMapPos mapId parentMapId newRect oldRect
+          |> storeMapRect boxId newRect
+          |> adjustMapPos boxId parentMapId newRect oldRect
           -- if boxes are revealed more than once only those within the drag-path
-          -- get the position adjustment, the other map's positions remain stable
+          -- get the position adjustment, the other box's positions remain stable
         else
           if isMapInDragPath then
             model
-            -- do nothing, postpone map's geometry update until reaching drag-path,
-            -- otherwise, when reaching drag-path, the map's rect would be updated
+            -- do nothing, postpone box's geometry update until reaching drag-path,
+            -- otherwise, when reaching drag-path, the box's rect would be updated
             -- already and position adjustment will calculate 0
           else
-            model |> storeMapRect mapId newRect
+            model |> storeMapRect boxId newRect
       else
-        model |> storeMapRect mapId newRect
-    [_] -> model -- do nothing, for the fullscreen map there is no geometry update
+        model |> storeMapRect boxId newRect
+    [_] -> model -- do nothing, for the fullscreen box there is no geometry update
     [] -> logError "storeMapGeometry" "boxPath is empty!" model
 
 
 storeMapRect : BoxId -> Rectangle -> Model -> Model
-storeMapRect mapId newRect model =
-  model |> updateMapRect mapId (\rect -> newRect)
+storeMapRect boxId newRect model =
+  model |> updateMapRect boxId (\rect -> newRect)
 
 
 adjustMapPos : BoxId -> BoxId -> Rectangle -> Rectangle -> Model -> Model
-adjustMapPos mapId parentMapId newRect oldRect model =
-  model |> setTopicPosByDelta mapId parentMapId
+adjustMapPos boxId parentMapId newRect oldRect model =
+  model |> setTopicPosByDelta boxId parentMapId
     (Point
       (newRect.x1 - oldRect.x1)
       (newRect.y1 - oldRect.y1)
@@ -130,10 +130,10 @@ topicExtent pos rectAcc =
 
 
 detailTopicExtent : Id -> BoxId -> Point -> Size -> Rectangle -> Model -> Rectangle
-detailTopicExtent topicId mapId pos size rectAcc model =
+detailTopicExtent topicId boxId pos size rectAcc model =
   let
     textWidth =
-      if model.editState == ItemEdit topicId mapId then
+      if model.editState == ItemEdit topicId boxId then
         C.topicDetailMaxWidth
       else
         size.w

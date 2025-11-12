@@ -81,17 +81,17 @@ encodeItem item =
 
 
 encodeMap : Box -> E.Value
-encodeMap map =
+encodeMap box =
   E.object
-    [ ("id", E.int map.id)
+    [ ("id", E.int box.id)
     , ("rect", E.object
-        [ ("x1", E.float map.rect.x1)
-        , ("y1", E.float map.rect.y1)
-        , ("x2", E.float map.rect.x2)
-        , ("y2", E.float map.rect.y2)
+        [ ("x1", E.float box.rect.x1)
+        , ("y1", E.float box.rect.y1)
+        , ("x2", E.float box.rect.x2)
+        , ("y2", E.float box.rect.y2)
         ]
       )
-    , ("items", map.items |> Dict.values |> E.list encodeMapItem)
+    , ("items", box.items |> Dict.values |> E.list encodeMapItem)
     ]
 
 

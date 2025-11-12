@@ -7,7 +7,7 @@ import Model exposing (Point, Size)
 -- CONFIG
 
 
-homeMapName = "DM6 Elm"
+rootBoxName = "DM6 Elm"
 version = "0.3-snapshot"
 date = "Nov 12, 2025"
 

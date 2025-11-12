@@ -138,8 +138,8 @@ update msg ({present} as undoModel) =
   case msg of
     AddTopic -> addTopic present |> store |> A.push undoModel
     AddBox -> addBox present |> store |> A.push undoModel
-    MoveTopicToMap topicId mapId origPos targetId targetMapPath pos
-      -> moveTopicToMap topicId mapId origPos targetId targetMapPath pos present
+    MoveTopicIntoBox topicId boxId origPos targetId targetMapPath pos
+      -> moveTopicToMap topicId boxId origPos targetId targetMapPath pos present
       |> store |> A.push undoModel
     SwitchDisplay displayMode -> switchDisplay displayMode present
       |> store |> A.swap undoModel
@@ -160,23 +160,23 @@ update msg ({present} as undoModel) =
 addTopic : Model -> Model
 addTopic model =
   let
-    mapId = A.activeMap model
+    boxId = A.activeMap model
   in
-  case A.mapByIdOrLog mapId model.boxes of
-    Just map ->
+  case A.mapByIdOrLog boxId model.boxes of
+    Just box ->
       let
         (newModel, topicId) = A.addTopic C.initTopicText Nothing model
         props = TopicV <| TopicProps
           (Point
-            (C.initTopicPos.x + map.rect.x1)
-            (C.initTopicPos.y + map.rect.y1)
+            (C.initTopicPos.x + box.rect.x1)
+            (C.initTopicPos.y + box.rect.y1)
           )
           C.topicDetailSize
           (TopicD LabelOnly)
       in
       newModel
-      |> A.putItemOnMap topicId props mapId
-      |> A.select topicId [ mapId ]
+      |> A.putItemOnMap topicId props boxId
+      |> A.select topicId [ boxId ]
     Nothing -> model
 
 
@@ -184,39 +184,39 @@ addTopic model =
 addBox : Model -> Model
 addBox model =
   let
-    mapId = A.activeMap model
+    boxId = A.activeMap model
   in
-  case A.mapByIdOrLog mapId model.boxes of
-    Just map ->
+  case A.mapByIdOrLog boxId model.boxes of
+    Just box ->
       let
         (newModel, topicId) = A.addTopic C.initBoxText Nothing model
         props = TopicV <| TopicProps
           (Point
-            (C.initTopicPos.x + map.rect.x1)
-            (C.initTopicPos.y + map.rect.y1)
+            (C.initTopicPos.x + box.rect.x1)
+            (C.initTopicPos.y + box.rect.y1)
           )
           C.topicDetailSize
           (BoxD BlackBox)
       in
       newModel
       |> A.addMap topicId
-      |> A.putItemOnMap topicId props mapId
-      |> A.select topicId [ mapId ]
+      |> A.putItemOnMap topicId props boxId
+      |> A.select topicId [ boxId ]
     Nothing -> model
 
 
 moveTopicToMap : Id -> BoxId -> Point -> Id -> BoxPath -> Point -> Model -> Model
-moveTopicToMap topicId mapId origPos targetId targetMapPath pos model =
+moveTopicToMap topicId boxId origPos targetId targetMapPath pos model =
   let
     props_ =
-      A.topicProps topicId mapId model.boxes
+      A.topicProps topicId boxId model.boxes
       |> Maybe.andThen (\props -> Just (TopicV { props | pos = pos }))
   in
   case props_ of
     Just props ->
       model
-      |> A.hideItem topicId mapId
-      |> A.setTopicPos topicId mapId origPos
+      |> A.hideItem topicId boxId
+      |> A.setTopicPos topicId boxId origPos
       |> A.putItemOnMap topicId props targetId
       |> A.select targetId targetMapPath
       |> autoSize
@@ -228,16 +228,16 @@ switchDisplay displayMode model =
   ( case A.singleSelection model of
     Just (boxId, boxPath) ->
       let
-        mapId = A.firstId boxPath
+        targetBoxId = A.firstId boxPath
       in
       { model | boxes =
         case displayMode of
           TopicD _ -> model.boxes
-          BoxD BlackBox -> box boxId mapId model
-          BoxD WhiteBox -> box boxId mapId model
-          BoxD Unboxed -> unbox boxId mapId model
+          BoxD BlackBox -> box boxId targetBoxId model
+          BoxD WhiteBox -> box boxId targetBoxId model
+          BoxD Unboxed -> unbox boxId targetBoxId model
       }
-      |> A.setDisplayMode boxId mapId displayMode
+      |> A.setDisplayMode boxId targetBoxId displayMode
     Nothing -> model
   )
   |> autoSize
@@ -251,9 +251,9 @@ updateEdit msg ({present} as undoModel) =
     EditStart -> startEdit present |> A.push undoModel
     OnTextInput text -> onTextInput text present |> store |> A.swap undoModel
     OnTextareaInput text -> onTextareaInput text present |> storeWith |> A.swap undoModel
-    SetTopicSize topicId mapId size ->
+    SetTopicSize topicId boxId size ->
       ( present
-        |> A.setTopicSize topicId mapId size
+        |> A.setTopicSize topicId boxId size
         |> autoSize
       , Cmd.none
       )
@@ -277,8 +277,8 @@ startEdit model =
 
 
 setDetailDisplayIfMonade : Id -> BoxId -> Model -> Model
-setDetailDisplayIfMonade topicId mapId model =
-  model |> A.updateTopicProps topicId mapId
+setDetailDisplayIfMonade topicId boxId model =
+  model |> A.updateTopicProps topicId boxId
     (\props ->
       case props.displayMode of
         TopicD _ -> { props | displayMode = TopicD Detail }
@@ -299,23 +299,23 @@ onTextInput text model =
 onTextareaInput : String -> Model -> (Model, Cmd Msg)
 onTextareaInput text model =
   case model.editState of
-    ItemEdit topicId mapId ->
+    ItemEdit topicId boxId ->
       A.updateTopicInfo topicId
         (\topic -> { topic | text = text })
         model
-      |> measureText text topicId mapId
+      |> measureText text topicId boxId
     NoEdit -> logError "onTextareaInput" "called when editState is NoEdit" (model, Cmd.none)
 
 
 measureText : String -> Id -> BoxId -> Model -> (Model, Cmd Msg)
-measureText text topicId mapId model =
+measureText text topicId boxId model =
   ( { model | measureText = text }
   , Dom.getElement "measure"
     |> Task.attempt
       (\result ->
         case result of
           Ok elem -> Edit
-            (SetTopicSize topicId mapId
+            (SetTopicSize topicId boxId
               (Size elem.element.width elem.element.height)
             )
           Err err -> logError "measureText" (toString err) NoOp
@@ -334,7 +334,7 @@ focus model =
   let
     nodeId =
       case model.editState of
-        ItemEdit id mapId -> "dmx-input-" ++ fromInt id ++ "-" ++ fromInt mapId
+        ItemEdit id boxId -> "dmx-input-" ++ fromInt id ++ "-" ++ fromInt boxId
         NoEdit -> logError "focus" "called when editState is NoEdit" ""
   in
   Dom.focus nodeId |> Task.attempt
@@ -367,11 +367,11 @@ fullscreen model =
 back : Model -> Model
 back model =
   let
-    (mapId, boxPath, selection) =
+    (boxId, boxPath, selection) =
       case model.boxPath of
-        prevMapId :: nextMapId :: mapIds ->
+        prevMapId :: nextMapId :: boxIds ->
           ( prevMapId
-          , nextMapId :: mapIds
+          , nextMapId :: boxIds
           , [(prevMapId, nextMapId)]
           )
         _ -> logError "back" "model.boxPath has a problem" (0, [0], [])
@@ -380,13 +380,13 @@ back model =
   | boxPath = boxPath
   -- , selection = selection -- TODO
   }
-  |> adjustMapRect mapId 1
+  |> adjustMapRect boxId 1
   |> autoSize
 
 
 adjustMapRect : BoxId -> Float -> Model -> Model
-adjustMapRect mapId factor model =
-  model |> A.updateMapRect mapId
+adjustMapRect boxId factor model =
+  model |> A.updateMapRect boxId
     (\rect -> Rectangle
       (rect.x1 + factor * 400) -- TODO
       (rect.y1 + factor * 300) -- TODO

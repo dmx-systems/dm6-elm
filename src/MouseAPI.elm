@@ -122,10 +122,10 @@ performDrag pos model =
         delta = Point
           (pos.x - lastPos.x)
           (pos.y - lastPos.y)
-        mapId = A.firstId boxPath
+        boxId = A.firstId boxPath
         newModel =
           case dragMode of
-            DragTopic -> A.setTopicPosByDelta id mapId delta model
+            DragTopic -> A.setTopicPosByDelta id boxId delta model
             DraftAssoc -> model
       in
       -- update lastPos
@@ -143,12 +143,12 @@ mouseUp ({present} as undoModel) =
       case present.mouse.dragState of
         Drag DragTopic id boxPath origPos _ (Just (targetId, targetMapPath)) ->
           let
-            _ = info "mouseUp" ("dropped " ++ fromInt id ++ " (map " ++ A.fromPath boxPath
-              ++ ") on " ++ fromInt targetId ++ " (map " ++ A.fromPath targetMapPath ++ ") --> "
+            _ = info "mouseUp" ("dropped " ++ fromInt id ++ " (box " ++ A.fromPath boxPath
+              ++ ") on " ++ fromInt targetId ++ " (box " ++ A.fromPath targetMapPath ++ ") --> "
               ++ if notDroppedOnOwnMap then "move topic" else "abort")
-            mapId = A.firstId boxPath
-            notDroppedOnOwnMap = mapId /= targetId
-            msg = MoveTopicToMap id mapId origPos targetId targetMapPath
+            boxId = A.firstId boxPath
+            notDroppedOnOwnMap = boxId /= targetId
+            msg = MoveTopicIntoBox id boxId origPos targetId targetMapPath
           in
           if notDroppedOnOwnMap then
             (present, Random.generate msg point, A.swap)
@@ -156,14 +156,14 @@ mouseUp ({present} as undoModel) =
             (present, Cmd.none, A.swap)
         Drag DraftAssoc id boxPath _ _ (Just (targetId, targetMapPath)) ->
           let
-            _ = info "mouseUp" ("assoc drawn from " ++ fromInt id ++ " (map " ++ A.fromPath
-              boxPath ++ ") to " ++ fromInt targetId ++ " (map " ++ A.fromPath targetMapPath
+            _ = info "mouseUp" ("assoc drawn from " ++ fromInt id ++ " (box " ++ A.fromPath
+              boxPath ++ ") to " ++ fromInt targetId ++ " (box " ++ A.fromPath targetMapPath
               ++ ") --> " ++ if isSameMap then "create assoc" else "abort")
-            mapId = A.firstId boxPath
-            isSameMap = mapId == A.firstId targetMapPath
+            boxId = A.firstId boxPath
+            isSameMap = boxId == A.firstId targetMapPath
           in
           if isSameMap then
-            (addDefaultAssocAndPutOnMap id targetId mapId present, Cmd.none, A.push)
+            (addDefaultAssocAndPutOnMap id targetId boxId present, Cmd.none, A.push)
           else
             (present, Cmd.none, A.swap)
         Drag _ _ _ _ _ _ ->
@@ -237,24 +237,24 @@ updateDragState dragState ({mouse} as model) =
   { model | mouse = { mouse | dragState = dragState }}
 
 
--- Presumption: both players exist in same map
+-- Presumption: both players exist in same box
 addDefaultAssocAndPutOnMap : Id -> Id -> BoxId -> Model -> Model
-addDefaultAssocAndPutOnMap player1 player2 mapId model =
+addDefaultAssocAndPutOnMap player1 player2 boxId model =
   addAssocAndPutOnMap
     "dmx.association"
     "dmx.default" player1
     "dmx.default" player2
-    mapId model
+    boxId model
 
 
--- Presumption: both players exist in same map
+-- Presumption: both players exist in same box
 addAssocAndPutOnMap : ItemType -> RoleType -> Id -> RoleType -> Id -> BoxId -> Model -> Model
-addAssocAndPutOnMap itemType role1 player1 role2 player2 mapId model =
+addAssocAndPutOnMap itemType role1 player1 role2 player2 boxId model =
   let
     (newModel, assocId) = A.addAssoc itemType role1 player1 role2 player2 model
     props = AssocV AssocProps
   in
-  A.putItemOnMap assocId props mapId newModel
+  A.putItemOnMap assocId props boxId newModel
 
 
 
