@@ -209,9 +209,9 @@ mouseOver class targetId targetMapPath model =
         isBox = A.hasMap targetId model.maps
         target =
           -- the hovered item is a potential drop target if
-          -- 1. the hovered item is not the item being dragged (can't drop on self), and
-          -- 2. the hovered item is a box
-          if not isSelf && isBox then
+          -- 1. the hovered item is not the item being dragged (can't drop on self), AND
+          -- 2. the hovered item is a box OR draft assoc is in progress
+          if not isSelf && (isBox || dragMode == DraftAssoc) then
             Just (targetId, targetMapPath)
           else
             Nothing
