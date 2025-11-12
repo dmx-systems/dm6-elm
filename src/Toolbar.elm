@@ -77,7 +77,7 @@ toolbarStyle =
 viewMapNav : Model -> Html Msg
 viewMapNav model =
   let
-    backDisabled = A.isHome model
+    backDisabled = A.isAtRoot model
   in
   div
     mapNavStyle
@@ -110,7 +110,7 @@ mapTitleStyle =
 
 getMapName : Model -> String
 getMapName model =
-  case A.topicById (A.activeMap model) model of
+  case A.topicById (A.activeBox model) model of
     Just topic -> A.topicLabel topic
     Nothing -> "??"
 
@@ -141,7 +141,7 @@ hasSelection undoModel =
 hasBoxSelection : UndoModel -> Bool
 hasBoxSelection {present} =
   case A.singleSelection present of
-    Just (id, _) -> A.hasMap id present.boxes
+    Just (id, _) -> A.isBox id present.boxes
     Nothing -> False
 
 

@@ -4,7 +4,7 @@ import AppModel exposing (..)
 import Boxing exposing (box, unbox)
 import Config as C
 import MapAutoSize exposing (autoSize)
-import MapRenderer exposing (viewMap)
+import MapRenderer exposing (viewBox)
 import Model exposing (..)
 import ModelAPI as A
 import Storage exposing (store, storeWith, modelDecoder, importJSON, exportJSON)
@@ -82,7 +82,7 @@ view ({present} as undoModel) =
         ++ appStyle
       )
       ( [ viewToolbar undoModel
-        , viewMap (A.activeMap present) [] present -- boxPath = []
+        , viewBox (A.activeBox present) [] present -- boxPath = []
         ]
         ++ viewResultMenu present
         ++ viewIconMenu present
@@ -138,8 +138,8 @@ update msg ({present} as undoModel) =
   case msg of
     AddTopic -> addTopic present |> store |> A.push undoModel
     AddBox -> addBox present |> store |> A.push undoModel
-    MoveTopicIntoBox topicId boxId origPos targetId targetMapPath pos
-      -> moveTopicToMap topicId boxId origPos targetId targetMapPath pos present
+    MoveTopicToBox topicId boxId origPos targetId targetBoxPath pos
+      -> moveTopicToBox topicId boxId origPos targetId targetBoxPath pos present
       |> store |> A.push undoModel
     SwitchDisplay displayMode -> switchDisplay displayMode present
       |> store |> A.swap undoModel
@@ -160,9 +160,9 @@ update msg ({present} as undoModel) =
 addTopic : Model -> Model
 addTopic model =
   let
-    boxId = A.activeMap model
+    boxId = A.activeBox model
   in
-  case A.mapByIdOrLog boxId model.boxes of
+  case A.boxByIdOrLog boxId model.boxes of
     Just box ->
       let
         (newModel, topicId) = A.addTopic C.initTopicText Nothing model
@@ -175,7 +175,7 @@ addTopic model =
           (TopicD LabelOnly)
       in
       newModel
-      |> A.putItemOnMap topicId props boxId
+      |> A.addItemToBox topicId props boxId
       |> A.select topicId [ boxId ]
     Nothing -> model
 
@@ -184,9 +184,9 @@ addTopic model =
 addBox : Model -> Model
 addBox model =
   let
-    boxId = A.activeMap model
+    boxId = A.activeBox model
   in
-  case A.mapByIdOrLog boxId model.boxes of
+  case A.boxByIdOrLog boxId model.boxes of
     Just box ->
       let
         (newModel, topicId) = A.addTopic C.initBoxText Nothing model
@@ -199,14 +199,14 @@ addBox model =
           (BoxD BlackBox)
       in
       newModel
-      |> A.addMap topicId
-      |> A.putItemOnMap topicId props boxId
+      |> A.addBox topicId
+      |> A.addItemToBox topicId props boxId
       |> A.select topicId [ boxId ]
     Nothing -> model
 
 
-moveTopicToMap : Id -> BoxId -> Point -> Id -> BoxPath -> Point -> Model -> Model
-moveTopicToMap topicId boxId origPos targetId targetMapPath pos model =
+moveTopicToBox : Id -> BoxId -> Point -> Id -> BoxPath -> Point -> Model -> Model
+moveTopicToBox topicId boxId origPos targetId targetBoxPath pos model =
   let
     props_ =
       A.topicProps topicId boxId model.boxes
@@ -217,8 +217,8 @@ moveTopicToMap topicId boxId origPos targetId targetMapPath pos model =
       model
       |> A.hideItem topicId boxId
       |> A.setTopicPos topicId boxId origPos
-      |> A.putItemOnMap topicId props targetId
-      |> A.select targetId targetMapPath
+      |> A.addItemToBox topicId props targetId
+      |> A.select targetId targetBoxPath
       |> autoSize
     Nothing -> model
 
@@ -386,7 +386,7 @@ back model =
 
 adjustMapRect : BoxId -> Float -> Model -> Model
 adjustMapRect boxId factor model =
-  model |> A.updateMapRect boxId
+  model |> A.updateBoxRect boxId
     (\rect -> Rectangle
       (rect.x1 + factor * 400) -- TODO
       (rect.y1 + factor * 300) -- TODO

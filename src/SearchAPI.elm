@@ -4,8 +4,8 @@ import AppModel exposing (UndoModel, Model, Msg(..))
 import Config as C
 import MapAutoSize exposing (autoSize)
 import Model exposing (ItemInfo(..), Id, BoxId)
-import ModelAPI exposing (topicById, relatedItems, activeMap, initItemProps, isItemInMap,
-  isItemInMapDeep, showItem, putItemOnMap, singleSelection, singleSelectionMapId, push, swap)
+import ModelAPI exposing (topicById, relatedItems, activeBox, initItemProps, boxHasItem,
+  boxHasDeepItem, showItem, addItemToBox, singleSelection, singleSelectionBoxId, push, swap)
 import Storage exposing (store)
 import Utils exposing (idDecoder, idTupleDecoder, stopPropagationOnMousedown, logError, info)
 -- components
@@ -121,7 +121,7 @@ viewRelTopicsMenu relTopicIds model =
 isItemDisabled : Id -> Model -> Bool
 isItemDisabled topicId model =
   case revealMapId model of
-    Just boxId -> isItemInMapDeep boxId topicId model
+    Just boxId -> boxHasDeepItem topicId boxId model
     Nothing -> False
 
 
@@ -129,9 +129,9 @@ isItemDisabled topicId model =
 revealMapId : Model -> Maybe Id
 revealMapId model =
   case model.search.menu of
-    Topics _ _ -> Just (activeMap model)
+    Topics _ _ -> Just (activeBox model)
     RelTopics _ _ ->
-      case singleSelectionMapId model of
+      case singleSelectionBoxId model of
         Just boxId -> Just boxId
         Nothing -> Nothing
     Closed -> Nothing
@@ -273,13 +273,13 @@ onUnhoverRelTopic ({search} as model) =
 revealTopic : Id -> Model -> Model
 revealTopic topicId model =
   model
-  |> revealItem topicId (activeMap model)
+  |> revealItem topicId (activeBox model)
   |> closeResultMenu
 
 
 revealRelTopic : (Id, Id) -> Model -> Model
 revealRelTopic (topicId, assocId) model =
-  case singleSelectionMapId model of
+  case singleSelectionBoxId model of
     Just boxId ->
       model
       |> revealItem topicId boxId
@@ -327,7 +327,7 @@ isMatch searchText text =
 
 revealItem : Id -> BoxId -> Model -> Model
 revealItem itemId boxId model =
-  if isItemInMap itemId boxId model then
+  if boxHasItem boxId itemId model then
     let
       _ = info "revealItem" <| fromInt itemId ++ " is in " ++ fromInt boxId
     in
@@ -337,7 +337,7 @@ revealItem itemId boxId model =
       _ = info "revealItem" <| fromInt itemId ++ " not in " ++ fromInt boxId
       props = initItemProps itemId model
     in
-    putItemOnMap itemId props boxId model
+    addItemToBox itemId props boxId model
 
 
 closeResultMenu : Model -> Model

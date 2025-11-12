@@ -44,12 +44,12 @@ unbox boxId targetBoxId model =
 
 transferContent : BoxId -> BoxId -> TransferFunc -> Model -> Boxes
 transferContent boxId targetBoxId transferFunc model =
-  case mapByIdOrLog boxId model.boxes of
+  case boxByIdOrLog boxId model.boxes of
     Just box_ ->
-      model.boxes |> updateMaps
+      model.boxes |> updateBoxes
         targetBoxId
-        (\targetMap ->
-          { targetMap | items = transferFunc box_.items targetMap.items model }
+        (\targetBox ->
+          { targetBox | items = transferFunc box_.items targetBox.items model }
         )
     Nothing -> model.boxes
 
@@ -71,7 +71,7 @@ boxItems_ boxItems targetItems model =
             let
               items = hideItem_ boxItem.id targetItemsAcc model
             in
-            case mapById boxItem.id model.boxes of
+            case boxById boxItem.id model.boxes of
               Just box_ -> boxItems_ box_.items items model -- recursion
               Nothing -> items
         Nothing -> targetItemsAcc -- FIXME: continue unboxing boxes?
@@ -95,7 +95,7 @@ unboxItems_ boxItems targetItems model =
           if abort then
             items
           else
-            case mapById boxItem.id model.boxes of
+            case boxById boxItem.id model.boxes of
               Just box_ -> unboxItems_ box_.items items model -- recursion
               Nothing -> items
         AssocV _ ->
@@ -123,7 +123,7 @@ unboxTopic boxItem targetItems model =
         Nothing ->
           -- by default (when no box item exists) an unboxed box will also be unboxed
           -- FIXME: set item's parentAssocId?
-          if hasMap boxItem.id model.boxes then
+          if isBox boxItem.id model.boxes then
             (setUnboxed boxItem, False)
           else
             (boxItem, False)

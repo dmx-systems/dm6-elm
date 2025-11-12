@@ -141,26 +141,26 @@ mouseUp ({present} as undoModel) =
   let
     (model, cmd, historyFunc) =
       case present.mouse.dragState of
-        Drag DragTopic id boxPath origPos _ (Just (targetId, targetMapPath)) ->
+        Drag DragTopic id boxPath origPos _ (Just (targetId, targetBoxPath)) ->
           let
             _ = info "mouseUp" ("dropped " ++ fromInt id ++ " (box " ++ A.fromPath boxPath
-              ++ ") on " ++ fromInt targetId ++ " (box " ++ A.fromPath targetMapPath ++ ") --> "
+              ++ ") on " ++ fromInt targetId ++ " (box " ++ A.fromPath targetBoxPath ++ ") --> "
               ++ if notDroppedOnOwnMap then "move topic" else "abort")
             boxId = A.firstId boxPath
             notDroppedOnOwnMap = boxId /= targetId
-            msg = MoveTopicIntoBox id boxId origPos targetId targetMapPath
+            msg = MoveTopicToBox id boxId origPos targetId targetBoxPath
           in
           if notDroppedOnOwnMap then
             (present, Random.generate msg point, A.swap)
           else
             (present, Cmd.none, A.swap)
-        Drag DraftAssoc id boxPath _ _ (Just (targetId, targetMapPath)) ->
+        Drag DraftAssoc id boxPath _ _ (Just (targetId, targetBoxPath)) ->
           let
             _ = info "mouseUp" ("assoc drawn from " ++ fromInt id ++ " (box " ++ A.fromPath
-              boxPath ++ ") to " ++ fromInt targetId ++ " (box " ++ A.fromPath targetMapPath
+              boxPath ++ ") to " ++ fromInt targetId ++ " (box " ++ A.fromPath targetBoxPath
               ++ ") --> " ++ if isSameMap then "create assoc" else "abort")
             boxId = A.firstId boxPath
-            isSameMap = boxId == A.firstId targetMapPath
+            isSameMap = boxId == A.firstId targetBoxPath
           in
           if isSameMap then
             (addDefaultAssocAndPutOnMap id targetId boxId present, Cmd.none, A.push)
@@ -201,18 +201,18 @@ point =
 
 
 mouseOver : Class -> Id -> BoxPath -> Model -> Model
-mouseOver class targetId targetMapPath model =
+mouseOver class targetId targetBoxPath model =
   case model.mouse.dragState of
     Drag dragMode id boxPath origPos lastPos _ ->
       let
-        isSelf = (id, A.firstId boxPath) == (targetId, A.firstId targetMapPath)
-        isBox = A.hasMap targetId model.boxes
+        isSelf = (id, A.firstId boxPath) == (targetId, A.firstId targetBoxPath)
+        isBox = A.isBox targetId model.boxes
         target =
           -- the hovered item is a potential drop target if
           -- 1. the hovered item is not the item being dragged (can't drop on self), AND
           -- 2. the hovered item is a box OR draft assoc is in progress
           if not isSelf && (isBox || dragMode == DraftAssoc) then
-            Just (targetId, targetMapPath)
+            Just (targetId, targetBoxPath)
           else
             Nothing
       in
@@ -224,7 +224,7 @@ mouseOver class targetId targetMapPath model =
 
 
 mouseOut : Class -> Id -> BoxPath -> Model -> Model
-mouseOut class targetId targetMapPath model =
+mouseOut class targetId targetBoxPath model =
   case model.mouse.dragState of
     Drag dragMode id boxPath origPos lastPos _ ->
       -- reset target
@@ -254,7 +254,7 @@ addAssocAndPutOnMap itemType role1 player1 role2 player2 boxId model =
     (newModel, assocId) = A.addAssoc itemType role1 player1 role2 player2 model
     props = AssocV AssocProps
   in
-  A.putItemOnMap assocId props boxId newModel
+  A.addItemToBox assocId props boxId newModel
 
 
 

@@ -67,7 +67,7 @@ resetTransientState model =
 type Msg
   = AddTopic
   | AddBox
-  | MoveTopicIntoBox Id BoxId Point Id BoxPath Point -- start point, random point (for target)
+  | MoveTopicToBox Id BoxId Point Id BoxPath Point -- start point, random point (for target)
   | SwitchDisplay DisplayMode
   | Edit EditMsg
   | Nav NavMsg
