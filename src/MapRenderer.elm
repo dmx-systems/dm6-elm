@@ -102,7 +102,7 @@ mapInfo mapId boxPath model =
 
 
 -- For a fullscreen map boxPath is empty
-viewItems : Map -> BoxPath -> Model -> (List (Html Msg), List (Svg Msg))
+viewItems : Box -> BoxPath -> Model -> (List (Html Msg), List (Svg Msg))
 viewItems map boxPath model =
   let
     newPath = map.id :: boxPath
@@ -112,15 +112,15 @@ viewItems map boxPath model =
       case itemById id model of
         Just {info} ->
           case (info, props) of
-            (Topic topic, MapTopic tProps) -> (viewTopic topic tProps newPath model :: t, a)
-            (Assoc assoc, MapAssoc _) -> (t, viewAssoc assoc map.id model :: a)
+            (Topic topic, TopicV tProps) -> (viewTopic topic tProps newPath model :: t, a)
+            (Assoc assoc, AssocV _) -> (t, viewAssoc assoc map.id model :: a)
             _ -> logError "viewItems" ("problem with item " ++ fromInt id) (t, a)
         Nothing -> logError "viewItems" ("problem with item " ++ fromInt id) (t, a)
     )
     ([], [])
 
 
-shouldItemRender : BoxId -> Model -> MapItem -> Bool
+shouldItemRender : BoxId -> Model -> BoxItem -> Bool
 shouldItemRender mapId model item =
   isVisible item || isLimboItem item mapId model
 
@@ -180,13 +180,13 @@ viewLimboAssoc mapId model =
     _ -> []
 
 
-isLimboItem : MapItem -> BoxId -> Model -> Bool
+isLimboItem : BoxItem -> BoxId -> Model -> Bool
 isLimboItem item mapId model =
   let
     isLimbo =
       case item.props of
-        MapTopic _ -> isLimboTopic
-        MapAssoc _ -> isLimboAssoc
+        TopicV _ -> isLimboTopic
+        AssocV _ -> isLimboAssoc
   in
   isLimbo item.id mapId model
 
@@ -222,11 +222,11 @@ viewTopic topic props boxPath model =
     mapId = firstId boxPath
     topicFunc =
       case effectiveDisplayMode topic.id mapId props.displayMode model of
-        Monad LabelOnly -> labelTopic
-        Monad Detail -> detailTopic
-        Box BlackBox -> blackBoxTopic
-        Box WhiteBox -> whiteBoxTopic
-        Box Unboxed -> unboxedTopic
+        TopicD LabelOnly -> labelTopic
+        TopicD Detail -> detailTopic
+        BoxD BlackBox -> blackBoxTopic
+        BoxD WhiteBox -> whiteBoxTopic
+        BoxD Unboxed -> unboxedTopic
     (style, children) = topicFunc topic props boxPath model
   in
   div
@@ -241,8 +241,8 @@ effectiveDisplayMode : Id -> BoxId -> DisplayMode -> Model -> DisplayMode
 effectiveDisplayMode topicId mapId displayMode model =
   if isLimboTopic topicId mapId model then
     case displayMode of
-      Monad _ -> Monad Detail
-      Box _ -> Box WhiteBox
+      TopicD _ -> TopicD Detail
+      BoxD _ -> BoxD WhiteBox
   else
     displayMode
 
@@ -421,8 +421,8 @@ mapItemCount topicId props model =
   let
     itemCount =
       case props.displayMode of
-        Monad _ -> 0
-        Box _ ->
+        TopicD _ -> 0
+        BoxD _ ->
           case mapByIdOrLog topicId model.boxes of
             Just map -> map.items |> Dict.values |> List.filter isVisible |> List.length
             Nothing -> 0
@@ -553,7 +553,7 @@ topicFlexboxStyle topic props mapId model =
   let
     r12 = fromInt C.topicRadius ++ "px"
     r34 = case props.displayMode of
-      Box WhiteBox -> "0"
+      BoxD WhiteBox -> "0"
       _ -> r12
   in
   [ style "display" "flex"
@@ -578,7 +578,7 @@ topicIconBoxStyle props =
   let
     r1 = fromInt C.topicRadius ++ "px"
     r4 = case props.displayMode of
-      Box WhiteBox -> "0"
+      BoxD WhiteBox -> "0"
       _ -> r1
   in
   [ style "flex" "none"

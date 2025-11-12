@@ -215,7 +215,7 @@ fromPath boxPath =
 {-| Logs an error if map does not exist.
 TODO: replace Boxes parameter by Model?
 -}
-mapByIdOrLog : BoxId -> Boxes -> Maybe Map
+mapByIdOrLog : BoxId -> Boxes -> Maybe Box
 mapByIdOrLog mapId boxes =
   case mapById mapId boxes of
     Just map -> Just map
@@ -223,7 +223,7 @@ mapByIdOrLog mapId boxes =
 
 
 {-| TODO: replace Boxes parameter by Model? -}
-mapById : BoxId -> Boxes -> Maybe Map
+mapById : BoxId -> Boxes -> Maybe Box
 mapById mapId boxes =
   boxes |> Dict.get mapId
 
@@ -238,7 +238,7 @@ addMap : BoxId -> Model -> Model
 addMap mapId model =
   { model | boxes = model.boxes |> Dict.insert
     mapId
-    (Map mapId (Rectangle 0 0 0 0) Dict.empty)
+    (Box mapId (Rectangle 0 0 0 0) Dict.empty)
   }
 
 
@@ -319,8 +319,8 @@ topicProps topicId mapId boxes =
   case mapItemById topicId mapId boxes of
     Just mapItem ->
       case mapItem.props of
-        MapTopic props -> Just props
-        MapAssoc _ -> topicMismatch "topicProps" topicId Nothing
+        TopicV props -> Just props
+        AssocV _ -> topicMismatch "topicProps" topicId Nothing
     Nothing -> fail "topicProps" {topicId = topicId, mapId = mapId} Nothing
 
 
@@ -334,9 +334,9 @@ updateTopicProps topicId mapId propsFunc model =
           case mapItem_ of
             Just mapItem ->
               case mapItem.props of
-                MapTopic props -> Just
-                  { mapItem | props = MapTopic (propsFunc props) }
-                MapAssoc _ -> topicMismatch "updateTopicProps" topicId Nothing
+                TopicV props -> Just
+                  { mapItem | props = TopicV (propsFunc props) }
+                AssocV _ -> topicMismatch "updateTopicProps" topicId Nothing
             Nothing -> illegalItemId "updateTopicProps" topicId Nothing
         )
       }
@@ -345,14 +345,14 @@ updateTopicProps topicId mapId propsFunc model =
 
 
 {-| Initial props for a newly revealed topic -}
-initItemProps : Id -> Model -> MapProps
+initItemProps : Id -> Model -> ViewProps
 initItemProps itemId model =
   case itemById itemId model of
     Just item ->
       case item.info of
-        Topic _ -> MapTopic <| initTopicProps itemId model
-        Assoc _ -> MapAssoc {}
-    Nothing -> MapAssoc {} -- error is already logged
+        Topic _ -> TopicV <| initTopicProps itemId model
+        Assoc _ -> AssocV {}
+    Nothing -> AssocV {} -- error is already logged
 
 
 {-| Initial props for a newly revealed topic -}
@@ -362,16 +362,16 @@ initTopicProps topicId model =
     ( Point 0 0 ) -- TODO, see also MapRenderer's viewLimboAssoc()
     C.topicSize
     ( if hasMap topicId model.boxes then
-        Box BlackBox
+        BoxD BlackBox
       else
-        Monad LabelOnly
+        TopicD LabelOnly
     )
 
 
 {-| Logs an error if map does not exist or item is not in map.
 TODO: replace Boxes parameter by Model?
 -}
-mapItemById : Id -> BoxId -> Boxes -> Maybe MapItem
+mapItemById : Id -> BoxId -> Boxes -> Maybe BoxItem
 mapItemById itemId mapId boxes =
   mapByIdOrLog mapId boxes |> Maybe.andThen
     (\map ->
@@ -405,7 +405,7 @@ Presumption: the item is not yet contained in the map. Otherwise the existing ma
 overridden and another association still be created. This is not what you want.
 Can be used for both, topics and associations.
 -}
-putItemOnMap : Id -> MapProps -> BoxId -> Model -> Model
+putItemOnMap : Id -> ViewProps -> BoxId -> Model -> Model
 putItemOnMap itemId props mapId model =
   let
     (newModel, parentAssocId) = addAssoc
@@ -413,7 +413,7 @@ putItemOnMap itemId props mapId model =
       "dmx.child" itemId
       "dmx.parent" mapId
       model
-    mapItem = MapItem itemId parentAssocId False False props -- hidden=False, pinned=False
+    mapItem = BoxItem itemId parentAssocId False False props -- hidden=False, pinned=False
     _ = info "putItemOnMap"
       { itemId = itemId, parentAssocId = parentAssocId, props = props, mapId = mapId}
   in
@@ -452,7 +452,7 @@ hideItem itemId mapId model =
   }
 
 
-hideItem_ : Id -> MapItems -> Model -> MapItems
+hideItem_ : Id -> BoxItems -> Model -> BoxItems
 hideItem_ itemId items model =
   mapAssocsOfPlayer_ itemId items model |> List.foldr
     (\assocId itemsAcc -> hideItem_ assocId itemsAcc model)
@@ -469,7 +469,7 @@ hideItem_ itemId items model =
 {-| Logs an error if map does not exist.
 TODO: replace Boxes parameter by Model?
 -}
-updateMaps : BoxId -> (Map -> Map) -> Boxes -> Boxes
+updateMaps : BoxId -> (Box -> Box) -> Boxes -> Boxes
 updateMaps mapId mapFunc boxes =
   boxes |> Dict.update mapId
     (\map_ ->
@@ -479,7 +479,7 @@ updateMaps mapId mapFunc boxes =
     )
 
 
-mapAssocsOfPlayer_ : Id -> MapItems -> Model -> List Id
+mapAssocsOfPlayer_ : Id -> BoxItems -> Model -> List Id
 mapAssocsOfPlayer_ playerId items model =
   items |> Dict.values
     |> List.filter isMapAssoc
@@ -512,23 +512,23 @@ isAssoc item =
 
 {-| useful as a filter predicate
 -}
-isMapTopic : MapItem -> Bool
+isMapTopic : BoxItem -> Bool
 isMapTopic item =
   case item.props of
-    MapTopic _ -> True
-    MapAssoc _ -> False
+    TopicV _ -> True
+    AssocV _ -> False
 
 
 {-| useful as a filter predicate
 -}
-isMapAssoc : MapItem -> Bool
+isMapAssoc : BoxItem -> Bool
 isMapAssoc item =
   not (isMapTopic item)
 
 
 {-| useful as a filter predicate
 -}
-isVisible : MapItem -> Bool
+isVisible : BoxItem -> Bool
 isVisible item =
   not item.hidden
 
@@ -613,7 +613,7 @@ assocMismatch funcName id val =
 
 illegalMapId : String -> Id -> a -> a
 illegalMapId funcName id val =
-  illegalId funcName "Map" id val
+  illegalId funcName "Box" id val
 
 
 illegalItemId : String -> Id -> a -> a

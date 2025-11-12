@@ -80,7 +80,7 @@ encodeItem item =
     ]
 
 
-encodeMap : Map -> E.Value
+encodeMap : Box -> E.Value
 encodeMap map =
   E.object
     [ ("id", E.int map.id)
@@ -95,7 +95,7 @@ encodeMap map =
     ]
 
 
-encodeMapItem : MapItem -> E.Value
+encodeMapItem : BoxItem -> E.Value
 encodeMapItem item =
   E.object
     [ ("id", E.int item.id)
@@ -103,7 +103,7 @@ encodeMapItem item =
     , ("hidden", E.bool item.hidden)
     , ("pinned", E.bool item.pinned)
     , case item.props of
-        MapTopic topicProps ->
+        TopicV topicProps ->
           ( "topicProps"
           , E.object
             [ ("pos", E.object
@@ -119,7 +119,7 @@ encodeMapItem item =
             , ("display", encodeDisplayName topicProps.displayMode)
             ]
           )
-        MapAssoc assosProps ->
+        AssocV assosProps ->
           ( "assocProps"
           , E.object []
           )
@@ -130,11 +130,11 @@ encodeDisplayName : DisplayMode -> E.Value
 encodeDisplayName displayMode =
   E.string
     (case displayMode of
-      Monad LabelOnly -> "LabelOnly"
-      Monad Detail -> "Detail"
-      Box BlackBox -> "BlackBox"
-      Box WhiteBox -> "WhiteBox"
-      Box Unboxed -> "Unboxed"
+      TopicD LabelOnly -> "LabelOnly"
+      TopicD Detail -> "Detail"
+      BoxD BlackBox -> "BlackBox"
+      BoxD WhiteBox -> "WhiteBox"
+      BoxD Unboxed -> "Unboxed"
     )
 
 
@@ -194,9 +194,9 @@ assocIdsDecoder =
   |> D.andThen (Set.fromList >> D.succeed)
 
 
-mapDecoder : D.Decoder Map
+mapDecoder : D.Decoder Box
 mapDecoder =
-  D.map3 Map
+  D.map3 Box
     (D.field "id" D.int)
     (D.field "rect" <| D.map4 Rectangle
       (D.field "x1" D.float)
@@ -207,15 +207,15 @@ mapDecoder =
     (D.field "items" (D.list mapItemDecoder |> D.andThen toDictDecoder))
 
 
-mapItemDecoder : D.Decoder MapItem
+mapItemDecoder : D.Decoder BoxItem
 mapItemDecoder =
-  D.map5 MapItem
+  D.map5 BoxItem
     (D.field "id" D.int)
     (D.field "parentAssocId" D.int)
     (D.field "hidden" D.bool)
     (D.field "pinned" D.bool)
     (D.oneOf
-      [ D.field "topicProps" <| D.map MapTopic <| D.map3 TopicProps
+      [ D.field "topicProps" <| D.map TopicV <| D.map3 TopicProps
         (D.field "pos" <| D.map2 Point
           (D.field "x" D.float)
           (D.field "y" D.float)
@@ -225,7 +225,7 @@ mapItemDecoder =
           (D.field "h" D.float)
         )
         (D.field "display" D.string |> D.andThen displayModeDecoder)
-      , D.field "assocProps" <| D.succeed (MapAssoc AssocProps)
+      , D.field "assocProps" <| D.succeed (AssocV AssocProps)
       ]
     )
 
@@ -241,11 +241,11 @@ toDictDecoder items =
 displayModeDecoder : String -> D.Decoder DisplayMode
 displayModeDecoder str =
   case str of
-    "LabelOnly" -> D.succeed (Monad LabelOnly)
-    "Detail" -> D.succeed (Monad Detail)
-    "BlackBox" -> D.succeed (Box BlackBox)
-    "WhiteBox" -> D.succeed (Box WhiteBox)
-    "Unboxed" -> D.succeed (Box Unboxed)
+    "LabelOnly" -> D.succeed (TopicD LabelOnly)
+    "Detail" -> D.succeed (TopicD Detail)
+    "BlackBox" -> D.succeed (BoxD BlackBox)
+    "WhiteBox" -> D.succeed (BoxD WhiteBox)
+    "Unboxed" -> D.succeed (BoxD Unboxed)
     _ -> D.fail <| "\"" ++ str ++ "\" is an invalid display mode"
 
 

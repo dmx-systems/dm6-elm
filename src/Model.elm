@@ -40,36 +40,36 @@ type alias AssocInfo =
 type alias BoxPath = List BoxId
 
 
-type alias Boxes = Dict Id Map
+type alias Boxes = Dict Id Box
 
 
-type alias Map =
+type alias Box =
   { id : BoxId
   , rect : Rectangle
-  , items : MapItems
+  , items : BoxItems
   }
 
 
-type alias MapItems = Dict Id MapItem
+type alias BoxItems = Dict Id BoxItem
 
 
-type alias MapItem =
+type alias BoxItem =
   { id : Id
   , parentAssocId : Id -- TODO: drop it? Compute from Item's "assocIds" field instead?
   , hidden : Bool -- TODO: replace hidden/pinned by custom type: Hidden/Visible/Pinned?
   , pinned : Bool
-  , props : MapProps
+  , props : ViewProps
   }
 
 
-type MapProps -- TODO: rename to "ItemProps"?
-  = MapTopic TopicProps
-  | MapAssoc AssocProps
+type ViewProps
+  = TopicV TopicProps
+  | AssocV AssocProps
 
 
 type alias TopicProps =
   { pos : Point
-  , size : Size -- TODO: really per-map?
+  , size : Size -- TODO: really per-box?
   , displayMode : DisplayMode -- serialized as "display", TODO: rename to "display"?
   }
 
@@ -79,11 +79,11 @@ type alias AssocProps =
 
 
 type DisplayMode
-  = Monad MonadDisplay
-  | Box BoxDisplay
+  = TopicD TopicDisplay
+  | BoxD BoxDisplay
 
 
-type MonadDisplay
+type TopicDisplay
   = LabelOnly
   | Detail
 

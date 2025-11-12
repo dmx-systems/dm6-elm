@@ -12,7 +12,7 @@ import Dict
 -- MODEL
 
 
-type alias TransferFunc = MapItems -> MapItems -> Model -> MapItems
+type alias TransferFunc = BoxItems -> BoxItems -> Model -> BoxItems
 
 
 
@@ -26,7 +26,7 @@ box : BoxId -> BoxId -> Model -> Boxes
 box boxId targetMapId model =
   case displayMode boxId targetMapId model.boxes of
     -- box only if currently unboxed
-    Just (Box Unboxed) -> transferContent boxId targetMapId boxItems_ model
+    Just (BoxD Unboxed) -> transferContent boxId targetMapId boxItems_ model
     _ -> model.boxes
 
 
@@ -37,8 +37,8 @@ unbox : BoxId -> BoxId -> Model -> Boxes
 unbox boxId targetMapId model =
   case displayMode boxId targetMapId model.boxes of
     -- unbox only if currently boxed
-    Just (Box BlackBox) -> transferContent boxId targetMapId unboxItems_ model
-    Just (Box WhiteBox) -> transferContent boxId targetMapId unboxItems_ model
+    Just (BoxD BlackBox) -> transferContent boxId targetMapId unboxItems_ model
+    Just (BoxD WhiteBox) -> transferContent boxId targetMapId unboxItems_ model
     _ -> model.boxes
 
 
@@ -58,7 +58,7 @@ transferContent boxId targetMapId transferFunc model =
 Iterates the box items (recursively) and sets corresponding target items to hidden.
 Returns the updated target items.
 -}
-boxItems_ : MapItems -> MapItems -> Model -> MapItems
+boxItems_ : BoxItems -> BoxItems -> Model -> BoxItems
 boxItems_ boxItems targetItems model =
   boxItems |> Dict.values |> List.foldr -- FIXME: apply isVisible filter?
     (\boxItem targetItemsAcc ->
@@ -83,12 +83,12 @@ boxItems_ boxItems targetItems model =
 Iterates the box items (recursively) and reveals corresponding target items.
 Returns the updated target items.
 -}
-unboxItems_ : MapItems -> MapItems -> Model -> MapItems
+unboxItems_ : BoxItems -> BoxItems -> Model -> BoxItems
 unboxItems_ boxItems targetItems model =
   boxItems |> Dict.values |> List.filter isVisible |> List.foldr
     (\boxItem targetItemsAcc ->
       case boxItem.props of
-        MapTopic _ ->
+        TopicV _ ->
           let
             (items, abort) = unboxTopic boxItem targetItemsAcc model
           in
@@ -98,7 +98,7 @@ unboxItems_ boxItems targetItems model =
             case mapById boxItem.id model.boxes of
               Just map -> unboxItems_ map.items items model -- recursion
               Nothing -> items
-        MapAssoc _ ->
+        AssocV _ ->
           unboxAssoc boxItem targetItemsAcc
     )
     targetItems
@@ -107,7 +107,7 @@ unboxItems_ boxItems targetItems model =
 {-| Returns the target item to reveal that corresponds to the box item.
 Part of unboxing. FIXDOC
 -}
-unboxTopic : MapItem -> MapItems -> Model -> (MapItems, Bool)
+unboxTopic : BoxItem -> BoxItems -> Model -> (BoxItems, Bool)
 unboxTopic boxItem targetItems model =
   let
     (topicToInsert, abort) =
@@ -136,7 +136,7 @@ unboxTopic boxItem targetItems model =
   )
 
 
-unboxAssoc : MapItem -> MapItems -> MapItems
+unboxAssoc : BoxItem -> BoxItems -> BoxItems
 unboxAssoc boxItem targetItems =
   let
     assocToInsert = targetAssocItem boxItem.id targetItems
@@ -145,33 +145,33 @@ unboxAssoc boxItem targetItems =
     |> Dict.insert assocToInsert.id assocToInsert
 
 
-setUnboxed : MapItem -> MapItem
+setUnboxed : BoxItem -> BoxItem
 setUnboxed item =
   { item | props =
     case item.props of
-      MapTopic props -> MapTopic { props | displayMode = Box Unboxed }
-      MapAssoc props -> MapAssoc props
+      TopicV props -> TopicV { props | displayMode = BoxD Unboxed }
+      AssocV props -> AssocV props
   }
 
 
-isAbort : MapItem -> Bool
+isAbort : BoxItem -> Bool
 isAbort item =
   case item.props of
-    MapTopic props ->
+    TopicV props ->
       case props.displayMode of
-        Box BlackBox -> True
-        Box WhiteBox -> True
-        Box Unboxed -> False
-        Monad _ -> False
-    MapAssoc _ -> False
+        BoxD BlackBox -> True
+        BoxD WhiteBox -> True
+        BoxD Unboxed -> False
+        TopicD _ -> False
+    AssocV _ -> False
 
 
 {-| Returns the target item to reveal that corresponds to the box item.
 Part of unboxing. FIXDOC
 -}
-targetAssocItem : Id -> MapItems -> MapItem
+targetAssocItem : Id -> BoxItems -> BoxItem
 targetAssocItem assocId targetItems =
   case targetItems |> Dict.get assocId of
     Just item -> { item | hidden = False }
-    Nothing -> MapItem assocId -1 False False (MapAssoc AssocProps) -- hidden/pinned=False
+    Nothing -> BoxItem assocId -1 False False (AssocV AssocProps) -- hidden/pinned=False
     -- FIXME: set item's parentAssocId?

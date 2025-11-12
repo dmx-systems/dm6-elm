@@ -2,7 +2,7 @@ module Toolbar exposing (viewToolbar)
 
 import AppModel exposing (UndoModel, Model, Msg(..))
 import Config as C
-import Model exposing (EditMsg(..), NavMsg(..), DisplayMode(..), MonadDisplay(..),
+import Model exposing (EditMsg(..), NavMsg(..), DisplayMode(..), TopicDisplay(..),
   BoxDisplay(..))
 import ModelAPI as A
 import Utils as U
@@ -178,8 +178,8 @@ viewMonadDisplay model =
       Nothing -> Nothing
     (checked1, checked2, disabled_) =
       case display of
-        Just (Monad LabelOnly) -> (True, False, False)
-        Just (Monad Detail) -> (False, True, False)
+        Just (TopicD LabelOnly) -> (True, False, False)
+        Just (TopicD Detail) -> (False, True, False)
         _ -> (False, False, True)
   in
   div
@@ -187,8 +187,8 @@ viewMonadDisplay model =
     [ div
         []
         [ text "Topic Display" ]
-    , viewRadioButton "Label Only" (SwitchDisplay <| Monad LabelOnly) checked1 disabled_
-    , viewRadioButton "Detail" (SwitchDisplay <| Monad Detail) checked2 disabled_
+    , viewRadioButton "Label Only" (SwitchDisplay <| TopicD LabelOnly) checked1 disabled_
+    , viewRadioButton "Detail" (SwitchDisplay <| TopicD Detail) checked2 disabled_
     ]
 
 
@@ -200,13 +200,13 @@ viewBoxDisplay model =
       Nothing -> Nothing
     (checked1, checked2, checked3) =
       case display of
-        Just (Box BlackBox) -> (True, False, False)
-        Just (Box WhiteBox) -> (False, True, False)
-        Just (Box Unboxed) -> (False, False, True)
+        Just (BoxD BlackBox) -> (True, False, False)
+        Just (BoxD WhiteBox) -> (False, True, False)
+        Just (BoxD Unboxed) -> (False, False, True)
         _ -> (False, False, False)
     disabled_ =
       case display of
-        Just (Box _) -> False
+        Just (BoxD _) -> False
         _ -> True
   in
   div
@@ -214,9 +214,9 @@ viewBoxDisplay model =
     [ div
         []
         [ text "Box Display" ]
-    , viewRadioButton "Black Box" (SwitchDisplay <| Box BlackBox) checked1 disabled_
-    , viewRadioButton "White Box" (SwitchDisplay <| Box WhiteBox) checked2 disabled_
-    , viewRadioButton "Unboxed" (SwitchDisplay <| Box Unboxed) checked3 disabled_
+    , viewRadioButton "Black Box" (SwitchDisplay <| BoxD BlackBox) checked1 disabled_
+    , viewRadioButton "White Box" (SwitchDisplay <| BoxD WhiteBox) checked2 disabled_
+    , viewRadioButton "Unboxed" (SwitchDisplay <| BoxD Unboxed) checked3 disabled_
     ]
 
 

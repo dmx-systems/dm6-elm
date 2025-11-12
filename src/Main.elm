@@ -166,13 +166,13 @@ addTopic model =
     Just map ->
       let
         (newModel, topicId) = A.addTopic C.initTopicText Nothing model
-        props = MapTopic <| TopicProps
+        props = TopicV <| TopicProps
           (Point
             (C.initTopicPos.x + map.rect.x1)
             (C.initTopicPos.y + map.rect.y1)
           )
           C.topicDetailSize
-          (Monad LabelOnly)
+          (TopicD LabelOnly)
       in
       newModel
       |> A.putItemOnMap topicId props mapId
@@ -190,13 +190,13 @@ addBox model =
     Just map ->
       let
         (newModel, topicId) = A.addTopic C.initBoxText Nothing model
-        props = MapTopic <| TopicProps
+        props = TopicV <| TopicProps
           (Point
             (C.initTopicPos.x + map.rect.x1)
             (C.initTopicPos.y + map.rect.y1)
           )
           C.topicDetailSize
-          (Box BlackBox)
+          (BoxD BlackBox)
       in
       newModel
       |> A.addMap topicId
@@ -210,7 +210,7 @@ moveTopicToMap topicId mapId origPos targetId targetMapPath pos model =
   let
     props_ =
       A.topicProps topicId mapId model.boxes
-      |> Maybe.andThen (\props -> Just (MapTopic { props | pos = pos }))
+      |> Maybe.andThen (\props -> Just (TopicV { props | pos = pos }))
   in
   case props_ of
     Just props ->
@@ -232,10 +232,10 @@ switchDisplay displayMode model =
       in
       { model | boxes =
         case displayMode of
-          Monad _ -> model.boxes
-          Box BlackBox -> box boxId mapId model
-          Box WhiteBox -> box boxId mapId model
-          Box Unboxed -> unbox boxId mapId model
+          TopicD _ -> model.boxes
+          BoxD BlackBox -> box boxId mapId model
+          BoxD WhiteBox -> box boxId mapId model
+          BoxD Unboxed -> unbox boxId mapId model
       }
       |> A.setDisplayMode boxId mapId displayMode
     Nothing -> model
@@ -281,7 +281,7 @@ setDetailDisplayIfMonade topicId mapId model =
   model |> A.updateTopicProps topicId mapId
     (\props ->
       case props.displayMode of
-        Monad _ -> { props | displayMode = Monad Detail }
+        TopicD _ -> { props | displayMode = TopicD Detail }
         _ -> props
     )
 

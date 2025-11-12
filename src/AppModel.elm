@@ -35,8 +35,8 @@ type alias Model =
 default : Model
 default =
   { items = Dict.singleton 0 <| Item 0 (Topic (TopicInfo 0 homeMapName Nothing)) Set.empty
-  , boxes = Dict.singleton 0 -- map 0 is the "home map"
-    <| Map 0 (Rectangle 0 0 0 0) Dict.empty
+  , boxes = Dict.singleton 0 -- box 0 is the "root box"
+    <| Box 0 (Rectangle 0 0 0 0) Dict.empty
   , boxPath = [0]
   , nextId = 1
   ----- transient -----

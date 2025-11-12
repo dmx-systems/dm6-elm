@@ -48,24 +48,24 @@ calcMapRect boxPath model =
     Nothing -> (Rectangle 0 0 0 0, model)
 
 
-calcItemSize : MapItem -> BoxPath -> Rectangle -> Model -> (Rectangle, Model)
+calcItemSize : BoxItem -> BoxPath -> Rectangle -> Model -> (Rectangle, Model)
 calcItemSize mapItem pathToParent rectAcc model =
   let
     mapId = firstId pathToParent
   in
   case mapItem.props of
-    MapTopic {pos, size, displayMode} ->
+    TopicV {pos, size, displayMode} ->
       case displayMode of
-        Monad LabelOnly -> (topicExtent pos rectAcc, model)
-        Monad Detail -> (detailTopicExtent mapItem.id mapId pos size rectAcc model, model)
-        Box BlackBox -> (topicExtent pos rectAcc, model)
-        Box WhiteBox ->
+        TopicD LabelOnly -> (topicExtent pos rectAcc, model)
+        TopicD Detail -> (detailTopicExtent mapItem.id mapId pos size rectAcc model, model)
+        BoxD BlackBox -> (topicExtent pos rectAcc, model)
+        BoxD WhiteBox ->
           let
             (rect, model_) = calcMapRect (mapItem.id :: pathToParent) model -- recursion
           in
           (mapExtent pos rect rectAcc, model_)
-        Box Unboxed -> (topicExtent pos rectAcc, model)
-    MapAssoc _ -> (rectAcc, model)
+        BoxD Unboxed -> (topicExtent pos rectAcc, model)
+    AssocV _ -> (rectAcc, model)
 
 
 {-| Stores the map's "newRect" and, based on its change, calculates and stores the map's "pos"

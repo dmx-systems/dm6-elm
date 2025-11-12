@@ -3,7 +3,7 @@ module MouseAPI exposing (mouseHoverHandler, mouseSubs, updateMouse)
 import AppModel exposing (UndoModel, Model, Msg(..))
 import Config as C
 import MapAutoSize exposing (autoSize)
-import Model exposing (Class, Id, BoxId, BoxPath, Point, ItemType, RoleType, MapProps(..),
+import Model exposing (Class, Id, BoxId, BoxPath, Point, ItemType, RoleType, ViewProps(..),
   AssocProps)
 import ModelAPI as A
 import Storage exposing (storeWith)
@@ -252,7 +252,7 @@ addAssocAndPutOnMap : ItemType -> RoleType -> Id -> RoleType -> Id -> BoxId -> M
 addAssocAndPutOnMap itemType role1 player1 role2 player2 mapId model =
   let
     (newModel, assocId) = A.addAssoc itemType role1 player1 role2 player2 model
-    props = MapAssoc AssocProps
+    props = AssocV AssocProps
   in
   A.putItemOnMap assocId props mapId newModel
 
