@@ -4,13 +4,13 @@ import AppModel exposing (..)
 import Boxing exposing (box, unbox)
 import Config as C
 import MapAutoSize exposing (autoSize)
-import MapRenderer exposing (viewBox)
+import MapRenderer exposing (viewMap)
 import Model exposing (..)
 import ModelAPI as A
 import Storage exposing (store, storeWith, modelDecoder, importJSON, exportJSON)
 import Toolbar exposing (viewToolbar)
 import Utils exposing (..)
--- components
+-- app modules
 import IconMenuAPI exposing (viewIconMenu, updateIconMenu)
 import MouseAPI exposing (mouseHoverHandler, mouseSubs, updateMouse)
 import SearchAPI exposing (viewResultMenu, updateSearch)
@@ -82,7 +82,7 @@ view ({present} as undoModel) =
         ++ appStyle
       )
       ( [ viewToolbar undoModel
-        , viewBox (A.activeBox present) [] present -- boxPath = []
+        , viewMap (A.activeBox present) [] present -- boxPath = []
         ]
         ++ viewResultMenu present
         ++ viewIconMenu present
@@ -360,7 +360,7 @@ fullscreen model =
     Just (topicId, _) ->
       { model | boxPath = topicId :: model.boxPath }
       |> A.resetSelection
-      |> adjustMapRect topicId -1
+      |> adjustBoxRect topicId -1
     Nothing -> model
 
 
@@ -369,10 +369,10 @@ back model =
   let
     (boxId, boxPath, selection) =
       case model.boxPath of
-        prevMapId :: nextMapId :: boxIds ->
-          ( prevMapId
-          , nextMapId :: boxIds
-          , [(prevMapId, nextMapId)]
+        prevBoxId :: nextBoxId :: boxIds ->
+          ( prevBoxId
+          , nextBoxId :: boxIds
+          , [(prevBoxId, nextBoxId)]
           )
         _ -> logError "back" "model.boxPath has a problem" (0, [0], [])
   in
@@ -380,12 +380,12 @@ back model =
   | boxPath = boxPath
   -- , selection = selection -- TODO
   }
-  |> adjustMapRect boxId 1
+  |> adjustBoxRect boxId 1
   |> autoSize
 
 
-adjustMapRect : BoxId -> Float -> Model -> Model
-adjustMapRect boxId factor model =
+adjustBoxRect : BoxId -> Float -> Model -> Model
+adjustBoxRect boxId factor model =
   model |> A.updateBoxRect boxId
     (\rect -> Rectangle
       (rect.x1 + factor * 400) -- TODO

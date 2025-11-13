@@ -7,7 +7,7 @@ import Model exposing (..)
 import ModelAPI exposing (..)
 import Storage exposing (store)
 import Utils exposing (..)
--- components
+-- app modules
 import IconMenu
 
 import Dict

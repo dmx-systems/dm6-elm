@@ -9,7 +9,7 @@ import Model exposing (Point, Size)
 
 rootBoxName = "DM6 Elm"
 version = "0.3-snapshot"
-date = "Nov 12, 2025"
+date = "Nov 13, 2025"
 
 mainFont = "sans-serif"
 toolbarFontSize = 13

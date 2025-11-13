@@ -8,7 +8,7 @@ import ModelAPI exposing (topicById, relatedItems, activeBox, initItemProps, box
   boxHasDeepItem, showItem, addItemToBox, singleSelection, singleSelectionBoxId, push, swap)
 import Storage exposing (store)
 import Utils exposing (idDecoder, idTupleDecoder, stopPropagationOnMousedown, logError, info)
--- components
+-- app modules
 import Search exposing (Menu(..))
 
 import Dict
@@ -120,14 +120,14 @@ viewRelTopicsMenu relTopicIds model =
 
 isItemDisabled : Id -> Model -> Bool
 isItemDisabled topicId model =
-  case revealMapId model of
+  case revealBoxId model of
     Just boxId -> boxHasDeepItem topicId boxId model
     Nothing -> False
 
 
 {- The box where to reveal search/related results -}
-revealMapId : Model -> Maybe Id
-revealMapId model =
+revealBoxId : Model -> Maybe Id
+revealBoxId model =
   case model.search.menu of
     Topics _ _ -> Just (activeBox model)
     RelTopics _ _ ->

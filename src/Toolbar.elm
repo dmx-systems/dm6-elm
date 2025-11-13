@@ -6,7 +6,7 @@ import Model exposing (EditMsg(..), NavMsg(..), DisplayMode(..), TopicDisplay(..
   BoxDisplay(..))
 import ModelAPI as A
 import Utils as U
--- components
+-- app modules
 import IconMenu
 import IconMenuAPI exposing (viewIcon)
 import Search

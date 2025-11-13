@@ -46,7 +46,7 @@ encodeModel : Model -> E.Value
 encodeModel model =
   E.object
     [ ("items", model.items |> Dict.values |> E.list encodeItem)
-    , ("boxes", model.boxes |> Dict.values |> E.list encodeMap)
+    , ("boxes", model.boxes |> Dict.values |> E.list encodeBox)
     , ("boxPath", E.list E.int model.boxPath)
     , ("nextId", E.int model.nextId)
     ]
@@ -80,8 +80,8 @@ encodeItem item =
     ]
 
 
-encodeMap : Box -> E.Value
-encodeMap box =
+encodeBox : Box -> E.Value
+encodeBox box =
   E.object
     [ ("id", E.int box.id)
     , ("rect", E.object
@@ -91,12 +91,12 @@ encodeMap box =
         , ("y2", E.float box.rect.y2)
         ]
       )
-    , ("items", box.items |> Dict.values |> E.list encodeMapItem)
+    , ("items", box.items |> Dict.values |> E.list encodeBoxItem)
     ]
 
 
-encodeMapItem : BoxItem -> E.Value
-encodeMapItem item =
+encodeBoxItem : BoxItem -> E.Value
+encodeBoxItem item =
   E.object
     [ ("id", E.int item.id)
     , ("parentAssocId", E.int item.parentAssocId)
@@ -144,14 +144,14 @@ modelDecoder : D.Decoder Model
 modelDecoder =
   D.succeed Model
     |> required "items" (D.list itemDecoder |> D.andThen toDictDecoder)
-    |> required "boxes" (D.list mapDecoder |> D.andThen toDictDecoder)
+    |> required "boxes" (D.list boxDecoder |> D.andThen toDictDecoder)
     |> required "boxPath" (D.list D.int)
     |> required "nextId" D.int
     ----- transient -----
     |> hardcoded default.selection
     |> hardcoded default.editState
     |> hardcoded default.measureText
-    -- components
+    -- app modules
     |> hardcoded default.mouse
     |> hardcoded default.search
     |> hardcoded default.iconMenu
@@ -194,8 +194,8 @@ assocIdsDecoder =
   |> D.andThen (Set.fromList >> D.succeed)
 
 
-mapDecoder : D.Decoder Box
-mapDecoder =
+boxDecoder : D.Decoder Box
+boxDecoder =
   D.map3 Box
     (D.field "id" D.int)
     (D.field "rect" <| D.map4 Rectangle
@@ -204,11 +204,11 @@ mapDecoder =
       (D.field "x2" D.float)
       (D.field "y2" D.float)
     )
-    (D.field "items" (D.list mapItemDecoder |> D.andThen toDictDecoder))
+    (D.field "items" (D.list boxItemDecoder |> D.andThen toDictDecoder))
 
 
-mapItemDecoder : D.Decoder BoxItem
-mapItemDecoder =
+boxItemDecoder : D.Decoder BoxItem
+boxItemDecoder =
   D.map5 BoxItem
     (D.field "id" D.int)
     (D.field "parentAssocId" D.int)

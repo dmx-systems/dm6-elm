@@ -1,11 +1,11 @@
-module MapRenderer exposing (viewBox)
+module MapRenderer exposing (viewMap)
 
 import AppModel exposing (..)
 import Config as C
 import Model exposing (..)
 import ModelAPI exposing (..)
 import Utils exposing (..)
--- components
+-- app modules
 import IconMenuAPI exposing (viewTopicIcon)
 import Mouse exposing (DragState(..), DragMode(..))
 import Search exposing (Menu(..))
@@ -47,8 +47,8 @@ type alias TopicRendering = (List (Attribute Msg), List (Html Msg))
 
 
 -- For a fullscreen box boxPath is empty
-viewBox : BoxId -> BoxPath -> Model -> Html Msg
-viewBox boxId boxPath model =
+viewMap : BoxId -> BoxPath -> Model -> Html Msg
+viewMap boxId boxPath model =
   let
     ((topics, assocs), boxRect, (svgSize, boxStyle)) = boxInfo boxId boxPath model
   in
@@ -401,7 +401,7 @@ whiteBoxTopic topic props boxPath model =
   ( style
   , children
     ++ boxItemCount topic.id props model
-    ++ [ viewBox topic.id boxPath model ]
+    ++ [ viewMap topic.id boxPath model ]
   )
 
 

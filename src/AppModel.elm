@@ -2,7 +2,7 @@ module AppModel exposing (..)
 
 import Config exposing (rootBoxName)
 import Model exposing (..)
--- components
+-- app modules
 import IconMenu
 import Mouse
 import Search
@@ -25,7 +25,7 @@ type alias Model =
   , selection : Selection
   , editState : EditState
   , measureText : String
-  -- components
+  -- app modules
   , mouse : Mouse.Model
   , search : Search.Model
   , iconMenu : IconMenu.Model
@@ -43,7 +43,7 @@ default =
   , selection = []
   , editState = NoEdit
   , measureText = ""
-  -- components
+  -- app modules
   , mouse = Mouse.init
   , search = Search.init
   , iconMenu = IconMenu.init
@@ -57,7 +57,7 @@ resetTransientState model =
   | selection = default.selection
   , editState = default.editState
   , measureText = default.measureText
-  -- components
+  -- app modules
   , mouse = default.mouse
   , search = default.search
   , iconMenu = default.iconMenu
@@ -78,7 +78,7 @@ type Msg
   | Import
   | Export
   | NoOp
-  -- components
+  -- app modules
   | Mouse Mouse.Msg
   | Search Search.Msg
   | IconMenu IconMenu.Msg

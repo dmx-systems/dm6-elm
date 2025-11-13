@@ -151,21 +151,21 @@ removeAssocId_ assocId itemId model =
 
 
 updateTopicInfo : Id -> (TopicInfo -> TopicInfo) -> Model -> Model
-updateTopicInfo topicId topicMapper model =
+updateTopicInfo topicId transform model =
   model |> updateItem topicId
     (\item ->
       case item.info of
-        Topic topic -> { item | info = Topic <| topicMapper topic }
+        Topic topic -> { item | info = Topic <| transform topic }
         Assoc _  -> topicMismatch "updateTopicInfo" topicId item
     )
 
 
 updateItem : Id -> (Item -> Item) -> Model -> Model
-updateItem itemId itemMapper model =
+updateItem itemId transform model =
   { model | items = model.items |> Dict.update itemId
     (\maybeItem ->
       case maybeItem of
-        Just item -> Just <| itemMapper item
+        Just item -> Just <| transform item
         Nothing -> illegalItemId "updateItem" itemId Nothing
     )
   }
@@ -243,11 +243,11 @@ addBox boxId model =
 
 
 updateBoxRect : BoxId -> (Rectangle -> Rectangle) -> Model -> Model
-updateBoxRect boxId rectMapper model =
+updateBoxRect boxId transform model =
   { model | boxes = updateBoxes
     boxId
     (\box ->
-      { box | rect = rectMapper box.rect }
+      { box | rect = transform box.rect }
     )
     model.boxes
   }
@@ -326,7 +326,7 @@ topicProps topicId boxId boxes =
 
 {-| Logs an error if box does not exist or if topic is not in box -}
 updateTopicProps : Id -> BoxId -> (TopicProps -> TopicProps) -> Model -> Model
-updateTopicProps topicId boxId propsMapper model =
+updateTopicProps topicId boxId transform model =
   { model | boxes = model.boxes |> updateBoxes boxId
     (\box ->
       { box | items = box.items |> Dict.update topicId
@@ -335,7 +335,7 @@ updateTopicProps topicId boxId propsMapper model =
             Just boxItem ->
               case boxItem.props of
                 TopicV props -> Just
-                  { boxItem | props = TopicV (propsMapper props) }
+                  { boxItem | props = TopicV (transform props) }
                 AssocV _ -> topicMismatch "updateTopicProps" topicId Nothing
             Nothing -> illegalItemId "updateTopicProps" topicId Nothing
         )
@@ -470,11 +470,11 @@ hideItem_ itemId items model =
 TODO: replace Boxes parameter by Model?
 -}
 updateBoxes : BoxId -> (Box -> Box) -> Boxes -> Boxes
-updateBoxes boxId boxMapper boxes =
+updateBoxes boxId transform boxes =
   boxes |> Dict.update boxId
     (\box_ ->
       case box_ of
-        Just box -> Just (boxMapper box)
+        Just box -> Just (transform box)
         Nothing -> illegalBoxId "updateBoxes" boxId Nothing
     )
 

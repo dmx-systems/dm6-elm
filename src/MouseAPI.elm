@@ -8,7 +8,7 @@ import Model exposing (Class, Id, BoxId, BoxPath, Point, ItemType, RoleType, Vie
 import ModelAPI as A
 import Storage exposing (storeWith)
 import Utils as U exposing (logError, info, toString)
--- components
+-- app modules
 import Mouse exposing (DragState(..), DragMode(..))
 import SearchAPI exposing (closeResultMenu)
 import IconMenuAPI exposing (closeIconMenu)
@@ -145,12 +145,12 @@ mouseUp ({present} as undoModel) =
           let
             _ = info "mouseUp" ("dropped " ++ fromInt id ++ " (box " ++ A.fromPath boxPath
               ++ ") on " ++ fromInt targetId ++ " (box " ++ A.fromPath targetBoxPath ++ ") --> "
-              ++ if notDroppedOnOwnMap then "move topic" else "abort")
+              ++ if notDroppedOnOwnBox then "move topic" else "abort")
             boxId = A.firstId boxPath
-            notDroppedOnOwnMap = boxId /= targetId
+            notDroppedOnOwnBox = boxId /= targetId
             msg = MoveTopicToBox id boxId origPos targetId targetBoxPath
           in
-          if notDroppedOnOwnMap then
+          if notDroppedOnOwnBox then
             (present, Random.generate msg point, A.swap)
           else
             (present, Cmd.none, A.swap)
@@ -158,12 +158,12 @@ mouseUp ({present} as undoModel) =
           let
             _ = info "mouseUp" ("assoc drawn from " ++ fromInt id ++ " (box " ++ A.fromPath
               boxPath ++ ") to " ++ fromInt targetId ++ " (box " ++ A.fromPath targetBoxPath
-              ++ ") --> " ++ if isSameMap then "create assoc" else "abort")
+              ++ ") --> " ++ if isSameBox then "create assoc" else "abort")
             boxId = A.firstId boxPath
-            isSameMap = boxId == A.firstId targetBoxPath
+            isSameBox = boxId == A.firstId targetBoxPath
           in
-          if isSameMap then
-            (addDefaultAssocAndPutOnMap id targetId boxId present, Cmd.none, A.push)
+          if isSameBox then
+            (addDefaultAssocAndAddToBox id targetId boxId present, Cmd.none, A.push)
           else
             (present, Cmd.none, A.swap)
         Drag _ _ _ _ _ _ ->
@@ -238,9 +238,9 @@ updateDragState dragState ({mouse} as model) =
 
 
 -- Presumption: both players exist in same box
-addDefaultAssocAndPutOnMap : Id -> Id -> BoxId -> Model -> Model
-addDefaultAssocAndPutOnMap player1 player2 boxId model =
-  addAssocAndPutOnMap
+addDefaultAssocAndAddToBox : Id -> Id -> BoxId -> Model -> Model
+addDefaultAssocAndAddToBox player1 player2 boxId model =
+  addAssocAndAddToBox
     "dmx.association"
     "dmx.default" player1
     "dmx.default" player2
@@ -248,8 +248,8 @@ addDefaultAssocAndPutOnMap player1 player2 boxId model =
 
 
 -- Presumption: both players exist in same box
-addAssocAndPutOnMap : ItemType -> RoleType -> Id -> RoleType -> Id -> BoxId -> Model -> Model
-addAssocAndPutOnMap itemType role1 player1 role2 player2 boxId model =
+addAssocAndAddToBox : ItemType -> RoleType -> Id -> RoleType -> Id -> BoxId -> Model -> Model
+addAssocAndAddToBox itemType role1 player1 role2 player2 boxId model =
   let
     (newModel, assocId) = A.addAssoc itemType role1 player1 role2 player2 model
     props = AssocV AssocProps
