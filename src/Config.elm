@@ -22,6 +22,7 @@ limboColor = "gray"
 initTopicPos = Point 232 167
 initTopicText = "New Topic"
 initBoxText = "New Box"
+nestedBoxOffset = Point 400 300
 
 topicWidth = 156
 topicHeight = 28 -- also width/height of square icon box

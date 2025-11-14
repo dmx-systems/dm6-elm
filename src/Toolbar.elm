@@ -38,7 +38,7 @@ view ({present} as undoModel) =
       [ viewToolbarButton "Edit" (Edit EditStart) hasSelection undoModel
       , viewToolbarButton "Set Icon" (IconMenu IconMenu.Open) hasSelection undoModel
       ]
-    , viewToolbarButton "Show Related" (Search Search.ShowRelated) hasSelection undoModel
+    , viewToolbarButton "Traverse" (Search Search.ShowRelated) hasSelection undoModel
     , viewMonadDisplay present
     , viewBoxDisplay present
     , viewToolbarButton "Fullscreen" (Nav Fullscreen) hasBoxSelection undoModel

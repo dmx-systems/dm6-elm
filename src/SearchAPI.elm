@@ -337,7 +337,7 @@ revealItem itemId boxId model =
   else
     let
       _ = U.info "revealItem" <| fromInt itemId ++ " not in " ++ fromInt boxId
-      props = A.initItemProps itemId model
+      props = A.initItemProps itemId boxId model
     in
     A.addItemToBox itemId props boxId model
 

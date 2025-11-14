@@ -138,7 +138,7 @@ viewLimboTopic boxId model =
         else
           let
             _ = U.info "viewLimboTopic" (topicId, "not in box", boxId)
-            props = A.initTopicProps topicId model
+            props = A.initTopicProps topicId boxId model
             boxPath = [boxId] -- Needed by limbo style calculation; single ID is sufficient;
           in
           case A.topicById topicId model of
@@ -169,10 +169,9 @@ viewLimboAssoc boxId model =
                 -- only if related topic is in box we can call high-level viewAssoc()
                 [ viewAssoc assoc boxId model ]
               else
-                -- otherwise we call low-level lineFunc() with topic default position,
-                -- see also ModelAPI's initTopicProps()
+                -- otherwise we call low-level lineFunc() with topic default position
                 case A.topicPos (A.otherPlayerId assocId topicId model) boxId model.boxes of
-                  Just pos -> [ lineFunc pos (Point 0 0) (Just assoc) boxId model ]
+                  Just pos -> [ lineFunc pos (A.initPos boxId) (Just assoc) boxId model ]
                   Nothing -> []
             Nothing -> []
       else

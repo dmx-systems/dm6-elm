@@ -344,28 +344,34 @@ updateTopicProps topicId boxId transform model =
   }
 
 
-{-| Initial props for a newly revealed topic -}
-initItemProps : Id -> Model -> ViewProps
-initItemProps itemId model =
+{-| Initial props for a newly revealed item -}
+initItemProps : Id -> BoxId -> Model -> ViewProps
+initItemProps itemId boxId model =
   case itemById itemId model of
     Just item ->
       case item.info of
-        Topic _ -> TopicV <| initTopicProps itemId model
+        Topic _ -> TopicV <| initTopicProps itemId boxId model
         Assoc _ -> AssocV {}
     Nothing -> AssocV {} -- error is already logged
 
 
 {-| Initial props for a newly revealed topic -}
-initTopicProps : Id -> Model -> TopicProps
-initTopicProps topicId model =
+initTopicProps : Id -> BoxId -> Model -> TopicProps
+initTopicProps topicId boxId model =
   TopicProps
-    ( Point 0 0 ) -- TODO, see also MapRenderer's viewLimboAssoc()
+    (initPos boxId)
     C.topicSize
-    ( if isBox topicId model.boxes then
-        BoxD BlackBox
-      else
-        TopicD LabelOnly
+    (case isBox topicId model.boxes of
+      True -> BoxD BlackBox
+      False -> TopicD LabelOnly
     )
+
+
+initPos : BoxId -> Point
+initPos boxId =
+  case isRootBox boxId of
+    True -> C.nestedBoxOffset
+    False -> Point 0 0
 
 
 {-| Logs an error if box does not exist or item is not in box.
