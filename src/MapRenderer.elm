@@ -3,10 +3,10 @@ module MapRenderer exposing (view)
 import AppModel exposing (..)
 import Config as C
 import Model exposing (..)
-import ModelAPI exposing (..)
+import ModelAPI as A
 import Utils as U
 -- app modules
-import IconMenuAPI exposing (viewTopicIcon)
+import IconMenuAPI as IconMenu
 import Mouse exposing (DragState(..), DragMode(..))
 import Search exposing (Menu(..))
 
@@ -84,17 +84,17 @@ gAttr boxId boxRect model =
 -- For a fullscreen box boxPath is empty
 boxInfo : BoxId -> BoxPath -> Model -> BoxInfo
 boxInfo boxId boxPath model =
-  case boxByIdOrLog boxId model.boxes of
+  case A.boxByIdOrLog boxId model.boxes of
     Just box ->
       ( viewItems box boxPath model
       , box.rect
-      , if isActiveBox boxId model then
+      , if A.isActiveBox boxId model then
           ( { w = "100%", h = "100%" }, [] )
         else
           ( { w = (box.rect.x2 - box.rect.x1) |> round |> fromInt
             , h = (box.rect.y2 - box.rect.y1) |> round |> fromInt
             }
-          , whiteBoxStyle boxId box.rect (firstId boxPath) model
+          , whiteBoxStyle boxId box.rect (A.firstId boxPath) model
           )
       )
     Nothing ->
@@ -109,7 +109,7 @@ viewItems box boxPath model =
   in
   box.items |> Dict.values |> List.filter (shouldItemRender box.id model) |> List.foldr
     (\{id, props} (t, a) ->
-      case itemById id model of
+      case A.itemById id model of
         Just {info} ->
           case (info, props) of
             (Topic topic, TopicV tProps) -> (viewTopic topic tProps newPath model :: t, a)
@@ -122,7 +122,7 @@ viewItems box boxPath model =
 
 shouldItemRender : BoxId -> Model -> BoxItem -> Bool
 shouldItemRender boxId model item =
-  isVisible item || isLimboItem item boxId model
+  A.isVisible item || isLimboItem item boxId model
 
 
 viewLimboTopic : BoxId -> Model -> List (Html Msg)
@@ -130,7 +130,7 @@ viewLimboTopic boxId model =
   case limboState model of
     Just (topicId, _, limboBoxId) ->
       if boxId == limboBoxId then
-        if boxHasItem boxId topicId model then
+        if A.boxHasItem boxId topicId model then
           let
             _ = U.info "viewLimboTopic" (topicId, "is in box", boxId)
           in
@@ -138,10 +138,10 @@ viewLimboTopic boxId model =
         else
           let
             _ = U.info "viewLimboTopic" (topicId, "not in box", boxId)
-            props = initTopicProps topicId model
+            props = A.initTopicProps topicId model
             boxPath = [boxId] -- Needed by limbo style calculation; single ID is sufficient;
           in
-          case topicById topicId model of
+          case A.topicById topicId model of
             Just topic -> [ viewTopic topic props boxPath model ]
             Nothing -> []
       else
@@ -154,7 +154,7 @@ viewLimboAssoc boxId model =
   case limboState model of
     Just (topicId, Just assocId, limboBoxId) ->
       if boxId == limboBoxId then
-        if boxHasItem boxId assocId model then
+        if A.boxHasItem boxId assocId model then
           let
             _ = U.info "viewLimboAssoc" (assocId, "is in box", boxId)
           in
@@ -163,15 +163,15 @@ viewLimboAssoc boxId model =
           let
             _ = U.info "viewLimboAssoc" (assocId, "not in box", boxId)
           in
-          case assocById assocId model of
+          case A.assocById assocId model of
             Just assoc ->
-              if boxHasItem boxId topicId model then
+              if A.boxHasItem boxId topicId model then
                 -- only if related topic is in box we can call high-level viewAssoc()
                 [ viewAssoc assoc boxId model ]
               else
                 -- otherwise we call low-level lineFunc() with topic default position,
                 -- see also ModelAPI's initTopicProps()
-                case topicPos (otherPlayerId assocId topicId model) boxId model.boxes of
+                case A.topicPos (A.otherPlayerId assocId topicId model) boxId model.boxes of
                   Just pos -> [ lineFunc pos (Point 0 0) (Just assoc) boxId model ]
                   Nothing -> []
             Nothing -> []
@@ -208,9 +208,9 @@ isLimboAssoc assocId boxId model =
 limboState : Model -> Maybe (Id, Maybe Id, BoxId) -- (topic ID, assoc ID, box ID)
 limboState model =
   case model.search.menu of
-    Topics _ (Just topicId) -> Just (topicId, Nothing, activeBox model)
+    Topics _ (Just topicId) -> Just (topicId, Nothing, A.activeBox model)
     RelTopics _ (Just (topicId, assocId)) ->
-      case singleSelectionBoxId model of
+      case A.singleSelectionBoxId model of
         Just boxId -> Just (topicId, Just assocId, boxId)
         Nothing -> Nothing
     _ -> Nothing
@@ -219,7 +219,7 @@ limboState model =
 viewTopic : TopicInfo -> TopicProps -> BoxPath -> Model -> Html Msg
 viewTopic topic props boxPath model =
   let
-    boxId = firstId boxPath
+    boxId = A.firstId boxPath
     topicFunc =
       case effectiveDisplayMode topic.id boxId props.displayMode model of
         TopicD LabelOnly -> labelTopic
@@ -250,7 +250,7 @@ effectiveDisplayMode topicId boxId displayMode model =
 labelTopic : TopicInfo -> TopicProps -> BoxPath -> Model -> TopicRendering
 labelTopic topic props boxPath model =
   let
-    boxId = firstId boxPath
+    boxId = A.firstId boxPath
   in
   ( topicPosStyle props
       ++ topicFlexboxStyle topic props boxId model
@@ -279,11 +279,11 @@ labelTopicHtml topic props boxId model =
       else
         div
           topicLabelStyle
-          [ text <| topicLabel topic ]
+          [ text <| A.topicLabel topic ]
   in
   [ div
     (topicIconBoxStyle props)
-    [ viewTopicIcon topic.id model ]
+    [ IconMenu.viewTopicIcon topic.id model ]
   , textElem
   ]
 
@@ -291,7 +291,7 @@ labelTopicHtml topic props boxId model =
 detailTopic : TopicInfo -> TopicProps -> BoxPath -> Model -> TopicRendering
 detailTopic topic props boxPath model =
   let
-    boxId = firstId boxPath
+    boxId = A.firstId boxPath
     isEdit = model.editState == ItemEdit topic.id boxId
     textElem =
       if isEdit then
@@ -319,7 +319,7 @@ detailTopic topic props boxPath model =
         ++ detailTopicIconBoxStyle
         ++ selectionStyle topic.id boxId model
       )
-      [ viewTopicIcon topic.id model ]
+      [ IconMenu.viewTopicIcon topic.id model ]
     , textElem
     ]
   )
@@ -360,7 +360,7 @@ detailTextViewStyle =
 detailTextEditStyle : Id -> BoxId -> Model -> List (Attribute Msg)
 detailTextEditStyle topicId boxId model =
   let
-    height = case topicSize topicId boxId model.boxes of
+    height = case A.topicSize topicId boxId model.boxes of
       Just size -> size.h
       Nothing -> 0
   in
@@ -376,7 +376,7 @@ detailTextEditStyle topicId boxId model =
 blackBoxTopic : TopicInfo -> TopicProps -> BoxPath -> Model -> TopicRendering
 blackBoxTopic topic props boxPath model =
   let
-    boxId = firstId boxPath
+    boxId = A.firstId boxPath
   in
   ( topicPosStyle props
   , [ div
@@ -423,8 +423,8 @@ boxItemCount topicId props model =
       case props.displayMode of
         TopicD _ -> 0
         BoxD _ ->
-          case boxByIdOrLog topicId model.boxes of
-            Just box -> box.items |> Dict.values |> List.filter isVisible |> List.length
+          case A.boxByIdOrLog topicId model.boxes of
+            Just box -> box.items |> Dict.values |> List.filter A.isVisible |> List.length
             Nothing -> 0
   in
   [ div
@@ -435,12 +435,12 @@ boxItemCount topicId props model =
 
 topicAttr : Id -> BoxPath -> Model -> List (Attribute Msg)
 topicAttr topicId boxPath model =
-  if isActiveBox topicId model then
+  if A.isActiveBox topicId model then
     [] -- TODO: the fullscreen box would require dedicated event handling, e.g. panning?
   else
     [ attribute "class" "dmx-topic"
     , attribute "data-id" (fromInt topicId)
-    , attribute "data-path" (fromPath boxPath)
+    , attribute "data-path" (A.fromPath boxPath)
     ]
 
 
@@ -457,8 +457,8 @@ viewAssoc assoc boxId model =
 assocGeometry : AssocInfo -> BoxId -> Model -> Maybe (Point, Point)
 assocGeometry assoc boxId model =
   let
-    pos1 = topicPos assoc.player1 boxId model.boxes
-    pos2 = topicPos assoc.player2 boxId model.boxes
+    pos1 = A.topicPos assoc.player1 boxId model.boxes
+    pos2 = A.topicPos assoc.player2 boxId model.boxes
   in
   case Maybe.map2 (\p1 p2 -> (p1, p2)) pos1 pos2 of
     Just geometry -> Just geometry
@@ -469,7 +469,7 @@ viewAssocDraft : BoxId -> Model -> List (Svg Msg)
 viewAssocDraft boxId model =
   case model.mouse.dragState of
     Drag DraftAssoc _ boxPath origPos pos _ ->
-      case firstId boxPath == boxId of
+      case A.firstId boxPath == boxId of
         True -> [ lineFunc origPos (relPos pos boxPath model) Nothing boxId model ]
         False -> []
     _ -> []
@@ -503,7 +503,7 @@ accumulateBoxPos posAcc boxId parentBoxId boxIds model =
   let
     {x, y} = accumulateBoxRect posAcc boxId model
   in
-  case topicPos boxId parentBoxId model.boxes of
+  case A.topicPos boxId parentBoxId model.boxes of
     Just boxPos ->
       absBoxPos -- recursion
         (parentBoxId :: boxIds)
@@ -517,7 +517,7 @@ accumulateBoxPos posAcc boxId parentBoxId boxIds model =
 
 accumulateBoxRect : Point -> BoxId -> Model -> Point
 accumulateBoxRect posAcc boxId model =
-  case boxByIdOrLog boxId model.boxes of
+  case A.boxByIdOrLog boxId model.boxes of
     Just box -> Point
       (posAcc.x - box.rect.x1)
       (posAcc.y - box.rect.y1)
@@ -543,7 +543,7 @@ topicStyle id boxId model =
 
 selectionStyle : Id -> BoxId -> Model -> List (Attribute Msg)
 selectionStyle topicId boxId model =
-  case isSelected topicId boxId model of
+  case A.isSelected topicId boxId model of
     True -> [ style "box-shadow" "gray 5px 5px 5px" ]
     False -> []
 

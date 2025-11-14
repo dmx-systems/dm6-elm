@@ -1,6 +1,6 @@
 module Utils exposing (..)
 
-import Model exposing (Class, Id, BoxPath, Point)
+import Model exposing (..)
 
 import Html exposing (Html, Attribute, text, br)
 import Html.Events exposing (on, stopPropagationOn, keyCode)

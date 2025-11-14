@@ -1,10 +1,9 @@
-module IconMenuAPI exposing
-  (viewIcon, viewTopicIcon, viewIconMenu, closeIconMenu, updateIconMenu)
+module IconMenuAPI exposing (viewIcon, viewTopicIcon, view, close, update)
 
 import AppModel exposing (..)
 import Config as C
 import Model exposing (..)
-import ModelAPI exposing (..)
+import ModelAPI as A
 import Storage as S
 import Utils as U
 -- app modules
@@ -22,8 +21,8 @@ import FeatherIcons as Icon
 -- VIEW
 
 
-viewIconMenu : Model -> List (Html Msg)
-viewIconMenu model =
+view : Model -> List (Html Msg)
+view model =
   if model.iconMenu.open then
     [ div
       iconMenuStyle
@@ -95,7 +94,7 @@ iconButtonStyle =
 
 viewTopicIcon : Id -> Model -> Html Msg
 viewTopicIcon topicId model =
-  case topicById topicId model of
+  case A.topicById topicId model of
     Just topic ->
       case topic.iconName of
         Just iconName ->
@@ -126,15 +125,15 @@ topicIconStyle =
 -- UPDATE
 
 
-updateIconMenu : IconMenu.Msg -> UndoModel -> (UndoModel, Cmd Msg)
-updateIconMenu msg ({present} as undoModel) =
+update : IconMenu.Msg -> UndoModel -> (UndoModel, Cmd Msg)
+update msg ({present} as undoModel) =
   case msg of
-    IconMenu.Open -> (openIconMenu present, Cmd.none) |> swap undoModel
-    IconMenu.Close -> (closeIconMenu present, Cmd.none) |> swap undoModel
+    IconMenu.Open -> (openIconMenu present, Cmd.none) |> A.swap undoModel
+    IconMenu.Close -> (close present, Cmd.none) |> A.swap undoModel
     IconMenu.SetIcon maybeIcon -> setIcon maybeIcon present
-      |> closeIconMenu
+      |> close
       |> S.store
-      |> push undoModel
+      |> A.push undoModel
 
 
 openIconMenu : Model -> Model
@@ -142,15 +141,15 @@ openIconMenu ({iconMenu} as model) =
   { model | iconMenu = { iconMenu | open = True }}
 
 
-closeIconMenu : Model -> Model
-closeIconMenu ({iconMenu} as model) =
+close : Model -> Model
+close ({iconMenu} as model) =
   { model | iconMenu = { iconMenu | open = False }}
 
 
 setIcon : Maybe IconName -> Model -> Model
 setIcon iconName model =
-  case singleSelection model of
-    Just (id, _) -> updateTopicInfo id
+  case A.singleSelection model of
+    Just (id, _) -> A.updateTopicInfo id
       (\topic -> { topic | iconName = iconName })
       model
     Nothing -> model -- FIXME: illegal state -> make Edit dialog modal?

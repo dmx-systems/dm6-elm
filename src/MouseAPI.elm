@@ -1,17 +1,16 @@
-module MouseAPI exposing (mouseHoverHandler, mouseSubs, updateMouse)
+module MouseAPI exposing (hoverHandler, subs, update)
 
-import AppModel exposing (UndoModel, Model, Msg(..))
+import AppModel exposing (..)
 import AutoSize as Size
 import Config as C
-import Model exposing (Class, Id, BoxId, BoxPath, Point, ItemType, RoleType, ViewProps(..),
-  AssocProps)
+import Model exposing (..)
 import ModelAPI as A
 import Storage as S
 import Utils as U
 -- app modules
 import Mouse exposing (DragState(..), DragMode(..))
-import SearchAPI exposing (closeResultMenu)
-import IconMenuAPI exposing (closeIconMenu)
+import SearchAPI as Search
+import IconMenuAPI as IconMenu
 
 import Browser.Events as Events
 import Html exposing (Attribute)
@@ -27,8 +26,8 @@ import Time exposing (Posix, posixToMillis)
 -- VIEW
 
 
-mouseHoverHandler : List (Attribute Msg)
-mouseHoverHandler =
+hoverHandler : List (Attribute Msg)
+hoverHandler =
   [ on "mouseover" (mouseDecoder Mouse.Over)
   , on "mouseout" (mouseDecoder Mouse.Out)
   ]
@@ -38,8 +37,8 @@ mouseHoverHandler =
 -- UPDATE
 
 
-updateMouse : Mouse.Msg -> UndoModel -> (UndoModel, Cmd Msg)
-updateMouse msg ({present} as undoModel) =
+update : Mouse.Msg -> UndoModel -> (UndoModel, Cmd Msg)
+update msg ({present} as undoModel) =
   case msg of
     Mouse.Down -> (mouseDown present, Cmd.none) |> A.swap undoModel
     Mouse.DownOnItem class id boxPath pos -> mouseDownOnItem class id boxPath pos present
@@ -57,8 +56,8 @@ mouseDown : Model -> Model
 mouseDown model =
   model
   |> A.resetSelection
-  |> closeIconMenu
-  |> closeResultMenu
+  |> IconMenu.close
+  |> Search.closeMenu
 
 
 mouseDownOnItem : Class -> Id -> BoxPath -> Point -> Model -> (Model, Cmd Msg)
@@ -261,8 +260,8 @@ addAssocAndAddToBox itemType role1 player1 role2 player2 boxId model =
 -- SUBSCRIPTIONS
 
 
-mouseSubs : UndoModel -> Sub Msg
-mouseSubs {present} =
+subs : UndoModel -> Sub Msg
+subs {present} =
   case present.mouse.dragState of
     WaitForStartTime _ _ _ _ -> Sub.none
     WaitForEndTime _ _ _ _ _ -> Sub.none

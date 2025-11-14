@@ -1,6 +1,6 @@
 module Mouse exposing (..)
 
-import Model exposing (Class, Id, BoxPath, Point)
+import Model exposing (..)
 import Time
 
 

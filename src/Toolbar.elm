@@ -1,16 +1,15 @@
 module Toolbar exposing (view)
 
-import AppModel exposing (UndoModel, Model, Msg(..))
+import AppModel exposing (..)
 import Config as C
-import Model exposing (EditMsg(..), NavMsg(..), DisplayMode(..), TopicDisplay(..),
-  BoxDisplay(..))
+import Model exposing (..)
 import ModelAPI as A
 import Utils as U
 -- app modules
 import IconMenu
-import IconMenuAPI exposing (viewIcon)
+import IconMenuAPI as IconMenu
 import Search
-import SearchAPI exposing (viewSearchInput)
+import SearchAPI as Search
 
 import Html exposing (Html, Attribute, div, span, text, button, input, label, a)
 import Html.Attributes exposing (href, style, type_, name, checked, disabled)
@@ -28,7 +27,7 @@ view ({present} as undoModel) =
   div
     toolbarStyle
     [ viewMapNav present
-    , viewSearchInput present
+    , Search.viewInput present
     , div
       []
       [ viewToolbarButton "Add Topic" AddTopic always undoModel
@@ -85,7 +84,7 @@ viewMapNav model =
       [ onClick (Nav Back)
       , disabled backDisabled
       ]
-      [ viewIcon "arrow-left" 20 ]
+      [ IconMenu.viewIcon "arrow-left" 20 ]
     , span
       mapTitleStyle
       [ text <| getMapName model ]

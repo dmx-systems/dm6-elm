@@ -1,11 +1,10 @@
-module SearchAPI exposing (viewSearchInput, viewResultMenu, closeResultMenu, updateSearch)
+module SearchAPI exposing (viewInput, viewMenu, closeMenu, update)
 
-import AppModel exposing (UndoModel, Model, Msg(..))
+import AppModel exposing (..)
 import AutoSize as Size
 import Config as C
-import Model exposing (ItemInfo(..), Id, BoxId)
-import ModelAPI exposing (topicById, relatedItems, activeBox, initItemProps, boxHasItem,
-  boxHasDeepItem, showItem, addItemToBox, singleSelection, singleSelectionBoxId, push, swap)
+import Model exposing (..)
+import ModelAPI as A
 import Storage as S
 import Utils as U
 -- app modules
@@ -23,8 +22,8 @@ import String exposing (fromInt)
 -- VIEW
 
 
-viewSearchInput : Model -> Html Msg
-viewSearchInput model =
+viewInput : Model -> Html Msg
+viewInput model =
   div
     []
     [ div
@@ -46,8 +45,8 @@ searchInputStyle =
   [ style "width" "100px" ]
 
 
-viewResultMenu : Model -> List (Html Msg)
-viewResultMenu model =
+viewMenu : Model -> List (Html Msg)
+viewMenu model =
   case model.search.menu of
     Topics topicIds _ ->
       if not (topicIds |> List.isEmpty) then
@@ -78,7 +77,7 @@ viewTopicsMenu topicIds model =
           isDisabled = isItemDisabled id model
           isHover = isTopicHover id model
         in
-        case topicById id model of
+        case A.topicById id model of
           Just topic ->
             div
               ( [ attribute "data-id" (fromInt id) ]
@@ -106,7 +105,7 @@ viewRelTopicsMenu relTopicIds model =
           isDisabled = isItemDisabled id model
           isHover = isRelTopicHover relTopic model
         in
-        case topicById id model of
+        case A.topicById id model of
           Just topic ->
             div
               ( [ attribute "data-id" <| fromInt id ++ "," ++ fromInt assocId ]
@@ -121,7 +120,7 @@ viewRelTopicsMenu relTopicIds model =
 isItemDisabled : Id -> Model -> Bool
 isItemDisabled topicId model =
   case revealBoxId model of
-    Just boxId -> boxHasDeepItem topicId boxId model
+    Just boxId -> A.boxHasDeepItem topicId boxId model
     Nothing -> False
 
 
@@ -129,9 +128,9 @@ isItemDisabled topicId model =
 revealBoxId : Model -> Maybe Id
 revealBoxId model =
   case model.search.menu of
-    Topics _ _ -> Just (activeBox model)
+    Topics _ _ -> Just (A.activeBox model)
     RelTopics _ _ ->
-      case singleSelectionBoxId model of
+      case A.singleSelectionBoxId model of
         Just boxId -> Just boxId
         Nothing -> Nothing
     Closed -> Nothing
@@ -201,21 +200,21 @@ resultItemStyle isDisabled isHover =
 -- UPDATE
 
 
-updateSearch : Search.Msg -> UndoModel -> (UndoModel, Cmd Msg)
-updateSearch msg ({present} as undoModel) =
+update : Search.Msg -> UndoModel -> (UndoModel, Cmd Msg)
+update msg ({present} as undoModel) =
   case msg of
-    Search.Input text -> (onTextInput text present, Cmd.none) |> swap undoModel
-    Search.FocusInput -> (onFocusInput present, Cmd.none) |> swap undoModel
-    Search.HoverTopic topicId -> (onHoverTopic topicId present, Cmd.none) |> swap undoModel
-    Search.UnhoverTopic _ -> (onUnhoverTopic present, Cmd.none) |> swap undoModel
-    Search.ClickTopic topicId -> revealTopic topicId present |> S.store |> push undoModel
+    Search.Input text -> (onTextInput text present, Cmd.none) |> A.swap undoModel
+    Search.FocusInput -> (onFocusInput present, Cmd.none) |> A.swap undoModel
+    Search.HoverTopic topicId -> (onHoverTopic topicId present, Cmd.none) |> A.swap undoModel
+    Search.UnhoverTopic _ -> (onUnhoverTopic present, Cmd.none) |> A.swap undoModel
+    Search.ClickTopic topicId -> revealTopic topicId present |> S.store |> A.push undoModel
     -- Traverse
-    Search.ShowRelated -> (showRelatedTopics present, Cmd.none) |> swap undoModel
+    Search.ShowRelated -> (showRelatedTopics present, Cmd.none) |> A.swap undoModel
     Search.HoverRelTopic relTopicId -> (onHoverRelTopic relTopicId present, Cmd.none)
-      |> swap undoModel
-    Search.UnhoverRelTopic _ -> (onUnhoverRelTopic present, Cmd.none) |> swap undoModel
+      |> A.swap undoModel
+    Search.UnhoverRelTopic _ -> (onUnhoverRelTopic present, Cmd.none) |> A.swap undoModel
     Search.ClickRelTopic relTopicId -> revealRelTopic relTopicId present |> S.store
-      |> push undoModel
+      |> A.push undoModel
 
 
 onTextInput : String -> Model -> Model
@@ -276,18 +275,18 @@ onUnhoverRelTopic ({search} as model) =
 revealTopic : Id -> Model -> Model
 revealTopic topicId model =
   model
-  |> revealItem topicId (activeBox model)
-  |> closeResultMenu
+  |> revealItem topicId (A.activeBox model)
+  |> closeMenu
 
 
 revealRelTopic : (Id, Id) -> Model -> Model
 revealRelTopic (topicId, assocId) model =
-  case singleSelectionBoxId model of
+  case A.singleSelectionBoxId model of
     Just boxId ->
       model
       |> revealItem topicId boxId
       |> revealItem assocId boxId
-      |> closeResultMenu
+      |> closeMenu
       |> Size.auto
     Nothing -> model
 
@@ -314,9 +313,9 @@ showRelatedTopics : Model -> Model
 showRelatedTopics ({search} as model) =
   let
     relTopicIds =
-      case singleSelection model of
+      case A.singleSelection model of
         Just (itemId, _) ->
-          relatedItems itemId model
+          A.relatedItems itemId model
         Nothing -> [] -- TODO: log error
   in
   { model | search = { search | menu = RelTopics relTopicIds Nothing }}
@@ -330,19 +329,19 @@ isMatch searchText text =
 
 revealItem : Id -> BoxId -> Model -> Model
 revealItem itemId boxId model =
-  if boxHasItem boxId itemId model then
+  if A.boxHasItem boxId itemId model then
     let
       _ = U.info "revealItem" <| fromInt itemId ++ " is in " ++ fromInt boxId
     in
-    showItem itemId boxId model
+    A.showItem itemId boxId model
   else
     let
       _ = U.info "revealItem" <| fromInt itemId ++ " not in " ++ fromInt boxId
-      props = initItemProps itemId model
+      props = A.initItemProps itemId model
     in
-    addItemToBox itemId props boxId model
+    A.addItemToBox itemId props boxId model
 
 
-closeResultMenu : Model -> Model
-closeResultMenu ({search} as model) =
+closeMenu : Model -> Model
+closeMenu ({search} as model) =
   { model | search = { search | menu = Closed }}

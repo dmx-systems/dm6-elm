@@ -1,6 +1,6 @@
 module AppModel exposing (..)
 
-import Config exposing (rootBoxName)
+import Config as C
 import Model exposing (..)
 -- app modules
 import IconMenu
@@ -34,7 +34,7 @@ type alias Model =
 
 default : Model
 default =
-  { items = Dict.singleton 0 <| Item 0 (Topic (TopicInfo 0 rootBoxName Nothing)) Set.empty
+  { items = Dict.singleton 0 <| Item 0 (Topic (TopicInfo 0 C.rootBoxName Nothing)) Set.empty
   , boxes = Dict.singleton 0 -- box 0 is the "root box"
     <| Box 0 (Rectangle 0 0 0 0) Dict.empty
   , boxPath = [0]
