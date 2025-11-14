@@ -3,7 +3,7 @@ module ModelAPI exposing (..)
 import AppModel exposing (..)
 import Config as C
 import Model exposing (..)
-import Utils exposing (..)
+import Utils as U
 
 import Dict
 import Set
@@ -24,7 +24,7 @@ topicById topicId model =
       case info of
         Topic topic -> Just topic
         Assoc _ -> topicMismatch "topicById" topicId Nothing
-    Nothing -> fail "topicById" topicId Nothing
+    Nothing -> U.fail "topicById" topicId Nothing
 
 
 assocById : Id -> Model -> Maybe AssocInfo
@@ -34,7 +34,7 @@ assocById assocId model =
       case info of
         Topic _ -> assocMismatch "assocById" assocId Nothing
         Assoc assoc -> Just assoc
-    Nothing -> fail "assocById" assocId Nothing
+    Nothing -> U.fail "assocById" assocId Nothing
 
 
 itemById : Id -> Model -> Maybe Item
@@ -126,7 +126,7 @@ otherPlayerId assocId playerId model =
       else if playerId == player2 then
         player1
       else
-        logError "otherPlayerId"
+        U.logError "otherPlayerId"
           (fromInt playerId ++ " is not a player in assoc " ++ fromInt assocId) -1
     Nothing -> -1 -- error is already logged
 
@@ -204,7 +204,7 @@ firstId : BoxPath -> BoxId
 firstId boxPath =
   case boxPath of
     boxId :: _ -> boxId
-    [] -> logError "firstId" "boxPath is empty!" -1
+    [] -> U.logError "firstId" "boxPath is empty!" -1
 
 
 fromPath : BoxPath -> String
@@ -260,7 +260,7 @@ topicPos : Id -> BoxId -> Boxes -> Maybe Point
 topicPos topicId boxId boxes =
   case topicProps topicId boxId boxes of
     Just { pos } -> Just pos
-    Nothing -> fail "topicPos" {topicId = topicId, boxId = boxId} Nothing
+    Nothing -> U.fail "topicPos" {topicId = topicId, boxId = boxId} Nothing
 
 
 {-| Logs an error if box does not exist or if topic is not in box -}
@@ -288,7 +288,7 @@ topicSize : Id -> BoxId -> Boxes -> Maybe Size
 topicSize topicId boxId boxes =
   case topicProps topicId boxId boxes of
     Just { size } -> Just size
-    Nothing -> fail "topicSize" {topicId = topicId, boxId = boxId} Nothing
+    Nothing -> U.fail "topicSize" {topicId = topicId, boxId = boxId} Nothing
 
 
 {-| Logs an error if box does not exist or if topic is not in box -}
@@ -303,7 +303,7 @@ displayMode : Id -> BoxId -> Boxes -> Maybe DisplayMode
 displayMode topicId boxId boxes =
   case topicProps topicId boxId boxes of
     Just props -> Just props.displayMode
-    Nothing -> fail "displayMode" {topicId = topicId, boxId = boxId} Nothing
+    Nothing -> U.fail "displayMode" {topicId = topicId, boxId = boxId} Nothing
 
 
 {-| Logs an error if box does not exist or if topic is not in box -}
@@ -321,7 +321,7 @@ topicProps topicId boxId boxes =
       case boxItem.props of
         TopicV props -> Just props
         AssocV _ -> topicMismatch "topicProps" topicId Nothing
-    Nothing -> fail "topicProps" {topicId = topicId, boxId = boxId} Nothing
+    Nothing -> U.fail "topicProps" {topicId = topicId, boxId = boxId} Nothing
 
 
 {-| Logs an error if box does not exist or if topic is not in box -}
@@ -414,7 +414,7 @@ addItemToBox itemId props boxId model =
       "dmx.parent" boxId
       model
     boxItem = BoxItem itemId parentAssocId False False props -- hidden=False, pinned=False
-    _ = info "addItemToBox"
+    _ = U.info "addItemToBox"
       { itemId = itemId, parentAssocId = parentAssocId, props = props, boxId = boxId}
   in
   { newModel | boxes = newModel.boxes |> updateBoxes
@@ -539,7 +539,7 @@ isVisible item =
 select : Id -> BoxPath -> Model -> Model
 select itemId boxPath model =
   let
-    _ = info "select" (itemId, boxPath)
+    _ = U.info "select" (itemId, boxPath)
   in
   { model | selection = [ (itemId, boxPath) ] }
 
@@ -599,17 +599,17 @@ reset (model, cmd) =
 
 itemNotInBox : String -> Id -> Id -> a -> a
 itemNotInBox funcName itemId boxId val =
-  logError funcName ("item " ++ fromInt itemId ++ " not in box " ++ fromInt boxId) val
+  U.logError funcName ("item " ++ fromInt itemId ++ " not in box " ++ fromInt boxId) val
 
 
 topicMismatch : String -> Id -> a -> a
 topicMismatch funcName id val =
-  logError funcName (fromInt id ++ " is not a Topic but an Assoc") val
+  U.logError funcName (fromInt id ++ " is not a Topic but an Assoc") val
 
 
 assocMismatch : String -> Id -> a -> a
 assocMismatch funcName id val =
-  logError funcName (fromInt id ++ " is not an Assoc but a Topic") val
+  U.logError funcName (fromInt id ++ " is not an Assoc but a Topic") val
 
 
 illegalBoxId : String -> Id -> a -> a
@@ -624,4 +624,4 @@ illegalItemId funcName id val =
 
 illegalId : String -> String -> Id -> a -> a
 illegalId funcName item id val =
-  logError funcName (fromInt id ++ " is an illegal " ++ item ++ " ID") val
+  U.logError funcName (fromInt id ++ " is an illegal " ++ item ++ " ID") val

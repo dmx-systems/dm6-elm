@@ -1,13 +1,13 @@
 module MouseAPI exposing (mouseHoverHandler, mouseSubs, updateMouse)
 
 import AppModel exposing (UndoModel, Model, Msg(..))
+import AutoSize as Size
 import Config as C
-import MapAutoSize exposing (autoSize)
 import Model exposing (Class, Id, BoxId, BoxPath, Point, ItemType, RoleType, ViewProps(..),
   AssocProps)
 import ModelAPI as A
-import Storage exposing (storeWith)
-import Utils as U exposing (logError, info, toString)
+import Storage as S
+import Utils as U
 -- app modules
 import Mouse exposing (DragState(..), DragMode(..))
 import SearchAPI exposing (closeResultMenu)
@@ -94,7 +94,7 @@ timeArrived time ({present} as undoModel) =
       (updateDragState dragState present, Cmd.none)
       |> historyFunc undoModel
     _ ->
-      logError "timeArrived" "Received \"Time\" message when dragState is not WaitForTime"
+      U.logError "timeArrived" "Received \"Time\" message when dragState is not WaitForTime"
         (undoModel, Cmd.none)
 
 
@@ -109,8 +109,8 @@ mouseMove pos model =
       ( model, Cmd.none ) -- ignore -- TODO: can this happen at all? Is there a move listener?
     Drag _ _ _ _ _ _ ->
       ( performDrag pos model, Cmd.none )
-    _ -> logError "mouseMove"
-      ("Received \"Move\" message when dragState is " ++ toString model.mouse.dragState)
+    _ -> U.logError "mouseMove"
+      ("Received \"Move\" message when dragState is " ++ U.toString model.mouse.dragState)
       ( model, Cmd.none )
 
 
@@ -130,9 +130,9 @@ performDrag pos model =
       in
       -- update lastPos
       updateDragState (Drag dragMode id boxPath origPos pos target) newModel
-      |> autoSize
-    _ -> logError "performDrag"
-      ("Received \"Move\" message when dragState is " ++ toString model.mouse.dragState)
+      |> Size.auto
+    _ -> U.logError "performDrag"
+      ("Received \"Move\" message when dragState is " ++ U.toString model.mouse.dragState)
       model
 
 
@@ -143,7 +143,7 @@ mouseUp ({present} as undoModel) =
       case present.mouse.dragState of
         Drag DragTopic id boxPath origPos _ (Just (targetId, targetBoxPath)) ->
           let
-            _ = info "mouseUp" ("dropped " ++ fromInt id ++ " (box " ++ A.fromPath boxPath
+            _ = U.info "mouseUp" ("dropped " ++ fromInt id ++ " (box " ++ A.fromPath boxPath
               ++ ") on " ++ fromInt targetId ++ " (box " ++ A.fromPath targetBoxPath ++ ") --> "
               ++ if notDroppedOnOwnBox then "move topic" else "abort")
             boxId = A.firstId boxPath
@@ -156,7 +156,7 @@ mouseUp ({present} as undoModel) =
             (present, Cmd.none, A.swap)
         Drag DraftAssoc id boxPath _ _ (Just (targetId, targetBoxPath)) ->
           let
-            _ = info "mouseUp" ("assoc drawn from " ++ fromInt id ++ " (box " ++ A.fromPath
+            _ = U.info "mouseUp" ("assoc drawn from " ++ fromInt id ++ " (box " ++ A.fromPath
               boxPath ++ ") to " ++ fromInt targetId ++ " (box " ++ A.fromPath targetBoxPath
               ++ ") --> " ++ if isSameBox then "create assoc" else "abort")
             boxId = A.firstId boxPath
@@ -168,21 +168,21 @@ mouseUp ({present} as undoModel) =
             (present, Cmd.none, A.swap)
         Drag _ _ _ _ _ _ ->
           let
-            _ = info "mouseUp" "drag ended w/o target"
+            _ = U.info "mouseUp" "drag ended w/o target"
           in
           (present, Cmd.none, A.swap)
         DragEngaged _ _ _ _ _ ->
           let
-            _ = info "mouseUp" "drag aborted w/o moving"
+            _ = U.info "mouseUp" "drag aborted w/o moving"
           in
           (present, Cmd.none, A.swap)
         _ ->
-          logError "mouseUp"
-            ("Received \"Up\" message when dragState is " ++ toString present.mouse.dragState)
+          U.logError "mouseUp"
+            ("Received \"Up\" message when dragState is " ++ U.toString present.mouse.dragState)
             (present, Cmd.none, A.swap)
   in
   (updateDragState NoDrag model, cmd)
-  |> storeWith
+  |> S.storeWith
   |> historyFunc undoModel
 
 
@@ -219,7 +219,7 @@ mouseOver class targetId targetBoxPath model =
       -- update target
       updateDragState (Drag dragMode id boxPath origPos lastPos target) model
     DragEngaged _ _ _ _ _ ->
-      logError "mouseOver" "Received \"Over\" message when dragState is DragEngaged" model
+      U.logError "mouseOver" "Received \"Over\" message when dragState is DragEngaged" model
     _ -> model
 
 

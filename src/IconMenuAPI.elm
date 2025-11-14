@@ -5,8 +5,8 @@ import AppModel exposing (..)
 import Config as C
 import Model exposing (..)
 import ModelAPI exposing (..)
-import Storage exposing (store)
-import Utils exposing (..)
+import Storage as S
+import Utils as U
 -- app modules
 import IconMenu
 
@@ -77,7 +77,7 @@ viewIconList =
     (\(iconName, icon) ->
       button
         ( [ onClick (Just iconName |> IconMenu.SetIcon |> IconMenu)
-          , stopPropagationOnMousedown NoOp
+          , U.stopPropagationOnMousedown NoOp
           , title iconName
           ]
           ++ iconButtonStyle
@@ -133,7 +133,7 @@ updateIconMenu msg ({present} as undoModel) =
     IconMenu.Close -> (closeIconMenu present, Cmd.none) |> swap undoModel
     IconMenu.SetIcon maybeIcon -> setIcon maybeIcon present
       |> closeIconMenu
-      |> store
+      |> S.store
       |> push undoModel
 
 

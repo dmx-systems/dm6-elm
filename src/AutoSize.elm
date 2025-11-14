@@ -1,11 +1,11 @@
-module MapAutoSize exposing (autoSize)
+module AutoSize exposing (auto)
 
 import AppModel exposing (..)
 import Config as C
 import Model exposing (..)
 import ModelAPI exposing (..)
 import Mouse exposing (DragState(..), DragMode(..))
-import Utils exposing (logError)
+import Utils as U
 
 import Dict
 
@@ -14,8 +14,8 @@ import Dict
 -- UPDATE
 
 
-autoSize : Model -> Model
-autoSize model =
+auto : Model -> Model
+auto model =
   calcBoxRect [ activeBox model ] model |> Tuple.second
 
 
@@ -103,7 +103,7 @@ storeBoxGeometry boxPath newRect oldRect model =
       else
         model |> storeBoxRect boxId newRect
     [_] -> model -- do nothing, for the fullscreen box there is no geometry update
-    [] -> logError "storeBoxGeometry" "boxPath is empty!" model
+    [] -> U.logError "storeBoxGeometry" "boxPath is empty!" model
 
 
 storeBoxRect : BoxId -> Rectangle -> Model -> Model

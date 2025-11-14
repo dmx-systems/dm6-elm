@@ -1,10 +1,10 @@
-module MapRenderer exposing (viewMap)
+module MapRenderer exposing (view)
 
 import AppModel exposing (..)
 import Config as C
 import Model exposing (..)
 import ModelAPI exposing (..)
-import Utils exposing (..)
+import Utils as U
 -- app modules
 import IconMenuAPI exposing (viewTopicIcon)
 import Mouse exposing (DragState(..), DragMode(..))
@@ -47,8 +47,8 @@ type alias TopicRendering = (List (Attribute Msg), List (Html Msg))
 
 
 -- For a fullscreen box boxPath is empty
-viewMap : BoxId -> BoxPath -> Model -> Html Msg
-viewMap boxId boxPath model =
+view : BoxId -> BoxPath -> Model -> Html Msg
+view boxId boxPath model =
   let
     ((topics, assocs), boxRect, (svgSize, boxStyle)) = boxInfo boxId boxPath model
   in
@@ -114,8 +114,8 @@ viewItems box boxPath model =
           case (info, props) of
             (Topic topic, TopicV tProps) -> (viewTopic topic tProps newPath model :: t, a)
             (Assoc assoc, AssocV _) -> (t, viewAssoc assoc box.id model :: a)
-            _ -> logError "viewItems" ("problem with item " ++ fromInt id) (t, a)
-        Nothing -> logError "viewItems" ("problem with item " ++ fromInt id) (t, a)
+            _ -> U.logError "viewItems" ("problem with item " ++ fromInt id) (t, a)
+        Nothing -> U.logError "viewItems" ("problem with item " ++ fromInt id) (t, a)
     )
     ([], [])
 
@@ -132,12 +132,12 @@ viewLimboTopic boxId model =
       if boxId == limboBoxId then
         if boxHasItem boxId topicId model then
           let
-            _ = info "viewLimboTopic" (topicId, "is in box", boxId)
+            _ = U.info "viewLimboTopic" (topicId, "is in box", boxId)
           in
           [] -- rendered already (viewItems())
         else
           let
-            _ = info "viewLimboTopic" (topicId, "not in box", boxId)
+            _ = U.info "viewLimboTopic" (topicId, "not in box", boxId)
             props = initTopicProps topicId model
             boxPath = [boxId] -- Needed by limbo style calculation; single ID is sufficient;
           in
@@ -156,12 +156,12 @@ viewLimboAssoc boxId model =
       if boxId == limboBoxId then
         if boxHasItem boxId assocId model then
           let
-            _ = info "viewLimboAssoc" (assocId, "is in box", boxId)
+            _ = U.info "viewLimboAssoc" (assocId, "is in box", boxId)
           in
           [] -- rendered already (viewItems())
         else
           let
-            _ = info "viewLimboAssoc" (assocId, "not in box", boxId)
+            _ = U.info "viewLimboAssoc" (assocId, "not in box", boxId)
           in
           case assocById assocId model of
             Just assoc ->
@@ -270,8 +270,8 @@ labelTopicHtml topic props boxId model =
             , value topic.text
             , onInput (Edit << OnTextInput)
             , onBlur (Edit EditEnd)
-            , onEnterOrEsc (Edit EditEnd)
-            , stopPropagationOnMousedown NoOp
+            , U.onEnterOrEsc (Edit EditEnd)
+            , U.stopPropagationOnMousedown NoOp
             ]
             ++ topicInputStyle
           )
@@ -299,8 +299,8 @@ detailTopic topic props boxPath model =
           ( [ id <| "dmx-input-" ++ fromInt topic.id ++ "-" ++ fromInt boxId
             , onInput (Edit << OnTextareaInput)
             , onBlur (Edit EditEnd)
-            , onEsc (Edit EditEnd)
-            , stopPropagationOnMousedown NoOp
+            , U.onEsc (Edit EditEnd)
+            , U.stopPropagationOnMousedown NoOp
             ]
             ++ detailTextStyle topic.id boxId model
             ++ detailTextEditStyle topic.id boxId model
@@ -311,7 +311,7 @@ detailTopic topic props boxPath model =
           ( detailTextStyle topic.id boxId model
             ++ detailTextViewStyle
           )
-          ( multilineHtml topic.text )
+          ( U.multilineHtml topic.text )
   in
   ( detailTopicStyle props
   , [ div
@@ -401,7 +401,7 @@ whiteBoxTopic topic props boxPath model =
   ( style
   , children
     ++ boxItemCount topic.id props model
-    ++ [ viewMap topic.id boxPath model ]
+    ++ [ view topic.id boxPath model ]
   )
 
 
@@ -462,7 +462,7 @@ assocGeometry assoc boxId model =
   in
   case Maybe.map2 (\p1 p2 -> (p1, p2)) pos1 pos2 of
     Just geometry -> Just geometry
-    Nothing -> fail "assocGeometry" { assoc = assoc, boxId = boxId } Nothing
+    Nothing -> U.fail "assocGeometry" { assoc = assoc, boxId = boxId } Nothing
 
 
 viewAssocDraft : BoxId -> Model -> List (Svg Msg)
@@ -495,7 +495,7 @@ absBoxPos boxPath posAcc model =
   case boxPath of
     [ boxId ] -> accumulateBoxRect posAcc boxId model
     boxId :: parentBoxId :: boxIds -> accumulateBoxPos posAcc boxId parentBoxId boxIds model
-    [] -> logError "absBoxPos" "boxPath is empty!" (Point 0 0)
+    [] -> U.logError "absBoxPos" "boxPath is empty!" (Point 0 0)
 
 
 accumulateBoxPos : Point -> BoxId -> BoxId -> BoxPath -> Model -> Point

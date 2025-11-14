@@ -1,4 +1,4 @@
-module Toolbar exposing (viewToolbar)
+module Toolbar exposing (view)
 
 import AppModel exposing (UndoModel, Model, Msg(..))
 import Config as C
@@ -23,8 +23,8 @@ import UndoList
 -- VIEW
 
 
-viewToolbar : UndoModel -> Html Msg
-viewToolbar ({present} as undoModel) =
+view : UndoModel -> Html Msg
+view ({present} as undoModel) =
   div
     toolbarStyle
     [ viewMapNav present

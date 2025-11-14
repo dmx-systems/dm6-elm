@@ -3,7 +3,7 @@ module Boxing exposing (box, unbox)
 import AppModel exposing (..)
 import Model exposing (..)
 import ModelAPI exposing (..)
-import Utils exposing (..)
+import Utils as U
 
 import Dict
 
@@ -117,7 +117,7 @@ unboxTopic boxItem targetItems model =
           -- 1) set it to "pinned" unless it is hidden
           -- 2) abort further unboxing if it's display mode is BlackBox or WhiteBox
           let
-            _ = info "unboxTopic" { item | hidden = False, pinned = not item.hidden }
+            _ = U.info "unboxTopic" { item | hidden = False, pinned = not item.hidden }
           in
           ({ item | hidden = False, pinned = not item.hidden }, isAbort item)
         Nothing ->

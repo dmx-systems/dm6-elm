@@ -1,13 +1,13 @@
 module SearchAPI exposing (viewSearchInput, viewResultMenu, closeResultMenu, updateSearch)
 
 import AppModel exposing (UndoModel, Model, Msg(..))
+import AutoSize as Size
 import Config as C
-import MapAutoSize exposing (autoSize)
 import Model exposing (ItemInfo(..), Id, BoxId)
 import ModelAPI exposing (topicById, relatedItems, activeBox, initItemProps, boxHasItem,
   boxHasDeepItem, showItem, addItemToBox, singleSelection, singleSelectionBoxId, push, swap)
-import Storage exposing (store)
-import Utils exposing (idDecoder, idTupleDecoder, stopPropagationOnMousedown, logError, info)
+import Storage as S
+import Utils as U
 -- app modules
 import Search exposing (Menu(..))
 
@@ -68,7 +68,7 @@ viewTopicsMenu topicIds model =
     ( [ on "click" (topicDecoder Search.ClickTopic)
       , on "mouseover" (topicDecoder Search.HoverTopic)
       , on "mouseout" (topicDecoder Search.UnhoverTopic)
-      , stopPropagationOnMousedown NoOp
+      , U.stopPropagationOnMousedown NoOp
       ]
       ++ resultMenuStyle
     )
@@ -96,7 +96,7 @@ viewRelTopicsMenu relTopicIds model =
     ( [ on "click" (relTopicDecoder Search.ClickRelTopic)
       , on "mouseover" (relTopicDecoder Search.HoverRelTopic)
       , on "mouseout" (relTopicDecoder Search.UnhoverRelTopic)
-      , stopPropagationOnMousedown NoOp
+      , U.stopPropagationOnMousedown NoOp
       ]
       ++ resultMenuStyle
     )
@@ -139,12 +139,12 @@ revealBoxId model =
 
 topicDecoder : (Id -> Search.Msg) -> D.Decoder Msg
 topicDecoder msg =
-  D.map Search <| D.map msg idDecoder
+  D.map Search <| D.map msg U.idDecoder
 
 
 relTopicDecoder : ((Id, Id) -> Search.Msg) -> D.Decoder Msg
 relTopicDecoder msg =
-  D.map Search <| D.map msg idTupleDecoder
+  D.map Search <| D.map msg U.idTupleDecoder
 
 
 isTopicHover : Id -> Model -> Bool
@@ -208,13 +208,13 @@ updateSearch msg ({present} as undoModel) =
     Search.FocusInput -> (onFocusInput present, Cmd.none) |> swap undoModel
     Search.HoverTopic topicId -> (onHoverTopic topicId present, Cmd.none) |> swap undoModel
     Search.UnhoverTopic _ -> (onUnhoverTopic present, Cmd.none) |> swap undoModel
-    Search.ClickTopic topicId -> revealTopic topicId present |> store |> push undoModel
+    Search.ClickTopic topicId -> revealTopic topicId present |> S.store |> push undoModel
     -- Traverse
     Search.ShowRelated -> (showRelatedTopics present, Cmd.none) |> swap undoModel
     Search.HoverRelTopic relTopicId -> (onHoverRelTopic relTopicId present, Cmd.none)
       |> swap undoModel
     Search.UnhoverRelTopic _ -> (onUnhoverRelTopic present, Cmd.none) |> swap undoModel
-    Search.ClickRelTopic relTopicId -> revealRelTopic relTopicId present |> store
+    Search.ClickRelTopic relTopicId -> revealRelTopic relTopicId present |> S.store
       |> push undoModel
 
 
@@ -235,7 +235,7 @@ onHoverTopic topicId ({search} as model) =
       -- update hover state
       { model | search = { search | menu = Topics topicIds (Just topicId) }}
     _ ->
-      logError "onHoverTopic" "Received \"HoverTopic\" when search.menu is not Topics" model
+      U.logError "onHoverTopic" "Received \"HoverTopic\" when search.menu is not Topics" model
 
 
 onHoverRelTopic : (Id, Id) -> Model -> Model
@@ -245,8 +245,9 @@ onHoverRelTopic relTopicId ({search} as model) =
       -- update hover state
       { model | search = { search | menu = RelTopics relTopicIds (Just relTopicId) }}
     _ ->
-      logError "onHoverRelTopic" "Received \"HoverRelTopic\" when search.menu is not RelTopics"
-      model
+      U.logError "onHoverRelTopic"
+        "Received \"HoverRelTopic\" when search.menu is not RelTopics"
+        model
 
 
 onUnhoverTopic : Model -> Model
@@ -256,7 +257,9 @@ onUnhoverTopic ({search} as model) =
       -- update hover state
       { model | search = { search | menu = Topics topicIds Nothing }}
     _ ->
-      logError "onUnhoverTopic" "Received \"UnhoverTopic\" when search.menu is not Topics" model
+      U.logError "onUnhoverTopic"
+        "Received \"UnhoverTopic\" when search.menu is not Topics"
+        model
 
 
 onUnhoverRelTopic : Model -> Model
@@ -266,7 +269,7 @@ onUnhoverRelTopic ({search} as model) =
       -- update hover state
       { model | search = { search | menu = RelTopics relTopicIds Nothing }}
     _ ->
-      logError "onUnhoverRelTopic"
+      U.logError "onUnhoverRelTopic"
         "Received \"UnhoverRelTopic\" when search.menu is not RelTopics" model
 
 
@@ -285,7 +288,7 @@ revealRelTopic (topicId, assocId) model =
       |> revealItem topicId boxId
       |> revealItem assocId boxId
       |> closeResultMenu
-      |> autoSize
+      |> Size.auto
     Nothing -> model
 
 
@@ -329,12 +332,12 @@ revealItem : Id -> BoxId -> Model -> Model
 revealItem itemId boxId model =
   if boxHasItem boxId itemId model then
     let
-      _ = info "revealItem" <| fromInt itemId ++ " is in " ++ fromInt boxId
+      _ = U.info "revealItem" <| fromInt itemId ++ " is in " ++ fromInt boxId
     in
     showItem itemId boxId model
   else
     let
-      _ = info "revealItem" <| fromInt itemId ++ " not in " ++ fromInt boxId
+      _ = U.info "revealItem" <| fromInt itemId ++ " not in " ++ fromInt boxId
       props = initItemProps itemId model
     in
     addItemToBox itemId props boxId model

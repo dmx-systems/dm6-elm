@@ -1,15 +1,15 @@
 module Main exposing (..)
 
 import AppModel exposing (..)
-import Boxing exposing (box, unbox)
+import AutoSize as Size
+import Boxing as B
 import Config as C
-import MapAutoSize exposing (autoSize)
-import MapRenderer exposing (viewMap)
+import MapRenderer as Map
 import Model exposing (..)
 import ModelAPI as A
-import Storage exposing (store, storeWith, modelDecoder, importJSON, exportJSON)
-import Toolbar exposing (viewToolbar)
-import Utils exposing (..)
+import Storage as S
+import Toolbar
+import Utils as U
 -- app modules
 import IconMenuAPI exposing (viewIconMenu, updateIconMenu)
 import MouseAPI exposing (mouseHoverHandler, mouseSubs, updateMouse)
@@ -51,20 +51,20 @@ initModel flags =
   case flags |> D.decodeValue (D.null True) of
     Ok True ->
       let
-        _ = info "init" "localStorage: empty"
+        _ = U.info "init" "localStorage: empty"
       in
       default
     _ ->
-      case flags |> D.decodeValue modelDecoder of
+      case flags |> D.decodeValue S.modelDecoder of
         Ok model ->
           let
-            _ = info "init"
-              ("localStorage: " ++ (model |> toString |> String.length |> fromInt) ++ " bytes")
+            _ = U.info "init" ("localStorage: " ++ bytes ++ " bytes")
+            bytes = model |> U.toString |> String.length |> fromInt
           in
           model
         Err e ->
           let
-            _ = logError "init" "localStorage" e
+            _ = U.logError "init" "localStorage" e
           in
           default
 
@@ -81,8 +81,8 @@ view ({present} as undoModel) =
       ( mouseHoverHandler
         ++ appStyle
       )
-      ( [ viewToolbar undoModel
-        , viewMap (A.activeBox present) [] present -- boxPath = []
+      ( [ Toolbar.view undoModel
+        , Map.view (A.activeBox present) [] present -- boxPath = []
         ]
         ++ viewResultMenu present
         ++ viewIconMenu present
@@ -133,27 +133,27 @@ update msg ({present} as undoModel) =
     _ =
       case msg of
         Mouse _ -> msg
-        _ -> info "update" msg
+        _ -> U.info "update" msg
   in
   case msg of
-    AddTopic -> addTopic present |> store |> A.push undoModel
-    AddBox -> addBox present |> store |> A.push undoModel
+    AddTopic -> addTopic present |> S.store |> A.push undoModel
+    AddBox -> addBox present |> S.store |> A.push undoModel
     MoveTopicToBox topicId boxId origPos targetId targetBoxPath pos
       -> moveTopicToBox topicId boxId origPos targetId targetBoxPath pos present
-      |> store |> A.push undoModel
+      |> S.store |> A.push undoModel
     SwitchDisplay displayMode -> switchDisplay displayMode present
-      |> store |> A.swap undoModel
+      |> S.store |> A.swap undoModel
     Search searchMsg -> updateSearch searchMsg undoModel
     Edit editMsg -> updateEdit editMsg undoModel
     IconMenu iconMenuMsg -> updateIconMenu iconMenuMsg undoModel
     Mouse mouseMsg -> updateMouse mouseMsg undoModel
-    Nav navMsg -> updateNav navMsg present |> store |> A.reset
-    Hide -> hide present |> store |> A.push undoModel
-    Delete -> delete present |> store |> A.push undoModel
+    Nav navMsg -> updateNav navMsg present |> S.store |> A.reset
+    Hide -> hide present |> S.store |> A.push undoModel
+    Delete -> delete present |> S.store |> A.push undoModel
     Undo -> undo undoModel
     Redo -> redo undoModel
-    Import -> (present, importJSON ()) |> A.swap undoModel
-    Export -> (present, exportJSON ()) |> A.swap undoModel
+    Import -> (present, S.importJSON ()) |> A.swap undoModel
+    Export -> (present, S.exportJSON ()) |> A.swap undoModel
     NoOp -> (present, Cmd.none) |> A.swap undoModel
 
 
@@ -219,7 +219,7 @@ moveTopicToBox topicId boxId origPos targetId targetBoxPath pos model =
       |> A.setTopicPos topicId boxId origPos
       |> A.addItemToBox topicId props targetId
       |> A.select targetId targetBoxPath
-      |> autoSize
+      |> Size.auto
     Nothing -> model
 
 
@@ -233,14 +233,14 @@ switchDisplay displayMode model =
       { model | boxes =
         case displayMode of
           TopicD _ -> model.boxes
-          BoxD BlackBox -> box boxId targetBoxId model
-          BoxD WhiteBox -> box boxId targetBoxId model
-          BoxD Unboxed -> unbox boxId targetBoxId model
+          BoxD BlackBox -> B.box boxId targetBoxId model
+          BoxD WhiteBox -> B.box boxId targetBoxId model
+          BoxD Unboxed -> B.unbox boxId targetBoxId model
       }
       |> A.setDisplayMode boxId targetBoxId displayMode
     Nothing -> model
   )
-  |> autoSize
+  |> Size.auto
 
 
 -- Text Edit
@@ -249,12 +249,12 @@ updateEdit : EditMsg -> UndoModel -> (UndoModel, Cmd Msg)
 updateEdit msg ({present} as undoModel) =
   case msg of
     EditStart -> startEdit present |> A.push undoModel
-    OnTextInput text -> onTextInput text present |> store |> A.swap undoModel
-    OnTextareaInput text -> onTextareaInput text present |> storeWith |> A.swap undoModel
+    OnTextInput text -> onTextInput text present |> S.store |> A.swap undoModel
+    OnTextareaInput text -> onTextareaInput text present |> S.storeWith |> A.swap undoModel
     SetTopicSize topicId boxId size ->
       ( present
         |> A.setTopicSize topicId boxId size
-        |> autoSize
+        |> Size.auto
       , Cmd.none
       )
       |> A.swap undoModel
@@ -270,7 +270,7 @@ startEdit model =
       Just (topicId, boxPath) ->
         { model | editState = ItemEdit topicId (A.firstId boxPath) }
         |> setDetailDisplayIfMonade topicId (A.firstId boxPath)
-        |> autoSize
+        |> Size.auto
       Nothing -> model
   in
   (newModel, focus newModel)
@@ -293,7 +293,7 @@ onTextInput text model =
       A.updateTopicInfo topicId
         (\topic -> { topic | text = text })
         model
-    NoEdit -> logError "onTextInput" "called when editState is NoEdit" model
+    NoEdit -> U.logError "onTextInput" "called when editState is NoEdit" model
 
 
 onTextareaInput : String -> Model -> (Model, Cmd Msg)
@@ -304,7 +304,7 @@ onTextareaInput text model =
         (\topic -> { topic | text = text })
         model
       |> measureText text topicId boxId
-    NoEdit -> logError "onTextareaInput" "called when editState is NoEdit" (model, Cmd.none)
+    NoEdit -> U.logError "onTextareaInput" "called when editState is NoEdit" (model, Cmd.none)
 
 
 measureText : String -> Id -> BoxId -> Model -> (Model, Cmd Msg)
@@ -318,7 +318,7 @@ measureText text topicId boxId model =
             (SetTopicSize topicId boxId
               (Size elem.element.width elem.element.height)
             )
-          Err err -> logError "measureText" (toString err) NoOp
+          Err err -> U.logError "measureText" (U.toString err) NoOp
       )
   )
 
@@ -326,7 +326,7 @@ measureText text topicId boxId model =
 endEdit : Model -> Model
 endEdit model =
   { model | editState = NoEdit }
-  |> autoSize
+  |> Size.auto
 
 
 focus : Model -> Cmd Msg
@@ -335,13 +335,13 @@ focus model =
     nodeId =
       case model.editState of
         ItemEdit id boxId -> "dmx-input-" ++ fromInt id ++ "-" ++ fromInt boxId
-        NoEdit -> logError "focus" "called when editState is NoEdit" ""
+        NoEdit -> U.logError "focus" "called when editState is NoEdit" ""
   in
   Dom.focus nodeId |> Task.attempt
     (\result ->
       case result of
         Ok () -> NoOp
-        Err e -> logError "focus" (toString e) NoOp
+        Err e -> U.logError "focus" (U.toString e) NoOp
     )
 
 
@@ -374,14 +374,14 @@ back model =
           , nextBoxId :: boxIds
           , [(prevBoxId, nextBoxId)]
           )
-        _ -> logError "back" "model.boxPath has a problem" (0, [0], [])
+        _ -> U.logError "back" "model.boxPath has a problem" (0, [0], [])
   in
   { model
   | boxPath = boxPath
   -- , selection = selection -- TODO
   }
   |> adjustBoxRect boxId 1
-  |> autoSize
+  |> Size.auto
 
 
 adjustBoxRect : BoxId -> Float -> Model -> Model
@@ -405,7 +405,7 @@ hide model =
   in
   newModel
   |> A.resetSelection
-  |> autoSize
+  |> Size.auto
 
 
 delete : Model -> Model
@@ -419,7 +419,7 @@ delete model =
   in
   newModel
   |> A.resetSelection
-  |> autoSize
+  |> Size.auto
 
 
 -- Undo / Redo
@@ -431,7 +431,7 @@ undo undoModel =
     newModel = resetTransientState newUndoModel.present
   in
   newModel
-  |> store
+  |> S.store
   |> A.swap newUndoModel
 
 
@@ -442,5 +442,5 @@ redo undoModel =
     newModel = resetTransientState newUndoModel.present
   in
   newModel
-  |> store
+  |> S.store
   |> A.swap newUndoModel
