@@ -151,7 +151,7 @@ modelDecoder =
     |> hardcoded default.selection
     |> hardcoded default.editState
     |> hardcoded default.measureText
-    -- app modules
+    -- feature modules
     |> hardcoded default.mouse
     |> hardcoded default.search
     |> hardcoded default.iconMenu

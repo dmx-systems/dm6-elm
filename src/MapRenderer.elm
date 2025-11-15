@@ -5,10 +5,10 @@ import Config as C
 import Model exposing (..)
 import ModelAPI as A
 import Utils as U
--- app modules
-import IconMenuAPI as IconMenu
-import Mouse exposing (DragState(..), DragMode(..))
-import Search exposing (Menu(..))
+-- feature modules
+import Feature.IconMenuAPI as IconMenuAPI
+import Feature.Mouse exposing (DragState(..), DragMode(..))
+import Feature.Search exposing (Menu(..))
 
 import Dict
 import Html exposing (Html, Attribute, div, text, input, textarea)
@@ -282,7 +282,7 @@ labelTopicHtml topic props boxId model =
   in
   [ div
     (topicIconBoxStyle props)
-    [ IconMenu.viewTopicIcon topic.id model ]
+    [ IconMenuAPI.viewTopicIcon topic.id model ]
   , textElem
   ]
 
@@ -318,7 +318,7 @@ detailTopic topic props boxPath model =
         ++ detailTopicIconBoxStyle
         ++ selectionStyle topic.id boxId model
       )
-      [ IconMenu.viewTopicIcon topic.id model ]
+      [ IconMenuAPI.viewTopicIcon topic.id model ]
     , textElem
     ]
   )

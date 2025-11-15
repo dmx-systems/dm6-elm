@@ -10,10 +10,10 @@ import ModelAPI as A
 import Storage as S
 import Toolbar
 import Utils as U
--- app modules
-import IconMenuAPI as IconMenu
-import MouseAPI as Mouse
-import SearchAPI as Search
+-- feature modules
+import Feature.IconMenuAPI as IconMenuAPI
+import Feature.MouseAPI as MouseAPI
+import Feature.SearchAPI as SearchAPI
 
 import Browser
 import Browser.Dom as Dom
@@ -36,7 +36,7 @@ main =
     { init = init
     , view = view
     , update = update
-    , subscriptions = Mouse.subs
+    , subscriptions = MouseAPI.subs
     }
 
 
@@ -77,14 +77,14 @@ view ({present} as undoModel) =
   Browser.Document
     "DM6 Elm"
     [ div
-      ( Mouse.hoverHandler
+      ( MouseAPI.hoverHandler
         ++ appStyle
       )
       ( [ Toolbar.view undoModel
         , Map.view (A.activeBox present) [] present -- boxPath = []
         ]
-        ++ Search.viewMenu present
-        ++ IconMenu.view present
+        ++ SearchAPI.viewMenu present
+        ++ IconMenuAPI.view present
       )
     , div
       ( [ id "measure" ]
@@ -142,10 +142,10 @@ update msg ({present} as undoModel) =
       |> S.store |> A.push undoModel
     SwitchDisplay displayMode -> switchDisplay displayMode present
       |> S.store |> A.swap undoModel
-    Search searchMsg -> Search.update searchMsg undoModel
+    Search searchMsg -> SearchAPI.update searchMsg undoModel
     Edit editMsg -> updateEdit editMsg undoModel
-    IconMenu iconMenuMsg -> IconMenu.update iconMenuMsg undoModel
-    Mouse mouseMsg -> Mouse.update mouseMsg undoModel
+    IconMenu iconMenuMsg -> IconMenuAPI.update iconMenuMsg undoModel
+    Mouse mouseMsg -> MouseAPI.update mouseMsg undoModel
     Nav navMsg -> updateNav navMsg present |> S.store |> A.reset
     Hide -> hide present |> S.store |> A.push undoModel
     Delete -> delete present |> S.store |> A.push undoModel

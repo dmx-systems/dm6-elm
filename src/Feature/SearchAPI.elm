@@ -1,4 +1,4 @@
-module SearchAPI exposing (viewInput, viewMenu, closeMenu, update)
+module Feature.SearchAPI exposing (viewInput, viewMenu, closeMenu, update)
 
 import AppModel exposing (..)
 import AutoSize as Size
@@ -7,8 +7,8 @@ import Model exposing (..)
 import ModelAPI as A
 import Storage as S
 import Utils as U
--- app modules
-import Search exposing (Menu(..))
+-- feature modules
+import Feature.Search as Search exposing (Menu(..))
 
 import Dict
 import Html exposing (Html, Attribute, div, text, input)

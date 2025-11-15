@@ -1,4 +1,4 @@
-module IconMenu exposing (..)
+module Feature.IconMenu exposing (..)
 
 import Model exposing (IconName)
 

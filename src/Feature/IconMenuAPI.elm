@@ -1,4 +1,4 @@
-module IconMenuAPI exposing (viewIcon, viewTopicIcon, view, close, update)
+module Feature.IconMenuAPI exposing (viewIcon, viewTopicIcon, view, close, update)
 
 import AppModel exposing (..)
 import Config as C
@@ -6,8 +6,8 @@ import Model exposing (..)
 import ModelAPI as A
 import Storage as S
 import Utils as U
--- app modules
-import IconMenu
+-- feature modules
+import Feature.IconMenu as IconMenu
 
 import Dict
 import Html exposing (Html, Attribute, div, text, button)

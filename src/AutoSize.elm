@@ -4,8 +4,9 @@ import AppModel exposing (..)
 import Config as C
 import Model exposing (..)
 import ModelAPI as A
-import Mouse exposing (DragState(..), DragMode(..))
 import Utils as U
+-- feature modules
+import Feature.Mouse exposing (DragState(..), DragMode(..))
 
 import Dict
 

@@ -2,10 +2,10 @@ module AppModel exposing (..)
 
 import Config as C
 import Model exposing (..)
--- app modules
-import IconMenu
-import Mouse
-import Search
+-- feature modules
+import Feature.IconMenu as IconMenu
+import Feature.Mouse as Mouse
+import Feature.Search as Search
 
 import Dict
 import Set
@@ -25,7 +25,7 @@ type alias Model =
   , selection : Selection
   , editState : EditState
   , measureText : String
-  -- app modules
+  -- feature modules
   , mouse : Mouse.Model
   , search : Search.Model
   , iconMenu : IconMenu.Model
@@ -43,7 +43,7 @@ default =
   , selection = []
   , editState = NoEdit
   , measureText = ""
-  -- app modules
+  -- feature modules
   , mouse = Mouse.init
   , search = Search.init
   , iconMenu = IconMenu.init
@@ -57,7 +57,7 @@ resetTransientState model =
   | selection = default.selection
   , editState = default.editState
   , measureText = default.measureText
-  -- app modules
+  -- feature modules
   , mouse = default.mouse
   , search = default.search
   , iconMenu = default.iconMenu
@@ -78,7 +78,7 @@ type Msg
   | Import
   | Export
   | NoOp
-  -- app modules
+  -- feature modules
   | Mouse Mouse.Msg
   | Search Search.Msg
   | IconMenu IconMenu.Msg
