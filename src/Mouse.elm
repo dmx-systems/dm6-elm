@@ -1,4 +1,4 @@
-module Feature.Mouse exposing (..)
+module Mouse exposing (..)
 
 import Model exposing (..)
 import Time

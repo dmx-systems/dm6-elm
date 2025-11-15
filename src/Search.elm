@@ -1,4 +1,4 @@
-module Feature.Search exposing (..)
+module Search exposing (..)
 
 import Model exposing (Id)
 

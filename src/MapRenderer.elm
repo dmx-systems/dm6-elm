@@ -6,9 +6,9 @@ import Model exposing (..)
 import ModelAPI as A
 import Utils as U
 -- feature modules
-import Feature.IconMenuAPI as IconMenuAPI
-import Feature.Mouse exposing (DragState(..), DragMode(..))
-import Feature.Search exposing (Menu(..))
+import IconMenuAPI
+import Mouse exposing (DragState(..), DragMode(..))
+import Search exposing (Menu(..))
 
 import Dict
 import Html exposing (Html, Attribute, div, text, input, textarea)

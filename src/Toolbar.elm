@@ -6,10 +6,10 @@ import Model exposing (..)
 import ModelAPI as A
 import Utils as U
 -- feature modules
-import Feature.IconMenu as IconMenu
-import Feature.IconMenuAPI as IconMenuAPI
-import Feature.Search as Search
-import Feature.SearchAPI as SearchAPI
+import IconMenu
+import IconMenuAPI
+import Search
+import SearchAPI
 
 import Html exposing (Html, Attribute, div, span, text, button, input, label, a)
 import Html.Attributes exposing (href, style, type_, name, checked, disabled)

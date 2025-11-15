@@ -11,9 +11,9 @@ import Storage as S
 import Toolbar
 import Utils as U
 -- feature modules
-import Feature.IconMenuAPI as IconMenuAPI
-import Feature.MouseAPI as MouseAPI
-import Feature.SearchAPI as SearchAPI
+import IconMenuAPI
+import MouseAPI
+import SearchAPI
 
 import Browser
 import Browser.Dom as Dom

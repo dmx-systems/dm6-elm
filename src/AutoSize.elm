@@ -6,7 +6,7 @@ import Model exposing (..)
 import ModelAPI as A
 import Utils as U
 -- feature modules
-import Feature.Mouse exposing (DragState(..), DragMode(..))
+import Mouse exposing (DragState(..), DragMode(..))
 
 import Dict
 

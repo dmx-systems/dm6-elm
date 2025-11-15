@@ -1,4 +1,4 @@
-module Feature.MouseAPI exposing (hoverHandler, subs, update)
+module MouseAPI exposing (hoverHandler, subs, update)
 
 import AppModel exposing (..)
 import AutoSize as Size
@@ -8,9 +8,9 @@ import ModelAPI as A
 import Storage as S
 import Utils as U
 -- feature modules
-import Feature.Mouse as Mouse exposing (DragState(..), DragMode(..))
-import Feature.SearchAPI as SearchAPI
-import Feature.IconMenuAPI as IconMenuAPI
+import Mouse exposing (DragState(..), DragMode(..))
+import SearchAPI
+import IconMenuAPI
 
 import Browser.Events as Events
 import Html exposing (Attribute)

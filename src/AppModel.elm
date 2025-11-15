@@ -3,9 +3,9 @@ module AppModel exposing (..)
 import Config as C
 import Model exposing (..)
 -- feature modules
-import Feature.IconMenu as IconMenu
-import Feature.Mouse as Mouse
-import Feature.Search as Search
+import IconMenu
+import Mouse
+import Search
 
 import Dict
 import Set
