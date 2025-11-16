@@ -1,10 +1,10 @@
 module SearchAPI exposing (viewInput, viewMenu, closeMenu, update)
 
-import AppModel exposing (..)
 import AutoSize as Size
 import Config as C
-import Model exposing (..)
+import Model exposing (Model, UndoModel, Msg(..))
 import ModelAPI as A
+import ModelHelper exposing (..)
 import Storage as S
 import Utils as U
 -- feature modules

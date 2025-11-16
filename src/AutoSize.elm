@@ -1,9 +1,9 @@
 module AutoSize exposing (auto)
 
-import AppModel exposing (..)
 import Config as C
-import Model exposing (..)
+import Model exposing (Model)
 import ModelAPI as A
+import ModelHelper exposing (..)
 import Utils as U
 -- feature modules
 import Mouse exposing (DragState(..), DragMode(..))

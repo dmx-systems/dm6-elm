@@ -1,7 +1,7 @@
 port module Storage exposing (store, storeWith, modelDecoder, importJSON, exportJSON)
 
-import AppModel exposing (..)
-import Model exposing (..)
+import Model exposing (Model, Msg)
+import ModelHelper exposing (..)
 
 import Dict exposing (Dict)
 import Json.Decode as D
@@ -148,13 +148,13 @@ modelDecoder =
     |> required "boxPath" (D.list D.int)
     |> required "nextId" D.int
     ----- transient -----
-    |> hardcoded default.selection
-    |> hardcoded default.editState
-    |> hardcoded default.measureText
+    |> hardcoded Model.init.selection
+    |> hardcoded Model.init.editState
+    |> hardcoded Model.init.measureText
     -- feature modules
-    |> hardcoded default.mouse
-    |> hardcoded default.search
-    |> hardcoded default.iconMenu
+    |> hardcoded Model.init.mouse
+    |> hardcoded Model.init.search
+    |> hardcoded Model.init.iconMenu
 
 
 itemDecoder : D.Decoder Item

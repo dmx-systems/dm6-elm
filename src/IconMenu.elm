@@ -1,6 +1,6 @@
 module IconMenu exposing (..)
 
-import Model exposing (IconName)
+import ModelHelper exposing (IconName)
 
 
 

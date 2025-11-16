@@ -21,7 +21,7 @@
     * Auto-size container on delete-topic
     * Toolbar radio buttons don't fire twice
 * Code/Build:
-    * Modularization: "components" with state and messages
+    * Modularization: feature modules with state and messages
     * `build-dev`/`build-prod` scripts (swap logger)
 
 **0.1** -- Aug 6, 2025

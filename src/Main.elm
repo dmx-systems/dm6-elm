@@ -1,12 +1,12 @@
 module Main exposing (..)
 
-import AppModel exposing (..)
 import AutoSize as Size
 import Boxing as B
 import Config as C
 import MapRenderer as Map
-import Model exposing (..)
+import Model exposing (Model, UndoModel, Msg(..))
 import ModelAPI as A
+import ModelHelper exposing (..)
 import Storage as S
 import Toolbar
 import Utils as U
@@ -52,7 +52,7 @@ initModel flags =
       let
         _ = U.info "init" "localStorage: empty"
       in
-      default
+      Model.init
     _ ->
       case flags |> D.decodeValue S.modelDecoder of
         Ok model ->
@@ -65,7 +65,7 @@ initModel flags =
           let
             _ = U.logError "init" "localStorage" e
           in
-          default
+          Model.init
 
 
 
@@ -427,7 +427,7 @@ undo : UndoModel -> (UndoModel, Cmd Msg)
 undo undoModel =
   let
     newUndoModel = UndoList.undo undoModel
-    newModel = resetTransientState newUndoModel.present
+    newModel = Model.initTransient newUndoModel.present
   in
   newModel
   |> S.store
@@ -438,7 +438,7 @@ redo : UndoModel -> (UndoModel, Cmd Msg)
 redo undoModel =
   let
     newUndoModel = UndoList.redo undoModel
-    newModel = resetTransientState newUndoModel.present
+    newModel = Model.initTransient newUndoModel.present
   in
   newModel
   |> S.store

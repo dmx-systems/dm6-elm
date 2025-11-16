@@ -1,145 +1,84 @@
 module Model exposing (..)
 
-import Dict exposing (Dict)
-import Set exposing (Set)
+import Config as C
+import ModelHelper exposing (..)
+-- feature modules
+import IconMenu
+import Mouse
+import Search
+
+import Dict
+import Set
+import UndoList exposing (UndoList)
 
 
 
-type alias Items = Dict Id Item
+type alias UndoModel = UndoList Model
 
 
-type alias Item =
-  { id : Id
-  , info : ItemInfo
-  , assocIds : AssocIds
+type alias Model =
+  { items : Items
+  , boxes : Boxes
+  , boxPath : BoxPath
+  , nextId : Id
+  ----- transient -----
+  , selection : Selection
+  , editState : EditState
+  , measureText : String
+  -- feature modules
+  , mouse : Mouse.Model
+  , search : Search.Model
+  , iconMenu : IconMenu.Model
   }
 
 
-type ItemInfo
-  = Topic TopicInfo
-  | Assoc AssocInfo
-
-
-type alias TopicInfo =
-  { id : Id
-  , text : String
-  , iconName : Maybe IconName -- serialzed as "icon"
+init : Model
+init =
+  { items = Dict.singleton 0 <| Item 0 (Topic (TopicInfo 0 C.rootBoxName Nothing)) Set.empty
+  , boxes = Dict.singleton 0 -- box 0 is the "root box"
+    <| Box 0 (Rectangle 0 0 0 0) Dict.empty
+  , boxPath = [0]
+  , nextId = 1
+  ----- transient -----
+  , selection = []
+  , editState = NoEdit
+  , measureText = ""
+  -- feature modules
+  , mouse = Mouse.init
+  , search = Search.init
+  , iconMenu = IconMenu.init
   }
 
 
-type alias AssocInfo =
-  { id : Id
-  , itemType : ItemType -- serialized as "type", field can't be named "type", a reserved word
-  , role1 : RoleType
-  , player1 : Id
-  , role2 : RoleType
-  , player2 : Id
+initTransient : Model -> Model
+initTransient model =
+  { model
+  ----- transient -----
+  | selection = init.selection
+  , editState = init.editState
+  , measureText = init.measureText
+  -- feature modules
+  , mouse = init.mouse
+  , search = init.search
+  , iconMenu = init.iconMenu
   }
 
 
-type alias BoxPath = List BoxId
-
-
-type alias Boxes = Dict Id Box
-
-
-type alias Box =
-  { id : BoxId
-  , rect : Rectangle
-  , items : BoxItems
-  }
-
-
-type alias BoxItems = Dict Id BoxItem
-
-
-type alias BoxItem =
-  { id : Id
-  , parentAssocId : Id -- TODO: drop it? Compute from Item's "assocIds" field instead?
-  , hidden : Bool -- TODO: replace hidden/pinned by custom type: Hidden/Visible/Pinned?
-  , pinned : Bool
-  , props : ViewProps
-  }
-
-
-type ViewProps
-  = TopicV TopicProps
-  | AssocV AssocProps
-
-
-type alias TopicProps =
-  { pos : Point
-  , size : Size -- TODO: really per-box?
-  , displayMode : DisplayMode -- serialized as "display", TODO: rename to "display"?
-  }
-
-
-type alias AssocProps =
-  {}
-
-
-type DisplayMode
-  = TopicD TopicDisplay
-  | BoxD BoxDisplay
-
-
-type TopicDisplay
-  = LabelOnly
-  | Detail
-
-
-type BoxDisplay
-  = BlackBox
-  | WhiteBox
-  | Unboxed
-
-
-type alias Point =
-  { x : Float
-  , y : Float
-  }
-
-
-type alias Rectangle =
-  { x1 : Float
-  , y1 : Float
-  , x2 : Float
-  , y2 : Float
-  }
-
-
-type alias Size =
-  { w : Float
-  , h : Float
-  }
-
-
-type alias Selection = List (Id, BoxPath) -- TODO: make it a Set?
-
-
-type alias Id = Int
-type alias BoxId = Id
-type alias AssocIds = Set Id
-type alias Class = String -- a CSS class, e.g. "dmx-topic"
-type alias ItemType = String -- a type URI, e.g. "dmx.association"
-type alias RoleType = String -- a role type URI, e.g. "dmx.default"
-type alias Delta = Point
-type alias IconName = String -- name of feather icon, https://feathericons.com
-
-
-type EditState
-  = ItemEdit Id BoxId
-  | NoEdit
-
-
-type EditMsg
-  = EditStart
-  | OnTextInput String
-  | OnTextareaInput String
-  | SetTopicSize Id BoxId Size
-  | EditEnd
-
-
-type NavMsg
-  = Fullscreen
-  | Back
+type Msg
+  = AddTopic
+  | AddBox
+  | MoveTopicToBox Id BoxId Point Id BoxPath Point -- start point, random point (for target)
+  | SwitchDisplay DisplayMode
+  | Edit EditMsg
+  | Nav NavMsg
+  | Hide
+  | Delete
+  | Undo
+  | Redo
+  | Import
+  | Export
+  | NoOp
+  -- feature modules
+  | Mouse Mouse.Msg
+  | Search Search.Msg
+  | IconMenu IconMenu.Msg

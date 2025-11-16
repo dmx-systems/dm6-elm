@@ -1,9 +1,9 @@
 module Toolbar exposing (view)
 
-import AppModel exposing (..)
 import Config as C
-import Model exposing (..)
+import Model exposing (Model, UndoModel, Msg(..))
 import ModelAPI as A
+import ModelHelper exposing (..)
 import Utils as U
 -- feature modules
 import IconMenu

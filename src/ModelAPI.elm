@@ -1,8 +1,8 @@
 module ModelAPI exposing (..)
 
-import AppModel exposing (..)
 import Config as C
-import Model exposing (..)
+import Model exposing (Model, UndoModel, Msg)
+import ModelHelper exposing (..)
 import Utils as U
 
 import Dict

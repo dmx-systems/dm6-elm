@@ -1,6 +1,6 @@
 module Search exposing (..)
 
-import Model exposing (Id)
+import ModelHelper exposing (Id)
 
 
 
