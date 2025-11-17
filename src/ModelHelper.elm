@@ -127,19 +127,6 @@ type alias Delta = Point
 type alias IconName = String -- name of feather icon, https://feathericons.com
 
 
-type EditState
-  = ItemEdit Id BoxId
-  | NoEdit
-
-
-type EditMsg
-  = EditStart
-  | OnTextInput String
-  | OnTextareaInput String
-  | SetTopicSize Id BoxId Size
-  | EditEnd
-
-
 type NavMsg
   = Fullscreen
   | Back

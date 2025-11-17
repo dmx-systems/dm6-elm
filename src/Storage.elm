@@ -149,9 +149,8 @@ modelDecoder =
     |> required "nextId" D.int
     ----- transient -----
     |> hardcoded Model.init.selection
-    |> hardcoded Model.init.editState
-    |> hardcoded Model.init.measureText
     -- feature modules
+    |> hardcoded Model.init.edit
     |> hardcoded Model.init.mouse
     |> hardcoded Model.init.search
     |> hardcoded Model.init.iconMenu

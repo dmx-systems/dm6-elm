@@ -7,6 +7,7 @@ import ModelHelper exposing (..)
 import Utils as U
 -- feature modules
 import Mouse exposing (DragState(..), DragMode(..))
+import TextEdit exposing (EditState(..))
 
 import Dict
 
@@ -134,7 +135,7 @@ detailTopicExtent : Id -> BoxId -> Point -> Size -> Rectangle -> Model -> Rectan
 detailTopicExtent topicId boxId pos size rectAcc model =
   let
     textWidth =
-      if model.editState == ItemEdit topicId boxId then
+      if model.edit.state == ItemEdit topicId boxId then
         C.topicDetailMaxWidth
       else
         size.w

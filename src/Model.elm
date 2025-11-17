@@ -6,6 +6,7 @@ import ModelHelper exposing (..)
 import IconMenu
 import Mouse
 import Search
+import TextEdit
 
 import Dict
 import Set
@@ -23,9 +24,8 @@ type alias Model =
   , nextId : Id
   ----- transient -----
   , selection : Selection
-  , editState : EditState
-  , measureText : String
   -- feature modules
+  , edit : TextEdit.Model
   , mouse : Mouse.Model
   , search : Search.Model
   , iconMenu : IconMenu.Model
@@ -41,9 +41,8 @@ init =
   , nextId = 1
   ----- transient -----
   , selection = []
-  , editState = NoEdit
-  , measureText = ""
   -- feature modules
+  , edit = TextEdit.init
   , mouse = Mouse.init
   , search = Search.init
   , iconMenu = IconMenu.init
@@ -55,9 +54,8 @@ initTransient model =
   { model
   ----- transient -----
   | selection = init.selection
-  , editState = init.editState
-  , measureText = init.measureText
   -- feature modules
+  , edit = init.edit
   , mouse = init.mouse
   , search = init.search
   , iconMenu = init.iconMenu
@@ -69,7 +67,6 @@ type Msg
   | AddBox
   | MoveTopicToBox Id BoxId Point Id BoxPath Point -- start point, random point (for target)
   | SwitchDisplay DisplayMode
-  | Edit EditMsg
   | Nav NavMsg
   | Hide
   | Delete
@@ -79,6 +76,7 @@ type Msg
   | Export
   | NoOp
   -- feature modules
+  | Edit TextEdit.Msg
   | Mouse Mouse.Msg
   | Search Search.Msg
   | IconMenu IconMenu.Msg

@@ -14,6 +14,7 @@ import Utils as U
 import IconMenuAPI
 import MouseAPI
 import SearchAPI
+import TextEditAPI
 
 import Browser
 import Browser.Dom as Dom
@@ -22,7 +23,6 @@ import Html.Attributes exposing (id, style)
 import Json.Decode as D
 import Json.Encode as E
 import String exposing (fromInt, fromFloat)
-import Task
 import UndoList
 
 
@@ -90,7 +90,7 @@ view ({present} as undoModel) =
       ( [ id "measure" ]
         ++ measureStyle
       )
-      [ text present.measureText
+      [ text present.edit.measureText
       , br [] []
       ]
     ]
@@ -142,10 +142,6 @@ update msg ({present} as undoModel) =
       |> S.store |> A.push undoModel
     SwitchDisplay displayMode -> switchDisplay displayMode present
       |> S.store |> A.swap undoModel
-    Search searchMsg -> SearchAPI.update searchMsg undoModel
-    Edit editMsg -> updateEdit editMsg undoModel
-    IconMenu iconMenuMsg -> IconMenuAPI.update iconMenuMsg undoModel
-    Mouse mouseMsg -> MouseAPI.update mouseMsg undoModel
     Nav navMsg -> updateNav navMsg present |> S.store |> A.reset
     Hide -> hide present |> S.store |> A.push undoModel
     Delete -> delete present |> S.store |> A.push undoModel
@@ -154,6 +150,11 @@ update msg ({present} as undoModel) =
     Import -> (present, S.importJSON ()) |> A.swap undoModel
     Export -> (present, S.exportJSON ()) |> A.swap undoModel
     NoOp -> (present, Cmd.none) |> A.swap undoModel
+    -- feature modules
+    Edit editMsg -> TextEditAPI.update editMsg undoModel
+    Mouse mouseMsg -> MouseAPI.update mouseMsg undoModel
+    Search searchMsg -> SearchAPI.update searchMsg undoModel
+    IconMenu iconMenuMsg -> IconMenuAPI.update iconMenuMsg undoModel
 
 
 addTopic : Model -> Model
@@ -241,110 +242,6 @@ switchDisplay displayMode model =
   )
   |> Size.auto
 
-
--- Text Edit
-
-updateEdit : EditMsg -> UndoModel -> (UndoModel, Cmd Msg)
-updateEdit msg ({present} as undoModel) =
-  case msg of
-    EditStart -> startEdit present |> A.push undoModel
-    OnTextInput text -> onTextInput text present |> S.store |> A.swap undoModel
-    OnTextareaInput text -> onTextareaInput text present |> S.storeWith |> A.swap undoModel
-    SetTopicSize topicId boxId size ->
-      ( present
-        |> A.setTopicSize topicId boxId size
-        |> Size.auto
-      , Cmd.none
-      )
-      |> A.swap undoModel
-    EditEnd ->
-      (endEdit present, Cmd.none)
-      |> A.swap undoModel
-
-
-startEdit : Model -> (Model, Cmd Msg)
-startEdit model =
-  let
-    newModel = case A.singleSelection model of
-      Just (topicId, boxPath) ->
-        { model | editState = ItemEdit topicId (A.firstId boxPath) }
-        |> setDetailDisplayIfMonade topicId (A.firstId boxPath)
-        |> Size.auto
-      Nothing -> model
-  in
-  (newModel, focus newModel)
-
-
-setDetailDisplayIfMonade : Id -> BoxId -> Model -> Model
-setDetailDisplayIfMonade topicId boxId model =
-  model |> A.updateTopicProps topicId boxId
-    (\props ->
-      case props.displayMode of
-        TopicD _ -> { props | displayMode = TopicD Detail }
-        _ -> props
-    )
-
-
-onTextInput : String -> Model -> Model
-onTextInput text model =
-  case model.editState of
-    ItemEdit topicId _ ->
-      A.updateTopicInfo topicId
-        (\topic -> { topic | text = text })
-        model
-    NoEdit -> U.logError "onTextInput" "called when editState is NoEdit" model
-
-
-onTextareaInput : String -> Model -> (Model, Cmd Msg)
-onTextareaInput text model =
-  case model.editState of
-    ItemEdit topicId boxId ->
-      A.updateTopicInfo topicId
-        (\topic -> { topic | text = text })
-        model
-      |> measureText text topicId boxId
-    NoEdit -> U.logError "onTextareaInput" "called when editState is NoEdit" (model, Cmd.none)
-
-
-measureText : String -> Id -> BoxId -> Model -> (Model, Cmd Msg)
-measureText text topicId boxId model =
-  ( { model | measureText = text }
-  , Dom.getElement "measure"
-    |> Task.attempt
-      (\result ->
-        case result of
-          Ok elem -> Edit
-            (SetTopicSize topicId boxId
-              (Size elem.element.width elem.element.height)
-            )
-          Err err -> U.logError "measureText" (U.toString err) NoOp
-      )
-  )
-
-
-endEdit : Model -> Model
-endEdit model =
-  { model | editState = NoEdit }
-  |> Size.auto
-
-
-focus : Model -> Cmd Msg
-focus model =
-  let
-    nodeId =
-      case model.editState of
-        ItemEdit id boxId -> "dmx-input-" ++ fromInt id ++ "-" ++ fromInt boxId
-        NoEdit -> U.logError "focus" "called when editState is NoEdit" ""
-  in
-  Dom.focus nodeId |> Task.attempt
-    (\result ->
-      case result of
-        Ok () -> NoOp
-        Err e -> U.logError "focus" (U.toString e) NoOp
-    )
-
-
---
 
 updateNav : NavMsg -> Model -> Model
 updateNav navMsg model =

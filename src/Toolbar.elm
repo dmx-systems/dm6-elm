@@ -10,6 +10,7 @@ import IconMenu
 import IconMenuAPI
 import Search
 import SearchAPI
+import TextEdit as T
 
 import Html exposing (Html, Attribute, div, span, text, button, input, label, a)
 import Html.Attributes exposing (href, style, type_, name, checked, disabled)
@@ -35,7 +36,7 @@ view ({present} as undoModel) =
       ]
     , div
       []
-      [ viewToolbarButton "Edit" (Edit EditStart) hasSelection undoModel
+      [ viewToolbarButton "Edit" (Edit T.EditStart) hasSelection undoModel
       , viewToolbarButton "Set Icon" (IconMenu IconMenu.Open) hasSelection undoModel
       ]
     , viewToolbarButton "Traverse" (Search Search.ShowRelated) hasSelection undoModel

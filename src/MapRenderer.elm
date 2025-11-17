@@ -9,6 +9,7 @@ import Utils as U
 import IconMenuAPI
 import Mouse exposing (DragState(..), DragMode(..))
 import Search exposing (Menu(..))
+import TextEdit as T exposing (EditState(..))
 
 import Dict
 import Html exposing (Html, Attribute, div, text, input, textarea)
@@ -261,15 +262,15 @@ labelTopic topic props boxPath model =
 labelTopicHtml : TopicInfo -> TopicProps -> BoxId -> Model -> List (Html Msg)
 labelTopicHtml topic props boxId model =
   let
-    isEdit = model.editState == ItemEdit topic.id boxId
+    isEdit = model.edit.state == ItemEdit topic.id boxId
     textElem =
       if isEdit then
         input
           ( [ id <| "dmx-input-" ++ fromInt topic.id ++ "-" ++ fromInt boxId
             , value topic.text
-            , onInput (Edit << OnTextInput)
-            , onBlur (Edit EditEnd)
-            , U.onEnterOrEsc (Edit EditEnd)
+            , onInput (Edit << T.OnTextInput)
+            , onBlur (Edit T.EditEnd)
+            , U.onEnterOrEsc (Edit T.EditEnd)
             , U.stopPropagationOnMousedown NoOp
             ]
             ++ topicInputStyle
@@ -291,14 +292,14 @@ detailTopic : TopicInfo -> TopicProps -> BoxPath -> Model -> TopicRendering
 detailTopic topic props boxPath model =
   let
     boxId = A.firstId boxPath
-    isEdit = model.editState == ItemEdit topic.id boxId
+    isEdit = model.edit.state == ItemEdit topic.id boxId
     textElem =
       if isEdit then
         textarea
           ( [ id <| "dmx-input-" ++ fromInt topic.id ++ "-" ++ fromInt boxId
-            , onInput (Edit << OnTextareaInput)
-            , onBlur (Edit EditEnd)
-            , U.onEsc (Edit EditEnd)
+            , onInput (Edit << T.OnTextareaInput)
+            , onBlur (Edit T.EditEnd)
+            , U.onEsc (Edit T.EditEnd)
             , U.stopPropagationOnMousedown NoOp
             ]
             ++ detailTextStyle topic.id boxId model
