@@ -5,13 +5,10 @@ import Config as C
 import Model exposing (Model, UndoModel, Msg(..))
 import ModelAPI as A
 import ModelHelper exposing (..)
-import Storage as S
 import Utils as U
 -- feature modules
 import Mouse exposing (DragState(..), DragMode(..))
-import SearchAPI
 import SelectionAPI as Sel
-import IconMenuAPI
 
 import Browser.Events as Events
 import Html exposing (Attribute)
@@ -41,11 +38,11 @@ hoverHandler =
 update : Mouse.Msg -> UndoModel -> (UndoModel, Cmd Msg)
 update msg ({present} as undoModel) =
   case msg of
-    Mouse.Down -> (mouseDown present, Cmd.none) |> A.swap undoModel
+    Mouse.Down -> (present, command NoOpMouse) |> A.swap undoModel
     Mouse.DownOnItem class id boxPath pos -> mouseDownOnItem class id boxPath pos present
       |> A.swap undoModel
     Mouse.Move pos -> mouseMove pos present |> A.swap undoModel
-    Mouse.Up -> mouseUp undoModel
+    Mouse.Up -> mouseUp present |> A.swap undoModel
     Mouse.Over class id boxPath -> (mouseOver class id boxPath present, Cmd.none)
       |> A.swap undoModel
     Mouse.Out class id boxPath -> (mouseOut class id boxPath present, Cmd.none)
@@ -53,17 +50,9 @@ update msg ({present} as undoModel) =
     Mouse.Time time -> timeArrived time undoModel
 
 
-mouseDown : Model -> Model
-mouseDown model =
-  model
-  |> Sel.reset
-  |> IconMenuAPI.close
-  |> SearchAPI.closeMenu
-
-
 mouseDownOnItem : Class -> Id -> BoxPath -> Point -> Model -> (Model, Cmd Msg)
 mouseDownOnItem class id boxPath pos model =
-  (updateDragState (WaitForStartTime class id boxPath pos) model
+  (setDragState (WaitForStartTime class id boxPath pos) model
     |> Sel.select id boxPath
   , Task.perform (Mouse << Mouse.Time) Time.now
   )
@@ -76,12 +65,15 @@ timeArrived time ({present} as undoModel) =
       let
         dragState = DragEngaged time class id boxPath pos
       in
-      (updateDragState dragState present, Cmd.none)
+      (setDragState dragState present, Cmd.none)
       |> A.swap undoModel
     WaitForEndTime startTime class id boxPath pos ->
       let
         delay = posixToMillis time - posixToMillis startTime > C.assocDelayMillis
-        (dragMode, historyFunc) = if delay then (DraftAssoc, A.swap) else (DragTopic, A.push)
+        (dragMode, historyFunc) =
+          case delay of
+            True -> (DraftAssoc, A.swap)
+            False -> (DragTopic, A.push)
         maybeOrigPos = A.topicPos id (A.firstId boxPath) present.boxes
         dragState =
           case class of
@@ -91,7 +83,7 @@ timeArrived time ({present} as undoModel) =
                 Nothing -> NoDrag -- error is already logged
             _ -> NoDrag -- the error will be logged in performDrag
       in
-      (updateDragState dragState present, Cmd.none)
+      (setDragState dragState present, Cmd.none)
       |> historyFunc undoModel
     _ ->
       U.logError "timeArrived" "Received \"Time\" message when dragState is not WaitForTime"
@@ -102,7 +94,7 @@ mouseMove : Point -> Model -> (Model, Cmd Msg)
 mouseMove pos model =
   case model.mouse.dragState of
     DragEngaged time class id boxPath pos_ ->
-      ( updateDragState (WaitForEndTime time class id boxPath pos_) model
+      ( setDragState (WaitForEndTime time class id boxPath pos_) model
       , Task.perform (Mouse << Mouse.Time) Time.now
       )
     WaitForEndTime _ _ _ _ _ ->
@@ -129,18 +121,18 @@ performDrag pos model =
             DraftAssoc -> model
       in
       -- update lastPos
-      updateDragState (Drag dragMode id boxPath origPos pos target) newModel
+      setDragState (Drag dragMode id boxPath origPos pos target) newModel
       |> Size.auto
     _ -> U.logError "performDrag"
       ("Received \"Move\" message when dragState is " ++ U.toString model.mouse.dragState)
       model
 
 
-mouseUp : UndoModel -> (UndoModel, Cmd Msg)
-mouseUp ({present} as undoModel) =
+mouseUp : Model -> (Model, Cmd Msg)
+mouseUp model =
   let
-    (model, cmd, historyFunc) =
-      case present.mouse.dragState of
+    cmd =
+      case model.mouse.dragState of
         Drag DragTopic id boxPath origPos _ (Just (targetId, targetBoxPath)) ->
           let
             _ = U.info "mouseUp" ("dropped " ++ fromInt id ++ " (box " ++ A.fromPath boxPath
@@ -151,9 +143,9 @@ mouseUp ({present} as undoModel) =
             msg = MoveTopicToBox id boxId origPos targetId targetBoxPath
           in
           if notDroppedOnOwnBox then
-            (present, Random.generate msg point, A.swap)
+            Random.generate msg point
           else
-            (present, Cmd.none, A.swap)
+            Cmd.none
         Drag DraftAssoc id boxPath _ _ (Just (targetId, targetBoxPath)) ->
           let
             _ = U.info "mouseUp" ("assoc drawn from " ++ fromInt id ++ " (box " ++ A.fromPath
@@ -163,27 +155,25 @@ mouseUp ({present} as undoModel) =
             isSameBox = boxId == A.firstId targetBoxPath
           in
           if isSameBox then
-            (addDefaultAssocAndAddToBox id targetId boxId present, Cmd.none, A.push)
+            command <| AddAssoc id targetId boxId
           else
-            (present, Cmd.none, A.swap)
+            Cmd.none
         Drag _ _ _ _ _ _ ->
           let
             _ = U.info "mouseUp" "drag ended w/o target"
           in
-          (present, Cmd.none, A.swap)
+          Cmd.none
         DragEngaged _ _ _ _ _ ->
           let
             _ = U.info "mouseUp" "drag aborted w/o moving"
           in
-          (present, Cmd.none, A.swap)
+          Cmd.none
         _ ->
           U.logError "mouseUp"
-            ("Received \"Up\" message when dragState is " ++ U.toString present.mouse.dragState)
-            (present, Cmd.none, A.swap)
+            ("Received \"Up\" message when dragState is " ++ U.toString model.mouse.dragState)
+            Cmd.none
   in
-  (updateDragState NoDrag model, cmd)
-  |> S.storeWith
-  |> historyFunc undoModel
+  (setDragState NoDrag model, cmd)
 
 
 point : Random.Generator Point
@@ -217,7 +207,7 @@ mouseOver class targetId targetBoxPath model =
             Nothing
       in
       -- update target
-      updateDragState (Drag dragMode id boxPath origPos lastPos target) model
+      setDragState (Drag dragMode id boxPath origPos lastPos target) model
     DragEngaged _ _ _ _ _ ->
       U.logError "mouseOver" "Received \"Over\" message when dragState is DragEngaged" model
     _ -> model
@@ -228,33 +218,18 @@ mouseOut class targetId targetBoxPath model =
   case model.mouse.dragState of
     Drag dragMode id boxPath origPos lastPos _ ->
       -- reset target
-      updateDragState (Drag dragMode id boxPath origPos lastPos Nothing) model
+      setDragState (Drag dragMode id boxPath origPos lastPos Nothing) model
     _ -> model
 
 
-updateDragState : DragState -> Model -> Model
-updateDragState dragState ({mouse} as model) =
+setDragState : DragState -> Model -> Model
+setDragState dragState ({mouse} as model) =
   { model | mouse = { mouse | dragState = dragState }}
 
 
--- Presumption: both players exist in same box
-addDefaultAssocAndAddToBox : Id -> Id -> BoxId -> Model -> Model
-addDefaultAssocAndAddToBox player1 player2 boxId model =
-  addAssocAndAddToBox
-    "dmx.association"
-    "dmx.default" player1
-    "dmx.default" player2
-    boxId model
-
-
--- Presumption: both players exist in same box
-addAssocAndAddToBox : ItemType -> RoleType -> Id -> RoleType -> Id -> BoxId -> Model -> Model
-addAssocAndAddToBox itemType role1 player1 role2 player2 boxId model =
-  let
-    (newModel, assocId) = A.addAssoc itemType role1 player1 role2 player2 model
-    props = AssocV AssocProps
-  in
-  A.addItemToBox assocId props boxId newModel
+command : Msg -> Cmd Msg
+command msg =
+  Task.succeed () |> Task.perform (\_ -> msg)
 
 
 

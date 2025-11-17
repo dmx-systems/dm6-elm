@@ -137,6 +137,8 @@ update msg ({present} as undoModel) =
   case msg of
     AddTopic -> addTopic present |> S.store |> A.push undoModel
     AddBox -> addBox present |> S.store |> A.push undoModel
+    AddAssoc player1 player2 boxId -> addAssoc player1 player2 boxId present
+      |> S.store |> A.push undoModel
     MoveTopicToBox topicId boxId origPos targetId targetBoxPath pos
       -> moveTopicToBox topicId boxId origPos targetId targetBoxPath pos present
       |> S.store |> A.push undoModel
@@ -150,6 +152,7 @@ update msg ({present} as undoModel) =
     Import -> (present, S.importJSON ()) |> A.swap undoModel
     Export -> (present, S.exportJSON ()) |> A.swap undoModel
     NoOp -> (present, Cmd.none) |> A.swap undoModel
+    NoOpMouse -> (resetUI present, Cmd.none) |> A.swap undoModel
     -- feature modules
     Edit editMsg -> TextEditAPI.update editMsg undoModel
     Mouse mouseMsg -> MouseAPI.update mouseMsg undoModel
@@ -203,6 +206,26 @@ addBox model =
       |> A.addItemToBox topicId props boxId
       |> Sel.select topicId [ boxId ]
     Nothing -> model
+
+
+-- Presumption: both players exist in same box
+addAssoc : Id -> Id -> BoxId -> Model -> Model
+addAssoc player1 player2 boxId model =
+  addAssocAndAddToBox
+    "dmx.association"
+    "dmx.default" player1
+    "dmx.default" player2
+    boxId model
+
+
+-- Presumption: both players exist in same box
+addAssocAndAddToBox : ItemType -> RoleType -> Id -> RoleType -> Id -> BoxId -> Model -> Model
+addAssocAndAddToBox itemType role1 player1 role2 player2 boxId model =
+  let
+    (newModel, assocId) = A.addAssoc itemType role1 player1 role2 player2 model
+    props = AssocV AssocProps
+  in
+  A.addItemToBox assocId props boxId newModel
 
 
 moveTopicToBox : Id -> BoxId -> Point -> Id -> BoxPath -> Point -> Model -> Model
@@ -341,3 +364,13 @@ redo undoModel =
   newModel
   |> S.store
   |> A.swap newUndoModel
+
+
+--
+
+resetUI : Model -> Model
+resetUI model =
+  model
+  |> Sel.reset
+  |> IconMenuAPI.close
+  |> SearchAPI.closeMenu
