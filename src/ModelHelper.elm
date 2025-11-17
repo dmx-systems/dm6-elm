@@ -114,9 +114,6 @@ type alias Size =
   }
 
 
-type alias Selection = List (Id, BoxPath) -- TODO: make it a Set?
-
-
 type alias Id = Int
 type alias BoxId = Id
 type alias AssocIds = Set Id

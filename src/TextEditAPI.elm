@@ -8,6 +8,7 @@ import Storage as S
 import Task
 import Utils as U
 -- feature modules
+import SelectionAPI as Sel
 import TextEdit as T exposing (EditState(..))
 
 import Browser.Dom as Dom
@@ -39,7 +40,7 @@ update msg ({present} as undoModel) =
 startEdit : Model -> (Model, Cmd Msg)
 startEdit model =
   let
-    newModel = case A.singleSelection model of
+    newModel = case Sel.single model of
       Just (topicId, boxPath) ->
         model
         |> setEditState (ItemEdit topicId (A.firstId boxPath))
@@ -89,9 +90,9 @@ measureText text topicId boxId model =
     |> Task.attempt
       (\result ->
         case result of
-          Ok elem -> Edit
+          Ok {element} -> Edit
             (T.SetTopicSize topicId boxId
-              (Size elem.element.width elem.element.height)
+              (Size element.width element.height)
             )
           Err err -> U.logError "measureText" (U.toString err) NoOp
       )

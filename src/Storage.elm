@@ -148,12 +148,12 @@ modelDecoder =
     |> required "boxPath" (D.list D.int)
     |> required "nextId" D.int
     ----- transient -----
-    |> hardcoded Model.init.selection
     -- feature modules
     |> hardcoded Model.init.edit
     |> hardcoded Model.init.mouse
     |> hardcoded Model.init.search
     |> hardcoded Model.init.iconMenu
+    |> hardcoded Model.init.selection
 
 
 itemDecoder : D.Decoder Item

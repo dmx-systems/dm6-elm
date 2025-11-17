@@ -6,6 +6,7 @@ import ModelHelper exposing (..)
 import IconMenu
 import Mouse
 import Search
+import Selection
 import TextEdit
 
 import Dict
@@ -23,12 +24,12 @@ type alias Model =
   , boxPath : BoxPath
   , nextId : Id
   ----- transient -----
-  , selection : Selection
   -- feature modules
   , edit : TextEdit.Model
   , mouse : Mouse.Model
   , search : Search.Model
   , iconMenu : IconMenu.Model
+  , selection : Selection.Model
   }
 
 
@@ -40,12 +41,12 @@ init =
   , boxPath = [0]
   , nextId = 1
   ----- transient -----
-  , selection = []
   -- feature modules
   , edit = TextEdit.init
   , mouse = Mouse.init
   , search = Search.init
   , iconMenu = IconMenu.init
+  , selection = Selection.init
   }
 
 
@@ -53,12 +54,12 @@ initTransient : Model -> Model
 initTransient model =
   { model
   ----- transient -----
-  | selection = init.selection
   -- feature modules
-  , edit = init.edit
+  | edit = init.edit
   , mouse = init.mouse
   , search = init.search
   , iconMenu = init.iconMenu
+  , selection = init.selection
   }
 
 

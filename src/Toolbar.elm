@@ -10,6 +10,7 @@ import IconMenu
 import IconMenuAPI
 import Search
 import SearchAPI
+import SelectionAPI as Sel
 import TextEdit as T
 
 import Html exposing (Html, Attribute, div, span, text, button, input, label, a)
@@ -134,13 +135,13 @@ viewToolbarButton label msg isEnabled undoModel =
 {-| isEnabled predicate -}
 hasSelection : UndoModel -> Bool
 hasSelection undoModel =
-  not (undoModel.present.selection |> List.isEmpty)
+  not (undoModel.present.selection.items |> List.isEmpty)
 
 
 {-| isEnabled predicate -}
 hasBoxSelection : UndoModel -> Bool
 hasBoxSelection {present} =
-  case A.singleSelection present of
+  case Sel.single present of
     Just (id, _) -> A.isBox id present.boxes
     Nothing -> False
 
@@ -173,7 +174,7 @@ buttonStyle =
 viewMonadDisplay : Model -> Html Msg
 viewMonadDisplay model =
   let
-    display = case A.singleSelection model of
+    display = case Sel.single model of
       Just (topicId, boxPath) -> A.displayMode topicId (A.firstId boxPath) model.boxes
       Nothing -> Nothing
     (checked1, checked2, disabled_) =
@@ -195,7 +196,7 @@ viewMonadDisplay model =
 viewBoxDisplay : Model -> Html Msg
 viewBoxDisplay model =
   let
-    display = case A.singleSelection model of
+    display = case Sel.single model of
       Just (topicId, boxPath) -> A.displayMode topicId (A.firstId boxPath) model.boxes
       Nothing -> Nothing
     (checked1, checked2, checked3) =

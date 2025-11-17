@@ -8,6 +8,7 @@ import Storage as S
 import Utils as U
 -- feature modules
 import IconMenu
+import SelectionAPI as Sel
 
 import Dict
 import Html exposing (Html, Attribute, div, text, button)
@@ -148,7 +149,7 @@ close ({iconMenu} as model) =
 
 setIcon : Maybe IconName -> Model -> Model
 setIcon iconName model =
-  case A.singleSelection model of
+  case Sel.single model of
     Just (id, _) -> A.updateTopicInfo id
       (\topic -> { topic | iconName = iconName })
       model

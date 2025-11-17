@@ -14,10 +14,10 @@ import Utils as U
 import IconMenuAPI
 import MouseAPI
 import SearchAPI
+import SelectionAPI as Sel
 import TextEditAPI
 
 import Browser
-import Browser.Dom as Dom
 import Html exposing (Attribute, div, text, br)
 import Html.Attributes exposing (id, style)
 import Json.Decode as D
@@ -176,7 +176,7 @@ addTopic model =
       in
       newModel
       |> A.addItemToBox topicId props boxId
-      |> A.select topicId [ boxId ]
+      |> Sel.select topicId [ boxId ]
     Nothing -> model
 
 
@@ -201,7 +201,7 @@ addBox model =
       newModel
       |> A.addBox topicId
       |> A.addItemToBox topicId props boxId
-      |> A.select topicId [ boxId ]
+      |> Sel.select topicId [ boxId ]
     Nothing -> model
 
 
@@ -218,14 +218,14 @@ moveTopicToBox topicId boxId origPos targetId targetBoxPath pos model =
       |> A.hideItem topicId boxId
       |> A.setTopicPos topicId boxId origPos
       |> A.addItemToBox topicId props targetId
-      |> A.select targetId targetBoxPath
+      |> Sel.select targetId targetBoxPath
       |> Size.auto
     Nothing -> model
 
 
 switchDisplay : DisplayMode -> Model -> Model
 switchDisplay displayMode model =
-  ( case A.singleSelection model of
+  ( case Sel.single model of
     Just (boxId, boxPath) ->
       let
         targetBoxId = A.firstId boxPath
@@ -252,10 +252,10 @@ updateNav navMsg model =
 
 fullscreen : Model -> Model
 fullscreen model =
-  case A.singleSelection model of
+  case Sel.single model of
     Just (topicId, _) ->
       { model | boxPath = topicId :: model.boxPath }
-      |> A.resetSelection
+      |> Sel.reset
       |> adjustBoxRect topicId -1
     Nothing -> model
 
@@ -280,12 +280,13 @@ back model =
   |> Size.auto
 
 
+-- TODO
 adjustBoxRect : BoxId -> Float -> Model -> Model
 adjustBoxRect boxId factor model =
   model |> A.updateBoxRect boxId
     (\rect -> Rectangle
-      (rect.x1 + factor * 400) -- TODO
-      (rect.y1 + factor * 300) -- TODO
+      (rect.x1 + factor * C.nestedBoxOffset.x)
+      (rect.y1 + factor * C.nestedBoxOffset.y)
       rect.x2
       rect.y2
     )
@@ -294,27 +295,27 @@ adjustBoxRect boxId factor model =
 hide : Model -> Model
 hide model =
   let
-    newModel = model.selection
+    newModel = model.selection.items
       |> List.foldr
         (\(itemId, boxPath) modelAcc -> A.hideItem itemId (A.firstId boxPath) modelAcc)
         model
   in
   newModel
-  |> A.resetSelection
+  |> Sel.reset
   |> Size.auto
 
 
 delete : Model -> Model
 delete model =
   let
-    newModel = model.selection
+    newModel = model.selection.items
       |> List.map Tuple.first
       |> List.foldr
         (\itemId modelAcc -> A.removeItem itemId modelAcc)
         model
   in
   newModel
-  |> A.resetSelection
+  |> Sel.reset
   |> Size.auto
 
 

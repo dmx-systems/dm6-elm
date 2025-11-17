@@ -540,48 +540,6 @@ isVisible item =
   not item.hidden
 
 
--- Selection
-
-select : Id -> BoxPath -> Model -> Model
-select itemId boxPath model =
-  let
-    _ = U.info "select" (itemId, boxPath)
-  in
-  { model | selection = [ (itemId, boxPath) ] }
-
-
-resetSelection : Model -> Model
-resetSelection model =
-  { model | selection = [] }
-
-
-isSelected : Id -> BoxId -> Model -> Bool
-isSelected itemId boxId model =
-  model.selection |> List.any
-    (\(id, boxPath) ->
-      case boxPath of
-        boxId_ :: _ -> itemId == id && boxId == boxId_
-        [] -> False
-    )
-
-
-singleSelection : Model -> Maybe (Id, BoxPath)
-singleSelection model =
-  case model.selection of
-    [ selItem ] -> Just selItem
-    _ -> Nothing
-
-
-singleSelectionBoxId : Model -> Maybe BoxId
-singleSelectionBoxId model =
-  case singleSelection model of
-    Just (_, boxPath) ->
-      case boxPath of
-        boxId :: _ -> Just boxId
-        [] -> Nothing
-    Nothing -> Nothing
-
-
 -- Undo / Redo
 
 push : UndoModel -> (Model, Cmd Msg) -> (UndoModel, Cmd Msg)

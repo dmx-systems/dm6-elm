@@ -10,6 +10,7 @@ import Utils as U
 -- feature modules
 import Mouse exposing (DragState(..), DragMode(..))
 import SearchAPI
+import SelectionAPI as Sel
 import IconMenuAPI
 
 import Browser.Events as Events
@@ -55,7 +56,7 @@ update msg ({present} as undoModel) =
 mouseDown : Model -> Model
 mouseDown model =
   model
-  |> A.resetSelection
+  |> Sel.reset
   |> IconMenuAPI.close
   |> SearchAPI.closeMenu
 
@@ -63,7 +64,7 @@ mouseDown model =
 mouseDownOnItem : Class -> Id -> BoxPath -> Point -> Model -> (Model, Cmd Msg)
 mouseDownOnItem class id boxPath pos model =
   (updateDragState (WaitForStartTime class id boxPath pos) model
-    |> A.select id boxPath
+    |> Sel.select id boxPath
   , Task.perform (Mouse << Mouse.Time) Time.now
   )
 

@@ -9,6 +9,7 @@ import Utils as U
 import IconMenuAPI
 import Mouse exposing (DragState(..), DragMode(..))
 import Search exposing (Menu(..))
+import SelectionAPI as Sel
 import TextEdit as T exposing (EditState(..))
 
 import Dict
@@ -210,7 +211,7 @@ limboState model =
   case model.search.menu of
     Topics _ (Just topicId) -> Just (topicId, Nothing, A.activeBox model)
     RelTopics _ (Just (topicId, assocId)) ->
-      case A.singleSelectionBoxId model of
+      case Sel.singleBoxId model of
         Just boxId -> Just (topicId, Just assocId, boxId)
         Nothing -> Nothing
     _ -> Nothing
@@ -543,7 +544,7 @@ topicStyle id boxId model =
 
 selectionStyle : Id -> BoxId -> Model -> List (Attribute Msg)
 selectionStyle topicId boxId model =
-  case A.isSelected topicId boxId model of
+  case Sel.isSelected topicId boxId model of
     True -> [ style "box-shadow" "gray 5px 5px 5px" ]
     False -> []
 

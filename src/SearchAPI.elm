@@ -9,6 +9,7 @@ import Storage as S
 import Utils as U
 -- feature modules
 import Search exposing (Menu(..))
+import SelectionAPI as Sel
 
 import Dict
 import Html exposing (Html, Attribute, div, text, input)
@@ -130,7 +131,7 @@ revealBoxId model =
   case model.search.menu of
     Topics _ _ -> Just (A.activeBox model)
     RelTopics _ _ ->
-      case A.singleSelectionBoxId model of
+      case Sel.singleBoxId model of
         Just boxId -> Just boxId
         Nothing -> Nothing
     Closed -> Nothing
@@ -281,7 +282,7 @@ revealTopic topicId model =
 
 revealRelTopic : (Id, Id) -> Model -> Model
 revealRelTopic (topicId, assocId) model =
-  case A.singleSelectionBoxId model of
+  case Sel.singleBoxId model of
     Just boxId ->
       model
       |> revealItem topicId boxId
@@ -313,7 +314,7 @@ showRelatedTopics : Model -> Model
 showRelatedTopics ({search} as model) =
   let
     relTopicIds =
-      case A.singleSelection model of
+      case Sel.single model of
         Just (itemId, _) ->
           A.relatedItems itemId model
         Nothing -> [] -- TODO: log error
