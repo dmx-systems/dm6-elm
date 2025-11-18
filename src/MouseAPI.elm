@@ -38,7 +38,7 @@ hoverHandler =
 update : Mouse.Msg -> UndoModel -> (UndoModel, Cmd Msg)
 update msg ({present} as undoModel) =
   case msg of
-    Mouse.Down -> (present, command NoOpMouse) |> A.swap undoModel
+    Mouse.Down -> (present, command ClickedBackground) |> A.swap undoModel
     Mouse.DownOnItem class id boxPath pos -> mouseDownOnItem class id boxPath pos present
       |> A.swap undoModel
     Mouse.Move pos -> mouseMove pos present |> A.swap undoModel
@@ -137,15 +137,21 @@ mouseUp model =
           let
             _ = U.info "mouseUp" ("dropped " ++ fromInt id ++ " (box " ++ A.fromPath boxPath
               ++ ") on " ++ fromInt targetId ++ " (box " ++ A.fromPath targetBoxPath ++ ") --> "
-              ++ if notDroppedOnOwnBox then "move topic" else "abort")
+              ++ if not droppedOnSourceBox then "move topic" else "abort")
             boxId = A.firstId boxPath
-            notDroppedOnOwnBox = boxId /= targetId
+            -- Can this actually happen? Possibly an edge case when rendering lags behind mouse
+            -- move, so that mouse leaves topic and enters box (background). FIXME: store model
+            droppedOnSourceBox = boxId == targetId
             msg = MoveTopicToBox id boxId origPos targetId targetBoxPath
           in
-          if notDroppedOnOwnBox then
-            Random.generate msg point
-          else
-            Cmd.none
+          case not droppedOnSourceBox of
+            True -> Random.generate msg point
+            False -> Cmd.none
+        Drag DragTopic _ _ _ _ _ ->
+          let
+            _ = U.info "mouseUp" "drag ended w/o target"
+          in
+          command <| DraggedTopic
         Drag DraftAssoc id boxPath _ _ (Just (targetId, targetBoxPath)) ->
           let
             _ = U.info "mouseUp" ("assoc drawn from " ++ fromInt id ++ " (box " ++ A.fromPath
@@ -154,13 +160,12 @@ mouseUp model =
             boxId = A.firstId boxPath
             isSameBox = boxId == A.firstId targetBoxPath
           in
-          if isSameBox then
-            command <| AddAssoc id targetId boxId
-          else
-            Cmd.none
-        Drag _ _ _ _ _ _ ->
+          case isSameBox of
+            True -> command <| AddAssoc id targetId boxId
+            False -> Cmd.none
+        Drag DraftAssoc _ _ _ _ _ ->
           let
-            _ = U.info "mouseUp" "drag ended w/o target"
+            _ = U.info "mouseUp" "assoc ended w/o target"
           in
           Cmd.none
         DragEngaged _ _ _ _ _ ->

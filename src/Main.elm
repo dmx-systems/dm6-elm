@@ -142,6 +142,8 @@ update msg ({present} as undoModel) =
     MoveTopicToBox topicId boxId origPos targetId targetBoxPath pos
       -> moveTopicToBox topicId boxId origPos targetId targetBoxPath pos present
       |> S.store |> A.push undoModel
+    DraggedTopic -> present |> S.store |> A.swap undoModel
+    ClickedBackground -> (resetUI present, Cmd.none) |> A.swap undoModel
     SwitchDisplay displayMode -> switchDisplay displayMode present
       |> S.store |> A.swap undoModel
     Nav navMsg -> updateNav navMsg present |> S.store |> A.reset
@@ -152,7 +154,6 @@ update msg ({present} as undoModel) =
     Import -> (present, S.importJSON ()) |> A.swap undoModel
     Export -> (present, S.exportJSON ()) |> A.swap undoModel
     NoOp -> (present, Cmd.none) |> A.swap undoModel
-    NoOpMouse -> (resetUI present, Cmd.none) |> A.swap undoModel
     -- feature modules
     Edit editMsg -> TextEditAPI.update editMsg undoModel
     Mouse mouseMsg -> MouseAPI.update mouseMsg undoModel

@@ -68,6 +68,8 @@ type Msg
   | AddBox
   | AddAssoc Id Id BoxId
   | MoveTopicToBox Id BoxId Point Id BoxPath Point -- start point, random point (for target)
+  | DraggedTopic
+  | ClickedBackground
   | SwitchDisplay DisplayMode
   | Nav NavMsg
   | Hide
@@ -77,7 +79,6 @@ type Msg
   | Import
   | Export
   | NoOp
-  | NoOpMouse
   -- feature modules
   | Edit TextEdit.Msg
   | Mouse Mouse.Msg
