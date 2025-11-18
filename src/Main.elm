@@ -4,11 +4,12 @@ import AutoSize as Size
 import Boxing as B
 import Config as C
 import MapRenderer as Map
-import Model exposing (Model, UndoModel, Msg(..))
+import Model exposing (Model, Msg(..))
 import ModelAPI as A
 import ModelHelper exposing (..)
 import Storage as S
 import Toolbar
+import Undo exposing (UndoModel)
 import Utils as U
 -- feature modules
 import IconMenuAPI
@@ -23,7 +24,6 @@ import Html.Attributes exposing (id, style)
 import Json.Decode as D
 import Json.Encode as E
 import String exposing (fromInt, fromFloat)
-import UndoList
 
 
 
@@ -42,7 +42,7 @@ main =
 
 init : E.Value -> (UndoModel, Cmd Msg)
 init flags =
-  (initModel flags, Cmd.none) |> A.reset
+  (initModel flags, Cmd.none) |> Undo.reset
 
 
 initModel : E.Value -> Model
@@ -135,26 +135,26 @@ update msg ({present} as undoModel) =
         _ -> U.info "update" msg
   in
   case msg of
-    AddTopic -> addTopic present |> S.store |> A.push undoModel
-    AddBox -> addBox present |> S.store |> A.push undoModel
+    AddTopic -> addTopic present |> S.store |> Undo.push undoModel
+    AddBox -> addBox present |> S.store |> Undo.push undoModel
     AddAssoc player1 player2 boxId -> addAssoc player1 player2 boxId present
-      |> S.store |> A.push undoModel
+      |> S.store |> Undo.push undoModel
     MoveTopicToBox topicId boxId origPos targetId targetBoxPath pos
       -> moveTopicToBox topicId boxId origPos targetId targetBoxPath pos present
-      |> S.store |> A.push undoModel
-    DraggedTopic -> present |> S.store |> A.swap undoModel
-    ClickedItem itemId boxPath -> select itemId boxPath present |> A.swap undoModel
-    ClickedBackground -> resetUI present |> A.swap undoModel
+      |> S.store |> Undo.push undoModel
+    DraggedTopic -> present |> S.store |> Undo.swap undoModel
+    ClickedItem itemId boxPath -> select itemId boxPath present |> Undo.swap undoModel
+    ClickedBackground -> resetUI present |> Undo.swap undoModel
     SwitchDisplay displayMode -> switchDisplay displayMode present
-      |> S.store |> A.swap undoModel
-    Nav navMsg -> updateNav navMsg present |> S.store |> A.reset
-    Hide -> hide present |> S.store |> A.push undoModel
-    Delete -> delete present |> S.store |> A.push undoModel
-    Undo -> undo undoModel
-    Redo -> redo undoModel
-    Import -> (present, S.importJSON ()) |> A.swap undoModel
-    Export -> (present, S.exportJSON ()) |> A.swap undoModel
-    NoOp -> (present, Cmd.none) |> A.swap undoModel
+      |> S.store |> Undo.swap undoModel
+    Nav navMsg -> updateNav navMsg present |> S.store |> Undo.reset
+    Hide -> hide present |> S.store |> Undo.push undoModel
+    Delete -> delete present |> S.store |> Undo.push undoModel
+    Undo -> Undo.undo undoModel
+    Redo -> Undo.redo undoModel
+    Import -> (present, S.importJSON ()) |> Undo.swap undoModel
+    Export -> (present, S.exportJSON ()) |> Undo.swap undoModel
+    NoOp -> (present, Cmd.none) |> Undo.swap undoModel
     -- feature modules
     Edit editMsg -> TextEditAPI.update editMsg undoModel
     Mouse mouseMsg -> MouseAPI.update mouseMsg undoModel
@@ -360,27 +360,3 @@ delete model =
   newModel
   |> Sel.reset
   |> Size.auto
-
-
--- Undo / Redo
-
-undo : UndoModel -> (UndoModel, Cmd Msg)
-undo undoModel =
-  let
-    newUndoModel = UndoList.undo undoModel
-    newModel = Model.initTransient newUndoModel.present
-  in
-  newModel
-  |> S.store
-  |> A.swap newUndoModel
-
-
-redo : UndoModel -> (UndoModel, Cmd Msg)
-redo undoModel =
-  let
-    newUndoModel = UndoList.redo undoModel
-    newModel = Model.initTransient newUndoModel.present
-  in
-  newModel
-  |> S.store
-  |> A.swap newUndoModel

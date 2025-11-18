@@ -2,10 +2,11 @@ module SearchAPI exposing (viewInput, viewMenu, closeMenu, update)
 
 import AutoSize as Size
 import Config as C
-import Model exposing (Model, UndoModel, Msg(..))
+import Model exposing (Model, Msg(..))
 import ModelAPI as A
 import ModelHelper exposing (..)
 import Storage as S
+import Undo exposing (UndoModel)
 import Utils as U
 -- feature modules
 import Search exposing (Menu(..))
@@ -204,18 +205,18 @@ resultItemStyle isDisabled isHover =
 update : Search.Msg -> UndoModel -> (UndoModel, Cmd Msg)
 update msg ({present} as undoModel) =
   case msg of
-    Search.Input text -> (onTextInput text present, Cmd.none) |> A.swap undoModel
-    Search.FocusInput -> (onFocusInput present, Cmd.none) |> A.swap undoModel
-    Search.HoverTopic topicId -> (onHoverTopic topicId present, Cmd.none) |> A.swap undoModel
-    Search.UnhoverTopic _ -> (onUnhoverTopic present, Cmd.none) |> A.swap undoModel
-    Search.ClickTopic topicId -> revealTopic topicId present |> S.store |> A.push undoModel
+    Search.Input text -> (onTextInput text present, Cmd.none) |> Undo.swap undoModel
+    Search.FocusInput -> (onFocusInput present, Cmd.none) |> Undo.swap undoModel
+    Search.HoverTopic topicId -> (onHoverTopic topicId present, Cmd.none) |> Undo.swap undoModel
+    Search.UnhoverTopic _ -> (onUnhoverTopic present, Cmd.none) |> Undo.swap undoModel
+    Search.ClickTopic topicId -> revealTopic topicId present |> S.store |> Undo.push undoModel
     -- Traverse
-    Search.ShowRelated -> (showRelatedTopics present, Cmd.none) |> A.swap undoModel
+    Search.ShowRelated -> (showRelatedTopics present, Cmd.none) |> Undo.swap undoModel
     Search.HoverRelTopic relTopicId -> (onHoverRelTopic relTopicId present, Cmd.none)
-      |> A.swap undoModel
-    Search.UnhoverRelTopic _ -> (onUnhoverRelTopic present, Cmd.none) |> A.swap undoModel
+      |> Undo.swap undoModel
+    Search.UnhoverRelTopic _ -> (onUnhoverRelTopic present, Cmd.none) |> Undo.swap undoModel
     Search.ClickRelTopic relTopicId -> revealRelTopic relTopicId present |> S.store
-      |> A.push undoModel
+      |> Undo.push undoModel
 
 
 onTextInput : String -> Model -> Model

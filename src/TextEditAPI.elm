@@ -1,11 +1,12 @@
 module TextEditAPI exposing (update)
 
 import AutoSize as Size
-import Model exposing (Model, UndoModel, Msg(..))
+import Model exposing (Model, Msg(..))
 import ModelAPI as A
 import ModelHelper exposing (..)
 import Storage as S
 import Task
+import Undo exposing (UndoModel)
 import Utils as U
 -- feature modules
 import SelectionAPI as Sel
@@ -22,19 +23,19 @@ import String exposing (fromInt)
 update : T.Msg -> UndoModel -> (UndoModel, Cmd Msg)
 update msg ({present} as undoModel) =
   case msg of
-    T.EditStart -> startEdit present |> A.push undoModel
-    T.OnTextInput text -> onTextInput text present |> S.store |> A.swap undoModel
-    T.OnTextareaInput text -> onTextareaInput text present |> S.storeWith |> A.swap undoModel
+    T.EditStart -> startEdit present |> Undo.push undoModel
+    T.OnTextInput text -> onTextInput text present |> S.store |> Undo.swap undoModel
+    T.OnTextareaInput text -> onTextareaInput text present |> S.storeWith |> Undo.swap undoModel
     T.SetTopicSize topicId boxId size ->
       ( present
         |> A.setTopicSize topicId boxId size
         |> Size.auto
       , Cmd.none
       )
-      |> A.swap undoModel
+      |> Undo.swap undoModel
     T.EditEnd ->
       (endEdit present, Cmd.none)
-      |> A.swap undoModel
+      |> Undo.swap undoModel
 
 
 startEdit : Model -> (Model, Cmd Msg)

@@ -1,9 +1,10 @@
 module Toolbar exposing (view)
 
 import Config as C
-import Model exposing (Model, UndoModel, Msg(..))
+import Model exposing (Model, Msg(..))
 import ModelAPI as A
 import ModelHelper exposing (..)
+import Undo exposing (UndoModel)
 import Utils as U
 -- feature modules
 import IconMenu
@@ -17,7 +18,6 @@ import Html exposing (Html, Attribute, div, span, text, button, input, label, a)
 import Html.Attributes exposing (href, style, type_, name, checked, disabled)
 import Html.Events exposing (onClick)
 import String exposing (fromInt)
-import UndoList
 
 
 
@@ -51,8 +51,8 @@ view ({present} as undoModel) =
       ]
     , div
       []
-      [ viewToolbarButton "Undo" Undo hasPast undoModel
-      , viewToolbarButton "Redo" Redo hasFuture undoModel
+      [ viewToolbarButton "Undo" Undo Undo.hasPast undoModel
+      , viewToolbarButton "Redo" Redo Undo.hasFuture undoModel
       ]
     , div
       []
@@ -144,18 +144,6 @@ hasBoxSelection {present} =
   case Sel.single present of
     Just (id, _) -> A.isBox id present.boxes
     Nothing -> False
-
-
-{-| isEnabled predicate -}
-hasPast : UndoModel -> Bool
-hasPast undoModel =
-  undoModel |> UndoList.hasPast
-
-
-{-| isEnabled predicate -}
-hasFuture : UndoModel -> Bool
-hasFuture undoModel =
-  undoModel |> UndoList.hasFuture
 
 
 {-| isEnabled predicate -}

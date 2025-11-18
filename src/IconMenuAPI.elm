@@ -1,10 +1,11 @@
 module IconMenuAPI exposing (viewIcon, viewTopicIcon, view, close, update)
 
 import Config as C
-import Model exposing (Model, UndoModel, Msg(..))
+import Model exposing (Model, Msg(..))
 import ModelAPI as A
 import ModelHelper exposing (..)
 import Storage as S
+import Undo exposing (UndoModel)
 import Utils as U
 -- feature modules
 import IconMenu
@@ -129,12 +130,12 @@ topicIconStyle =
 update : IconMenu.Msg -> UndoModel -> (UndoModel, Cmd Msg)
 update msg ({present} as undoModel) =
   case msg of
-    IconMenu.Open -> (openIconMenu present, Cmd.none) |> A.swap undoModel
-    IconMenu.Close -> (close present, Cmd.none) |> A.swap undoModel
+    IconMenu.Open -> (openIconMenu present, Cmd.none) |> Undo.swap undoModel
+    IconMenu.Close -> (close present, Cmd.none) |> Undo.swap undoModel
     IconMenu.SetIcon maybeIcon -> setIcon maybeIcon present
       |> close
       |> S.store
-      |> A.push undoModel
+      |> Undo.push undoModel
 
 
 openIconMenu : Model -> Model

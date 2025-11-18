@@ -2,9 +2,10 @@ module MouseAPI exposing (hoverHandler, subs, update)
 
 import AutoSize as Size
 import Config as C
-import Model exposing (Model, UndoModel, Msg(..))
+import Model exposing (Model, Msg(..))
 import ModelAPI as A
 import ModelHelper exposing (..)
+import Undo exposing (UndoModel)
 import Utils as U
 -- feature modules
 import Mouse exposing (DragState(..), DragMode(..))
@@ -37,15 +38,15 @@ hoverHandler =
 update : Mouse.Msg -> UndoModel -> (UndoModel, Cmd Msg)
 update msg ({present} as undoModel) =
   case msg of
-    Mouse.Down -> (present, command ClickedBackground) |> A.swap undoModel
+    Mouse.Down -> (present, command ClickedBackground) |> Undo.swap undoModel
     Mouse.DownOnItem class id boxPath pos -> mouseDownOnItem class id boxPath pos present
-      |> A.swap undoModel
-    Mouse.Move pos -> mouseMove pos present |> A.swap undoModel
-    Mouse.Up -> mouseUp present |> A.swap undoModel
+      |> Undo.swap undoModel
+    Mouse.Move pos -> mouseMove pos present |> Undo.swap undoModel
+    Mouse.Up -> mouseUp present |> Undo.swap undoModel
     Mouse.Over class id boxPath -> (mouseOver class id boxPath present, Cmd.none)
-      |> A.swap undoModel
+      |> Undo.swap undoModel
     Mouse.Out class id boxPath -> (mouseOut class id boxPath present, Cmd.none)
-      |> A.swap undoModel
+      |> Undo.swap undoModel
     Mouse.Time time -> timeArrived time undoModel
 
 
@@ -68,14 +69,14 @@ timeArrived time ({present} as undoModel) =
         dragState = DragEngaged time class id boxPath pos
       in
       (setDragState dragState present, Cmd.none)
-      |> A.swap undoModel
+      |> Undo.swap undoModel
     WaitForEndTime startTime class id boxPath pos ->
       let
         delay = posixToMillis time - posixToMillis startTime > C.assocDelayMillis
         (dragMode, historyFunc) =
           case delay of
-            True -> (DraftAssoc, A.swap)
-            False -> (DragTopic, A.push)
+            True -> (DraftAssoc, Undo.swap)
+            False -> (DragTopic, Undo.push)
         maybeOrigPos = A.topicPos id (A.firstId boxPath) present.boxes
         dragState =
           case class of

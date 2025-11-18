@@ -1,14 +1,13 @@
 module ModelAPI exposing (..)
 
 import Config as C
-import Model exposing (Model, UndoModel, Msg)
+import Model exposing (Model)
 import ModelHelper exposing (..)
 import Utils as U
 
 import Dict
 import Set
 import String exposing (fromInt)
-import UndoList
 
 
 
@@ -538,20 +537,3 @@ isBoxAssoc item =
 isVisible : BoxItem -> Bool
 isVisible item =
   not item.hidden
-
-
--- Undo / Redo
-
-push : UndoModel -> (Model, Cmd Msg) -> (UndoModel, Cmd Msg)
-push undoModel (model, cmd) =
-  (UndoList.new model undoModel, cmd)
-
-
-swap : UndoModel -> (Model, Cmd Msg) -> (UndoModel, Cmd Msg)
-swap undoModel (model, cmd) =
-  (UndoList.mapPresent (\_ -> model) undoModel, cmd)
-
-
-reset : (Model, Cmd Msg) -> (UndoModel, Cmd Msg)
-reset (model, cmd) =
-  (UndoList.fresh model, cmd)

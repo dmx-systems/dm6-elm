@@ -11,11 +11,7 @@ import TextEdit
 
 import Dict
 import Set
-import UndoList exposing (UndoList)
 
-
-
-type alias UndoModel = UndoList Model
 
 
 type alias Model =
