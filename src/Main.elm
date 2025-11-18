@@ -143,7 +143,8 @@ update msg ({present} as undoModel) =
       -> moveTopicToBox topicId boxId origPos targetId targetBoxPath pos present
       |> S.store |> A.push undoModel
     DraggedTopic -> present |> S.store |> A.swap undoModel
-    ClickedBackground -> (resetUI present, Cmd.none) |> A.swap undoModel
+    ClickedItem itemId boxPath -> select itemId boxPath present |> A.swap undoModel
+    ClickedBackground -> resetUI present |> A.swap undoModel
     SwitchDisplay displayMode -> switchDisplay displayMode present
       |> S.store |> A.swap undoModel
     Nav navMsg -> updateNav navMsg present |> S.store |> A.reset
@@ -245,6 +246,24 @@ moveTopicToBox topicId boxId origPos targetId targetBoxPath pos model =
       |> Sel.select targetId targetBoxPath
       |> Size.auto
     Nothing -> model
+
+
+select : Id -> BoxPath -> Model -> (Model, Cmd Msg)
+select itemId boxPath model =
+  ( model
+    |> Sel.select itemId boxPath
+  , Cmd.none
+  )
+
+
+resetUI : Model -> (Model, Cmd Msg)
+resetUI model =
+  ( model
+    |> Sel.reset
+    |> IconMenuAPI.close
+    |> SearchAPI.closeMenu
+  , Cmd.none
+  )
 
 
 switchDisplay : DisplayMode -> Model -> Model
@@ -365,13 +384,3 @@ redo undoModel =
   newModel
   |> S.store
   |> A.swap newUndoModel
-
-
---
-
-resetUI : Model -> Model
-resetUI model =
-  model
-  |> Sel.reset
-  |> IconMenuAPI.close
-  |> SearchAPI.closeMenu

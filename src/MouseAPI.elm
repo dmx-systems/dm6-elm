@@ -8,7 +8,6 @@ import ModelHelper exposing (..)
 import Utils as U
 -- feature modules
 import Mouse exposing (DragState(..), DragMode(..))
-import SelectionAPI as Sel
 
 import Browser.Events as Events
 import Html exposing (Attribute)
@@ -52,9 +51,11 @@ update msg ({present} as undoModel) =
 
 mouseDownOnItem : Class -> Id -> BoxPath -> Point -> Model -> (Model, Cmd Msg)
 mouseDownOnItem class id boxPath pos model =
-  (setDragState (WaitForStartTime class id boxPath pos) model
-    |> Sel.select id boxPath
-  , Task.perform (Mouse << Mouse.Time) Time.now
+  ( model |> setDragState (WaitForStartTime class id boxPath pos)
+  , Cmd.batch
+    [ command <| ClickedItem id boxPath
+    , Task.perform (Mouse << Mouse.Time) Time.now
+    ]
   )
 
 

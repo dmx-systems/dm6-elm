@@ -69,6 +69,7 @@ type Msg
   | AddAssoc Id Id BoxId
   | MoveTopicToBox Id BoxId Point Id BoxPath Point -- start point, random point (for target)
   | DraggedTopic
+  | ClickedItem Id BoxPath
   | ClickedBackground
   | SwitchDisplay DisplayMode
   | Nav NavMsg
