@@ -23,7 +23,7 @@ topicById topicId model =
     Just {info} ->
       case info of
         Topic topic -> Just topic
-        Assoc _ -> topicMismatch "topicById" topicId Nothing
+        Assoc _ -> U.topicMismatch "topicById" topicId Nothing
     Nothing -> U.fail "topicById" topicId Nothing
 
 
@@ -32,7 +32,7 @@ assocById assocId model =
   case itemById assocId model of
     Just {info} ->
       case info of
-        Topic _ -> assocMismatch "assocById" assocId Nothing
+        Topic _ -> U.assocMismatch "assocById" assocId Nothing
         Assoc assoc -> Just assoc
     Nothing -> U.fail "assocById" assocId Nothing
 
@@ -41,7 +41,7 @@ itemById : Id -> Model -> Maybe Item
 itemById itemId model =
   case model.items |> Dict.get itemId of
     Just item -> Just item
-    Nothing -> illegalItemId "itemById" itemId Nothing
+    Nothing -> U.illegalItemId "itemById" itemId Nothing
 
 
 topicLabel : TopicInfo -> String
@@ -156,7 +156,7 @@ updateTopicInfo topicId transform model =
     (\item ->
       case item.info of
         Topic topic -> { item | info = Topic <| transform topic }
-        Assoc _  -> topicMismatch "updateTopicInfo" topicId item
+        Assoc _  -> U.topicMismatch "updateTopicInfo" topicId item
     )
 
 
@@ -166,7 +166,7 @@ updateItem itemId transform model =
     (\maybeItem ->
       case maybeItem of
         Just item -> Just <| transform item
-        Nothing -> illegalItemId "updateItem" itemId Nothing
+        Nothing -> U.illegalItemId "updateItem" itemId Nothing
     )
   }
 
@@ -219,7 +219,7 @@ boxByIdOrLog : BoxId -> Boxes -> Maybe Box
 boxByIdOrLog boxId boxes =
   case boxById boxId boxes of
     Just box -> Just box
-    Nothing -> illegalBoxId "boxByIdOrLog" boxId Nothing
+    Nothing -> U.illegalBoxId "boxByIdOrLog" boxId Nothing
 
 
 {-| TODO: replace Boxes parameter by Model? -}
@@ -320,7 +320,7 @@ topicProps topicId boxId boxes =
     Just boxItem ->
       case boxItem.props of
         TopicV props -> Just props
-        AssocV _ -> topicMismatch "topicProps" topicId Nothing
+        AssocV _ -> U.topicMismatch "topicProps" topicId Nothing
     Nothing -> U.fail "topicProps" {topicId = topicId, boxId = boxId} Nothing
 
 
@@ -336,8 +336,8 @@ updateTopicProps topicId boxId transform model =
               case boxItem.props of
                 TopicV props -> Just
                   { boxItem | props = TopicV (transform props) }
-                AssocV _ -> topicMismatch "updateTopicProps" topicId Nothing
-            Nothing -> illegalItemId "updateTopicProps" topicId Nothing
+                AssocV _ -> U.topicMismatch "updateTopicProps" topicId Nothing
+            Nothing -> U.illegalItemId "updateTopicProps" topicId Nothing
         )
       }
     )
@@ -383,7 +383,7 @@ boxItemById itemId boxId boxes =
     (\box ->
       case box.items |> Dict.get itemId of
         Just boxItem -> Just boxItem
-        Nothing -> itemNotInBox "boxItemById" itemId box.id Nothing
+        Nothing -> U.itemNotInBox "boxItemById" itemId box.id Nothing
     )
 
 
@@ -481,7 +481,7 @@ updateBoxes boxId transform boxes =
     (\box_ ->
       case box_ of
         Just box -> Just (transform box)
-        Nothing -> illegalBoxId "updateBoxes" boxId Nothing
+        Nothing -> U.illegalBoxId "updateBoxes" boxId Nothing
     )
 
 
@@ -555,37 +555,3 @@ swap undoModel (model, cmd) =
 reset : (Model, Cmd Msg) -> (UndoModel, Cmd Msg)
 reset (model, cmd) =
   (UndoList.fresh model, cmd)
-
-
-
--- DEBUG
-
-
-itemNotInBox : String -> Id -> Id -> a -> a
-itemNotInBox funcName itemId boxId val =
-  U.logError funcName ("item " ++ fromInt itemId ++ " not in box " ++ fromInt boxId) val
-
-
-topicMismatch : String -> Id -> a -> a
-topicMismatch funcName id val =
-  U.logError funcName (fromInt id ++ " is not a Topic but an Assoc") val
-
-
-assocMismatch : String -> Id -> a -> a
-assocMismatch funcName id val =
-  U.logError funcName (fromInt id ++ " is not an Assoc but a Topic") val
-
-
-illegalBoxId : String -> Id -> a -> a
-illegalBoxId funcName id val =
-  illegalId funcName "Box" id val
-
-
-illegalItemId : String -> Id -> a -> a
-illegalItemId funcName id val =
-  illegalId funcName "Item" id val
-
-
-illegalId : String -> String -> Id -> a -> a
-illegalId funcName item id val =
-  U.logError funcName (fromInt id ++ " is an illegal " ++ item ++ " ID") val

@@ -6,9 +6,12 @@ import Html exposing (Html, Attribute, text, br)
 import Html.Events exposing (on, stopPropagationOn, keyCode)
 import Json.Decode as D
 import Logger
+import String exposing (fromInt)
 
 
--- Events
+
+-- EVENTS
+
 
 onEsc : msg -> Attribute msg
 onEsc msg_ =
@@ -42,7 +45,9 @@ stopPropagationOnMousedown msg_ =
   stopPropagationOn "mousedown" <| D.succeed (msg_, True)
 
 
--- Decoder
+
+-- DECODER
+
 
 classDecoder : D.Decoder Class
 classDecoder =
@@ -109,7 +114,9 @@ toIntList string =
     )
 
 
+
 -- HTML
+
 
 multilineHtml : String -> List (Html msg)
 multilineHtml str =
@@ -120,7 +127,41 @@ multilineHtml str =
     []
 
 
--- Debug
+
+-- DEBUG
+
+
+itemNotInBox : String -> Id -> Id -> a -> a
+itemNotInBox funcName itemId boxId val =
+  logError funcName ("item " ++ fromInt itemId ++ " not in box " ++ fromInt boxId) val
+
+
+topicMismatch : String -> Id -> a -> a
+topicMismatch funcName id val =
+  logError funcName (fromInt id ++ " is not a Topic but an Assoc") val
+
+
+assocMismatch : String -> Id -> a -> a
+assocMismatch funcName id val =
+  logError funcName (fromInt id ++ " is not an Assoc but a Topic") val
+
+
+illegalBoxId : String -> Id -> a -> a
+illegalBoxId funcName id val =
+  illegalId funcName "Box" id val
+
+
+illegalItemId : String -> Id -> a -> a
+illegalItemId funcName id val =
+  illegalId funcName "Item" id val
+
+
+illegalId : String -> String -> Id -> a -> a
+illegalId funcName item id val =
+  logError funcName (fromInt id ++ " is an illegal " ++ item ++ " ID") val
+
+
+--
 
 logError : String -> String -> v -> v
 logError funcName text val =
