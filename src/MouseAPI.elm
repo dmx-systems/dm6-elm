@@ -1,7 +1,7 @@
 module MouseAPI exposing (hoverHandler, subs, update)
 
-import AutoSize as Size
 import Box
+import Box.Size as Size
 import Config as C
 import Model exposing (Model, Msg(..))
 import ModelHelper exposing (..)

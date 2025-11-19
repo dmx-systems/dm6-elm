@@ -1,4 +1,4 @@
-module AutoSize exposing (auto)
+module Box.Size exposing (auto)
 
 import Box
 import Config as C

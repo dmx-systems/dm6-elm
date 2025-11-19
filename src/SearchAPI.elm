@@ -1,7 +1,7 @@
 module SearchAPI exposing (viewInput, viewMenu, closeMenu, update)
 
-import AutoSize as Size
 import Box
+import Box.Size as Size
 import Config as C
 import Item
 import Model exposing (Model, Msg(..))

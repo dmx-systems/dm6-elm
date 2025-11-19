@@ -1,4 +1,4 @@
-module Boxing exposing (box, unbox)
+module Box.Transfer exposing (boxContent, unboxContent)
 
 import Box
 import Model exposing (Model)
@@ -22,8 +22,8 @@ type alias TransferFunc = BoxItems -> BoxItems -> Model -> BoxItems
 {-| Hides box content from its parent box.
   (Any target box can be given but de-facto it's the box's parent box)
 -}
-box : BoxId -> BoxId -> Model -> Boxes
-box boxId targetBoxId model =
+boxContent : BoxId -> BoxId -> Model -> Boxes
+boxContent boxId targetBoxId model =
   case Box.displayMode boxId targetBoxId model.boxes of
     -- box only if currently unboxed
     Just (BoxD Unboxed) -> transferContent boxId targetBoxId boxItems_ model
@@ -33,8 +33,8 @@ box boxId targetBoxId model =
 {-| Reveals box content on its parent box.
   (Any target box can be given but de-facto it's the box's parent box)
 -}
-unbox : BoxId -> BoxId -> Model -> Boxes
-unbox boxId targetBoxId model =
+unboxContent : BoxId -> BoxId -> Model -> Boxes
+unboxContent boxId targetBoxId model =
   case Box.displayMode boxId targetBoxId model.boxes of
     -- unbox only if currently boxed
     Just (BoxD BlackBox) -> transferContent boxId targetBoxId unboxItems_ model

@@ -1,8 +1,8 @@
 module Main exposing (..)
 
-import AutoSize as Size
 import Box
-import Boxing as B
+import Box.Size as Size
+import Box.Transfer as Transfer
 import Config as C
 import Item
 import MapRenderer as Map
@@ -277,9 +277,9 @@ switchDisplay displayMode model =
       { model | boxes =
         case displayMode of
           TopicD _ -> model.boxes
-          BoxD BlackBox -> B.box boxId targetBoxId model
-          BoxD WhiteBox -> B.box boxId targetBoxId model
-          BoxD Unboxed -> B.unbox boxId targetBoxId model
+          BoxD BlackBox -> Transfer.boxContent boxId targetBoxId model
+          BoxD WhiteBox -> Transfer.boxContent boxId targetBoxId model
+          BoxD Unboxed -> Transfer.unboxContent boxId targetBoxId model
       }
       |> Box.setDisplayMode boxId targetBoxId displayMode
     Nothing -> model

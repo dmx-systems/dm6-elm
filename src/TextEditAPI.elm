@@ -1,7 +1,7 @@
 module TextEditAPI exposing (update)
 
-import AutoSize as Size
 import Box
+import Box.Size as Size
 import Item
 import Model exposing (Model, Msg(..))
 import ModelHelper exposing (..)
