@@ -1,11 +1,12 @@
 module Main exposing (..)
 
 import AutoSize as Size
+import Box
 import Boxing as B
 import Config as C
+import Item
 import MapRenderer as Map
 import Model exposing (Model, Msg(..))
-import ModelAPI as A
 import ModelHelper exposing (..)
 import Storage as S
 import Toolbar
@@ -81,7 +82,7 @@ view ({present} as undoModel) =
         ++ appStyle
       )
       ( [ Toolbar.view undoModel
-        , Map.view (A.activeBox present) [] present -- boxPath = []
+        , Map.view (Box.activeBox present) [] present -- boxPath = []
         ]
         ++ SearchAPI.viewMenu present
         ++ IconMenuAPI.view present
@@ -165,12 +166,12 @@ update msg ({present} as undoModel) =
 addTopic : Model -> Model
 addTopic model =
   let
-    boxId = A.activeBox model
+    boxId = Box.activeBox model
   in
-  case A.boxByIdOrLog boxId model.boxes of
+  case Box.boxByIdOrLog boxId model.boxes of
     Just box ->
       let
-        (newModel, topicId) = A.addTopic C.initTopicText Nothing model
+        (newModel, topicId) = Item.addTopic C.initTopicText Nothing model
         props = TopicV <| TopicProps
           (Point
             (C.initTopicPos.x + box.rect.x1)
@@ -180,7 +181,7 @@ addTopic model =
           (TopicD LabelOnly)
       in
       newModel
-      |> A.addItemToBox topicId props boxId
+      |> Box.addItemToBox topicId props boxId
       |> Sel.select topicId [ boxId ]
     Nothing -> model
 
@@ -189,12 +190,12 @@ addTopic model =
 addBox : Model -> Model
 addBox model =
   let
-    boxId = A.activeBox model
+    boxId = Box.activeBox model
   in
-  case A.boxByIdOrLog boxId model.boxes of
+  case Box.boxByIdOrLog boxId model.boxes of
     Just box ->
       let
-        (newModel, topicId) = A.addTopic C.initBoxText Nothing model
+        (newModel, topicId) = Item.addTopic C.initBoxText Nothing model
         props = TopicV <| TopicProps
           (Point
             (C.initTopicPos.x + box.rect.x1)
@@ -204,8 +205,8 @@ addBox model =
           (BoxD BlackBox)
       in
       newModel
-      |> A.addBox topicId
-      |> A.addItemToBox topicId props boxId
+      |> Box.addBox topicId
+      |> Box.addItemToBox topicId props boxId
       |> Sel.select topicId [ boxId ]
     Nothing -> model
 
@@ -224,25 +225,25 @@ addAssoc player1 player2 boxId model =
 addAssocAndAddToBox : ItemType -> RoleType -> Id -> RoleType -> Id -> BoxId -> Model -> Model
 addAssocAndAddToBox itemType role1 player1 role2 player2 boxId model =
   let
-    (newModel, assocId) = A.addAssoc itemType role1 player1 role2 player2 model
+    (newModel, assocId) = Item.addAssoc itemType role1 player1 role2 player2 model
     props = AssocV AssocProps
   in
-  A.addItemToBox assocId props boxId newModel
+  Box.addItemToBox assocId props boxId newModel
 
 
 moveTopicToBox : Id -> BoxId -> Point -> Id -> BoxPath -> Point -> Model -> Model
 moveTopicToBox topicId boxId origPos targetId targetBoxPath pos model =
   let
     props_ =
-      A.topicProps topicId boxId model.boxes
+      Box.topicProps topicId boxId model.boxes
       |> Maybe.andThen (\props -> Just (TopicV { props | pos = pos }))
   in
   case props_ of
     Just props ->
       model
-      |> A.hideItem topicId boxId
-      |> A.setTopicPos topicId boxId origPos
-      |> A.addItemToBox topicId props targetId
+      |> Box.hideItem topicId boxId
+      |> Box.setTopicPos topicId boxId origPos
+      |> Box.addItemToBox topicId props targetId
       |> Sel.select targetId targetBoxPath
       |> Size.auto
     Nothing -> model
@@ -271,7 +272,7 @@ switchDisplay displayMode model =
   ( case Sel.single model of
     Just (boxId, boxPath) ->
       let
-        targetBoxId = A.firstId boxPath
+        targetBoxId = Box.firstId boxPath
       in
       { model | boxes =
         case displayMode of
@@ -280,7 +281,7 @@ switchDisplay displayMode model =
           BoxD WhiteBox -> B.box boxId targetBoxId model
           BoxD Unboxed -> B.unbox boxId targetBoxId model
       }
-      |> A.setDisplayMode boxId targetBoxId displayMode
+      |> Box.setDisplayMode boxId targetBoxId displayMode
     Nothing -> model
   )
   |> Size.auto
@@ -326,7 +327,7 @@ back model =
 -- TODO
 adjustBoxRect : BoxId -> Float -> Model -> Model
 adjustBoxRect boxId factor model =
-  model |> A.updateBoxRect boxId
+  model |> Box.updateBoxRect boxId
     (\rect -> Rectangle
       (rect.x1 + factor * C.nestedBoxOffset.x)
       (rect.y1 + factor * C.nestedBoxOffset.y)
@@ -340,7 +341,7 @@ hide model =
   let
     newModel = model.selection.items
       |> List.foldr
-        (\(itemId, boxPath) modelAcc -> A.hideItem itemId (A.firstId boxPath) modelAcc)
+        (\(itemId, boxPath) modelAcc -> Box.hideItem itemId (Box.firstId boxPath) modelAcc)
         model
   in
   newModel
@@ -354,7 +355,7 @@ delete model =
     newModel = model.selection.items
       |> List.map Tuple.first
       |> List.foldr
-        (\itemId modelAcc -> A.removeItem itemId modelAcc)
+        (\itemId modelAcc -> Item.removeItem itemId modelAcc)
         model
   in
   newModel

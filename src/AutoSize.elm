@@ -1,8 +1,8 @@
 module AutoSize exposing (auto)
 
+import Box
 import Config as C
 import Model exposing (Model)
-import ModelAPI as A
 import ModelHelper exposing (..)
 import Utils as U
 -- feature modules
@@ -18,7 +18,7 @@ import Dict
 
 auto : Model -> Model
 auto model =
-  calcBoxRect [ A.activeBox model ] model |> Tuple.second
+  calcBoxRect [ Box.activeBox model ] model |> Tuple.second
 
 
 {-| Calculates (recursively) the box's "rect"
@@ -26,13 +26,13 @@ auto model =
 calcBoxRect : BoxPath -> Model -> (Rectangle, Model)
 calcBoxRect boxPath model =
   let
-    boxId = A.firstId boxPath
+    boxId = Box.firstId boxPath
   in
-  case A.boxByIdOrLog boxId model.boxes of
+  case Box.boxByIdOrLog boxId model.boxes of
     Just box ->
       let
         (rect, model_) =
-          (box.items |> Dict.values |> List.filter A.isVisible |> List.foldr
+          (box.items |> Dict.values |> List.filter Box.isVisible |> List.foldr
             (\boxItem (rectAcc, modelAcc) ->
               calcItemSize boxItem boxPath rectAcc modelAcc
             )
@@ -53,7 +53,7 @@ calcBoxRect boxPath model =
 calcItemSize : BoxItem -> BoxPath -> Rectangle -> Model -> (Rectangle, Model)
 calcItemSize boxItem pathToParent rectAcc model =
   let
-    boxId = A.firstId pathToParent
+    boxId = Box.firstId pathToParent
   in
   case boxItem.props of
     TopicV {pos, size, displayMode} ->
@@ -110,12 +110,12 @@ storeBoxGeometry boxPath newRect oldRect model =
 
 storeBoxRect : BoxId -> Rectangle -> Model -> Model
 storeBoxRect boxId newRect model =
-  model |> A.updateBoxRect boxId (\rect -> newRect)
+  model |> Box.updateBoxRect boxId (\rect -> newRect)
 
 
 adjustBoxPos : BoxId -> BoxId -> Rectangle -> Rectangle -> Model -> Model
 adjustBoxPos boxId parentBoxId newRect oldRect model =
-  model |> A.setTopicPosByDelta boxId parentBoxId
+  model |> Box.setTopicPosByDelta boxId parentBoxId
     (Point
       (newRect.x1 - oldRect.x1)
       (newRect.y1 - oldRect.y1)

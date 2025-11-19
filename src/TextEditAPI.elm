@@ -1,8 +1,9 @@
 module TextEditAPI exposing (update)
 
 import AutoSize as Size
+import Box
+import Item
 import Model exposing (Model, Msg(..))
-import ModelAPI as A
 import ModelHelper exposing (..)
 import Storage as S
 import Task
@@ -28,7 +29,7 @@ update msg ({present} as undoModel) =
     T.OnTextareaInput text -> onTextareaInput text present |> S.storeWith |> Undo.swap undoModel
     T.SetTopicSize topicId boxId size ->
       ( present
-        |> A.setTopicSize topicId boxId size
+        |> Box.setTopicSize topicId boxId size
         |> Size.auto
       , Cmd.none
       )
@@ -44,8 +45,8 @@ startEdit model =
     newModel = case Sel.single model of
       Just (topicId, boxPath) ->
         model
-        |> setEditState (ItemEdit topicId (A.firstId boxPath))
-        |> setDetailDisplayIfMonade topicId (A.firstId boxPath)
+        |> setEditState (ItemEdit topicId (Box.firstId boxPath))
+        |> setDetailDisplayIfMonade topicId (Box.firstId boxPath)
         |> Size.auto
       Nothing -> model
   in
@@ -54,7 +55,7 @@ startEdit model =
 
 setDetailDisplayIfMonade : Id -> BoxId -> Model -> Model
 setDetailDisplayIfMonade topicId boxId model =
-  model |> A.updateTopicProps topicId boxId
+  model |> Box.updateTopicProps topicId boxId
     (\props ->
       case props.displayMode of
         TopicD _ -> { props | displayMode = TopicD Detail }
@@ -66,7 +67,7 @@ onTextInput : String -> Model -> Model
 onTextInput text model =
   case model.edit.state of
     ItemEdit topicId _ ->
-      A.updateTopicInfo topicId
+      Item.updateTopicInfo topicId
         (\topic -> { topic | text = text })
         model
     NoEdit -> U.logError "onTextInput" "called when edit.state is NoEdit" model
@@ -76,7 +77,7 @@ onTextareaInput : String -> Model -> (Model, Cmd Msg)
 onTextareaInput text model =
   case model.edit.state of
     ItemEdit topicId boxId ->
-      A.updateTopicInfo topicId
+      Item.updateTopicInfo topicId
         (\topic -> { topic | text = text })
         model
       |> measureText text topicId boxId

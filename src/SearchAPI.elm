@@ -1,9 +1,10 @@
 module SearchAPI exposing (viewInput, viewMenu, closeMenu, update)
 
 import AutoSize as Size
+import Box
 import Config as C
+import Item
 import Model exposing (Model, Msg(..))
-import ModelAPI as A
 import ModelHelper exposing (..)
 import Storage as S
 import Undo exposing (UndoModel)
@@ -79,7 +80,7 @@ viewTopicsMenu topicIds model =
           isDisabled = isItemDisabled id model
           isHover = isTopicHover id model
         in
-        case A.topicById id model of
+        case Item.topicById id model of
           Just topic ->
             div
               ( [ attribute "data-id" (fromInt id) ]
@@ -107,7 +108,7 @@ viewRelTopicsMenu relTopicIds model =
           isDisabled = isItemDisabled id model
           isHover = isRelTopicHover relTopic model
         in
-        case A.topicById id model of
+        case Item.topicById id model of
           Just topic ->
             div
               ( [ attribute "data-id" <| fromInt id ++ "," ++ fromInt assocId ]
@@ -122,7 +123,7 @@ viewRelTopicsMenu relTopicIds model =
 isItemDisabled : Id -> Model -> Bool
 isItemDisabled topicId model =
   case revealBoxId model of
-    Just boxId -> A.boxHasDeepItem topicId boxId model
+    Just boxId -> Box.boxHasDeepItem topicId boxId model
     Nothing -> False
 
 
@@ -130,7 +131,7 @@ isItemDisabled topicId model =
 revealBoxId : Model -> Maybe Id
 revealBoxId model =
   case model.search.menu of
-    Topics _ _ -> Just (A.activeBox model)
+    Topics _ _ -> Just (Box.activeBox model)
     RelTopics _ _ ->
       case Sel.singleBoxId model of
         Just boxId -> Just boxId
@@ -277,7 +278,7 @@ onUnhoverRelTopic ({search} as model) =
 revealTopic : Id -> Model -> Model
 revealTopic topicId model =
   model
-  |> revealItem topicId (A.activeBox model)
+  |> revealItem topicId (Box.activeBox model)
   |> closeMenu
 
 
@@ -317,7 +318,7 @@ showRelatedTopics ({search} as model) =
     relTopicIds =
       case Sel.single model of
         Just (itemId, _) ->
-          A.relatedItems itemId model
+          Item.relatedItems itemId model
         Nothing -> [] -- TODO: log error
   in
   { model | search = { search | menu = RelTopics relTopicIds Nothing }}
@@ -331,17 +332,17 @@ isMatch searchText text =
 
 revealItem : Id -> BoxId -> Model -> Model
 revealItem itemId boxId model =
-  if A.boxHasItem boxId itemId model then
+  if Box.boxHasItem boxId itemId model then
     let
       _ = U.info "revealItem" <| fromInt itemId ++ " is in " ++ fromInt boxId
     in
-    A.showItem itemId boxId model
+    Box.showItem itemId boxId model
   else
     let
       _ = U.info "revealItem" <| fromInt itemId ++ " not in " ++ fromInt boxId
-      props = A.initItemProps itemId boxId model
+      props = Box.initItemProps itemId boxId model
     in
-    A.addItemToBox itemId props boxId model
+    Box.addItemToBox itemId props boxId model
 
 
 closeMenu : Model -> Model

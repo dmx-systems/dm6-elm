@@ -1,8 +1,9 @@
 module Toolbar exposing (view)
 
+import Box
 import Config as C
+import Item
 import Model exposing (Model, Msg(..))
-import ModelAPI as A
 import ModelHelper exposing (..)
 import Undo exposing (UndoModel)
 import Utils as U
@@ -78,7 +79,7 @@ toolbarStyle =
 viewMapNav : Model -> Html Msg
 viewMapNav model =
   let
-    backDisabled = A.isAtRoot model
+    backDisabled = Box.isAtRoot model
   in
   div
     mapNavStyle
@@ -111,8 +112,8 @@ mapTitleStyle =
 
 getMapName : Model -> String
 getMapName model =
-  case A.topicById (A.activeBox model) model of
-    Just topic -> A.topicLabel topic
+  case Item.topicById (Box.activeBox model) model of
+    Just topic -> Item.topicLabel topic
     Nothing -> "??"
 
 
@@ -142,7 +143,7 @@ hasSelection undoModel =
 hasBoxSelection : UndoModel -> Bool
 hasBoxSelection {present} =
   case Sel.single present of
-    Just (id, _) -> A.isBox id present.boxes
+    Just (id, _) -> Box.isBox id present.boxes
     Nothing -> False
 
 
@@ -163,7 +164,7 @@ viewMonadDisplay : Model -> Html Msg
 viewMonadDisplay model =
   let
     display = case Sel.single model of
-      Just (topicId, boxPath) -> A.displayMode topicId (A.firstId boxPath) model.boxes
+      Just (topicId, boxPath) -> Box.displayMode topicId (Box.firstId boxPath) model.boxes
       Nothing -> Nothing
     (checked1, checked2, disabled_) =
       case display of
@@ -185,7 +186,7 @@ viewBoxDisplay : Model -> Html Msg
 viewBoxDisplay model =
   let
     display = case Sel.single model of
-      Just (topicId, boxPath) -> A.displayMode topicId (A.firstId boxPath) model.boxes
+      Just (topicId, boxPath) -> Box.displayMode topicId (Box.firstId boxPath) model.boxes
       Nothing -> Nothing
     (checked1, checked2, checked3) =
       case display of

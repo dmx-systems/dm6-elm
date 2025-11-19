@@ -1,8 +1,8 @@
 module IconMenuAPI exposing (viewIcon, viewTopicIcon, view, close, update)
 
 import Config as C
+import Item
 import Model exposing (Model, Msg(..))
-import ModelAPI as A
 import ModelHelper exposing (..)
 import Storage as S
 import Undo exposing (UndoModel)
@@ -96,7 +96,7 @@ iconButtonStyle =
 
 viewTopicIcon : Id -> Model -> Html Msg
 viewTopicIcon topicId model =
-  case A.topicById topicId model of
+  case Item.topicById topicId model of
     Just topic ->
       case topic.iconName of
         Just iconName ->
@@ -151,7 +151,7 @@ close ({iconMenu} as model) =
 setIcon : Maybe IconName -> Model -> Model
 setIcon iconName model =
   case Sel.single model of
-    Just (id, _) -> A.updateTopicInfo id
+    Just (id, _) -> Item.updateTopicInfo id
       (\topic -> { topic | iconName = iconName })
       model
     Nothing -> model -- FIXME: illegal state -> make Edit dialog modal?

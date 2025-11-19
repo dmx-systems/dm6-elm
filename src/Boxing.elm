@@ -1,7 +1,7 @@
 module Boxing exposing (box, unbox)
 
+import Box
 import Model exposing (Model)
-import ModelAPI as A
 import ModelHelper exposing (..)
 import Utils as U
 
@@ -24,7 +24,7 @@ type alias TransferFunc = BoxItems -> BoxItems -> Model -> BoxItems
 -}
 box : BoxId -> BoxId -> Model -> Boxes
 box boxId targetBoxId model =
-  case A.displayMode boxId targetBoxId model.boxes of
+  case Box.displayMode boxId targetBoxId model.boxes of
     -- box only if currently unboxed
     Just (BoxD Unboxed) -> transferContent boxId targetBoxId boxItems_ model
     _ -> model.boxes
@@ -35,7 +35,7 @@ box boxId targetBoxId model =
 -}
 unbox : BoxId -> BoxId -> Model -> Boxes
 unbox boxId targetBoxId model =
-  case A.displayMode boxId targetBoxId model.boxes of
+  case Box.displayMode boxId targetBoxId model.boxes of
     -- unbox only if currently boxed
     Just (BoxD BlackBox) -> transferContent boxId targetBoxId unboxItems_ model
     Just (BoxD WhiteBox) -> transferContent boxId targetBoxId unboxItems_ model
@@ -44,9 +44,9 @@ unbox boxId targetBoxId model =
 
 transferContent : BoxId -> BoxId -> TransferFunc -> Model -> Boxes
 transferContent boxId targetBoxId transferFunc model =
-  case A.boxByIdOrLog boxId model.boxes of
+  case Box.boxByIdOrLog boxId model.boxes of
     Just box_ ->
-      model.boxes |> A.updateBoxes
+      model.boxes |> Box.updateBoxes
         targetBoxId
         (\targetBox ->
           { targetBox | items = transferFunc box_.items targetBox.items model }
@@ -66,12 +66,12 @@ boxItems_ boxItems targetItems model =
         Just {pinned} ->
           if pinned then
             -- don't box pinned items, only hide the assoc
-            A.hideItem_ boxItem.parentAssocId targetItemsAcc model
+            Box.hideItem_ boxItem.parentAssocId targetItemsAcc model
           else
             let
-              items = A.hideItem_ boxItem.id targetItemsAcc model
+              items = Box.hideItem_ boxItem.id targetItemsAcc model
             in
-            case A.boxById boxItem.id model.boxes of
+            case Box.boxById boxItem.id model.boxes of
               Just box_ -> boxItems_ box_.items items model -- recursion
               Nothing -> items
         Nothing -> targetItemsAcc -- FIXME: continue unboxing boxes?
@@ -85,7 +85,7 @@ Returns the updated target items.
 -}
 unboxItems_ : BoxItems -> BoxItems -> Model -> BoxItems
 unboxItems_ boxItems targetItems model =
-  boxItems |> Dict.values |> List.filter A.isVisible |> List.foldr
+  boxItems |> Dict.values |> List.filter Box.isVisible |> List.foldr
     (\boxItem targetItemsAcc ->
       case boxItem.props of
         TopicV _ ->
@@ -95,7 +95,7 @@ unboxItems_ boxItems targetItems model =
           if abort then
             items
           else
-            case A.boxById boxItem.id model.boxes of
+            case Box.boxById boxItem.id model.boxes of
               Just box_ -> unboxItems_ box_.items items model -- recursion
               Nothing -> items
         AssocV _ ->
@@ -123,7 +123,7 @@ unboxTopic boxItem targetItems model =
         Nothing ->
           -- by default (when no box item exists) an unboxed box will also be unboxed
           -- FIXME: set item's parentAssocId?
-          if A.isBox boxItem.id model.boxes then
+          if Box.isBox boxItem.id model.boxes then
             (setUnboxed boxItem, False)
           else
             (boxItem, False)

@@ -1,9 +1,9 @@
 module MouseAPI exposing (hoverHandler, subs, update)
 
 import AutoSize as Size
+import Box
 import Config as C
 import Model exposing (Model, Msg(..))
-import ModelAPI as A
 import ModelHelper exposing (..)
 import Undo exposing (UndoModel)
 import Utils as U
@@ -77,7 +77,7 @@ timeArrived time ({present} as undoModel) =
           case delay of
             True -> (DraftAssoc, Undo.swap)
             False -> (DragTopic, Undo.push)
-        maybeOrigPos = A.topicPos id (A.firstId boxPath) present.boxes
+        maybeOrigPos = Box.topicPos id (Box.firstId boxPath) present.boxes
         dragState =
           case class of
             "dmx-topic" ->
@@ -117,10 +117,10 @@ performDrag pos model =
         delta = Point
           (pos.x - lastPos.x)
           (pos.y - lastPos.y)
-        boxId = A.firstId boxPath
+        boxId = Box.firstId boxPath
         newModel =
           case dragMode of
-            DragTopic -> A.setTopicPosByDelta id boxId delta model
+            DragTopic -> Box.setTopicPosByDelta id boxId delta model
             DraftAssoc -> model
       in
       -- update lastPos
@@ -138,10 +138,10 @@ mouseUp model =
       case model.mouse.dragState of
         Drag DragTopic id boxPath origPos _ (Just (targetId, targetBoxPath)) ->
           let
-            _ = U.info "mouseUp" ("dropped " ++ fromInt id ++ " (box " ++ A.fromPath boxPath
-              ++ ") on " ++ fromInt targetId ++ " (box " ++ A.fromPath targetBoxPath ++ ") --> "
-              ++ if not droppedOnSourceBox then "move topic" else "abort")
-            boxId = A.firstId boxPath
+            _ = U.info "mouseUp" ("dropped " ++ fromInt id ++ " (box " ++ Box.fromPath boxPath
+              ++ ") on " ++ fromInt targetId ++ " (box " ++ Box.fromPath targetBoxPath
+              ++ ") --> " ++ if not droppedOnSourceBox then "move topic" else "abort")
+            boxId = Box.firstId boxPath
             -- Can this actually happen? Possibly an edge case when rendering lags behind mouse
             -- move, so that mouse leaves topic and enters box (background). FIXME: store model
             droppedOnSourceBox = boxId == targetId
@@ -157,11 +157,11 @@ mouseUp model =
           command <| DraggedTopic
         Drag DraftAssoc id boxPath _ _ (Just (targetId, targetBoxPath)) ->
           let
-            _ = U.info "mouseUp" ("assoc drawn from " ++ fromInt id ++ " (box " ++ A.fromPath
-              boxPath ++ ") to " ++ fromInt targetId ++ " (box " ++ A.fromPath targetBoxPath
+            _ = U.info "mouseUp" ("assoc drawn from " ++ fromInt id ++ " (box " ++ Box.fromPath
+              boxPath ++ ") to " ++ fromInt targetId ++ " (box " ++ Box.fromPath targetBoxPath
               ++ ") --> " ++ if isSameBox then "create assoc" else "abort")
-            boxId = A.firstId boxPath
-            isSameBox = boxId == A.firstId targetBoxPath
+            boxId = Box.firstId boxPath
+            isSameBox = boxId == Box.firstId targetBoxPath
           in
           case isSameBox of
             True -> command <| AddAssoc id targetId boxId
@@ -203,8 +203,8 @@ mouseOver class targetId targetBoxPath model =
   case model.mouse.dragState of
     Drag dragMode id boxPath origPos lastPos _ ->
       let
-        isSelf = (id, A.firstId boxPath) == (targetId, A.firstId targetBoxPath)
-        isBox = A.isBox targetId model.boxes
+        isSelf = (id, Box.firstId boxPath) == (targetId, Box.firstId targetBoxPath)
+        isBox = Box.isBox targetId model.boxes
         target =
           -- the hovered item is a potential drop target if
           -- 1. the hovered item is not the item being dragged (can't drop on self), AND
