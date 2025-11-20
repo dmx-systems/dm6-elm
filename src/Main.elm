@@ -13,7 +13,7 @@ import Toolbar
 import Undo exposing (UndoModel)
 import Utils as U
 -- feature modules
-import IconMenuAPI
+import IconAPI
 import MouseAPI
 import SearchAPI
 import SelectionAPI as Sel
@@ -85,7 +85,7 @@ view ({present} as undoModel) =
         , Map.view (Box.activeBox present) [] present -- boxPath = []
         ]
         ++ SearchAPI.viewMenu present
-        ++ IconMenuAPI.view present
+        ++ IconAPI.viewMenu present
       )
     , div
       ( [ id "measure" ]
@@ -160,7 +160,7 @@ update msg ({present} as undoModel) =
     Edit editMsg -> TextEditAPI.update editMsg undoModel
     Mouse mouseMsg -> MouseAPI.update mouseMsg undoModel
     Search searchMsg -> SearchAPI.update searchMsg undoModel
-    IconMenu iconMenuMsg -> IconMenuAPI.update iconMenuMsg undoModel
+    Icon iconMenuMsg -> IconAPI.update iconMenuMsg undoModel
 
 
 addTopic : Model -> Model
@@ -261,7 +261,7 @@ resetUI : Model -> (Model, Cmd Msg)
 resetUI model =
   ( model
     |> Sel.reset
-    |> IconMenuAPI.close
+    |> IconAPI.closeMenu
     |> SearchAPI.closeMenu
   , Cmd.none
   )

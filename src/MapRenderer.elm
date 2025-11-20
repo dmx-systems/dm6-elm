@@ -7,7 +7,7 @@ import Model exposing (Model, Msg(..))
 import ModelHelper exposing (..)
 import Utils as U
 -- feature modules
-import IconMenuAPI
+import IconAPI
 import Mouse exposing (DragState(..), DragMode(..))
 import Search exposing (Menu(..))
 import SelectionAPI as Sel
@@ -288,7 +288,7 @@ labelTopicHtml topic props boxId model =
   in
   [ div
     (topicIconBoxStyle props)
-    [ IconMenuAPI.viewTopicIcon topic.id model ]
+    [ IconAPI.viewTopicIcon topic.id model ]
   , textElem
   ]
 
@@ -324,7 +324,7 @@ detailTopic topic props boxPath model =
         ++ detailTopicIconBoxStyle
         ++ selectionStyle topic.id boxId model
       )
-      [ IconMenuAPI.viewTopicIcon topic.id model ]
+      [ IconAPI.viewTopicIcon topic.id model ]
     , textElem
     ]
   )

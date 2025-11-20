@@ -152,7 +152,7 @@ modelDecoder =
     |> hardcoded Model.init.edit
     |> hardcoded Model.init.mouse
     |> hardcoded Model.init.search
-    |> hardcoded Model.init.iconMenu
+    |> hardcoded Model.init.icon
     |> hardcoded Model.init.selection
 
 

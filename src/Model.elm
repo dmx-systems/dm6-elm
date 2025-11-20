@@ -3,7 +3,7 @@ module Model exposing (..)
 import Config as C
 import ModelHelper exposing (..)
 -- feature modules
-import IconMenu
+import Icon
 import Mouse
 import Search
 import Selection
@@ -24,7 +24,7 @@ type alias Model =
   , edit : TextEdit.Model
   , mouse : Mouse.Model
   , search : Search.Model
-  , iconMenu : IconMenu.Model
+  , icon : Icon.Model
   , selection : Selection.Model
   }
 
@@ -41,7 +41,7 @@ init =
   , edit = TextEdit.init
   , mouse = Mouse.init
   , search = Search.init
-  , iconMenu = IconMenu.init
+  , icon = Icon.init
   , selection = Selection.init
   }
 
@@ -54,7 +54,7 @@ initTransient model =
   | edit = init.edit
   , mouse = init.mouse
   , search = init.search
-  , iconMenu = init.iconMenu
+  , icon = init.icon
   , selection = init.selection
   }
 
@@ -80,4 +80,4 @@ type Msg
   | Edit TextEdit.Msg
   | Mouse Mouse.Msg
   | Search Search.Msg
-  | IconMenu IconMenu.Msg
+  | Icon Icon.Msg

@@ -1,4 +1,4 @@
-module IconMenuAPI exposing (viewIcon, viewTopicIcon, view, close, update)
+module IconAPI exposing (viewIcon, viewTopicIcon, viewMenu, closeMenu, update)
 
 import Config as C
 import Item
@@ -8,7 +8,7 @@ import Storage as S
 import Undo exposing (UndoModel)
 import Utils as U
 -- feature modules
-import IconMenu
+import Icon
 import SelectionAPI as Sel
 
 import Dict
@@ -16,33 +16,33 @@ import Html exposing (Html, Attribute, div, text, button)
 import Html.Attributes exposing (title, style)
 import Html.Events exposing (onClick)
 import String exposing (fromFloat)
-import FeatherIcons as Icon
+import FeatherIcons as FI
 
 
 
 -- VIEW
 
 
-view : Model -> List (Html Msg)
-view model =
-  if model.iconMenu.open then
-    [ div
-      iconMenuStyle
+viewMenu : Model -> List (Html Msg)
+viewMenu model =
+  case model.icon.menu of
+    Icon.Open ->
       [ div
-        iconListStyle
-        viewIconList
-      , button
-        ( [onClick (IconMenu IconMenu.Close)]
-          ++ closeButtonStyle
-        )
-        [ Icon.x
-          |> Icon.withSize 12
-          |> Icon.toHtml []
+        iconMenuStyle
+        [ div
+          iconListStyle
+          viewIconList
+        , button
+          ( [onClick (Icon Icon.CloseMenu)]
+            ++ closeButtonStyle
+          )
+          [ FI.x
+            |> FI.withSize 12
+            |> FI.toHtml []
+          ]
         ]
       ]
-    ]
-  else
-    []
+    Icon.Closed -> []
 
 
 iconMenuStyle : List (Attribute Msg)
@@ -74,16 +74,16 @@ closeButtonStyle =
 
 viewIconList : List (Html Msg)
 viewIconList =
-  Icon.icons |> Dict.toList |> List.map
+  FI.icons |> Dict.toList |> List.map
     (\(iconName, icon) ->
       button
-        ( [ onClick (Just iconName |> IconMenu.SetIcon |> IconMenu)
+        ( [ onClick (Just iconName |> Icon.SetIcon |> Icon)
           , U.stopPropagationOnMousedown NoOp
           , title iconName
           ]
           ++ iconButtonStyle
         )
-        [ Icon.toHtml [] icon ]
+        [ FI.toHtml [] icon ]
     )
 
 
@@ -100,8 +100,8 @@ viewTopicIcon topicId model =
     Just topic ->
       case topic.iconName of
         Just iconName ->
-          case Icon.icons |> Dict.get iconName of
-            Just icon -> icon |> Icon.withSize C.topicIconSize |> Icon.toHtml topicIconStyle
+          case FI.icons |> Dict.get iconName of
+            Just icon -> icon |> FI.withSize C.topicIconSize |> FI.toHtml topicIconStyle
             Nothing -> text "??"
         Nothing -> text ""
     Nothing -> text "?"
@@ -109,8 +109,8 @@ viewTopicIcon topicId model =
 
 viewIcon : String -> Float -> Html Msg
 viewIcon iconName size =
-  case Icon.icons |> Dict.get iconName of
-    Just icon -> icon |> Icon.withSize size |> Icon.toHtml []
+  case FI.icons |> Dict.get iconName of
+    Just icon -> icon |> FI.withSize size |> FI.toHtml []
     Nothing -> text "??"
 
 
@@ -127,25 +127,25 @@ topicIconStyle =
 -- UPDATE
 
 
-update : IconMenu.Msg -> UndoModel -> (UndoModel, Cmd Msg)
+update : Icon.Msg -> UndoModel -> (UndoModel, Cmd Msg)
 update msg ({present} as undoModel) =
   case msg of
-    IconMenu.Open -> (openIconMenu present, Cmd.none) |> Undo.swap undoModel
-    IconMenu.Close -> (close present, Cmd.none) |> Undo.swap undoModel
-    IconMenu.SetIcon maybeIcon -> setIcon maybeIcon present
-      |> close
+    Icon.OpenMenu -> (openMenu present, Cmd.none) |> Undo.swap undoModel
+    Icon.CloseMenu -> (closeMenu present, Cmd.none) |> Undo.swap undoModel
+    Icon.SetIcon maybeIcon -> setIcon maybeIcon present
+      |> closeMenu
       |> S.store
       |> Undo.push undoModel
 
 
-openIconMenu : Model -> Model
-openIconMenu ({iconMenu} as model) =
-  { model | iconMenu = { iconMenu | open = True }}
+openMenu : Model -> Model
+openMenu ({icon} as model) =
+  { model | icon = { icon | menu = Icon.Open }}
 
 
-close : Model -> Model
-close ({iconMenu} as model) =
-  { model | iconMenu = { iconMenu | open = False }}
+closeMenu : Model -> Model
+closeMenu ({icon} as model) =
+  { model | icon = { icon | menu = Icon.Closed }}
 
 
 setIcon : Maybe IconName -> Model -> Model

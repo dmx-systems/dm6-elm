@@ -8,8 +8,8 @@ import ModelHelper exposing (..)
 import Undo exposing (UndoModel)
 import Utils as U
 -- feature modules
-import IconMenu
-import IconMenuAPI
+import Icon
+import IconAPI
 import Search
 import SearchAPI
 import SelectionAPI as Sel
@@ -39,10 +39,10 @@ view ({present} as undoModel) =
     , div
       []
       [ viewToolbarButton "Edit" (Edit T.EditStart) hasSelection undoModel
-      , viewToolbarButton "Set Icon" (IconMenu IconMenu.Open) hasSelection undoModel
+      , viewToolbarButton "Set Icon" (Icon Icon.OpenMenu) hasSelection undoModel
       ]
     , viewToolbarButton "Traverse" (Search Search.ShowRelated) hasSelection undoModel
-    , viewMonadDisplay present
+    , viewTopicDisplay present
     , viewBoxDisplay present
     , viewToolbarButton "Fullscreen" (Nav Fullscreen) hasBoxSelection undoModel
     , div
@@ -87,7 +87,7 @@ viewMapNav model =
       [ onClick (Nav Back)
       , disabled backDisabled
       ]
-      [ IconMenuAPI.viewIcon "arrow-left" 20 ]
+      [ IconAPI.viewIcon "arrow-left" 20 ]
     , span
       mapTitleStyle
       [ text <| getMapName model ]
@@ -160,8 +160,8 @@ buttonStyle =
   ]
 
 
-viewMonadDisplay : Model -> Html Msg
-viewMonadDisplay model =
+viewTopicDisplay : Model -> Html Msg
+viewTopicDisplay model =
   let
     display = case Sel.single model of
       Just (topicId, boxPath) -> Box.displayMode topicId (Box.firstId boxPath) model.boxes
