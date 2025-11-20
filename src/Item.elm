@@ -44,11 +44,11 @@ topicLabel topic =
     Nothing -> ""
 
 
-addTopic : String -> Maybe IconName -> Model -> (Model, Id)
-addTopic text iconName model =
+addTopic : String -> Maybe Icon -> Model -> (Model, Id)
+addTopic text icon model =
   let
     id = model.nextId
-    topic = Item id (Topic <| TopicInfo id text iconName) Set.empty
+    topic = Item id (Topic <| TopicInfo id text icon) Set.empty
   in
   ( { model | items = model.items |> Dict.insert id topic }
     |> nextId

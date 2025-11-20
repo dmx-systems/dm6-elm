@@ -1,6 +1,6 @@
 module Icon exposing (..)
 
-import ModelHelper exposing (Id, IconName)
+import ModelHelper exposing (Icon)
 
 
 
@@ -24,4 +24,4 @@ type Menu
 type Msg
   = OpenMenu
   | CloseMenu
-  | SetIcon (Maybe IconName)
+  | SetIcon (Maybe Icon)

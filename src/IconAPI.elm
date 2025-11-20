@@ -98,7 +98,7 @@ viewTopicIcon : Id -> Model -> Html Msg
 viewTopicIcon topicId model =
   case Item.topicById topicId model of
     Just topic ->
-      case topic.iconName of
+      case topic.icon of
         Just iconName ->
           case FI.icons |> Dict.get iconName of
             Just icon -> icon |> FI.withSize C.topicIconSize |> FI.toHtml topicIconStyle
@@ -148,10 +148,10 @@ closeMenu ({icon} as model) =
   { model | icon = { icon | menu = Icon.Closed }}
 
 
-setIcon : Maybe IconName -> Model -> Model
+setIcon : Maybe Icon -> Model -> Model
 setIcon iconName model =
   case Sel.single model of
     Just (id, _) -> Item.updateTopicInfo id
-      (\topic -> { topic | iconName = iconName })
+      (\topic -> { topic | icon = iconName })
       model
     Nothing -> model -- FIXME: illegal state -> make Edit dialog modal?

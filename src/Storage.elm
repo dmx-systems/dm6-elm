@@ -61,7 +61,7 @@ encodeItem item =
         , E.object
           [ ("id", E.int topic.id)
           , ("text", E.string topic.text)
-          , ("icon", E.string <| Maybe.withDefault "" topic.iconName)
+          , ("icon", E.string <| Maybe.withDefault "" topic.icon)
           , ("assocIds", E.set E.int item.assocIds)
           ]
         )

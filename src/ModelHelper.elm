@@ -23,7 +23,7 @@ type ItemInfo
 type alias TopicInfo =
   { id : Id
   , text : String
-  , iconName : Maybe IconName -- serialzed as "icon"
+  , icon : Maybe Icon
   }
 
 
@@ -121,7 +121,7 @@ type alias Class = String -- a CSS class, e.g. "dmx-topic"
 type alias ItemType = String -- a type URI, e.g. "dmx.association"
 type alias RoleType = String -- a role type URI, e.g. "dmx.default"
 type alias Delta = Point
-type alias IconName = String -- name of feather icon, https://feathericons.com
+type alias Icon = String -- name of feather icon, https://feathericons.com
 
 
 type NavMsg

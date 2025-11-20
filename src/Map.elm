@@ -1,4 +1,4 @@
-module MapRenderer exposing (view)
+module Map exposing (view)
 
 import Box
 import Config as C
