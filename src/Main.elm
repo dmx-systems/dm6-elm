@@ -82,7 +82,7 @@ view ({present} as undoModel) =
         ++ appStyle
       )
       ( [ Toolbar.view undoModel
-        , Map.view (Box.activeBox present) [] present -- boxPath = []
+        , Map.view (Box.active present) [] present -- boxPath = []
         ]
         ++ SearchAPI.viewMenu present
         ++ IconAPI.viewMenu present
@@ -166,9 +166,9 @@ update msg ({present} as undoModel) =
 addTopic : Model -> Model
 addTopic model =
   let
-    boxId = Box.activeBox model
+    boxId = Box.active model
   in
-  case Box.boxByIdOrLog boxId model.boxes of
+  case Box.byIdOrLog boxId model.boxes of
     Just box ->
       let
         (newModel, topicId) = Item.addTopic C.initTopicText Nothing model
@@ -181,7 +181,7 @@ addTopic model =
           (TopicD LabelOnly)
       in
       newModel
-      |> Box.addItemToBox topicId props boxId
+      |> Box.addItem topicId props boxId
       |> Sel.select topicId [ boxId ]
     Nothing -> model
 
@@ -190,9 +190,9 @@ addTopic model =
 addBox : Model -> Model
 addBox model =
   let
-    boxId = Box.activeBox model
+    boxId = Box.active model
   in
-  case Box.boxByIdOrLog boxId model.boxes of
+  case Box.byIdOrLog boxId model.boxes of
     Just box ->
       let
         (newModel, topicId) = Item.addTopic C.initBoxText Nothing model
@@ -206,7 +206,7 @@ addBox model =
       in
       newModel
       |> Box.addBox topicId
-      |> Box.addItemToBox topicId props boxId
+      |> Box.addItem topicId props boxId
       |> Sel.select topicId [ boxId ]
     Nothing -> model
 
@@ -228,7 +228,7 @@ addAssocAndAddToBox itemType role1 player1 role2 player2 boxId model =
     (newModel, assocId) = Item.addAssoc itemType role1 player1 role2 player2 model
     props = AssocV AssocProps
   in
-  Box.addItemToBox assocId props boxId newModel
+  Box.addItem assocId props boxId newModel
 
 
 moveTopicToBox : Id -> BoxId -> Point -> Id -> BoxPath -> Point -> Model -> Model
@@ -243,7 +243,7 @@ moveTopicToBox topicId boxId origPos targetId targetBoxPath pos model =
       model
       |> Box.hideItem topicId boxId
       |> Box.setTopicPos topicId boxId origPos
-      |> Box.addItemToBox topicId props targetId
+      |> Box.addItem topicId props targetId
       |> Sel.select targetId targetBoxPath
       |> Size.auto
     Nothing -> model
@@ -327,7 +327,7 @@ back model =
 -- TODO
 adjustBoxRect : BoxId -> Float -> Model -> Model
 adjustBoxRect boxId factor model =
-  model |> Box.updateBoxRect boxId
+  model |> Box.updateRect boxId
     (\rect -> Rectangle
       (rect.x1 + factor * C.nestedBoxOffset.x)
       (rect.y1 + factor * C.nestedBoxOffset.y)
@@ -355,7 +355,7 @@ delete model =
     newModel = model.selection.items
       |> List.map Tuple.first
       |> List.foldr
-        (\itemId modelAcc -> Item.removeItem itemId modelAcc)
+        (\itemId modelAcc -> Item.remove itemId modelAcc)
         model
   in
   newModel

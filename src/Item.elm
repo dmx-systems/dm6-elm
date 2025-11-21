@@ -12,7 +12,7 @@ import String exposing (fromInt)
 
 topicById : Id -> Model -> Maybe TopicInfo
 topicById topicId model =
-  case itemById topicId model of
+  case byId topicId model of
     Just {info} ->
       case info of
         Topic topic -> Just topic
@@ -22,7 +22,7 @@ topicById topicId model =
 
 assocById : Id -> Model -> Maybe AssocInfo
 assocById assocId model =
-  case itemById assocId model of
+  case byId assocId model of
     Just {info} ->
       case info of
         Topic _ -> U.assocMismatch "assocById" assocId Nothing
@@ -30,11 +30,11 @@ assocById assocId model =
     Nothing -> U.fail "assocById" assocId Nothing
 
 
-itemById : Id -> Model -> Maybe Item
-itemById itemId model =
+byId : Id -> Model -> Maybe Item
+byId itemId model =
   case model.items |> Dict.get itemId of
     Just item -> Just item
-    Nothing -> U.illegalItemId "itemById" itemId Nothing
+    Nothing -> U.illegalItemId "byId" itemId Nothing
 
 
 topicLabel : TopicInfo -> String
@@ -70,18 +70,18 @@ addAssoc itemType role1 player1 role2 player2 model =
   )
 
 
-removeItem : Id -> Model -> Model
-removeItem itemId model =
-  itemAssocIds itemId model |> Set.foldr
-    removeItem -- recursion
+remove : Id -> Model -> Model
+remove itemId model =
+  assocIds itemId model |> Set.foldr
+    remove -- recursion
     model
     |> removeAssocRefs_ itemId
-    |> removeItem_ itemId
+    |> remove_ itemId
 
 
 removeAssocRefs_ : Id -> Model -> Model
 removeAssocRefs_ itemId model =
-  case itemById itemId model of
+  case byId itemId model of
     Just {info} ->
       case info of
         Assoc assoc ->
@@ -92,8 +92,8 @@ removeAssocRefs_ itemId model =
     Nothing -> model -- error is already logged
 
 
-removeItem_ : Id -> Model -> Model
-removeItem_ itemId model =
+remove_ : Id -> Model -> Model
+remove_ itemId model =
   { model
     | items = model.items |> Dict.remove itemId -- delete item
     , boxes = model.boxes |> Dict.map -- delete item from all boxes
@@ -103,7 +103,7 @@ removeItem_ itemId model =
 
 relatedItems : Id -> Model -> List (Id, Id)
 relatedItems itemId model =
-  itemAssocIds itemId model |> Set.foldr
+  assocIds itemId model |> Set.foldr
     (\assocId relItemsAcc ->
       (otherPlayerId assocId itemId model, assocId) :: relItemsAcc
     )
@@ -124,28 +124,28 @@ otherPlayerId assocId playerId model =
     Nothing -> -1 -- error is already logged
 
 
-itemAssocIds : Id -> Model -> AssocIds
-itemAssocIds itemId model =
-  case itemById itemId model of
-    Just {assocIds} -> assocIds
+assocIds : Id -> Model -> AssocIds
+assocIds itemId model =
+  case byId itemId model of
+    Just item -> item.assocIds
     Nothing -> Set.empty -- error is already logged
 
 
 insertAssocId_ : Id -> Id -> Model -> Model
 insertAssocId_ assocId itemId model =
   model
-  |> updateItem itemId (\item -> {item | assocIds = item.assocIds |> Set.insert assocId})
+  |> update itemId (\item -> {item | assocIds = item.assocIds |> Set.insert assocId})
 
 
 removeAssocId_ : Id -> Id -> Model -> Model
 removeAssocId_ assocId itemId model =
   model
-  |> updateItem itemId (\item -> {item | assocIds = item.assocIds |> Set.remove assocId})
+  |> update itemId (\item -> {item | assocIds = item.assocIds |> Set.remove assocId})
 
 
 updateTopicInfo : Id -> (TopicInfo -> TopicInfo) -> Model -> Model
 updateTopicInfo topicId transform model =
-  model |> updateItem topicId
+  model |> update topicId
     (\item ->
       case item.info of
         Topic topic -> { item | info = Topic <| transform topic }
@@ -153,15 +153,38 @@ updateTopicInfo topicId transform model =
     )
 
 
-updateItem : Id -> (Item -> Item) -> Model -> Model
-updateItem itemId transform model =
+update : Id -> (Item -> Item) -> Model -> Model
+update itemId transform model =
   { model | items = model.items |> Dict.update itemId
     (\maybeItem ->
       case maybeItem of
         Just item -> Just <| transform item
-        Nothing -> U.illegalItemId "updateItem" itemId Nothing
+        Nothing -> U.illegalItemId "update" itemId Nothing
     )
   }
+
+
+hasPlayer : Id -> Model -> Id -> Bool
+hasPlayer playerId model assocId =
+  case assocById assocId model of
+    Just assoc -> assoc.player1 == playerId || assoc.player2 == playerId
+    Nothing -> False
+
+
+{-| useful as a filter predicate
+-}
+isTopic : Item -> Bool
+isTopic item =
+  case item.info of
+    Topic _ -> True
+    Assoc _ -> False
+
+
+{-| useful as a filter predicate
+-}
+isAssoc : Item -> Bool
+isAssoc item =
+  not (isTopic item)
 
 
 nextId : Model -> Model

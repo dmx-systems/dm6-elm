@@ -87,11 +87,11 @@ gAttr boxId boxRect model =
 -- For a fullscreen box boxPath is empty
 boxInfo : BoxId -> BoxPath -> Model -> BoxInfo
 boxInfo boxId boxPath model =
-  case Box.boxByIdOrLog boxId model.boxes of
+  case Box.byIdOrLog boxId model.boxes of
     Just box ->
       ( viewItems box boxPath model
       , box.rect
-      , if Box.isActiveBox boxId model then
+      , if Box.isActive boxId model then
           ( { w = "100%", h = "100%" }, [] )
         else
           ( { w = (box.rect.x2 - box.rect.x1) |> round |> fromInt
@@ -112,7 +112,7 @@ viewItems box boxPath model =
   in
   box.items |> Dict.values |> List.filter (shouldItemRender box.id model) |> List.foldr
     (\{id, props} (t, a) ->
-      case Item.itemById id model of
+      case Item.byId id model of
         Just {info} ->
           case (info, props) of
             (Topic topic, TopicV tProps) -> (viewTopic topic tProps newPath model :: t, a)
@@ -133,7 +133,7 @@ viewLimboTopic boxId model =
   case limboState model of
     Just (topicId, _, limboBoxId) ->
       if boxId == limboBoxId then
-        if Box.boxHasItem boxId topicId model then
+        if Box.hasItem boxId topicId model then
           let
             _ = U.info "viewLimboTopic" (topicId, "is in box", boxId)
           in
@@ -157,7 +157,7 @@ viewLimboAssoc boxId model =
   case limboState model of
     Just (topicId, Just assocId, limboBoxId) ->
       if boxId == limboBoxId then
-        if Box.boxHasItem boxId assocId model then
+        if Box.hasItem boxId assocId model then
           let
             _ = U.info "viewLimboAssoc" (assocId, "is in box", boxId)
           in
@@ -168,7 +168,7 @@ viewLimboAssoc boxId model =
           in
           case Item.assocById assocId model of
             Just assoc ->
-              if Box.boxHasItem boxId topicId model then
+              if Box.hasItem boxId topicId model then
                 -- only if related topic is in box we can call high-level viewAssoc()
                 [ viewAssoc assoc boxId model ]
               else
@@ -213,7 +213,7 @@ isLimboAssoc assocId boxId model =
 limboState : Model -> Maybe (Id, Maybe Id, BoxId) -- (topic ID, assoc ID, box ID)
 limboState model =
   case model.search.menu of
-    Topics _ (Just topicId) -> Just (topicId, Nothing, Box.activeBox model)
+    Topics _ (Just topicId) -> Just (topicId, Nothing, Box.active model)
     RelTopics _ (Just (topicId, assocId)) ->
       case Sel.singleBoxId model of
         Just boxId -> Just (topicId, Just assocId, boxId)
@@ -428,7 +428,7 @@ boxItemCount topicId props model =
       case props.displayMode of
         TopicD _ -> 0
         BoxD _ ->
-          case Box.boxByIdOrLog topicId model.boxes of
+          case Box.byIdOrLog topicId model.boxes of
             Just box -> box.items |> Dict.values |> List.filter Box.isVisible |> List.length
             Nothing -> 0
   in
@@ -440,7 +440,7 @@ boxItemCount topicId props model =
 
 topicAttr : Id -> BoxPath -> Model -> List (Attribute Msg)
 topicAttr topicId boxPath model =
-  if Box.isActiveBox topicId model then
+  if Box.isActive topicId model then
     [] -- TODO: the fullscreen box would require dedicated event handling, e.g. panning?
   else
     [ attribute "class" "dmx-topic"
@@ -522,7 +522,7 @@ accumulateBoxPos posAcc boxId parentBoxId boxIds model =
 
 accumulateBoxRect : Point -> BoxId -> Model -> Point
 accumulateBoxRect posAcc boxId model =
-  case Box.boxByIdOrLog boxId model.boxes of
+  case Box.byIdOrLog boxId model.boxes of
     Just box -> Point
       (posAcc.x - box.rect.x1)
       (posAcc.y - box.rect.y1)

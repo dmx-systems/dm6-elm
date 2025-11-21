@@ -18,7 +18,7 @@ import Dict
 
 auto : Model -> Model
 auto model =
-  calcBoxRect [ Box.activeBox model ] model |> Tuple.second
+  calcBoxRect [ Box.active model ] model |> Tuple.second
 
 
 {-| Calculates (recursively) the box's "rect"
@@ -28,7 +28,7 @@ calcBoxRect boxPath model =
   let
     boxId = Box.firstId boxPath
   in
-  case Box.boxByIdOrLog boxId model.boxes of
+  case Box.byIdOrLog boxId model.boxes of
     Just box ->
       let
         (rect, model_) =
@@ -110,7 +110,7 @@ storeBoxGeometry boxPath newRect oldRect model =
 
 storeBoxRect : BoxId -> Rectangle -> Model -> Model
 storeBoxRect boxId newRect model =
-  model |> Box.updateBoxRect boxId (\rect -> newRect)
+  model |> Box.updateRect boxId (\rect -> newRect)
 
 
 adjustBoxPos : BoxId -> BoxId -> Rectangle -> Rectangle -> Model -> Model

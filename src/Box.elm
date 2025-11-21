@@ -13,21 +13,21 @@ import String exposing (fromInt)
 
 isAtRoot : Model -> Bool
 isAtRoot model =
-  model |> activeBox |> isRootBox
+  model |> active |> isRoot
 
 
-isRootBox : Id -> Bool
-isRootBox id =
+isRoot : Id -> Bool
+isRoot id =
   id == 0
 
 
-isActiveBox : BoxId -> Model -> Bool
-isActiveBox boxId model =
-  activeBox model == boxId
+isActive : BoxId -> Model -> Bool -- TODO: rename "isFullscreen"?
+isActive boxId model =
+  active model == boxId
 
 
-activeBox : Model -> BoxId
-activeBox model =
+active : Model -> BoxId
+active model =
   firstId model.boxPath
 
 
@@ -48,16 +48,16 @@ fromPath boxPath =
 {-| Logs an error if box does not exist.
 TODO: replace Boxes parameter by Model?
 -}
-boxByIdOrLog : BoxId -> Boxes -> Maybe Box
-boxByIdOrLog boxId boxes =
-  case boxById boxId boxes of
+byIdOrLog : BoxId -> Boxes -> Maybe Box
+byIdOrLog boxId boxes =
+  case byId boxId boxes of
     Just box -> Just box
-    Nothing -> U.illegalBoxId "boxByIdOrLog" boxId Nothing
+    Nothing -> U.illegalBoxId "byIdOrLog" boxId Nothing
 
 
 {-| TODO: replace Boxes parameter by Model? -}
-boxById : BoxId -> Boxes -> Maybe Box
-boxById boxId boxes =
+byId : BoxId -> Boxes -> Maybe Box
+byId boxId boxes =
   boxes |> Dict.get boxId
 
 
@@ -67,6 +67,9 @@ isBox id boxes =
   boxes |> Dict.member id
 
 
+{-| Presumption: the item exists already.
+TODO: create item along with box
+-}
 addBox : BoxId -> Model -> Model
 addBox boxId model =
   { model | boxes = model.boxes |> Dict.insert
@@ -75,9 +78,9 @@ addBox boxId model =
   }
 
 
-updateBoxRect : BoxId -> (Rectangle -> Rectangle) -> Model -> Model
-updateBoxRect boxId transform model =
-  { model | boxes = updateBoxes
+updateRect : BoxId -> (Rectangle -> Rectangle) -> Model -> Model
+updateRect boxId transform model =
+  { model | boxes = update
     boxId
     (\box ->
       { box | rect = transform box.rect }
@@ -103,7 +106,9 @@ setTopicPos topicId boxId pos model =
     (\props -> { props | pos = pos })
 
 
-{-| Logs an error if box does not exist or if topic is not in box -}
+{-| Logs an error if box does not exist or if topic is not in box
+TODO: make it "updateTopicPos" and take a transform function
+-}
 setTopicPosByDelta : Id -> BoxId -> Delta -> Model -> Model
 setTopicPosByDelta topicId boxId delta model =
   model |> updateTopicProps topicId boxId
@@ -149,7 +154,7 @@ setDisplayMode topicId boxId display model =
 {-| TODO: replace Boxes parameter by Model? -}
 topicProps : Id -> BoxId -> Boxes -> Maybe TopicProps
 topicProps topicId boxId boxes =
-  case boxItemById topicId boxId boxes of
+  case itemByIdOrLog topicId boxId boxes of
     Just boxItem ->
       case boxItem.props of
         TopicV props -> Just props
@@ -160,7 +165,7 @@ topicProps topicId boxId boxes =
 {-| Logs an error if box does not exist or if topic is not in box -}
 updateTopicProps : Id -> BoxId -> (TopicProps -> TopicProps) -> Model -> Model
 updateTopicProps topicId boxId transform model =
-  { model | boxes = model.boxes |> updateBoxes boxId
+  { model | boxes = model.boxes |> update boxId
     (\box ->
       { box | items = box.items |> Dict.update topicId
         (\boxItem_ ->
@@ -180,7 +185,7 @@ updateTopicProps topicId boxId transform model =
 {-| Initial props for a newly revealed item -}
 initItemProps : Id -> BoxId -> Model -> ViewProps
 initItemProps itemId boxId model =
-  case Item.itemById itemId model of
+  case Item.byId itemId model of
     Just item ->
       case item.info of
         Topic _ -> TopicV <| initTopicProps itemId boxId model
@@ -202,7 +207,7 @@ initTopicProps topicId boxId model =
 
 initPos : BoxId -> Point
 initPos boxId =
-  case isRootBox boxId of
+  case isRoot boxId of
     True -> C.nestedBoxOffset
     False -> Point 0 0
 
@@ -210,33 +215,33 @@ initPos boxId =
 {-| Logs an error if box does not exist or item is not in box.
 TODO: replace Boxes parameter by Model?
 -}
-boxItemById : Id -> BoxId -> Boxes -> Maybe BoxItem
-boxItemById itemId boxId boxes =
-  boxByIdOrLog boxId boxes |> Maybe.andThen
+itemByIdOrLog : Id -> BoxId -> Boxes -> Maybe BoxItem
+itemByIdOrLog itemId boxId boxes =
+  byIdOrLog boxId boxes |> Maybe.andThen
     (\box ->
       case box.items |> Dict.get itemId of
         Just boxItem -> Just boxItem
-        Nothing -> U.itemNotInBox "boxItemById" itemId box.id Nothing
+        Nothing -> U.itemNotInBox "itemByIdOrLog" itemId box.id Nothing
     )
 
 
-boxHasDeepItem : BoxId -> Id -> Model -> Bool
-boxHasDeepItem boxId itemId model =
+{-| Logs an error if box does not exist. -}
+hasItem : BoxId -> Id -> Model -> Bool
+hasItem boxId itemId model =
+  case byIdOrLog boxId model.boxes of
+    Just box -> box.items |> Dict.member itemId
+    Nothing -> False
+
+
+hasDeepItem : BoxId -> Id -> Model -> Bool
+hasDeepItem boxId itemId model =
   if itemId == boxId then
     True
   else
-    case boxById boxId model.boxes of
+    case byId boxId model.boxes of
       Just box -> box.items |> Dict.keys |> List.any
-        (\id -> boxHasDeepItem id itemId model)
+        (\id -> hasDeepItem id itemId model)
       Nothing -> False
-
-
-{-| Logs an error if box does not exist. -}
-boxHasItem : BoxId -> Id -> Model -> Bool
-boxHasItem boxId itemId model =
-  case boxByIdOrLog boxId model.boxes of
-    Just box -> box.items |> Dict.member itemId
-    Nothing -> False
 
 
 {-| Adds an item to a box and creates a connecting association.
@@ -244,8 +249,8 @@ Presumption: the item is not yet contained in the box. Otherwise the existing bo
 overridden and another association still be created. This is not what you want.
 Can be used for both, topics and associations.
 -}
-addItemToBox : Id -> ViewProps -> BoxId -> Model -> Model
-addItemToBox itemId props boxId model =
+addItem : Id -> ViewProps -> BoxId -> Model -> Model
+addItem itemId props boxId model =
   let
     (newModel, parentAssocId) = Item.addAssoc
       "dmx.composition"
@@ -253,10 +258,10 @@ addItemToBox itemId props boxId model =
       "dmx.parent" boxId
       model
     boxItem = BoxItem itemId parentAssocId False False props -- hidden=False, pinned=False
-    _ = U.info "addItemToBox"
+    _ = U.info "addItem"
       { itemId = itemId, parentAssocId = parentAssocId, props = props, boxId = boxId}
   in
-  { newModel | boxes = newModel.boxes |> updateBoxes
+  { newModel | boxes = newModel.boxes |> update
       boxId
       (\box -> { box | items = box.items |> Dict.insert itemId boxItem })
   }
@@ -269,7 +274,7 @@ Logs an error if box does not exist.
 -}
 showItem : Id -> BoxId -> Model -> Model
 showItem itemId boxId model =
-  { model | boxes = model.boxes |> updateBoxes
+  { model | boxes = model.boxes |> update
     boxId
     (\box ->
       { box | items = box.items |> Dict.update itemId
@@ -285,7 +290,7 @@ showItem itemId boxId model =
 
 hideItem : Id -> BoxId -> Model -> Model
 hideItem itemId boxId model =
-  { model | boxes = model.boxes |> updateBoxes
+  { model | boxes = model.boxes |> update
     boxId
     (\box -> { box | items = hideItem_ itemId box.items model })
   }
@@ -293,7 +298,7 @@ hideItem itemId boxId model =
 
 hideItem_ : Id -> BoxItems -> Model -> BoxItems
 hideItem_ itemId items model =
-  boxAssocsOfPlayer_ itemId items model |> List.foldr
+  assocsOfPlayer_ itemId items model |> List.foldr
     (\assocId itemsAcc -> hideItem_ assocId itemsAcc model)
     (items |> Dict.update
       itemId
@@ -308,52 +313,29 @@ hideItem_ itemId items model =
 {-| Logs an error if box does not exist.
 TODO: replace Boxes parameter by Model?
 -}
-updateBoxes : BoxId -> (Box -> Box) -> Boxes -> Boxes
-updateBoxes boxId transform boxes =
+update : BoxId -> (Box -> Box) -> Boxes -> Boxes
+update boxId transform boxes =
   boxes |> Dict.update boxId
     (\box_ ->
       case box_ of
         Just box -> Just (transform box)
-        Nothing -> U.illegalBoxId "updateBoxes" boxId Nothing
+        Nothing -> U.illegalBoxId "update" boxId Nothing
     )
 
 
-boxAssocsOfPlayer_ : Id -> BoxItems -> Model -> List Id
-boxAssocsOfPlayer_ playerId items model =
+assocsOfPlayer_ : Id -> BoxItems -> Model -> List Id
+assocsOfPlayer_ playerId items model =
   items
   |> Dict.values
-  |> List.filter isBoxAssoc
+  |> List.filter isAssoc
   |> List.map .id
-  |> List.filter (hasPlayer playerId model)
-
-
-hasPlayer : Id -> Model -> Id -> Bool
-hasPlayer playerId model assocId =
-  case Item.assocById assocId model of
-    Just assoc -> assoc.player1 == playerId || assoc.player2 == playerId
-    Nothing -> False
+  |> List.filter (Item.hasPlayer playerId model)
 
 
 {-| useful as a filter predicate
 -}
-isTopic : Item -> Bool
+isTopic : BoxItem -> Bool
 isTopic item =
-  case item.info of
-    Topic _ -> True
-    Assoc _ -> False
-
-
-{-| useful as a filter predicate
--}
-isAssoc : Item -> Bool
-isAssoc item =
-  not (isTopic item)
-
-
-{-| useful as a filter predicate
--}
-isBoxTopic : BoxItem -> Bool
-isBoxTopic item =
   case item.props of
     TopicV _ -> True
     AssocV _ -> False
@@ -361,9 +343,9 @@ isBoxTopic item =
 
 {-| useful as a filter predicate
 -}
-isBoxAssoc : BoxItem -> Bool
-isBoxAssoc item =
-  not (isBoxTopic item)
+isAssoc : BoxItem -> Bool
+isAssoc item =
+  not (isTopic item)
 
 
 {-| useful as a filter predicate

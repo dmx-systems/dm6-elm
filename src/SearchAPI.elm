@@ -123,7 +123,7 @@ viewRelTopicsMenu relTopicIds model =
 isItemDisabled : Id -> Model -> Bool
 isItemDisabled topicId model =
   case revealBoxId model of
-    Just boxId -> Box.boxHasDeepItem topicId boxId model
+    Just boxId -> Box.hasDeepItem topicId boxId model
     Nothing -> False
 
 
@@ -131,7 +131,7 @@ isItemDisabled topicId model =
 revealBoxId : Model -> Maybe Id
 revealBoxId model =
   case model.search.menu of
-    Topics _ _ -> Just (Box.activeBox model)
+    Topics _ _ -> Just (Box.active model)
     RelTopics _ _ ->
       case Sel.singleBoxId model of
         Just boxId -> Just boxId
@@ -278,7 +278,7 @@ onUnhoverRelTopic ({search} as model) =
 revealTopic : Id -> Model -> Model
 revealTopic topicId model =
   model
-  |> revealItem topicId (Box.activeBox model)
+  |> revealItem topicId (Box.active model)
   |> closeMenu
 
 
@@ -332,7 +332,7 @@ isMatch searchText text =
 
 revealItem : Id -> BoxId -> Model -> Model
 revealItem itemId boxId model =
-  if Box.boxHasItem boxId itemId model then
+  if Box.hasItem boxId itemId model then
     let
       _ = U.info "revealItem" <| fromInt itemId ++ " is in " ++ fromInt boxId
     in
@@ -342,7 +342,7 @@ revealItem itemId boxId model =
       _ = U.info "revealItem" <| fromInt itemId ++ " not in " ++ fromInt boxId
       props = Box.initItemProps itemId boxId model
     in
-    Box.addItemToBox itemId props boxId model
+    Box.addItem itemId props boxId model
 
 
 closeMenu : Model -> Model

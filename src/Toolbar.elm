@@ -112,7 +112,7 @@ mapTitleStyle =
 
 getMapName : Model -> String
 getMapName model =
-  case Item.topicById (Box.activeBox model) model of
+  case Item.topicById (Box.active model) model of
     Just topic -> Item.topicLabel topic
     Nothing -> "??"
 
