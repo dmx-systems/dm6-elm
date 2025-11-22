@@ -143,7 +143,7 @@ hasSelection undoModel =
 hasBoxSelection : UndoModel -> Bool
 hasBoxSelection {present} =
   case Sel.single present of
-    Just (id, _) -> Box.isBox id present.boxes
+    Just (id, _) -> Item.isBox id present
     Nothing -> False
 
 

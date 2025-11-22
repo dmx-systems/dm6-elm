@@ -480,37 +480,37 @@ viewAssocDraft boxId model =
     _ -> []
 
 
-{-| Transforms an absolute screen position to a box-relative position.
+{-| Transforms a viewport position to a box-relative position.
 -}
 relPos : Point -> BoxPath -> Model -> Point
 relPos pos boxPath model =
   let
-    posAbs = absBoxPos boxPath (Point 0 0) model
+    posAbs = absPos boxPath (Point 0 0) model
   in
   Point
     (pos.x - posAbs.x)
-    (pos.y - posAbs.y)
+    (pos.y - posAbs.y - C.appHeaderHeight)
 
 
 {-| Recursively calculates the absolute position of a box.
 "posAcc" is the position accumulated so far.
 -}
-absBoxPos : BoxPath -> Point -> Model -> Point
-absBoxPos boxPath posAcc model =
+absPos : BoxPath -> Point -> Model -> Point
+absPos boxPath posAcc model =
   case boxPath of
-    [ boxId ] -> accumulateBoxRect posAcc boxId model
-    boxId :: parentBoxId :: boxIds -> accumulateBoxPos posAcc boxId parentBoxId boxIds model
-    [] -> U.logError "absBoxPos" "boxPath is empty!" (Point 0 0)
+    [ boxId ] -> accumulateRect posAcc boxId model
+    boxId :: parentBoxId :: boxIds -> accumulatePos posAcc boxId parentBoxId boxIds model
+    [] -> U.logError "absPos" "boxPath is empty!" (Point 0 0)
 
 
-accumulateBoxPos : Point -> BoxId -> BoxId -> BoxPath -> Model -> Point
-accumulateBoxPos posAcc boxId parentBoxId boxIds model =
+accumulatePos : Point -> BoxId -> BoxId -> BoxPath -> Model -> Point
+accumulatePos posAcc boxId parentBoxId boxIds model =
   let
-    {x, y} = accumulateBoxRect posAcc boxId model
+    {x, y} = accumulateRect posAcc boxId model
   in
   case Box.topicPos boxId parentBoxId model.boxes of
     Just boxPos ->
-      absBoxPos -- recursion
+      absPos -- recursion
         (parentBoxId :: boxIds)
         (Point
           (x + boxPos.x - C.topicW2)
@@ -520,8 +520,8 @@ accumulateBoxPos posAcc boxId parentBoxId boxIds model =
     Nothing -> Point 0 0 -- error is already logged
 
 
-accumulateBoxRect : Point -> BoxId -> Model -> Point
-accumulateBoxRect posAcc boxId model =
+accumulateRect : Point -> BoxId -> Model -> Point
+accumulateRect posAcc boxId model =
   case Box.byIdOrLog boxId model.boxes of
     Just box -> Point
       (posAcc.x - box.rect.x1)

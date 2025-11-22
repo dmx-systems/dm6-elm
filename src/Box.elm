@@ -61,12 +61,6 @@ byId boxId boxes =
   boxes |> Dict.get boxId
 
 
-{-| TODO: replace Boxes parameter by Model? -}
-isBox : Id -> Boxes -> Bool
-isBox id boxes =
-  boxes |> Dict.member id
-
-
 {-| Presumption: the item exists already.
 TODO: create item along with box
 -}
@@ -199,7 +193,7 @@ initTopicProps topicId boxId model =
   TopicProps
     (initPos boxId)
     C.topicSize
-    (case isBox topicId model.boxes of
+    (case Item.isBox topicId model of
       True -> BoxD BlackBox
       False -> TopicD LabelOnly
     )

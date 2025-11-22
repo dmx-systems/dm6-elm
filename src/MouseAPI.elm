@@ -3,6 +3,7 @@ module MouseAPI exposing (hoverHandler, subs, update)
 import Box
 import Box.Size as Size
 import Config as C
+import Item
 import Model exposing (Model, Msg(..))
 import ModelHelper exposing (..)
 import Undo exposing (UndoModel)
@@ -204,7 +205,7 @@ mouseOver class targetId targetBoxPath model =
     Drag dragMode id boxPath origPos lastPos _ ->
       let
         isSelf = (id, Box.firstId boxPath) == (targetId, Box.firstId targetBoxPath)
-        isBox = Box.isBox targetId model.boxes
+        isBox = Item.isBox targetId model
         target =
           -- the hovered item is a potential drop target if
           -- 1. the hovered item is not the item being dragged (can't drop on self), AND

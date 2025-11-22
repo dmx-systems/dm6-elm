@@ -1,6 +1,7 @@
 module Box.Transfer exposing (boxContent, unboxContent)
 
 import Box
+import Item
 import Model exposing (Model)
 import ModelHelper exposing (..)
 import Utils as U
@@ -123,7 +124,7 @@ unboxTopic boxItem targetItems model =
         Nothing ->
           -- by default (when no box item exists) an unboxed box will also be unboxed
           -- FIXME: set item's parentAssocId?
-          if Box.isBox boxItem.id model.boxes then
+          if Item.isBox boxItem.id model then
             (setUnboxed boxItem, False)
           else
             (boxItem, False)

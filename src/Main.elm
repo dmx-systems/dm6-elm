@@ -9,7 +9,8 @@ import Map
 import Model exposing (Model, Msg(..))
 import ModelHelper exposing (..)
 import Storage as S
-import Toolbar
+import Toolbar -- TODO: drop in favor of Tools
+import Tools
 import Undo exposing (UndoModel)
 import Utils as U
 -- feature modules
@@ -78,15 +79,19 @@ view ({present} as undoModel) =
   Browser.Document
     "DM6 Elm"
     [ div
-      ( MouseAPI.hoverHandler
-        ++ appStyle
-      )
-      ( [ Toolbar.view undoModel
-        , Map.view (Box.active present) [] present -- boxPath = []
-        ]
-        ++ SearchAPI.viewMenu present
-        ++ IconAPI.viewMenu present
-      )
+      appStyle
+      [ Tools.viewAppHeader
+      , div
+        ( mainStyle
+          ++ MouseAPI.hoverHandler
+        )
+        ( [ Toolbar.view undoModel
+          , Map.view (Box.active present) [] present -- boxPath = []
+          ]
+          ++ SearchAPI.viewMenu present
+          ++ IconAPI.viewMenu present
+        )
+      ]
     , div
       ( [ id "measure" ]
         ++ measureStyle
@@ -99,9 +104,19 @@ view ({present} as undoModel) =
 
 appStyle : List (Attribute Msg)
 appStyle =
-  [ style "font-family" C.mainFont
+  [ style "display" "flex"
+  , style "flex-direction" "column"
+  , style "height" "100%"
+  , style "font-family" C.mainFont
   , style "user-select" "none"
   , style "-webkit-user-select" "none" -- Safari still needs vendor prefix
+  ]
+
+
+mainStyle : List (Attribute Msg)
+mainStyle =
+  [ style "position" "relative"
+  , style "flex-grow" "1"
   ]
 
 
