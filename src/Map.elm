@@ -5,6 +5,7 @@ import Config as C
 import Item
 import Model exposing (Model, Msg(..))
 import ModelHelper exposing (..)
+import Tool
 import Utils as U
 -- feature modules
 import IconAPI
@@ -176,7 +177,7 @@ viewLimboAssoc boxId model =
                 let
                   sourceTopicId = Item.otherPlayerId assocId topicId model
                 in
-                case Box.topicPos sourceTopicId boxId model.boxes of
+                case Box.topicPos sourceTopicId boxId model of
                   Just pos -> [ lineFunc pos (Box.initPos boxId) (Just assoc) boxId model ]
                   Nothing -> []
             Nothing -> []
@@ -239,7 +240,29 @@ viewTopic topic props boxPath model =
       ++ topicStyle topic.id boxId model
       ++ style
     )
-    children
+    ( children
+      ++ viewTools topic.id boxId model
+    )
+
+
+viewTools : Id -> BoxId -> Model -> List (Html Msg)
+viewTools topicId boxId model =
+  case Sel.isSelected topicId boxId model of
+    True -> [ Tool.viewTools topicId boxId model ]
+    False -> []
+
+
+topicStyle : Id -> BoxId -> Model -> List (Attribute Msg)
+topicStyle id boxId model =
+  let
+    isDragging = case model.mouse.dragState of
+      Drag DragTopic id_ _ _ _ _ -> id_ == id
+      _ -> False
+  in
+  [ style "position" "absolute"
+  , style "opacity" <| if isLimboTopic id boxId model then ".5" else "1"
+  , style "z-index" <| if isDragging then "1" else "2"
+  ]
 
 
 effectiveDisplayMode : Id -> BoxId -> DisplayMode -> Model -> DisplayMode
@@ -462,8 +485,8 @@ viewAssoc assoc boxId model =
 assocGeometry : AssocInfo -> BoxId -> Model -> Maybe (Point, Point)
 assocGeometry assoc boxId model =
   let
-    pos1 = Box.topicPos assoc.player1 boxId model.boxes
-    pos2 = Box.topicPos assoc.player2 boxId model.boxes
+    pos1 = Box.topicPos assoc.player1 boxId model
+    pos2 = Box.topicPos assoc.player2 boxId model
   in
   case Maybe.map2 (\p1 p2 -> (p1, p2)) pos1 pos2 of
     Just geometry -> Just geometry
@@ -508,7 +531,7 @@ accumulatePos posAcc boxId parentBoxId boxIds model =
   let
     {x, y} = accumulateRect posAcc boxId model
   in
-  case Box.topicPos boxId parentBoxId model.boxes of
+  case Box.topicPos boxId parentBoxId model of
     Just boxPos ->
       absPos -- recursion
         (parentBoxId :: boxIds)
@@ -531,19 +554,6 @@ accumulateRect posAcc boxId model =
 
 
 -- STYLE
-
-
-topicStyle : Id -> BoxId -> Model -> List (Attribute Msg)
-topicStyle id boxId model =
-  let
-    isDragging = case model.mouse.dragState of
-      Drag DragTopic id_ _ _ _ _ -> id_ == id
-      _ -> False
-  in
-  [ style "position" "absolute"
-  , style "opacity" <| if isLimboTopic id boxId model then ".5" else "1"
-  , style "z-index" <| if isDragging then "1" else "2"
-  ]
 
 
 selectionStyle : Id -> BoxId -> Model -> List (Attribute Msg)

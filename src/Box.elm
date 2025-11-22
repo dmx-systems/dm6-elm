@@ -83,12 +83,10 @@ updateRect boxId transform model =
   }
 
 
-{-| Logs an error if box does not exist or item is not in box or is not a topic.
-TODO: replace Boxes parameter by Model?
--}
-topicPos : Id -> BoxId -> Boxes -> Maybe Point
-topicPos topicId boxId boxes =
-  case topicProps topicId boxId boxes of
+{-| Logs an error if box does not exist or item is not in box or is not a topic. -}
+topicPos : Id -> BoxId -> Model -> Maybe Point
+topicPos topicId boxId model =
+  case topicProps topicId boxId model.boxes of
     Just { pos } -> Just pos
     Nothing -> U.fail "topicPos" {topicId = topicId, boxId = boxId} Nothing
 

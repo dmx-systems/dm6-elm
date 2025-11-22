@@ -78,7 +78,7 @@ timeArrived time ({present} as undoModel) =
           case delay of
             True -> (DraftAssoc, Undo.swap)
             False -> (DragTopic, Undo.push)
-        maybeOrigPos = Box.topicPos id (Box.firstId boxPath) present.boxes
+        maybeOrigPos = Box.topicPos id (Box.firstId boxPath) present
         dragState =
           case class of
             "dmx-topic" ->

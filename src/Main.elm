@@ -10,7 +10,6 @@ import Model exposing (Model, Msg(..), NavMsg(..))
 import ModelHelper exposing (..)
 import Storage as S
 import Tool
-import Toolbar -- TODO: drop in favor of Tools
 import Undo exposing (UndoModel)
 import Utils as U
 -- feature modules
@@ -21,8 +20,8 @@ import SelectionAPI as Sel
 import TextEditAPI
 
 import Browser
-import Html exposing (Attribute, div, text, br)
-import Html.Attributes exposing (id, style)
+import Html exposing (Html, Attribute, div, text, br, a)
+import Html.Attributes exposing (id, style, href)
 import Json.Decode as D
 import Json.Encode as E
 import String exposing (fromInt, fromFloat)
@@ -85,20 +84,13 @@ view ({present} as undoModel) =
         ( mainStyle
           ++ MouseAPI.hoverHandler
         )
-        ( [ Toolbar.view undoModel
-          , Map.view (Box.active present) [] present -- boxPath = []
-          ]
+        ( [ Map.view (Box.active present) [] present ] -- boxPath = []
           ++ SearchAPI.viewMenu present
           ++ IconAPI.viewMenu present
         )
       ]
-    , div
-      ( [ id "measure" ]
-        ++ measureStyle
-      )
-      [ text present.edit.measureText
-      , br [] []
-      ]
+    , viewFooter
+    , viewMeasure present
     ]
 
 
@@ -118,6 +110,58 @@ mainStyle =
   [ style "position" "relative"
   , style "flex-grow" "1"
   ]
+
+
+viewFooter : Html Msg
+viewFooter =
+  div
+    footerStyle
+    [ div
+      []
+      [ text C.version ]
+    , div
+      []
+      [ text C.date ]
+    , div
+      []
+      [ text "Source: "
+      , a
+        ( [ href "https://github.com/dmx-systems/dm6-elm" ]
+          ++ linkStyle
+        )
+        [ text "GitHub" ]
+      ]
+    , a
+      ( [ href "https://dmx.berlin" ]
+        ++ linkStyle
+      )
+      [ text "DMX Systems" ]
+    ]
+
+
+footerStyle : List (Attribute Msg)
+footerStyle =
+  [ style "font-size" <| fromInt C.footerFontSize ++ "px"
+  , style "position" "absolute"
+  , style "bottom" "0"
+  , style "color" "lightgray"
+  ]
+
+
+linkStyle : List (Attribute Msg)
+linkStyle =
+  [ style "color" "lightgray" ]
+
+
+viewMeasure : Model -> Html Msg
+viewMeasure model =
+  div
+    ( [ id "measure" ]
+      ++ measureStyle
+    )
+    [ text model.edit.measureText
+    , br [] []
+    ]
 
 
 measureStyle : List (Attribute Msg)
@@ -275,7 +319,7 @@ select itemId boxPath model =
 resetUI : Model -> (Model, Cmd Msg)
 resetUI model =
   ( model
-    |> Sel.reset
+    |> Sel.clear
     |> IconAPI.closeMenu
     |> SearchAPI.closeMenu
   , Cmd.none
@@ -314,7 +358,7 @@ fullscreen model =
   case Sel.single model of
     Just (topicId, _) ->
       { model | boxPath = topicId :: model.boxPath }
-      |> Sel.reset
+      |> Sel.clear
       |> adjustBoxRect topicId -1
     Nothing -> model
 
@@ -360,7 +404,7 @@ hide model =
         model
   in
   newModel
-  |> Sel.reset
+  |> Sel.clear
   |> Size.auto
 
 
@@ -374,5 +418,5 @@ delete model =
         model
   in
   newModel
-  |> Sel.reset
+  |> Sel.clear
   |> Size.auto

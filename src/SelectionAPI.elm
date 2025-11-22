@@ -1,4 +1,4 @@
-module SelectionAPI exposing (select, reset, isSelected, single, singleBoxId)
+module SelectionAPI exposing (select, clear, isSelected, single, singleBoxId)
 
 import Model exposing (Model)
 import ModelHelper exposing (Id, BoxId, BoxPath)
@@ -20,8 +20,8 @@ select itemId boxPath model =
   |> setItems [ (itemId, boxPath) ]
 
 
-reset : Model -> Model
-reset model =
+clear : Model -> Model
+clear model =
   model
   |> setItems []
 
