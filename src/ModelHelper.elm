@@ -122,8 +122,3 @@ type alias ItemType = String -- a type URI, e.g. "dmx.association"
 type alias RoleType = String -- a role type URI, e.g. "dmx.default"
 type alias Delta = Point
 type alias Icon = String -- name of feather icon, https://feathericons.com
-
-
-type NavMsg
-  = Fullscreen
-  | Back

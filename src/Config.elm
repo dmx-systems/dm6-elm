@@ -14,7 +14,7 @@ date = "Nov 22, 2025"
 appHeaderHeight = 36
 
 mainFont = "sans-serif"
-toolbarFontSize = 13
+toolFontSize = 13
 contentFontSize = 13
 footerFontSize = 13
 

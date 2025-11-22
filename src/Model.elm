@@ -81,3 +81,8 @@ type Msg
   | Mouse Mouse.Msg
   | Search Search.Msg
   | Icon Icon.Msg
+
+
+type NavMsg
+  = Fullscreen
+  | Back

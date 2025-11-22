@@ -29,10 +29,7 @@ viewInput : Model -> Html Msg
 viewInput model =
   div
     []
-    [ div
-      []
-      [ text "Search" ]
-    , input
+    [ input
       ( [ value model.search.text
         , onInput (Search << Search.Input)
         , onFocus (Search Search.FocusInput)

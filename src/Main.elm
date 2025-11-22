@@ -6,11 +6,11 @@ import Box.Transfer as Transfer
 import Config as C
 import Item
 import Map
-import Model exposing (Model, Msg(..))
+import Model exposing (Model, Msg(..), NavMsg(..))
 import ModelHelper exposing (..)
 import Storage as S
+import Tool
 import Toolbar -- TODO: drop in favor of Tools
-import Tools
 import Undo exposing (UndoModel)
 import Utils as U
 -- feature modules
@@ -80,7 +80,7 @@ view ({present} as undoModel) =
     "DM6 Elm"
     [ div
       appStyle
-      [ Tools.viewAppHeader
+      [ Tool.viewAppHeader undoModel
       , div
         ( mainStyle
           ++ MouseAPI.hoverHandler

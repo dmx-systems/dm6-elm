@@ -3,8 +3,9 @@ module Toolbar exposing (view)
 import Box
 import Config as C
 import Item
-import Model exposing (Model, Msg(..))
+import Model exposing (Model, Msg(..), NavMsg(..))
 import ModelHelper exposing (..)
+import Tool
 import Undo exposing (UndoModel)
 import Utils as U
 -- feature modules
@@ -29,36 +30,19 @@ view : UndoModel -> Html Msg
 view ({present} as undoModel) =
   div
     toolbarStyle
-    [ viewMapNav present
-    , SearchAPI.viewInput present
-    , div
+    [ div
       []
-      [ viewToolbarButton "Add Topic" AddTopic always undoModel
-      , viewToolbarButton "Add Box" AddBox always undoModel
+      [ Tool.viewButton "Edit" (Edit T.EditStart) Tool.hasSelection undoModel
+      , Tool.viewButton "Set Icon" (Icon Icon.OpenMenu) Tool.hasSelection undoModel
       ]
-    , div
-      []
-      [ viewToolbarButton "Edit" (Edit T.EditStart) hasSelection undoModel
-      , viewToolbarButton "Set Icon" (Icon Icon.OpenMenu) hasSelection undoModel
-      ]
-    , viewToolbarButton "Traverse" (Search Search.ShowRelated) hasSelection undoModel
+    , Tool.viewButton "Traverse" (Search Search.ShowRelated) Tool.hasSelection undoModel
     , viewTopicDisplay present
     , viewBoxDisplay present
-    , viewToolbarButton "Fullscreen" (Nav Fullscreen) hasBoxSelection undoModel
+    , Tool.viewButton "Fullscreen" (Nav Fullscreen) Tool.hasBoxSelection undoModel
     , div
       []
-      [ viewToolbarButton "Hide" Hide hasSelection undoModel
-      , viewToolbarButton "Delete" Delete hasSelection undoModel
-      ]
-    , div
-      []
-      [ viewToolbarButton "Undo" Undo Undo.hasPast undoModel
-      , viewToolbarButton "Redo" Redo Undo.hasFuture undoModel
-      ]
-    , div
-      []
-      [ viewToolbarButton "Import" Import always undoModel
-      , viewToolbarButton "Export" Export always undoModel
+      [ Tool.viewButton "Hide" Hide Tool.hasSelection undoModel
+      , Tool.viewButton "Delete" Delete Tool.hasSelection undoModel
       ]
     , viewFooter
     ]
@@ -66,97 +50,14 @@ view ({present} as undoModel) =
 
 toolbarStyle : List (Attribute Msg)
 toolbarStyle =
-  [ style "font-size" <| fromInt C.toolbarFontSize ++ "px"
+  [ style "font-size" <| fromInt C.toolFontSize ++ "px"
   , style "display" "flex"
   , style "flex-direction" "column"
   , style "align-items" "flex-start"
   , style "gap" "22px"
+  , style "margin-top" "48px"
   , style "position" "fixed"
   , style "z-index" "1"
-  ]
-
-
-viewMapNav : Model -> Html Msg
-viewMapNav model =
-  let
-    backDisabled = Box.isAtRoot model
-  in
-  div
-    mapNavStyle
-    [ button
-      [ onClick (Nav Back)
-      , disabled backDisabled
-      ]
-      [ IconAPI.viewIcon "arrow-left" 20 ]
-    , span
-      mapTitleStyle
-      [ text <| getMapName model ]
-    ]
-
-
-mapNavStyle : List (Attribute Msg)
-mapNavStyle =
-  [ style "margin-top" "20px"
-  , style "margin-bottom" "12px"
-  ]
-
-
-mapTitleStyle : List (Attribute Msg)
-mapTitleStyle =
-  [ style "font-size" "36px"
-  , style "font-weight" "bold"
-  , style "vertical-align" "top"
-  , style "margin-left" "12px"
-  ]
-
-
-getMapName : Model -> String
-getMapName model =
-  case Item.topicById (Box.active model) model of
-    Just topic -> Item.topicLabel topic
-    Nothing -> "??"
-
-
-viewToolbarButton : String -> Msg -> (UndoModel -> Bool) -> UndoModel -> Html Msg
-viewToolbarButton label msg isEnabled undoModel =
-  let
-    buttonAttr =
-      [ U.stopPropagationOnMousedown NoOp
-      , disabled <| not <| isEnabled undoModel
-      ]
-  in
-  button
-    ( [ onClick msg ]
-      ++ buttonAttr
-      ++ buttonStyle
-    )
-    [ text label ]
-
-
-{-| isEnabled predicate -}
-hasSelection : UndoModel -> Bool
-hasSelection undoModel =
-  not (undoModel.present.selection.items |> List.isEmpty)
-
-
-{-| isEnabled predicate -}
-hasBoxSelection : UndoModel -> Bool
-hasBoxSelection {present} =
-  case Sel.single present of
-    Just (id, _) -> Item.isBox id present
-    Nothing -> False
-
-
-{-| isEnabled predicate -}
-always : UndoModel -> Bool
-always undoModel =
-  True
-
-
-buttonStyle : List (Attribute Msg)
-buttonStyle =
-  [ style "font-family" C.mainFont
-  , style "font-size" <| fromInt C.toolbarFontSize ++ "px"
   ]
 
 
