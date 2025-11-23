@@ -12,11 +12,10 @@ import Icon
 import IconAPI
 import Search
 import SearchAPI
-import SelectionAPI as Sel
 import TextEdit as T
 
-import Html exposing (Html, Attribute, div, span, text, button, input, label)
-import Html.Attributes exposing (style, type_, name, title, disabled, checked)
+import Html exposing (Html, Attribute, div, span, text, button)
+import Html.Attributes exposing (style, title, disabled)
 import Html.Events exposing (onClick)
 import String exposing (fromInt)
 
@@ -120,22 +119,6 @@ viewButton label msg isEnabled undoModel =
     [ text label ]
 
 
--- TODO: not used
-{-| isEnabled predicate -}
-hasSelection : UndoModel -> Bool
-hasSelection undoModel =
-  not (undoModel.present.selection.items |> List.isEmpty)
-
-
--- TODO: not used
-{-| isEnabled predicate -}
-hasBoxSelection : UndoModel -> Bool
-hasBoxSelection {present} =
-  case Sel.single present of
-    Just (id, _) -> Item.isBox id present
-    Nothing -> False
-
-
 {-| isEnabled predicate -}
 always : UndoModel -> Bool
 always undoModel =
@@ -146,27 +129,54 @@ always undoModel =
 -- ITEM TOOLS
 
 
-viewTools : Id -> BoxId -> Model -> Html Msg
+viewTools : Id -> BoxId -> Model -> List (Html Msg)
 viewTools itemId boxId model =
+  [ viewToolbar itemId boxId model
+  , viewCaret itemId boxId model
+  ]
+
+
+viewToolbar : Id -> BoxId -> Model -> Html Msg
+viewToolbar itemId boxId model =
   div
-    (toolStyle itemId boxId model)
-    [ viewIconButton "Edit" "edit-3" (Edit T.EditStart) model
-    , viewIconButton "Set Icon" "image" (Icon Icon.OpenMenu) model
-    , viewIconButton "Traverse" "share-2" (Search Search.ShowRelated) model
-    , viewIconButton "Remove" "x" Hide model -- TODO: "hide" -> "remove"
-    , viewIconButton "Delete" "trash" Delete model
-    , viewIconButton "Fullscreen" "maximize-2" (Nav Fullscreen) model
-    , viewIconButton "Unbox" "external-link" (SwitchDisplay <| BoxD Unboxed) model
-    , viewTopicDisplay model
-    , viewBoxDisplay model
+    (toolbarStyle itemId boxId model)
+    [ viewIconButton "Edit" "edit-3" (Edit T.EditStart)
+    , viewIconButton "Set Icon" "image" (Icon Icon.OpenMenu)
+    , viewIconButton "Traverse" "share-2" (Search Search.ShowRelated)
+    , viewIconButton "Remove" "x" Hide -- TODO: "hide" -> "remove"
+    , viewIconButton "Delete" "trash" Delete
+    -- TODO: render these 2 only for boxes
+    , viewIconButton "Fullscreen" "maximize-2" (Nav Fullscreen)
+    , viewIconButton "Unbox" "external-link" (Unbox itemId boxId) -- TODO: disable if unboxed
     ]
 
 
-toolStyle : Id -> BoxId -> Model -> List (Attribute Msg)
-toolStyle topicId boxId model =
+viewCaret : Id -> BoxId -> Model -> Html Msg
+viewCaret itemId boxId model =
+  let
+    icon =
+      case Box.displayMode itemId boxId model.boxes of
+        Just (TopicD LabelOnly) -> "chevron-right"
+        Just (TopicD Detail) -> "chevron-down"
+        Just (BoxD BlackBox) -> "chevron-right"
+        Just (BoxD WhiteBox) -> "chevron-down"
+        Just (BoxD Unboxed) -> "chevron-down"
+        Nothing -> "??"
+  in
+  button
+    ( [ onClick <| ToggleDisplay itemId boxId
+      , U.stopPropagationOnMousedown NoOp
+      ]
+      ++ caretStyle
+    )
+    [ IconAPI.viewIcon icon 20 ]
+
+
+toolbarStyle : Id -> BoxId -> Model -> List (Attribute Msg)
+toolbarStyle topicId boxId model =
   [ style "font-size" <| fromInt C.toolFontSize ++ "px"
   , style "position" "absolute"
-  , style "top" "0"
+  , style "top" "35px"
   , style "left" "0"
   --, style "width" "100px"
   --, style "height" "22px"
@@ -174,8 +184,16 @@ toolStyle topicId boxId model =
   ]
 
 
-viewIconButton : String -> String -> Msg -> Model -> Html Msg
-viewIconButton label icon msg model =
+caretStyle : List (Attribute Msg)
+caretStyle  =
+  [ style "position" "absolute"
+  , style "top" "0"
+  , style "left" "-33px"
+  ]
+
+
+viewIconButton : String -> String -> Msg -> Html Msg
+viewIconButton label icon msg =
   let
     buttonAttr =
       [ U.stopPropagationOnMousedown NoOp ]
@@ -195,83 +213,3 @@ buttonStyle =
   [ style "font-family" C.mainFont
   , style "font-size" <| fromInt C.toolFontSize ++ "px"
   ]
-
-
-viewTopicDisplay : Model -> Html Msg
-viewTopicDisplay model =
-  let
-    display = case Sel.single model of
-      Just (topicId, boxPath) -> Box.displayMode topicId (Box.firstId boxPath) model.boxes
-      Nothing -> Nothing
-    (checked1, checked2, disabled_) =
-      case display of
-        Just (TopicD LabelOnly) -> (True, False, False)
-        Just (TopicD Detail) -> (False, True, False)
-        _ -> (False, False, True)
-  in
-  div
-    (displayModeStyle disabled_)
-    [ div
-        []
-        [ text "Topic Display" ]
-    , viewRadioButton "Label Only" (SwitchDisplay <| TopicD LabelOnly) checked1 disabled_
-    , viewRadioButton "Detail" (SwitchDisplay <| TopicD Detail) checked2 disabled_
-    ]
-
-
-viewBoxDisplay : Model -> Html Msg
-viewBoxDisplay model =
-  let
-    display = case Sel.single model of
-      Just (topicId, boxPath) -> Box.displayMode topicId (Box.firstId boxPath) model.boxes
-      Nothing -> Nothing
-    (checked1, checked2, checked3) =
-      case display of
-        Just (BoxD BlackBox) -> (True, False, False)
-        Just (BoxD WhiteBox) -> (False, True, False)
-        Just (BoxD Unboxed) -> (False, False, True)
-        _ -> (False, False, False)
-    disabled_ =
-      case display of
-        Just (BoxD _) -> False
-        _ -> True
-  in
-  div
-    (displayModeStyle disabled_)
-    [ div
-        []
-        [ text "Box Display" ]
-    , viewRadioButton "Black Box" (SwitchDisplay <| BoxD BlackBox) checked1 disabled_
-    , viewRadioButton "White Box" (SwitchDisplay <| BoxD WhiteBox) checked2 disabled_
-    , viewRadioButton "Unboxed" (SwitchDisplay <| BoxD Unboxed) checked3 disabled_
-    ]
-
-
-displayModeStyle : Bool -> List (Attribute Msg)
-displayModeStyle disabled =
-  let
-    (color, pointerEvents) =
-      if disabled then
-        (C.disabledColor, "none")
-      else
-        ("unset", "unset")
-  in
-  [ style "display" "flex"
-  , style "flex-direction" "column"
-  , style "gap" "6px"
-  , style "color" color
-  , style "pointer-events" pointerEvents
-  ]
-
-
-viewRadioButton : String -> Msg -> Bool -> Bool -> Html Msg
-viewRadioButton label_ msg isChecked isDisabled =
-  label
-    [ U.stopPropagationOnMousedown NoOp ]
-    [ input
-      [ type_ "radio", name "display-mode", checked isChecked, disabled isDisabled
-      , onClick msg
-      ]
-      []
-    , text label_
-    ]

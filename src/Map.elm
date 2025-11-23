@@ -248,7 +248,7 @@ viewTopic topic props boxPath model =
 viewTools : Id -> BoxId -> Model -> List (Html Msg)
 viewTools topicId boxId model =
   case Sel.isSelected topicId boxId model of
-    True -> [ Tool.viewTools topicId boxId model ]
+    True -> Tool.viewTools topicId boxId model
     False -> []
 
 

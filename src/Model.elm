@@ -67,7 +67,8 @@ type Msg
   | DraggedTopic
   | ClickedItem Id BoxPath
   | ClickedBackground
-  | SwitchDisplay DisplayMode
+  | ToggleDisplay Id BoxId -- TODO: make params Id BoxPath
+  | Unbox BoxId BoxId -- TODO: make params BoxId BoxPath
   | Nav NavMsg
   | Hide
   | Delete

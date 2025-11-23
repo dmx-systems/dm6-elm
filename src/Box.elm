@@ -139,8 +139,14 @@ displayMode topicId boxId boxes =
 {-| Logs an error if box does not exist or if topic is not in box -}
 setDisplayMode : Id -> BoxId -> DisplayMode -> Model -> Model
 setDisplayMode topicId boxId display model =
+  model
+  |> updateDisplayMode topicId boxId (\_ -> display)
+
+
+updateDisplayMode : Id -> BoxId -> (DisplayMode -> DisplayMode) -> Model -> Model
+updateDisplayMode topicId boxId transform model =
   model |> updateTopicProps topicId boxId
-    (\props -> { props | displayMode = display })
+    (\props -> { props | displayMode = transform props.displayMode })
 
 
 {-| TODO: replace Boxes parameter by Model? -}
@@ -324,8 +330,7 @@ assocsOfPlayer_ playerId items model =
   |> List.filter (Item.hasPlayer playerId model)
 
 
-{-| useful as a filter predicate
--}
+{-| useful as a filter predicate -}
 isTopic : BoxItem -> Bool
 isTopic item =
   case item.props of
@@ -333,15 +338,13 @@ isTopic item =
     AssocV _ -> False
 
 
-{-| useful as a filter predicate
--}
+{-| useful as a filter predicate -}
 isAssoc : BoxItem -> Bool
 isAssoc item =
   not (isTopic item)
 
 
-{-| useful as a filter predicate
--}
+{-| useful as a filter predicate -}
 isVisible : BoxItem -> Bool
 isVisible item =
   not item.hidden

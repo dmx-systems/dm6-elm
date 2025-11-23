@@ -197,16 +197,17 @@ update msg ({present} as undoModel) =
   case msg of
     AddTopic -> addTopic present |> S.store |> Undo.push undoModel
     AddBox -> addBox present |> S.store |> Undo.push undoModel
-    AddAssoc player1 player2 boxId -> addAssoc player1 player2 boxId present
-      |> S.store |> Undo.push undoModel
+    AddAssoc player1 player2 boxId -> addAssoc player1 player2 boxId present |> S.store
+      |> Undo.push undoModel
     MoveTopicToBox topicId boxId origPos targetId targetBoxPath pos
-      -> moveTopicToBox topicId boxId origPos targetId targetBoxPath pos present
-      |> S.store |> Undo.push undoModel
+      -> moveTopicToBox topicId boxId origPos targetId targetBoxPath pos present |> S.store
+      |> Undo.push undoModel
     DraggedTopic -> present |> S.store |> Undo.swap undoModel
     ClickedItem itemId boxPath -> select itemId boxPath present |> Undo.swap undoModel
     ClickedBackground -> resetUI present |> Undo.swap undoModel
-    SwitchDisplay displayMode -> switchDisplay displayMode present
-      |> S.store |> Undo.swap undoModel
+    ToggleDisplay topicId boxId -> toggleDisplay topicId boxId present |> S.store
+      |> Undo.swap undoModel
+    Unbox boxId targetBoxId -> unbox boxId targetBoxId present |> S.store |> Undo.swap undoModel
     Nav navMsg -> updateNav navMsg present |> S.store |> Undo.reset
     Hide -> hide present |> S.store |> Undo.push undoModel
     Delete -> delete present |> S.store |> Undo.push undoModel
@@ -326,23 +327,33 @@ resetUI model =
   )
 
 
-switchDisplay : DisplayMode -> Model -> Model
-switchDisplay displayMode model =
-  ( case Sel.single model of
-    Just (boxId, boxPath) ->
-      let
-        targetBoxId = Box.firstId boxPath
-      in
-      { model | boxes =
-        case displayMode of
-          TopicD _ -> model.boxes
-          BoxD BlackBox -> Transfer.boxContent boxId targetBoxId model
-          BoxD WhiteBox -> Transfer.boxContent boxId targetBoxId model
-          BoxD Unboxed -> Transfer.unboxContent boxId targetBoxId model
-      }
-      |> Box.setDisplayMode boxId targetBoxId displayMode
-    Nothing -> model
-  )
+toggleDisplay : Id -> BoxId -> Model -> Model
+toggleDisplay topicId boxId model =
+  let
+    (newModel, newDisplayMode) =
+      case Box.displayMode topicId boxId model.boxes of
+        Just (TopicD LabelOnly) -> (model, Just <| TopicD Detail)
+        Just (TopicD Detail) -> (model, Just <| TopicD LabelOnly)
+        Just (BoxD BlackBox) -> (model, Just <| BoxD WhiteBox)
+        Just (BoxD WhiteBox) -> (model, Just <| BoxD BlackBox)
+        Just (BoxD Unboxed) ->
+          ( { model | boxes = Transfer.boxContent topicId boxId model }
+          , Just (BoxD BlackBox)
+          )
+        Nothing -> (model, Nothing)
+  in
+  case (newModel, newDisplayMode) of
+    (newModel_, Just displayMode) ->
+      newModel_
+      |> Box.setDisplayMode topicId boxId displayMode
+      |> Size.auto
+    _ -> model
+
+
+unbox : BoxId -> BoxId -> Model -> Model
+unbox boxId targetBoxId model =
+  { model | boxes = Transfer.unboxContent boxId targetBoxId model }
+  |> Box.setDisplayMode boxId targetBoxId (BoxD Unboxed)
   |> Size.auto
 
 
