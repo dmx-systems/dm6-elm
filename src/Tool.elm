@@ -16,7 +16,7 @@ import SelectionAPI as Sel
 import TextEdit as T
 
 import Html exposing (Html, Attribute, div, span, text, button, input, label)
-import Html.Attributes exposing (style, type_, name, disabled, checked)
+import Html.Attributes exposing (style, type_, name, title, disabled, checked)
 import Html.Events exposing (onClick)
 import String exposing (fromInt)
 
@@ -31,12 +31,12 @@ viewAppHeader ({present} as undoModel) =
     appHeaderStyle
     [ viewNav present
     , div spacerStyle []
-    , SearchAPI.viewInput present
     , div
       []
       [ viewButton "Add Topic" AddTopic always undoModel
       , viewButton "Add Box" AddBox always undoModel
       ]
+    , SearchAPI.viewInput present
     , div
       []
       [ viewButton "Undo" Undo Undo.hasPast undoModel
@@ -142,13 +142,6 @@ always undoModel =
   True
 
 
-buttonStyle : List (Attribute Msg)
-buttonStyle =
-  [ style "font-family" C.mainFont
-  , style "font-size" <| fromInt C.toolFontSize ++ "px"
-  ]
-
-
 
 -- ITEM TOOLS
 
@@ -157,20 +150,15 @@ viewTools : Id -> BoxId -> Model -> Html Msg
 viewTools itemId boxId model =
   div
     (toolStyle itemId boxId model)
-    [ div
-      []
-      [ viewIconButton "Edit" (Edit T.EditStart) model
-      , viewIconButton "Set Icon" (Icon Icon.OpenMenu) model
-      ]
-    , viewIconButton "Traverse" (Search Search.ShowRelated) model
+    [ viewIconButton "Edit" "edit-3" (Edit T.EditStart) model
+    , viewIconButton "Set Icon" "image" (Icon Icon.OpenMenu) model
+    , viewIconButton "Traverse" "share-2" (Search Search.ShowRelated) model
+    , viewIconButton "Remove" "x" Hide model -- TODO: "hide" -> "remove"
+    , viewIconButton "Delete" "trash" Delete model
+    , viewIconButton "Fullscreen" "maximize-2" (Nav Fullscreen) model
+    , viewIconButton "Unbox" "external-link" (SwitchDisplay <| BoxD Unboxed) model
     , viewTopicDisplay model
     , viewBoxDisplay model
-    , viewIconButton "Fullscreen" (Nav Fullscreen) model
-    , div
-      []
-      [ viewIconButton "Hide" Hide model
-      , viewIconButton "Delete" Delete model
-      ]
     ]
 
 
@@ -186,18 +174,27 @@ toolStyle topicId boxId model =
   ]
 
 
-viewIconButton : String -> Msg -> Model -> Html Msg
-viewIconButton label msg model =
+viewIconButton : String -> String -> Msg -> Model -> Html Msg
+viewIconButton label icon msg model =
   let
     buttonAttr =
       [ U.stopPropagationOnMousedown NoOp ]
   in
   button
-    ( [ onClick msg ]
+    ( [ title label
+      , onClick msg
+      ]
       ++ buttonAttr
       ++ buttonStyle
     )
-    [ text label ]
+    [ IconAPI.viewIcon icon 20 ]
+
+
+buttonStyle : List (Attribute Msg)
+buttonStyle =
+  [ style "font-family" C.mainFont
+  , style "font-size" <| fromInt C.toolFontSize ++ "px"
+  ]
 
 
 viewTopicDisplay : Model -> Html Msg
