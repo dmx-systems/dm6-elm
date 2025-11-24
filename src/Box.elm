@@ -61,12 +61,6 @@ byId boxId boxes =
   boxes |> Dict.get boxId
 
 
-{-| TODO: replace Boxes parameter by Model? -}
-isBox : Id -> Boxes -> Bool
-isBox id boxes =
-  boxes |> Dict.member id
-
-
 {-| Presumption: the item exists already.
 TODO: create item along with box
 -}
@@ -89,12 +83,12 @@ updateRect boxId transform model =
   }
 
 
-{-| Logs an error if box does not exist or item is not in box or is not a topic.
-TODO: replace Boxes parameter by Model?
+{-| Logs an error if box does not exist, or topic is not in box, or ID refers not a topic (but
+an association).
 -}
-topicPos : Id -> BoxId -> Boxes -> Maybe Point
-topicPos topicId boxId boxes =
-  case topicProps topicId boxId boxes of
+topicPos : Id -> BoxId -> Model -> Maybe Point
+topicPos topicId boxId model =
+  case topicProps topicId boxId model of
     Just { pos } -> Just pos
     Nothing -> U.fail "topicPos" {topicId = topicId, boxId = boxId} Nothing
 
@@ -121,40 +115,52 @@ setTopicPosByDelta topicId boxId delta model =
     )
 
 
-{-| TODO: replace Boxes parameter by Model? -}
-topicSize : Id -> BoxId -> Boxes -> Maybe Size
-topicSize topicId boxId boxes =
-  case topicProps topicId boxId boxes of
+{-| Logs an error if box does not exist, or topic is not in box, or ID refers not a topic (but
+an association).
+-}
+topicSize : Id -> BoxId -> Model -> Maybe Size
+topicSize topicId boxId model =
+  case topicProps topicId boxId model of
     Just { size } -> Just size
     Nothing -> U.fail "topicSize" {topicId = topicId, boxId = boxId} Nothing
 
 
-{-| Logs an error if box does not exist or if topic is not in box -}
+{-| Logs an error if box does not exist, or topic is not in box -}
 setTopicSize : Id -> BoxId -> Size -> Model -> Model
 setTopicSize topicId boxId size model =
   model |> updateTopicProps topicId boxId
     (\props -> { props | size = size })
 
 
-{-| TODO: replace Boxes parameter by Model? -}
-displayMode : Id -> BoxId -> Boxes -> Maybe DisplayMode
-displayMode topicId boxId boxes =
-  case topicProps topicId boxId boxes of
+{-| Logs an error if box does not exist, or topic is not in box, or ID refers not a topic (but
+an association).
+-}
+displayMode : Id -> BoxId -> Model -> Maybe DisplayMode
+displayMode topicId boxId model =
+  case topicProps topicId boxId model of
     Just props -> Just props.displayMode
     Nothing -> U.fail "displayMode" {topicId = topicId, boxId = boxId} Nothing
 
 
-{-| Logs an error if box does not exist or if topic is not in box -}
+{-| Logs an error if box does not exist, or if topic is not in box -}
 setDisplayMode : Id -> BoxId -> DisplayMode -> Model -> Model
 setDisplayMode topicId boxId display model =
+  model
+  |> updateDisplayMode topicId boxId (\_ -> display)
+
+
+updateDisplayMode : Id -> BoxId -> (DisplayMode -> DisplayMode) -> Model -> Model
+updateDisplayMode topicId boxId transform model =
   model |> updateTopicProps topicId boxId
-    (\props -> { props | displayMode = display })
+    (\props -> { props | displayMode = transform props.displayMode })
 
 
-{-| TODO: replace Boxes parameter by Model? -}
-topicProps : Id -> BoxId -> Boxes -> Maybe TopicProps
-topicProps topicId boxId boxes =
-  case itemByIdOrLog topicId boxId boxes of
+{-| Logs an error if box does not exist, or topic is not in box, or ID refers not a topic (but
+an association).
+-}
+topicProps : Id -> BoxId -> Model -> Maybe TopicProps
+topicProps topicId boxId model =
+  case itemByIdOrLog topicId boxId model.boxes of
     Just boxItem ->
       case boxItem.props of
         TopicV props -> Just props
@@ -199,7 +205,7 @@ initTopicProps topicId boxId model =
   TopicProps
     (initPos boxId)
     C.topicSize
-    (case isBox topicId model.boxes of
+    (case Item.isBox topicId model of
       True -> BoxD BlackBox
       False -> TopicD LabelOnly
     )
@@ -332,8 +338,7 @@ assocsOfPlayer_ playerId items model =
   |> List.filter (Item.hasPlayer playerId model)
 
 
-{-| useful as a filter predicate
--}
+{-| useful as a filter predicate -}
 isTopic : BoxItem -> Bool
 isTopic item =
   case item.props of
@@ -341,15 +346,13 @@ isTopic item =
     AssocV _ -> False
 
 
-{-| useful as a filter predicate
--}
+{-| useful as a filter predicate -}
 isAssoc : BoxItem -> Bool
 isAssoc item =
   not (isTopic item)
 
 
-{-| useful as a filter predicate
--}
+{-| useful as a filter predicate -}
 isVisible : BoxItem -> Bool
 isVisible item =
   not item.hidden

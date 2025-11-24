@@ -6,10 +6,10 @@ import Box.Transfer as Transfer
 import Config as C
 import Item
 import Map
-import Model exposing (Model, Msg(..))
+import Model exposing (Model, Msg(..), NavMsg(..))
 import ModelHelper exposing (..)
 import Storage as S
-import Toolbar
+import Tool
 import Undo exposing (UndoModel)
 import Utils as U
 -- feature modules
@@ -20,8 +20,8 @@ import SelectionAPI as Sel
 import TextEditAPI
 
 import Browser
-import Html exposing (Attribute, div, text, br)
-import Html.Attributes exposing (id, style)
+import Html exposing (Html, Attribute, div, text, br, a)
+import Html.Attributes exposing (id, style, href)
 import Json.Decode as D
 import Json.Encode as E
 import String exposing (fromInt, fromFloat)
@@ -78,31 +78,90 @@ view ({present} as undoModel) =
   Browser.Document
     "DM6 Elm"
     [ div
-      ( MouseAPI.hoverHandler
-        ++ appStyle
-      )
-      ( [ Toolbar.view undoModel
-        , Map.view (Box.active present) [] present -- boxPath = []
-        ]
-        ++ SearchAPI.viewMenu present
-        ++ IconAPI.viewMenu present
-      )
-    , div
-      ( [ id "measure" ]
-        ++ measureStyle
-      )
-      [ text present.edit.measureText
-      , br [] []
+      appStyle
+      [ Tool.viewAppHeader undoModel
+      , div
+        ( mainStyle
+          ++ MouseAPI.hoverHandler
+        )
+        ( [ Map.view (Box.active present) [] present ] -- boxPath = []
+          ++ SearchAPI.viewMenu present
+          ++ IconAPI.viewMenu present
+        )
       ]
+    , viewFooter
+    , viewMeasure present
     ]
 
 
 appStyle : List (Attribute Msg)
 appStyle =
-  [ style "font-family" C.mainFont
+  [ style "display" "flex"
+  , style "flex-direction" "column"
+  , style "height" "100%"
+  , style "font-family" C.mainFont
   , style "user-select" "none"
   , style "-webkit-user-select" "none" -- Safari still needs vendor prefix
   ]
+
+
+mainStyle : List (Attribute Msg)
+mainStyle =
+  [ style "position" "relative"
+  , style "flex-grow" "1"
+  ]
+
+
+viewFooter : Html Msg
+viewFooter =
+  div
+    footerStyle
+    [ div
+      []
+      [ text C.version ]
+    , div
+      []
+      [ text C.date ]
+    , div
+      []
+      [ text "Source: "
+      , a
+        ( [ href "https://github.com/dmx-systems/dm6-elm" ]
+          ++ linkStyle
+        )
+        [ text "GitHub" ]
+      ]
+    , a
+      ( [ href "https://dmx.berlin" ]
+        ++ linkStyle
+      )
+      [ text "DMX Systems" ]
+    ]
+
+
+footerStyle : List (Attribute Msg)
+footerStyle =
+  [ style "font-size" <| fromInt C.footerFontSize ++ "px"
+  , style "position" "absolute"
+  , style "bottom" "0"
+  , style "color" "lightgray"
+  ]
+
+
+linkStyle : List (Attribute Msg)
+linkStyle =
+  [ style "color" "lightgray" ]
+
+
+viewMeasure : Model -> Html Msg
+viewMeasure model =
+  div
+    ( [ id "measure" ]
+      ++ measureStyle
+    )
+    [ text model.edit.measureText
+    , br [] []
+    ]
 
 
 measureStyle : List (Attribute Msg)
@@ -138,16 +197,17 @@ update msg ({present} as undoModel) =
   case msg of
     AddTopic -> addTopic present |> S.store |> Undo.push undoModel
     AddBox -> addBox present |> S.store |> Undo.push undoModel
-    AddAssoc player1 player2 boxId -> addAssoc player1 player2 boxId present
-      |> S.store |> Undo.push undoModel
+    AddAssoc player1 player2 boxId -> addAssoc player1 player2 boxId present |> S.store
+      |> Undo.push undoModel
     MoveTopicToBox topicId boxId origPos targetId targetBoxPath pos
-      -> moveTopicToBox topicId boxId origPos targetId targetBoxPath pos present
-      |> S.store |> Undo.push undoModel
+      -> moveTopicToBox topicId boxId origPos targetId targetBoxPath pos present |> S.store
+      |> Undo.push undoModel
     DraggedTopic -> present |> S.store |> Undo.swap undoModel
     ClickedItem itemId boxPath -> select itemId boxPath present |> Undo.swap undoModel
     ClickedBackground -> resetUI present |> Undo.swap undoModel
-    SwitchDisplay displayMode -> switchDisplay displayMode present
-      |> S.store |> Undo.swap undoModel
+    ToggleDisplay topicId boxId -> toggleDisplay topicId boxId present |> S.store
+      |> Undo.swap undoModel
+    Unbox boxId targetBoxId -> unbox boxId targetBoxId present |> S.store |> Undo.swap undoModel
     Nav navMsg -> updateNav navMsg present |> S.store |> Undo.reset
     Hide -> hide present |> S.store |> Undo.push undoModel
     Delete -> delete present |> S.store |> Undo.push undoModel
@@ -235,7 +295,7 @@ moveTopicToBox : Id -> BoxId -> Point -> Id -> BoxPath -> Point -> Model -> Mode
 moveTopicToBox topicId boxId origPos targetId targetBoxPath pos model =
   let
     props_ =
-      Box.topicProps topicId boxId model.boxes
+      Box.topicProps topicId boxId model
       |> Maybe.andThen (\props -> Just (TopicV { props | pos = pos }))
   in
   case props_ of
@@ -260,30 +320,40 @@ select itemId boxPath model =
 resetUI : Model -> (Model, Cmd Msg)
 resetUI model =
   ( model
-    |> Sel.reset
+    |> Sel.clear
     |> IconAPI.closeMenu
     |> SearchAPI.closeMenu
   , Cmd.none
   )
 
 
-switchDisplay : DisplayMode -> Model -> Model
-switchDisplay displayMode model =
-  ( case Sel.single model of
-    Just (boxId, boxPath) ->
-      let
-        targetBoxId = Box.firstId boxPath
-      in
-      { model | boxes =
-        case displayMode of
-          TopicD _ -> model.boxes
-          BoxD BlackBox -> Transfer.boxContent boxId targetBoxId model
-          BoxD WhiteBox -> Transfer.boxContent boxId targetBoxId model
-          BoxD Unboxed -> Transfer.unboxContent boxId targetBoxId model
-      }
-      |> Box.setDisplayMode boxId targetBoxId displayMode
-    Nothing -> model
-  )
+toggleDisplay : Id -> BoxId -> Model -> Model
+toggleDisplay topicId boxId model =
+  let
+    (newModel, newDisplayMode) =
+      case Box.displayMode topicId boxId model of
+        Just (TopicD LabelOnly) -> (model, Just <| TopicD Detail)
+        Just (TopicD Detail) -> (model, Just <| TopicD LabelOnly)
+        Just (BoxD BlackBox) -> (model, Just <| BoxD WhiteBox)
+        Just (BoxD WhiteBox) -> (model, Just <| BoxD BlackBox)
+        Just (BoxD Unboxed) ->
+          ( { model | boxes = Transfer.boxContent topicId boxId model }
+          , Just (BoxD BlackBox)
+          )
+        Nothing -> (model, Nothing)
+  in
+  case (newModel, newDisplayMode) of
+    (newModel_, Just displayMode) ->
+      newModel_
+      |> Box.setDisplayMode topicId boxId displayMode
+      |> Size.auto
+    _ -> model
+
+
+unbox : BoxId -> BoxId -> Model -> Model
+unbox boxId targetBoxId model =
+  { model | boxes = Transfer.unboxContent boxId targetBoxId model }
+  |> Box.setDisplayMode boxId targetBoxId (BoxD Unboxed)
   |> Size.auto
 
 
@@ -299,7 +369,7 @@ fullscreen model =
   case Sel.single model of
     Just (topicId, _) ->
       { model | boxPath = topicId :: model.boxPath }
-      |> Sel.reset
+      |> Sel.clear
       |> adjustBoxRect topicId -1
     Nothing -> model
 
@@ -345,7 +415,7 @@ hide model =
         model
   in
   newModel
-  |> Sel.reset
+  |> Sel.clear
   |> Size.auto
 
 
@@ -359,5 +429,5 @@ delete model =
         model
   in
   newModel
-  |> Sel.reset
+  |> Sel.clear
   |> Size.auto

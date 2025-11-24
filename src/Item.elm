@@ -187,6 +187,11 @@ isAssoc item =
   not (isTopic item)
 
 
+isBox : Id -> Model -> Bool
+isBox id model =
+  model.boxes |> Dict.member id
+
+
 nextId : Model -> Model
 nextId model =
   { model | nextId = model.nextId + 1 }

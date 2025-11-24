@@ -1,6 +1,7 @@
 module Box.Transfer exposing (boxContent, unboxContent)
 
 import Box
+import Item
 import Model exposing (Model)
 import ModelHelper exposing (..)
 import Utils as U
@@ -20,26 +21,21 @@ type alias TransferFunc = BoxItems -> BoxItems -> Model -> BoxItems
 
 
 {-| Hides box content from its parent box.
-  (Any target box can be given but de-facto it's the box's parent box)
+(Any target box can be given but de-facto it's the box's parent box.)
+Presumtion: content is currently unboxed
 -}
 boxContent : BoxId -> BoxId -> Model -> Boxes
 boxContent boxId targetBoxId model =
-  case Box.displayMode boxId targetBoxId model.boxes of
-    -- box only if currently unboxed
-    Just (BoxD Unboxed) -> transferContent boxId targetBoxId boxItems_ model
-    _ -> model.boxes
+  transferContent boxId targetBoxId boxItems_ model
 
 
 {-| Reveals box content on its parent box.
-  (Any target box can be given but de-facto it's the box's parent box)
+(Any target box can be given but de-facto it's the box's parent box.)
+Presumtion: content is currently boxed (blackbox or whitebox)
 -}
 unboxContent : BoxId -> BoxId -> Model -> Boxes
 unboxContent boxId targetBoxId model =
-  case Box.displayMode boxId targetBoxId model.boxes of
-    -- unbox only if currently boxed
-    Just (BoxD BlackBox) -> transferContent boxId targetBoxId unboxItems_ model
-    Just (BoxD WhiteBox) -> transferContent boxId targetBoxId unboxItems_ model
-    _ -> model.boxes
+  transferContent boxId targetBoxId unboxItems_ model
 
 
 transferContent : BoxId -> BoxId -> TransferFunc -> Model -> Boxes
@@ -123,7 +119,7 @@ unboxTopic boxItem targetItems model =
         Nothing ->
           -- by default (when no box item exists) an unboxed box will also be unboxed
           -- FIXME: set item's parentAssocId?
-          if Box.isBox boxItem.id model.boxes then
+          if Item.isBox boxItem.id model then
             (setUnboxed boxItem, False)
           else
             (boxItem, False)

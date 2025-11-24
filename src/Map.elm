@@ -5,6 +5,7 @@ import Config as C
 import Item
 import Model exposing (Model, Msg(..))
 import ModelHelper exposing (..)
+import Tool
 import Utils as U
 -- feature modules
 import IconAPI
@@ -176,7 +177,7 @@ viewLimboAssoc boxId model =
                 let
                   sourceTopicId = Item.otherPlayerId assocId topicId model
                 in
-                case Box.topicPos sourceTopicId boxId model.boxes of
+                case Box.topicPos sourceTopicId boxId model of
                   Just pos -> [ lineFunc pos (Box.initPos boxId) (Just assoc) boxId model ]
                   Nothing -> []
             Nothing -> []
@@ -239,7 +240,29 @@ viewTopic topic props boxPath model =
       ++ topicStyle topic.id boxId model
       ++ style
     )
-    children
+    ( children
+      ++ viewTools topic.id boxId model
+    )
+
+
+viewTools : Id -> BoxId -> Model -> List (Html Msg)
+viewTools topicId boxId model =
+  case Sel.isSelected topicId boxId model of
+    True -> Tool.viewTools topicId boxId model
+    False -> []
+
+
+topicStyle : Id -> BoxId -> Model -> List (Attribute Msg)
+topicStyle id boxId model =
+  let
+    isDragging = case model.mouse.dragState of
+      Drag DragTopic id_ _ _ _ _ -> id_ == id
+      _ -> False
+  in
+  [ style "position" "absolute"
+  , style "opacity" <| if isLimboTopic id boxId model then ".5" else "1"
+  , style "z-index" <| if isDragging then "1" else "2"
+  ]
 
 
 effectiveDisplayMode : Id -> BoxId -> DisplayMode -> Model -> DisplayMode
@@ -365,7 +388,7 @@ detailTextViewStyle =
 detailTextEditStyle : Id -> BoxId -> Model -> List (Attribute Msg)
 detailTextEditStyle topicId boxId model =
   let
-    height = case Box.topicSize topicId boxId model.boxes of
+    height = case Box.topicSize topicId boxId model of
       Just size -> size.h
       Nothing -> 0
   in
@@ -462,8 +485,8 @@ viewAssoc assoc boxId model =
 assocGeometry : AssocInfo -> BoxId -> Model -> Maybe (Point, Point)
 assocGeometry assoc boxId model =
   let
-    pos1 = Box.topicPos assoc.player1 boxId model.boxes
-    pos2 = Box.topicPos assoc.player2 boxId model.boxes
+    pos1 = Box.topicPos assoc.player1 boxId model
+    pos2 = Box.topicPos assoc.player2 boxId model
   in
   case Maybe.map2 (\p1 p2 -> (p1, p2)) pos1 pos2 of
     Just geometry -> Just geometry
@@ -480,37 +503,37 @@ viewAssocDraft boxId model =
     _ -> []
 
 
-{-| Transforms an absolute screen position to a box-relative position.
+{-| Transforms a viewport position to a box-relative position.
 -}
 relPos : Point -> BoxPath -> Model -> Point
 relPos pos boxPath model =
   let
-    posAbs = absBoxPos boxPath (Point 0 0) model
+    posAbs = absPos boxPath (Point 0 0) model
   in
   Point
     (pos.x - posAbs.x)
-    (pos.y - posAbs.y)
+    (pos.y - posAbs.y - C.appHeaderHeight)
 
 
 {-| Recursively calculates the absolute position of a box.
 "posAcc" is the position accumulated so far.
 -}
-absBoxPos : BoxPath -> Point -> Model -> Point
-absBoxPos boxPath posAcc model =
+absPos : BoxPath -> Point -> Model -> Point
+absPos boxPath posAcc model =
   case boxPath of
-    [ boxId ] -> accumulateBoxRect posAcc boxId model
-    boxId :: parentBoxId :: boxIds -> accumulateBoxPos posAcc boxId parentBoxId boxIds model
-    [] -> U.logError "absBoxPos" "boxPath is empty!" (Point 0 0)
+    [ boxId ] -> accumulateRect posAcc boxId model
+    boxId :: parentBoxId :: boxIds -> accumulatePos posAcc boxId parentBoxId boxIds model
+    [] -> U.logError "absPos" "boxPath is empty!" (Point 0 0)
 
 
-accumulateBoxPos : Point -> BoxId -> BoxId -> BoxPath -> Model -> Point
-accumulateBoxPos posAcc boxId parentBoxId boxIds model =
+accumulatePos : Point -> BoxId -> BoxId -> BoxPath -> Model -> Point
+accumulatePos posAcc boxId parentBoxId boxIds model =
   let
-    {x, y} = accumulateBoxRect posAcc boxId model
+    {x, y} = accumulateRect posAcc boxId model
   in
-  case Box.topicPos boxId parentBoxId model.boxes of
+  case Box.topicPos boxId parentBoxId model of
     Just boxPos ->
-      absBoxPos -- recursion
+      absPos -- recursion
         (parentBoxId :: boxIds)
         (Point
           (x + boxPos.x - C.topicW2)
@@ -520,8 +543,8 @@ accumulateBoxPos posAcc boxId parentBoxId boxIds model =
     Nothing -> Point 0 0 -- error is already logged
 
 
-accumulateBoxRect : Point -> BoxId -> Model -> Point
-accumulateBoxRect posAcc boxId model =
+accumulateRect : Point -> BoxId -> Model -> Point
+accumulateRect posAcc boxId model =
   case Box.byIdOrLog boxId model.boxes of
     Just box -> Point
       (posAcc.x - box.rect.x1)
@@ -531,19 +554,6 @@ accumulateBoxRect posAcc boxId model =
 
 
 -- STYLE
-
-
-topicStyle : Id -> BoxId -> Model -> List (Attribute Msg)
-topicStyle id boxId model =
-  let
-    isDragging = case model.mouse.dragState of
-      Drag DragTopic id_ _ _ _ _ -> id_ == id
-      _ -> False
-  in
-  [ style "position" "absolute"
-  , style "opacity" <| if isLimboTopic id boxId model then ".5" else "1"
-  , style "z-index" <| if isDragging then "1" else "2"
-  ]
 
 
 selectionStyle : Id -> BoxId -> Model -> List (Attribute Msg)
