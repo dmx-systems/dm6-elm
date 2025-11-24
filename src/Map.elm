@@ -5,7 +5,6 @@ import Config as C
 import Item
 import Model exposing (Model, Msg(..))
 import ModelHelper exposing (..)
-import Tool
 import Utils as U
 -- feature modules
 import IconAPI
@@ -13,6 +12,7 @@ import Mouse exposing (DragState(..), DragMode(..))
 import Search exposing (Menu(..))
 import SelectionAPI as Sel
 import TextEdit as T exposing (EditState(..))
+import ToolAPI
 
 import Dict
 import Html exposing (Html, Attribute, div, text, input, textarea)
@@ -248,7 +248,7 @@ viewTopic topic props boxPath model =
 viewTools : Id -> BoxId -> Model -> List (Html Msg)
 viewTools topicId boxId model =
   case Sel.isSelected topicId boxId model of
-    True -> Tool.viewTools topicId boxId model
+    True -> ToolAPI.viewTools topicId boxId model
     False -> []
 
 

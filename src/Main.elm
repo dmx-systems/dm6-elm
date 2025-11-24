@@ -2,14 +2,12 @@ module Main exposing (..)
 
 import Box
 import Box.Size as Size
-import Box.Transfer as Transfer
 import Config as C
 import Item
 import Map
 import Model exposing (Model, Msg(..), NavMsg(..))
 import ModelHelper exposing (..)
 import Storage as S
-import Tool
 import Undo exposing (UndoModel)
 import Utils as U
 -- feature modules
@@ -18,6 +16,7 @@ import MouseAPI
 import SearchAPI
 import SelectionAPI as Sel
 import TextEditAPI
+import ToolAPI
 
 import Browser
 import Html exposing (Html, Attribute, div, text, br, a)
@@ -79,7 +78,7 @@ view ({present} as undoModel) =
     "DM6 Elm"
     [ div
       appStyle
-      [ Tool.viewAppHeader undoModel
+      [ ToolAPI.viewAppHeader undoModel
       , div
         ( mainStyle
           ++ MouseAPI.hoverHandler
@@ -195,8 +194,7 @@ update msg ({present} as undoModel) =
         _ -> U.info "update" msg
   in
   case msg of
-    AddTopic -> addTopic present |> S.store |> Undo.push undoModel
-    AddBox -> addBox present |> S.store |> Undo.push undoModel
+    -- gestures detected by Mouse module
     AddAssoc player1 player2 boxId -> addAssoc player1 player2 boxId present |> S.store
       |> Undo.push undoModel
     MoveTopicToBox topicId boxId origPos targetId targetBoxPath pos
@@ -205,70 +203,15 @@ update msg ({present} as undoModel) =
     DraggedTopic -> present |> S.store |> Undo.swap undoModel
     ClickedItem itemId boxPath -> select itemId boxPath present |> Undo.swap undoModel
     ClickedBackground -> resetUI present |> Undo.swap undoModel
-    ToggleDisplay topicId boxId -> toggleDisplay topicId boxId present |> S.store
-      |> Undo.swap undoModel
-    Unbox boxId targetBoxId -> unbox boxId targetBoxId present |> S.store |> Undo.swap undoModel
-    Nav navMsg -> updateNav navMsg present |> S.store |> Undo.reset
-    Hide -> hide present |> S.store |> Undo.push undoModel
-    Delete -> delete present |> S.store |> Undo.push undoModel
-    Undo -> Undo.undo undoModel
-    Redo -> Undo.redo undoModel
-    Import -> (present, S.importJSON ()) |> Undo.swap undoModel
-    Export -> (present, S.exportJSON ()) |> Undo.swap undoModel
-    NoOp -> (present, Cmd.none) |> Undo.swap undoModel
     -- feature modules
+    Tool toolMsg -> ToolAPI.update toolMsg undoModel
     Edit editMsg -> TextEditAPI.update editMsg undoModel
     Mouse mouseMsg -> MouseAPI.update mouseMsg undoModel
     Search searchMsg -> SearchAPI.update searchMsg undoModel
     Icon iconMenuMsg -> IconAPI.update iconMenuMsg undoModel
-
-
-addTopic : Model -> Model
-addTopic model =
-  let
-    boxId = Box.active model
-  in
-  case Box.byIdOrLog boxId model.boxes of
-    Just box ->
-      let
-        (newModel, topicId) = Item.addTopic C.initTopicText Nothing model
-        props = TopicV <| TopicProps
-          (Point
-            (C.initTopicPos.x + box.rect.x1)
-            (C.initTopicPos.y + box.rect.y1)
-          )
-          C.topicDetailSize
-          (TopicD LabelOnly)
-      in
-      newModel
-      |> Box.addItem topicId props boxId
-      |> Sel.select topicId [ boxId ]
-    Nothing -> model
-
-
--- TODO: factor out addTopic() common code
-addBox : Model -> Model
-addBox model =
-  let
-    boxId = Box.active model
-  in
-  case Box.byIdOrLog boxId model.boxes of
-    Just box ->
-      let
-        (newModel, topicId) = Item.addTopic C.initBoxText Nothing model
-        props = TopicV <| TopicProps
-          (Point
-            (C.initTopicPos.x + box.rect.x1)
-            (C.initTopicPos.y + box.rect.y1)
-          )
-          C.topicDetailSize
-          (BoxD BlackBox)
-      in
-      newModel
-      |> Box.addBox topicId
-      |> Box.addItem topicId props boxId
-      |> Sel.select topicId [ boxId ]
-    Nothing -> model
+    --
+    Nav navMsg -> updateNav navMsg present |> S.store |> Undo.reset
+    NoOp -> (present, Cmd.none) |> Undo.swap undoModel
 
 
 -- Presumption: both players exist in same box
@@ -327,36 +270,6 @@ resetUI model =
   )
 
 
-toggleDisplay : Id -> BoxId -> Model -> Model
-toggleDisplay topicId boxId model =
-  let
-    (newModel, newDisplayMode) =
-      case Box.displayMode topicId boxId model of
-        Just (TopicD LabelOnly) -> (model, Just <| TopicD Detail)
-        Just (TopicD Detail) -> (model, Just <| TopicD LabelOnly)
-        Just (BoxD BlackBox) -> (model, Just <| BoxD WhiteBox)
-        Just (BoxD WhiteBox) -> (model, Just <| BoxD BlackBox)
-        Just (BoxD Unboxed) ->
-          ( { model | boxes = Transfer.boxContent topicId boxId model }
-          , Just (BoxD BlackBox)
-          )
-        Nothing -> (model, Nothing)
-  in
-  case (newModel, newDisplayMode) of
-    (newModel_, Just displayMode) ->
-      newModel_
-      |> Box.setDisplayMode topicId boxId displayMode
-      |> Size.auto
-    _ -> model
-
-
-unbox : BoxId -> BoxId -> Model -> Model
-unbox boxId targetBoxId model =
-  { model | boxes = Transfer.unboxContent boxId targetBoxId model }
-  |> Box.setDisplayMode boxId targetBoxId (BoxD Unboxed)
-  |> Size.auto
-
-
 updateNav : NavMsg -> Model -> Model
 updateNav navMsg model =
   case navMsg of
@@ -404,30 +317,3 @@ adjustBoxRect boxId factor model =
       rect.x2
       rect.y2
     )
-
-
-hide : Model -> Model
-hide model =
-  let
-    newModel = model.selection.items
-      |> List.foldr
-        (\(itemId, boxPath) modelAcc -> Box.hideItem itemId (Box.firstId boxPath) modelAcc)
-        model
-  in
-  newModel
-  |> Sel.clear
-  |> Size.auto
-
-
-delete : Model -> Model
-delete model =
-  let
-    newModel = model.selection.items
-      |> List.map Tuple.first
-      |> List.foldr
-        (\itemId modelAcc -> Item.remove itemId modelAcc)
-        model
-  in
-  newModel
-  |> Sel.clear
-  |> Size.auto

@@ -8,6 +8,7 @@ import Mouse
 import Search
 import Selection
 import TextEdit
+import Tool
 
 import Dict
 import Set
@@ -60,24 +61,15 @@ initTransient model =
 
 
 type Msg
-  = AddTopic
-  | AddBox
-  | AddAssoc Id Id BoxId
+  = AddAssoc Id Id BoxId
   | MoveTopicToBox Id BoxId Point Id BoxPath Point -- start point, random point (for target)
   | DraggedTopic
   | ClickedItem Id BoxPath
   | ClickedBackground
-  | ToggleDisplay Id BoxId -- TODO: make params Id BoxPath
-  | Unbox BoxId BoxId -- TODO: make params BoxId BoxPath
   | Nav NavMsg
-  | Hide
-  | Delete
-  | Undo
-  | Redo
-  | Import
-  | Export
   | NoOp
   -- feature modules
+  | Tool Tool.Msg
   | Edit TextEdit.Msg
   | Mouse Mouse.Msg
   | Search Search.Msg
