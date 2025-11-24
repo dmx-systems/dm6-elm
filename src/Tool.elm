@@ -56,7 +56,7 @@ appHeaderStyle =
   , style "gap" "18px"
   , style "height" <| fromInt C.appHeaderHeight ++ "px"
   , style "padding" "0 18px 0 8px"
-  , style "background-color" "lightgray"
+  , style "background-color" C.toolbarColor
   ]
 
 
@@ -105,18 +105,21 @@ getMapName model =
 
 viewButton : String -> Msg -> (UndoModel -> Bool) -> UndoModel -> Html Msg
 viewButton label msg isEnabled undoModel =
-  let
-    buttonAttr =
-      [ U.stopPropagationOnMousedown NoOp
-      , disabled <| not <| isEnabled undoModel
-      ]
-  in
   button
-    ( [ onClick msg ]
-      ++ buttonAttr
+    ( [ onClick msg
+      , disabled <| not <| isEnabled undoModel
+      , U.stopPropagationOnMousedown NoOp
+      ]
       ++ buttonStyle
     )
     [ text label ]
+
+
+buttonStyle : List (Attribute Msg)
+buttonStyle =
+  [ style "font-family" C.mainFont
+  , style "font-size" <| fromInt C.toolFontSize ++ "px"
+  ]
 
 
 {-| isEnabled predicate -}
@@ -138,24 +141,55 @@ viewTools itemId boxId model =
 
 viewToolbar : Id -> BoxId -> Model -> Html Msg
 viewToolbar itemId boxId model =
+  let
+    topicTools =
+      [ viewIconButton "Edit" "edit-3" False (Edit T.EditStart)
+      , viewIconButton "Set Icon" "image" False (Icon Icon.OpenMenu)
+      , viewIconButton "Traverse" "share-2" False (Search Search.ShowRelated)
+      , viewIconButton "Delete" "trash" False Delete
+      , viewIconButton "Remove" "x" False Hide -- TODO: "hide" -> "remove"
+      ]
+    boxTools =
+      if Item.isBox itemId model then
+        [ viewSpacer
+        , viewIconButton "Unbox" "external-link" isUnboxed (Unbox itemId boxId)
+        , viewIconButton "Fullscreen" "maximize-2" False (Nav Fullscreen)
+        ]
+      else
+        []
+    isUnboxed =
+      case Box.displayMode itemId boxId model of
+        Just (BoxD Unboxed) -> True
+        _ -> False
+  in
   div
     (toolbarStyle itemId boxId model)
-    [ viewIconButton "Edit" "edit-3" (Edit T.EditStart)
-    , viewIconButton "Set Icon" "image" (Icon Icon.OpenMenu)
-    , viewIconButton "Traverse" "share-2" (Search Search.ShowRelated)
-    , viewIconButton "Remove" "x" Hide -- TODO: "hide" -> "remove"
-    , viewIconButton "Delete" "trash" Delete
-    -- TODO: render these 2 only for boxes
-    , viewIconButton "Fullscreen" "maximize-2" (Nav Fullscreen)
-    , viewIconButton "Unbox" "external-link" (Unbox itemId boxId) -- TODO: disable if unboxed
+    (topicTools ++ boxTools)
+
+
+toolbarStyle : Id -> BoxId -> Model -> List (Attribute Msg)
+toolbarStyle topicId boxId model =
+  [ style "position" "absolute"
+  , style "top" "-32px"
+  , style "white-space" "nowrap"
+  , style "background-color" C.toolbarColor
+  ]
+
+
+viewSpacer : Html Msg
+viewSpacer =
+  span
+    [ style "display" "inline-block"
+    , style "width" "12px"
     ]
+    []
 
 
 viewCaret : Id -> BoxId -> Model -> Html Msg
 viewCaret itemId boxId model =
   let
     icon =
-      case Box.displayMode itemId boxId model.boxes of
+      case Box.displayMode itemId boxId model of
         Just (TopicD LabelOnly) -> "chevron-right"
         Just (TopicD Detail) -> "chevron-down"
         Just (BoxD BlackBox) -> "chevron-right"
@@ -172,44 +206,20 @@ viewCaret itemId boxId model =
     [ IconAPI.viewIcon icon 20 ]
 
 
-toolbarStyle : Id -> BoxId -> Model -> List (Attribute Msg)
-toolbarStyle topicId boxId model =
-  [ style "font-size" <| fromInt C.toolFontSize ++ "px"
-  , style "position" "absolute"
-  , style "top" "35px"
-  , style "left" "0"
-  --, style "width" "100px"
-  --, style "height" "22px"
-  , style "background-color" "lightgray"
-  ]
-
-
 caretStyle : List (Attribute Msg)
 caretStyle  =
   [ style "position" "absolute"
-  , style "top" "0"
-  , style "left" "-33px"
+  , style "top" "-1px"
+  , style "left" "-35px"
   ]
 
 
-viewIconButton : String -> String -> Msg -> Html Msg
-viewIconButton label icon msg =
-  let
-    buttonAttr =
-      [ U.stopPropagationOnMousedown NoOp ]
-  in
+viewIconButton : String -> String -> Bool -> Msg -> Html Msg
+viewIconButton label icon disabled_ msg =
   button
-    ( [ title label
-      , onClick msg
-      ]
-      ++ buttonAttr
-      ++ buttonStyle
-    )
+    [ onClick msg
+    , disabled disabled_
+    , title label
+    , U.stopPropagationOnMousedown NoOp
+    ]
     [ IconAPI.viewIcon icon 20 ]
-
-
-buttonStyle : List (Attribute Msg)
-buttonStyle =
-  [ style "font-family" C.mainFont
-  , style "font-size" <| fromInt C.toolFontSize ++ "px"
-  ]

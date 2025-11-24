@@ -295,7 +295,7 @@ moveTopicToBox : Id -> BoxId -> Point -> Id -> BoxPath -> Point -> Model -> Mode
 moveTopicToBox topicId boxId origPos targetId targetBoxPath pos model =
   let
     props_ =
-      Box.topicProps topicId boxId model.boxes
+      Box.topicProps topicId boxId model
       |> Maybe.andThen (\props -> Just (TopicV { props | pos = pos }))
   in
   case props_ of
@@ -331,7 +331,7 @@ toggleDisplay : Id -> BoxId -> Model -> Model
 toggleDisplay topicId boxId model =
   let
     (newModel, newDisplayMode) =
-      case Box.displayMode topicId boxId model.boxes of
+      case Box.displayMode topicId boxId model of
         Just (TopicD LabelOnly) -> (model, Just <| TopicD Detail)
         Just (TopicD Detail) -> (model, Just <| TopicD LabelOnly)
         Just (BoxD BlackBox) -> (model, Just <| BoxD WhiteBox)

@@ -388,7 +388,7 @@ detailTextViewStyle =
 detailTextEditStyle : Id -> BoxId -> Model -> List (Attribute Msg)
 detailTextEditStyle topicId boxId model =
   let
-    height = case Box.topicSize topicId boxId model.boxes of
+    height = case Box.topicSize topicId boxId model of
       Just size -> size.h
       Nothing -> 0
   in

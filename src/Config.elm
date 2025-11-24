@@ -9,7 +9,7 @@ import ModelHelper exposing (Point, Size)
 
 rootBoxName = "DM6 Elm"
 version = "0.3-snapshot"
-date = "Nov 23, 2025"
+date = "Nov 24, 2025"
 
 appHeaderHeight = 36
 
@@ -18,6 +18,7 @@ toolFontSize = 13
 contentFontSize = 13
 footerFontSize = 13
 
+toolbarColor = "#e9e9ed" -- Firefox button color
 disabledColor = "gray"
 limboColor = "gray"
 

@@ -83,10 +83,12 @@ updateRect boxId transform model =
   }
 
 
-{-| Logs an error if box does not exist or item is not in box or is not a topic. -}
+{-| Logs an error if box does not exist, or topic is not in box, or ID refers not a topic (but
+an association).
+-}
 topicPos : Id -> BoxId -> Model -> Maybe Point
 topicPos topicId boxId model =
-  case topicProps topicId boxId model.boxes of
+  case topicProps topicId boxId model of
     Just { pos } -> Just pos
     Nothing -> U.fail "topicPos" {topicId = topicId, boxId = boxId} Nothing
 
@@ -113,30 +115,34 @@ setTopicPosByDelta topicId boxId delta model =
     )
 
 
-{-| TODO: replace Boxes parameter by Model? -}
-topicSize : Id -> BoxId -> Boxes -> Maybe Size
-topicSize topicId boxId boxes =
-  case topicProps topicId boxId boxes of
+{-| Logs an error if box does not exist, or topic is not in box, or ID refers not a topic (but
+an association).
+-}
+topicSize : Id -> BoxId -> Model -> Maybe Size
+topicSize topicId boxId model =
+  case topicProps topicId boxId model of
     Just { size } -> Just size
     Nothing -> U.fail "topicSize" {topicId = topicId, boxId = boxId} Nothing
 
 
-{-| Logs an error if box does not exist or if topic is not in box -}
+{-| Logs an error if box does not exist, or topic is not in box -}
 setTopicSize : Id -> BoxId -> Size -> Model -> Model
 setTopicSize topicId boxId size model =
   model |> updateTopicProps topicId boxId
     (\props -> { props | size = size })
 
 
-{-| TODO: replace Boxes parameter by Model? -}
-displayMode : Id -> BoxId -> Boxes -> Maybe DisplayMode
-displayMode topicId boxId boxes =
-  case topicProps topicId boxId boxes of
+{-| Logs an error if box does not exist, or topic is not in box, or ID refers not a topic (but
+an association).
+-}
+displayMode : Id -> BoxId -> Model -> Maybe DisplayMode
+displayMode topicId boxId model =
+  case topicProps topicId boxId model of
     Just props -> Just props.displayMode
     Nothing -> U.fail "displayMode" {topicId = topicId, boxId = boxId} Nothing
 
 
-{-| Logs an error if box does not exist or if topic is not in box -}
+{-| Logs an error if box does not exist, or if topic is not in box -}
 setDisplayMode : Id -> BoxId -> DisplayMode -> Model -> Model
 setDisplayMode topicId boxId display model =
   model
@@ -149,10 +155,12 @@ updateDisplayMode topicId boxId transform model =
     (\props -> { props | displayMode = transform props.displayMode })
 
 
-{-| TODO: replace Boxes parameter by Model? -}
-topicProps : Id -> BoxId -> Boxes -> Maybe TopicProps
-topicProps topicId boxId boxes =
-  case itemByIdOrLog topicId boxId boxes of
+{-| Logs an error if box does not exist, or topic is not in box, or ID refers not a topic (but
+an association).
+-}
+topicProps : Id -> BoxId -> Model -> Maybe TopicProps
+topicProps topicId boxId model =
+  case itemByIdOrLog topicId boxId model.boxes of
     Just boxItem ->
       case boxItem.props of
         TopicV props -> Just props
