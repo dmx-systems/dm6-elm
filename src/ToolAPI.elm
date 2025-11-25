@@ -5,7 +5,7 @@ import Box.Size as Size
 import Box.Transfer as Transfer
 import Config as C
 import Item
-import Model exposing (Model, Msg(..), NavMsg(..))
+import Model exposing (Model, Msg(..))
 import ModelHelper exposing (..)
 import Storage as S
 import Undo exposing (UndoModel)
@@ -13,6 +13,7 @@ import Utils as U
 -- feature modules
 import Icon
 import IconAPI
+import Nav
 import Search
 import SearchAPI
 import SelectionAPI as Sel
@@ -80,7 +81,7 @@ viewNav model =
   div
     navStyle
     [ button
-      [ onClick (Nav Back)
+      [ onClick (Nav Nav.Back)
       , disabled backDisabled
       ]
       [ IconAPI.viewIcon "arrow-left" 20 ]
@@ -158,14 +159,12 @@ viewToolbar itemId boxId model =
       if Item.isBox itemId model then
         [ viewSpacer
         , viewIconButton "Unbox" "external-link" isUnboxed (Tool <| Tool.Unbox itemId boxId)
-        , viewIconButton "Fullscreen" "maximize-2" False (Nav Fullscreen)
+        , viewIconButton "Fullscreen" "maximize-2" False (Nav Nav.Fullscreen)
         ]
       else
         []
     isUnboxed =
-      case Box.displayMode itemId boxId model of
-        Just (BoxD Unboxed) -> True
-        _ -> False
+      Box.displayMode itemId boxId model == Just (BoxD Unboxed)
   in
   div
     (toolbarStyle itemId boxId model)

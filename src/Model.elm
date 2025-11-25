@@ -5,12 +5,17 @@ import ModelHelper exposing (..)
 -- feature modules
 import Icon
 import Mouse
+import Nav
 import Search
 import Selection
 import TextEdit
 import Tool
 
+import Browser.Navigation exposing (Key)
 import Dict
+import Json.Decode as D
+import Json.Decode.Pipeline exposing (required, hardcoded)
+import Json.Encode as E
 import Set
 
 
@@ -27,11 +32,12 @@ type alias Model =
   , search : Search.Model
   , icon : Icon.Model
   , selection : Selection.Model
+  , nav : Nav.Model
   }
 
 
-init : Model
-init =
+init : Key -> Model
+init key =
   { items = Dict.singleton 0 <| Item 0 (Topic (TopicInfo 0 C.rootBoxName Nothing)) Set.empty
   , boxes = Dict.singleton 0 -- box 0 is the "root box"
     <| Box 0 (Rectangle 0 0 0 0) Dict.empty
@@ -44,6 +50,7 @@ init =
   , search = Search.init
   , icon = Icon.init
   , selection = Selection.init
+  , nav = Nav.init key
   }
 
 
@@ -52,11 +59,11 @@ initTransient model =
   { model
   ----- transient -----
   -- feature modules
-  | edit = init.edit
-  , mouse = init.mouse
-  , search = init.search
-  , icon = init.icon
-  , selection = init.selection
+  | edit = TextEdit.init
+  , mouse = Mouse.init
+  , search = Search.init
+  , icon = Icon.init
+  , selection = Selection.init
   }
 
 
@@ -66,7 +73,6 @@ type Msg
   | DraggedTopic
   | ClickedItem Id BoxPath
   | ClickedBackground
-  | Nav NavMsg
   | NoOp
   -- feature modules
   | Tool Tool.Msg
@@ -74,8 +80,35 @@ type Msg
   | Mouse Mouse.Msg
   | Search Search.Msg
   | Icon Icon.Msg
+  | Nav Nav.Msg
 
 
-type NavMsg
-  = Fullscreen
-  | Back
+
+-- JSON
+
+
+encode : Model -> E.Value
+encode model =
+  E.object
+    [ ("items", model.items |> Dict.values |> E.list encodeItem)
+    , ("boxes", model.boxes |> Dict.values |> E.list encodeBox)
+    , ("boxPath", E.list E.int model.boxPath)
+    , ("nextId", E.int model.nextId)
+    ]
+
+
+decoder : Key -> D.Decoder Model
+decoder key =
+  D.succeed Model
+  |> required "items" (D.list itemDecoder |> D.andThen toDictDecoder)
+  |> required "boxes" (D.list boxDecoder |> D.andThen toDictDecoder)
+  |> required "boxPath" (D.list D.int)
+  |> required "nextId" D.int
+  ----- transient -----
+  -- feature modules
+  |> hardcoded TextEdit.init
+  |> hardcoded Mouse.init
+  |> hardcoded Search.init
+  |> hardcoded Icon.init
+  |> hardcoded Selection.init
+  |> hardcoded (Nav.init key)
