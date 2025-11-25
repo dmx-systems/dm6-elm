@@ -31,6 +31,13 @@ active model =
   firstId model.boxPath
 
 
+activeName : Model -> String
+activeName model =
+  case Item.topicById (active model) model of
+    Just topic -> Item.topicLabel topic
+    Nothing -> "??"
+
+
 {-| Logs an error (and returns -1) if boxPath is empty.
 -}
 firstId : BoxPath -> BoxId

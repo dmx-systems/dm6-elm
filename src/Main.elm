@@ -215,7 +215,7 @@ update msg ({present} as undoModel) =
     Mouse mouseMsg -> MouseAPI.update mouseMsg undoModel
     Search searchMsg -> SearchAPI.update searchMsg undoModel
     Icon iconMenuMsg -> IconAPI.update iconMenuMsg undoModel
-    Nav navMsg -> NavAPI.update navMsg present |> S.store |> Undo.reset
+    Nav navMsg -> NavAPI.update navMsg undoModel
     --
     NoOp -> (present, Cmd.none) |> Undo.swap undoModel
 

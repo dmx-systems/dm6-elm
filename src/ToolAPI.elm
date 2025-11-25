@@ -36,7 +36,7 @@ viewAppHeader : UndoModel -> Html Msg
 viewAppHeader ({present} as undoModel) =
   div
     appHeaderStyle
-    [ viewNav present
+    [ viewMapTitle present
     , div spacerStyle []
     , div
       []
@@ -63,52 +63,28 @@ appHeaderStyle =
   , style "align-items" "center"
   , style "gap" "18px"
   , style "height" <| fromInt C.appHeaderHeight ++ "px"
-  , style "padding" "0 18px 0 8px"
+  , style "padding" "0 8px"
   , style "background-color" C.toolbarColor
   ]
 
 
-spacerStyle : List (Attribute Msg)
-spacerStyle =
-  [ style "flex-grow" "1" ]
-
-
-viewNav : Model -> Html Msg
-viewNav model =
-  let
-    backDisabled = Box.isAtRoot model
-  in
+viewMapTitle : Model -> Html Msg
+viewMapTitle model =
   div
-    navStyle
-    [ button
-      [ onClick (Nav Nav.Back)
-      , disabled backDisabled
-      ]
-      [ IconAPI.viewIcon "arrow-left" 20 ]
-    , span
-      mapTitleStyle
-      [ text <| getMapName model ]
-    ]
-
-
-navStyle : List (Attribute Msg)
-navStyle =
-  []
+    mapTitleStyle
+    [ text <| Box.activeName model ]
 
 
 mapTitleStyle : List (Attribute Msg)
 mapTitleStyle =
   [ style "font-size" "24px"
   , style "font-weight" "bold"
-  , style "margin-left" "10px"
   ]
 
 
-getMapName : Model -> String
-getMapName model =
-  case Item.topicById (Box.active model) model of
-    Just topic -> Item.topicLabel topic
-    Nothing -> "??"
+spacerStyle : List (Attribute Msg)
+spacerStyle =
+  [ style "flex-grow" "1" ]
 
 
 viewButton : String -> Msg -> (UndoModel -> Bool) -> UndoModel -> Html Msg

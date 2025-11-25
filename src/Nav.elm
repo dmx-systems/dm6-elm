@@ -17,6 +17,5 @@ init key =
 
 type Msg
   = Fullscreen
-  | Back -- TODO: drop
   | UrlChanged Url
   | LinkClicked UrlRequest
