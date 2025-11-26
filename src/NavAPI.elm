@@ -1,4 +1,4 @@
-module NavAPI exposing (update)
+module NavAPI exposing (boxIdFromUrl, pushUrl, update)
 
 import Model exposing (Model, Msg)
 import ModelHelper exposing (..)
@@ -32,19 +32,14 @@ fullscreenRoute model =
 
 urlChanged : Url -> UndoModel -> (UndoModel, Cmd Msg)
 urlChanged url ({present} as undoModel) =
-  case url.fragment of
-    Just str ->
-      case toInt str of
-        Just boxId ->
-          fullscreen boxId present |> S.store |> Undo.reset
-        Nothing ->
-          U.logError "urlChanged" ("\"" ++ str ++ "\" is not a number")
-          (undoModel, Cmd.none) -- TODO
+  case boxIdFromUrl url of
+    Just boxId ->
+      fullscreen boxId present |> S.store |> Undo.reset
     Nothing ->
       let
-        _ = U.info "urlChanged" "URL w/o fragment -> redirect to root box"
+        _ = U.info "urlChanged" <| "No fragment -> redirect to " ++ fromInt present.boxId
       in
-      (undoModel, pushUrl rootBoxId present)
+      (undoModel, pushUrl present.boxId present)
 
 
 fullscreen : BoxId -> Model -> Model
@@ -56,3 +51,14 @@ fullscreen boxId model =
 pushUrl : BoxId -> Model -> Cmd Msg
 pushUrl boxId model =
   Navigation.pushUrl model.nav.key <| "#" ++ fromInt boxId
+
+
+boxIdFromUrl : Url -> Maybe BoxId
+boxIdFromUrl url =
+  case url.fragment of
+    Just str ->
+      case toInt str of
+        Just boxId -> Just boxId
+        Nothing ->
+          U.logError "boxIdFromUrl" ("\"" ++ str ++ "\" is not a number") Nothing
+    Nothing -> Nothing

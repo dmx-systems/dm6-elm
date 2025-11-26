@@ -48,7 +48,14 @@ main =
 
 init : E.Value -> Url -> Key -> (UndoModel, Cmd Msg)
 init flags url key =
-  (initModel flags key, Cmd.none) |> Undo.reset
+  let
+    model = initModel flags key
+    boxId =
+      case NavAPI.boxIdFromUrl url of
+        Just boxId_ -> boxId_
+        Nothing -> model.boxId
+  in
+  (model, NavAPI.pushUrl boxId model) |> Undo.reset
 
 
 initModel : E.Value -> Key -> Model
