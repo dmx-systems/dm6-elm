@@ -1,4 +1,4 @@
-module Tool exposing (..)
+module Feature.Tool exposing (..)
 
 import ModelHelper exposing (Id, BoxId)
 

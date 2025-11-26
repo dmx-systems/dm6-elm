@@ -1,13 +1,12 @@
-module NavAPI exposing (boxIdFromUrl, pushUrl, update)
+module Feature.NavAPI exposing (boxIdFromUrl, pushUrl, update)
 
+import Feature.Nav as Nav
+import Feature.SelectionAPI as Sel
 import Model exposing (Model, Msg)
 import ModelHelper exposing (..)
 import Storage as S
 import Undo exposing (UndoModel)
 import Utils as U
--- feature modules
-import Nav
-import SelectionAPI as Sel
 
 import Browser.Navigation as Navigation
 import String exposing (fromInt, toInt)

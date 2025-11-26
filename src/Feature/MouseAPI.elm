@@ -1,15 +1,14 @@
-module MouseAPI exposing (hoverHandler, subs, update)
+module Feature.MouseAPI exposing (hoverHandler, subs, update)
 
 import Box
 import Box.Size as Size
 import Config as C
+import Feature.Mouse as Mouse exposing (DragState(..), DragMode(..))
 import Item
 import Model exposing (Model, Msg(..))
 import ModelHelper exposing (..)
 import Undo exposing (UndoModel)
 import Utils as U
--- feature modules
-import Mouse exposing (DragState(..), DragMode(..))
 
 import Browser.Events as Events
 import Html exposing (Attribute)

@@ -1,4 +1,4 @@
-module Icon exposing (..)
+module Feature.Icon exposing (..)
 
 import ModelHelper exposing (Icon)
 

@@ -2,17 +2,16 @@ module Map exposing (view)
 
 import Box
 import Config as C
+import Feature.IconAPI as IconAPI
+import Feature.Mouse exposing (DragState(..), DragMode(..))
+import Feature.Search exposing (Menu(..))
+import Feature.SelectionAPI as Sel
+import Feature.TextEdit as T exposing (EditState(..))
+import Feature.ToolAPI as ToolAPI
 import Item
 import Model exposing (Model, Msg(..))
 import ModelHelper exposing (..)
 import Utils as U
--- feature modules
-import IconAPI
-import Mouse exposing (DragState(..), DragMode(..))
-import Search exposing (Menu(..))
-import SelectionAPI as Sel
-import TextEdit as T exposing (EditState(..))
-import ToolAPI
 
 import Dict
 import Html exposing (Html, Attribute, div, text, input, textarea)

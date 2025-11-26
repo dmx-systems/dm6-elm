@@ -1,15 +1,14 @@
 module Model exposing (..)
 
 import Config as C
+import Feature.Icon as Icon
+import Feature.Mouse as Mouse
+import Feature.Nav as Nav
+import Feature.Search as Search
+import Feature.Selection as Selection
+import Feature.TextEdit as TextEdit
+import Feature.Tool as Tool
 import ModelHelper exposing (..)
--- feature modules
-import Icon
-import Mouse
-import Nav
-import Search
-import Selection
-import TextEdit
-import Tool
 
 import Browser.Navigation exposing (Key)
 import Dict

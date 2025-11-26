@@ -1,4 +1,4 @@
-module TextEdit exposing (..)
+module Feature.TextEdit exposing (..)
 
 import ModelHelper exposing (Id, BoxId, Size)
 

@@ -1,4 +1,4 @@
-module Selection exposing (..)
+module Feature.Selection exposing (..)
 
 import ModelHelper exposing (Id, BoxPath)
 

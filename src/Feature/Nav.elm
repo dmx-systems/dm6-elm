@@ -1,4 +1,4 @@
-module Nav exposing (..)
+module Feature.Nav exposing (..)
 
 import Browser exposing (UrlRequest)
 import Browser.Navigation exposing (Key)

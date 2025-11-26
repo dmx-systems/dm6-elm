@@ -1,15 +1,14 @@
-module IconAPI exposing (viewIcon, viewTopicIcon, viewMenu, closeMenu, update)
+module Feature.IconAPI exposing (viewIcon, viewTopicIcon, viewMenu, closeMenu, update)
 
 import Config as C
+import Feature.Icon as Icon
+import Feature.SelectionAPI as Sel
 import Item
 import Model exposing (Model, Msg(..))
 import ModelHelper exposing (..)
 import Storage as S
 import Undo exposing (UndoModel)
 import Utils as U
--- feature modules
-import Icon
-import SelectionAPI as Sel
 
 import Dict
 import Html exposing (Html, Attribute, div, text, button)

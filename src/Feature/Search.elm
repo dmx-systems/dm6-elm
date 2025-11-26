@@ -1,4 +1,4 @@
-module Search exposing (..)
+module Feature.Search exposing (..)
 
 import ModelHelper exposing (Id)
 

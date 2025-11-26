@@ -1,24 +1,23 @@
-module ToolAPI exposing (viewAppHeader, viewTools, update)
+module Feature.ToolAPI exposing (viewAppHeader, viewTools, update)
 
 import Box
 import Box.Size as Size
 import Box.Transfer as Transfer
 import Config as C
+import Feature.Icon as Icon
+import Feature.IconAPI as IconAPI
+import Feature.Nav as Nav
+import Feature.Search as Search
+import Feature.SearchAPI as SearchAPI
+import Feature.SelectionAPI as Sel
+import Feature.TextEdit as T
+import Feature.Tool as Tool
 import Item
 import Model exposing (Model, Msg(..))
 import ModelHelper exposing (..)
 import Storage as S
 import Undo exposing (UndoModel)
 import Utils as U
--- feature modules
-import Icon
-import IconAPI
-import Nav
-import Search
-import SearchAPI
-import SelectionAPI as Sel
-import TextEdit as T
-import Tool
 
 import Html exposing (Html, Attribute, div, span, text, button)
 import Html.Attributes exposing (style, title, disabled)

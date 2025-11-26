@@ -1,17 +1,16 @@
-module SearchAPI exposing (viewInput, viewMenu, closeMenu, update)
+module Feature.SearchAPI exposing (viewInput, viewMenu, closeMenu, update)
 
 import Box
 import Box.Size as Size
 import Config as C
+import Feature.Search as Search exposing (Menu(..))
+import Feature.SelectionAPI as Sel
 import Item
 import Model exposing (Model, Msg(..))
 import ModelHelper exposing (..)
 import Storage as S
 import Undo exposing (UndoModel)
 import Utils as U
--- feature modules
-import Search exposing (Menu(..))
-import SelectionAPI as Sel
 
 import Dict
 import Html exposing (Html, Attribute, div, text, input)

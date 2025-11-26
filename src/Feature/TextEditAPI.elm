@@ -1,7 +1,9 @@
-module TextEditAPI exposing (update)
+module Feature.TextEditAPI exposing (update)
 
 import Box
 import Box.Size as Size
+import Feature.SelectionAPI as Sel
+import Feature.TextEdit as T exposing (EditState(..))
 import Item
 import Model exposing (Model, Msg(..))
 import ModelHelper exposing (..)
@@ -9,9 +11,6 @@ import Storage as S
 import Task
 import Undo exposing (UndoModel)
 import Utils as U
--- feature modules
-import SelectionAPI as Sel
-import TextEdit as T exposing (EditState(..))
 
 import Browser.Dom as Dom
 import String exposing (fromInt)

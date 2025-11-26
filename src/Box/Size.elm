@@ -2,12 +2,11 @@ module Box.Size exposing (auto)
 
 import Box
 import Config as C
+import Feature.Mouse exposing (DragState(..), DragMode(..))
+import Feature.TextEdit exposing (EditState(..))
 import Model exposing (Model)
 import ModelHelper exposing (..)
 import Utils as U
--- feature modules
-import Mouse exposing (DragState(..), DragMode(..))
-import TextEdit exposing (EditState(..))
 
 import Dict
 

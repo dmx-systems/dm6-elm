@@ -3,6 +3,14 @@ module Main exposing (..)
 import Box
 import Box.Size as Size
 import Config as C
+import Feature.IconAPI as IconAPI
+import Feature.MouseAPI as MouseAPI
+import Feature.Nav as Nav
+import Feature.NavAPI as NavAPI
+import Feature.SearchAPI as SearchAPI
+import Feature.SelectionAPI as Sel
+import Feature.TextEditAPI as TextEditAPI
+import Feature.ToolAPI as ToolAPI
 import Item
 import Map
 import Model exposing (Model, Msg(..))
@@ -10,15 +18,6 @@ import ModelHelper exposing (..)
 import Storage as S
 import Undo exposing (UndoModel)
 import Utils as U
--- feature modules
-import IconAPI
-import MouseAPI
-import Nav
-import NavAPI
-import SearchAPI
-import SelectionAPI as Sel
-import TextEditAPI
-import ToolAPI
 
 import Browser
 import Browser.Navigation exposing (Key)
