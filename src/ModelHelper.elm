@@ -52,6 +52,10 @@ type alias Box =
   }
 
 
+rootBoxId : BoxId
+rootBoxId = 0
+
+
 type alias BoxItems = Dict Id BoxItem
 
 

@@ -23,7 +23,7 @@ import Set
 type alias Model =
   { items : Items
   , boxes : Boxes
-  , boxPath : BoxPath
+  , boxId : BoxId
   , nextId : Id
   ----- transient -----
   -- feature modules
@@ -39,9 +39,9 @@ type alias Model =
 init : Key -> Model
 init key =
   { items = Dict.singleton 0 <| Item 0 (Topic (TopicInfo 0 C.rootBoxName Nothing)) Set.empty
-  , boxes = Dict.singleton 0 -- box 0 is the "root box"
-    <| Box 0 (Rectangle 0 0 0 0) Dict.empty
-  , boxPath = [0]
+  , boxes = Dict.singleton rootBoxId
+    <| Box rootBoxId (Rectangle 0 0 0 0) Dict.empty
+  , boxId = rootBoxId
   , nextId = 1
   ----- transient -----
   -- feature modules
@@ -92,7 +92,7 @@ encode model =
   E.object
     [ ("items", model.items |> Dict.values |> E.list encodeItem)
     , ("boxes", model.boxes |> Dict.values |> E.list encodeBox)
-    , ("boxPath", E.list E.int model.boxPath)
+    , ("boxId", E.int model.boxId)
     , ("nextId", E.int model.nextId)
     ]
 
@@ -102,7 +102,7 @@ decoder key =
   D.succeed Model
   |> required "items" (D.list itemDecoder |> D.andThen toDictDecoder)
   |> required "boxes" (D.list boxDecoder |> D.andThen toDictDecoder)
-  |> required "boxPath" (D.list D.int)
+  |> required "boxId" D.int
   |> required "nextId" D.int
   ----- transient -----
   -- feature modules

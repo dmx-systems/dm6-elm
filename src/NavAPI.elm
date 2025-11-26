@@ -18,30 +18,41 @@ import Url exposing (Url)
 update : Nav.Msg -> UndoModel -> (UndoModel, Cmd Msg)
 update msg ({present} as undoModel) =
   case msg of
-    Nav.Fullscreen -> (undoModel, pushBoxUrl present)
-    Nav.UrlChanged url -> urlChanged url present |> S.store |> Undo.reset
+    Nav.Fullscreen -> (undoModel, fullscreenRoute present)
+    Nav.UrlChanged url -> urlChanged url undoModel
     Nav.LinkClicked urlRequest -> (undoModel, Cmd.none) -- TODO
 
 
-pushBoxUrl : Model -> Cmd Msg
-pushBoxUrl model =
+fullscreenRoute : Model -> Cmd Msg
+fullscreenRoute model =
   case Sel.single model of
-    Just (boxId, _) ->
-      Navigation.pushUrl model.nav.key <| "#" ++ fromInt boxId
+    Just (boxId, _) -> pushUrl boxId model
     Nothing -> Cmd.none
 
 
-urlChanged : Url -> Model -> Model
-urlChanged url model =
+urlChanged : Url -> UndoModel -> (UndoModel, Cmd Msg)
+urlChanged url ({present} as undoModel) =
   case url.fragment of
     Just str ->
       case toInt str of
-        Just boxId -> fullscreen boxId model
-        Nothing -> U.logError "urlChanged" ("\"" ++ str ++ "\" is not a number") model
-    Nothing -> U.logError "urlChanged" "URL misses fragment" model
+        Just boxId ->
+          fullscreen boxId present |> S.store |> Undo.reset
+        Nothing ->
+          U.logError "urlChanged" ("\"" ++ str ++ "\" is not a number")
+          (undoModel, Cmd.none) -- TODO
+    Nothing ->
+      let
+        _ = U.info "urlChanged" "URL w/o fragment -> redirect to root box"
+      in
+      (undoModel, pushUrl rootBoxId present)
 
 
 fullscreen : BoxId -> Model -> Model
 fullscreen boxId model =
-  { model | boxPath = boxId :: model.boxPath }
+  { model | boxId = boxId }
   |> Sel.clear
+
+
+pushUrl : BoxId -> Model -> Cmd Msg
+pushUrl boxId model =
+  Navigation.pushUrl model.nav.key <| "#" ++ fromInt boxId

@@ -28,7 +28,7 @@ isActive boxId model =
 
 active : Model -> BoxId
 active model =
-  firstId model.boxPath
+  model.boxId
 
 
 activeName : Model -> String
