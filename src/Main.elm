@@ -5,7 +5,7 @@ import Box.Size as Size
 import Config as C
 import Item
 import Map
-import Model exposing (Model, Msg(..), NavMsg(..))
+import Model exposing (Model, Msg(..))
 import ModelHelper exposing (..)
 import Storage as S
 import Undo exposing (UndoModel)
@@ -13,17 +13,21 @@ import Utils as U
 -- feature modules
 import IconAPI
 import MouseAPI
+import Nav
+import NavAPI
 import SearchAPI
 import SelectionAPI as Sel
 import TextEditAPI
 import ToolAPI
 
 import Browser
+import Browser.Navigation exposing (Key)
 import Html exposing (Html, Attribute, div, text, br, a)
 import Html.Attributes exposing (id, style, href)
 import Json.Decode as D
 import Json.Encode as E
 import String exposing (fromInt, fromFloat)
+import Url exposing (Url)
 
 
 
@@ -32,29 +36,38 @@ import String exposing (fromInt, fromFloat)
 
 main : Program E.Value UndoModel Msg
 main =
-  Browser.document
+  Browser.application
     { init = init
     , view = view
     , update = update
     , subscriptions = MouseAPI.subs
+    , onUrlChange = Nav << Nav.UrlChanged
+    , onUrlRequest = Nav << Nav.LinkClicked
     }
 
 
-init : E.Value -> (UndoModel, Cmd Msg)
-init flags =
-  (initModel flags, Cmd.none) |> Undo.reset
+init : E.Value -> Url -> Key -> (UndoModel, Cmd Msg)
+init flags url key =
+  let
+    model = initModel flags key
+    boxId =
+      case NavAPI.boxIdFromUrl url of
+        Just boxId_ -> boxId_
+        Nothing -> model.boxId
+  in
+  (model, NavAPI.pushUrl boxId model) |> Undo.reset
 
 
-initModel : E.Value -> Model
-initModel flags =
+initModel : E.Value -> Key -> Model
+initModel flags key =
   case flags |> D.decodeValue (D.null True) of
     Ok True ->
       let
         _ = U.info "init" "localStorage: empty"
       in
-      Model.init
+      Model.init key
     _ ->
-      case flags |> D.decodeValue S.modelDecoder of
+      case flags |> D.decodeValue (Model.decoder key) of
         Ok model ->
           let
             _ = U.info "init" ("localStorage: " ++ bytes ++ " bytes")
@@ -65,7 +78,7 @@ initModel flags =
           let
             _ = U.logError "init" "localStorage" e
           in
-          Model.init
+          Model.init key
 
 
 
@@ -209,8 +222,8 @@ update msg ({present} as undoModel) =
     Mouse mouseMsg -> MouseAPI.update mouseMsg undoModel
     Search searchMsg -> SearchAPI.update searchMsg undoModel
     Icon iconMenuMsg -> IconAPI.update iconMenuMsg undoModel
+    Nav navMsg -> NavAPI.update navMsg undoModel
     --
-    Nav navMsg -> updateNav navMsg present |> S.store |> Undo.reset
     NoOp -> (present, Cmd.none) |> Undo.swap undoModel
 
 
@@ -268,52 +281,3 @@ resetUI model =
     |> SearchAPI.closeMenu
   , Cmd.none
   )
-
-
-updateNav : NavMsg -> Model -> Model
-updateNav navMsg model =
-  case navMsg of
-    Fullscreen -> fullscreen model
-    Back -> back model
-
-
-fullscreen : Model -> Model
-fullscreen model =
-  case Sel.single model of
-    Just (topicId, _) ->
-      { model | boxPath = topicId :: model.boxPath }
-      |> Sel.clear
-      |> adjustBoxRect topicId -1
-    Nothing -> model
-
-
-back : Model -> Model
-back model =
-  let
-    (boxId, boxPath, selection) =
-      case model.boxPath of
-        prevBoxId :: nextBoxId :: boxIds ->
-          ( prevBoxId
-          , nextBoxId :: boxIds
-          , [(prevBoxId, nextBoxId)]
-          )
-        _ -> U.logError "back" "model.boxPath has a problem" (0, [0], [])
-  in
-  { model
-  | boxPath = boxPath
-  -- , selection = selection -- TODO
-  }
-  |> adjustBoxRect boxId 1
-  |> Size.auto
-
-
--- TODO
-adjustBoxRect : BoxId -> Float -> Model -> Model
-adjustBoxRect boxId factor model =
-  model |> Box.updateRect boxId
-    (\rect -> Rectangle
-      (rect.x1 + factor * C.nestedBoxOffset.x)
-      (rect.y1 + factor * C.nestedBoxOffset.y)
-      rect.x2
-      rect.y2
-    )

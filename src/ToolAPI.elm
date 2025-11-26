@@ -5,7 +5,7 @@ import Box.Size as Size
 import Box.Transfer as Transfer
 import Config as C
 import Item
-import Model exposing (Model, Msg(..), NavMsg(..))
+import Model exposing (Model, Msg(..))
 import ModelHelper exposing (..)
 import Storage as S
 import Undo exposing (UndoModel)
@@ -13,6 +13,7 @@ import Utils as U
 -- feature modules
 import Icon
 import IconAPI
+import Nav
 import Search
 import SearchAPI
 import SelectionAPI as Sel
@@ -35,7 +36,7 @@ viewAppHeader : UndoModel -> Html Msg
 viewAppHeader ({present} as undoModel) =
   div
     appHeaderStyle
-    [ viewNav present
+    [ viewMapTitle present
     , div spacerStyle []
     , div
       []
@@ -62,52 +63,28 @@ appHeaderStyle =
   , style "align-items" "center"
   , style "gap" "18px"
   , style "height" <| fromInt C.appHeaderHeight ++ "px"
-  , style "padding" "0 18px 0 8px"
+  , style "padding" "0 8px"
   , style "background-color" C.toolbarColor
   ]
 
 
-spacerStyle : List (Attribute Msg)
-spacerStyle =
-  [ style "flex-grow" "1" ]
-
-
-viewNav : Model -> Html Msg
-viewNav model =
-  let
-    backDisabled = Box.isAtRoot model
-  in
+viewMapTitle : Model -> Html Msg
+viewMapTitle model =
   div
-    navStyle
-    [ button
-      [ onClick (Nav Back)
-      , disabled backDisabled
-      ]
-      [ IconAPI.viewIcon "arrow-left" 20 ]
-    , span
-      mapTitleStyle
-      [ text <| getMapName model ]
-    ]
-
-
-navStyle : List (Attribute Msg)
-navStyle =
-  []
+    mapTitleStyle
+    [ text <| Box.activeName model ]
 
 
 mapTitleStyle : List (Attribute Msg)
 mapTitleStyle =
   [ style "font-size" "24px"
   , style "font-weight" "bold"
-  , style "margin-left" "10px"
   ]
 
 
-getMapName : Model -> String
-getMapName model =
-  case Item.topicById (Box.active model) model of
-    Just topic -> Item.topicLabel topic
-    Nothing -> "??"
+spacerStyle : List (Attribute Msg)
+spacerStyle =
+  [ style "flex-grow" "1" ]
 
 
 viewButton : String -> Msg -> (UndoModel -> Bool) -> UndoModel -> Html Msg
@@ -158,14 +135,12 @@ viewToolbar itemId boxId model =
       if Item.isBox itemId model then
         [ viewSpacer
         , viewIconButton "Unbox" "external-link" isUnboxed (Tool <| Tool.Unbox itemId boxId)
-        , viewIconButton "Fullscreen" "maximize-2" False (Nav Fullscreen)
+        , viewIconButton "Fullscreen" "maximize-2" False (Nav Nav.Fullscreen)
         ]
       else
         []
     isUnboxed =
-      case Box.displayMode itemId boxId model of
-        Just (BoxD Unboxed) -> True
-        _ -> False
+      Box.displayMode itemId boxId model == Just (BoxD Unboxed)
   in
   div
     (toolbarStyle itemId boxId model)

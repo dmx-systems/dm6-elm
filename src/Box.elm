@@ -28,7 +28,14 @@ isActive boxId model =
 
 active : Model -> BoxId
 active model =
-  firstId model.boxPath
+  model.boxId
+
+
+activeName : Model -> String
+activeName model =
+  case Item.topicById (active model) model of
+    Just topic -> Item.topicLabel topic
+    Nothing -> "??"
 
 
 {-| Logs an error (and returns -1) if boxPath is empty.
