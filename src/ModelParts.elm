@@ -1,4 +1,7 @@
-module ModelHelper exposing (..)
+module ModelParts exposing (Item, ItemInfo(..), TopicInfo, AssocInfo, Items, Id, AssocIds, Icon,
+  ItemType, RoleType, Box, Boxes, BoxId, Class, Delta, BoxItems, BoxPath, rootBoxId, BoxItem,
+  ViewProps(..), TopicProps, AssocProps, DisplayMode(..), TopicDisplay(..), BoxDisplay(..),
+  Point, Rectangle, Size, encodeItem, encodeBox, itemDecoder, boxDecoder, toDictDecoder)
 
 import Dict exposing (Dict)
 import Json.Decode as D
@@ -7,8 +10,10 @@ import Set exposing (Set)
 
 
 
-type alias Items = Dict Id Item
+-- TYPES
 
+
+-- Item
 
 type alias Item =
   { id : Id
@@ -39,11 +44,16 @@ type alias AssocInfo =
   }
 
 
-type alias BoxPath = List BoxId
+type alias Items = Dict Id Item
+
+type alias Id = Int
+type alias AssocIds = Set Id
+type alias Icon = String -- name of feather icon, https://feathericons.com
+type alias ItemType = String -- a type URI, e.g. "dmx.association"
+type alias RoleType = String -- a role type URI, e.g. "dmx.default"
 
 
-type alias Boxes = Dict Id Box
-
+-- Box
 
 type alias Box =
   { id : BoxId
@@ -52,11 +62,17 @@ type alias Box =
   }
 
 
+type alias Boxes = Dict Id Box
+
+type alias BoxId = Id
+type alias Class = String -- a CSS class, e.g. "dmx-topic"
+type alias Delta = Point
+type alias BoxItems = Dict Id BoxItem
+type alias BoxPath = List BoxId
+
+
 rootBoxId : BoxId
 rootBoxId = 0
-
-
-type alias BoxItems = Dict Id BoxItem
 
 
 type alias BoxItem =
@@ -118,16 +134,6 @@ type alias Size =
   { w : Float
   , h : Float
   }
-
-
-type alias Id = Int
-type alias BoxId = Id
-type alias AssocIds = Set Id
-type alias Class = String -- a CSS class, e.g. "dmx-topic"
-type alias ItemType = String -- a type URI, e.g. "dmx.association"
-type alias RoleType = String -- a role type URI, e.g. "dmx.default"
-type alias Delta = Point
-type alias Icon = String -- name of feather icon, https://feathericons.com
 
 
 

@@ -3,7 +3,7 @@ module Box exposing (..)
 import Config as C
 import Item
 import Model exposing (Model)
-import ModelHelper exposing (..)
+import ModelParts exposing (..)
 import Utils as U
 
 import Dict

@@ -10,7 +10,7 @@ import Feature.TextEdit as T exposing (EditState(..))
 import Feature.ToolAPI as ToolAPI
 import Item
 import Model exposing (Model, Msg(..))
-import ModelHelper exposing (..)
+import ModelParts exposing (..)
 import Utils as U
 
 import Dict

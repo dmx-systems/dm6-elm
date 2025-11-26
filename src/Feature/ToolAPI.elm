@@ -14,7 +14,7 @@ import Feature.TextEdit as T
 import Feature.Tool as Tool
 import Item
 import Model exposing (Model, Msg(..))
-import ModelHelper exposing (..)
+import ModelParts exposing (..)
 import Storage as S
 import Undo exposing (UndoModel)
 import Utils as U

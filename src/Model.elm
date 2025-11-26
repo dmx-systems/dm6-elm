@@ -8,7 +8,7 @@ import Feature.Search as Search
 import Feature.Selection as Selection
 import Feature.TextEdit as TextEdit
 import Feature.Tool as Tool
-import ModelHelper exposing (..)
+import ModelParts exposing (..)
 
 import Browser.Navigation exposing (Key)
 import Dict

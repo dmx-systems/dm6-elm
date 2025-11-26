@@ -6,7 +6,7 @@ import Feature.SelectionAPI as Sel
 import Feature.TextEdit as T exposing (EditState(..))
 import Item
 import Model exposing (Model, Msg(..))
-import ModelHelper exposing (..)
+import ModelParts exposing (..)
 import Storage as S
 import Task
 import Undo exposing (UndoModel)

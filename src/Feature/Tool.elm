@@ -1,6 +1,6 @@
 module Feature.Tool exposing (..)
 
-import ModelHelper exposing (Id, BoxId)
+import ModelParts exposing (Id, BoxId)
 
 
 

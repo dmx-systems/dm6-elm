@@ -14,7 +14,7 @@ import Feature.ToolAPI as ToolAPI
 import Item
 import Map
 import Model exposing (Model, Msg(..))
-import ModelHelper exposing (..)
+import ModelParts exposing (..)
 import Storage as S
 import Undo exposing (UndoModel)
 import Utils as U

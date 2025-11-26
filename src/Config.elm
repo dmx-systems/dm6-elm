@@ -1,6 +1,6 @@
 module Config exposing (..)
 
-import ModelHelper exposing (Point, Size)
+import ModelParts exposing (Point, Size)
 
 
 

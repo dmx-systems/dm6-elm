@@ -1,6 +1,6 @@
 module Feature.Mouse exposing (..)
 
-import ModelHelper exposing (..)
+import ModelParts exposing (..)
 import Time
 
 

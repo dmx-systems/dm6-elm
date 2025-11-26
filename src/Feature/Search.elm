@@ -1,6 +1,6 @@
 module Feature.Search exposing (..)
 
-import ModelHelper exposing (Id)
+import ModelParts exposing (Id)
 
 
 

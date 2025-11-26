@@ -3,7 +3,7 @@ module Feature.NavAPI exposing (boxIdFromUrl, pushUrl, update)
 import Feature.Nav as Nav
 import Feature.SelectionAPI as Sel
 import Model exposing (Model, Msg)
-import ModelHelper exposing (..)
+import ModelParts exposing (..)
 import Storage as S
 import Undo exposing (UndoModel)
 import Utils as U

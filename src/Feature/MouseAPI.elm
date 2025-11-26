@@ -6,7 +6,7 @@ import Config as C
 import Feature.Mouse as Mouse exposing (DragState(..), DragMode(..))
 import Item
 import Model exposing (Model, Msg(..))
-import ModelHelper exposing (..)
+import ModelParts exposing (..)
 import Undo exposing (UndoModel)
 import Utils as U
 

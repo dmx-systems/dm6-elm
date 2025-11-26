@@ -1,6 +1,6 @@
 module Utils exposing (..)
 
-import ModelHelper exposing (..)
+import ModelParts exposing (..)
 
 import Html exposing (Html, Attribute, text, br)
 import Html.Events exposing (on, stopPropagationOn, keyCode)

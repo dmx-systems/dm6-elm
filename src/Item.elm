@@ -1,7 +1,7 @@
 module Item exposing (..)
 
 import Model exposing (Model)
-import ModelHelper exposing (..)
+import ModelParts exposing (..)
 import Utils as U
 
 import Dict

@@ -2,7 +2,7 @@ module Feature.SelectionAPI exposing (select, clear, isSelected, single, singleB
 
 import Feature.Selection exposing (Selection)
 import Model exposing (Model)
-import ModelHelper exposing (Id, BoxId, BoxPath)
+import ModelParts exposing (Id, BoxId, BoxPath)
 import Utils as U
 
 
