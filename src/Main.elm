@@ -120,6 +120,7 @@ mainStyle : List (Attribute Msg)
 mainStyle =
   [ style "position" "relative"
   , style "flex-grow" "1"
+  , style "overflow" "auto"
   ]
 
 
