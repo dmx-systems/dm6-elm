@@ -92,7 +92,8 @@ view ({present} as undoModel) =
       appStyle
       [ ToolAPI.viewAppHeader undoModel
       , div
-        ( mainStyle
+        ( [ id "main" ]
+          ++ mainStyle
           ++ MouseAPI.hoverHandler
         )
         ( [ Map.view (Box.active present) [] present ] -- boxPath = []

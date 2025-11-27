@@ -79,7 +79,7 @@ storeBoxGeometry boxPath newRect oldRect model =
       let
         (isDragInProgress, isOnDragPath, isBoxInDragPath) =
           case model.mouse.dragState of
-            Drag DragTopic _ dragPath _ _ _ ->
+            Drag DragTopic _ _ dragPath _ _ _ ->
               (True
               , (dragPath |> List.drop (List.length dragPath - List.length boxPath)) == boxPath
               , List.member boxId dragPath

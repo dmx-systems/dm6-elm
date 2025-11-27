@@ -18,8 +18,9 @@ type DragState
   = WaitForStartTime Class Id BoxPath Point -- start point (mouse)
   | DragEngaged Time.Posix Class Id BoxPath Point -- start point (mouse)
   | WaitForEndTime Time.Posix Class Id BoxPath Point -- start point (mouse)
-  | Drag DragMode Id BoxPath Point Point (Maybe (Id, BoxPath)) -- orig topic pos,
-                                                               -- last point (mouse)
+  | Drag DragMode Point Id BoxPath Point Point (Maybe (Id, BoxPath)) -- scroll pos
+                                                                     -- orig topic pos
+                                                                     -- last point (mouse)
   | NoDrag
 
 
@@ -35,4 +36,5 @@ type Msg
   | Up
   | Over Class Id BoxPath
   | Out Class Id BoxPath
-  | Time Time.Posix
+  | StartTime Time.Posix
+  | EndTime (Time.Posix, Point) -- scroll position

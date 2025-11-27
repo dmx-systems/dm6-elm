@@ -255,7 +255,7 @@ topicStyle : Id -> BoxId -> Model -> List (Attribute Msg)
 topicStyle id boxId model =
   let
     isDragging = case model.mouse.dragState of
-      Drag DragTopic id_ _ _ _ _ -> id_ == id
+      Drag DragTopic _ id_ _ _ _ _ -> id_ == id
       _ -> False
   in
   [ style "position" "absolute"
@@ -495,9 +495,14 @@ assocGeometry assoc boxId model =
 viewAssocDraft : BoxId -> Model -> List (Svg Msg)
 viewAssocDraft boxId model =
   case model.mouse.dragState of
-    Drag DraftAssoc _ boxPath origPos pos _ ->
+    Drag DraftAssoc scrollPos _ boxPath origPos pos _ ->
+      let
+        pagePos = Point
+          (pos.x + scrollPos.x)
+          (pos.y + scrollPos.y - C.appHeaderHeight)
+      in
       case Box.firstId boxPath == boxId of
-        True -> [ lineFunc origPos (relPos pos boxPath model) Nothing boxId model ]
+        True -> [ lineFunc origPos (relPos pagePos boxPath model) Nothing boxId model ]
         False -> []
     _ -> []
 
@@ -511,7 +516,7 @@ relPos pos boxPath model =
   in
   Point
     (pos.x - posAbs.x)
-    (pos.y - posAbs.y - C.appHeaderHeight)
+    (pos.y - posAbs.y)
 
 
 {-| Recursively calculates the absolute position of a box.
@@ -684,11 +689,12 @@ whiteBoxStyle topicId rect boxId model =
 topicBorderStyle : Id -> BoxId -> Model -> List (Attribute Msg)
 topicBorderStyle id boxId model =
   let
+    isTarget_ = isTarget id boxId
     targeted = case model.mouse.dragState of
       -- can't move a topic to a box where it is already
       -- can't create assoc when both topics are in different box
-      Drag DragTopic _ (boxId_ :: _) _ _ target -> isTarget id boxId target && boxId_ /= id
-      Drag DraftAssoc _ (boxId_ :: _) _ _ target -> isTarget id boxId target && boxId_ == boxId
+      Drag DragTopic _ _ (boxId_ :: _) _ _ target -> isTarget_ target && boxId_ /= id
+      Drag DraftAssoc _ _ (boxId_ :: _) _ _ target -> isTarget_ target && boxId_ == boxId
       _ -> False
   in
   [ style "border-width" <| fromFloat C.topicBorderWidth ++ "px"
