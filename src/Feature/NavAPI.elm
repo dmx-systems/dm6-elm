@@ -1,5 +1,6 @@
 module Feature.NavAPI exposing (boxIdFromUrl, pushUrl, update)
 
+import Box.Size as Size
 import Feature.Nav as Nav
 import Feature.SelectionAPI as Sel
 import Model exposing (Model, Msg)
@@ -45,6 +46,7 @@ fullscreen : BoxId -> Model -> Model
 fullscreen boxId model =
   { model | boxId = boxId }
   |> Sel.clear
+  |> Size.auto
 
 
 pushUrl : BoxId -> Model -> Cmd Msg

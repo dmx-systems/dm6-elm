@@ -92,6 +92,9 @@ boxInfo boxId boxPath model =
       ( viewItems box boxPath model
       , box.rect
       , if Box.isActive boxId model then
+          let
+            _ = U.info "boxInfo" {activeBoxId = boxId, rect = box.rect}
+          in
           ( { w = "100%", h = "100%" }, [] )
         else
           ( { w = (box.rect.x2 - box.rect.x1) |> round |> fromInt
@@ -560,13 +563,6 @@ accumulateRect posAcc boxId model =
 -- STYLE
 
 
-selectionStyle : Id -> BoxId -> Model -> List (Attribute Msg)
-selectionStyle topicId boxId model =
-  case Sel.isSelected topicId boxId model of
-    True -> [ style "box-shadow" "gray 5px 5px 5px" ]
-    False -> []
-
-
 topicFlexboxStyle : TopicInfo -> TopicProps -> BoxId -> Model -> List (Attribute Msg)
 topicFlexboxStyle topic props boxId model =
   let
@@ -702,6 +698,13 @@ topicBorderStyle id boxId model =
   , style "box-sizing" "border-box"
   , style "background-color" "white"
   ]
+
+
+selectionStyle : Id -> BoxId -> Model -> List (Attribute Msg)
+selectionStyle topicId boxId model =
+  case Sel.isSelected topicId boxId model of
+    True -> [ style "box-shadow" "gray 5px 5px 5px" ]
+    False -> []
 
 
 isTarget : Id -> BoxId -> Maybe (Id, BoxPath) -> Bool

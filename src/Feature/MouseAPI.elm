@@ -82,7 +82,7 @@ endTimeArrived endTime scrollPos ({present} as undoModel) =
   case present.mouse.dragState of
     WaitForEndTime startTime class id boxPath pos ->
       let
-        _ = U.info "endTimeArrived" {delay = delay, scrollPos = scrollPos}
+        -- _ = U.info "endTimeArrived" {delay = delay, scrollPos = scrollPos}
         delay = posixToMillis endTime - posixToMillis startTime
         (dragMode, undo) =
           case delay > C.assocDelayMillis of
