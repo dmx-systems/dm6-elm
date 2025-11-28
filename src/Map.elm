@@ -77,6 +77,22 @@ view boxId boxPath model =
     ]
 
 
+topicLayerStyle : Rectangle -> List (Attribute Msg)
+topicLayerStyle boxRect =
+  [ style "position" "absolute"
+  , style "left" <| fromFloat -boxRect.x1 ++ "px"
+  , style "top" <| fromFloat -boxRect.y1 ++ "px"
+  ]
+
+
+svgStyle : List (Attribute Msg)
+svgStyle =
+  [ style "position" "absolute" -- occupy entire window height (instead 150px default height)
+  , style "top" "0"
+  , style "left" "0"
+  ]
+
+
 gAttr : BoxId -> Rectangle -> Model -> List (Attribute Msg)
 gAttr boxId boxRect model =
     [ transform
@@ -91,20 +107,35 @@ boxInfo boxId boxPath model =
     Just box ->
       ( viewItems box boxPath model
       , box.rect
-      , if Box.isActive boxId model then
-          let
-            _ = U.info "boxInfo" {activeBoxId = boxId, rect = box.rect}
-          in
-          ( { w = "100%", h = "100%" }, [] )
-        else
-          ( { w = (box.rect.x2 - box.rect.x1) |> round |> fromInt
-            , h = (box.rect.y2 - box.rect.y1) |> round |> fromInt
-            }
-          , whiteBoxStyle boxId box.rect (Box.firstId boxPath) model
-          )
+      , ( { w = (box.rect.x2 - box.rect.x1) |> round |> fromInt
+          , h = (box.rect.y2 - box.rect.y1) |> round |> fromInt
+          }
+        , if Box.isActive boxId model then
+            []
+          else
+            nestedBoxStyle boxId box.rect (Box.firstId boxPath) model
+        )
       )
     Nothing ->
       ( ([], []), Rectangle 0 0 0 0, ( {w = "0", h = "0"}, [] ))
+
+
+nestedBoxStyle : Id -> Rectangle -> BoxId -> Model -> List (Attribute Msg)
+nestedBoxStyle topicId rect boxId model =
+  let
+    width = rect.x2 - rect.x1
+    height = rect.y2 - rect.y1
+    r = fromInt C.whiteBoxRadius ++ "px"
+  in
+  [ style "position" "absolute"
+  , style "left" <| fromFloat -C.topicBorderWidth ++ "px"
+  , style "top" <| fromFloat (C.topicSize.h - 2 * C.topicBorderWidth) ++ "px"
+  , style "width" <| fromFloat width ++ "px"
+  , style "height" <| fromFloat height ++ "px"
+  , style "border-radius" <| "0 " ++ r ++ " " ++ r ++ " " ++ r
+  ]
+  ++ topicBorderStyle topicId boxId model
+  ++ selectionStyle topicId boxId model
 
 
 -- For a fullscreen box boxPath is empty
@@ -664,24 +695,6 @@ itemCountStyle =
   ]
 
 
-whiteBoxStyle : Id -> Rectangle -> BoxId -> Model -> List (Attribute Msg)
-whiteBoxStyle topicId rect boxId model =
-  let
-    width = rect.x2 - rect.x1
-    height = rect.y2 - rect.y1
-    r = fromInt C.whiteBoxRadius ++ "px"
-  in
-  [ style "position" "absolute"
-  , style "left" <| fromFloat -C.topicBorderWidth ++ "px"
-  , style "top" <| fromFloat (C.topicSize.h - 2 * C.topicBorderWidth) ++ "px"
-  , style "width" <| fromFloat width ++ "px"
-  , style "height" <| fromFloat height ++ "px"
-  , style "border-radius" <| "0 " ++ r ++ " " ++ r ++ " " ++ r
-  ]
-  ++ topicBorderStyle topicId boxId model
-  ++ selectionStyle topicId boxId model
-
-
 topicBorderStyle : Id -> BoxId -> Model -> List (Attribute Msg)
 topicBorderStyle id boxId model =
   let
@@ -715,22 +728,6 @@ isTarget topicId boxId target =
         targetBoxId :: _ -> topicId == targetId && boxId == targetBoxId
         [] -> False
     Nothing -> False
-
-
-topicLayerStyle : Rectangle -> List (Attribute Msg)
-topicLayerStyle boxRect =
-  [ style "position" "absolute"
-  , style "left" <| fromFloat -boxRect.x1 ++ "px"
-  , style "top" <| fromFloat -boxRect.y1 ++ "px"
-  ]
-
-
-svgStyle : List (Attribute Msg)
-svgStyle =
-  [ style "position" "absolute" -- occupy entire window height (instead 150px default height)
-  , style "top" "0"
-  , style "left" "0"
-  ]
 
 
 -- One possible lineFunc

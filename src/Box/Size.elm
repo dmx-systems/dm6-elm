@@ -69,7 +69,7 @@ calcItemSize boxItem pathToParent rectAcc model =
     AssocV _ -> (rectAcc, model)
 
 
-{-| Stores the box's "newRect" and, based on its change, calculates and stores the box's "pos"
+{-| Sets the box's "newRect" and, based on its change, calculates and sets the box's "pos"
 adjustmennt ("delta")
 -}
 storeBoxGeometry : BoxPath -> Rectangle -> Rectangle -> Model -> Model
@@ -89,7 +89,7 @@ storeBoxGeometry boxPath newRect oldRect model =
       if isDragInProgress then
         if isOnDragPath then
           model
-          |> storeBoxRect boxId newRect
+          |> setBoxRect boxId newRect
           |> adjustBoxPos boxId parentBoxId newRect oldRect
           -- if boxes are revealed more than once only those within the drag-path
           -- get the position adjustment, the other box's positions remain stable
@@ -100,16 +100,18 @@ storeBoxGeometry boxPath newRect oldRect model =
             -- otherwise, when reaching drag-path, the box's rect would be updated
             -- already and position adjustment will calculate 0
           else
-            model |> storeBoxRect boxId newRect
+            model |> setBoxRect boxId newRect
       else
-        model |> storeBoxRect boxId newRect
-    [_] -> model -- do nothing, for the fullscreen box there is no geometry update
+        model |> setBoxRect boxId newRect
+    [ boxId ] ->
+      model |> setBoxRect boxId newRect
     [] -> U.logError "storeBoxGeometry" "boxPath is empty!" model
 
 
-storeBoxRect : BoxId -> Rectangle -> Model -> Model
-storeBoxRect boxId newRect model =
-  model |> Box.updateRect boxId (\rect -> newRect)
+setBoxRect : BoxId -> Rectangle -> Model -> Model
+setBoxRect boxId rect model =
+  model
+  |> Box.updateRect boxId (\_ -> rect)
 
 
 adjustBoxPos : BoxId -> BoxId -> Rectangle -> Rectangle -> Model -> Model
