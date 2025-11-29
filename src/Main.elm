@@ -94,7 +94,6 @@ view ({present} as undoModel) =
       , div
         ( [ id "main" ]
           ++ mainStyle
-          ++ MouseAPI.hoverHandler
         )
         ( [ Map.view (Box.active present) [] present ] -- boxPath = []
           ++ SearchAPI.viewMenu present

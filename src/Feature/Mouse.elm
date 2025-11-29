@@ -11,7 +11,7 @@ type alias Model =
 
 init : Model
 init =
-  { dragState = NoDrag }
+  { dragState = NoDrag Nothing }
 
 
 type DragState
@@ -21,7 +21,7 @@ type DragState
   | Drag DragMode Point Id BoxPath Point Point (Maybe (Id, BoxPath)) -- scroll pos
                                                                      -- orig topic pos
                                                                      -- last point (mouse)
-  | NoDrag
+  | NoDrag (Maybe (Id, BoxPath)) -- target
 
 
 type DragMode
@@ -34,7 +34,7 @@ type Msg
   | DownOnItem Class Id BoxPath Point -- mouse down on an item where a drag can be engaged
   | Move Point
   | Up
-  | Over Class Id BoxPath
-  | Out Class Id BoxPath
+  | Hover Class Id BoxPath
+  | Unhover Class Id BoxPath
   | StartTime Time.Posix
   | EndTime (Time.Posix, Point) -- scroll position

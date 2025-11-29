@@ -6,6 +6,7 @@ import Box.Transfer as Transfer
 import Config as C
 import Feature.Icon as Icon
 import Feature.IconAPI as IconAPI
+import Feature.MouseAPI as MouseAPI
 import Feature.Nav as Nav
 import Feature.Search as Search
 import Feature.SearchAPI as SearchAPI
@@ -115,9 +116,17 @@ always undoModel =
 
 viewTools : Id -> BoxId -> Model -> List (Html Msg)
 viewTools itemId boxId model =
-  [ viewToolbar itemId boxId model
-  , viewCaret itemId boxId model
-  ]
+  let
+    toolbar =
+      case Sel.isSelected itemId boxId model of
+        True -> [ viewToolbar itemId boxId model ]
+        False -> []
+    caret =
+      case MouseAPI.isHovered itemId boxId model of
+        True -> [ viewCaret itemId boxId model ]
+        False ->[]
+  in
+  toolbar ++ caret
 
 
 viewToolbar : Id -> BoxId -> Model -> Html Msg
@@ -189,7 +198,7 @@ caretStyle : List (Attribute Msg)
 caretStyle  =
   [ style "position" "absolute"
   , style "top" "-1px"
-  , style "left" "-35px"
+  , style "left" "-32px"
   ]
 
 

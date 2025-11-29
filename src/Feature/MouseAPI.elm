@@ -1,4 +1,4 @@
-module Feature.MouseAPI exposing (hoverHandler, subs, update)
+module Feature.MouseAPI exposing (hoverHandler, isHovered, subs, update)
 
 import Box
 import Box.Size as Size
@@ -27,8 +27,8 @@ import Time exposing (Posix, posixToMillis)
 
 hoverHandler : List (Attribute Msg)
 hoverHandler =
-  [ on "mouseover" (mouseDecoder Mouse.Over)
-  , on "mouseout" (mouseDecoder Mouse.Out)
+  [ on "mouseenter" (mouseDecoder Mouse.Hover)
+  , on "mouseleave" (mouseDecoder Mouse.Unhover)
   ]
 
 
@@ -44,9 +44,9 @@ update msg ({present} as undoModel) =
       |> Undo.swap undoModel
     Mouse.Move pos -> mouseMove pos present |> Undo.swap undoModel
     Mouse.Up -> mouseUp present |> Undo.swap undoModel
-    Mouse.Over class id boxPath -> (mouseOver class id boxPath present, Cmd.none)
+    Mouse.Hover class id boxPath -> (hover class id boxPath present, Cmd.none)
       |> Undo.swap undoModel
-    Mouse.Out class id boxPath -> (mouseOut class id boxPath present, Cmd.none)
+    Mouse.Unhover class id boxPath -> (unhover class id boxPath present, Cmd.none)
       |> Undo.swap undoModel
     Mouse.StartTime time -> startTimeArrived time undoModel
     Mouse.EndTime (time, scrollPos) -> endTimeArrived time scrollPos undoModel
@@ -94,8 +94,8 @@ endTimeArrived endTime scrollPos ({present} as undoModel) =
             "dmx-topic" ->
               case maybeOrigPos of
                 Just origPos -> Drag dragMode scrollPos id boxPath origPos pos Nothing
-                Nothing -> NoDrag -- error is already logged
-            _ -> NoDrag -- the error will be logged in performDrag
+                Nothing -> NoDrag Nothing -- error is already logged
+            _ -> NoDrag Nothing -- the error will be logged in performDrag
       in
       (setDragState dragState present, Cmd.none)
       |> undo undoModel
@@ -202,7 +202,7 @@ mouseUp model =
             ("Received \"Up\" message when dragState is " ++ U.toString model.mouse.dragState)
             Cmd.none
   in
-  (setDragState NoDrag model, cmd)
+  (setDragState (NoDrag Nothing) model, cmd)
 
 
 point : Random.Generator Point
@@ -219,8 +219,8 @@ point =
     (Random.float 0 rh)
 
 
-mouseOver : Class -> Id -> BoxPath -> Model -> Model
-mouseOver class targetId targetBoxPath model =
+hover : Class -> Id -> BoxPath -> Model -> Model
+hover class targetId targetBoxPath model =
   case model.mouse.dragState of
     Drag dragMode scrollPos id boxPath origPos lastPos _ ->
       let
@@ -236,24 +236,40 @@ mouseOver class targetId targetBoxPath model =
             Nothing
       in
       -- update target
-      setDragState (Drag dragMode scrollPos id boxPath origPos lastPos target) model
-    DragEngaged _ _ _ _ _ ->
-      U.logError "mouseOver" "Received \"Over\" message when dragState is DragEngaged" model
+      model
+      |> setDragState (Drag dragMode scrollPos id boxPath origPos lastPos target)
+    NoDrag _ ->
+      -- update target
+      model
+      |> setDragState (NoDrag <| Just (targetId, targetBoxPath))
     _ -> model
 
 
-mouseOut : Class -> Id -> BoxPath -> Model -> Model
-mouseOut class targetId targetBoxPath model =
+unhover : Class -> Id -> BoxPath -> Model -> Model
+unhover class targetId targetBoxPath model =
   case model.mouse.dragState of
     Drag dragMode scrollPos id boxPath origPos lastPos _ ->
       -- reset target
-      setDragState (Drag dragMode scrollPos id boxPath origPos lastPos Nothing) model
+      model
+      |> setDragState (Drag dragMode scrollPos id boxPath origPos lastPos Nothing)
+    NoDrag _ ->
+      -- reset target
+      model
+      |> setDragState (NoDrag Nothing)
     _ -> model
 
 
 setDragState : DragState -> Model -> Model
 setDragState dragState ({mouse} as model) =
   { model | mouse = { mouse | dragState = dragState }}
+
+
+isHovered : Id -> BoxId -> Model -> Bool
+isHovered itemId boxId model =
+  case model.mouse.dragState of
+    NoDrag (Just (itemId_, boxId_ :: _ )) ->
+      itemId == itemId_ && boxId == boxId_ -- TODO: box path?
+    _ -> False
 
 
 command : Msg -> Cmd Msg
@@ -272,7 +288,7 @@ subs {present} =
     WaitForEndTime _ _ _ _ _ -> Sub.none
     DragEngaged _ _ _ _ _ -> dragSub
     Drag _ _ _ _ _ _ _ -> dragSub
-    NoDrag -> mouseDownSub
+    NoDrag _ -> mouseDownSub
 
 
 mouseDownSub : Sub Msg

@@ -4,6 +4,7 @@ import Box
 import Config as C
 import Feature.IconAPI as IconAPI
 import Feature.Mouse exposing (DragState(..), DragMode(..))
+import Feature.MouseAPI as MouseAPI
 import Feature.Search exposing (Menu(..))
 import Feature.SelectionAPI as Sel
 import Feature.TextEdit as T exposing (EditState(..))
@@ -270,19 +271,24 @@ viewTopic topic props boxPath model =
   in
   div
     ( topicAttr topic.id boxPath model
+      ++ MouseAPI.hoverHandler
       ++ topicStyle topic.id boxId model
       ++ style
     )
     ( children
-      ++ viewTools topic.id boxId model
+      ++ ToolAPI.viewTools topic.id boxId model
     )
 
 
-viewTools : Id -> BoxId -> Model -> List (Html Msg)
-viewTools topicId boxId model =
-  case Sel.isSelected topicId boxId model of
-    True -> ToolAPI.viewTools topicId boxId model
-    False -> []
+topicAttr : Id -> BoxPath -> Model -> List (Attribute Msg)
+topicAttr topicId boxPath model =
+  if Box.isActive topicId model then
+    [] -- TODO: the fullscreen box would require dedicated event handling, e.g. panning?
+  else
+    [ attribute "class" "dmx-topic"
+    , attribute "data-id" (fromInt topicId)
+    , attribute "data-path" (Box.fromPath boxPath)
+    ]
 
 
 topicStyle : Id -> BoxId -> Model -> List (Attribute Msg)
@@ -492,17 +498,6 @@ boxItemCount topicId props model =
       itemCountStyle
       [ text <| fromInt itemCount ]
   ]
-
-
-topicAttr : Id -> BoxPath -> Model -> List (Attribute Msg)
-topicAttr topicId boxPath model =
-  if Box.isActive topicId model then
-    [] -- TODO: the fullscreen box would require dedicated event handling, e.g. panning?
-  else
-    [ attribute "class" "dmx-topic"
-    , attribute "data-id" (fromInt topicId)
-    , attribute "data-path" (Box.fromPath boxPath)
-    ]
 
 
 viewAssoc : AssocInfo -> BoxId -> Model -> Svg Msg
