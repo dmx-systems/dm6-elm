@@ -10,7 +10,7 @@ import Feature.MouseAPI as MouseAPI
 import Feature.Nav as Nav
 import Feature.Search as Search
 import Feature.SearchAPI as SearchAPI
-import Feature.SelectionAPI as Sel
+import Feature.SelAPI as SelAPI
 import Feature.TextEdit as T
 import Feature.Tool as Tool
 import Item
@@ -118,7 +118,7 @@ viewTools : Id -> BoxId -> Model -> List (Html Msg)
 viewTools itemId boxId model =
   let
     toolbar =
-      case Sel.isSelected itemId boxId model of
+      case SelAPI.isSelected itemId boxId model of
         True -> [ viewToolbar itemId boxId model ]
         False -> []
     caret =
@@ -255,7 +255,7 @@ addTopic model =
       in
       newModel
       |> Box.addItem topicId props boxId
-      |> Sel.select topicId [ boxId ]
+      |> SelAPI.select topicId [ boxId ]
     Nothing -> model
 
 
@@ -280,7 +280,7 @@ addBox model =
       newModel
       |> Box.addBox topicId
       |> Box.addItem topicId props boxId
-      |> Sel.select topicId [ boxId ]
+      |> SelAPI.select topicId [ boxId ]
     Nothing -> model
 
 
@@ -323,7 +323,7 @@ hide model =
         model
   in
   newModel
-  |> Sel.clear
+  |> SelAPI.clear
   |> Size.auto
 
 
@@ -337,5 +337,5 @@ delete model =
         model
   in
   newModel
-  |> Sel.clear
+  |> SelAPI.clear
   |> Size.auto

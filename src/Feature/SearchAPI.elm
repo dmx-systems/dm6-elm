@@ -4,7 +4,7 @@ import Box
 import Box.Size as Size
 import Config as C
 import Feature.Search as Search exposing (Menu(..))
-import Feature.SelectionAPI as Sel
+import Feature.SelAPI as SelAPI
 import Item
 import Model exposing (Model, Msg(..))
 import ModelParts exposing (..)
@@ -129,7 +129,7 @@ revealBoxId model =
   case model.search.menu of
     Topics _ _ -> Just (Box.active model)
     RelTopics _ _ ->
-      case Sel.singleBoxId model of
+      case SelAPI.singleBoxId model of
         Just boxId -> Just boxId
         Nothing -> Nothing
     Closed -> Nothing
@@ -280,7 +280,7 @@ revealTopic topicId model =
 
 revealRelTopic : (Id, Id) -> Model -> Model
 revealRelTopic (topicId, assocId) model =
-  case Sel.singleBoxId model of
+  case SelAPI.singleBoxId model of
     Just boxId ->
       model
       |> revealItem topicId boxId
@@ -312,7 +312,7 @@ showRelatedTopics : Model -> Model
 showRelatedTopics ({search} as model) =
   let
     relTopicIds =
-      case Sel.single model of
+      case SelAPI.single model of
         Just (itemId, _) ->
           Item.relatedItems itemId model
         Nothing -> [] -- TODO: log error

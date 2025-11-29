@@ -6,7 +6,7 @@ import Feature.IconAPI as IconAPI
 import Feature.Mouse exposing (DragState(..), DragMode(..))
 import Feature.MouseAPI as MouseAPI
 import Feature.Search exposing (Menu(..))
-import Feature.SelectionAPI as Sel
+import Feature.SelAPI as SelAPI
 import Feature.TextEdit as T exposing (EditState(..))
 import Feature.ToolAPI as ToolAPI
 import Item
@@ -250,7 +250,7 @@ limboState model =
   case model.search.menu of
     Topics _ (Just topicId) -> Just (topicId, Nothing, Box.active model)
     RelTopics _ (Just (topicId, assocId)) ->
-      case Sel.singleBoxId model of
+      case SelAPI.singleBoxId model of
         Just boxId -> Just (topicId, Just assocId, boxId)
         Nothing -> Nothing
     _ -> Nothing
@@ -710,7 +710,7 @@ topicBorderStyle id boxId model =
 
 selectionStyle : Id -> BoxId -> Model -> List (Attribute Msg)
 selectionStyle topicId boxId model =
-  case Sel.isSelected topicId boxId model of
+  case SelAPI.isSelected topicId boxId model of
     True -> [ style "box-shadow" "gray 5px 5px 5px" ]
     False -> []
 
@@ -718,8 +718,8 @@ selectionStyle topicId boxId model =
 isTarget : Id -> BoxId -> Maybe (Id, BoxPath) -> Bool
 isTarget topicId boxId target =
   case target of
-    Just (targetId, targetBoxPath) ->
-      case targetBoxPath of
+    Just (targetId, targetPath) ->
+      case targetPath of
         targetBoxId :: _ -> topicId == targetId && boxId == targetBoxId
         [] -> False
     Nothing -> False

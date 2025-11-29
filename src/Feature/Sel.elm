@@ -1,4 +1,4 @@
-module Feature.Selection exposing (..)
+module Feature.Sel exposing (..)
 
 import ModelParts exposing (Id, BoxPath)
 

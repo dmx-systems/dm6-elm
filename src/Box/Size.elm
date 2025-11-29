@@ -36,6 +36,7 @@ calcBoxRect boxPath model =
               calcItemSize boxItem boxPath rectAcc modelAcc
             )
             (Rectangle 5000 5000 -5000 -5000, model) -- x-min y-min x-max y-max
+            -- FIXME: if box is empty its rect size is negative
           )
         newRect = Rectangle
           (rect.x1 - C.whiteBoxPadding)

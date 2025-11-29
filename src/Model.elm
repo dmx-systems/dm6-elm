@@ -5,7 +5,7 @@ import Feature.Icon as Icon
 import Feature.Mouse as Mouse
 import Feature.Nav as Nav
 import Feature.Search as Search
-import Feature.Selection as Selection
+import Feature.Sel as Sel
 import Feature.TextEdit as TextEdit
 import Feature.Tool as Tool
 import ModelParts exposing (..)
@@ -30,7 +30,7 @@ type alias Model =
   , mouse : Mouse.Model
   , search : Search.Model
   , icon : Icon.Model
-  , selection : Selection.Model
+  , selection : Sel.Model
   , nav : Nav.Model
   }
 
@@ -48,7 +48,7 @@ init key =
   , mouse = Mouse.init
   , search = Search.init
   , icon = Icon.init
-  , selection = Selection.init
+  , selection = Sel.init
   , nav = Nav.init key
   }
 
@@ -62,7 +62,7 @@ initTransient model =
   , mouse = Mouse.init
   , search = Search.init
   , icon = Icon.init
-  , selection = Selection.init
+  , selection = Sel.init
   }
 
 
@@ -109,5 +109,5 @@ decoder key =
   |> hardcoded Mouse.init
   |> hardcoded Search.init
   |> hardcoded Icon.init
-  |> hardcoded Selection.init
+  |> hardcoded Sel.init
   |> hardcoded (Nav.init key)

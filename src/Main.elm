@@ -8,7 +8,7 @@ import Feature.MouseAPI as MouseAPI
 import Feature.Nav as Nav
 import Feature.NavAPI as NavAPI
 import Feature.SearchAPI as SearchAPI
-import Feature.SelectionAPI as Sel
+import Feature.SelAPI as SelAPI
 import Feature.TextEditAPI as TextEditAPI
 import Feature.ToolAPI as ToolAPI
 import Item
@@ -210,9 +210,8 @@ update msg ({present} as undoModel) =
     -- gestures detected by Mouse module
     AddAssoc player1 player2 boxId -> addAssoc player1 player2 boxId present |> S.store
       |> Undo.push undoModel
-    MoveTopicToBox topicId boxId origPos targetId targetBoxPath pos
-      -> moveTopicToBox topicId boxId origPos targetId targetBoxPath pos present |> S.store
-      |> Undo.push undoModel
+    MoveTopicToBox topicId boxId origPos targetId targetPath pos -> moveTopicToBox topicId boxId
+      origPos targetId targetPath pos present |> S.store |> Undo.push undoModel
     DraggedTopic -> present |> S.store |> Undo.swap undoModel
     ClickedItem itemId boxPath -> select itemId boxPath present |> Undo.swap undoModel
     ClickedBackground -> resetUI present |> Undo.swap undoModel
@@ -248,7 +247,7 @@ addAssocAndAddToBox itemType role1 player1 role2 player2 boxId model =
 
 
 moveTopicToBox : Id -> BoxId -> Point -> Id -> BoxPath -> Point -> Model -> Model
-moveTopicToBox topicId boxId origPos targetId targetBoxPath pos model =
+moveTopicToBox topicId boxId origPos targetId targetPath pos model =
   let
     props_ =
       Box.topicProps topicId boxId model
@@ -260,7 +259,7 @@ moveTopicToBox topicId boxId origPos targetId targetBoxPath pos model =
       |> Box.hideItem topicId boxId
       |> Box.setTopicPos topicId boxId origPos
       |> Box.addItem topicId props targetId
-      |> Sel.select targetId targetBoxPath
+      |> SelAPI.select targetId targetPath
       |> Size.auto
     Nothing -> model
 
@@ -268,7 +267,7 @@ moveTopicToBox topicId boxId origPos targetId targetBoxPath pos model =
 select : Id -> BoxPath -> Model -> (Model, Cmd Msg)
 select itemId boxPath model =
   ( model
-    |> Sel.select itemId boxPath
+    |> SelAPI.select itemId boxPath
   , Cmd.none
   )
 
@@ -276,7 +275,7 @@ select itemId boxPath model =
 resetUI : Model -> (Model, Cmd Msg)
 resetUI model =
   ( model
-    |> Sel.clear
+    |> SelAPI.clear
     |> IconAPI.closeMenu
     |> SearchAPI.closeMenu
   , Cmd.none

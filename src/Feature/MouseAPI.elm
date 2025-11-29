@@ -157,16 +157,16 @@ mouseUp model =
   let
     cmd =
       case model.mouse.dragState of
-        Drag DragTopic _ id boxPath origPos _ (Just (targetId, targetBoxPath)) ->
+        Drag DragTopic _ id boxPath origPos _ (Just (targetId, targetPath)) ->
           let
             _ = U.info "mouseUp" ("dropped " ++ fromInt id ++ " (box " ++ Box.fromPath boxPath
-              ++ ") on " ++ fromInt targetId ++ " (box " ++ Box.fromPath targetBoxPath
-              ++ ") --> " ++ if not droppedOnSourceBox then "move topic" else "abort")
+              ++ ") on " ++ fromInt targetId ++ " (box " ++ Box.fromPath targetPath ++ ") --> "
+              ++ if not droppedOnSourceBox then "move topic" else "abort")
             boxId = Box.firstId boxPath
             -- Can this actually happen? Possibly an edge case when rendering lags behind mouse
             -- move, so that mouse leaves topic and enters box (background). FIXME: store model
             droppedOnSourceBox = boxId == targetId
-            msg = MoveTopicToBox id boxId origPos targetId targetBoxPath
+            msg = MoveTopicToBox id boxId origPos targetId targetPath
           in
           case not droppedOnSourceBox of
             True -> Random.generate msg point
@@ -176,13 +176,13 @@ mouseUp model =
             _ = U.info "mouseUp" "drag ended w/o target"
           in
           command <| DraggedTopic
-        Drag DraftAssoc _ id boxPath _ _ (Just (targetId, targetBoxPath)) ->
+        Drag DraftAssoc _ id boxPath _ _ (Just (targetId, targetPath)) ->
           let
             _ = U.info "mouseUp" ("assoc drawn from " ++ fromInt id ++ " (box " ++ Box.fromPath
-              boxPath ++ ") to " ++ fromInt targetId ++ " (box " ++ Box.fromPath targetBoxPath
+              boxPath ++ ") to " ++ fromInt targetId ++ " (box " ++ Box.fromPath targetPath
               ++ ") --> " ++ if isSameBox then "create assoc" else "abort")
             boxId = Box.firstId boxPath
-            isSameBox = boxId == Box.firstId targetBoxPath
+            isSameBox = boxId == Box.firstId targetPath
           in
           case isSameBox of
             True -> command <| AddAssoc id targetId boxId
@@ -220,18 +220,18 @@ point =
 
 
 hover : Class -> Id -> BoxPath -> Model -> Model
-hover class targetId targetBoxPath model =
+hover class targetId targetPath model =
   case model.mouse.dragState of
     Drag dragMode scrollPos id boxPath origPos lastPos _ ->
       let
-        isSelf = (id, Box.firstId boxPath) == (targetId, Box.firstId targetBoxPath)
+        isSelf = (id, Box.firstId boxPath) == (targetId, Box.firstId targetPath)
         isBox = Item.isBox targetId model
         target =
           -- the hovered item is a potential drop target if
           -- 1. the hovered item is not the item being dragged (can't drop on self), AND
           -- 2. the hovered item is a box OR draft assoc is in progress
           if not isSelf && (isBox || dragMode == DraftAssoc) then
-            Just (targetId, targetBoxPath)
+            Just (targetId, targetPath)
           else
             Nothing
       in
@@ -241,12 +241,12 @@ hover class targetId targetBoxPath model =
     NoDrag _ ->
       -- update target
       model
-      |> setDragState (NoDrag <| Just (targetId, targetBoxPath))
+      |> setDragState (NoDrag <| Just (targetId, targetPath))
     _ -> model
 
 
 unhover : Class -> Id -> BoxPath -> Model -> Model
-unhover class targetId targetBoxPath model =
+unhover class targetId targetPath model =
   case model.mouse.dragState of
     Drag dragMode scrollPos id boxPath origPos lastPos _ ->
       -- reset target

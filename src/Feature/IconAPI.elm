@@ -2,7 +2,7 @@ module Feature.IconAPI exposing (viewIcon, viewTopicIcon, viewMenu, closeMenu, u
 
 import Config as C
 import Feature.Icon as Icon
-import Feature.SelectionAPI as Sel
+import Feature.SelAPI as SelAPI
 import Item
 import Model exposing (Model, Msg(..))
 import ModelParts exposing (..)
@@ -149,7 +149,7 @@ closeMenu ({icon} as model) =
 
 setIcon : Maybe Icon -> Model -> Model
 setIcon iconName model =
-  case Sel.single model of
+  case SelAPI.single model of
     Just (id, _) -> Item.updateTopicInfo id
       (\topic -> { topic | icon = iconName })
       model

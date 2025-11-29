@@ -21,7 +21,7 @@ type DragState
   | Drag DragMode Point Id BoxPath Point Point (Maybe (Id, BoxPath)) -- scroll pos
                                                                      -- orig topic pos
                                                                      -- last point (mouse)
-  | NoDrag (Maybe (Id, BoxPath)) -- target
+  | NoDrag (Maybe (Id, BoxPath)) -- hover target
 
 
 type DragMode

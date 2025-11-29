@@ -2,7 +2,7 @@ module Feature.TextEditAPI exposing (update)
 
 import Box
 import Box.Size as Size
-import Feature.SelectionAPI as Sel
+import Feature.SelAPI as SelAPI
 import Feature.TextEdit as T exposing (EditState(..))
 import Item
 import Model exposing (Model, Msg(..))
@@ -41,7 +41,7 @@ update msg ({present} as undoModel) =
 startEdit : Model -> (Model, Cmd Msg)
 startEdit model =
   let
-    newModel = case Sel.single model of
+    newModel = case SelAPI.single model of
       Just (topicId, boxPath) ->
         model
         |> setEditState (ItemEdit topicId (Box.firstId boxPath))

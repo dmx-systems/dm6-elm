@@ -2,7 +2,7 @@ module Feature.NavAPI exposing (boxIdFromUrl, pushUrl, update)
 
 import Box.Size as Size
 import Feature.Nav as Nav
-import Feature.SelectionAPI as Sel
+import Feature.SelAPI as SelAPI
 import Model exposing (Model, Msg)
 import ModelParts exposing (..)
 import Storage as S
@@ -25,7 +25,7 @@ update msg ({present} as undoModel) =
 
 fullscreenRoute : Model -> Cmd Msg
 fullscreenRoute model =
-  case Sel.single model of
+  case SelAPI.single model of
     Just (boxId, _) -> pushUrl boxId model
     Nothing -> Cmd.none
 
@@ -45,7 +45,7 @@ urlChanged url ({present} as undoModel) =
 fullscreen : BoxId -> Model -> Model
 fullscreen boxId model =
   { model | boxId = boxId }
-  |> Sel.clear
+  |> SelAPI.clear
   |> Size.auto
 
 
