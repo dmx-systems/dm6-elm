@@ -39,7 +39,7 @@ hoverHandler =
 update : Mouse.Msg -> UndoModel -> (UndoModel, Cmd Msg)
 update msg ({present} as undoModel) =
   case msg of
-    Mouse.Down -> (present, command BackgroundClicked) |> Undo.swap undoModel
+    Mouse.Down -> (undoModel, mouseDown)
     Mouse.DownOnItem class id boxPath pos -> mouseDownOnItem class id boxPath pos present
       |> Undo.swap undoModel
     Mouse.Move pos -> mouseMove pos present |> Undo.swap undoModel
@@ -52,11 +52,19 @@ update msg ({present} as undoModel) =
     Mouse.EndTime (time, scrollPos) -> endTimeArrived time scrollPos undoModel
 
 
+mouseDown : Cmd Msg
+mouseDown =
+  command <| MouseDown Nothing
+
+
 mouseDownOnItem : Class -> Id -> BoxPath -> Point -> Model -> (Model, Cmd Msg)
 mouseDownOnItem class id boxPath pos model =
   ( model
     |> setDragState (WaitForStartTime class id boxPath pos)
-  , Task.perform (Mouse << Mouse.StartTime) Time.now
+  , Cmd.batch
+    [ command <| MouseDown <| Just (id, boxPath)
+    , Task.perform (Mouse << Mouse.StartTime) Time.now
+    ]
   )
 
 
@@ -170,7 +178,7 @@ mouseUp model =
             False -> Cmd.none
         Drag DragTopic _ _ _ _ _ _ ->
           let
-            _ = U.info "mouseUp" "drag ended w/o target"
+            _ = U.info "mouseUp" "topic drag ended w/o target"
           in
           command <| TopicDragged
         Drag DraftAssoc _ id boxPath _ _ (Just (targetId, targetPath)) ->

@@ -71,7 +71,7 @@ type Msg
   | MoveTopicToBox Id BoxId Point Id BoxPath Point -- start point, random point (for target)
   | TopicDragged
   | ItemClicked Id BoxPath
-  | BackgroundClicked
+  | MouseDown (Maybe (Id, BoxPath))
   | NoOp
   -- feature modules
   | Tool Tool.Msg

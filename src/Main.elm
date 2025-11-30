@@ -214,7 +214,7 @@ update msg ({present} as undoModel) =
       origPos targetId targetPath pos present |> S.store |> Undo.push undoModel
     TopicDragged -> present |> S.store |> Undo.swap undoModel
     ItemClicked itemId boxPath -> select itemId boxPath present |> Undo.swap undoModel
-    BackgroundClicked -> resetUI present |> Undo.swap undoModel
+    MouseDown target -> resetUI target present |> Undo.swap undoModel
     -- feature modules
     Tool toolMsg -> ToolAPI.update toolMsg undoModel
     Edit editMsg -> TextEditAPI.update editMsg undoModel
@@ -272,10 +272,16 @@ select itemId boxPath model =
   )
 
 
-resetUI : Model -> (Model, Cmd Msg)
-resetUI model =
+resetUI : Maybe (Id, BoxPath) -> Model -> (Model, Cmd Msg)
+resetUI target model =
+  let
+    shouldClear =
+      case target of
+        Just (itemId, boxPath) -> not <| SelAPI.isSelected itemId (Box.firstId boxPath) model
+        Nothing -> True
+  in
   ( model
-    |> SelAPI.clear
+    |> (if shouldClear then SelAPI.clear else identity)
     |> IconAPI.closeMenu
     |> SearchAPI.closeMenu
   , Cmd.none
