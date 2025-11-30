@@ -69,9 +69,9 @@ initTransient model =
 type Msg
   = AddAssoc Id Id BoxId
   | MoveTopicToBox Id BoxId Point Id BoxPath Point -- start point, random point (for target)
-  | DraggedTopic
-  | ClickedItem Id BoxPath
-  | ClickedBackground
+  | TopicDragged
+  | ItemClicked Id BoxPath
+  | BackgroundClicked
   | NoOp
   -- feature modules
   | Tool Tool.Msg

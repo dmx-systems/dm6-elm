@@ -39,7 +39,7 @@ hoverHandler =
 update : Mouse.Msg -> UndoModel -> (UndoModel, Cmd Msg)
 update msg ({present} as undoModel) =
   case msg of
-    Mouse.Down -> (present, command ClickedBackground) |> Undo.swap undoModel
+    Mouse.Down -> (present, command BackgroundClicked) |> Undo.swap undoModel
     Mouse.DownOnItem class id boxPath pos -> mouseDownOnItem class id boxPath pos present
       |> Undo.swap undoModel
     Mouse.Move pos -> mouseMove pos present |> Undo.swap undoModel
@@ -56,10 +56,7 @@ mouseDownOnItem : Class -> Id -> BoxPath -> Point -> Model -> (Model, Cmd Msg)
 mouseDownOnItem class id boxPath pos model =
   ( model
     |> setDragState (WaitForStartTime class id boxPath pos)
-  , Cmd.batch
-    [ command <| ClickedItem id boxPath
-    , Task.perform (Mouse << Mouse.StartTime) Time.now
-    ]
+  , Task.perform (Mouse << Mouse.StartTime) Time.now
   )
 
 
@@ -175,7 +172,7 @@ mouseUp model =
           let
             _ = U.info "mouseUp" "drag ended w/o target"
           in
-          command <| DraggedTopic
+          command <| TopicDragged
         Drag DraftAssoc _ id boxPath _ _ (Just (targetId, targetPath)) ->
           let
             _ = U.info "mouseUp" ("assoc drawn from " ++ fromInt id ++ " (box " ++ Box.fromPath
@@ -192,11 +189,11 @@ mouseUp model =
             _ = U.info "mouseUp" "assoc ended w/o target"
           in
           Cmd.none
-        DragEngaged _ _ _ _ _ ->
+        DragEngaged _ _ id boxPath _ ->
           let
-            _ = U.info "mouseUp" "drag aborted w/o moving"
+            _ = U.info "mouseUp" "item not moved -> ItemClicked"
           in
-          Cmd.none
+          command <| ItemClicked id boxPath
         _ ->
           U.logError "mouseUp"
             ("Received \"Up\" message when dragState is " ++ U.toString model.mouse.dragState)

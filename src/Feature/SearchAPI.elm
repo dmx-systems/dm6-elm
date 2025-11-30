@@ -68,7 +68,7 @@ viewTopicsMenu topicIds model =
       , on "mouseout" (topicDecoder Search.UnhoverTopic)
       , U.stopPropagationOnMousedown NoOp
       ]
-      ++ resultMenuStyle
+      ++ menuStyle
     )
     (topicIds |> List.map
       (\id ->
@@ -96,7 +96,7 @@ viewRelTopicsMenu relTopicIds model =
       , on "mouseout" (relTopicDecoder Search.UnhoverRelTopic)
       , U.stopPropagationOnMousedown NoOp
       ]
-      ++ resultMenuStyle
+      ++ menuStyle
     )
     (relTopicIds |> List.map
       (\((id, assocId) as relTopic) ->
@@ -159,8 +159,8 @@ isRelTopicHover relTopic model =
     _ -> False
 
 
-resultMenuStyle : List (Attribute Msg)
-resultMenuStyle =
+menuStyle : List (Attribute Msg)
+menuStyle =
   [ style "position" "absolute"
   , style "top" "138px"
   , style "width" "240px"

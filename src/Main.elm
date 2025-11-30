@@ -212,9 +212,9 @@ update msg ({present} as undoModel) =
       |> Undo.push undoModel
     MoveTopicToBox topicId boxId origPos targetId targetPath pos -> moveTopicToBox topicId boxId
       origPos targetId targetPath pos present |> S.store |> Undo.push undoModel
-    DraggedTopic -> present |> S.store |> Undo.swap undoModel
-    ClickedItem itemId boxPath -> select itemId boxPath present |> Undo.swap undoModel
-    ClickedBackground -> resetUI present |> Undo.swap undoModel
+    TopicDragged -> present |> S.store |> Undo.swap undoModel
+    ItemClicked itemId boxPath -> select itemId boxPath present |> Undo.swap undoModel
+    BackgroundClicked -> resetUI present |> Undo.swap undoModel
     -- feature modules
     Tool toolMsg -> ToolAPI.update toolMsg undoModel
     Edit editMsg -> TextEditAPI.update editMsg undoModel

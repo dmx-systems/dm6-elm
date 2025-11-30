@@ -658,7 +658,7 @@ topicInputStyle =
   , style "width" "100%"
   , style "position" "relative"
   , style "left" "-4px"
-  , style "pointer-events" "initial"
+  , style "pointer-events" "initial" -- TODO: needed?
   ]
 
 
