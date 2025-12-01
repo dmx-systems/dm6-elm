@@ -151,14 +151,22 @@ viewToolbar itemId boxId model =
       Box.displayMode itemId boxId model == Just (BoxD Unboxed)
   in
   div
-    toolbarStyle
+    (toolbarStyle itemId boxId model)
     (topicTools ++ boxTools)
 
 
-toolbarStyle : List (Attribute Msg)
-toolbarStyle =
+toolbarStyle : Id -> BoxId -> Model -> List (Attribute Msg)
+toolbarStyle itemId boxId model =
+  let
+    offset =
+      case Box.displayMode itemId boxId model of
+        Just (TopicD Detail) -> 1
+        Just (BoxD BlackBox) -> 1
+        _ -> 0
+  in
   [ style "position" "absolute"
-  , style "top" "-30px"
+  , style "top" <| fromInt (offset - 30) ++ "px"
+  , style "left" <| fromInt (offset - 1) ++ "px"
   , style "white-space" "nowrap"
   , style "background-color" C.toolbarColor
   , style "border-radius" <| fromInt C.topicRadius ++ "px"
