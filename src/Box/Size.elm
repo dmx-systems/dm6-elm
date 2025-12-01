@@ -17,13 +17,13 @@ import Dict
 
 auto : Model -> Model
 auto model =
-  calcBoxRect [ Box.active model ] model |> Tuple.second
+  boxRect [ Box.active model ] model |> Tuple.second
 
 
 {-| Calculates (recursively) the box's "rect"
 -}
-calcBoxRect : BoxPath -> Model -> (Rectangle, Model)
-calcBoxRect boxPath model =
+boxRect : BoxPath -> Model -> (Rectangle, Model)
+boxRect boxPath model =
   let
     boxId = Box.firstId boxPath
   in
@@ -33,7 +33,7 @@ calcBoxRect boxPath model =
         (rect, model_) =
           (box.items |> Dict.values |> List.filter Box.isVisible |> List.foldr
             (\boxItem (rectAcc, modelAcc) ->
-              calcItemSize boxItem boxPath rectAcc modelAcc
+              accumulateItem boxItem boxPath rectAcc modelAcc
             )
             (Rectangle 5000 5000 -5000 -5000, model) -- x-min y-min x-max y-max
             -- FIXME: if box is empty its rect size is negative
@@ -50,24 +50,75 @@ calcBoxRect boxPath model =
     Nothing -> (Rectangle 0 0 0 0, model)
 
 
-calcItemSize : BoxItem -> BoxPath -> Rectangle -> Model -> (Rectangle, Model)
-calcItemSize boxItem pathToParent rectAcc model =
+accumulateItem : BoxItem -> BoxPath -> Rectangle -> Model -> (Rectangle, Model)
+accumulateItem boxItem pathToParent rectAcc model =
   let
     boxId = Box.firstId pathToParent
   in
   case boxItem.props of
     TopicV {pos, size, displayMode} ->
-      case displayMode of
-        TopicD LabelOnly -> (topicExtent pos rectAcc, model)
-        TopicD Detail -> (detailTopicExtent boxItem.id boxId pos size rectAcc model, model)
-        BoxD BlackBox -> (topicExtent pos rectAcc, model)
-        BoxD WhiteBox ->
-          let
-            (rect, model_) = calcBoxRect (boxItem.id :: pathToParent) model -- recursion
-          in
-          (boxExtent pos rect rectAcc, model_)
-        BoxD Unboxed -> (topicExtent pos rectAcc, model)
+      let
+        (rect__, model__) =
+          case displayMode of
+            TopicD LabelOnly -> (topicExtent pos, model)
+            TopicD Detail -> (detailTopicExtent boxItem.id boxId pos size model, model)
+            BoxD BlackBox -> (topicExtent pos, model)
+            BoxD WhiteBox ->
+              let
+                (rect_, model_) = boxRect (boxItem.id :: pathToParent) model -- recursion
+              in
+              (boxExtent pos rect_, model_)
+            BoxD Unboxed -> (topicExtent pos, model)
+      in
+      (accumulateRect rectAcc rect__, model__)
     AssocV _ -> (rectAcc, model)
+
+
+topicExtent : Point -> Rectangle
+topicExtent pos =
+  Rectangle
+    (pos.x - C.topicW2)
+    (pos.y - C.topicH2)
+    (pos.x + C.topicW2 + 2 * C.topicBorderWidth)
+    (pos.y + C.topicH2 + 2 * C.topicBorderWidth)
+
+
+detailTopicExtent : Id -> BoxId -> Point -> Size -> Model -> Rectangle
+detailTopicExtent topicId boxId pos size model =
+  let
+    textWidth =
+      if model.edit.state == ItemEdit topicId boxId then
+        C.topicDetailMaxWidth
+      else
+        size.w
+  in
+  Rectangle
+    (pos.x - C.topicW2)
+    (pos.y - C.topicH2)
+    (pos.x - C.topicW2 + textWidth + C.topicSize.h + 2 * C.topicBorderWidth)
+    (pos.y - C.topicH2 + size.h + 2 * C.topicBorderWidth)
+
+
+boxExtent : Point -> Rectangle -> Rectangle
+boxExtent pos rect =
+  let
+    boxWidth = rect.x2 - rect.x1
+    boxHeight = rect.y2 - rect.y1
+  in
+  Rectangle
+    (pos.x - C.topicW2)
+    (pos.y - C.topicH2)
+    (pos.x - C.topicW2 + boxWidth)
+    (pos.y + C.topicH2 + boxHeight)
+
+
+accumulateRect : Rectangle -> Rectangle -> Rectangle
+accumulateRect rectAcc rect =
+  Rectangle
+    (min rectAcc.x1 rect.x1)
+    (min rectAcc.y1 rect.y1)
+    (max rectAcc.x2 rect.x2)
+    (max rectAcc.y2 rect.y2)
 
 
 {-| Sets the box's "newRect" and, based on its change, calculates and sets the box's "pos"
@@ -122,41 +173,3 @@ adjustBoxPos boxId parentBoxId newRect oldRect model =
       (newRect.x1 - oldRect.x1)
       (newRect.y1 - oldRect.y1)
     )
-
-
-topicExtent : Point -> Rectangle -> Rectangle
-topicExtent pos rectAcc =
-  Rectangle
-    (min rectAcc.x1 (pos.x - C.topicW2))
-    (min rectAcc.y1 (pos.y - C.topicH2))
-    (max rectAcc.x2 (pos.x + C.topicW2 + 2 * C.topicBorderWidth))
-    (max rectAcc.y2 (pos.y + C.topicH2 + 2 * C.topicBorderWidth))
-
-
-detailTopicExtent : Id -> BoxId -> Point -> Size -> Rectangle -> Model -> Rectangle
-detailTopicExtent topicId boxId pos size rectAcc model =
-  let
-    textWidth =
-      if model.edit.state == ItemEdit topicId boxId then
-        C.topicDetailMaxWidth
-      else
-        size.w
-  in
-  Rectangle
-    (min rectAcc.x1 (pos.x - C.topicW2))
-    (min rectAcc.y1 (pos.y - C.topicH2))
-    (max rectAcc.x2 (pos.x - C.topicW2 + textWidth + C.topicSize.h + 2 * C.topicBorderWidth))
-    (max rectAcc.y2 (pos.y - C.topicH2 + size.h + 2 * C.topicBorderWidth))
-
-
-boxExtent : Point -> Rectangle -> Rectangle -> Rectangle
-boxExtent pos rect rectAcc =
-  let
-    boxWidth = rect.x2 - rect.x1
-    boxHeight = rect.y2 - rect.y1
-  in
-  Rectangle
-    (min rectAcc.x1 (pos.x - C.topicW2))
-    (min rectAcc.y1 (pos.y - C.topicH2))
-    (max rectAcc.x2 (pos.x - C.topicW2 + boxWidth))
-    (max rectAcc.y2 (pos.y + C.topicH2 + boxHeight))
