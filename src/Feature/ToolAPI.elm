@@ -151,16 +151,18 @@ viewToolbar itemId boxId model =
       Box.displayMode itemId boxId model == Just (BoxD Unboxed)
   in
   div
-    (toolbarStyle itemId boxId model)
+    toolbarStyle
     (topicTools ++ boxTools)
 
 
-toolbarStyle : Id -> BoxId -> Model -> List (Attribute Msg)
-toolbarStyle topicId boxId model =
+toolbarStyle : List (Attribute Msg)
+toolbarStyle =
   [ style "position" "absolute"
-  , style "top" "-32px"
+  , style "top" "-30px"
   , style "white-space" "nowrap"
   , style "background-color" C.toolbarColor
+  , style "border-radius" <| fromInt C.topicRadius ++ "px"
+  , style "padding" "4px 3px 0"
   ]
 
 
@@ -168,9 +170,29 @@ viewSpacer : Html Msg
 viewSpacer =
   span
     [ style "display" "inline-block"
-    , style "width" "12px"
+    , style "width" "14px"
     ]
     []
+
+
+viewIconButton : String -> String -> Bool -> Msg -> Html Msg
+viewIconButton label icon disabled_ msg =
+  button
+    ( [ onClick msg
+      , disabled disabled_
+      , title label
+      , U.stopPropagationOnMousedown NoOp
+      ]
+      ++ iconButtonStyle
+    )
+    [ IconAPI.viewIcon icon 18 ]
+
+
+iconButtonStyle : List (Attribute Msg)
+iconButtonStyle =
+  [ style "border" "none"
+  , style "margin" "0 2px"
+  ]
 
 
 viewCaret : Id -> BoxId -> Model -> Html Msg
@@ -195,22 +217,13 @@ viewCaret itemId boxId model =
 
 
 caretStyle : List (Attribute Msg)
-caretStyle  =
+caretStyle =
   [ style "position" "absolute"
-  , style "top" "-1px"
-  , style "left" "-32px"
+  , style "top" "1px"
+  , style "left" "-27px"
+  , style "background-color" "transparent"
+  , style "border" "none"
   ]
-
-
-viewIconButton : String -> String -> Bool -> Msg -> Html Msg
-viewIconButton label icon disabled_ msg =
-  button
-    [ onClick msg
-    , disabled disabled_
-    , title label
-    , U.stopPropagationOnMousedown NoOp
-    ]
-    [ IconAPI.viewIcon icon 20 ]
 
 
 
