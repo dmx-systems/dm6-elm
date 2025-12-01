@@ -296,6 +296,8 @@ subs {present} =
     NoDrag _ -> mouseDownSub
 
 
+-- TODO: attach mousedown listeners to elements directly.
+-- All the "pointer-events: none" could be removed then.
 mouseDownSub : Sub Msg
 mouseDownSub =
   Events.onMouseDown <| D.oneOf

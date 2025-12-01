@@ -17,13 +17,18 @@ import Dict
 
 auto : Model -> Model
 auto model =
-  boxRect [ Box.active model ] model |> Tuple.second
+  model
+  |> calcBoxRect [ Box.active model ]
+  |> Tuple.second
 
 
-{-| Calculates (recursively) the box's "rect"
+{-| Calculates the box's "rect" (recursively) and modifies the model accordingly.
+Returns the modified model along with, for convenience, the calculated rect.
+Based on the rect's change the box topic position adjustment within the parent box (if any) is
+calculated as well.
 -}
-boxRect : BoxPath -> Model -> (Rectangle, Model)
-boxRect boxPath model =
+calcBoxRect : BoxPath -> Model -> (Rectangle, Model)
+calcBoxRect boxPath model =
   let
     boxId = Box.firstId boxPath
   in
@@ -31,21 +36,15 @@ boxRect boxPath model =
     Just box ->
       let
         (rect, model_) =
-          (box.items |> Dict.values |> List.filter Box.isVisible |> List.foldr
+          box |> Box.visibleTopics |> List.foldr
             (\boxItem (rectAcc, modelAcc) ->
               accumulateItem boxItem boxPath rectAcc modelAcc
             )
-            (Rectangle 5000 5000 -5000 -5000, model) -- x-min y-min x-max y-max
-            -- FIXME: if box is empty its rect size is negative
-          )
-        newRect = Rectangle
-          (rect.x1 - C.whiteBoxPadding)
-          (rect.y1 - C.whiteBoxPadding)
-          (rect.x2 + C.whiteBoxPadding)
-          (rect.y2 + C.whiteBoxPadding)
+            (Rectangle 0 0 0 0, model)
+        newRect = addBoxPadding rect
       in
       ( newRect
-      , storeBoxGeometry boxPath newRect box.rect model_
+      , updateBoxGeometry boxPath newRect box.rect model_
       )
     Nothing -> (Rectangle 0 0 0 0, model)
 
@@ -53,25 +52,29 @@ boxRect boxPath model =
 accumulateItem : BoxItem -> BoxPath -> Rectangle -> Model -> (Rectangle, Model)
 accumulateItem boxItem pathToParent rectAcc model =
   let
+    (rect, model_) = calcItemRect boxItem pathToParent model
+  in
+  (accumulateRect rectAcc rect, model_)
+
+
+calcItemRect : BoxItem -> BoxPath -> Model -> (Rectangle, Model)
+calcItemRect boxItem pathToParent model =
+  let
     boxId = Box.firstId pathToParent
   in
   case boxItem.props of
     TopicV {pos, size, displayMode} ->
-      let
-        (rect__, model__) =
-          case displayMode of
-            TopicD LabelOnly -> (topicExtent pos, model)
-            TopicD Detail -> (detailTopicExtent boxItem.id boxId pos size model, model)
-            BoxD BlackBox -> (topicExtent pos, model)
-            BoxD WhiteBox ->
-              let
-                (rect_, model_) = boxRect (boxItem.id :: pathToParent) model -- recursion
-              in
-              (boxExtent pos rect_, model_)
-            BoxD Unboxed -> (topicExtent pos, model)
-      in
-      (accumulateRect rectAcc rect__, model__)
-    AssocV _ -> (rectAcc, model)
+      case displayMode of
+        TopicD LabelOnly -> (topicExtent pos, model)
+        TopicD Detail -> (detailTopicExtent boxItem.id boxId pos size model, model)
+        BoxD BlackBox -> (topicExtent pos, model)
+        BoxD WhiteBox ->
+          let
+            (rect_, model_) = calcBoxRect (boxItem.id :: pathToParent) model -- recursion
+          in
+          (boxExtent pos rect_, model_)
+        BoxD Unboxed -> (topicExtent pos, model)
+    AssocV _ -> (Rectangle 0 0 0 0, model) -- never called
 
 
 topicExtent : Point -> Rectangle
@@ -121,11 +124,20 @@ accumulateRect rectAcc rect =
     (max rectAcc.y2 rect.y2)
 
 
+addBoxPadding : Rectangle -> Rectangle
+addBoxPadding rect =
+  Rectangle
+    (rect.x1 - C.whiteBoxPadding)
+    (rect.y1 - C.whiteBoxPadding)
+    (rect.x2 + C.whiteBoxPadding)
+    (rect.y2 + C.whiteBoxPadding)
+
+
 {-| Sets the box's "newRect" and, based on its change, calculates and sets the box's "pos"
-adjustmennt ("delta")
+adjustment ("delta")
 -}
-storeBoxGeometry : BoxPath -> Rectangle -> Rectangle -> Model -> Model
-storeBoxGeometry boxPath newRect oldRect model =
+updateBoxGeometry : BoxPath -> Rectangle -> Rectangle -> Model -> Model
+updateBoxGeometry boxPath newRect oldRect model =
   case boxPath of
     boxId :: parentBoxId :: _ ->
       let
@@ -157,7 +169,7 @@ storeBoxGeometry boxPath newRect oldRect model =
         model |> setBoxRect boxId newRect
     [ boxId ] ->
       model |> setBoxRect boxId newRect
-    [] -> U.logError "storeBoxGeometry" "boxPath is empty!" model
+    [] -> U.logError "updateBoxGeometry" "boxPath is empty!" model
 
 
 setBoxRect : BoxId -> Rectangle -> Model -> Model
