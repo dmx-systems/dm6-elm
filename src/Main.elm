@@ -90,12 +90,19 @@ view ({present} as undoModel) =
     "DM6 Elm"
     [ div
       appStyle
-      [ ToolAPI.viewAppHeader undoModel
+      [ div
+        headerStyle
+        ( [ viewMapTitle present
+          , viewSpacer
+          ]
+          ++ ToolAPI.viewGlobalTools undoModel
+        )
       , div
         ( [ id "main" ]
           ++ mainStyle
         )
         ( [ Map.view (Box.active present) [] present ] -- boxPath = []
+          ++ ToolAPI.viewMapTools undoModel
           ++ SearchAPI.viewMenu present
           ++ IconAPI.viewMenu present
         )
@@ -114,6 +121,38 @@ appStyle =
   , style "user-select" "none"
   , style "-webkit-user-select" "none" -- Safari still needs vendor prefix
   ]
+
+
+headerStyle : List (Attribute Msg)
+headerStyle =
+  [ style "display" "flex"
+  , style "align-items" "center"
+  , style "gap" "18px"
+  , style "height" <| fromInt C.appHeaderHeight ++ "px"
+  , style "padding" "0 8px"
+  , style "background-color" C.toolbarColor
+  ]
+
+
+viewMapTitle : Model -> Html Msg
+viewMapTitle model =
+  div
+    mapTitleStyle
+    [ text <| Box.activeName model ]
+
+
+mapTitleStyle : List (Attribute Msg)
+mapTitleStyle =
+  [ style "font-size" "24px"
+  , style "font-weight" "bold"
+  ]
+
+
+viewSpacer : Html Msg
+viewSpacer =
+  div
+  [ style "flex-grow" "1" ]
+  []
 
 
 mainStyle : List (Attribute Msg)
@@ -153,9 +192,12 @@ viewFooter =
 
 footerStyle : List (Attribute Msg)
 footerStyle =
-  [ style "font-size" <| fromInt C.footerFontSize ++ "px"
+  [ style "font-family" C.mainFont
+  , style "font-size" <| fromInt C.footerFontSize ++ "px"
   , style "position" "absolute"
-  , style "bottom" "0"
+  , style "bottom" "4px"
+  , style "right" "20px"
+  , style "text-align" "right"
   , style "color" "lightgray"
   ]
 
@@ -223,7 +265,7 @@ update msg ({present} as undoModel) =
     Icon iconMenuMsg -> IconAPI.update iconMenuMsg undoModel
     Nav navMsg -> NavAPI.update navMsg undoModel
     --
-    NoOp -> (present, Cmd.none) |> Undo.swap undoModel
+    NoOp -> (undoModel, Cmd.none)
 
 
 -- Presumption: both players exist in same box

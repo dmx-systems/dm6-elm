@@ -276,7 +276,7 @@ viewTopic topic props boxPath model =
       ++ style
     )
     ( children
-      ++ ToolAPI.viewTools topic.id boxId model
+      ++ ToolAPI.viewItemTools topic.id boxId model
     )
 
 

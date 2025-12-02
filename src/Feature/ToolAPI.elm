@@ -1,4 +1,4 @@
-module Feature.ToolAPI exposing (viewAppHeader, viewTools, update)
+module Feature.ToolAPI exposing (viewGlobalTools, viewMapTools, viewItemTools, update)
 
 import Box
 import Box.Size as Size
@@ -21,7 +21,7 @@ import Undo exposing (UndoModel)
 import Utils as U
 
 import Html exposing (Html, Attribute, div, span, text, button)
-import Html.Attributes exposing (style, title, disabled)
+import Html.Attributes exposing (class, style, title, disabled)
 import Html.Events exposing (onClick)
 import String exposing (fromInt)
 
@@ -32,94 +32,48 @@ import String exposing (fromInt)
 
 -- Global Tools
 
-viewAppHeader : UndoModel -> Html Msg
-viewAppHeader ({present} as undoModel) =
-  div
-    appHeaderStyle
-    [ viewMapTitle present
-    , div spacerStyle []
-    , div
-      []
-      [ viewButton "Add Topic" (Tool Tool.AddTopic) always undoModel
-      , viewButton "Add Box" (Tool Tool.AddBox) always undoModel
-      ]
-    , SearchAPI.viewInput present
-    , div
-      []
-      [ viewButton "Undo" (Tool Tool.Undo) Undo.hasPast undoModel
-      , viewButton "Redo" (Tool Tool.Redo) Undo.hasFuture undoModel
-      ]
-    , div
-      []
-      [ viewButton "Import" (Tool Tool.Import) always undoModel
-      , viewButton "Export" (Tool Tool.Export) always undoModel
-      ]
+viewGlobalTools : UndoModel -> List (Html Msg)
+viewGlobalTools {present} =
+  [ SearchAPI.viewInput present
+  , div
+    []
+    [ viewTextButton "Import" (Tool Tool.Import) True
+    , viewTextButton "Export" (Tool Tool.Export) True
     ]
-
-
-appHeaderStyle : List (Attribute Msg)
-appHeaderStyle =
-  [ style "display" "flex"
-  , style "align-items" "center"
-  , style "gap" "18px"
-  , style "height" <| fromInt C.appHeaderHeight ++ "px"
-  , style "padding" "0 8px"
-  , style "background-color" C.toolbarColor
   ]
 
 
-viewMapTitle : Model -> Html Msg
-viewMapTitle model =
-  div
-    mapTitleStyle
-    [ text <| Box.activeName model ]
+-- Map Tools
 
-
-mapTitleStyle : List (Attribute Msg)
-mapTitleStyle =
-  [ style "font-size" "24px"
-  , style "font-weight" "bold"
+viewMapTools : UndoModel -> List (Html Msg)
+viewMapTools undoModel =
+  [ div
+    mapToolsStyle
+    [ viewMapButton "Add Topic" "plus-circle" (Tool Tool.AddTopic) True
+    , viewMapButton "Add Box" "plus-square" (Tool Tool.AddBox) True
+    , viewSpacer
+    , viewMapButton "Undo" "rotate-ccw" (Tool Tool.Undo) (Undo.hasPast undoModel)
+    , viewMapButton "Redo" "rotate-cw" (Tool Tool.Redo) (Undo.hasFuture undoModel)
+    ]
   ]
 
 
-spacerStyle : List (Attribute Msg)
-spacerStyle =
-  [ style "flex-grow" "1" ]
-
-
-viewButton : String -> Msg -> (UndoModel -> Bool) -> UndoModel -> Html Msg
-viewButton label msg isEnabled undoModel =
-  button
-    ( [ onClick msg
-      , disabled <| not <| isEnabled undoModel
-      , U.stopPropagationOnMousedown NoOp
-      ]
-      ++ buttonStyle
-    )
-    [ text label ]
-
-
-buttonStyle : List (Attribute Msg)
-buttonStyle =
-  [ style "font-family" C.mainFont
-  , style "font-size" <| fromInt C.toolFontSize ++ "px"
+mapToolsStyle : List (Attribute Msg)
+mapToolsStyle =
+  [ style "position" "fixed"
+  , style "bottom" "4px"
+  , style "left" "4px"
   ]
-
-
-{-| isEnabled predicate -}
-always : UndoModel -> Bool
-always undoModel =
-  True
 
 
 -- Item Tools
 
-viewTools : Id -> BoxId -> Model -> List (Html Msg)
-viewTools itemId boxId model =
+viewItemTools : Id -> BoxId -> Model -> List (Html Msg)
+viewItemTools itemId boxId model =
   let
     toolbar =
       case SelAPI.isSelected itemId boxId model of
-        True -> [ viewToolbar itemId boxId model ]
+        True -> [ viewItemToolbar itemId boxId model ]
         False -> []
     caret =
       case MouseAPI.isHovered itemId boxId model of
@@ -129,25 +83,25 @@ viewTools itemId boxId model =
   toolbar ++ caret
 
 
-viewToolbar : Id -> BoxId -> Model -> Html Msg
-viewToolbar itemId boxId model =
+viewItemToolbar : Id -> BoxId -> Model -> Html Msg
+viewItemToolbar itemId boxId model =
   let
     topicTools =
-      [ viewIconButton "Edit" "edit-3" False (Edit T.EditStart)
-      , viewIconButton "Set Icon" "image" False (Icon Icon.OpenMenu)
-      , viewIconButton "Traverse" "share-2" False (Search Search.ShowRelated)
-      , viewIconButton "Delete" "trash" False (Tool Tool.Delete)
-      , viewIconButton "Remove" "x" False (Tool Tool.Hide) -- TODO: "hide" -> "remove"
+      [ viewItemButton "Edit" "edit-3" (Edit T.EditStart) True
+      , viewItemButton "Set Icon" "image" (Icon Icon.OpenMenu) True
+      , viewItemButton "Traverse" "share-2" (Search Search.ShowRelated) True
+      , viewItemButton "Delete" "trash" (Tool Tool.Delete) True
+      , viewItemButton "Remove" "x" (Tool Tool.Hide) True -- TODO: "hide" -> "remove"
       ]
     boxTools =
       if Item.isBox itemId model then
         [ viewSpacer
-        , viewIconButton "Unbox" "external-link" isUnboxed (Tool <| Tool.Unbox itemId boxId)
-        , viewIconButton "Fullscreen" "maximize-2" False (Nav Nav.Fullscreen)
+        , viewItemButton "Unbox" "external-link" (Tool <| Tool.Unbox itemId boxId) (not unboxed)
+        , viewItemButton "Fullscreen" "maximize-2" (Nav Nav.Fullscreen) True
         ]
       else
         []
-    isUnboxed =
+    unboxed =
       Box.displayMode itemId boxId model == Just (BoxD Unboxed)
   in
   div
@@ -183,26 +137,6 @@ viewSpacer =
     []
 
 
-viewIconButton : String -> String -> Bool -> Msg -> Html Msg
-viewIconButton label icon disabled_ msg =
-  button
-    ( [ onClick msg
-      , disabled disabled_
-      , title label
-      , U.stopPropagationOnMousedown NoOp
-      ]
-      ++ iconButtonStyle
-    )
-    [ IconAPI.viewIcon icon 18 ]
-
-
-iconButtonStyle : List (Attribute Msg)
-iconButtonStyle =
-  [ style "border" "none"
-  , style "margin" "0 2px"
-  ]
-
-
 viewCaret : Id -> BoxId -> Model -> Html Msg
 viewCaret itemId boxId model =
   let
@@ -231,6 +165,59 @@ caretStyle =
   , style "left" "-27px"
   , style "background-color" "transparent"
   , style "border" "none"
+  ]
+
+
+-- Buttons
+
+viewTextButton : String -> Msg -> Bool -> Html Msg
+viewTextButton label msg isEnabled =
+  button
+    ( [ onClick msg
+      , disabled <| not isEnabled
+      , U.stopPropagationOnMousedown NoOp
+      ]
+      ++ textButtonStyle
+    )
+    [ text label ]
+
+
+viewMapButton : String -> String -> Msg -> Bool -> Html Msg
+viewMapButton label icon msg isEnabled =
+  viewIconButton label icon C.mapToolbarIconSize msg isEnabled
+
+
+viewItemButton : String -> String -> Msg -> Bool -> Html Msg
+viewItemButton label icon msg isEnabled =
+  viewIconButton label icon C.itemToolbarIconSize msg isEnabled
+
+
+viewIconButton : String -> String -> Float -> Msg -> Bool -> Html Msg
+viewIconButton label icon iconSize msg isEnabled =
+  button
+    ( [ class "tool"
+      , title label
+      , onClick msg
+      , disabled <| not isEnabled
+      , U.stopPropagationOnMousedown NoOp
+      ]
+      ++ iconButtonStyle
+    )
+    [ IconAPI.viewIcon icon iconSize ]
+
+
+textButtonStyle : List (Attribute Msg)
+textButtonStyle =
+  [ style "font-family" C.mainFont
+  , style "font-size" <| fromInt C.toolFontSize ++ "px"
+  ]
+
+
+iconButtonStyle : List (Attribute Msg)
+iconButtonStyle =
+  [ style "border" "none"
+  , style "margin" "0 2px"
+  , style "background-color" "transparent"
   ]
 
 
