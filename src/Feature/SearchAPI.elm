@@ -1,4 +1,5 @@
-module Feature.SearchAPI exposing (viewInput, viewMenu, closeMenu, update)
+module Feature.SearchAPI exposing (viewInput, viewSearchResult, viewTraversalResult, closeMenu,
+  update)
 
 import Box
 import Box.Size as Size
@@ -44,31 +45,38 @@ searchInputStyle =
   [ style "width" "100px" ]
 
 
-viewMenu : Model -> List (Html Msg)
-viewMenu model =
+viewSearchResult : Model -> List (Html Msg)
+viewSearchResult model =
   case model.search.menu of
     Topics topicIds _ ->
       if not (topicIds |> List.isEmpty) then
-        [ viewTopicsMenu topicIds model ]
+        [ viewSearchResultMenu topicIds model ]
       else
         []
+    _ -> []
+
+
+viewTraversalResult : Model -> List (Html Msg)
+viewTraversalResult model =
+  case model.search.menu of
     RelTopics relTopicIds _ ->
       if not (relTopicIds |> List.isEmpty) then
-        [ viewRelTopicsMenu relTopicIds model ]
+        [ viewTraversalResultMenu relTopicIds model ]
       else
         []
-    Closed -> []
+    _ -> []
 
 
-viewTopicsMenu : List Id -> Model -> Html Msg
-viewTopicsMenu topicIds model =
+viewSearchResultMenu : List Id -> Model -> Html Msg
+viewSearchResultMenu topicIds model =
   div
     ( [ on "click" (topicDecoder Search.ClickTopic)
       , on "mouseover" (topicDecoder Search.HoverTopic)
       , on "mouseout" (topicDecoder Search.UnhoverTopic)
       , U.stopPropagationOnMousedown NoOp
       ]
-      ++ menuStyle
+      ++ searchResultStyle
+      ++ resultStyle
     )
     (topicIds |> List.map
       (\id ->
@@ -88,15 +96,16 @@ viewTopicsMenu topicIds model =
     )
 
 
-viewRelTopicsMenu : List (Id, Id) -> Model -> Html Msg
-viewRelTopicsMenu relTopicIds model =
+viewTraversalResultMenu : List (Id, Id) -> Model -> Html Msg
+viewTraversalResultMenu relTopicIds model =
   div
     ( [ on "click" (relTopicDecoder Search.ClickRelTopic)
       , on "mouseover" (relTopicDecoder Search.HoverRelTopic)
       , on "mouseout" (relTopicDecoder Search.UnhoverRelTopic)
       , U.stopPropagationOnMousedown NoOp
       ]
-      ++ menuStyle
+      ++ traversalResultStyle
+      ++ resultStyle
     )
     (relTopicIds |> List.map
       (\((id, assocId) as relTopic) ->
@@ -159,11 +168,22 @@ isRelTopicHover relTopic model =
     _ -> False
 
 
-menuStyle : List (Attribute Msg)
-menuStyle =
-  [ style "position" "absolute"
-  , style "top" "138px"
-  , style "width" "240px"
+searchResultStyle : List (Attribute Msg)
+searchResultStyle =
+  [ style "position" "fixed"
+  , style "top" <| fromInt (C.appHeaderHeight - 5) ++ "px"
+  , style "right" "20px"
+  ]
+
+
+traversalResultStyle : List (Attribute Msg)
+traversalResultStyle =
+  [ style "position" "absolute" ]
+
+
+resultStyle : List (Attribute Msg)
+resultStyle =
+  [ style "width" "240px"
   , style "padding" "3px 0"
   , style "font-size" <| fromInt C.contentFontSize ++ "px"
   , style "line-height" "2"

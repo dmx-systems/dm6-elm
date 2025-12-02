@@ -31,7 +31,7 @@ type Msg
   | UnhoverTopic Id
   | ClickTopic Id
   -- Traverse
-  | ShowRelated
+  | ShowRelated -- TODO: rename "Traverse"
   | HoverRelTopic (Id, Id)
   | UnhoverRelTopic (Id, Id)
   | ClickRelTopic (Id, Id)

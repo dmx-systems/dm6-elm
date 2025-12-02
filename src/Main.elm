@@ -103,7 +103,7 @@ view ({present} as undoModel) =
         )
         ( [ Map.view (Box.active present) [] present ] -- boxPath = []
           ++ ToolAPI.viewMapTools undoModel
-          ++ SearchAPI.viewMenu present
+          ++ SearchAPI.viewSearchResult present
           ++ IconAPI.viewMenu present
         )
       ]

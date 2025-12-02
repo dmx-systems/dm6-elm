@@ -18,12 +18,12 @@ toolFontSize = 13
 contentFontSize = 13
 footerFontSize = 13
 
-mapToolbarIconSize = 22
-itemToolbarIconSize = 18
-
-toolbarColor = "#e9e9ed" -- Firefox button color
 disabledColor = "gray"
 limboColor = "gray"
+
+mapToolbarIconSize = 22
+itemToolbarIconSize = 18
+toolbarColor = "#e9e9ed" -- Firefox button color
 
 initTopicPos = Point 232 167
 initTopicText = "New Topic"

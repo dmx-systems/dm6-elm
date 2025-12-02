@@ -105,12 +105,15 @@ viewItemToolbar itemId boxId model =
       Box.displayMode itemId boxId model == Just (BoxD Unboxed)
   in
   div
-    (toolbarStyle itemId boxId model)
-    (topicTools ++ boxTools)
+    ( itemToolbarStyle itemId boxId model )
+    ( topicTools
+      ++ boxTools
+      ++ SearchAPI.viewTraversalResult model
+    )
 
 
-toolbarStyle : Id -> BoxId -> Model -> List (Attribute Msg)
-toolbarStyle itemId boxId model =
+itemToolbarStyle : Id -> BoxId -> Model -> List (Attribute Msg)
+itemToolbarStyle itemId boxId model =
   let
     offset =
       case Box.displayMode itemId boxId model of
