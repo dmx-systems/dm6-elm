@@ -23,5 +23,4 @@ type Menu
 
 type Msg
   = OpenMenu
-  | CloseMenu
   | SetIcon (Maybe Icon)

@@ -178,7 +178,9 @@ searchResultStyle =
 
 traversalResultStyle : List (Attribute Msg)
 traversalResultStyle =
-  [ style "position" "absolute" ]
+  [ style "position" "absolute"
+  , style "left" "65px"
+  ]
 
 
 resultStyle : List (Attribute Msg)
@@ -190,7 +192,6 @@ resultStyle =
   , style "white-space" "nowrap"
   , style "background-color" "white"
   , style "border" "1px solid lightgray"
-  , style "z-index" "2"
   ]
 
 

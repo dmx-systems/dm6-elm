@@ -108,6 +108,7 @@ viewItemToolbar itemId boxId model =
     ( itemToolbarStyle itemId boxId model )
     ( topicTools
       ++ boxTools
+      ++ IconAPI.viewMenu model
       ++ SearchAPI.viewTraversalResult model
     )
 

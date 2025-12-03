@@ -12,7 +12,7 @@ import Utils as U
 
 import Dict
 import Html exposing (Html, Attribute, div, text, button)
-import Html.Attributes exposing (title, style)
+import Html.Attributes exposing (class, title, style)
 import Html.Events exposing (onClick)
 import String exposing (fromFloat)
 import FeatherIcons as FI
@@ -28,18 +28,7 @@ viewMenu model =
     Icon.Open ->
       [ div
         iconMenuStyle
-        [ div
-          iconListStyle
-          viewIconList
-        , button
-          ( [onClick (Icon Icon.CloseMenu)]
-            ++ closeButtonStyle
-          )
-          [ FI.x
-            |> FI.withSize 12
-            |> FI.toHtml []
-          ]
-        ]
+        viewIconList
       ]
     Icon.Closed -> []
 
@@ -47,27 +36,11 @@ viewMenu model =
 iconMenuStyle : List (Attribute Msg)
 iconMenuStyle =
   [ style "position" "absolute"
-  , style "top" "291px"
-  , style "width" "320px"
-  , style "height" "320px"
+  , style "left" "35px"
+  , style "width" "288px"
+  , style "white-space" "initial" -- don't inherit from item toolbar
   , style "background-color" "white"
   , style "border" "1px solid lightgray"
-  , style "z-index" "1"
-  ]
-
-
-iconListStyle : List (Attribute Msg)
-iconListStyle =
-  [ style "height" "100%"
-  , style "overflow" "auto"
-  ]
-
-
-closeButtonStyle : List (Attribute Msg)
-closeButtonStyle =
-  [ style "position" "absolute"
-  , style "top" "0"
-  , style "right" "0"
   ]
 
 
@@ -76,9 +49,10 @@ viewIconList =
   FI.icons |> Dict.toList |> List.map
     (\(iconName, icon) ->
       button
-        ( [ onClick (Just iconName |> Icon.SetIcon |> Icon)
-          , U.stopPropagationOnMousedown NoOp
+        ( [ class "tool"
           , title iconName
+          , onClick (Just iconName |> Icon.SetIcon |> Icon)
+          , U.stopPropagationOnMousedown NoOp
           ]
           ++ iconButtonStyle
         )
@@ -88,8 +62,9 @@ viewIconList =
 
 iconButtonStyle : List (Attribute Msg)
 iconButtonStyle =
-  [ style "border-width" "0"
+  [ style "border" "none"
   , style "margin" "8px"
+  , style "background-color" "transparent"
   ]
 
 
@@ -130,7 +105,6 @@ update : Icon.Msg -> UndoModel -> (UndoModel, Cmd Msg)
 update msg ({present} as undoModel) =
   case msg of
     Icon.OpenMenu -> (openMenu present, Cmd.none) |> Undo.swap undoModel
-    Icon.CloseMenu -> (closeMenu present, Cmd.none) |> Undo.swap undoModel
     Icon.SetIcon maybeIcon -> setIcon maybeIcon present
       |> closeMenu
       |> S.store

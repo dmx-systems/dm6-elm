@@ -297,10 +297,11 @@ topicStyle id boxId model =
     isDragging = case model.mouse.dragState of
       Drag DragTopic _ id_ _ _ _ _ -> id_ == id
       _ -> False
+    isSelected = SelAPI.isSelected id boxId model
   in
   [ style "position" "absolute"
   , style "opacity" <| if isLimboTopic id boxId model then ".5" else "1"
-  , style "z-index" <| if isDragging then "1" else "2"
+  , style "z-index" <| if isDragging then "1" else if isSelected then "3" else "2"
   ]
 
 
