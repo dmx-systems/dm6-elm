@@ -63,9 +63,13 @@ app.ports.exportJSON.subscribe(() => {
   URL.revokeObjectURL(url)
 })
 const main = document.getElementById('main')
+let timer
 main.addEventListener('scroll', () => {
-  app.ports.onMainScrolled.send({clientX: main.scrollLeft, clientY: main.scrollTop})
-})
+  clearTimeout(timer)
+  timer = setTimeout(() => {
+    app.ports.onScroll.send({clientX: main.scrollLeft, clientY: main.scrollTop})
+  }, 200)   // debounce 200ms
+}, {passive: true})
 </script>
 </body>
 </html>

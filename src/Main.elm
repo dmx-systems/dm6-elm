@@ -42,7 +42,7 @@ main =
     , subscriptions =
       (\model -> Sub.batch
         [ MouseAPI.subs model
-        , mainScrollSub
+        , scrollSub
         ]
       )
     , onUrlChange = Nav << Nav.UrlChanged
@@ -89,7 +89,7 @@ initModel flags key =
 -- PORTS
 
 
-port onMainScrolled : (E.Value -> msg) -> Sub msg
+port onScroll : (E.Value -> msg) -> Sub msg
 
 
 
@@ -276,7 +276,7 @@ update msg ({present} as undoModel) =
     Icon iconMenuMsg -> IconAPI.update iconMenuMsg undoModel
     Nav navMsg -> NavAPI.update navMsg undoModel
     --
-    MainScrolled pos -> (undoModel, Cmd.none)
+    Scrolled pos -> updateScrollPos pos present |> S.store |> Undo.swap undoModel
     NoOp -> (undoModel, Cmd.none)
 
 
@@ -342,15 +342,20 @@ resetUI target model =
   )
 
 
+updateScrollPos : Point -> Model -> Model
+updateScrollPos pos model =
+  Box.updateScrollPos model.boxId (\_ -> pos) model
+
+
 
 -- SUBSCRIPTIONS
 
 
-mainScrollSub : Sub Msg
-mainScrollSub =
-  onMainScrolled
-    (\val -> MainScrolled <|
+scrollSub : Sub Msg
+scrollSub =
+  onScroll
+    (\val -> Scrolled <|
       case val |> D.decodeValue U.pointDecoder of
         Ok pos -> pos
-        Err e -> U.logError "mainScrollSub" (U.toString e) (Point 0 0)
+        Err e -> U.logError "scrollSub" (U.toString e) (Point 0 0)
     )

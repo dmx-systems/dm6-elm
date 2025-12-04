@@ -75,7 +75,7 @@ addBox : BoxId -> Model -> Model
 addBox boxId model =
   { model | boxes = model.boxes |> Dict.insert
     boxId
-    (Box boxId (Rectangle 0 0 0 0) Dict.empty)
+    (Box boxId (Rectangle 0 0 0 0) (Point 0 0) Dict.empty)
   }
 
 
@@ -85,6 +85,17 @@ updateRect boxId transform model =
     boxId
     (\box ->
       { box | rect = transform box.rect }
+    )
+    model.boxes
+  }
+
+
+updateScrollPos : BoxId -> (Point -> Point) -> Model -> Model
+updateScrollPos boxId transform model =
+  { model | boxes = update
+    boxId
+    (\box ->
+      { box | scroll = transform box.scroll }
     )
     model.boxes
   }
