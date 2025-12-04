@@ -72,6 +72,7 @@ type Msg
   | TopicDragged
   | ItemClicked Id BoxPath
   | MouseDown (Maybe (Id, BoxPath))
+  | MainScrolled Point
   | NoOp
   -- feature modules
   | Tool Tool.Msg

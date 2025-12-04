@@ -1,4 +1,4 @@
-module Main exposing (..)
+port module Main exposing (..)
 
 import Box
 import Box.Size as Size
@@ -39,7 +39,12 @@ main =
     { init = init
     , view = view
     , update = update
-    , subscriptions = MouseAPI.subs
+    , subscriptions =
+      (\model -> Sub.batch
+        [ MouseAPI.subs model
+        , mainScrollSub
+        ]
+      )
     , onUrlChange = Nav << Nav.UrlChanged
     , onUrlRequest = Nav << Nav.LinkClicked
     }
@@ -78,6 +83,13 @@ initModel flags key =
             _ = U.logError "init" "localStorage" e
           in
           Model.init key
+
+
+
+-- PORTS
+
+
+port onMainScrolled : (E.Value -> msg) -> Sub msg
 
 
 
@@ -194,7 +206,7 @@ footerStyle =
   [ style "font-family" C.mainFont
   , style "font-size" <| fromInt C.footerFontSize ++ "px"
   , style "position" "absolute"
-  , style "bottom" "4px"
+  , style "bottom" "20px"
   , style "right" "20px"
   , style "text-align" "right"
   , style "color" "lightgray"
@@ -264,6 +276,7 @@ update msg ({present} as undoModel) =
     Icon iconMenuMsg -> IconAPI.update iconMenuMsg undoModel
     Nav navMsg -> NavAPI.update navMsg undoModel
     --
+    MainScrolled pos -> (undoModel, Cmd.none)
     NoOp -> (undoModel, Cmd.none)
 
 
@@ -327,3 +340,17 @@ resetUI target model =
     |> SearchAPI.closeMenu
   , Cmd.none
   )
+
+
+
+-- SUBSCRIPTIONS
+
+
+mainScrollSub : Sub Msg
+mainScrollSub =
+  onMainScrolled
+    (\val -> MainScrolled <|
+      case val |> D.decodeValue U.pointDecoder of
+        Ok pos -> pos
+        Err e -> U.logError "mainScrollSub" (U.toString e) (Point 0 0)
+    )

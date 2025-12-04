@@ -62,6 +62,10 @@ app.ports.exportJSON.subscribe(() => {
   anchor.click()
   URL.revokeObjectURL(url)
 })
+const main = document.getElementById('main')
+main.addEventListener('scroll', () => {
+  app.ports.onMainScrolled.send({clientX: main.scrollLeft, clientY: main.scrollTop})
+})
 </script>
 </body>
 </html>

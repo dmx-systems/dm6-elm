@@ -61,7 +61,7 @@ viewMapTools undoModel =
 mapToolsStyle : List (Attribute Msg)
 mapToolsStyle =
   [ style "position" "fixed"
-  , style "bottom" "4px"
+  , style "bottom" "20px"
   , style "left" "4px"
   ]
 
