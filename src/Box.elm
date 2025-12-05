@@ -221,19 +221,22 @@ initItemProps itemId boxId model =
 initTopicProps : Id -> BoxId -> Model -> TopicProps
 initTopicProps topicId boxId model =
   TopicProps
-    (initPos boxId)
+    ( initTopicPos boxId model )
     C.topicSize
-    (case Item.isBox topicId model of
+    ( case Item.isBox topicId model of
       True -> BoxD BlackBox
       False -> TopicD LabelOnly
     )
 
 
-initPos : BoxId -> Point
-initPos boxId =
-  case isRoot boxId of
-    True -> C.nestedBoxOffset
-    False -> Point 0 0
+initTopicPos : BoxId -> Model -> Point
+initTopicPos boxId model =
+  case byIdOrLog boxId model.boxes of
+    Just box ->
+      Point
+        (C.initTopicPos.x + box.rect.x1 + box.scroll.x)
+        (C.initTopicPos.y + box.rect.y1 + box.scroll.y)
+    Nothing -> Point 0 0 -- error is already logged
 
 
 {-| Logs an error if box does not exist or item is not in box.

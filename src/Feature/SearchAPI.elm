@@ -265,8 +265,7 @@ onHoverRelTopic relTopicId ({search} as model) =
       { model | search = { search | menu = RelTopics relTopicIds (Just relTopicId) }}
     _ ->
       U.logError "onHoverRelTopic"
-        "Received \"HoverRelTopic\" when search.menu is not RelTopics"
-        model
+        "Received \"HoverRelTopic\" when search.menu is not RelTopics" model
 
 
 onUnhoverTopic : Model -> Model

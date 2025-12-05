@@ -212,7 +212,8 @@ viewLimboAssoc boxId model =
                   sourceTopicId = Item.otherPlayerId assocId topicId model
                 in
                 case Box.topicPos sourceTopicId boxId model of
-                  Just pos -> [ lineFunc pos (Box.initPos boxId) (Just assoc) boxId model ]
+                  Just pos ->
+                    [ lineFunc pos (Box.initTopicPos boxId model) (Just assoc) boxId model ]
                   Nothing -> []
             Nothing -> []
       else

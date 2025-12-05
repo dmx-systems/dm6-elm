@@ -9,7 +9,7 @@ import ModelParts exposing (Point, Size)
 
 rootBoxName = "DM6 Elm"
 version = "0.3-snapshot"
-date = "Dec 4, 2025"
+date = "Dec 5, 2025"
 
 appHeaderHeight = 36
 
@@ -25,10 +25,9 @@ mapToolbarIconSize = 22
 itemToolbarIconSize = 18
 toolbarColor = "#e9e9ed" -- Firefox button color
 
-initTopicPos = Point 232 167
+initTopicPos = Point 104 72
 initTopicText = "New Topic"
 initBoxText = "New Box"
-nestedBoxOffset = Point 400 300
 
 topicWidth = 156
 topicHeight = 28 -- also width/height of square icon box
