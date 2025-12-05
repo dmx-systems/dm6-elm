@@ -39,7 +39,7 @@ init : Key -> Model
 init key =
   { items = Dict.singleton 0 <| Item 0 (Topic (TopicInfo 0 C.rootBoxName Nothing)) Set.empty
   , boxes = Dict.singleton rootBoxId
-    <| Box rootBoxId (Rectangle 0 0 0 0) Dict.empty
+    <| Box rootBoxId (Rectangle 0 0 0 0) (Point 0 0) Dict.empty
   , boxId = rootBoxId
   , nextId = 1
   ----- transient -----
@@ -67,12 +67,12 @@ initTransient model =
 
 
 type Msg
+  -- gestures detected by Mouse module
   = AddAssoc Id Id BoxId
   | MoveTopicToBox Id BoxId Point Id BoxPath Point -- start point, random point (for target)
   | TopicDragged
   | ItemClicked Id BoxPath
   | MouseDown (Maybe (Id, BoxPath))
-  | NoOp
   -- feature modules
   | Tool Tool.Msg
   | Edit TextEdit.Msg
@@ -80,6 +80,9 @@ type Msg
   | Search Search.Msg
   | Icon Icon.Msg
   | Nav Nav.Msg
+  --
+  | Scrolled Point
+  | NoOp
 
 
 

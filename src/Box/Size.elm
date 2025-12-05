@@ -8,8 +8,6 @@ import Model exposing (Model)
 import ModelParts exposing (..)
 import Utils as U
 
-import Dict
-
 
 
 -- UPDATE
@@ -143,7 +141,7 @@ updateBoxGeometry boxPath newRect oldRect model =
       let
         (isDragInProgress, isOnDragPath, isBoxInDragPath) =
           case model.mouse.dragState of
-            Drag DragTopic _ _ dragPath _ _ _ ->
+            Drag DragTopic _ dragPath _ _ _ ->
               (True
               , (dragPath |> List.drop (List.length dragPath - List.length boxPath)) == boxPath
               , List.member boxId dragPath

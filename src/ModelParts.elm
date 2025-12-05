@@ -58,6 +58,7 @@ type alias RoleType = String -- a role type URI, e.g. "dmx.default"
 type alias Box =
   { id : BoxId
   , rect : Rectangle
+  , scroll : Point
   , items : BoxItems
   }
 
@@ -181,6 +182,11 @@ encodeBox box =
         , ("y2", E.float box.rect.y2)
         ]
       )
+    , ("scroll", E.object
+        [ ("x", E.float box.scroll.x)
+        , ("y", E.float box.scroll.y)
+        ]
+      )
     , ("items", box.items |> Dict.values |> E.list encodeBoxItem)
     ]
 
@@ -269,13 +275,17 @@ assocIdsDecoder =
 
 boxDecoder : D.Decoder Box
 boxDecoder =
-  D.map3 Box
+  D.map4 Box
     (D.field "id" D.int)
     (D.field "rect" <| D.map4 Rectangle
       (D.field "x1" D.float)
       (D.field "y1" D.float)
       (D.field "x2" D.float)
       (D.field "y2" D.float)
+    )
+    (D.field "scroll" <| D.map2 Point
+      (D.field "x" D.float)
+      (D.field "y" D.float)
     )
     (D.field "items" (D.list boxItemDecoder |> D.andThen toDictDecoder))
 

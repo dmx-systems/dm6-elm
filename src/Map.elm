@@ -212,7 +212,8 @@ viewLimboAssoc boxId model =
                   sourceTopicId = Item.otherPlayerId assocId topicId model
                 in
                 case Box.topicPos sourceTopicId boxId model of
-                  Just pos -> [ lineFunc pos (Box.initPos boxId) (Just assoc) boxId model ]
+                  Just pos ->
+                    [ lineFunc pos (Box.initTopicPos boxId model) (Just assoc) boxId model ]
                   Nothing -> []
             Nothing -> []
       else
@@ -295,7 +296,7 @@ topicStyle : Id -> BoxId -> Model -> List (Attribute Msg)
 topicStyle id boxId model =
   let
     isDragging = case model.mouse.dragState of
-      Drag DragTopic _ id_ _ _ _ _ -> id_ == id
+      Drag DragTopic id_ _ _ _ _ -> id_ == id
       _ -> False
     isSelected = SelAPI.isSelected id boxId model
   in
@@ -525,15 +526,16 @@ assocGeometry assoc boxId model =
 viewAssocDraft : BoxId -> Model -> List (Svg Msg)
 viewAssocDraft boxId model =
   case model.mouse.dragState of
-    Drag DraftAssoc scrollPos _ boxPath origPos pos _ ->
-      let
-        pagePos = Point
-          (pos.x + scrollPos.x)
-          (pos.y + scrollPos.y - C.appHeaderHeight)
-      in
-      case Box.firstId boxPath == boxId of
-        True -> [ lineFunc origPos (relPos pagePos boxPath model) Nothing boxId model ]
-        False -> []
+    Drag DraftAssoc _ boxPath origPos pos _ ->
+      case (Box.firstId boxPath == boxId, Box.byIdOrLog rootBoxId model.boxes) of
+        (True, Just box) ->
+          let
+            pagePos = Point
+              (pos.x + box.scroll.x)
+              (pos.y + box.scroll.y - C.appHeaderHeight)
+          in
+          [ lineFunc origPos (relPos pagePos boxPath model) Nothing boxId model ]
+        _ -> []
     _ -> []
 
 
@@ -698,8 +700,8 @@ topicBorderStyle id boxId model =
     targeted = case model.mouse.dragState of
       -- can't move a topic to a box where it is already
       -- can't create assoc when both topics are in different box
-      Drag DragTopic _ _ (boxId_ :: _) _ _ target -> isTarget_ target && boxId_ /= id
-      Drag DraftAssoc _ _ (boxId_ :: _) _ _ target -> isTarget_ target && boxId_ == boxId
+      Drag DragTopic _ (boxId_ :: _) _ _ target -> isTarget_ target && boxId_ /= id
+      Drag DraftAssoc _ (boxId_ :: _) _ _ target -> isTarget_ target && boxId_ == boxId
       _ -> False
   in
   [ style "border-width" <| fromFloat C.topicBorderWidth ++ "px"

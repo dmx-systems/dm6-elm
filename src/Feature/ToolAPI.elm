@@ -61,7 +61,7 @@ viewMapTools undoModel =
 mapToolsStyle : List (Attribute Msg)
 mapToolsStyle =
   [ style "position" "fixed"
-  , style "bottom" "4px"
+  , style "bottom" "20px"
   , style "left" "4px"
   ]
 
@@ -252,23 +252,15 @@ addTopic : Model -> Model
 addTopic model =
   let
     boxId = Box.active model
+    ( newModel, topicId ) = Item.addTopic C.initTopicText Nothing model
+    props = TopicV <| TopicProps
+      ( Box.initTopicPos boxId model )
+      C.topicDetailSize
+      ( TopicD LabelOnly )
   in
-  case Box.byIdOrLog boxId model.boxes of
-    Just box ->
-      let
-        (newModel, topicId) = Item.addTopic C.initTopicText Nothing model
-        props = TopicV <| TopicProps
-          (Point
-            (C.initTopicPos.x + box.rect.x1)
-            (C.initTopicPos.y + box.rect.y1)
-          )
-          C.topicDetailSize
-          (TopicD LabelOnly)
-      in
-      newModel
-      |> Box.addItem topicId props boxId
-      |> SelAPI.select topicId [ boxId ]
-    Nothing -> model
+  newModel
+  |> Box.addItem topicId props boxId
+  |> SelAPI.select topicId [ boxId ]
 
 
 -- TODO: factor out addTopic() common code
@@ -276,24 +268,16 @@ addBox : Model -> Model
 addBox model =
   let
     boxId = Box.active model
+    ( newModel, topicId ) = Item.addTopic C.initBoxText Nothing model
+    props = TopicV <| TopicProps
+      ( Box.initTopicPos boxId model )
+      C.topicDetailSize
+      ( BoxD BlackBox )
   in
-  case Box.byIdOrLog boxId model.boxes of
-    Just box ->
-      let
-        (newModel, topicId) = Item.addTopic C.initBoxText Nothing model
-        props = TopicV <| TopicProps
-          (Point
-            (C.initTopicPos.x + box.rect.x1)
-            (C.initTopicPos.y + box.rect.y1)
-          )
-          C.topicDetailSize
-          (BoxD BlackBox)
-      in
-      newModel
-      |> Box.addBox topicId
-      |> Box.addItem topicId props boxId
-      |> SelAPI.select topicId [ boxId ]
-    Nothing -> model
+  newModel
+  |> Box.addBox topicId
+  |> Box.addItem topicId props boxId
+  |> SelAPI.select topicId [ boxId ]
 
 
 toggleDisplay : Id -> BoxId -> Model -> Model

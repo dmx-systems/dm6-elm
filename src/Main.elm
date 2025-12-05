@@ -1,4 +1,4 @@
-module Main exposing (..)
+port module Main exposing (..)
 
 import Box
 import Box.Size as Size
@@ -39,7 +39,12 @@ main =
     { init = init
     , view = view
     , update = update
-    , subscriptions = MouseAPI.subs
+    , subscriptions =
+      (\model -> Sub.batch
+        [ MouseAPI.subs model
+        , scrollSub
+        ]
+      )
     , onUrlChange = Nav << Nav.UrlChanged
     , onUrlRequest = Nav << Nav.LinkClicked
     }
@@ -53,8 +58,13 @@ init flags url key =
       case NavAPI.boxIdFromUrl url of
         Just boxId_ -> boxId_
         Nothing -> model.boxId
+    cmd =
+      Cmd.batch
+      [ NavAPI.pushUrl boxId model
+      , Box.initViewport boxId model
+      ]
   in
-  (model, NavAPI.pushUrl boxId model) |> Undo.reset
+  (model, cmd) |> Undo.reset
 
 
 initModel : E.Value -> Key -> Model
@@ -78,6 +88,13 @@ initModel flags key =
             _ = U.logError "init" "localStorage" e
           in
           Model.init key
+
+
+
+-- PORTS
+
+
+port onScroll : (E.Value -> msg) -> Sub msg
 
 
 
@@ -194,7 +211,7 @@ footerStyle =
   [ style "font-family" C.mainFont
   , style "font-size" <| fromInt C.footerFontSize ++ "px"
   , style "position" "absolute"
-  , style "bottom" "4px"
+  , style "bottom" "20px"
   , style "right" "20px"
   , style "text-align" "right"
   , style "color" "lightgray"
@@ -264,6 +281,7 @@ update msg ({present} as undoModel) =
     Icon iconMenuMsg -> IconAPI.update iconMenuMsg undoModel
     Nav navMsg -> NavAPI.update navMsg undoModel
     --
+    Scrolled pos -> updateScrollPos pos present |> S.store |> Undo.swap undoModel
     NoOp -> (undoModel, Cmd.none)
 
 
@@ -327,3 +345,22 @@ resetUI target model =
     |> SearchAPI.closeMenu
   , Cmd.none
   )
+
+
+updateScrollPos : Point -> Model -> Model
+updateScrollPos pos model =
+  Box.updateScrollPos model.boxId (\_ -> pos) model
+
+
+
+-- SUBSCRIPTIONS
+
+
+scrollSub : Sub Msg
+scrollSub =
+  onScroll
+    (\val -> Scrolled <|
+      case val |> D.decodeValue U.pointDecoder of
+        Ok pos -> pos
+        Err e -> U.logError "scrollSub" (U.toString e) (Point 0 0)
+    )
