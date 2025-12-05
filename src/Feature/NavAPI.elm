@@ -1,5 +1,6 @@
 module Feature.NavAPI exposing (boxIdFromUrl, pushUrl, update)
 
+import Box
 import Box.Size as Size
 import Feature.Nav as Nav
 import Feature.SelAPI as SelAPI
@@ -34,7 +35,7 @@ urlChanged : Url -> UndoModel -> (UndoModel, Cmd Msg)
 urlChanged url ({present} as undoModel) =
   case boxIdFromUrl url of
     Just boxId ->
-      fullscreen boxId present |> S.store |> Undo.reset
+      fullscreen boxId present |> S.storeWith |> Undo.reset
     Nothing ->
       let
         _ = U.info "urlChanged" <| "No fragment -> redirect to " ++ fromInt present.boxId
@@ -42,11 +43,13 @@ urlChanged url ({present} as undoModel) =
       (undoModel, pushUrl present.boxId present)
 
 
-fullscreen : BoxId -> Model -> Model
+fullscreen : BoxId -> Model -> (Model, Cmd Msg)
 fullscreen boxId model =
-  { model | boxId = boxId }
-  |> SelAPI.clear
-  |> Size.auto
+  ( { model | boxId = boxId }
+    |> SelAPI.clear
+    |> Size.auto
+  , Box.initViewport boxId model
+  )
 
 
 pushUrl : BoxId -> Model -> Cmd Msg

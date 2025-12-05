@@ -2,12 +2,14 @@ module Box exposing (..)
 
 import Config as C
 import Item
-import Model exposing (Model)
+import Model exposing (Model, Msg(..))
 import ModelParts exposing (..)
 import Utils as U
 
+import Browser.Dom as Dom
 import Dict
 import String exposing (fromInt)
+import Task
 
 
 
@@ -99,6 +101,20 @@ updateScrollPos boxId transform model =
     )
     model.boxes
   }
+
+
+initViewport : BoxId -> Model -> Cmd Msg
+initViewport boxId model =
+  case byIdOrLog boxId model.boxes of
+    Just box ->
+      Dom.setViewportOf "main" box.scroll.x box.scroll.y
+      |> Task.attempt
+        (\result ->
+          case result of
+            Ok () -> NoOp
+            Err e -> U.logError "setViewport" (U.toString e) NoOp
+        )
+    Nothing -> Cmd.none
 
 
 {-| Logs an error if box does not exist, or topic is not in box, or ID refers not a topic (but

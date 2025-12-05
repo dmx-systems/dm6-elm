@@ -58,8 +58,13 @@ init flags url key =
       case NavAPI.boxIdFromUrl url of
         Just boxId_ -> boxId_
         Nothing -> model.boxId
+    cmd =
+      Cmd.batch
+      [ NavAPI.pushUrl boxId model
+      , Box.initViewport boxId model
+      ]
   in
-  (model, NavAPI.pushUrl boxId model) |> Undo.reset
+  (model, cmd) |> Undo.reset
 
 
 initModel : E.Value -> Key -> Model
