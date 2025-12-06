@@ -136,7 +136,7 @@ isItemDisabled topicId model =
 revealBoxId : Model -> Maybe Id
 revealBoxId model =
   case model.search.menu of
-    Topics _ _ -> Just (Box.active model)
+    Topics _ _ -> Just model.boxId
     RelTopics _ _ ->
       case SelAPI.singleBoxId model of
         Just boxId -> Just boxId
@@ -294,7 +294,7 @@ onUnhoverRelTopic ({search} as model) =
 revealTopic : Id -> Model -> Model
 revealTopic topicId model =
   model
-  |> revealItem topicId (Box.active model)
+  |> revealItem topicId model.boxId
   |> closeMenu
 
 

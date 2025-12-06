@@ -13,20 +13,17 @@ import Task
 
 
 
-{-| Logs an error if box does not exist.
-TODO: replace Boxes parameter by Model?
--}
-byIdOrLog : BoxId -> Boxes -> Maybe Box
-byIdOrLog boxId boxes =
-  case byId boxId boxes of
+{-| Logs an error if box does not exist. -}
+byIdOrLog : BoxId -> Model -> Maybe Box
+byIdOrLog boxId model =
+  case byId boxId model of
     Just box -> Just box
     Nothing -> U.illegalBoxId "byIdOrLog" boxId Nothing
 
 
-{-| TODO: replace Boxes parameter by Model? -}
-byId : BoxId -> Boxes -> Maybe Box
-byId boxId boxes =
-  boxes |> Dict.get boxId
+byId : BoxId -> Model -> Maybe Box
+byId boxId model =
+  model.boxes |> Dict.get boxId
 
 
 {-| Presumption: the item exists already.
@@ -58,7 +55,7 @@ updateScrollPos boxId transform model =
 
 initViewport : BoxId -> Model -> Cmd Msg
 initViewport boxId model =
-  case byIdOrLog boxId model.boxes of
+  case byIdOrLog boxId model of
     Just box ->
       Dom.setViewportOf "main" box.scroll.x box.scroll.y
       |> Task.attempt
@@ -147,7 +144,7 @@ an association).
 -}
 topicProps : Id -> BoxId -> Model -> Maybe TopicProps
 topicProps topicId boxId model =
-  case itemByIdOrLog topicId boxId model.boxes of
+  case itemByIdOrLog topicId boxId model of
     Just boxItem ->
       case boxItem.props of
         TopicV props -> Just props
@@ -199,7 +196,7 @@ initTopicProps topicId boxId model =
 
 initTopicPos : BoxId -> Model -> Point
 initTopicPos boxId model =
-  case byIdOrLog boxId model.boxes of
+  case byIdOrLog boxId model of
     Just box ->
       Point
         (C.initTopicPos.x + box.rect.x1 + box.scroll.x)
@@ -207,12 +204,10 @@ initTopicPos boxId model =
     Nothing -> Point 0 0 -- error is already logged
 
 
-{-| Logs an error if box does not exist or item is not in box.
-TODO: replace Boxes parameter by Model?
--}
-itemByIdOrLog : Id -> BoxId -> Boxes -> Maybe BoxItem
-itemByIdOrLog itemId boxId boxes =
-  byIdOrLog boxId boxes |> Maybe.andThen
+{-| Logs an error if box does not exist or item is not in box. -}
+itemByIdOrLog : Id -> BoxId -> Model -> Maybe BoxItem
+itemByIdOrLog itemId boxId model =
+  byIdOrLog boxId model |> Maybe.andThen
     (\box ->
       case box.items |> Dict.get itemId of
         Just boxItem -> Just boxItem
@@ -223,7 +218,7 @@ itemByIdOrLog itemId boxId boxes =
 {-| Logs an error if box does not exist. -}
 hasItem : BoxId -> Id -> Model -> Bool
 hasItem boxId itemId model =
-  case byIdOrLog boxId model.boxes of
+  case byIdOrLog boxId model of
     Just box -> box.items |> Dict.member itemId
     Nothing -> False
 
@@ -233,7 +228,7 @@ hasDeepItem boxId itemId model =
   if itemId == boxId then
     True
   else
-    case byId boxId model.boxes of
+    case byId boxId model of
       Just box -> box.items |> Dict.keys |> List.any
         (\id -> hasDeepItem id itemId model)
       Nothing -> False
@@ -348,29 +343,9 @@ isVisible item =
   not item.hidden
 
 
-isAtRoot : Model -> Bool
-isAtRoot model =
-  model |> active |> isRoot
-
-
-isRoot : Id -> Bool
-isRoot id =
-  id == 0
-
-
-isActive : BoxId -> Model -> Bool -- TODO: rename "isFullscreen"?
-isActive boxId model =
-  active model == boxId
-
-
-active : Model -> BoxId
-active model =
-  model.boxId
-
-
-activeName : Model -> String
-activeName model =
-  case Item.topicById (active model) model of
+fullscreenName : Model -> String
+fullscreenName model =
+  case Item.topicById model.boxId model of
     Just topic -> Item.topicLabel topic
     Nothing -> "??"
 

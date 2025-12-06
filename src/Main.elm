@@ -118,7 +118,7 @@ view ({present} as undoModel) =
         ( [ id "main" ]
           ++ mainStyle
         )
-        ( [ Map.view (Box.active present) [] present ] -- boxPath = []
+        ( [ Map.view present.boxId [] present ] -- boxPath = []
           ++ ToolAPI.viewMapTools undoModel
           ++ SearchAPI.viewSearchResult present
         )
@@ -154,7 +154,7 @@ viewMapTitle : Model -> Html Msg
 viewMapTitle model =
   div
     mapTitleStyle
-    [ text <| Box.activeName model ]
+    [ text <| Box.fullscreenName model ]
 
 
 mapTitleStyle : List (Attribute Msg)

@@ -251,7 +251,7 @@ update msg ({present} as undoModel) =
 addTopic : Model -> Model
 addTopic model =
   let
-    boxId = Box.active model
+    boxId = model.boxId
     ( newModel, topicId ) = Item.addTopic C.initTopicText Nothing model
     props = TopicV <| TopicProps
       ( Box.initTopicPos boxId model )
@@ -267,7 +267,7 @@ addTopic model =
 addBox : Model -> Model
 addBox model =
   let
-    boxId = Box.active model
+    boxId = model.boxId
     ( newModel, topicId ) = Item.addTopic C.initBoxText Nothing model
     props = TopicV <| TopicProps
       ( Box.initTopicPos boxId model )

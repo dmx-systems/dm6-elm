@@ -40,7 +40,7 @@ unboxContent boxId targetBoxId model =
 
 transferContent : BoxId -> BoxId -> Transfer -> Model -> Model
 transferContent boxId targetBoxId transfer model =
-  case Box.byIdOrLog boxId model.boxes of
+  case Box.byIdOrLog boxId model of
     Just box_ ->
       model |> Box.update targetBoxId
         (\targetBox ->
@@ -66,7 +66,7 @@ boxItems_ boxItems targetItems model =
             let
               items = Box.hideItem_ boxItem.id targetItemsAcc model
             in
-            case Box.byId boxItem.id model.boxes of
+            case Box.byId boxItem.id model of
               Just box_ -> boxItems_ box_.items items model -- recursion
               Nothing -> items
         Nothing -> targetItemsAcc -- FIXME: continue unboxing boxes?
@@ -90,7 +90,7 @@ unboxItems_ boxItems targetItems model =
           if abort then
             items
           else
-            case Box.byId boxItem.id model.boxes of
+            case Box.byId boxItem.id model of
               Just box_ -> unboxItems_ box_.items items model -- recursion
               Nothing -> items
         AssocV _ ->

@@ -16,7 +16,7 @@ import Utils as U
 auto : Model -> Model
 auto model =
   model
-  |> calcBoxRect [ Box.active model ]
+  |> calcBoxRect [ model.boxId ]
   |> Tuple.second
 
 
@@ -30,7 +30,7 @@ calcBoxRect boxPath model =
   let
     boxId = Box.firstId boxPath
   in
-  case Box.byIdOrLog boxId model.boxes of
+  case Box.byIdOrLog boxId model of
     Just box ->
       let
         (rect, model_) =

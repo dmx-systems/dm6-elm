@@ -22,7 +22,7 @@ import Set
 type alias Model =
   { items : Items
   , boxes : Boxes
-  , boxId : BoxId
+  , boxId : BoxId -- the box rendered fullscreen
   , nextId : Id
   ----- transient -----
   -- feature modules

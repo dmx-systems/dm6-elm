@@ -104,14 +104,14 @@ gAttr boxId boxRect model =
 -- For a fullscreen box boxPath is empty
 boxInfo : BoxId -> BoxPath -> Model -> BoxInfo
 boxInfo boxId boxPath model =
-  case Box.byIdOrLog boxId model.boxes of
+  case Box.byIdOrLog boxId model of
     Just box ->
       ( viewItems box boxPath model
       , box.rect
       , ( { w = (box.rect.x2 - box.rect.x1) |> round |> fromInt
           , h = (box.rect.y2 - box.rect.y1) |> round |> fromInt
           }
-        , if Box.isActive boxId model then
+        , if model.boxId == boxId then
             []
           else
             nestedBoxStyle boxId box.rect (Box.firstId boxPath) model
@@ -249,7 +249,7 @@ isLimboAssoc assocId boxId model =
 limboState : Model -> Maybe (Id, Maybe Id, BoxId) -- (topic ID, assoc ID, box ID)
 limboState model =
   case model.search.menu of
-    Topics _ (Just topicId) -> Just (topicId, Nothing, Box.active model)
+    Topics _ (Just topicId) -> Just (topicId, Nothing, model.boxId)
     RelTopics _ (Just (topicId, assocId)) ->
       case SelAPI.singleBoxId model of
         Just boxId -> Just (topicId, Just assocId, boxId)
@@ -283,7 +283,7 @@ viewTopic topic props boxPath model =
 
 topicAttr : Id -> BoxPath -> Model -> List (Attribute Msg)
 topicAttr topicId boxPath model =
-  if Box.isActive topicId model then
+  if model.boxId == topicId then
     [] -- TODO: the fullscreen box would require dedicated event handling, e.g. panning?
   else
     [ attribute "class" "dmx-topic"
@@ -492,7 +492,7 @@ boxItemCount topicId props model =
       case props.displayMode of
         TopicD _ -> 0
         BoxD _ ->
-          case Box.byIdOrLog topicId model.boxes of
+          case Box.byIdOrLog topicId model of
             Just box -> box.items |> Dict.values |> List.filter Box.isVisible |> List.length
             Nothing -> 0
   in
@@ -527,7 +527,7 @@ viewAssocDraft : BoxId -> Model -> List (Svg Msg)
 viewAssocDraft boxId model =
   case model.mouse.dragState of
     Drag DraftAssoc _ boxPath origPos pos _ ->
-      case (Box.firstId boxPath == boxId, Box.byIdOrLog rootBoxId model.boxes) of
+      case (Box.firstId boxPath == boxId, Box.byIdOrLog model.boxId model) of
         (True, Just box) ->
           let
             pagePos = Point
@@ -581,7 +581,7 @@ accumulatePos posAcc boxId parentBoxId boxIds model =
 
 accumulateRect : Point -> BoxId -> Model -> Point
 accumulateRect posAcc boxId model =
-  case Box.byIdOrLog boxId model.boxes of
+  case Box.byIdOrLog boxId model of
     Just box -> Point
       (posAcc.x - box.rect.x1)
       (posAcc.y - box.rect.y1)
