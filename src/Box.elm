@@ -13,47 +13,6 @@ import Task
 
 
 
-isAtRoot : Model -> Bool
-isAtRoot model =
-  model |> active |> isRoot
-
-
-isRoot : Id -> Bool
-isRoot id =
-  id == 0
-
-
-isActive : BoxId -> Model -> Bool -- TODO: rename "isFullscreen"?
-isActive boxId model =
-  active model == boxId
-
-
-active : Model -> BoxId
-active model =
-  model.boxId
-
-
-activeName : Model -> String
-activeName model =
-  case Item.topicById (active model) model of
-    Just topic -> Item.topicLabel topic
-    Nothing -> "??"
-
-
-{-| Logs an error (and returns -1) if boxPath is empty.
--}
-firstId : BoxPath -> BoxId
-firstId boxPath =
-  case boxPath of
-    boxId :: _ -> boxId
-    [] -> U.logError "firstId" "boxPath is empty!" -1
-
-
-fromPath : BoxPath -> String
-fromPath boxPath =
-  boxPath |> List.map fromInt |> String.join ","
-
-
 {-| Logs an error if box does not exist.
 TODO: replace Boxes parameter by Model?
 -}
@@ -83,24 +42,18 @@ addBox boxId model =
 
 updateRect : BoxId -> (Rectangle -> Rectangle) -> Model -> Model
 updateRect boxId transform model =
-  { model | boxes = update
-    boxId
+  model |> update boxId
     (\box ->
       { box | rect = transform box.rect }
     )
-    model.boxes
-  }
 
 
 updateScrollPos : BoxId -> (Point -> Point) -> Model -> Model
 updateScrollPos boxId transform model =
-  { model | boxes = update
-    boxId
+  model |> update boxId
     (\box ->
       { box | scroll = transform box.scroll }
     )
-    model.boxes
-  }
 
 
 initViewport : BoxId -> Model -> Cmd Msg
@@ -205,7 +158,7 @@ topicProps topicId boxId model =
 {-| Logs an error if box does not exist or if topic is not in box -}
 updateTopicProps : Id -> BoxId -> (TopicProps -> TopicProps) -> Model -> Model
 updateTopicProps topicId boxId transform model =
-  { model | boxes = model.boxes |> update boxId
+  model |> update boxId
     (\box ->
       { box | items = box.items |> Dict.update topicId
         (\boxItem_ ->
@@ -219,7 +172,6 @@ updateTopicProps topicId boxId transform model =
         )
       }
     )
-  }
 
 
 {-| Initial props for a newly revealed item -}
@@ -295,7 +247,7 @@ Can be used for both, topics and associations.
 addItem : Id -> ViewProps -> BoxId -> Model -> Model
 addItem itemId props boxId model =
   let
-    (newModel, parentAssocId) = Item.addAssoc
+    ( newModel, parentAssocId ) = Item.addAssoc
       "dmx.composition"
       "dmx.child" itemId
       "dmx.parent" boxId
@@ -304,10 +256,8 @@ addItem itemId props boxId model =
     _ = U.info "addItem"
       { itemId = itemId, parentAssocId = parentAssocId, props = props, boxId = boxId}
   in
-  { newModel | boxes = newModel.boxes |> update
-      boxId
-      (\box -> { box | items = box.items |> Dict.insert itemId boxItem })
-  }
+  newModel |> update boxId
+    (\box -> { box | items = box.items |> Dict.insert itemId boxItem })
 
 
 {-| Presumption: the item *is* contained in the box. Sets its "hidden" flag to False.
@@ -317,8 +267,7 @@ Logs an error if box does not exist.
 -}
 showItem : Id -> BoxId -> Model -> Model
 showItem itemId boxId model =
-  { model | boxes = model.boxes |> update
-    boxId
+  model |> update boxId
     (\box ->
       { box | items = box.items |> Dict.update itemId
         (\maybeItem ->
@@ -328,15 +277,12 @@ showItem itemId boxId model =
         )
       }
     )
-  }
 
 
 hideItem : Id -> BoxId -> Model -> Model
 hideItem itemId boxId model =
-  { model | boxes = model.boxes |> update
-    boxId
+  model |> update boxId
     (\box -> { box | items = hideItem_ itemId box.items model })
-  }
 
 
 hideItem_ : Id -> BoxItems -> Model -> BoxItems
@@ -353,17 +299,16 @@ hideItem_ itemId items model =
     )
 
 
-{-| Logs an error if box does not exist.
-TODO: replace Boxes parameter by Model?
--}
-update : BoxId -> (Box -> Box) -> Boxes -> Boxes
-update boxId transform boxes =
-  boxes |> Dict.update boxId
+{-| Logs an error if box does not exist. -}
+update : BoxId -> (Box -> Box) -> Model -> Model
+update boxId transform model =
+  { model | boxes = model.boxes |> Dict.update boxId
     (\box_ ->
       case box_ of
         Just box -> Just (transform box)
         Nothing -> U.illegalBoxId "update" boxId Nothing
     )
+  }
 
 
 visibleTopics : Box -> List BoxItem
@@ -401,3 +346,44 @@ isAssoc item =
 isVisible : BoxItem -> Bool
 isVisible item =
   not item.hidden
+
+
+isAtRoot : Model -> Bool
+isAtRoot model =
+  model |> active |> isRoot
+
+
+isRoot : Id -> Bool
+isRoot id =
+  id == 0
+
+
+isActive : BoxId -> Model -> Bool -- TODO: rename "isFullscreen"?
+isActive boxId model =
+  active model == boxId
+
+
+active : Model -> BoxId
+active model =
+  model.boxId
+
+
+activeName : Model -> String
+activeName model =
+  case Item.topicById (active model) model of
+    Just topic -> Item.topicLabel topic
+    Nothing -> "??"
+
+
+{-| Logs an error (and returns -1) if boxPath is empty.
+-}
+firstId : BoxPath -> BoxId
+firstId boxPath =
+  case boxPath of
+    boxId :: _ -> boxId
+    [] -> U.logError "firstId" "boxPath is empty!" -1
+
+
+fromPath : BoxPath -> String
+fromPath boxPath =
+  boxPath |> List.map fromInt |> String.join ","

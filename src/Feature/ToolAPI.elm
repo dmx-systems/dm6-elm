@@ -290,7 +290,7 @@ toggleDisplay topicId boxId model =
         Just (BoxD BlackBox) -> (model, Just <| BoxD WhiteBox)
         Just (BoxD WhiteBox) -> (model, Just <| BoxD BlackBox)
         Just (BoxD Unboxed) ->
-          ( { model | boxes = Transfer.boxContent topicId boxId model }
+          ( Transfer.boxContent topicId boxId model
           , Just (BoxD BlackBox)
           )
         Nothing -> (model, Nothing)
@@ -305,7 +305,7 @@ toggleDisplay topicId boxId model =
 
 unbox : BoxId -> BoxId -> Model -> Model
 unbox boxId targetBoxId model =
-  { model | boxes = Transfer.unboxContent boxId targetBoxId model }
+  Transfer.unboxContent boxId targetBoxId model
   |> Box.setDisplayMode boxId targetBoxId (BoxD Unboxed)
   |> Size.auto
 

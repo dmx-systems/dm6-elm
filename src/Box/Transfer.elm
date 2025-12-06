@@ -13,7 +13,7 @@ import Dict
 -- MODEL
 
 
-type alias TransferFunc = BoxItems -> BoxItems -> Model -> BoxItems
+type alias Transfer = BoxItems -> BoxItems -> Model -> BoxItems
 
 
 
@@ -24,7 +24,7 @@ type alias TransferFunc = BoxItems -> BoxItems -> Model -> BoxItems
 (Any target box can be given but de-facto it's the box's parent box.)
 Presumtion: content is currently unboxed
 -}
-boxContent : BoxId -> BoxId -> Model -> Boxes
+boxContent : BoxId -> BoxId -> Model -> Model
 boxContent boxId targetBoxId model =
   transferContent boxId targetBoxId boxItems_ model
 
@@ -33,21 +33,20 @@ boxContent boxId targetBoxId model =
 (Any target box can be given but de-facto it's the box's parent box.)
 Presumtion: content is currently boxed (blackbox or whitebox)
 -}
-unboxContent : BoxId -> BoxId -> Model -> Boxes
+unboxContent : BoxId -> BoxId -> Model -> Model
 unboxContent boxId targetBoxId model =
   transferContent boxId targetBoxId unboxItems_ model
 
 
-transferContent : BoxId -> BoxId -> TransferFunc -> Model -> Boxes
-transferContent boxId targetBoxId transferFunc model =
+transferContent : BoxId -> BoxId -> Transfer -> Model -> Model
+transferContent boxId targetBoxId transfer model =
   case Box.byIdOrLog boxId model.boxes of
     Just box_ ->
-      model.boxes |> Box.update
-        targetBoxId
+      model |> Box.update targetBoxId
         (\targetBox ->
-          { targetBox | items = transferFunc box_.items targetBox.items model }
+          { targetBox | items = transfer box_.items targetBox.items model }
         )
-    Nothing -> model.boxes
+    Nothing -> model
 
 
 {-| Transfer function, Boxing.
@@ -56,7 +55,7 @@ Returns the updated target items.
 -}
 boxItems_ : BoxItems -> BoxItems -> Model -> BoxItems
 boxItems_ boxItems targetItems model =
-  boxItems |> Dict.values |> List.foldr -- FIXME: apply isVisible filter?
+  boxItems |> Dict.values |> List.filter Box.isVisible |> List.foldr
     (\boxItem targetItemsAcc ->
       case targetItemsAcc |> Dict.get boxItem.id of
         Just {pinned} ->
