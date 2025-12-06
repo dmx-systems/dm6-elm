@@ -5,3 +5,5 @@ src/Logger.elm
 elm-stuff/
 review/
 .DS_Store
+*.sublime-project
+*.sublime-workspace

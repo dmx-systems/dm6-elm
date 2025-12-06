@@ -15,5 +15,5 @@ type Msg
   -- Item Tools
   | ToggleDisplay Id BoxId -- TODO: make params Id BoxPath?
   | Unbox BoxId BoxId -- TODO: make params BoxId BoxPath?
-  | Hide -- TODO: add params instead of operating on selection?
-  | Delete -- TODO: add params instead of operating on selection?
+  | Remove
+  | Delete

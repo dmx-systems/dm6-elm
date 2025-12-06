@@ -315,7 +315,7 @@ moveTopicToBox topicId boxId origPos targetId targetPath pos model =
   case props_ of
     Just props ->
       model
-      |> Box.hideItem topicId boxId
+      |> Box.removeItem topicId boxId
       |> Box.setTopicPos topicId boxId origPos
       |> Box.addItem topicId props targetId
       |> SelAPI.select targetId targetPath

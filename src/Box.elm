@@ -274,16 +274,16 @@ showItem itemId boxId model =
     )
 
 
-hideItem : Id -> BoxId -> Model -> Model
-hideItem itemId boxId model =
+removeItem : Id -> BoxId -> Model -> Model
+removeItem itemId boxId model =
   model |> update boxId
-    (\box -> { box | items = hideItem_ itemId box.items model })
+    (\box -> { box | items = removeItem_ itemId box.items model })
 
 
-hideItem_ : Id -> BoxItems -> Model -> BoxItems
-hideItem_ itemId items model =
+removeItem_ : Id -> BoxItems -> Model -> BoxItems
+removeItem_ itemId items model =
   assocsOfPlayer_ itemId items model |> List.foldr
-    (\assocId itemsAcc -> hideItem_ assocId itemsAcc model)
+    (\assocId itemsAcc -> removeItem_ assocId itemsAcc model)
     (items |> Dict.update
       itemId
       (\item_ ->

@@ -132,7 +132,7 @@ isItemDisabled topicId model =
     Nothing -> False
 
 
-{- The box where to reveal search/related results -}
+{- The box where to reveal search/traversal results -}
 revealBoxId : Model -> Maybe Id
 revealBoxId model =
   case model.search.menu of
@@ -229,7 +229,7 @@ update msg ({present} as undoModel) =
     Search.UnhoverTopic _ -> (onUnhoverTopic present, Cmd.none) |> Undo.swap undoModel
     Search.ClickTopic topicId -> revealTopic topicId present |> S.store |> Undo.push undoModel
     -- Traverse
-    Search.ShowRelated -> (showRelatedTopics present, Cmd.none) |> Undo.swap undoModel
+    Search.Traverse -> (traverse present, Cmd.none) |> Undo.swap undoModel
     Search.HoverRelTopic relTopicId -> (onHoverRelTopic relTopicId present, Cmd.none)
       |> Undo.swap undoModel
     Search.UnhoverRelTopic _ -> (onUnhoverRelTopic present, Cmd.none) |> Undo.swap undoModel
@@ -328,8 +328,8 @@ searchTopics ({search} as model) =
   { model | search = { search | menu = Topics topicIds Nothing }}
 
 
-showRelatedTopics : Model -> Model
-showRelatedTopics ({search} as model) =
+traverse : Model -> Model
+traverse ({search} as model) =
   let
     relTopicIds =
       case SelAPI.single model of

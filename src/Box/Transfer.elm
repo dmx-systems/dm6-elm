@@ -20,7 +20,7 @@ type alias Transfer = BoxItems -> BoxItems -> Model -> BoxItems
 -- UPDATE
 
 
-{-| Hides box content from its parent box.
+{-| Removes box content from its parent box.
 (Any target box can be given but de-facto it's the box's parent box.)
 Presumtion: content is currently unboxed
 -}
@@ -60,11 +60,11 @@ boxItems_ boxItems targetItems model =
       case targetItemsAcc |> Dict.get boxItem.id of
         Just {pinned} ->
           if pinned then
-            -- don't box pinned items, only hide the assoc
-            Box.hideItem_ boxItem.parentAssocId targetItemsAcc model
+            -- don't box pinned items, only remove the assoc
+            Box.removeItem_ boxItem.parentAssocId targetItemsAcc model
           else
             let
-              items = Box.hideItem_ boxItem.id targetItemsAcc model
+              items = Box.removeItem_ boxItem.id targetItemsAcc model
             in
             case Box.byId boxItem.id model of
               Just box_ -> boxItems_ box_.items items model -- recursion

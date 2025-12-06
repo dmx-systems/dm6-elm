@@ -88,16 +88,16 @@ viewItemToolbar itemId boxId model =
   let
     topicTools =
       [ viewItemButton "Edit" "edit-3" (Edit T.EditStart) True
-      , viewItemButton "Set Icon" "image" (Icon Icon.OpenMenu) True
-      , viewItemButton "Traverse" "share-2" (Search Search.ShowRelated) True
+      , viewItemButton "Choose Icon" "image" (Icon Icon.OpenMenu) True
+      , viewItemButton "Traverse" "share-2" (Search Search.Traverse) True
       , viewItemButton "Delete" "trash" (Tool Tool.Delete) True
-      , viewItemButton "Remove" "x" (Tool Tool.Hide) True -- TODO: "hide" -> "remove"
+      , viewItemButton "Remove" "x" (Tool Tool.Remove) True
       ]
     boxTools =
       if Item.isBox itemId model then
         [ viewSpacer
-        , viewItemButton "Unbox" "external-link" (Tool <| Tool.Unbox itemId boxId) (not unboxed)
         , viewItemButton "Fullscreen" "maximize-2" (Nav Nav.Fullscreen) True
+        , viewItemButton "Unbox" "external-link" (Tool <| Tool.Unbox itemId boxId) (not unboxed)
         ]
       else
         []
@@ -244,7 +244,7 @@ update msg ({present} as undoModel) =
       |> Undo.swap undoModel
     Tool.Unbox boxId targetBoxId -> unbox boxId targetBoxId present |> S.store
       |> Undo.swap undoModel
-    Tool.Hide -> hide present |> S.store |> Undo.push undoModel
+    Tool.Remove -> remove present |> S.store |> Undo.push undoModel
     Tool.Delete -> delete present |> S.store |> Undo.push undoModel
 
 
@@ -310,12 +310,12 @@ unbox boxId targetBoxId model =
   |> Size.auto
 
 
-hide : Model -> Model
-hide model =
+remove : Model -> Model
+remove model =
   let
     newModel = model.selection.items
       |> List.foldr
-        (\(itemId, boxPath) modelAcc -> Box.hideItem itemId (Box.firstId boxPath) modelAcc)
+        (\(itemId, boxPath) modelAcc -> Box.removeItem itemId (Box.firstId boxPath) modelAcc)
         model
   in
   newModel
