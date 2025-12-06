@@ -38,13 +38,21 @@ viewGlobalTools {present} =
   let
     isHome = present.boxId == rootBoxId
   in
-  [ viewMapButton "Show Home Map" "home" (Tool Tool.Home) (not isHome)
+  [ viewIconButton "Show Home Map" "home" 20 (Tool Tool.Home) (not isHome) homeButtonStyle
   , SearchAPI.viewInput present
   , div
     []
     [ viewTextButton "Import" (Tool Tool.Import) True
     , viewTextButton "Export" (Tool Tool.Export) True
     ]
+  ]
+
+
+homeButtonStyle : List (Attribute Msg)
+homeButtonStyle =
+  [ style "position" "relative"
+  , style "top" "1px"
+  , style "left" "8px"
   ]
 
 
@@ -193,16 +201,16 @@ viewTextButton label msg isEnabled =
 
 viewMapButton : String -> String -> Msg -> Bool -> Html Msg
 viewMapButton label icon msg isEnabled =
-  viewIconButton label icon C.mapToolbarIconSize msg isEnabled
+  viewIconButton label icon C.mapToolbarIconSize msg isEnabled []
 
 
 viewItemButton : String -> String -> Msg -> Bool -> Html Msg
 viewItemButton label icon msg isEnabled =
-  viewIconButton label icon C.itemToolbarIconSize msg isEnabled
+  viewIconButton label icon C.itemToolbarIconSize msg isEnabled []
 
 
-viewIconButton : String -> String -> Float -> Msg -> Bool -> Html Msg
-viewIconButton label icon iconSize msg isEnabled =
+viewIconButton : String -> String -> Float -> Msg -> Bool -> List (Attribute Msg) -> Html Msg
+viewIconButton label icon iconSize msg isEnabled extraStyle =
   button
     ( [ class "tool"
       , title label
@@ -211,6 +219,7 @@ viewIconButton label icon iconSize msg isEnabled =
       , U.stopPropagationOnMousedown NoOp
       ]
       ++ iconButtonStyle
+      ++ extraStyle
     )
     [ IconAPI.viewIcon icon iconSize ]
 

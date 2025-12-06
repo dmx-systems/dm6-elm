@@ -18,6 +18,7 @@ toolFontSize = 13
 contentFontSize = 13
 footerFontSize = 13
 
+hoverColor = "#d0d0d7" -- Firefox default hover button color (index.html)
 disabledColor = "#b0b0b0" -- see button.tool:disabled (index.html)
 limboColor = "gray" -- #808080
 

@@ -76,7 +76,7 @@ viewSearchResultMenu topicIds model =
       , U.stopPropagationOnMousedown NoOp
       ]
       ++ searchResultStyle
-      ++ resultStyle
+      ++ menuStyle
     )
     (topicIds |> List.map
       (\id ->
@@ -88,7 +88,7 @@ viewSearchResultMenu topicIds model =
           Just topic ->
             div
               ( [ attribute "data-id" (fromInt id) ]
-                ++ resultItemStyle isDisabled isHover
+                ++ menuItemStyle isDisabled isHover
               )
               [ text topic.text ]
           Nothing -> text "??"
@@ -105,7 +105,7 @@ viewTraversalResultMenu relTopicIds model =
       , U.stopPropagationOnMousedown NoOp
       ]
       ++ traversalResultStyle
-      ++ resultStyle
+      ++ menuStyle
     )
     (relTopicIds |> List.map
       (\((id, assocId) as relTopic) ->
@@ -117,7 +117,7 @@ viewTraversalResultMenu relTopicIds model =
           Just topic ->
             div
               ( [ attribute "data-id" <| fromInt id ++ "," ++ fromInt assocId ]
-                ++ resultItemStyle isDisabled isHover
+                ++ menuItemStyle isDisabled isHover
               )
               [ text topic.text ] -- TODO: render assoc info
           Nothing -> text "??"
@@ -130,28 +130,6 @@ isItemDisabled topicId model =
   case revealBoxId model of
     Just boxId -> Box.hasDeepItem topicId boxId model
     Nothing -> False
-
-
-{- The box where to reveal search/traversal results -}
-revealBoxId : Model -> Maybe Id
-revealBoxId model =
-  case model.search.menu of
-    Topics _ _ -> Just model.boxId
-    RelTopics _ _ ->
-      case SelAPI.singleBoxId model of
-        Just boxId -> Just boxId
-        Nothing -> Nothing
-    Closed -> Nothing
-
-
-topicDecoder : (Id -> Search.Msg) -> D.Decoder Msg
-topicDecoder msg =
-  D.map Search <| D.map msg U.idDecoder
-
-
-relTopicDecoder : ((Id, Id) -> Search.Msg) -> D.Decoder Msg
-relTopicDecoder msg =
-  D.map Search <| D.map msg U.idTupleDecoder
 
 
 isTopicHover : Id -> Model -> Bool
@@ -168,42 +146,52 @@ isRelTopicHover relTopic model =
     _ -> False
 
 
+{- The box where to reveal search/traversal results -}
+revealBoxId : Model -> Maybe Id
+revealBoxId model =
+  case model.search.menu of
+    Topics _ _ -> Just model.boxId
+    RelTopics _ _ ->
+      case SelAPI.singleBoxId model of
+        Just boxId -> Just boxId
+        Nothing -> Nothing
+    Closed -> Nothing
+
+
 searchResultStyle : List (Attribute Msg)
 searchResultStyle =
-  [ style "position" "fixed"
-  , style "top" <| fromInt (C.appHeaderHeight - 5) ++ "px"
+  [ style "top" <| fromInt (C.appHeaderHeight - 5) ++ "px"
   , style "right" "20px"
+  , style "z-index" "3" -- before topics (1,2)
   ]
 
 
 traversalResultStyle : List (Attribute Msg)
 traversalResultStyle =
+  [ style "left" "65px" ]
+
+
+menuStyle : List (Attribute Msg)
+menuStyle =
   [ style "position" "absolute"
-  , style "left" "65px"
-  ]
-
-
-resultStyle : List (Attribute Msg)
-resultStyle =
-  [ style "width" "240px"
+  , style "width" "210px"
   , style "padding" "3px 0"
   , style "font-size" <| fromInt C.contentFontSize ++ "px"
   , style "line-height" "2"
-  , style "white-space" "nowrap"
   , style "background-color" "white"
   , style "border" "1px solid lightgray"
   ]
 
 
-resultItemStyle : Bool -> Bool -> List (Attribute Msg)
-resultItemStyle isDisabled isHover =
+menuItemStyle : Bool -> Bool -> List (Attribute Msg)
+menuItemStyle isDisabled isHover =
   let
     (color, bgColor, pointerEvents) =
       if isDisabled then
         (C.disabledColor, "unset", "none")
       else
-        ( if isHover then "white" else "black"
-        , if isHover then "black" else "white"
+        ( "unset"
+        , if isHover then C.hoverColor else "unset"
         , "unset"
         )
   in
@@ -214,6 +202,16 @@ resultItemStyle isDisabled isHover =
   , style "padding" "0 8px"
   , style "pointer-events" pointerEvents
   ]
+
+
+topicDecoder : (Id -> Search.Msg) -> D.Decoder Msg
+topicDecoder msg =
+  D.map Search <| D.map msg U.idDecoder
+
+
+relTopicDecoder : ((Id, Id) -> Search.Msg) -> D.Decoder Msg
+relTopicDecoder msg =
+  D.map Search <| D.map msg U.idTupleDecoder
 
 
 

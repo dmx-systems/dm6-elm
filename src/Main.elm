@@ -113,6 +113,7 @@ view ({present} as undoModel) =
           , viewSpacer
           ]
           ++ ToolAPI.viewGlobalTools undoModel
+          ++ SearchAPI.viewSearchResult present
         )
       , div
         ( [ id "main" ]
@@ -120,7 +121,6 @@ view ({present} as undoModel) =
         )
         ( [ Map.view present.boxId [] present ] -- boxPath = []
           ++ ToolAPI.viewMapTools undoModel
-          ++ SearchAPI.viewSearchResult present
         )
       ]
     , viewFooter
@@ -154,7 +154,7 @@ viewMapTitle : Model -> Html Msg
 viewMapTitle model =
   div
     mapTitleStyle
-    [ text <| Box.fullscreenName model ]
+    [ text <| Box.mapTitle model ]
 
 
 mapTitleStyle : List (Attribute Msg)

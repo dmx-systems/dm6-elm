@@ -343,8 +343,8 @@ isVisible item =
   not item.hidden
 
 
-fullscreenName : Model -> String
-fullscreenName model =
+mapTitle : Model -> String
+mapTitle model =
   case Item.topicById model.boxId model of
     Just topic -> Item.topicLabel topic
     Nothing -> "??"
