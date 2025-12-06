@@ -214,7 +214,7 @@ footerStyle =
   , style "bottom" "20px"
   , style "right" "20px"
   , style "text-align" "right"
-  , style "color" "lightgray"
+  , style "color" "lightgray" -- #d3d3d3
   ]
 
 

@@ -18,8 +18,8 @@ toolFontSize = 13
 contentFontSize = 13
 footerFontSize = 13
 
-disabledColor = "gray"
-limboColor = "gray"
+disabledColor = "#b0b0b0" -- see button.tool:disabled (index.html)
+limboColor = "gray" -- #808080
 
 mapToolbarIconSize = 22
 itemToolbarIconSize = 18

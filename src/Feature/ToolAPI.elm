@@ -8,6 +8,7 @@ import Feature.Icon as Icon
 import Feature.IconAPI as IconAPI
 import Feature.MouseAPI as MouseAPI
 import Feature.Nav as Nav
+import Feature.NavAPI as NavAPI
 import Feature.Search as Search
 import Feature.SearchAPI as SearchAPI
 import Feature.SelAPI as SelAPI
@@ -34,7 +35,11 @@ import String exposing (fromInt)
 
 viewGlobalTools : UndoModel -> List (Html Msg)
 viewGlobalTools {present} =
-  [ SearchAPI.viewInput present
+  let
+    isHome = present.boxId == rootBoxId
+  in
+  [ viewMapButton "Show Home Map" "home" (Tool Tool.Home) (not isHome)
+  , SearchAPI.viewInput present
   , div
     []
     [ viewTextButton "Import" (Tool Tool.Import) True
@@ -233,12 +238,14 @@ update : Tool.Msg -> UndoModel -> (UndoModel, Cmd Msg)
 update msg ({present} as undoModel) =
   case msg of
     -- Global Tools
+    Tool.Home -> (undoModel, NavAPI.pushUrl rootBoxId present)
+    Tool.Import -> (present, S.importJSON ()) |> Undo.swap undoModel
+    Tool.Export -> (present, S.exportJSON ()) |> Undo.swap undoModel
+    -- Map Tools
     Tool.AddTopic -> addTopic present |> S.store |> Undo.push undoModel
     Tool.AddBox -> addBox present |> S.store |> Undo.push undoModel
     Tool.Undo -> Undo.undo undoModel
     Tool.Redo -> Undo.redo undoModel
-    Tool.Import -> (present, S.importJSON ()) |> Undo.swap undoModel
-    Tool.Export -> (present, S.exportJSON ()) |> Undo.swap undoModel
     -- Item Tools
     Tool.ToggleDisplay topicId boxId -> toggleDisplay topicId boxId present |> S.store
       |> Undo.swap undoModel
