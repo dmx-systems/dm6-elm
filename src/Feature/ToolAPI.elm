@@ -33,13 +33,13 @@ import String exposing (fromInt)
 
 -- Global Tools
 
-viewGlobalTools : UndoModel -> List (Html Msg)
-viewGlobalTools {present} =
+viewGlobalTools : Model -> List (Html Msg)
+viewGlobalTools model =
   let
-    isHome = present.boxId == rootBoxId
+    isHome = model.boxId == rootBoxId
   in
   [ viewIconButton "Show Home Map" "home" 20 (Tool Tool.Home) (not isHome) homeButtonStyle
-  , SearchAPI.viewInput present
+  , SearchAPI.viewInput model
   , div
     []
     [ viewTextButton "Import" (Tool Tool.Import) True
@@ -86,7 +86,7 @@ viewItemTools itemId boxId model =
   let
     toolbar =
       case SelAPI.isSelected itemId boxId model of
-        True -> [ viewItemToolbar itemId boxId model ]
+        True -> [ viewToolbar itemId boxId model ]
         False -> []
     caret =
       case MouseAPI.isHovered itemId boxId model of
@@ -96,8 +96,8 @@ viewItemTools itemId boxId model =
   toolbar ++ caret
 
 
-viewItemToolbar : Id -> BoxId -> Model -> Html Msg
-viewItemToolbar itemId boxId model =
+viewToolbar : Id -> BoxId -> Model -> Html Msg
+viewToolbar itemId boxId model =
   let
     topicTools =
       [ viewItemButton "Edit" "edit-3" (Edit T.EditStart) True
@@ -118,7 +118,7 @@ viewItemToolbar itemId boxId model =
       Box.displayMode itemId boxId model == Just (BoxD Unboxed)
   in
   div
-    ( itemToolbarStyle itemId boxId model )
+    ( toolbarStyle itemId boxId model )
     ( topicTools
       ++ boxTools
       ++ IconAPI.viewMenu model
@@ -126,8 +126,8 @@ viewItemToolbar itemId boxId model =
     )
 
 
-itemToolbarStyle : Id -> BoxId -> Model -> List (Attribute Msg)
-itemToolbarStyle itemId boxId model =
+toolbarStyle : Id -> BoxId -> Model -> List (Attribute Msg)
+toolbarStyle itemId boxId model =
   let
     offset =
       case Box.displayMode itemId boxId model of
@@ -234,8 +234,8 @@ textButtonStyle =
 iconButtonStyle : List (Attribute Msg)
 iconButtonStyle =
   [ style "border" "none"
-  , style "margin" "0 2px"
   , style "background-color" "transparent"
+  , style "margin" "0 2px"
   ]
 
 

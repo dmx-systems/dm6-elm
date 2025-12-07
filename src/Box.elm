@@ -55,6 +55,9 @@ updateScrollPos boxId transform model =
 
 initViewport : BoxId -> Model -> Cmd Msg
 initViewport boxId model =
+  let
+    _ = U.info "initViewport" {boxId = boxId, model = model.boxId}
+  in
   case byIdOrLog boxId model of
     Just box ->
       Dom.setViewportOf "main" box.scroll.x box.scroll.y

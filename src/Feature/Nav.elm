@@ -16,6 +16,6 @@ init key =
 
 
 type Msg
-  = Fullscreen
+  = Fullscreen -- TODO: drop in favor of pushUrl API?
   | UrlChanged Url
   | LinkClicked UrlRequest

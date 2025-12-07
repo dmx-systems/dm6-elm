@@ -61,7 +61,7 @@ init flags url key =
     cmd =
       Cmd.batch
       [ NavAPI.pushUrl boxId model
-      , Box.initViewport boxId model
+      , Box.initViewport boxId model -- TODO: needed?
       ]
   in
   (model, cmd) |> Undo.reset
@@ -112,7 +112,7 @@ view ({present} as undoModel) =
         ( [ viewMapTitle present
           , viewSpacer
           ]
-          ++ ToolAPI.viewGlobalTools undoModel
+          ++ ToolAPI.viewGlobalTools present
           ++ SearchAPI.viewSearchResult present
         )
       , div
@@ -272,7 +272,7 @@ update msg ({present} as undoModel) =
       origPos targetId targetPath pos present |> S.store |> Undo.push undoModel
     TopicDragged -> present |> S.store |> Undo.swap undoModel
     ItemClicked itemId boxPath -> select itemId boxPath present |> Undo.swap undoModel
-    MouseDown target -> resetUI target present |> Undo.swap undoModel
+    MouseDown maybeTarget -> resetUI maybeTarget present |> Undo.swap undoModel
     -- feature modules
     Tool toolMsg -> ToolAPI.update toolMsg undoModel
     Edit editMsg -> TextEditAPI.update editMsg undoModel
@@ -332,10 +332,10 @@ select itemId boxPath model =
 
 
 resetUI : Maybe (Id, BoxPath) -> Model -> (Model, Cmd Msg)
-resetUI target model =
+resetUI maybeTarget model =
   let
     shouldClear =
-      case target of
+      case maybeTarget of
         Just (itemId, boxPath) -> not <| SelAPI.isSelected itemId (Box.firstId boxPath) model
         Nothing -> True
   in
