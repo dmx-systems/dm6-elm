@@ -1,6 +1,6 @@
 module Feature.Search exposing (..)
 
-import ModelParts exposing (Id)
+import ModelParts exposing (Id, BoxId)
 
 
 
@@ -35,3 +35,5 @@ type Msg
   | HoverRelTopic (Id, Id)
   | UnhoverRelTopic (Id, Id)
   | ClickRelTopic (Id, Id)
+  -- Fullscreen
+  | Fullscreen BoxId

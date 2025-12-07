@@ -58,11 +58,7 @@ init flags url key =
       case NavAPI.boxIdFromUrl url of
         Just boxId_ -> boxId_
         Nothing -> model.boxId
-    cmd =
-      Cmd.batch
-      [ NavAPI.pushUrl boxId model
-      , Box.initViewport boxId model
-      ]
+    cmd = NavAPI.pushUrl boxId model
   in
   (model, cmd) |> Undo.reset
 
@@ -112,8 +108,8 @@ view ({present} as undoModel) =
         ( [ viewMapTitle present
           , viewSpacer
           ]
-          ++ ToolAPI.viewGlobalTools undoModel
-          ++ SearchAPI.viewSearchResult present
+          ++ ToolAPI.viewGlobalTools present
+          ++ SearchAPI.viewSearchResult present -- TODO: move to "main" for scrolling along?
         )
       , div
         ( [ id "main" ]
@@ -272,7 +268,7 @@ update msg ({present} as undoModel) =
       origPos targetId targetPath pos present |> S.store |> Undo.push undoModel
     TopicDragged -> present |> S.store |> Undo.swap undoModel
     ItemClicked itemId boxPath -> select itemId boxPath present |> Undo.swap undoModel
-    MouseDown target -> resetUI target present |> Undo.swap undoModel
+    MouseDown maybeTarget -> resetUI maybeTarget present |> Undo.swap undoModel
     -- feature modules
     Tool toolMsg -> ToolAPI.update toolMsg undoModel
     Edit editMsg -> TextEditAPI.update editMsg undoModel
@@ -332,10 +328,10 @@ select itemId boxPath model =
 
 
 resetUI : Maybe (Id, BoxPath) -> Model -> (Model, Cmd Msg)
-resetUI target model =
+resetUI maybeTarget model =
   let
     shouldClear =
-      case target of
+      case maybeTarget of
         Just (itemId, boxPath) -> not <| SelAPI.isSelected itemId (Box.firstId boxPath) model
         Nothing -> True
   in

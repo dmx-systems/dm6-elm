@@ -4,6 +4,8 @@ module Feature.SearchAPI exposing (viewInput, viewSearchResult, viewTraversalRes
 import Box
 import Box.Size as Size
 import Config as C
+import Feature.IconAPI as IconAPI
+import Feature.NavAPI as NavAPI
 import Feature.Search as Search exposing (Menu(..))
 import Feature.SelAPI as SelAPI
 import Item
@@ -14,9 +16,9 @@ import Undo exposing (UndoModel)
 import Utils as U
 
 import Dict
-import Html exposing (Html, Attribute, div, text, input)
-import Html.Attributes exposing (value, style, attribute)
-import Html.Events exposing (onInput, onFocus, on)
+import Html exposing (Html, Attribute, button, div, input, text)
+import Html.Attributes exposing (attribute, class, disabled, style, title, value)
+import Html.Events exposing (onClick, onInput, onFocus, on)
 import Json.Decode as D
 import String exposing (fromInt)
 
@@ -50,7 +52,7 @@ viewSearchResult model =
   case model.search.menu of
     Topics topicIds _ ->
       if not (topicIds |> List.isEmpty) then
-        [ viewSearchResultMenu topicIds model ]
+        [ viewSearchtMenu topicIds model ]
       else
         []
     _ -> []
@@ -61,14 +63,14 @@ viewTraversalResult model =
   case model.search.menu of
     RelTopics relTopicIds _ ->
       if not (relTopicIds |> List.isEmpty) then
-        [ viewTraversalResultMenu relTopicIds model ]
+        [ viewTraversalMenu relTopicIds model ]
       else
         []
     _ -> []
 
 
-viewSearchResultMenu : List Id -> Model -> Html Msg
-viewSearchResultMenu topicIds model =
+viewSearchtMenu : List Id -> Model -> Html Msg
+viewSearchtMenu topicIds model =
   div
     ( [ on "click" (topicDecoder Search.ClickTopic)
       , on "mouseover" (topicDecoder Search.HoverTopic)
@@ -90,14 +92,16 @@ viewSearchResultMenu topicIds model =
               ( [ attribute "data-id" (fromInt id) ]
                 ++ menuItemStyle isDisabled isHover
               )
-              [ text topic.text ]
+              [ viewItemText topic.text
+              , viewFullscreenButton id isDisabled model
+              ]
           Nothing -> text "??"
       )
     )
 
 
-viewTraversalResultMenu : List (Id, Id) -> Model -> Html Msg
-viewTraversalResultMenu relTopicIds model =
+viewTraversalMenu : List (Id, Id) -> Model -> Html Msg
+viewTraversalMenu relTopicIds model =
   div
     ( [ on "click" (relTopicDecoder Search.ClickRelTopic)
       , on "mouseover" (relTopicDecoder Search.HoverRelTopic)
@@ -119,10 +123,45 @@ viewTraversalResultMenu relTopicIds model =
               ( [ attribute "data-id" <| fromInt id ++ "," ++ fromInt assocId ]
                 ++ menuItemStyle isDisabled isHover
               )
-              [ text topic.text ] -- TODO: render assoc info
+              [ viewItemText topic.text -- TODO: render assoc info
+              , viewFullscreenButton id isDisabled model
+              ]
           Nothing -> text "??"
       )
     )
+
+
+viewItemText : String -> Html Msg
+viewItemText text_ =
+  div
+    [ style "flex" "auto"
+    , style "pointer-events" "none"
+    ]
+    [ text text_ ]
+
+
+viewFullscreenButton : Id -> Bool -> Model -> Html Msg
+viewFullscreenButton id isDisabled model =
+  case Item.isBox id model of
+    True ->
+      button
+      ( [ class "tool"
+        , title "Fullscreen"
+        , onClick <| Search <| Search.Fullscreen id
+        , disabled isDisabled
+        -- the parent (menu) stops propagation anyways
+        ]
+        ++ fullscreenButtonStyle
+      )
+      [ IconAPI.viewIcon "maximize-2" 16 ]
+    False -> text ""
+
+
+fullscreenButtonStyle : List (Attribute Msg)
+fullscreenButtonStyle =
+  [ style "border" "none"
+  , style "background-color" "transparent"
+  ]
 
 
 isItemDisabled : Id -> Model -> Bool
@@ -195,7 +234,8 @@ menuItemStyle isDisabled isHover =
         , "unset"
         )
   in
-  [ style "color" color
+  [ style "display" "flex"
+  , style "color" color
   , style "background-color" bgColor
   , style "overflow" "hidden"
   , style "text-overflow" "ellipsis"
@@ -221,6 +261,7 @@ relTopicDecoder msg =
 update : Search.Msg -> UndoModel -> (UndoModel, Cmd Msg)
 update msg ({present} as undoModel) =
   case msg of
+    -- Search
     Search.Input text -> (onTextInput text present, Cmd.none) |> Undo.swap undoModel
     Search.FocusInput -> (onFocusInput present, Cmd.none) |> Undo.swap undoModel
     Search.HoverTopic topicId -> (onHoverTopic topicId present, Cmd.none) |> Undo.swap undoModel
@@ -233,6 +274,8 @@ update msg ({present} as undoModel) =
     Search.UnhoverRelTopic _ -> (onUnhoverRelTopic present, Cmd.none) |> Undo.swap undoModel
     Search.ClickRelTopic relTopicId -> revealRelTopic relTopicId present |> S.store
       |> Undo.push undoModel
+    -- Fullscreen
+    Search.Fullscreen boxId -> fullscreen boxId present |> Undo.swap undoModel
 
 
 onTextInput : String -> Model -> Model
@@ -306,6 +349,13 @@ revealRelTopic (topicId, assocId) model =
       |> closeMenu
       |> Size.auto
     Nothing -> model
+
+
+fullscreen : BoxId -> Model -> (Model, Cmd Msg)
+fullscreen boxId model =
+  ( model |> closeMenu
+  , NavAPI.pushUrl boxId model
+  )
 
 
 searchTopics : Model -> Model

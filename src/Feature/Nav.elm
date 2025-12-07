@@ -16,6 +16,5 @@ init key =
 
 
 type Msg
-  = Fullscreen
-  | UrlChanged Url
+  = UrlChanged Url
   | LinkClicked UrlRequest
