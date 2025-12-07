@@ -6,10 +6,8 @@ import Model exposing (Model, Msg(..))
 import ModelParts exposing (..)
 import Utils as U
 
-import Browser.Dom as Dom
 import Dict
 import String exposing (fromInt)
-import Task
 
 
 
@@ -51,23 +49,6 @@ updateScrollPos boxId transform model =
     (\box ->
       { box | scroll = transform box.scroll }
     )
-
-
-initViewport : BoxId -> Model -> Cmd Msg
-initViewport boxId model =
-  let
-    _ = U.info "initViewport" {boxId = boxId, model = model.boxId}
-  in
-  case byIdOrLog boxId model of
-    Just box ->
-      Dom.setViewportOf "main" box.scroll.x box.scroll.y
-      |> Task.attempt
-        (\result ->
-          case result of
-            Ok () -> NoOp
-            Err e -> U.logError "setViewport" (U.toString e) NoOp
-        )
-    Nothing -> Cmd.none
 
 
 {-| Logs an error if box does not exist, or topic is not in box, or ID refers not a topic (but

@@ -109,7 +109,7 @@ viewToolbar itemId boxId model =
     boxTools =
       if Item.isBox itemId model then
         [ viewSpacer
-        , viewItemButton "Fullscreen" "maximize-2" (Nav Nav.Fullscreen) True
+        , viewItemButton "Fullscreen" "maximize-2" (Tool <| Tool.Fullscreen itemId) True
         , viewItemButton "Unbox" "external-link" (Tool <| Tool.Unbox itemId boxId) (not unboxed)
         ]
       else
@@ -256,12 +256,13 @@ update msg ({present} as undoModel) =
     Tool.Undo -> Undo.undo undoModel
     Tool.Redo -> Undo.redo undoModel
     -- Item Tools
-    Tool.ToggleDisplay topicId boxId -> toggleDisplay topicId boxId present |> S.store
-      |> Undo.swap undoModel
+    Tool.Delete -> delete present |> S.store |> Undo.push undoModel
+    Tool.Remove -> remove present |> S.store |> Undo.push undoModel
+    Tool.Fullscreen boxId -> (undoModel, NavAPI.pushUrl boxId present)
     Tool.Unbox boxId targetBoxId -> unbox boxId targetBoxId present |> S.store
       |> Undo.swap undoModel
-    Tool.Remove -> remove present |> S.store |> Undo.push undoModel
-    Tool.Delete -> delete present |> S.store |> Undo.push undoModel
+    Tool.ToggleDisplay topicId boxId -> toggleDisplay topicId boxId present |> S.store
+      |> Undo.swap undoModel
 
 
 addTopic : Model -> Model

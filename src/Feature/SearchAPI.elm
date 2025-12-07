@@ -141,14 +141,14 @@ viewFullscreenButton id model =
         , title "Fullscreen"
         , onClick <| Search <| Search.Fullscreen id
         ]
-        ++ iconButtonStyle
+        ++ fullscreenButtonStyle
       )
       [ IconAPI.viewIcon "maximize-2" 16 ]
     False -> text ""
 
 
-iconButtonStyle : List (Attribute Msg)
-iconButtonStyle =
+fullscreenButtonStyle : List (Attribute Msg)
+fullscreenButtonStyle =
   [ style "border" "none"
   , style "background-color" "transparent"
   ]

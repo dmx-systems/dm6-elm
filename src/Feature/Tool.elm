@@ -15,7 +15,8 @@ type Msg
   | Undo
   | Redo
   -- Item Tools
-  | ToggleDisplay Id BoxId -- TODO: make params Id BoxPath?
-  | Unbox BoxId BoxId -- TODO: make params BoxId BoxPath?
-  | Remove
   | Delete
+  | Remove
+  | Fullscreen BoxId
+  | Unbox BoxId BoxId -- TODO: make params BoxId BoxPath?
+  | ToggleDisplay Id BoxId -- TODO: make params Id BoxPath?
