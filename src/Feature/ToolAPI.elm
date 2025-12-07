@@ -7,7 +7,6 @@ import Config as C
 import Feature.Icon as Icon
 import Feature.IconAPI as IconAPI
 import Feature.MouseAPI as MouseAPI
-import Feature.Nav as Nav
 import Feature.NavAPI as NavAPI
 import Feature.Search as Search
 import Feature.SearchAPI as SearchAPI

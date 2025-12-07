@@ -5,7 +5,6 @@ import Box
 import Box.Size as Size
 import Config as C
 import Feature.IconAPI as IconAPI
-import Feature.Nav as Nav
 import Feature.NavAPI as NavAPI
 import Feature.Search as Search exposing (Menu(..))
 import Feature.SelAPI as SelAPI
@@ -17,8 +16,8 @@ import Undo exposing (UndoModel)
 import Utils as U
 
 import Dict
-import Html exposing (Html, Attribute, button, div, text, input)
-import Html.Attributes exposing (attribute, class, style, title, value)
+import Html exposing (Html, Attribute, button, div, input, text)
+import Html.Attributes exposing (attribute, class, disabled, style, title, value)
 import Html.Events exposing (onClick, onInput, onFocus, on)
 import Json.Decode as D
 import String exposing (fromInt)
@@ -93,8 +92,8 @@ viewSearchtMenu topicIds model =
               ( [ attribute "data-id" (fromInt id) ]
                 ++ menuItemStyle isDisabled isHover
               )
-              [ text topic.text
-              , viewFullscreenButton id model
+              [ viewItemText topic.text
+              , viewFullscreenButton id isDisabled model
               ]
           Nothing -> text "??"
       )
@@ -124,22 +123,33 @@ viewTraversalMenu relTopicIds model =
               ( [ attribute "data-id" <| fromInt id ++ "," ++ fromInt assocId ]
                 ++ menuItemStyle isDisabled isHover
               )
-              [ text topic.text
-              , viewFullscreenButton id model
-              ] -- TODO: render assoc info
+              [ viewItemText topic.text -- TODO: render assoc info
+              , viewFullscreenButton id isDisabled model
+              ]
           Nothing -> text "??"
       )
     )
 
 
-viewFullscreenButton : Id -> Model -> Html Msg
-viewFullscreenButton id model =
+viewItemText : String -> Html Msg
+viewItemText text_ =
+  div
+    [ style "flex" "auto"
+    , style "pointer-events" "none"
+    ]
+    [ text text_ ]
+
+
+viewFullscreenButton : Id -> Bool -> Model -> Html Msg
+viewFullscreenButton id isDisabled model =
   case Item.isBox id model of
     True ->
       button
       ( [ class "tool"
         , title "Fullscreen"
         , onClick <| Search <| Search.Fullscreen id
+        , disabled isDisabled
+        -- the parent (menu) stops propagation anyways
         ]
         ++ fullscreenButtonStyle
       )
@@ -224,7 +234,8 @@ menuItemStyle isDisabled isHover =
         , "unset"
         )
   in
-  [ style "color" color
+  [ style "display" "flex"
+  , style "color" color
   , style "background-color" bgColor
   , style "overflow" "hidden"
   , style "text-overflow" "ellipsis"

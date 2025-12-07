@@ -10,7 +10,6 @@ import ModelParts exposing (..)
 import Undo exposing (UndoModel)
 import Utils as U
 
-import Browser.Dom as Dom
 import Browser.Events as Events
 import Html exposing (Attribute)
 import Html.Events exposing (on)

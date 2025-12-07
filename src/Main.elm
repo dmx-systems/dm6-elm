@@ -109,7 +109,7 @@ view ({present} as undoModel) =
           , viewSpacer
           ]
           ++ ToolAPI.viewGlobalTools present
-          ++ SearchAPI.viewSearchResult present
+          ++ SearchAPI.viewSearchResult present -- TODO: move to "main" for scrolling along?
         )
       , div
         ( [ id "main" ]

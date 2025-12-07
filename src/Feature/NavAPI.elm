@@ -63,11 +63,10 @@ setViewport model =
     Nothing -> Cmd.none
 
 
-{- Pushes a new box-URL to the browser history.
-This results in rendering the given box fullscreen.
+{- Pushes a new box-URL. This results in rendering the given box fullscreen.
 Note: the boxId is *not* necessarily the one contained in the model.
 (The model is just used to access the navigation key.)
-Eventually the boxId will become the new model's boxId.
+Eventually the model will be up-to-date (new boxId) as a *result* of the route change.
 -}
 pushUrl : BoxId -> Model -> Cmd Msg
 pushUrl boxId model =
