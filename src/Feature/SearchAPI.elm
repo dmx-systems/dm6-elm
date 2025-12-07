@@ -135,6 +135,9 @@ viewItemText : String -> Html Msg
 viewItemText text_ =
   div
     [ style "flex" "auto"
+    , style "overflow" "hidden"
+    , style "text-overflow" "ellipsis"
+    , style "white-space" "nowrap"
     , style "pointer-events" "none"
     ]
     [ text text_ ]
