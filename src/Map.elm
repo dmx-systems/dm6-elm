@@ -295,13 +295,14 @@ topicAttr topicId boxPath model =
 topicStyle : Id -> BoxId -> Model -> List (Attribute Msg)
 topicStyle id boxId model =
   let
+    isLimbo = isLimboTopic id boxId model
     isDragging = case model.mouse.dragState of
       Drag DragTopic id_ _ _ _ _ -> id_ == id
       _ -> False
     isSelected = SelAPI.isSelected id boxId model
   in
   [ style "position" "absolute"
-  , style "opacity" <| if isLimboTopic id boxId model then ".5" else "1"
+  , style "filter" <| if isLimbo then C.topicLimboFilter else "none"
   , style "z-index" <| if isDragging then "1" else if isSelected then "3" else "2"
   ]
 
@@ -809,8 +810,8 @@ lineStyle assoc boxId model =
   let
     color =
       case assoc of
-        Just {id} -> if isLimboAssoc id boxId model then C.limboColor else C.assocColor
-        Nothing -> C.limboColor
+        Just {id} -> if isLimboAssoc id boxId model then C.assocLimboColor else C.assocColor
+        Nothing -> C.assocLimboColor
   in
   [ stroke color
   , strokeWidth <| fromFloat C.assocWidth ++ "px"

@@ -20,7 +20,8 @@ footerFontSize = 13
 
 hoverColor = "#d0d0d7" -- Firefox default hover button color (index.html)
 disabledColor = "#b0b0b0" -- see button.tool:disabled (index.html)
-limboColor = "gray" -- #808080
+assocLimboColor = "#858585"
+topicLimboFilter = "contrast(0.3) brightness(1.5)"
 
 mapToolbarIconSize = 22
 itemToolbarIconSize = 18
