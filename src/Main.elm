@@ -157,6 +157,9 @@ mapTitleStyle : List (Attribute Msg)
 mapTitleStyle =
   [ style "font-size" "24px"
   , style "font-weight" "bold"
+  , style "overflow" "hidden"
+  , style "text-overflow" "ellipsis"
+  , style "white-space" "nowrap"
   ]
 
 

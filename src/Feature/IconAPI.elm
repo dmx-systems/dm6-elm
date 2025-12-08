@@ -1,6 +1,5 @@
-module Feature.IconAPI exposing (viewIcon, viewTopicIcon, viewMenu, closeMenu, update)
+module Feature.IconAPI exposing (view, viewTopicIcon, viewMenu, closeMenu, update)
 
-import Config as C
 import Feature.Icon as Icon
 import Feature.SelAPI as SelAPI
 import Item
@@ -68,33 +67,25 @@ iconButtonStyle =
   ]
 
 
-viewTopicIcon : Id -> Model -> Html Msg
-viewTopicIcon topicId model =
+viewTopicIcon : Id -> Float -> List (Attribute Msg) -> Model -> Html Msg
+viewTopicIcon topicId size style_ model =
   case Item.topicById topicId model of
     Just topic ->
       case topic.icon of
         Just iconName ->
-          case FI.icons |> Dict.get iconName of
-            Just icon -> icon |> FI.withSize C.topicIconSize |> FI.toHtml topicIconStyle
-            Nothing -> text "??"
+          view iconName size style_
         Nothing -> text ""
     Nothing -> text "?"
 
 
-viewIcon : String -> Float -> Html Msg
-viewIcon iconName size =
+view : String -> Float -> List (Attribute Msg) -> Html Msg
+view iconName size style_ =
   case FI.icons |> Dict.get iconName of
-    Just icon -> icon |> FI.withSize size |> FI.toHtml []
+    Just icon ->
+      icon
+      |> FI.withSize size
+      |> FI.toHtml style_
     Nothing -> text "??"
-
-
-topicIconStyle : List (Attribute Msg)
-topicIconStyle =
-  [ style "position" "relative"
-  , style "top" <| fromFloat ((C.topicSize.h - C.topicIconSize) / 2) ++ "px"
-  , style "left" <| fromFloat ((C.topicSize.h - C.topicIconSize) / 2) ++ "px"
-  , style "color" "white"
-  ]
 
 
 
@@ -127,4 +118,4 @@ setIcon iconName model =
     Just (id, _) -> Item.updateTopicInfo id
       (\topic -> { topic | icon = iconName })
       model
-    Nothing -> model -- FIXME: illegal state -> make Edit dialog modal?
+    Nothing -> model

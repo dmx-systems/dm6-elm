@@ -352,7 +352,7 @@ labelTopicHtml topic props boxId model =
   in
   [ div
     (topicIconBoxStyle props)
-    [ IconAPI.viewTopicIcon topic.id model ]
+    [ IconAPI.viewTopicIcon topic.id C.topicIconSize topicIconStyle model ]
   , textElem
   ]
 
@@ -388,7 +388,7 @@ detailTopic topic props boxPath model =
         ++ detailTopicIconBoxStyle
         ++ selectionStyle topic.id boxId model
       )
-      [ IconAPI.viewTopicIcon topic.id model ]
+      [ IconAPI.viewTopicIcon topic.id C.topicIconSize topicIconStyle model ]
     , textElem
     ]
   )
@@ -439,6 +439,15 @@ detailTextEditStyle topicId boxId model =
   , style "font-family" C.mainFont -- <textarea> default is "monospace"
   , style "border-color" "black" -- <textarea> default is some lightgray
   , style "resize" "none"
+  ]
+
+
+topicIconStyle : List (Attribute Msg)
+topicIconStyle =
+  [ style "position" "relative"
+  , style "top" <| fromFloat ((C.topicSize.h - C.topicIconSize) / 2) ++ "px"
+  , style "left" <| fromFloat ((C.topicSize.h - C.topicIconSize) / 2) ++ "px"
+  , style "color" "white"
   ]
 
 

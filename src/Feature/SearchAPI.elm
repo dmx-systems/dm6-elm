@@ -92,7 +92,8 @@ viewSearchtMenu topicIds model =
               ( [ attribute "data-id" (fromInt id) ]
                 ++ menuItemStyle isDisabled isHover
               )
-              [ viewItemText topic.text
+              [ viewTopicIcon topic model
+              , viewItemText topic
               , viewFullscreenButton id isDisabled model
               ]
           Nothing -> text "??"
@@ -123,7 +124,8 @@ viewTraversalMenu relTopicIds model =
               ( [ attribute "data-id" <| fromInt id ++ "," ++ fromInt assocId ]
                 ++ menuItemStyle isDisabled isHover
               )
-              [ viewItemText topic.text -- TODO: render assoc info
+              [ viewTopicIcon topic model
+              , viewItemText topic -- TODO: render assoc info
               , viewFullscreenButton id isDisabled model
               ]
           Nothing -> text "??"
@@ -131,8 +133,60 @@ viewTraversalMenu relTopicIds model =
     )
 
 
-viewItemText : String -> Html Msg
-viewItemText text_ =
+searchResultStyle : List (Attribute Msg)
+searchResultStyle =
+  [ style "top" <| fromInt (C.appHeaderHeight - 5) ++ "px"
+  , style "right" "20px"
+  , style "z-index" "3" -- before topics (1,2)
+  ]
+
+
+traversalResultStyle : List (Attribute Msg)
+traversalResultStyle =
+  [ style "left" "65px" ]
+
+
+menuStyle : List (Attribute Msg)
+menuStyle =
+  [ style "position" "absolute"
+  , style "width" "210px"
+  , style "padding" "3px 0"
+  , style "font-size" <| fromInt C.contentFontSize ++ "px"
+  , style "line-height" "2"
+  , style "background-color" "white"
+  , style "border" "1px solid lightgray"
+  ]
+
+
+menuItemStyle : Bool -> Bool -> List (Attribute Msg)
+menuItemStyle isDisabled isHover =
+  let
+    (color, bgColor, pointerEvents) =
+      if isDisabled then
+        (C.disabledColor, "unset", "none")
+      else
+        ( "unset"
+        , if isHover then C.hoverColor else "unset"
+        , "unset"
+        )
+  in
+  [ style "display" "flex"
+  , style "align-items" "center"
+  , style "gap" "8px"
+  , style "color" color
+  , style "background-color" bgColor
+  , style "padding" "0 8px"
+  , style "pointer-events" pointerEvents
+  ]
+
+
+viewTopicIcon : TopicInfo -> Model -> Html Msg
+viewTopicIcon topic model =
+  IconAPI.viewTopicIcon topic.id C.topicIconSize [ style "flex" "none" ] model
+
+
+viewItemText : TopicInfo -> Html Msg
+viewItemText topic =
   div
     [ style "flex" "auto"
     , style "overflow" "hidden"
@@ -140,7 +194,7 @@ viewItemText text_ =
     , style "white-space" "nowrap"
     , style "pointer-events" "none"
     ]
-    [ text text_ ]
+    [ text <| Item.topicLabel topic ]
 
 
 viewFullscreenButton : Id -> Bool -> Model -> Html Msg
@@ -156,7 +210,7 @@ viewFullscreenButton id isDisabled model =
         ]
         ++ fullscreenButtonStyle
       )
-      [ IconAPI.viewIcon "maximize-2" 16 ]
+      [ IconAPI.view "maximize-2" 16 [] ]
     False -> text ""
 
 
@@ -198,53 +252,6 @@ revealBoxId model =
         Just boxId -> Just boxId
         Nothing -> Nothing
     Closed -> Nothing
-
-
-searchResultStyle : List (Attribute Msg)
-searchResultStyle =
-  [ style "top" <| fromInt (C.appHeaderHeight - 5) ++ "px"
-  , style "right" "20px"
-  , style "z-index" "3" -- before topics (1,2)
-  ]
-
-
-traversalResultStyle : List (Attribute Msg)
-traversalResultStyle =
-  [ style "left" "65px" ]
-
-
-menuStyle : List (Attribute Msg)
-menuStyle =
-  [ style "position" "absolute"
-  , style "width" "210px"
-  , style "padding" "3px 0"
-  , style "font-size" <| fromInt C.contentFontSize ++ "px"
-  , style "line-height" "2"
-  , style "background-color" "white"
-  , style "border" "1px solid lightgray"
-  ]
-
-
-menuItemStyle : Bool -> Bool -> List (Attribute Msg)
-menuItemStyle isDisabled isHover =
-  let
-    (color, bgColor, pointerEvents) =
-      if isDisabled then
-        (C.disabledColor, "unset", "none")
-      else
-        ( "unset"
-        , if isHover then C.hoverColor else "unset"
-        , "unset"
-        )
-  in
-  [ style "display" "flex"
-  , style "color" color
-  , style "background-color" bgColor
-  , style "overflow" "hidden"
-  , style "text-overflow" "ellipsis"
-  , style "padding" "0 8px"
-  , style "pointer-events" pointerEvents
-  ]
 
 
 topicDecoder : (Id -> Search.Msg) -> D.Decoder Msg

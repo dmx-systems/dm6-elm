@@ -40,7 +40,7 @@ viewGlobalTools model =
   [ viewIconButton "Show Home Map" "home" 20 (Tool Tool.Home) (not isHome) homeButtonStyle
   , SearchAPI.viewInput model
   , div
-    []
+    importExportStyle
     [ viewTextButton "Import" (Tool Tool.Import) True
     , viewTextButton "Export" (Tool Tool.Export) True
     ]
@@ -53,6 +53,11 @@ homeButtonStyle =
   , style "top" "1px"
   , style "left" "8px"
   ]
+
+
+importExportStyle : List (Attribute Msg)
+importExportStyle =
+  [ style "white-space" "nowrap" ]
 
 
 -- Map Tools
@@ -171,7 +176,7 @@ viewCaret itemId boxId model =
       ]
       ++ caretStyle
     )
-    [ IconAPI.viewIcon icon 20 ]
+    [ IconAPI.view icon 20 [] ]
 
 
 caretStyle : List (Attribute Msg)
@@ -220,7 +225,7 @@ viewIconButton label icon iconSize msg isEnabled extraStyle =
       ++ iconButtonStyle
       ++ extraStyle
     )
-    [ IconAPI.viewIcon icon iconSize ]
+    [ IconAPI.view icon iconSize [] ]
 
 
 textButtonStyle : List (Attribute Msg)
