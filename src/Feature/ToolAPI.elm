@@ -11,7 +11,6 @@ import Feature.NavAPI as NavAPI
 import Feature.Search as Search
 import Feature.SearchAPI as SearchAPI
 import Feature.SelAPI as SelAPI
-import Feature.TextEdit as T
 import Feature.TextEditAPI as TextEditAPI
 import Feature.Tool as Tool
 import Item
@@ -105,7 +104,7 @@ viewToolbar : Id -> BoxId -> Model -> Html Msg
 viewToolbar itemId boxId model =
   let
     topicTools =
-      [ viewItemButton "Edit" "edit-3" (Edit T.EditStart) True
+      [ viewItemButton "Edit" "edit-3" (Tool Tool.Edit) True
       , viewItemButton "Choose Icon" "image" (Icon Icon.OpenMenu) True
       , viewItemButton "Traverse" "share-2" (Search Search.Traverse) True
       , viewItemButton "Delete" "trash" (Tool Tool.Delete) True
@@ -256,11 +255,12 @@ update msg ({present} as undoModel) =
     Tool.Import -> (present, S.importJSON ()) |> Undo.swap undoModel
     Tool.Export -> (present, S.exportJSON ()) |> Undo.swap undoModel
     -- Map Tools
-    Tool.AddTopic -> addTopic present |> S.store |> Undo.push undoModel
-    Tool.AddBox -> addBox present |> S.store |> Undo.push undoModel
+    Tool.AddTopic -> addTopic present |> S.storeWith |> Undo.push undoModel
+    Tool.AddBox -> addBox present |> S.storeWith |> Undo.push undoModel
     Tool.Undo -> Undo.undo undoModel
     Tool.Redo -> Undo.redo undoModel
     -- Item Tools
+    Tool.Edit -> edit present |> S.storeWith |> Undo.swap undoModel
     Tool.Delete -> delete present |> S.store |> Undo.push undoModel
     Tool.Remove -> remove present |> S.store |> Undo.push undoModel
     Tool.Fullscreen boxId -> (undoModel, NavAPI.pushUrl boxId present)
@@ -270,7 +270,7 @@ update msg ({present} as undoModel) =
       |> Undo.swap undoModel
 
 
-addTopic : Model -> Model
+addTopic : Model -> (Model, Cmd Msg)
 addTopic model =
   let
     boxId = model.boxId
@@ -283,10 +283,11 @@ addTopic model =
   newModel
   |> Box.addItem topicId props boxId
   |> SelAPI.select topicId [ boxId ]
+  |> TextEditAPI.startEdit topicId boxId
 
 
 -- TODO: factor out addTopic() common code
-addBox : Model -> Model
+addBox : Model -> (Model, Cmd Msg)
 addBox model =
   let
     boxId = model.boxId
@@ -300,6 +301,7 @@ addBox model =
   |> Box.addBox topicId
   |> Box.addItem topicId props boxId
   |> SelAPI.select topicId [ boxId ]
+  |> TextEditAPI.startEdit topicId boxId
 
 
 toggleDisplay : Id -> BoxId -> Model -> Model
@@ -332,17 +334,11 @@ unbox boxId targetBoxId model =
   |> Size.auto
 
 
-remove : Model -> Model
-remove model =
-  let
-    newModel = model.selection.items
-      |> List.foldr
-        (\(itemId, boxPath) modelAcc -> Box.removeItem itemId (Box.firstId boxPath) modelAcc)
-        model
-  in
-  newModel
-  |> SelAPI.clear
-  |> Size.auto
+edit : Model -> (Model, Cmd Msg)
+edit model =
+  case SelAPI.single model of
+    Just (topicId, boxPath) -> TextEditAPI.startEdit topicId (Box.firstId boxPath) model
+    Nothing -> U.logError "edit" "called when there is no single selection" (model, Cmd.none)
 
 
 delete : Model -> Model
@@ -352,6 +348,19 @@ delete model =
       |> List.map Tuple.first
       |> List.foldr
         (\itemId modelAcc -> Item.remove itemId modelAcc)
+        model
+  in
+  newModel
+  |> SelAPI.clear
+  |> Size.auto
+
+
+remove : Model -> Model
+remove model =
+  let
+    newModel = model.selection.items
+      |> List.foldr
+        (\(itemId, boxPath) modelAcc -> Box.removeItem itemId (Box.firstId boxPath) modelAcc)
         model
   in
   newModel

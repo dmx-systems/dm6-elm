@@ -7,7 +7,7 @@ import Feature.Mouse exposing (DragState(..), DragMode(..))
 import Feature.MouseAPI as MouseAPI
 import Feature.Search exposing (Menu(..))
 import Feature.SelAPI as SelAPI
-import Feature.TextEdit as T exposing (EditState(..))
+import Feature.TextEdit as TextEdit
 import Feature.TextEditAPI as TextEditAPI
 import Feature.ToolAPI as ToolAPI
 import Item
@@ -338,9 +338,9 @@ labelTopicHtml topic props boxId model =
         input
           ( [ id <| "dmx-input-" ++ fromInt topic.id ++ "-" ++ fromInt boxId
             , value topic.text
-            , onInput (Edit << T.OnTextInput)
-            , onBlur (Edit T.EditEnd)
-            , U.onEnterOrEsc (Edit T.EditEnd)
+            , onInput (Edit << TextEdit.OnTextInput)
+            , onBlur (Edit TextEdit.EditEnd)
+            , U.onEnterOrEsc (Edit TextEdit.EditEnd)
             , U.stopPropagationOnMousedown NoOp
             ]
             ++ topicInputStyle
@@ -366,9 +366,9 @@ detailTopic topic props boxPath model =
       if TextEditAPI.isEdit topic.id boxId model then
         textarea
           ( [ id <| "dmx-input-" ++ fromInt topic.id ++ "-" ++ fromInt boxId
-            , onInput (Edit << T.OnTextareaInput)
-            , onBlur (Edit T.EditEnd)
-            , U.onEsc (Edit T.EditEnd)
+            , onInput (Edit << TextEdit.OnTextareaInput)
+            , onBlur (Edit TextEdit.EditEnd)
+            , U.onEsc (Edit TextEdit.EditEnd)
             , U.stopPropagationOnMousedown NoOp
             ]
             ++ detailTextStyle topic.id boxId model

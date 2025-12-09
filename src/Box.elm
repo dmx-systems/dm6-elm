@@ -119,7 +119,8 @@ setDisplayMode topicId boxId display model =
 
 updateDisplayMode : Id -> BoxId -> (DisplayMode -> DisplayMode) -> Model -> Model
 updateDisplayMode topicId boxId transform model =
-  model |> updateTopicProps topicId boxId
+  model
+  |> updateTopicProps topicId boxId
     (\props -> { props | displayMode = transform props.displayMode })
 
 

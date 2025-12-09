@@ -1,9 +1,8 @@
-module Feature.TextEditAPI exposing (update, isEdit)
+module Feature.TextEditAPI exposing (update, startEdit, isEdit)
 
 import Box
 import Box.Size as Size
-import Feature.SelAPI as SelAPI
-import Feature.TextEdit as T exposing (EditState(..))
+import Feature.TextEdit as TextEdit exposing (EditState(..))
 import Item
 import Model exposing (Model, Msg(..))
 import ModelParts exposing (..)
@@ -20,45 +19,52 @@ import String exposing (fromInt)
 -- UPDATE
 
 
-update : T.Msg -> UndoModel -> (UndoModel, Cmd Msg)
+update : TextEdit.Msg -> UndoModel -> (UndoModel, Cmd Msg)
 update msg ({present} as undoModel) =
   case msg of
-    T.EditStart -> startEdit present |> Undo.push undoModel
-    T.OnTextInput text -> onTextInput text present |> S.store |> Undo.swap undoModel
-    T.OnTextareaInput text -> onTextareaInput text present |> S.storeWith |> Undo.swap undoModel
-    T.SetTopicSize topicId boxId size ->
+    TextEdit.OnTextInput text -> onTextInput text present |> S.store
+      |> Undo.swap undoModel
+    TextEdit.OnTextareaInput text -> onTextareaInput text present |> S.storeWith
+      |> Undo.swap undoModel
+    TextEdit.SetTopicSize topicId boxId size ->
       ( present
         |> Box.setTopicSize topicId boxId size
         |> Size.auto
       , Cmd.none
       )
       |> Undo.swap undoModel
-    T.EditEnd ->
+    TextEdit.EditEnd ->
       (endEdit present, Cmd.none)
       |> Undo.swap undoModel
 
 
-startEdit : Model -> (Model, Cmd Msg)
-startEdit model =
+startEdit : Id -> BoxId -> Model -> (Model, Cmd Msg)
+startEdit topicId boxId model =
   let
-    newModel = case SelAPI.single model of
-      Just (topicId, boxPath) ->
-        model
-        |> setEditState (ItemEdit topicId (Box.firstId boxPath))
-        |> setDetailDisplayIfMonade topicId (Box.firstId boxPath)
-        |> Size.auto
-      Nothing -> model
+    newModel =
+      model
+      |> setEditState (ItemEdit topicId boxId)
+      |> switchTopicDisplay topicId boxId
+      |> Size.auto
   in
   (newModel, focus newModel)
 
 
-setDetailDisplayIfMonade : Id -> BoxId -> Model -> Model
-setDetailDisplayIfMonade topicId boxId model =
-  model |> Box.updateTopicProps topicId boxId
-    (\props ->
-      case props.displayMode of
-        TopicD _ -> { props | displayMode = TopicD Detail }
-        _ -> props
+endEdit : Model -> Model
+endEdit model =
+  model
+  |> setEditState NoEdit
+  |> Size.auto
+
+
+switchTopicDisplay : Id -> BoxId -> Model -> Model
+switchTopicDisplay topicId boxId model =
+  model
+  |> Box.updateDisplayMode topicId boxId
+    (\displayMode ->
+      case displayMode of
+        TopicD _ -> TopicD Detail
+        _ -> displayMode
     )
 
 
@@ -92,19 +98,12 @@ measureText text topicId boxId model =
       (\result ->
         case result of
           Ok {element} -> Edit
-            (T.SetTopicSize topicId boxId
+            (TextEdit.SetTopicSize topicId boxId
               (Size element.width element.height)
             )
           Err err -> U.logError "measureText" (U.toString err) NoOp
       )
   )
-
-
-endEdit : Model -> Model
-endEdit model =
-  model
-  |> setEditState NoEdit
-  |> Size.auto
 
 
 focus : Model -> Cmd Msg

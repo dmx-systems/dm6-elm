@@ -15,6 +15,7 @@ type Msg
   | Undo
   | Redo
   -- Item Tools
+  | Edit
   | Delete
   | Remove
   | Fullscreen BoxId
