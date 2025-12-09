@@ -1,4 +1,4 @@
-module Feature.TextEditAPI exposing (update)
+module Feature.TextEditAPI exposing (update, isEdit)
 
 import Box
 import Box.Size as Size
@@ -121,6 +121,11 @@ focus model =
         Ok () -> NoOp
         Err e -> U.logError "focus" (U.toString e) NoOp
     )
+
+
+isEdit : Id -> BoxId -> Model -> Bool
+isEdit topicId boxId model =
+  model.edit.state == ItemEdit topicId boxId
 
 
 setEditState : EditState -> Model -> Model

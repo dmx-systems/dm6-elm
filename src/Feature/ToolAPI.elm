@@ -12,6 +12,7 @@ import Feature.Search as Search
 import Feature.SearchAPI as SearchAPI
 import Feature.SelAPI as SelAPI
 import Feature.TextEdit as T
+import Feature.TextEditAPI as TextEditAPI
 import Feature.Tool as Tool
 import Item
 import Model exposing (Model, Msg(..))
@@ -89,9 +90,9 @@ viewItemTools : Id -> BoxId -> Model -> List (Html Msg)
 viewItemTools itemId boxId model =
   let
     toolbar =
-      case SelAPI.isSelected itemId boxId model of
-        True -> [ viewToolbar itemId boxId model ]
-        False -> []
+      case (SelAPI.isSelected itemId boxId model, TextEditAPI.isEdit itemId boxId model) of
+        (True, False) -> [ viewToolbar itemId boxId model ]
+        _ -> []
     caret =
       case MouseAPI.isHovered itemId boxId model of
         True -> [ viewCaret itemId boxId model ]

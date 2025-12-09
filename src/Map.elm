@@ -8,6 +8,7 @@ import Feature.MouseAPI as MouseAPI
 import Feature.Search exposing (Menu(..))
 import Feature.SelAPI as SelAPI
 import Feature.TextEdit as T exposing (EditState(..))
+import Feature.TextEditAPI as TextEditAPI
 import Feature.ToolAPI as ToolAPI
 import Item
 import Model exposing (Model, Msg(..))
@@ -332,9 +333,8 @@ labelTopic topic props boxPath model =
 labelTopicHtml : TopicInfo -> TopicProps -> BoxId -> Model -> List (Html Msg)
 labelTopicHtml topic props boxId model =
   let
-    isEdit = model.edit.state == ItemEdit topic.id boxId
     textElem =
-      if isEdit then
+      if TextEditAPI.isEdit topic.id boxId model then
         input
           ( [ id <| "dmx-input-" ++ fromInt topic.id ++ "-" ++ fromInt boxId
             , value topic.text
@@ -362,9 +362,8 @@ detailTopic : TopicInfo -> TopicProps -> BoxPath -> Model -> TopicRendering
 detailTopic topic props boxPath model =
   let
     boxId = Box.firstId boxPath
-    isEdit = model.edit.state == ItemEdit topic.id boxId
     textElem =
-      if isEdit then
+      if TextEditAPI.isEdit topic.id boxId model then
         textarea
           ( [ id <| "dmx-input-" ++ fromInt topic.id ++ "-" ++ fromInt boxId
             , onInput (Edit << T.OnTextareaInput)
