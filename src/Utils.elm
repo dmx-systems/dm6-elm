@@ -115,19 +115,6 @@ toIntList string =
 
 
 
--- HTML
-
-
-multilineHtml : String -> List (Html msg)
-multilineHtml str =
-  String.lines str |> List.foldr
-    (\line linesAcc ->
-      [ text line, br [] [] ] ++ linesAcc
-    )
-    []
-
-
-
 -- DEBUG
 
 

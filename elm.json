@@ -16,9 +16,11 @@
             "elm/time": "1.0.0",
             "elm/url": "1.0.0",
             "elm-community/undo-redo": "3.0.0",
-            "feathericons/elm-feather": "1.5.0"
+            "feathericons/elm-feather": "1.5.0",
+            "pablohirafuji/elm-markdown": "2.0.6"
         },
         "indirect": {
+            "elm/regex": "1.0.0",
             "elm/virtual-dom": "1.0.3"
         }
     },

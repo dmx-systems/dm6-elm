@@ -8,6 +8,7 @@ import Feature.MouseAPI as MouseAPI
 import Feature.Search exposing (Menu(..))
 import Feature.SelAPI as SelAPI
 import Feature.TextEdit as T exposing (EditState(..))
+import Feature.TextEditAPI as TextEditAPI
 import Feature.ToolAPI as ToolAPI
 import Item
 import Model exposing (Model, Msg(..))
@@ -381,7 +382,7 @@ detailTopic topic props boxPath model =
           ( detailTextStyle topic.id boxId model
             ++ detailTextViewStyle
           )
-          ( U.multilineHtml topic.text )
+          ( TextEditAPI.markdown topic.text )
   in
   ( detailTopicStyle props
   , [ div

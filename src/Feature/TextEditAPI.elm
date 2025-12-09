@@ -1,4 +1,4 @@
-module Feature.TextEditAPI exposing (update)
+module Feature.TextEditAPI exposing (update, markdown)
 
 import Box
 import Box.Size as Size
@@ -13,6 +13,8 @@ import Undo exposing (UndoModel)
 import Utils as U
 
 import Browser.Dom as Dom
+import Html exposing (Html)
+import Markdown
 import String exposing (fromInt)
 
 
@@ -131,3 +133,12 @@ setEditState state ({edit} as model) =
 setMeasureText : String -> Model -> Model
 setMeasureText text ({edit} as model) =
   { model | edit = { edit | measureText = text }}
+
+
+
+-- MARKDOWN
+
+
+markdown : String -> List (Html Msg)
+markdown text =
+  Markdown.toHtml Nothing text

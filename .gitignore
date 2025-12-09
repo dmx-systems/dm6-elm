@@ -4,6 +4,7 @@ main.min.js
 src/Logger.elm
 elm-stuff/
 review/
+userdata/
 .DS_Store
 *.sublime-project
 *.sublime-workspace
