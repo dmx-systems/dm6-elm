@@ -28,9 +28,9 @@ update msg ({present} as undoModel) =
       |> Undo.swap undoModel
     TextEdit.OnTextareaInput text -> onTextareaInput text present |> S.storeWith
       |> Undo.swap undoModel
-    TextEdit.SetTopicSize topicId boxId size ->
+    TextEdit.GotTopicSize topicId size ->
       ( present
-        |> Box.setTopicSize topicId boxId size
+        |> Item.setTopicSize topicId size
         |> Size.auto
       , Cmd.none
       )
@@ -74,7 +74,7 @@ onTextInput : String -> Model -> Model
 onTextInput text model =
   case model.edit.state of
     ItemEdit topicId _ ->
-      Item.updateTopicInfo topicId
+      Item.updateTopic topicId
         (\topic -> { topic | text = text })
         model
     NoEdit -> U.logError "onTextInput" "called when edit.state is NoEdit" model
@@ -83,16 +83,16 @@ onTextInput text model =
 onTextareaInput : String -> Model -> (Model, Cmd Msg)
 onTextareaInput text model =
   case model.edit.state of
-    ItemEdit topicId boxId ->
-      Item.updateTopicInfo topicId
+    ItemEdit topicId _ ->
+      Item.updateTopic topicId
         (\topic -> { topic | text = text })
         model
-      |> measureText text topicId boxId
+      |> measureText text topicId
     NoEdit -> U.logError "onTextareaInput" "called when edit.state is NoEdit" (model, Cmd.none)
 
 
-measureText : String -> Id -> BoxId -> Model -> (Model, Cmd Msg)
-measureText text topicId boxId model =
+measureText : String -> Id -> Model -> (Model, Cmd Msg)
+measureText text topicId model =
   ( model
     |> setMeasureText text
   , Dom.getElement "measure"
@@ -100,7 +100,7 @@ measureText text topicId boxId model =
       (\result ->
         case result of
           Ok {element} -> Edit
-            (TextEdit.SetTopicSize topicId boxId
+            (TextEdit.GotTopicSize topicId
               (Size element.width element.height)
             )
           Err err -> U.logError "measureText" (U.toString err) NoOp

@@ -114,7 +114,7 @@ closeMenu ({icon} as model) =
 setIcon : Maybe Icon -> Model -> Model
 setIcon iconName model =
   case SelAPI.single model of
-    Just (id, _) -> Item.updateTopicInfo id
+    Just (id, _) -> Item.updateTopic id
       (\topic -> { topic | icon = iconName })
       model
     Nothing -> model

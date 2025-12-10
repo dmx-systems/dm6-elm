@@ -277,7 +277,6 @@ addTopic model =
     ( newModel, topicId ) = Item.addTopic C.initTopicText Nothing model
     props = TopicV <| TopicProps
       ( Box.initTopicPos boxId model )
-      C.topicDetailSize
       ( TopicD LabelOnly )
   in
   newModel
@@ -294,7 +293,6 @@ addBox model =
     ( newModel, topicId ) = Item.addTopic C.initBoxText Nothing model
     props = TopicV <| TopicProps
       ( Box.initTopicPos boxId model )
-      C.topicDetailSize
       ( BoxD BlackBox )
   in
   newModel

@@ -86,23 +86,6 @@ setTopicPosByDelta topicId boxId delta model =
 {-| Logs an error if box does not exist, or topic is not in box, or ID refers not a topic (but
 an association).
 -}
-topicSize : Id -> BoxId -> Model -> Maybe Size
-topicSize topicId boxId model =
-  case topicProps topicId boxId model of
-    Just { size } -> Just size
-    Nothing -> U.fail "topicSize" {topicId = topicId, boxId = boxId} Nothing
-
-
-{-| Logs an error if box does not exist, or topic is not in box -}
-setTopicSize : Id -> BoxId -> Size -> Model -> Model
-setTopicSize topicId boxId size model =
-  model |> updateTopicProps topicId boxId
-    (\props -> { props | size = size })
-
-
-{-| Logs an error if box does not exist, or topic is not in box, or ID refers not a topic (but
-an association).
--}
 displayMode : Id -> BoxId -> Model -> Maybe DisplayMode
 displayMode topicId boxId model =
   case topicProps topicId boxId model of
@@ -172,7 +155,6 @@ initTopicProps : Id -> BoxId -> Model -> TopicProps
 initTopicProps topicId boxId model =
   TopicProps
     ( initTopicPos boxId model )
-    C.topicSize
     ( case Item.isBox topicId model of
       True -> BoxD BlackBox
       False -> TopicD LabelOnly
