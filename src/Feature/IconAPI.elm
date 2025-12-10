@@ -13,7 +13,6 @@ import Dict
 import Html exposing (Html, Attribute, div, text, button)
 import Html.Attributes exposing (class, title, style)
 import Html.Events exposing (onClick)
-import String exposing (fromFloat)
 import FeatherIcons as FI
 
 

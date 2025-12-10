@@ -23,8 +23,7 @@ type EditState
 
 
 type Msg
-  = EditStart
-  | OnTextInput String
+  = OnTextInput String
   | OnTextareaInput String
   | SetTopicSize Id BoxId Size
   | EditEnd
