@@ -1,5 +1,6 @@
 module Item exposing (..)
 
+import Config as C
 import Model exposing (Model)
 import ModelParts exposing (..)
 import Utils as U
@@ -44,11 +45,38 @@ topicLabel topic =
     Nothing -> ""
 
 
+{-| Logs an error if topic does not exist, or ID refers not a topic (but an association). -}
+topicSize : Id -> Model -> Maybe Size
+topicSize topicId model =
+  case topicById topicId model of
+    Just { size } -> Just size
+    Nothing -> U.fail "topicSize" {topicId = topicId} Nothing
+
+
+{-| Logs an error if box does not exist, or topic is not in box -}
+setTopicSize : Id -> Size -> Model -> Model
+setTopicSize topicId size model =
+  model
+    |> updateTopic topicId
+      (\topic -> { topic | size = size })
+
+
+updateTopic : Id -> (TopicInfo -> TopicInfo) -> Model -> Model
+updateTopic topicId transform model =
+  model
+  |> update topicId
+    (\item ->
+      case item.info of
+        Topic topic -> { item | info = Topic <| transform topic }
+        Assoc _  -> U.topicMismatch "updateTopic" topicId item
+    )
+
+
 addTopic : String -> Maybe Icon -> Model -> (Model, Id)
 addTopic text icon model =
   let
     id = model.nextId
-    topic = Item id (Topic <| TopicInfo id text icon) Set.empty
+    topic = Item id (Topic <| TopicInfo id text C.topicDetailSize icon) Set.empty
   in
   ( { model | items = model.items |> Dict.insert id topic }
     |> nextId
@@ -141,16 +169,6 @@ removeAssocId_ : Id -> Id -> Model -> Model
 removeAssocId_ assocId itemId model =
   model
   |> update itemId (\item -> {item | assocIds = item.assocIds |> Set.remove assocId})
-
-
-updateTopicInfo : Id -> (TopicInfo -> TopicInfo) -> Model -> Model
-updateTopicInfo topicId transform model =
-  model |> update topicId
-    (\item ->
-      case item.info of
-        Topic topic -> { item | info = Topic <| transform topic }
-        Assoc _  -> U.topicMismatch "updateTopicInfo" topicId item
-    )
 
 
 update : Id -> (Item -> Item) -> Model -> Model

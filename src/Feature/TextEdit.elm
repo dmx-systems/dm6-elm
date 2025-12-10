@@ -25,5 +25,5 @@ type EditState
 type Msg
   = OnTextInput String
   | OnTextareaInput String
-  | SetTopicSize Id BoxId Size
+  | GotTopicSize Id Size
   | EditEnd

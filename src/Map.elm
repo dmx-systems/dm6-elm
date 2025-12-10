@@ -372,7 +372,7 @@ detailTopic topic props boxPath model =
             , U.stopPropagationOnMousedown NoOp
             ]
             ++ detailTextStyle topic.id boxId model
-            ++ detailTextEditStyle topic.id boxId model
+            ++ detailTextEditStyle topic.id model
           )
           [ text topic.text ]
       else
@@ -426,10 +426,10 @@ detailTextViewStyle =
   ]
 
 
-detailTextEditStyle : Id -> BoxId -> Model -> List (Attribute Msg)
-detailTextEditStyle topicId boxId model =
+detailTextEditStyle : Id -> Model -> List (Attribute Msg)
+detailTextEditStyle topicId model =
   let
-    height = case Box.topicSize topicId boxId model of
+    height = case Item.topicSize topicId model of
       Just size -> size.h
       Nothing -> 0
   in

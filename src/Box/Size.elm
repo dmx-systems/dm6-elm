@@ -4,6 +4,7 @@ import Box
 import Config as C
 import Feature.Mouse exposing (DragState(..), DragMode(..))
 import Feature.TextEdit exposing (EditState(..))
+import Item
 import Model exposing (Model)
 import ModelParts exposing (..)
 import Utils as U
@@ -61,10 +62,10 @@ calcItemRect boxItem pathToParent model =
     boxId = Box.firstId pathToParent
   in
   case boxItem.props of
-    TopicV {pos, size, displayMode} ->
+    TopicV {pos, displayMode} ->
       case displayMode of
         TopicD LabelOnly -> (topicExtent pos, model)
-        TopicD Detail -> (detailTopicExtent boxItem.id boxId pos size model, model)
+        TopicD Detail -> (detailTopicExtent boxItem.id boxId pos model, model)
         BoxD BlackBox -> (topicExtent pos, model)
         BoxD WhiteBox ->
           let
@@ -84,20 +85,26 @@ topicExtent pos =
     (pos.y + C.topicH2 + 2 * C.topicBorderWidth)
 
 
-detailTopicExtent : Id -> BoxId -> Point -> Size -> Model -> Rectangle
-detailTopicExtent topicId boxId pos size model =
+detailTopicExtent : Id -> BoxId -> Point -> Model -> Rectangle
+detailTopicExtent topicId boxId pos model =
   let
-    textWidth =
-      if model.edit.state == ItemEdit topicId boxId then -- can't use TextEditAPI (cyclic)
-        C.topicDetailMaxWidth
-      else
-        size.w
+    maybeSize =
+      case Item.topicSize topicId model of
+        Just size ->
+          if model.edit.state == ItemEdit topicId boxId then -- can't use TextEditAPI (cyclic)
+            Just { size | w = C.topicDetailMaxWidth }
+          else
+            Just size
+        Nothing -> Nothing
   in
-  Rectangle
-    (pos.x - C.topicW2)
-    (pos.y - C.topicH2)
-    (pos.x - C.topicW2 + textWidth + C.topicSize.h + 2 * C.topicBorderWidth)
-    (pos.y - C.topicH2 + size.h + 2 * C.topicBorderWidth)
+  case maybeSize of
+    Just size ->
+      Rectangle
+        (pos.x - C.topicW2)
+        (pos.y - C.topicH2)
+        (pos.x - C.topicW2 + size.w + C.topicSize.h + 2 * C.topicBorderWidth)
+        (pos.y - C.topicH2 + size.h + 2 * C.topicBorderWidth)
+    Nothing -> Rectangle 0 0 0 0 -- error is logged already
 
 
 boxExtent : Point -> Rectangle -> Rectangle

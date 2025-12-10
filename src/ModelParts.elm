@@ -30,6 +30,7 @@ type ItemInfo
 type alias TopicInfo =
   { id : Id
   , text : String
+  , size : Size
   , icon : Maybe Icon
   }
 
@@ -92,7 +93,6 @@ type ViewProps
 
 type alias TopicProps =
   { pos : Point
-  , size : Size -- TODO: really per-box?
   , displayMode : DisplayMode -- serialized as "display", TODO: rename to "display"?
   }
 
@@ -152,6 +152,11 @@ encodeItem item =
         , E.object
           [ ("id", E.int topic.id)
           , ("text", E.string topic.text)
+          , ("size", E.object
+              [ ("w", E.float topic.size.w)
+              , ("h", E.float topic.size.h)
+              ]
+            )
           , ("icon", E.string <| Maybe.withDefault "" topic.icon)
           , ("assocIds", E.set E.int item.assocIds)
           ]
@@ -207,11 +212,6 @@ encodeBoxItem item =
                 , ("y", E.float topicProps.pos.y)
                 ]
               )
-            , ("size", E.object
-                [ ("w", E.float topicProps.size.w)
-                , ("h", E.float topicProps.size.h)
-                ]
-              )
             , ("display", encodeDisplayName topicProps.displayMode)
             ]
           )
@@ -242,9 +242,13 @@ itemDecoder =
     [ D.field "topic"
       (D.map3 Item
         (D.field "id" D.int)
-        (D.map Topic <| D.map3 TopicInfo
+        (D.map Topic <| D.map4 TopicInfo
           (D.field "id" D.int)
           (D.field "text" D.string)
+          (D.field "size" <| D.map2 Size
+            (D.field "w" D.float)
+            (D.field "h" D.float)
+          )
           (D.field "icon" D.string
             |> D.andThen maybeString
           )
@@ -298,14 +302,10 @@ boxItemDecoder =
     (D.field "hidden" D.bool)
     (D.field "pinned" D.bool)
     (D.oneOf
-      [ D.field "topicProps" <| D.map TopicV <| D.map3 TopicProps
+      [ D.field "topicProps" <| D.map TopicV <| D.map2 TopicProps
         (D.field "pos" <| D.map2 Point
           (D.field "x" D.float)
           (D.field "y" D.float)
-        )
-        (D.field "size" <| D.map2 Size
-          (D.field "w" D.float)
-          (D.field "h" D.float)
         )
         (D.field "display" D.string |> D.andThen displayModeDecoder)
       , D.field "assocProps" <| D.succeed (AssocV AssocProps)
