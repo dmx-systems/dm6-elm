@@ -64,7 +64,8 @@ setTopicSize topicId sizeField size model =
         in
         { topic | size =
           case sizeField of
-            View -> { size_ | view = size }
+            -- detail width does not include icon box
+            View -> { size_ | view = { size | w = size.w - C.topicHeight } }
             Editor -> { size_ | editor = size }
         }
       )
@@ -85,7 +86,7 @@ addTopic : String -> Maybe Icon -> Model -> (Model, Id)
 addTopic text icon model =
   let
     id = model.nextId
-    topic = TopicInfo id icon text <| TextSize C.topicDetailSize C.topicDetailSize -- TODO: size
+    topic = TopicInfo id icon text <| TextSize C.topicDetailSize C.topicDetailSize
     item = Item id (Topic topic) Set.empty
   in
   ( { model | items = model.items |> Dict.insert id item }

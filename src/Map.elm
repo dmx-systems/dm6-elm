@@ -287,7 +287,8 @@ topicAttr topicId boxPath model =
   if model.boxId == topicId then
     [] -- TODO: the fullscreen box would require dedicated event handling, e.g. panning?
   else
-    [ attribute "class" "dmx-topic"
+    [ id <| "topic-" ++ fromInt topicId ++ "," ++ fromInt (Box.firstId boxPath) -- TODO: path
+    , attribute "class" "dmx-topic"
     , attribute "data-id" (fromInt topicId)
     , attribute "data-path" (Box.fromPath boxPath)
     ]
@@ -336,7 +337,7 @@ labelTopicHtml topic props boxId model =
     textElem =
       if TextEditAPI.isEdit topic.id boxId model then
         input
-          ( [ id <| "dmx-input-" ++ fromInt topic.id ++ "-" ++ fromInt boxId
+          ( [ id <| "dmx-input-" ++ fromInt topic.id ++ "-" ++ fromInt boxId -- TODO: box-path
             , value topic.text
             , onInput (Edit << TextEdit.OnTextInput)
             , onBlur (Edit TextEdit.EditEnd)

@@ -18,7 +18,7 @@ init =
 
 
 type EditState
-  = ItemEdit Id BoxId
+  = ItemEdit Id BoxId -- FIXME: BoxId -> BoxPath
   | NoEdit
 
 
@@ -26,4 +26,4 @@ type Msg
   = OnTextInput String
   | OnTextareaInput String
   | GotTextSize Id SizeField Size
-  | EditEnd
+  | EditEnd -- TODO: drop it, expose API instead

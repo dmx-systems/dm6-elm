@@ -1,7 +1,7 @@
 module Feature.TextEditAPI exposing (update, startEdit, isEdit, markdown)
 
 import Box
-import Box.Size as Size
+import Box.Size as Size -- TODO: don't import, let caller do the sizing instead
 import Feature.TextEdit as TextEdit exposing (EditState(..))
 import Item
 import Model exposing (Model, Msg(..))
@@ -35,9 +35,7 @@ update msg ({present} as undoModel) =
       , Cmd.none
       )
       |> Undo.swap undoModel
-    TextEdit.EditEnd ->
-      (endEdit present, Cmd.none)
-      |> Undo.swap undoModel
+    TextEdit.EditEnd -> endEdit present |> Undo.swap undoModel
 
 
 startEdit : Id -> BoxId -> Model -> (Model, Cmd Msg)
@@ -52,11 +50,19 @@ startEdit topicId boxId model =
   (newModel, focus newModel)
 
 
-endEdit : Model -> Model
+endEdit : Model -> (Model, Cmd Msg)
 endEdit model =
-  model
-  |> setEditState NoEdit
-  |> Size.auto
+  case model.edit.state of
+    ItemEdit topicId boxId ->
+      let
+        elemId = "topic-" ++ fromInt topicId ++ "," ++ fromInt boxId -- TODO: box-path
+      in
+      ( model
+        |> setEditState NoEdit
+        |> Size.auto
+      , measureElement elemId topicId View
+      )
+    NoEdit -> U.logError "endEdit" "called when edit.state is NoEdit" (model, Cmd.none)
 
 
 switchTopicDisplay : Id -> BoxId -> Model -> Model
@@ -93,19 +99,22 @@ onTextareaInput text model =
 
 measureText : String -> Id -> Model -> (Model, Cmd Msg)
 measureText text topicId model =
-  ( model
-    |> setMeasureText text
-  , Dom.getElement "measure"
-    |> Task.attempt
-      (\result ->
-        case result of
-          Ok {element} -> Edit
-            (TextEdit.GotTextSize topicId Editor
-              (Size element.width element.height)
-            )
-          Err err -> U.logError "measureText" (U.toString err) NoOp
-      )
+  ( model |> setMeasureText text
+  , measureElement "measure" topicId Editor
   )
+
+
+measureElement : String -> Id -> SizeField -> Cmd Msg
+measureElement elemId topicId sizeField =
+  Dom.getElement elemId |> Task.attempt
+    (\result ->
+      case result of
+        Ok {element} -> Edit
+          (TextEdit.GotTextSize topicId sizeField
+            (Size element.width element.height)
+          )
+        Err err -> U.logError "measureElement" (U.toString err) NoOp
+    )
 
 
 focus : Model -> Cmd Msg

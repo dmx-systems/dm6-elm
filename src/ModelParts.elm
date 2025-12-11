@@ -268,9 +268,7 @@ itemDecoder =
         (D.field "id" D.int)
         (D.map Topic <| D.map4 TopicInfo
           (D.field "id" D.int)
-          (D.field "icon" D.string
-            |> D.andThen maybeString
-          )
+          (D.field "icon" D.string |> D.andThen maybeString)
           (D.field "text" D.string)
           textSizeDecoder
         )
