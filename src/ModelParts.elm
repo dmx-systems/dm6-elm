@@ -1,7 +1,8 @@
 module ModelParts exposing (Item, ItemInfo(..), TopicInfo, AssocInfo, Items, Id, AssocIds, Icon,
-  ItemType, RoleType, Box, Boxes, BoxId, Class, Delta, BoxItems, BoxPath, rootBoxId, BoxItem,
-  ViewProps(..), TopicProps, AssocProps, DisplayMode(..), TopicDisplay(..), BoxDisplay(..),
-  Point, Rectangle, Size, encodeItem, encodeBox, itemDecoder, boxDecoder, toDictDecoder)
+  Size, SizeField(..), TextSize, ItemType, RoleType, Box, Boxes, BoxId, Class, Delta, BoxItems,
+  BoxPath, rootBoxId, BoxItem, ViewProps(..), TopicProps, AssocProps, DisplayMode(..),
+  TopicDisplay(..), BoxDisplay(..), Point, Rectangle, encodeItem, encodeBox, itemDecoder,
+  boxDecoder, toDictDecoder)
 
 import Dict exposing (Dict)
 import Json.Decode as D
@@ -29,9 +30,9 @@ type ItemInfo
 
 type alias TopicInfo =
   { id : Id
-  , text : String
-  , size : Size
   , icon : Maybe Icon
+  , text : String
+  , size : TextSize
   }
 
 
@@ -42,6 +43,23 @@ type alias AssocInfo =
   , player1 : Id
   , role2 : RoleType
   , player2 : Id
+  }
+
+
+type alias TextSize =
+  { view: Size
+  , editor: Size
+  }
+
+
+type SizeField
+  = View
+  | Editor
+
+
+type alias Size =
+  { w : Float
+  , h : Float
   }
 
 
@@ -131,12 +149,6 @@ type alias Rectangle =
   }
 
 
-type alias Size =
-  { w : Float
-  , h : Float
-  }
-
-
 
 -- JSON
 
@@ -151,13 +163,9 @@ encodeItem item =
         ( "topic"
         , E.object
           [ ("id", E.int topic.id)
-          , ("text", E.string topic.text)
-          , ("size", E.object
-              [ ("w", E.float topic.size.w)
-              , ("h", E.float topic.size.h)
-              ]
-            )
           , ("icon", E.string <| Maybe.withDefault "" topic.icon)
+          , ("text", E.string topic.text)
+          , ("size", encodeTextSize topic.size)
           , ("assocIds", E.set E.int item.assocIds)
           ]
         )
@@ -173,6 +181,22 @@ encodeItem item =
           , ("assocIds", E.set E.int item.assocIds)
           ]
         )
+    ]
+
+
+encodeTextSize : TextSize -> E.Value
+encodeTextSize size =
+  E.object
+    [ ("view", E.object
+        [ ("w", E.float size.view.w)
+        , ("h", E.float size.view.h)
+        ]
+      )
+    , ("editor", E.object
+        [ ("w", E.float size.editor.w)
+        , ("h", E.float size.editor.h)
+        ]
+      )
     ]
 
 
@@ -244,14 +268,11 @@ itemDecoder =
         (D.field "id" D.int)
         (D.map Topic <| D.map4 TopicInfo
           (D.field "id" D.int)
-          (D.field "text" D.string)
-          (D.field "size" <| D.map2 Size
-            (D.field "w" D.float)
-            (D.field "h" D.float)
-          )
           (D.field "icon" D.string
             |> D.andThen maybeString
           )
+          (D.field "text" D.string)
+          textSizeDecoder
         )
         assocIdsDecoder
       )
@@ -269,6 +290,20 @@ itemDecoder =
         assocIdsDecoder
       )
     ]
+
+
+textSizeDecoder : D.Decoder TextSize
+textSizeDecoder =
+  (D.field "size" <| D.map2 TextSize
+    (D.field "view" <| D.map2 Size
+      (D.field "w" D.float)
+      (D.field "h" D.float)
+    )
+    (D.field "editor" <| D.map2 Size
+      (D.field "w" D.float)
+      (D.field "h" D.float)
+    )
+  )
 
 
 assocIdsDecoder : D.Decoder AssocIds

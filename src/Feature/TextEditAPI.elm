@@ -28,9 +28,9 @@ update msg ({present} as undoModel) =
       |> Undo.swap undoModel
     TextEdit.OnTextareaInput text -> onTextareaInput text present |> S.storeWith
       |> Undo.swap undoModel
-    TextEdit.GotTopicSize topicId size ->
+    TextEdit.GotTextSize topicId sizeField size ->
       ( present
-        |> Item.setTopicSize topicId size
+        |> Item.setTopicSize topicId sizeField size
         |> Size.auto
       , Cmd.none
       )
@@ -100,7 +100,7 @@ measureText text topicId model =
       (\result ->
         case result of
           Ok {element} -> Edit
-            (TextEdit.GotTopicSize topicId
+            (TextEdit.GotTextSize topicId Editor
               (Size element.width element.height)
             )
           Err err -> U.logError "measureText" (U.toString err) NoOp

@@ -46,19 +46,28 @@ topicLabel topic =
 
 
 {-| Logs an error if topic does not exist, or ID refers not a topic (but an association). -}
-topicSize : Id -> Model -> Maybe Size
-topicSize topicId model =
+topicSize : Id -> (TextSize -> Size) -> Model -> Maybe Size
+topicSize topicId get model =
   case topicById topicId model of
-    Just { size } -> Just size
+    Just { size } -> Just <| get size
     Nothing -> U.fail "topicSize" {topicId = topicId} Nothing
 
 
 {-| Logs an error if box does not exist, or topic is not in box -}
-setTopicSize : Id -> Size -> Model -> Model
-setTopicSize topicId size model =
+setTopicSize : Id -> SizeField -> Size -> Model -> Model
+setTopicSize topicId sizeField size model =
   model
     |> updateTopic topicId
-      (\topic -> { topic | size = size })
+      (\topic ->
+        let
+          size_ = topic.size
+        in
+        { topic | size =
+          case sizeField of
+            View -> { size_ | view = size }
+            Editor -> { size_ | editor = size }
+        }
+      )
 
 
 updateTopic : Id -> (TopicInfo -> TopicInfo) -> Model -> Model
@@ -76,9 +85,10 @@ addTopic : String -> Maybe Icon -> Model -> (Model, Id)
 addTopic text icon model =
   let
     id = model.nextId
-    topic = Item id (Topic <| TopicInfo id text C.topicDetailSize icon) Set.empty
+    topic = TopicInfo id icon text <| TextSize C.topicDetailSize C.topicDetailSize -- TODO: size
+    item = Item id (Topic topic) Set.empty
   in
-  ( { model | items = model.items |> Dict.insert id topic }
+  ( { model | items = model.items |> Dict.insert id item }
     |> nextId
   , id
   )
@@ -88,9 +98,10 @@ addAssoc : ItemType -> RoleType -> Id -> RoleType -> Id -> Model -> (Model, Id)
 addAssoc itemType role1 player1 role2 player2 model =
   let
     id = model.nextId
-    assoc = Item id (Assoc <| AssocInfo id itemType role1 player1 role2 player2) Set.empty
+    assoc = AssocInfo id itemType role1 player1 role2 player2
+    item = Item id (Assoc assoc) Set.empty
   in
-  ( { model | items = model.items |> Dict.insert id assoc }
+  ( { model | items = model.items |> Dict.insert id item }
     |> insertAssocId_ id player1
     |> insertAssocId_ id player2
     |> nextId

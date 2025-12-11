@@ -372,13 +372,13 @@ detailTopic topic props boxPath model =
             , U.stopPropagationOnMousedown NoOp
             ]
             ++ detailTextStyle topic.id boxId model
-            ++ detailTextEditStyle topic.id model
+            ++ textEditorStyle topic.id model
           )
           [ text topic.text ]
       else
         div
           ( detailTextStyle topic.id boxId model
-            ++ detailTextViewStyle
+            ++ textViewStyle
           )
           ( TextEditAPI.markdown topic.text )
   in
@@ -417,8 +417,8 @@ detailTextStyle topicId boxId model =
   ++ selectionStyle topicId boxId model
 
 
-detailTextViewStyle : List (Attribute Msg)
-detailTextViewStyle =
+textViewStyle : List (Attribute Msg)
+textViewStyle =
   [ style "min-width" <| fromFloat (C.topicSize.w - C.topicSize.h) ++ "px"
   , style "max-width" "max-content"
   , style "white-space" "pre-wrap"
@@ -426,10 +426,10 @@ detailTextViewStyle =
   ]
 
 
-detailTextEditStyle : Id -> Model -> List (Attribute Msg)
-detailTextEditStyle topicId model =
+textEditorStyle : Id -> Model -> List (Attribute Msg)
+textEditorStyle topicId model =
   let
-    height = case Item.topicSize topicId model of
+    height = case Item.topicSize topicId .editor model of
       Just size -> size.h
       Nothing -> 0
   in

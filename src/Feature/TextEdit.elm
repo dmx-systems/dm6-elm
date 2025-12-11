@@ -1,6 +1,6 @@
 module Feature.TextEdit exposing (..)
 
-import ModelParts exposing (Id, BoxId, Size)
+import ModelParts exposing (Id, BoxId, Size, SizeField)
 
 
 
@@ -25,5 +25,5 @@ type EditState
 type Msg
   = OnTextInput String
   | OnTextareaInput String
-  | GotTopicSize Id Size
+  | GotTextSize Id SizeField Size
   | EditEnd

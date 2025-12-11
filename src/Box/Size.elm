@@ -89,7 +89,7 @@ detailTopicExtent : Id -> BoxId -> Point -> Model -> Rectangle
 detailTopicExtent topicId boxId pos model =
   let
     maybeSize =
-      case Item.topicSize topicId model of
+      case Item.topicSize topicId .view model of
         Just size ->
           if model.edit.state == ItemEdit topicId boxId then -- can't use TextEditAPI (cyclic)
             Just { size | w = C.topicDetailMaxWidth }

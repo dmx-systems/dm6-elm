@@ -9,7 +9,7 @@ import ModelParts exposing (Point, Size)
 
 rootBoxName = "DM6 Elm"
 version = "0.3-snapshot"
-date = "Dec 10, 2025"
+date = "Dec 11, 2025"
 
 appHeaderHeight = 36
 
@@ -20,8 +20,8 @@ footerFontSize = 13
 
 hoverColor = "#d0d0d7" -- Firefox default hover button color (index.html)
 disabledColor = "#b0b0b0" -- see button.tool:disabled (index.html)
-assocLimboColor = "#858585"
 topicLimboFilter = "contrast(0.3) brightness(1.5)"
+assocLimboColor = "#858585"
 
 mapToolbarIconSize = 22
 itemToolbarIconSize = 18

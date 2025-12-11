@@ -38,7 +38,7 @@ type alias Model =
 init : Key -> Model
 init key =
   let
-    rootTopic = TopicInfo 0 C.rootBoxName (Size 0 0) Nothing
+    rootTopic = TopicInfo 0 Nothing C.rootBoxName <| TextSize (Size 0 0) (Size 0 0)
   in
   { items = Dict.singleton 0 <| Item 0 (Topic rootTopic) Set.empty
   , boxes = Dict.singleton rootBoxId
