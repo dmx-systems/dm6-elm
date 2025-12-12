@@ -9,11 +9,12 @@ import ModelParts exposing (Point, Size)
 
 rootBoxName = "DM6 Elm"
 version = "0.3-snapshot"
-date = "Dec 11, 2025"
+date = "Dec 12, 2025"
 
 appHeaderHeight = 36
 
 mainFont = "sans-serif"
+editorFont = "monospace"
 toolFontSize = 13
 contentFontSize = 13
 footerFontSize = 13

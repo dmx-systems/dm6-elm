@@ -422,7 +422,6 @@ textViewStyle : List (Attribute Msg)
 textViewStyle =
   [ style "min-width" <| fromFloat (C.topicSize.w - C.topicSize.h) ++ "px"
   , style "max-width" "max-content"
-  , style "white-space" "pre-wrap"
   , style "pointer-events" "none"
   ]
 
@@ -437,7 +436,7 @@ textEditorStyle topicId model =
   [ style "position" "relative"
   , style "top" <| fromFloat -C.topicBorderWidth ++ "px"
   , style "height" <| fromFloat height ++ "px"
-  , style "font-family" C.mainFont -- <textarea> default is "monospace"
+  , style "font-family" C.editorFont
   , style "border-color" "black" -- <textarea> default is some lightgray
   , style "resize" "none"
   ]

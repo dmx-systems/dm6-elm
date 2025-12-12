@@ -238,7 +238,7 @@ measureStyle =
   [ style "position" "fixed"
   , style "visibility" "hidden"
   , style "white-space" "pre-wrap"
-  , style "font-family" C.mainFont
+  , style "font-family" C.editorFont
   , style "font-size" <| fromInt C.contentFontSize ++ "px"
   , style "line-height" <| fromFloat C.topicLineHeight
   , style "padding" <| fromInt C.topicDetailPadding ++ "px"
