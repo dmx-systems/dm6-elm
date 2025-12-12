@@ -317,6 +317,11 @@ mapTitle model =
     Nothing -> "??"
 
 
+elemId : String -> Id -> BoxPath -> String
+elemId name id boxPath =
+  name ++ "-" ++ fromInt id ++ "," ++ fromPath boxPath
+
+
 {-| Logs an error (and returns -1) if boxPath is empty.
 -}
 firstId : BoxPath -> BoxId

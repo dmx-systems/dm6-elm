@@ -49,27 +49,24 @@ calcBoxRect boxPath model =
 
 
 accumulateItem : BoxItem -> BoxPath -> Rectangle -> Model -> (Rectangle, Model)
-accumulateItem boxItem pathToParent rectAcc model =
+accumulateItem boxItem boxPath rectAcc model =
   let
-    (rect, model_) = calcItemRect boxItem pathToParent model
+    (rect, model_) = calcItemRect boxItem boxPath model
   in
   (accumulateRect rectAcc rect, model_)
 
 
 calcItemRect : BoxItem -> BoxPath -> Model -> (Rectangle, Model)
-calcItemRect boxItem pathToParent model =
-  let
-    boxId = Box.firstId pathToParent
-  in
+calcItemRect boxItem boxPath model =
   case boxItem.props of
     TopicV {pos, displayMode} ->
       case displayMode of
         TopicD LabelOnly -> (topicExtent pos, model)
-        TopicD Detail -> (detailTopicExtent boxItem.id boxId pos model, model)
+        TopicD Detail -> (detailTopicExtent boxItem.id boxPath pos model, model)
         BoxD BlackBox -> (topicExtent pos, model)
         BoxD WhiteBox ->
           let
-            (rect_, model_) = calcBoxRect (boxItem.id :: pathToParent) model -- recursion
+            (rect_, model_) = calcBoxRect (boxItem.id :: boxPath) model -- recursion
           in
           (boxExtent pos rect_, model_)
         BoxD Unboxed -> (topicExtent pos, model)
@@ -85,10 +82,10 @@ topicExtent pos =
     (pos.y + C.topicH2 + 2 * C.topicBorderWidth)
 
 
-detailTopicExtent : Id -> BoxId -> Point -> Model -> Rectangle
-detailTopicExtent topicId boxId pos model =
+detailTopicExtent : Id -> BoxPath -> Point -> Model -> Rectangle
+detailTopicExtent topicId boxPath pos model =
   let
-    isEdit = model.edit.state == ItemEdit topicId boxId -- TODO: use TextEditAPI (cyclic atm)
+    isEdit = model.edit.state == ItemEdit topicId boxPath -- TODO: use TextEditAPI (cyclic atm)
     get = if isEdit then .editor else .view
     maybeSize =
       case Item.topicSize topicId get model of

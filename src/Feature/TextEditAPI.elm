@@ -38,13 +38,13 @@ update msg ({present} as undoModel) =
     TextEdit.EditEnd -> endEdit present |> Undo.swap undoModel
 
 
-startEdit : Id -> BoxId -> Model -> (Model, Cmd Msg)
-startEdit topicId boxId model =
+startEdit : Id -> BoxPath -> Model -> (Model, Cmd Msg)
+startEdit topicId boxPath model =
   let
     newModel =
       model
-      |> setEditState (ItemEdit topicId boxId)
-      |> switchTopicDisplay topicId boxId
+      |> setEditState (ItemEdit topicId boxPath)
+      |> switchTopicDisplay topicId (Box.firstId boxPath)
       |> Size.auto
   in
   (newModel, focus newModel)
@@ -53,9 +53,9 @@ startEdit topicId boxId model =
 endEdit : Model -> (Model, Cmd Msg)
 endEdit model =
   case model.edit.state of
-    ItemEdit topicId boxId ->
+    ItemEdit topicId boxPath ->
       let
-        elemId = "topic-" ++ fromInt topicId ++ "," ++ fromInt boxId -- TODO: box-path
+        elemId = Box.elemId "topic" topicId boxPath
       in
       ( model
         |> setEditState NoEdit
@@ -120,12 +120,12 @@ measureElement elemId topicId sizeField =
 focus : Model -> Cmd Msg
 focus model =
   let
-    nodeId =
+    elemId =
       case model.edit.state of
-        ItemEdit id boxId -> "dmx-input-" ++ fromInt id ++ "-" ++ fromInt boxId
+        ItemEdit id boxPath -> Box.elemId "input" id boxPath
         NoEdit -> U.logError "focus" "called when edit.state is NoEdit" ""
   in
-  Dom.focus nodeId |> Task.attempt
+  Dom.focus elemId |> Task.attempt
     (\result ->
       case result of
         Ok () -> NoOp
@@ -133,9 +133,9 @@ focus model =
     )
 
 
-isEdit : Id -> BoxId -> Model -> Bool
-isEdit topicId boxId model =
-  model.edit.state == ItemEdit topicId boxId
+isEdit : Id -> BoxPath -> Model -> Bool
+isEdit topicId boxPath model =
+  model.edit.state == ItemEdit topicId boxPath
 
 
 setEditState : EditState -> Model -> Model

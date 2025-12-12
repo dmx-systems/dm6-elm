@@ -85,11 +85,12 @@ mapToolsStyle =
 
 -- Item Tools
 
-viewItemTools : Id -> BoxId -> Model -> List (Html Msg)
-viewItemTools itemId boxId model =
+viewItemTools : Id -> BoxPath -> Model -> List (Html Msg)
+viewItemTools itemId boxPath model =
   let
+    boxId = Box.firstId boxPath
     toolbar =
-      case (SelAPI.isSelected itemId boxId model, TextEditAPI.isEdit itemId boxId model) of
+      case (SelAPI.isSelected itemId boxId model, TextEditAPI.isEdit itemId boxPath model) of
         (True, False) -> [ viewToolbar itemId boxId model ]
         _ -> []
     caret =
@@ -282,7 +283,7 @@ addTopic model =
   newModel
   |> Box.addItem topicId props boxId
   |> SelAPI.select topicId [ boxId ]
-  |> TextEditAPI.startEdit topicId boxId
+  |> TextEditAPI.startEdit topicId [ boxId ]
 
 
 -- TODO: factor out addTopic() common code
@@ -299,7 +300,7 @@ addBox model =
   |> Box.addBox topicId
   |> Box.addItem topicId props boxId
   |> SelAPI.select topicId [ boxId ]
-  |> TextEditAPI.startEdit topicId boxId
+  |> TextEditAPI.startEdit topicId [ boxId ]
 
 
 toggleDisplay : Id -> BoxId -> Model -> Model
@@ -335,7 +336,7 @@ unbox boxId targetBoxId model =
 edit : Model -> (Model, Cmd Msg)
 edit model =
   case SelAPI.single model of
-    Just (topicId, boxPath) -> TextEditAPI.startEdit topicId (Box.firstId boxPath) model
+    Just (topicId, boxPath) -> TextEditAPI.startEdit topicId boxPath model
     Nothing -> U.logError "edit" "called when there is no single selection" (model, Cmd.none)
 
 

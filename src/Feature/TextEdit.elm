@@ -1,6 +1,6 @@
 module Feature.TextEdit exposing (..)
 
-import ModelParts exposing (Id, BoxId, Size, SizeField)
+import ModelParts exposing (Id, BoxPath, Size, SizeField)
 
 
 
@@ -18,7 +18,7 @@ init =
 
 
 type EditState
-  = ItemEdit Id BoxId -- FIXME: BoxId -> BoxPath
+  = ItemEdit Id BoxPath
   | NoEdit
 
 

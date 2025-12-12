@@ -278,7 +278,7 @@ viewTopic topic props boxPath model =
       ++ style
     )
     ( children
-      ++ ToolAPI.viewItemTools topic.id boxId model
+      ++ ToolAPI.viewItemTools topic.id boxPath model
     )
 
 
@@ -287,7 +287,7 @@ topicAttr topicId boxPath model =
   if model.boxId == topicId then
     [] -- TODO: the fullscreen box would require dedicated event handling, e.g. panning?
   else
-    [ id <| "topic-" ++ fromInt topicId ++ "," ++ fromInt (Box.firstId boxPath) -- TODO: path
+    [ id <| Box.elemId "topic" topicId boxPath
     , attribute "class" "dmx-topic"
     , attribute "data-id" (fromInt topicId)
     , attribute "data-path" (Box.fromPath boxPath)
@@ -327,17 +327,17 @@ labelTopic topic props boxPath model =
   ( topicPosStyle props
       ++ topicFlexboxStyle topic props boxId model
       ++ selectionStyle topic.id boxId model
-  , labelTopicHtml topic props boxId model
+  , labelTopicHtml topic props boxPath model
   )
 
 
-labelTopicHtml : TopicInfo -> TopicProps -> BoxId -> Model -> List (Html Msg)
-labelTopicHtml topic props boxId model =
+labelTopicHtml : TopicInfo -> TopicProps -> BoxPath -> Model -> List (Html Msg)
+labelTopicHtml topic props boxPath model =
   let
     textElem =
-      if TextEditAPI.isEdit topic.id boxId model then
+      if TextEditAPI.isEdit topic.id boxPath model then
         input
-          ( [ id <| "dmx-input-" ++ fromInt topic.id ++ "-" ++ fromInt boxId -- TODO: box-path
+          ( [ id <| Box.elemId "input" topic.id boxPath
             , value topic.text
             , onInput (Edit << TextEdit.OnTextInput)
             , onBlur (Edit TextEdit.EditEnd)
@@ -364,9 +364,9 @@ detailTopic topic props boxPath model =
   let
     boxId = Box.firstId boxPath
     textElem =
-      if TextEditAPI.isEdit topic.id boxId model then
+      if TextEditAPI.isEdit topic.id boxPath model then
         textarea
-          ( [ id <| "dmx-input-" ++ fromInt topic.id ++ "-" ++ fromInt boxId
+          ( [ id <| Box.elemId "input" topic.id boxPath
             , onInput (Edit << TextEdit.OnTextareaInput)
             , onBlur (Edit TextEdit.EditEnd)
             , U.onEsc (Edit TextEdit.EditEnd)
@@ -461,7 +461,7 @@ blackBoxTopic topic props boxPath model =
       (topicFlexboxStyle topic props boxId model
         ++ blackBoxStyle
       )
-      (labelTopicHtml topic props boxId model
+      (labelTopicHtml topic props boxPath model
         ++ boxItemCount topic.id props model
       )
     , div
