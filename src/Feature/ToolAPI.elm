@@ -149,6 +149,7 @@ toolbarStyle itemId boxId model =
   , style "background-color" C.toolbarColor
   , style "border-radius" <| fromInt C.topicRadius ++ "px"
   , style "padding" "4px 3px 0"
+  , style "z-index" "2"
   ]
 
 
