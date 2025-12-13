@@ -22,5 +22,5 @@ type Msg
   | Unbox BoxId BoxId -- TODO: make params BoxId BoxPath?
   | ToggleDisplay Id BoxId -- TODO: make params Id BoxPath?
   -- Text Tools
-  | Image
+  | Image Id
   | Link

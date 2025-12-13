@@ -30,7 +30,7 @@ import String exposing (fromInt)
 -- PORTS
 
 
-port filePicker : () -> Cmd msg
+port filePicker : Id -> Cmd msg
 
 
 
@@ -148,7 +148,7 @@ viewTextToolbar : Id -> BoxId -> Model -> Html Msg
 viewTextToolbar itemId boxId model =
   div
     ( toolbarStyle itemId boxId model )
-    [ viewItemButton "Insert Image" "image" (Tool Tool.Image) True
+    [ viewItemButton "Insert Image" "image" (Tool <| Tool.Image itemId) True
     , viewItemButton "Insert Link" "link-2" (Tool Tool.Link) True
     ]
 
@@ -295,8 +295,8 @@ update msg ({present} as undoModel) =
     Tool.ToggleDisplay topicId boxId -> toggleDisplay topicId boxId present |> S.store
       |> Undo.swap undoModel
     -- Text Tools
-    Tool.Image -> (undoModel, filePicker ())
-    Tool.Link -> (undoModel, Cmd.none)
+    Tool.Image topicId -> insertImage topicId present |> S.storeWith |> Undo.swap undoModel
+    Tool.Link -> (undoModel, Cmd.none) -- TODO
 
 
 addTopic : Model -> (Model, Cmd Msg)
@@ -396,6 +396,15 @@ remove model =
 
 
 
-insertImage : Model -> Model -- TODO
-insertImage model =
-  model
+insertImage : Id -> Model -> (Model, Cmd Msg)
+insertImage topicId model =
+  let
+    fileId = model.nextId
+    imageMarkdown = "![image](app://image/" ++ fromInt fileId ++ ")"
+  in
+  ( model
+    |> Item.updateTopic topicId
+      (\topic -> { topic | text = topic.text ++ imageMarkdown })
+    |> Item.nextId
+  , filePicker fileId
+  )
