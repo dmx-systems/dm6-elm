@@ -12,8 +12,9 @@ import Undo exposing (UndoModel)
 import Utils as U
 
 import Browser.Dom as Dom
-import Html exposing (Html)
-import Markdown
+import Html exposing (Html, text)
+import Markdown.Parser as Parser
+import Markdown.Renderer as Renderer
 import String exposing (fromInt)
 
 
@@ -153,5 +154,9 @@ setMeasureText text ({edit} as model) =
 
 
 markdown : String -> List (Html Msg)
-markdown text =
-  Markdown.toHtml Nothing text
+markdown source =
+  source
+  |> Parser.parse
+  |> Result.withDefault []
+  |> Renderer.render Renderer.defaultHtmlRenderer
+  |> Result.withDefault [ text "Markdown Problem!" ]
