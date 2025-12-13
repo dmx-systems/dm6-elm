@@ -29,7 +29,7 @@ import Svg.Attributes exposing (width, height, x1, y1, x2, y2, d, stroke, fill, 
 -- CONFIG
 
 
-lineFunc = taxiLine -- directLine
+lineFunc = taxiLine -- or directLine
 
 
 
@@ -115,15 +115,15 @@ boxInfo boxId boxPath model =
         , if model.boxId == boxId then
             []
           else
-            nestedBoxStyle boxId box.rect (Box.firstId boxPath) model
+            nestedBoxStyle boxId box.rect boxPath model
         )
       )
     Nothing ->
       ( ([], []), Rectangle 0 0 0 0, ( {w = "0", h = "0"}, [] ))
 
 
-nestedBoxStyle : Id -> Rectangle -> BoxId -> Model -> List (Attribute Msg)
-nestedBoxStyle topicId rect boxId model =
+nestedBoxStyle : Id -> Rectangle -> BoxPath -> Model -> List (Attribute Msg)
+nestedBoxStyle topicId rect boxPath model =
   let
     width = rect.x2 - rect.x1
     height = rect.y2 - rect.y1
@@ -136,8 +136,8 @@ nestedBoxStyle topicId rect boxId model =
   , style "height" <| fromFloat height ++ "px"
   , style "border-radius" <| "0 " ++ r ++ " " ++ r ++ " " ++ r
   ]
-  ++ topicBorderStyle topicId boxId model
-  ++ selectionStyle topicId boxId model
+  ++ topicBorderStyle topicId boxPath model
+  ++ selectionStyle topicId boxPath model
 
 
 -- For a fullscreen box boxPath is empty
@@ -321,12 +321,9 @@ effectiveDisplayMode topicId boxId displayMode model =
 
 labelTopic : TopicInfo -> TopicProps -> BoxPath -> Model -> TopicRendering
 labelTopic topic props boxPath model =
-  let
-    boxId = Box.firstId boxPath
-  in
   ( topicPosStyle props
-      ++ topicFlexboxStyle topic props boxId model
-      ++ selectionStyle topic.id boxId model
+      ++ topicFlexboxStyle topic props boxPath model
+      ++ selectionStyle topic.id boxPath model
   , labelTopicHtml topic props boxPath model
   )
 
@@ -362,7 +359,6 @@ labelTopicHtml topic props boxPath model =
 detailTopic : TopicInfo -> TopicProps -> BoxPath -> Model -> TopicRendering
 detailTopic topic props boxPath model =
   let
-    boxId = Box.firstId boxPath
     textElem =
       if TextEditAPI.isEdit topic.id boxPath model then
         textarea
@@ -372,13 +368,13 @@ detailTopic topic props boxPath model =
             , U.onEsc (Edit TextEdit.EditEnd)
             , U.stopPropagationOnMousedown NoOp
             ]
-            ++ detailTextStyle topic.id boxId model
+            ++ detailTextStyle topic.id boxPath model
             ++ textEditorStyle topic.id model
           )
           [ text topic.text ]
       else
         div
-          ( detailTextStyle topic.id boxId model
+          ( detailTextStyle topic.id boxPath model
             ++ textViewStyle
           )
           ( TextEditAPI.markdown topic.text )
@@ -387,7 +383,7 @@ detailTopic topic props boxPath model =
   , [ div
       ( topicIconBoxStyle props
         ++ detailTopicIconBoxStyle
-        ++ selectionStyle topic.id boxId model
+        ++ selectionStyle topic.id boxPath model
       )
       [ IconAPI.viewTopicIcon topic.id C.topicIconSize topicIconStyle model ]
     , textElem
@@ -403,8 +399,8 @@ detailTopicStyle {pos} =
   ]
 
 
-detailTextStyle : Id -> BoxId -> Model -> List (Attribute Msg)
-detailTextStyle topicId boxId model =
+detailTextStyle : Id -> BoxPath -> Model -> List (Attribute Msg)
+detailTextStyle topicId boxPath model =
   let
     r = fromInt C.topicRadius ++ "px"
   in
@@ -414,8 +410,8 @@ detailTextStyle topicId boxId model =
   , style "padding" <| fromInt C.topicDetailPadding ++ "px"
   , style "border-radius" <| "0 " ++ r ++ " " ++ r ++ " " ++ r
   ]
-  ++ topicBorderStyle topicId boxId model
-  ++ selectionStyle topicId boxId model
+  ++ topicBorderStyle topicId boxPath model
+  ++ selectionStyle topicId boxPath model
 
 
 textViewStyle : List (Attribute Msg)
@@ -453,19 +449,16 @@ topicIconStyle =
 
 blackBoxTopic : TopicInfo -> TopicProps -> BoxPath -> Model -> TopicRendering
 blackBoxTopic topic props boxPath model =
-  let
-    boxId = Box.firstId boxPath
-  in
   ( topicPosStyle props
   , [ div
-      (topicFlexboxStyle topic props boxId model
+      (topicFlexboxStyle topic props boxPath model
         ++ blackBoxStyle
       )
       (labelTopicHtml topic props boxPath model
         ++ boxItemCount topic.id props model
       )
     , div
-      (ghostTopicStyle topic boxId model)
+      (ghostTopicStyle topic boxPath model)
       []
     ]
   )
@@ -601,8 +594,8 @@ accumulateRect posAcc boxId model =
 -- STYLE
 
 
-topicFlexboxStyle : TopicInfo -> TopicProps -> BoxId -> Model -> List (Attribute Msg)
-topicFlexboxStyle topic props boxId model =
+topicFlexboxStyle : TopicInfo -> TopicProps -> BoxPath -> Model -> List (Attribute Msg)
+topicFlexboxStyle topic props boxPath model =
   let
     r12 = fromInt C.topicRadius ++ "px"
     r34 = case props.displayMode of
@@ -616,7 +609,7 @@ topicFlexboxStyle topic props boxId model =
   , style "height" <| fromFloat C.topicSize.h ++ "px"
   , style "border-radius" <| r12 ++ " " ++ r12 ++ " " ++ r34 ++ " " ++ r34
   ]
-  ++ topicBorderStyle topic.id boxId model
+  ++ topicBorderStyle topic.id boxPath model
 
 
 topicPosStyle : TopicProps -> List (Attribute Msg)
@@ -679,8 +672,8 @@ blackBoxStyle =
   [ style "pointer-events" "none" ]
 
 
-ghostTopicStyle : TopicInfo -> BoxId -> Model -> List (Attribute Msg)
-ghostTopicStyle topic boxId model =
+ghostTopicStyle : TopicInfo -> BoxPath -> Model -> List (Attribute Msg)
+ghostTopicStyle topic boxPath model =
   [ style "position" "absolute"
   , style "left" <| fromInt C.blackBoxOffset ++ "px"
   , style "top" <| fromInt C.blackBoxOffset ++ "px"
@@ -690,8 +683,8 @@ ghostTopicStyle topic boxId model =
   , style "pointer-events" "none"
   , style "z-index" "-1" -- behind topic
   ]
-  ++ topicBorderStyle topic.id boxId model
-  ++ selectionStyle topic.id boxId model
+  ++ topicBorderStyle topic.id boxPath model
+  ++ selectionStyle topic.id boxPath model
 
 
 itemCountStyle : List (Attribute Msg)
@@ -702,15 +695,15 @@ itemCountStyle =
   ]
 
 
-topicBorderStyle : Id -> BoxId -> Model -> List (Attribute Msg)
-topicBorderStyle id boxId model =
+topicBorderStyle : Id -> BoxPath -> Model -> List (Attribute Msg)
+topicBorderStyle id boxPath model =
   let
-    isTarget_ = isTarget id boxId
+    isTarget_ = isTarget id boxPath
     targeted = case model.mouse.dragState of
-      -- can't move a topic to a box where it is already
+      -- can't move a topic to a box where it is already, can happen if mouse moves very quick
       -- can't create assoc when both topics are in different box
       Drag DragTopic _ (boxId_ :: _) _ _ target -> isTarget_ target && boxId_ /= id
-      Drag DraftAssoc _ (boxId_ :: _) _ _ target -> isTarget_ target && boxId_ == boxId
+      Drag DraftAssoc _ boxPath_ _ _ target -> isTarget_ target && boxPath_ == boxPath
       _ -> False
   in
   [ style "border-width" <| fromFloat C.topicBorderWidth ++ "px"
@@ -720,20 +713,17 @@ topicBorderStyle id boxId model =
   ]
 
 
-selectionStyle : Id -> BoxId -> Model -> List (Attribute Msg)
-selectionStyle topicId boxId model =
-  case SelAPI.isSelected topicId boxId model of
+selectionStyle : Id -> BoxPath -> Model -> List (Attribute Msg)
+selectionStyle topicId boxPath model =
+  case SelAPI.isSelectedPath topicId boxPath model of
     True -> [ style "box-shadow" "gray 5px 5px 5px" ]
     False -> []
 
 
-isTarget : Id -> BoxId -> Maybe (Id, BoxPath) -> Bool
-isTarget topicId boxId target =
-  case target of
-    Just (targetId, targetPath) ->
-      case targetPath of
-        targetBoxId :: _ -> topicId == targetId && boxId == targetBoxId
-        [] -> False
+isTarget : Id -> BoxPath -> Maybe (Id, BoxPath) -> Bool
+isTarget topicId boxPath target_ =
+  case target_ of
+    Just target -> target == (topicId, boxPath)
     Nothing -> False
 
 

@@ -90,7 +90,9 @@ viewItemTools itemId boxPath model =
   let
     boxId = Box.firstId boxPath
     toolbar =
-      case (SelAPI.isSelected itemId boxId model, TextEditAPI.isEdit itemId boxPath model) of
+      case
+        (SelAPI.isSelectedPath itemId boxPath model, TextEditAPI.isEdit itemId boxPath model)
+      of
         (True, False) -> [ viewToolbar itemId boxId model ]
         _ -> []
     caret =
