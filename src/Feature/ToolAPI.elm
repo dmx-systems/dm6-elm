@@ -1,4 +1,4 @@
-module Feature.ToolAPI exposing (viewGlobalTools, viewMapTools, viewItemTools, update)
+port module Feature.ToolAPI exposing (viewGlobalTools, viewMapTools, viewItemTools, update)
 
 import Box
 import Box.Size as Size
@@ -24,6 +24,13 @@ import Html exposing (Html, Attribute, div, span, text, button)
 import Html.Attributes exposing (class, style, title, disabled)
 import Html.Events exposing (onClick)
 import String exposing (fromInt)
+
+
+
+-- PORTS
+
+
+port filePicker : () -> Cmd msg
 
 
 
@@ -90,15 +97,17 @@ viewItemTools itemId boxPath model =
   let
     boxId = Box.firstId boxPath
     toolbar =
-      case
-        (SelAPI.isSelectedPath itemId boxPath model, TextEditAPI.isEdit itemId boxPath model)
-      of
-        (True, False) -> [ viewToolbar itemId boxId model ]
-        _ -> []
+      if SelAPI.isSelectedPath itemId boxPath model then
+        if TextEditAPI.isEdit itemId boxPath model then
+          [ viewTextToolbar itemId boxId model ]
+        else
+          [ viewToolbar itemId boxId model ]
+      else
+        []
     caret =
       case MouseAPI.isHovered itemId boxId model of
         True -> [ viewCaret itemId boxId model ]
-        False ->[]
+        False -> []
   in
   toolbar ++ caret
 
@@ -132,6 +141,19 @@ viewToolbar itemId boxId model =
       ++ SearchAPI.viewTraversalResult model
     )
 
+
+-- Text Tools
+
+viewTextToolbar : Id -> BoxId -> Model -> Html Msg
+viewTextToolbar itemId boxId model =
+  div
+    ( toolbarStyle itemId boxId model )
+    [ viewItemButton "Insert Image" "image" (Tool Tool.Image) True
+    , viewItemButton "Insert Link" "link-2" (Tool Tool.Link) True
+    ]
+
+
+--
 
 toolbarStyle : Id -> BoxId -> Model -> List (Attribute Msg)
 toolbarStyle itemId boxId model =
@@ -272,6 +294,9 @@ update msg ({present} as undoModel) =
       |> Undo.swap undoModel
     Tool.ToggleDisplay topicId boxId -> toggleDisplay topicId boxId present |> S.store
       |> Undo.swap undoModel
+    -- Text Tools
+    Tool.Image -> (undoModel, filePicker ())
+    Tool.Link -> (undoModel, Cmd.none)
 
 
 addTopic : Model -> (Model, Cmd Msg)
@@ -368,3 +393,9 @@ remove model =
   newModel
   |> SelAPI.clear
   |> Size.auto
+
+
+
+insertImage : Model -> Model -- TODO
+insertImage model =
+  model
