@@ -377,7 +377,7 @@ detailTopic topic props boxPath model =
           ( detailTextStyle topic.id boxPath model
             ++ textViewStyle
           )
-          ( TextEditAPI.markdown topic.text )
+          ( TextEditAPI.markdown topic.text model )
   in
   ( detailTopicStyle props
   , [ div

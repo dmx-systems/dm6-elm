@@ -12,7 +12,9 @@ import Undo exposing (UndoModel)
 import Utils as U
 
 import Browser.Dom as Dom
+import Dict
 import Html exposing (Html, text)
+import Markdown.Block as Block exposing (Block(..), Inline(..))
 import Markdown.Parser as Parser
 import Markdown.Renderer as Renderer
 import String exposing (fromInt)
@@ -153,10 +155,38 @@ setMeasureText text ({edit} as model) =
 -- MARKDOWN
 
 
-markdown : String -> List (Html Msg)
-markdown source =
+markdown : String -> Model -> List (Html Msg)
+markdown source model =
   source
   |> Parser.parse
   |> Result.withDefault []
+  |> resolveImages model
   |> Renderer.render Renderer.defaultHtmlRenderer
   |> Result.withDefault [ text "Markdown Problem!" ]
+
+
+resolveImages : Model -> List Block -> List Block
+resolveImages model blocks =
+  blocks |> List.map
+    ( Block.walkInlines
+      (\inline ->
+        case inline of
+          Image url title altInlines ->
+            -- let
+            --   _ = U.info "resolveImages" (url, title, altInlines)
+            -- in
+            resolveImage url title altInlines model
+          _ -> inline
+      )
+    )
+
+
+resolveImage : String -> Maybe String -> List Inline -> Model -> Inline
+resolveImage url title altInlines model =
+  let
+    newUrl =
+      case model.edit.imageCache |> Dict.get url of
+        Just blobUrl -> blobUrl
+        Nothing -> url
+  in
+  Image newUrl title altInlines

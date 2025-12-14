@@ -82,10 +82,10 @@ main.addEventListener('scroll', () => {
     app.ports.onScroll.send({clientX: main.scrollLeft, clientY: main.scrollTop})
   }, 200)   // debounce 200ms
 }, {passive: true})
-// --- IndexedDB ---
-const dbName = 'dm6-elm'
-const objectStoreName = 'images'
+// --- Image Files ---
+// File picker
 app.ports.filePicker.subscribe(fileId => {
+  console.log('### filePicker', fileId)
   const id = 'dm6-elm-filePicker'
   const input = document.getElementById(id) || document.createElement('input')
   if (!input.id) {
@@ -94,36 +94,39 @@ app.ports.filePicker.subscribe(fileId => {
     input.style.display = 'none'
     input.addEventListener('change', async () => {
       const file = input.files[0]
-      console.log('### filePicker', fileId, file)
-      await saveFile(fileId, file)
+      const currentFileId = input.dataset.fileId
+      await saveFile(file, currentFileId)
       console.log(`--> saved "${file.name}" in IndexedDB`)
     })
     document.body.appendChild(input)
   }
+  input.dataset.fileId = fileId   // update value before clicking
+  input.value = ''                // allow re-selecting same file
   input.click()
 })
 // Open DB
+const dbName = 'dm6-elm'
+const objectStoreName = 'images'
 const dbPromise = new Promise((resolve, reject) => {
-  const request = indexedDB.open(dbName, 1)
+  const request = indexedDB.open(dbName, 1)   // version=1
   request.onupgradeneeded = ev => {
     console.log('### createObjectStore', objectStoreName)
     const db = ev.target.result
-    // Create object store, keyPath "id"
-    db.createObjectStore(objectStoreName, {keyPath: 'id'})
+    db.createObjectStore(objectStoreName)
   }
   request.onsuccess = ev => resolve(ev.target.result)
   request.onerror = ev => reject(ev.target.error)
 })
 // Save
-async function saveFile(id, file) {
+async function saveFile(file, id) {
+  console.log('### saveFile', id, file)
   const db = await dbPromise
   return new Promise((resolve, reject) => {
     const tx = db.transaction(objectStoreName, 'readwrite')
     const store = tx.objectStore(objectStoreName)
-    const data = {id: id, file: file}
-    const request = store.put(data)
+    const request = store.put(file, id)
     request.onsuccess = () => resolve()
-    request.onerror = (e) => reject(e.target.error)
+    request.onerror = ev => reject(ev.target.error)
   })
 }
 </script>
