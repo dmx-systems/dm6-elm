@@ -40,9 +40,11 @@ const model = modelStr ? JSON.parse(modelStr) : null
 const app = Elm.Main.init({
   flags: model
 })
+
 app.ports.storeModel.subscribe(model => {
   localStorage.setItem(key, JSON.stringify(model))
 })
+
 app.ports.importJSON.subscribe(() => {
   const id = 'dm6-elm-importer'
   const input = document.getElementById(id) || document.createElement('input')
@@ -58,6 +60,7 @@ app.ports.importJSON.subscribe(() => {
   }
   input.click()
 })
+
 app.ports.exportJSON.subscribe(() => {
   const id = 'dm6-elm-exporter'
   const modelStr = localStorage.getItem(key)
@@ -74,6 +77,7 @@ app.ports.exportJSON.subscribe(() => {
   anchor.click()
   URL.revokeObjectURL(url)
 })
+
 const main = document.getElementById('main')
 let timer
 main.addEventListener('scroll', () => {
@@ -82,8 +86,7 @@ main.addEventListener('scroll', () => {
     app.ports.onScroll.send({clientX: main.scrollLeft, clientY: main.scrollTop})
   }, 200)   // debounce 200ms
 }, {passive: true})
-// --- Image Files ---
-// File picker
+
 app.ports.filePicker.subscribe(fileId => {
   console.log('### filePicker', fileId)
   const id = 'dm6-elm-filePicker'
@@ -104,20 +107,20 @@ app.ports.filePicker.subscribe(fileId => {
   input.value = ''                // allow re-selecting same file
   input.click()
 })
-// Open DB
+
 const dbName = 'dm6-elm'
 const objectStoreName = 'images'
 const dbPromise = new Promise((resolve, reject) => {
   const request = indexedDB.open(dbName, 1)   // version=1
-  request.onupgradeneeded = ev => {
+  request.onupgradeneeded = () => {
     console.log('### createObjectStore', objectStoreName)
-    const db = ev.target.result
+    const db = request.result
     db.createObjectStore(objectStoreName)
   }
-  request.onsuccess = ev => resolve(ev.target.result)
-  request.onerror = ev => reject(ev.target.error)
+  request.onsuccess = () => resolve(request.result)
+  request.onerror = () => reject(request.error)
 })
-// Save
+
 async function saveFile(file, id) {
   console.log('### saveFile', id, file)
   const db = await dbPromise
@@ -126,9 +129,55 @@ async function saveFile(file, id) {
     const store = tx.objectStore(objectStoreName)
     const request = store.put(file, id)
     request.onsuccess = () => resolve()
-    request.onerror = ev => reject(ev.target.error)
+    request.onerror = () => reject(request.error)
   })
 }
+
+async function loadFile(id) {
+  const db = await dbPromise
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(objectStoreName, "readonly")
+    const store = tx.objectStore(objectStoreName)
+    const request = store.get(id)
+    request.onsuccess = () => {
+      if (request.result) {
+          console.log('### loadFile', id, request.result)
+          resolve(request.result)
+      } else {
+          reject("File not found")
+      }
+    }
+    request.onerror = () => reject(request.error)
+  })
+}
+
+async function loadAllIds() {
+  const db = await dbPromise
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(objectStoreName, "readonly")
+    const store = tx.objectStore(objectStoreName)
+    const request = store.getAllKeys()
+    request.onsuccess = () => {
+      console.log('### loadAllIds', request.result)
+      resolve(request.result)
+    }
+    request.onerror = () => reject(request.error)
+  })
+}
+
+function loadAll() {
+  return loadAllIds().then(ids =>
+    Promise.all(ids.map(id =>
+      loadFile(id).then(file => (
+        {id, url: URL.createObjectURL(file)}
+      ))
+    ))
+  )
+}
+
+loadAll().then(urls => {
+  console.log(urls)
+})
 </script>
 </body>
 </html>

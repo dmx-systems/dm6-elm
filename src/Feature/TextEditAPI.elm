@@ -160,29 +160,29 @@ markdown source model =
   source
   |> Parser.parse
   |> Result.withDefault []
-  |> resolveImages model
+  |> transformImages model
   |> Renderer.render Renderer.defaultHtmlRenderer
   |> Result.withDefault [ text "Markdown Problem!" ]
 
 
-resolveImages : Model -> List Block -> List Block
-resolveImages model blocks =
+transformImages : Model -> List Block -> List Block
+transformImages model blocks =
   blocks |> List.map
     ( Block.walkInlines
       (\inline ->
         case inline of
           Image url title altInlines ->
             -- let
-            --   _ = U.info "resolveImages" (url, title, altInlines)
+            --   _ = U.info "transformImages" (url, title, altInlines)
             -- in
-            resolveImage url title altInlines model
+            transformImage url title altInlines model
           _ -> inline
       )
     )
 
 
-resolveImage : String -> Maybe String -> List Inline -> Model -> Inline
-resolveImage url title altInlines model =
+transformImage : String -> Maybe String -> List Inline -> Model -> Inline
+transformImage url title altInlines model =
   let
     newUrl =
       case model.edit.imageCache |> Dict.get url of
