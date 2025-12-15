@@ -11,7 +11,7 @@ import Feature.Tool as Tool
 import ModelParts exposing (..)
 
 import Browser.Navigation exposing (Key)
-import Dict
+import Dict exposing (Dict)
 import Json.Decode as D
 import Json.Decode.Pipeline exposing (required, hardcoded)
 import Json.Encode as E
@@ -25,6 +25,7 @@ type alias Model =
   , boxId : BoxId -- the box rendered fullscreen
   , nextId : Id
   ----- transient -----
+  , imageCache : Dict ImageId String -- Int -> blob: URL
   -- feature modules
   , edit : TextEdit.Model
   , mouse : Mouse.Model
@@ -46,6 +47,7 @@ init key =
   , boxId = rootBoxId
   , nextId = 1
   ----- transient -----
+  , imageCache = Dict.empty
   -- feature modules
   , edit = TextEdit.init
   , mouse = Mouse.init
@@ -59,7 +61,6 @@ init key =
 initTransient : Model -> Model
 initTransient model =
   { model
-  ----- transient -----
   -- feature modules
   | edit = TextEdit.init
   , mouse = Mouse.init
@@ -84,6 +85,7 @@ type Msg
   | Icon Icon.Msg
   | Nav Nav.Msg
   --
+  | UrlResolved ImageId String
   | Scrolled Point
   | NoOp
 
@@ -110,6 +112,7 @@ decoder key =
   |> required "boxId" D.int
   |> required "nextId" D.int
   ----- transient -----
+  |> hardcoded Dict.empty
   -- feature modules
   |> hardcoded TextEdit.init
   |> hardcoded Mouse.init

@@ -21,12 +21,22 @@ import Utils as U
 
 import Browser
 import Browser.Navigation exposing (Key)
+import Dict
 import Html exposing (Html, Attribute, div, text, br, a)
 import Html.Attributes exposing (id, style, href)
 import Json.Decode as D
 import Json.Encode as E
 import String exposing (fromInt, fromFloat)
 import Url exposing (Url)
+
+
+
+-- PORTS
+
+
+port onScroll : (E.Value -> msg) -> Sub msg
+
+port onResolveUrl : (E.Value -> msg) -> Sub msg
 
 
 
@@ -43,6 +53,7 @@ main =
       (\model -> Sub.batch
         [ MouseAPI.subs model
         , scrollSub
+        , resolveUrlSub
         ]
       )
     , onUrlChange = Nav << Nav.UrlChanged
@@ -84,13 +95,6 @@ initModel flags key =
             _ = U.logError "init" "localStorage" e
           in
           Model.init key
-
-
-
--- PORTS
-
-
-port onScroll : (E.Value -> msg) -> Sub msg
 
 
 
@@ -280,6 +284,7 @@ update msg ({present} as undoModel) =
     Icon iconMenuMsg -> IconAPI.update iconMenuMsg undoModel
     Nav navMsg -> NavAPI.update navMsg undoModel
     --
+    UrlResolved imageId url -> cacheImageUrl imageId url present |> Undo.swap undoModel
     Scrolled pos -> updateScrollPos pos present |> S.store |> Undo.swap undoModel
     NoOp -> (undoModel, Cmd.none)
 
@@ -346,6 +351,13 @@ resetUI maybeTarget model =
   )
 
 
+cacheImageUrl : ImageId -> String -> Model -> (Model, Cmd Msg)
+cacheImageUrl imageId url model =
+  ( { model | imageCache = model.imageCache |> Dict.insert imageId url }
+  , Cmd.none
+  )
+
+
 updateScrollPos : Point -> Model -> Model
 updateScrollPos pos model =
   Box.updateScrollPos model.boxId (\_ -> pos) model
@@ -358,8 +370,25 @@ updateScrollPos pos model =
 scrollSub : Sub Msg
 scrollSub =
   onScroll
-    (\val -> Scrolled <|
+    (\val ->
       case val |> D.decodeValue U.pointDecoder of
-        Ok pos -> pos
-        Err e -> U.logError "scrollSub" (U.toString e) (Point 0 0)
+        Ok pos -> Scrolled pos
+        Err e -> U.logError "scrollSub" (U.toString e) NoOp
     )
+
+
+resolveUrlSub : Sub Msg
+resolveUrlSub =
+  onResolveUrl
+    (\val ->
+      case val |> D.decodeValue urlMappingDecoder of
+        Ok (id, url) -> UrlResolved id url
+        Err e -> U.logError "resolveUrlSub" (U.toString e) NoOp
+    )
+
+
+urlMappingDecoder : D.Decoder (ImageId, String)
+urlMappingDecoder =
+  D.map2 (\id url -> (id, url))
+    (D.field "id" D.int)
+    (D.field "url" D.string)

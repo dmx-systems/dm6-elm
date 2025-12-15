@@ -9,7 +9,6 @@ import Dict exposing (Dict)
 type alias Model =
   { state : EditState
   , measureText : String
-  , imageCache : Dict String String -- app: key -> blob: URL
   }
 
 
@@ -17,7 +16,6 @@ init : Model
 init =
   { state = NoEdit
   , measureText = ""
-  , imageCache = Dict.empty
   }
 
 

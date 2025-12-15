@@ -160,33 +160,53 @@ markdown source model =
   source
   |> Parser.parse
   |> Result.withDefault []
-  |> transformImages model
+  |> resolveImageUrls model
   |> Renderer.render Renderer.defaultHtmlRenderer
   |> Result.withDefault [ text "Markdown Problem!" ]
 
 
-transformImages : Model -> List Block -> List Block
-transformImages model blocks =
+resolveImageUrls : Model -> List Block -> List Block
+resolveImageUrls model blocks =
   blocks |> List.map
     ( Block.walkInlines
       (\inline ->
         case inline of
           Image url title altInlines ->
             -- let
-            --   _ = U.info "transformImages" (url, title, altInlines)
+            --   _ = U.info "resolveImageUrls" (url, title, altInlines)
             -- in
-            transformImage url title altInlines model
+            resolveImageUrl url title altInlines model
           _ -> inline
       )
     )
 
 
-transformImage : String -> Maybe String -> List Inline -> Model -> Inline
-transformImage url title altInlines model =
+resolveImageUrl : String -> Maybe String -> List Inline -> Model -> Inline
+resolveImageUrl url title altInlines model =
   let
     newUrl =
-      case model.edit.imageCache |> Dict.get url of
-        Just blobUrl -> blobUrl
-        Nothing -> url
+      case imageId url of
+        Just imageId_ ->
+          case model.imageCache |> Dict.get imageId_ of
+            Just blobUrl -> blobUrl
+            Nothing ->
+              let
+                _ = U.info "resolveImageUrl" ("MISSING", imageId_)
+              in
+              url
+        Nothing ->
+          let
+            _ = U.info "resolveImageUrl" ("INVALID", url)
+          in
+          url
   in
   Image newUrl title altInlines
+
+
+imageId : String -> Maybe ImageId
+imageId url =
+  url
+  |> String.split "/"
+  |> List.reverse
+  |> List.head
+  |> Maybe.andThen String.toInt
