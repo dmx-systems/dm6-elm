@@ -363,6 +363,7 @@ detailTopic topic props boxPath model =
       if TextEditAPI.isEdit topic.id boxPath model then
         textarea
           ( [ id <| Box.elemId "input" topic.id boxPath
+            , value topic.text
             , onInput (Edit << TextEdit.OnTextareaInput)
             --, onBlur (Edit TextEdit.EditEnd) -- TODO
             , U.onEsc (Edit TextEdit.EditEnd)
@@ -371,7 +372,7 @@ detailTopic topic props boxPath model =
             ++ detailTextStyle topic.id boxPath model
             ++ textEditorStyle topic.id model
           )
-          [ text topic.text ]
+          []
       else
         div
           ( detailTextStyle topic.id boxPath model

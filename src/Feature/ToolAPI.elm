@@ -30,7 +30,7 @@ import String exposing (fromInt)
 -- PORTS
 
 
-port filePicker : Id -> Cmd msg
+port filePicker : (Id, ImageId) -> Cmd msg
 
 
 
@@ -398,12 +398,8 @@ toggleDisplay topicId boxId model =
 insertImage : Id -> Model -> (Model, Cmd Msg)
 insertImage topicId model =
   let
-    fileId = model.nextId
-    imageMarkdown = "![image](app://image/" ++ fromInt fileId ++ ")"
+    imageId = model.nextId
   in
-  ( model
-    |> Item.updateTopic topicId
-      (\topic -> { topic | text = topic.text ++ imageMarkdown })
-    |> Item.nextId
-  , filePicker fileId
+  ( model |> Item.nextId
+  , filePicker (topicId, imageId)
   )

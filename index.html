@@ -83,23 +83,27 @@ let timer
 main.addEventListener('scroll', () => {
   clearTimeout(timer)
   timer = setTimeout(() => {
-    app.ports.onScroll.send({clientX: main.scrollLeft, clientY: main.scrollTop})
+    app.ports.onScroll.send({x: main.scrollLeft, y: main.scrollTop})
   }, 200)   // debounce 200ms
 }, {passive: true})
 
+// Image file picker
 const fpInput = document.createElement('input')
 fpInput.type = 'file'
 fpInput.style.display = 'none'
 fpInput.addEventListener('change', () => {
   const file = fpInput.files[0]
-  const fileId = Number(fpInput.dataset.fileId)
-  saveFile(file, fileId)   // don't need to wait
-  createAndSendUrl(file, fileId)
+  const topicId = Number(fpInput.dataset.topicId)
+  const imageId = Number(fpInput.dataset.imageId)
+  app.ports.onPickFile.send([topicId, imageId])
+  createUrlAndSend(file, imageId)
+  saveFile(file, imageId)   // don't need to wait
 })
 document.body.appendChild(fpInput)
-app.ports.filePicker.subscribe(fileId => {
-  console.log('### filePicker', fileId)
-  fpInput.dataset.fileId = fileId       // update value before clicking
+app.ports.filePicker.subscribe(([topicId, imageId]) => {
+  console.log('### filePicker', 'topicId', topicId, 'imageId', imageId)
+  fpInput.dataset.topicId = topicId     // update value before clicking
+  fpInput.dataset.imageId = imageId     // update value before clicking
   fpInput.value = ''                    // allow re-selecting same file
   fpInput.click()
 })
@@ -168,14 +172,14 @@ async function loadAllImageIds() {
 function loadAllImages() {
   loadAllImageIds().then(ids => ids.forEach(id =>
     loadFile(id).then(file =>
-      createAndSendUrl(file, id)
+      createUrlAndSend(file, id)
     )
   ))
 }
 
-function createAndSendUrl(file, id) {
+function createUrlAndSend(file, id) {
   app.ports.onResolveUrl.send(
-    {id, url: URL.createObjectURL(file)}
+    [id, URL.createObjectURL(file)]
   )
 }
 </script>

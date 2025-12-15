@@ -85,8 +85,9 @@ type Msg
   | Icon Icon.Msg
   | Nav Nav.Msg
   --
-  | UrlResolved ImageId String
   | Scrolled Point
+  | FilePicked (Id, ImageId)
+  | UrlResolved (ImageId, String)
   | NoOp
 
 
