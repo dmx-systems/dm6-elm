@@ -331,36 +331,6 @@ addBox model =
   |> TextEditAPI.startEdit topicId [ boxId ]
 
 
-toggleDisplay : Id -> BoxId -> Model -> Model
-toggleDisplay topicId boxId model =
-  let
-    (newModel, newDisplayMode) =
-      case Box.displayMode topicId boxId model of
-        Just (TopicD LabelOnly) -> (model, Just <| TopicD Detail)
-        Just (TopicD Detail) -> (model, Just <| TopicD LabelOnly)
-        Just (BoxD BlackBox) -> (model, Just <| BoxD WhiteBox)
-        Just (BoxD WhiteBox) -> (model, Just <| BoxD BlackBox)
-        Just (BoxD Unboxed) ->
-          ( Transfer.boxContent topicId boxId model
-          , Just (BoxD BlackBox)
-          )
-        Nothing -> (model, Nothing)
-  in
-  case (newModel, newDisplayMode) of
-    (newModel_, Just displayMode) ->
-      newModel_
-      |> Box.setDisplayMode topicId boxId displayMode
-      |> Size.auto
-    _ -> model
-
-
-unbox : BoxId -> BoxId -> Model -> Model
-unbox boxId targetBoxId model =
-  Transfer.unboxContent boxId targetBoxId model
-  |> Box.setDisplayMode boxId targetBoxId (BoxD Unboxed)
-  |> Size.auto
-
-
 edit : Model -> (Model, Cmd Msg)
 edit model =
   case SelAPI.single model of
@@ -394,6 +364,35 @@ remove model =
   |> SelAPI.clear
   |> Size.auto
 
+
+unbox : BoxId -> BoxId -> Model -> Model
+unbox boxId targetBoxId model =
+  Transfer.unboxContent boxId targetBoxId model
+  |> Box.setDisplayMode boxId targetBoxId (BoxD Unboxed)
+  |> Size.auto
+
+
+toggleDisplay : Id -> BoxId -> Model -> Model
+toggleDisplay topicId boxId model =
+  let
+    (newModel, newDisplayMode) =
+      case Box.displayMode topicId boxId model of
+        Just (TopicD LabelOnly) -> (model, Just <| TopicD Detail)
+        Just (TopicD Detail) -> (model, Just <| TopicD LabelOnly)
+        Just (BoxD BlackBox) -> (model, Just <| BoxD WhiteBox)
+        Just (BoxD WhiteBox) -> (model, Just <| BoxD BlackBox)
+        Just (BoxD Unboxed) ->
+          ( Transfer.boxContent topicId boxId model
+          , Just (BoxD BlackBox)
+          )
+        Nothing -> (model, Nothing)
+  in
+  case (newModel, newDisplayMode) of
+    (newModel_, Just displayMode) ->
+      newModel_
+      |> Box.setDisplayMode topicId boxId displayMode
+      |> Size.auto
+    _ -> model
 
 
 insertImage : Id -> Model -> (Model, Cmd Msg)
