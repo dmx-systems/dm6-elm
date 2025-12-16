@@ -1,4 +1,4 @@
-module Feature.ToolAPI exposing (viewGlobalTools, viewMapTools, viewItemTools, update)
+port module Feature.ToolAPI exposing (viewGlobalTools, viewMapTools, viewItemTools, update)
 
 import Box
 import Box.Size as Size
@@ -24,6 +24,13 @@ import Html exposing (Html, Attribute, div, span, text, button)
 import Html.Attributes exposing (class, style, title, disabled)
 import Html.Events exposing (onClick)
 import String exposing (fromInt)
+
+
+
+-- PORTS
+
+
+port filePicker : (Id, ImageId) -> Cmd msg
 
 
 
@@ -90,15 +97,17 @@ viewItemTools itemId boxPath model =
   let
     boxId = Box.firstId boxPath
     toolbar =
-      case
-        (SelAPI.isSelectedPath itemId boxPath model, TextEditAPI.isEdit itemId boxPath model)
-      of
-        (True, False) -> [ viewToolbar itemId boxId model ]
-        _ -> []
+      if SelAPI.isSelectedPath itemId boxPath model then
+        if TextEditAPI.isEdit itemId boxPath model then
+          [ viewTextToolbar itemId boxId model ]
+        else
+          [ viewToolbar itemId boxId model ]
+      else
+        []
     caret =
       case MouseAPI.isHovered itemId boxId model of
         True -> [ viewCaret itemId boxId model ]
-        False ->[]
+        False -> []
   in
   toolbar ++ caret
 
@@ -132,6 +141,19 @@ viewToolbar itemId boxId model =
       ++ SearchAPI.viewTraversalResult model
     )
 
+
+-- Text Tools
+
+viewTextToolbar : Id -> BoxId -> Model -> Html Msg
+viewTextToolbar itemId boxId model =
+  div
+    ( toolbarStyle itemId boxId model )
+    [ viewItemButton "Insert Image" "image" (Tool <| Tool.Image itemId) True
+    , viewItemButton "Insert Link" "link-2" (Tool Tool.Link) True
+    ]
+
+
+--
 
 toolbarStyle : Id -> BoxId -> Model -> List (Attribute Msg)
 toolbarStyle itemId boxId model =
@@ -272,6 +294,9 @@ update msg ({present} as undoModel) =
       |> Undo.swap undoModel
     Tool.ToggleDisplay topicId boxId -> toggleDisplay topicId boxId present |> S.store
       |> Undo.swap undoModel
+    -- Text Tools
+    Tool.Image topicId -> insertImage topicId present |> S.storeWith |> Undo.swap undoModel
+    Tool.Link -> (undoModel, Cmd.none) -- TODO
 
 
 addTopic : Model -> (Model, Cmd Msg)
@@ -306,36 +331,6 @@ addBox model =
   |> TextEditAPI.startEdit topicId [ boxId ]
 
 
-toggleDisplay : Id -> BoxId -> Model -> Model
-toggleDisplay topicId boxId model =
-  let
-    (newModel, newDisplayMode) =
-      case Box.displayMode topicId boxId model of
-        Just (TopicD LabelOnly) -> (model, Just <| TopicD Detail)
-        Just (TopicD Detail) -> (model, Just <| TopicD LabelOnly)
-        Just (BoxD BlackBox) -> (model, Just <| BoxD WhiteBox)
-        Just (BoxD WhiteBox) -> (model, Just <| BoxD BlackBox)
-        Just (BoxD Unboxed) ->
-          ( Transfer.boxContent topicId boxId model
-          , Just (BoxD BlackBox)
-          )
-        Nothing -> (model, Nothing)
-  in
-  case (newModel, newDisplayMode) of
-    (newModel_, Just displayMode) ->
-      newModel_
-      |> Box.setDisplayMode topicId boxId displayMode
-      |> Size.auto
-    _ -> model
-
-
-unbox : BoxId -> BoxId -> Model -> Model
-unbox boxId targetBoxId model =
-  Transfer.unboxContent boxId targetBoxId model
-  |> Box.setDisplayMode boxId targetBoxId (BoxD Unboxed)
-  |> Size.auto
-
-
 edit : Model -> (Model, Cmd Msg)
 edit model =
   case SelAPI.single model of
@@ -368,3 +363,43 @@ remove model =
   newModel
   |> SelAPI.clear
   |> Size.auto
+
+
+unbox : BoxId -> BoxId -> Model -> Model
+unbox boxId targetBoxId model =
+  Transfer.unboxContent boxId targetBoxId model
+  |> Box.setDisplayMode boxId targetBoxId (BoxD Unboxed)
+  |> Size.auto
+
+
+toggleDisplay : Id -> BoxId -> Model -> Model
+toggleDisplay topicId boxId model =
+  let
+    (newModel, newDisplayMode) =
+      case Box.displayMode topicId boxId model of
+        Just (TopicD LabelOnly) -> (model, Just <| TopicD Detail)
+        Just (TopicD Detail) -> (model, Just <| TopicD LabelOnly)
+        Just (BoxD BlackBox) -> (model, Just <| BoxD WhiteBox)
+        Just (BoxD WhiteBox) -> (model, Just <| BoxD BlackBox)
+        Just (BoxD Unboxed) ->
+          ( Transfer.boxContent topicId boxId model
+          , Just (BoxD BlackBox)
+          )
+        Nothing -> (model, Nothing)
+  in
+  case (newModel, newDisplayMode) of
+    (newModel_, Just displayMode) ->
+      newModel_
+      |> Box.setDisplayMode topicId boxId displayMode
+      |> Size.auto
+    _ -> model
+
+
+insertImage : Id -> Model -> (Model, Cmd Msg)
+insertImage topicId model =
+  let
+    imageId = model.nextId
+  in
+  ( model |> Item.nextId
+  , filePicker (topicId, imageId)
+  )

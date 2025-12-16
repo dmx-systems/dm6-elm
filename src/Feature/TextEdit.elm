@@ -2,6 +2,8 @@ module Feature.TextEdit exposing (..)
 
 import ModelParts exposing (Id, BoxPath, Size, SizeField)
 
+import Dict exposing (Dict)
+
 
 
 type alias Model =

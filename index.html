@@ -40,9 +40,11 @@ const model = modelStr ? JSON.parse(modelStr) : null
 const app = Elm.Main.init({
   flags: model
 })
+
 app.ports.storeModel.subscribe(model => {
   localStorage.setItem(key, JSON.stringify(model))
 })
+
 app.ports.importJSON.subscribe(() => {
   const id = 'dm6-elm-importer'
   const input = document.getElementById(id) || document.createElement('input')
@@ -58,6 +60,7 @@ app.ports.importJSON.subscribe(() => {
   }
   input.click()
 })
+
 app.ports.exportJSON.subscribe(() => {
   const id = 'dm6-elm-exporter'
   const modelStr = localStorage.getItem(key)
@@ -74,14 +77,111 @@ app.ports.exportJSON.subscribe(() => {
   anchor.click()
   URL.revokeObjectURL(url)
 })
+
 const main = document.getElementById('main')
 let timer
 main.addEventListener('scroll', () => {
   clearTimeout(timer)
   timer = setTimeout(() => {
-    app.ports.onScroll.send({clientX: main.scrollLeft, clientY: main.scrollTop})
+    app.ports.onScroll.send({x: main.scrollLeft, y: main.scrollTop})
   }, 200)   // debounce 200ms
 }, {passive: true})
+
+// Image file picker
+const fpInput = document.createElement('input')
+fpInput.type = 'file'
+fpInput.style.display = 'none'
+fpInput.addEventListener('change', () => {
+  const file = fpInput.files[0]
+  const topicId = Number(fpInput.dataset.topicId)
+  const imageId = Number(fpInput.dataset.imageId)
+  app.ports.onPickFile.send([topicId, imageId])
+  createUrlAndSend(file, imageId)
+  saveFile(file, imageId)   // don't need to wait
+})
+document.body.appendChild(fpInput)
+app.ports.filePicker.subscribe(([topicId, imageId]) => {
+  console.log('### filePicker', 'topicId', topicId, 'imageId', imageId)
+  fpInput.dataset.topicId = topicId     // update value before clicking
+  fpInput.dataset.imageId = imageId     // update value before clicking
+  fpInput.value = ''                    // allow re-selecting same file
+  fpInput.click()
+})
+
+const dbName = 'dm6-elm'
+const objectStoreName = 'images'
+const dbPromise = new Promise((resolve, reject) => {
+  const request = indexedDB.open(dbName, 1)   // version=1
+  request.onupgradeneeded = () => {
+    console.log('### createObjectStore', objectStoreName)
+    const db = request.result
+    db.createObjectStore(objectStoreName)
+  }
+  request.onsuccess = () => resolve(request.result)
+  request.onerror = () => reject(request.error)
+})
+
+loadAllImages()
+
+async function saveFile(file, fileId) {
+  console.log('### saveFile', fileId, file)
+  const db = await dbPromise
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(objectStoreName, 'readwrite')
+    const store = tx.objectStore(objectStoreName)
+    const request = store.put(file, fileId)
+    request.onsuccess = () => {
+      console.log('--> saved', fileId, file)
+      resolve()
+    }
+    request.onerror = () => reject(request.error)
+  })
+}
+
+async function loadFile(id) {
+  const db = await dbPromise
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(objectStoreName, "readonly")
+    const store = tx.objectStore(objectStoreName)
+    const request = store.get(id)
+    request.onsuccess = () => {
+      if (request.result) {
+          resolve(request.result)
+      } else {
+          reject("File not found")
+      }
+    }
+    request.onerror = () => reject(request.error)
+  })
+}
+
+async function loadAllImageIds() {
+  const db = await dbPromise
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(objectStoreName, "readonly")
+    const store = tx.objectStore(objectStoreName)
+    const request = store.getAllKeys()
+    request.onsuccess = () => {
+      console.log('### loadAllImageIds', request.result)
+      resolve(request.result)
+    }
+    request.onerror = () => reject(request.error)
+  })
+}
+
+function loadAllImages() {
+  loadAllImageIds().then(ids => ids.forEach(id =>
+    loadFile(id).then(file =>
+      createUrlAndSend(file, id)
+    )
+  ))
+}
+
+function createUrlAndSend(file, id) {
+  app.ports.onResolveUrl.send(
+    [id, URL.createObjectURL(file)]
+  )
+}
 </script>
 </body>
 </html>

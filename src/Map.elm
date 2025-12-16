@@ -324,12 +324,12 @@ labelTopic topic props boxPath model =
   ( topicPosStyle props
       ++ topicFlexboxStyle topic props boxPath model
       ++ selectionStyle topic.id boxPath model
-  , labelTopicHtml topic props boxPath model
+  , viewLabelTopic topic props boxPath model
   )
 
 
-labelTopicHtml : TopicInfo -> TopicProps -> BoxPath -> Model -> List (Html Msg)
-labelTopicHtml topic props boxPath model =
+viewLabelTopic : TopicInfo -> TopicProps -> BoxPath -> Model -> List (Html Msg)
+viewLabelTopic topic props boxPath model =
   let
     textElem =
       if TextEditAPI.isEdit topic.id boxPath model then
@@ -337,7 +337,7 @@ labelTopicHtml topic props boxPath model =
           ( [ id <| Box.elemId "input" topic.id boxPath
             , value topic.text
             , onInput (Edit << TextEdit.OnTextInput)
-            , onBlur (Edit TextEdit.EditEnd)
+            --, onBlur (Edit TextEdit.EditEnd) -- TODO
             , U.onEnterOrEsc (Edit TextEdit.EditEnd)
             , U.stopPropagationOnMousedown NoOp
             ]
@@ -363,21 +363,22 @@ detailTopic topic props boxPath model =
       if TextEditAPI.isEdit topic.id boxPath model then
         textarea
           ( [ id <| Box.elemId "input" topic.id boxPath
+            , value topic.text
             , onInput (Edit << TextEdit.OnTextareaInput)
-            , onBlur (Edit TextEdit.EditEnd)
+            --, onBlur (Edit TextEdit.EditEnd) -- TODO
             , U.onEsc (Edit TextEdit.EditEnd)
             , U.stopPropagationOnMousedown NoOp
             ]
             ++ detailTextStyle topic.id boxPath model
             ++ textEditorStyle topic.id model
           )
-          [ text topic.text ]
+          []
       else
         div
           ( detailTextStyle topic.id boxPath model
             ++ textViewStyle
           )
-          ( TextEditAPI.markdown topic.text )
+          ( TextEditAPI.markdown topic.text model )
   in
   ( detailTopicStyle props
   , [ div
@@ -454,8 +455,8 @@ blackBoxTopic topic props boxPath model =
       (topicFlexboxStyle topic props boxPath model
         ++ blackBoxStyle
       )
-      (labelTopicHtml topic props boxPath model
-        ++ boxItemCount topic.id props model
+      (viewLabelTopic topic props boxPath model
+        ++ viewItemCount topic.id props model
       )
     , div
       (ghostTopicStyle topic boxPath model)
@@ -471,7 +472,7 @@ whiteBoxTopic topic props boxPath model =
   in
   ( style
   , children
-    ++ boxItemCount topic.id props model
+    ++ viewItemCount topic.id props model
     ++ [ view topic.id boxPath model ]
   )
 
@@ -483,12 +484,12 @@ unboxedTopic topic props boxPath model =
   in
   ( style
   , children
-    ++ boxItemCount topic.id props model
+    ++ viewItemCount topic.id props model
   )
 
 
-boxItemCount : Id -> TopicProps -> Model -> List (Html Msg)
-boxItemCount topicId props model =
+viewItemCount : Id -> TopicProps -> Model -> List (Html Msg)
+viewItemCount topicId props model =
   let
     itemCount =
       case props.displayMode of
@@ -501,6 +502,14 @@ boxItemCount topicId props model =
   [ div
       itemCountStyle
       [ text <| fromInt itemCount ]
+  ]
+
+
+itemCountStyle : List (Attribute Msg)
+itemCountStyle =
+  [ style "font-size" <| fromInt C.contentFontSize ++ "px"
+  , style "position" "absolute"
+  , style "left" "calc(100% + 12px)"
   ]
 
 
@@ -685,14 +694,6 @@ ghostTopicStyle topic boxPath model =
   ]
   ++ topicBorderStyle topic.id boxPath model
   ++ selectionStyle topic.id boxPath model
-
-
-itemCountStyle : List (Attribute Msg)
-itemCountStyle =
-  [ style "font-size" <| fromInt C.contentFontSize ++ "px"
-  , style "position" "absolute"
-  , style "left" "calc(100% + 12px)"
-  ]
 
 
 topicBorderStyle : Id -> BoxPath -> Model -> List (Attribute Msg)

@@ -12,8 +12,11 @@ import Undo exposing (UndoModel)
 import Utils as U
 
 import Browser.Dom as Dom
-import Html exposing (Html)
-import Markdown
+import Dict
+import Html exposing (Html, text)
+import Markdown.Block as Block exposing (Block(..), Inline(..))
+import Markdown.Parser as Parser
+import Markdown.Renderer as Renderer
 import String exposing (fromInt)
 
 
@@ -152,6 +155,58 @@ setMeasureText text ({edit} as model) =
 -- MARKDOWN
 
 
-markdown : String -> List (Html Msg)
-markdown text =
-  Markdown.toHtml Nothing text
+markdown : String -> Model -> List (Html Msg)
+markdown source model =
+  source
+  |> Parser.parse
+  |> Result.withDefault []
+  |> resolveImageUrls model
+  |> Renderer.render Renderer.defaultHtmlRenderer
+  |> Result.withDefault [ text "Markdown Problem!" ]
+
+
+resolveImageUrls : Model -> List Block -> List Block
+resolveImageUrls model blocks =
+  blocks |> List.map
+    ( Block.walkInlines
+      (\inline ->
+        case inline of
+          Image url title altInlines ->
+            -- let
+            --   _ = U.info "resolveImageUrls" (url, title, altInlines)
+            -- in
+            resolveImageUrl url title altInlines model
+          _ -> inline
+      )
+    )
+
+
+resolveImageUrl : String -> Maybe String -> List Inline -> Model -> Inline
+resolveImageUrl url title altInlines model =
+  let
+    newUrl =
+      case imageId url of
+        Just imageId_ ->
+          case model.imageCache |> Dict.get imageId_ of
+            Just blobUrl -> blobUrl
+            Nothing ->
+              let
+                _ = U.info "resolveImageUrl" ("MISSING", imageId_)
+              in
+              url
+        Nothing ->
+          let
+            _ = U.info "resolveImageUrl" ("INVALID", url)
+          in
+          url
+  in
+  Image newUrl title altInlines
+
+
+imageId : String -> Maybe ImageId
+imageId url =
+  url
+  |> String.split "/"
+  |> List.reverse
+  |> List.head
+  |> Maybe.andThen String.toInt

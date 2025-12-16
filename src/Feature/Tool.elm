@@ -19,5 +19,8 @@ type Msg
   | Delete
   | Remove
   | Fullscreen BoxId
-  | Unbox BoxId BoxId -- TODO: make params BoxId BoxPath?
-  | ToggleDisplay Id BoxId -- TODO: make params Id BoxPath?
+  | Unbox BoxId BoxId
+  | ToggleDisplay Id BoxId
+  -- Text Tools
+  | Image Id
+  | Link
