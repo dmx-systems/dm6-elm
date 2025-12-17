@@ -78,6 +78,7 @@ app.ports.exportJSON.subscribe(() => {
   URL.revokeObjectURL(url)
 })
 
+// Scrolling
 const main = document.getElementById('main')
 let timer
 main.addEventListener('scroll', () => {
@@ -86,6 +87,14 @@ main.addEventListener('scroll', () => {
     app.ports.onScroll.send({x: main.scrollLeft, y: main.scrollTop})
   }, 200)   // debounce 200ms
 }, {passive: true})
+
+// Routing
+window.addEventListener('hashchange', () => {
+  app.ports.onHashChange.send(location.hash)
+})
+app.ports.setHash.subscribe(function (hash) {
+  location.hash = hash    // creates history entries
+})
 
 // Image file picker
 const fpInput = document.createElement('input')

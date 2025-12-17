@@ -277,7 +277,7 @@ update : Tool.Msg -> UndoModel -> (UndoModel, Cmd Msg)
 update msg ({present} as undoModel) =
   case msg of
     -- Global Tools
-    Tool.Home -> (undoModel, NavAPI.pushUrl rootBoxId present)
+    Tool.Home -> (undoModel, NavAPI.pushUrl rootBoxId)
     Tool.Import -> (present, S.importJSON ()) |> Undo.swap undoModel
     Tool.Export -> (present, S.exportJSON ()) |> Undo.swap undoModel
     -- Map Tools
@@ -289,7 +289,7 @@ update msg ({present} as undoModel) =
     Tool.Edit -> edit present |> S.storeWith |> Undo.swap undoModel
     Tool.Delete -> delete present |> S.store |> Undo.push undoModel
     Tool.Remove -> remove present |> S.store |> Undo.push undoModel
-    Tool.Fullscreen boxId -> (undoModel, NavAPI.pushUrl boxId present)
+    Tool.Fullscreen boxId -> (undoModel, NavAPI.pushUrl boxId)
     Tool.Unbox boxId targetBoxId -> unbox boxId targetBoxId present |> S.store
       |> Undo.swap undoModel
     Tool.ToggleDisplay topicId boxId -> toggleDisplay topicId boxId present |> S.store

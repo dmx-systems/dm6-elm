@@ -1,4 +1,4 @@
-module Feature.NavAPI exposing (boxIdFromUrl, pushUrl, update)
+port module Feature.NavAPI exposing (boxIdFromHash, pushUrl, update, sub)
 
 import Box
 import Box.Size as Size
@@ -11,30 +11,48 @@ import Undo exposing (UndoModel)
 import Utils as U
 
 import Browser.Dom as Dom
-import Browser.Navigation as Navigation
-import String exposing (fromInt, toInt)
-import Url exposing (Url)
+import String exposing (fromInt)
 import Task
 
+
+
+-- PORTS
+
+
+port setHash : String -> Cmd msg
+
+port onHashChange : (String -> msg) -> Sub msg
+
+
+
+-- SUBSCRIPTIONS
+
+
+sub : Sub Msg
+sub =
+  onHashChange (Nav << Nav.HashChanged)
+
+
+
+-- UPDATE
 
 
 update : Nav.Msg -> UndoModel -> (UndoModel, Cmd Msg)
 update msg ({present} as undoModel) =
   case msg of
-    Nav.UrlChanged url -> urlChanged url undoModel
-    Nav.LinkClicked urlRequest -> (undoModel, Cmd.none) -- TODO
+    Nav.HashChanged hash -> hashChanged hash undoModel
 
 
-urlChanged : Url -> UndoModel -> (UndoModel, Cmd Msg)
-urlChanged url ({present} as undoModel) =
-  case boxIdFromUrl url of
+hashChanged : String -> UndoModel -> (UndoModel, Cmd Msg)
+hashChanged hash ({present} as undoModel) =
+  case boxIdFromHash hash of
     Just boxId ->
       setFullscreenBox boxId present |> S.storeWith |> Undo.reset
     Nothing ->
       let
-        _ = U.info "urlChanged" <| "No fragment -> redirect to " ++ fromInt present.boxId
+        _ = U.info "hashChanged" <| "No fragment -> redirect to " ++ fromInt present.boxId
       in
-      (undoModel, pushUrl present.boxId present)
+      (undoModel, pushUrl present.boxId)
 
 
 setFullscreenBox : BoxId -> Model -> (Model, Cmd Msg)
@@ -64,22 +82,18 @@ setViewport model =
 
 
 {- Pushes a new box-URL. This results in rendering the given box fullscreen.
-Note: the boxId is *not* necessarily the one contained in the model.
-(The model is just used to access the navigation key.)
-Eventually the model will be up-to-date (new boxId) as a *result* of the route change.
+Eventually the model.boxId will be updated, as a *result* of the route change.
 -}
-pushUrl : BoxId -> Model -> Cmd Msg
-pushUrl boxId model =
-  -- Navigation.pushUrl model.nav.key <| "#" ++ fromInt boxId
-  Cmd.none -- TODO
+pushUrl : BoxId -> Cmd Msg
+pushUrl boxId =
+  setHash <| "#" ++ fromInt boxId
 
 
-boxIdFromUrl : Url -> Maybe BoxId
-boxIdFromUrl url =
-  case url.fragment of
-    Just str ->
-      case toInt str of
-        Just boxId -> Just boxId
-        Nothing ->
-          U.logError "boxIdFromUrl" ("\"" ++ str ++ "\" is not a number") Nothing
-    Nothing -> Nothing
+boxIdFromHash : String -> Maybe BoxId
+boxIdFromHash hash =
+  case String.startsWith "#" hash of
+    True -> case String.dropLeft 1 hash |> String.toInt of
+      Just boxId -> Just boxId
+      Nothing ->
+        U.logError "boxIdFromHash" ("no number after hash in \"" ++ hash ++ "\"") Nothing
+    False -> U.logError "boxIdFromHash" ("\"" ++ hash ++ "\" is not a hash") Nothing

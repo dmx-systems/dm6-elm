@@ -27,7 +27,6 @@ import Html.Attributes exposing (id, style, href)
 import Json.Decode as D
 import Json.Encode as E
 import String exposing (fromInt, fromFloat)
-import Url exposing (Url)
 
 
 
@@ -53,7 +52,8 @@ main =
     , update = update
     , subscriptions =
       (\model -> Sub.batch
-        [ MouseAPI.subs model
+        [ MouseAPI.sub model
+        , NavAPI.sub
         , onScroll Scrolled
         , onPickFile FilePicked
         , onResolveUrl UrlResolved
@@ -66,10 +66,10 @@ init : E.Value -> (UndoModel, Cmd Msg)
 init flags =
   let
     model = initModel flags
-    boxId = model.boxId -- TODO
-      -- case NavAPI.boxIdFromUrl url of
-      --   Just boxId_ -> boxId_
-      --   Nothing -> model.boxId
+    -- boxId =
+    --   case NavAPI.boxIdFromHash url of
+    --     Just boxId_ -> boxId_
+    --     Nothing -> model.boxId
     cmd = Cmd.none -- NavAPI.pushUrl boxId model -- TODO
   in
   (model, cmd) |> Undo.reset

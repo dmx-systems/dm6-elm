@@ -1,4 +1,4 @@
-module Feature.MouseAPI exposing (hoverHandler, isHovered, subs, update)
+module Feature.MouseAPI exposing (hoverHandler, isHovered, update, sub)
 
 import Box
 import Box.Size as Size
@@ -266,8 +266,8 @@ command msg =
 -- SUBSCRIPTIONS
 
 
-subs : UndoModel -> Sub Msg
-subs {present} =
+sub : UndoModel -> Sub Msg
+sub {present} =
   case present.mouse.dragState of
     WaitForStartTime _ _ _ _ -> Sub.none
     WaitForEndTime _ _ _ _ _ -> Sub.none
