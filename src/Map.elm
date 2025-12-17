@@ -5,12 +5,12 @@ import Config as C
 import Feature.IconAPI as IconAPI
 import Feature.Mouse exposing (DragState(..), DragMode(..))
 import Feature.MouseAPI as MouseAPI
-import Feature.Search exposing (Menu(..))
 import Feature.SelAPI as SelAPI
 import Feature.TextEdit as TextEdit
 import Feature.TextEditAPI as TextEditAPI
 import Feature.ToolAPI as ToolAPI
 import Item
+import Map.Model as MM
 import Model exposing (Model, Msg(..))
 import ModelParts exposing (..)
 import Utils as U
@@ -18,7 +18,7 @@ import Utils as U
 import Dict
 import Html exposing (Html, Attribute, div, text, input, textarea)
 import Html.Attributes exposing (id, style, attribute, value)
-import Html.Events exposing (onInput, onBlur)
+import Html.Events exposing (onInput)
 import String exposing (fromInt, fromFloat)
 import Svg exposing (Svg, svg, g, line, path)
 import Svg.Attributes exposing (width, height, x1, y1, x2, y2, d, stroke, fill, transform,
@@ -61,9 +61,7 @@ view boxId boxPath model =
     boxStyle
     [ div
         ( topicLayerStyle boxRect )
-        ( topics
-          ++ viewLimboTopic boxId model
-        )
+        topics
     , svg
         ( [ width svgSize.w, height svgSize.h ]
           ++ topicAttr boxId boxPath model
@@ -145,52 +143,27 @@ viewItems : Box -> BoxPath -> Model -> (List (Html Msg), List (Svg Msg))
 viewItems box boxPath model =
   let
     newPath = box.id :: boxPath
+    topics =
+      MM.topicsToRender box model |> List.map
+        (\{id, props} ->
+          case (Item.topicById id model, props) of
+            (Just topic, TopicV tProps) -> viewTopic topic tProps newPath model
+            _ -> U.logError "viewItems" ("problem with topic " ++ fromInt id) (text "")
+        )
+    assocs =
+      MM.assocsToRender box model |> List.map
+        (\{id} ->
+          case Item.assocById id model of
+            Just assoc -> viewAssoc assoc box.id model
+            _ -> U.logError "viewItems" ("problem with assoc " ++ fromInt id) (text "")
+        )
   in
-  box.items |> Dict.values |> List.filter (shouldItemRender box.id model) |> List.foldr
-    (\{id, props} (t, a) ->
-      case Item.byId id model of
-        Just {info} ->
-          case (info, props) of
-            (Topic topic, TopicV tProps) -> (viewTopic topic tProps newPath model :: t, a)
-            (Assoc assoc, AssocV _) -> (t, viewAssoc assoc box.id model :: a)
-            _ -> U.logError "viewItems" ("problem with item " ++ fromInt id) (t, a)
-        Nothing -> U.logError "viewItems" ("problem with item " ++ fromInt id) (t, a)
-    )
-    ([], [])
-
-
-shouldItemRender : BoxId -> Model -> BoxItem -> Bool
-shouldItemRender boxId model item =
-  Box.isVisible item || isLimboItem item boxId model
-
-
-viewLimboTopic : BoxId -> Model -> List (Html Msg)
-viewLimboTopic boxId model =
-  case limboState model of
-    Just (topicId, _, limboBoxId) ->
-      if boxId == limboBoxId then
-        if Box.hasItem boxId topicId model then
-          let
-            _ = U.info "viewLimboTopic" (topicId, "is in box", boxId)
-          in
-          [] -- rendered already (viewItems())
-        else
-          let
-            _ = U.info "viewLimboTopic" (topicId, "not in box", boxId)
-            props = Box.initTopicProps topicId boxId model
-            boxPath = [boxId] -- Needed by limbo style calculation; single ID is sufficient;
-          in
-          case Item.topicById topicId model of
-            Just topic -> [ viewTopic topic props boxPath model ]
-            Nothing -> []
-      else
-        []
-    Nothing -> []
+  (topics, assocs)
 
 
 viewLimboAssoc : BoxId -> Model -> List (Html Msg)
 viewLimboAssoc boxId model =
-  case limboState model of
+  case MM.limboState model of
     Just (topicId, Just assocId, limboBoxId) ->
       if boxId == limboBoxId then
         if Box.hasItem boxId assocId model then
@@ -222,54 +195,18 @@ viewLimboAssoc boxId model =
     _ -> []
 
 
-isLimboItem : BoxItem -> BoxId -> Model -> Bool
-isLimboItem item boxId model =
-  let
-    isLimbo =
-      case item.props of
-        TopicV _ -> isLimboTopic
-        AssocV _ -> isLimboAssoc
-  in
-  isLimbo item.id boxId model
-
-
-isLimboTopic : Id -> BoxId -> Model -> Bool
-isLimboTopic topicId boxId model =
-  case limboState model of
-    Just (topicId_, _, boxId_) -> topicId == topicId_ && boxId == boxId_
-    Nothing -> False
-
-
-isLimboAssoc : Id -> BoxId -> Model -> Bool
-isLimboAssoc assocId boxId model =
-  case limboState model of
-    Just (_, Just assocId_, boxId_) -> assocId == assocId_ && boxId == boxId_
-    _ -> False
-
-
-limboState : Model -> Maybe (Id, Maybe Id, BoxId) -- (topic ID, assoc ID, box ID)
-limboState model =
-  case model.search.menu of
-    Topics _ (Just topicId) -> Just (topicId, Nothing, model.boxId)
-    RelTopics _ (Just (topicId, assocId)) ->
-      case SelAPI.singleBoxId model of
-        Just boxId -> Just (topicId, Just assocId, boxId)
-        Nothing -> Nothing
-    _ -> Nothing
-
-
 viewTopic : TopicInfo -> TopicProps -> BoxPath -> Model -> Html Msg
 viewTopic topic props boxPath model =
   let
     boxId = Box.firstId boxPath
-    topicFunc =
-      case effectiveDisplayMode topic.id boxId props.displayMode model of
+    render =
+      case props.displayMode of
         TopicD LabelOnly -> labelTopic
         TopicD Detail -> detailTopic
         BoxD BlackBox -> blackBoxTopic
         BoxD WhiteBox -> whiteBoxTopic
         BoxD Unboxed -> unboxedTopic
-    (style, children) = topicFunc topic props boxPath model
+    (style, children) = render topic props boxPath model
   in
   div
     ( topicAttr topic.id boxPath model
@@ -297,7 +234,7 @@ topicAttr topicId boxPath model =
 topicStyle : Id -> BoxId -> Model -> List (Attribute Msg)
 topicStyle id boxId model =
   let
-    isLimbo = isLimboTopic id boxId model
+    isLimbo = MM.isLimboTopic id boxId model
     isDragging = case model.mouse.dragState of
       Drag DragTopic id_ _ _ _ _ -> id_ == id
       _ -> False
@@ -307,16 +244,6 @@ topicStyle id boxId model =
   , style "filter" <| if isLimbo then C.topicLimboFilter else "none"
   , style "z-index" <| if isDragging then "1" else if isSelected then "3" else "2"
   ]
-
-
-effectiveDisplayMode : Id -> BoxId -> DisplayMode -> Model -> DisplayMode
-effectiveDisplayMode topicId boxId displayMode model =
-  if isLimboTopic topicId boxId model then
-    case displayMode of
-      TopicD _ -> TopicD Detail
-      BoxD _ -> BoxD WhiteBox
-  else
-    displayMode
 
 
 labelTopic : TopicInfo -> TopicProps -> BoxPath -> Model -> TopicRendering
@@ -800,7 +727,10 @@ lineStyle assoc boxId model =
   let
     color =
       case assoc of
-        Just {id} -> if isLimboAssoc id boxId model then C.assocLimboColor else C.assocColor
+        Just {id} ->
+          case MM.isLimboAssoc id boxId model of
+            True -> C.assocLimboColor
+            False -> C.assocColor
         Nothing -> C.assocLimboColor
   in
   [ stroke color

@@ -5,6 +5,7 @@ import Config as C
 import Feature.Mouse exposing (DragState(..), DragMode(..))
 import Feature.TextEdit exposing (EditState(..))
 import Item
+import Map.Model as MM
 import Model exposing (Model)
 import ModelParts exposing (..)
 import Utils as U
@@ -35,7 +36,7 @@ calcBoxRect boxPath model =
     Just box ->
       let
         (rect, model_) =
-          box |> Box.visibleTopics |> List.foldr
+          MM.topicsToRender box model |> List.foldr
             (\boxItem (rectAcc, modelAcc) ->
               accumulateItem boxItem boxPath rectAcc modelAcc
             )

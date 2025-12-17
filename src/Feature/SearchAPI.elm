@@ -304,6 +304,7 @@ onHoverTopic topicId ({search} as model) =
     Topics topicIds _ ->
       -- update hover state
       { model | search = { search | menu = Topics topicIds (Just topicId) }}
+      |> Size.auto
     _ ->
       U.logError "onHoverTopic" "Received \"HoverTopic\" when search.menu is not Topics" model
 
@@ -314,6 +315,7 @@ onHoverRelTopic relTopicId ({search} as model) =
     RelTopics relTopicIds _ ->
       -- update hover state
       { model | search = { search | menu = RelTopics relTopicIds (Just relTopicId) }}
+      |> Size.auto
     _ ->
       U.logError "onHoverRelTopic"
         "Received \"HoverRelTopic\" when search.menu is not RelTopics" model
@@ -325,6 +327,7 @@ onUnhoverTopic ({search} as model) =
     Topics topicIds _ ->
       -- update hover state
       { model | search = { search | menu = Topics topicIds Nothing }}
+      |> Size.auto
     _ ->
       U.logError "onUnhoverTopic"
         "Received \"UnhoverTopic\" when search.menu is not Topics"
@@ -337,6 +340,7 @@ onUnhoverRelTopic ({search} as model) =
     RelTopics relTopicIds _ ->
       -- update hover state
       { model | search = { search | menu = RelTopics relTopicIds Nothing }}
+      |> Size.auto
     _ ->
       U.logError "onUnhoverRelTopic"
         "Received \"UnhoverRelTopic\" when search.menu is not RelTopics" model
@@ -347,6 +351,7 @@ revealTopic topicId model =
   model
   |> revealItem topicId model.boxId
   |> closeMenu
+  -- FIXME: auto-size?
 
 
 revealRelTopic : (Id, Id) -> Model -> Model

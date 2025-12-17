@@ -14,10 +14,9 @@ import Utils as U
 import Browser.Dom as Dom
 import Dict
 import Html exposing (Html, text)
-import Markdown.Block as Block exposing (Block(..), Inline(..))
+import Markdown.Block as Block exposing (Block, Inline(..))
 import Markdown.Parser as Parser
 import Markdown.Renderer as Renderer
-import String exposing (fromInt)
 
 
 

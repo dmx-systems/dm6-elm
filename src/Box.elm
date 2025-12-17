@@ -273,14 +273,6 @@ update boxId transform model =
   }
 
 
-visibleTopics : Box -> List BoxItem
-visibleTopics box =
-  box.items
-  |> Dict.values
-  |> List.filter isTopic
-  |> List.filter isVisible
-
-
 assocsOfPlayer_ : Id -> BoxItems -> Model -> List Id
 assocsOfPlayer_ playerId items model =
   items

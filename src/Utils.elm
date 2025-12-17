@@ -2,7 +2,7 @@ module Utils exposing (..)
 
 import ModelParts exposing (..)
 
-import Html exposing (Html, Attribute, text, br)
+import Html exposing (Attribute)
 import Html.Events exposing (on, stopPropagationOn, keyCode)
 import Json.Decode as D
 import Logger
