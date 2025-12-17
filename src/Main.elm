@@ -47,7 +47,7 @@ port onResolveUrl : ((ImageId, String) -> msg) -> Sub msg
 
 main : Program E.Value UndoModel Msg
 main =
-  Browser.application
+  Browser.document
     { init = init
     , view = view
     , update = update
@@ -59,34 +59,32 @@ main =
         , onResolveUrl UrlResolved
         ]
       )
-    , onUrlChange = Nav << Nav.UrlChanged
-    , onUrlRequest = Nav << Nav.LinkClicked
     }
 
 
-init : E.Value -> Url -> Key -> (UndoModel, Cmd Msg)
-init flags url key =
+init : E.Value -> (UndoModel, Cmd Msg)
+init flags =
   let
-    model = initModel flags key
-    boxId =
-      case NavAPI.boxIdFromUrl url of
-        Just boxId_ -> boxId_
-        Nothing -> model.boxId
-    cmd = NavAPI.pushUrl boxId model
+    model = initModel flags
+    boxId = model.boxId -- TODO
+      -- case NavAPI.boxIdFromUrl url of
+      --   Just boxId_ -> boxId_
+      --   Nothing -> model.boxId
+    cmd = Cmd.none -- NavAPI.pushUrl boxId model -- TODO
   in
   (model, cmd) |> Undo.reset
 
 
-initModel : E.Value -> Key -> Model
-initModel flags key =
+initModel : E.Value -> Model
+initModel flags =
   case flags |> D.decodeValue (D.null True) of
     Ok True ->
       let
         _ = U.info "init" "localStorage: empty"
       in
-      Model.init key
+      Model.init
     _ ->
-      case flags |> D.decodeValue (Model.decoder key) of
+      case flags |> D.decodeValue Model.decoder of
         Ok model ->
           let
             _ = U.info "init" ("localStorage: " ++ bytes ++ " bytes")
@@ -97,7 +95,7 @@ initModel flags key =
           let
             _ = U.logError "init" "localStorage" e
           in
-          Model.init key
+          Model.init
 
 
 

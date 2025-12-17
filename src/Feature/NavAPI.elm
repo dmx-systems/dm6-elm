@@ -70,7 +70,8 @@ Eventually the model will be up-to-date (new boxId) as a *result* of the route c
 -}
 pushUrl : BoxId -> Model -> Cmd Msg
 pushUrl boxId model =
-  Navigation.pushUrl model.nav.key <| "#" ++ fromInt boxId
+  -- Navigation.pushUrl model.nav.key <| "#" ++ fromInt boxId
+  Cmd.none -- TODO
 
 
 boxIdFromUrl : Url -> Maybe BoxId
