@@ -49,6 +49,7 @@ stopPropagationOnMousedown msg_ =
 -- DECODER
 
 
+-- TODO: drop
 classDecoder : D.Decoder Class
 classDecoder =
   D.oneOf
@@ -57,18 +58,21 @@ classDecoder =
     ]
 
 
+-- TODO: drop
 idDecoder : D.Decoder Id
 idDecoder =
   D.at ["target", "dataset", "id"] D.string
   |> D.andThen toIntDecoder
 
 
+-- TODO: drop
 idTupleDecoder : D.Decoder (Id, Id)
 idTupleDecoder =
   D.at ["target", "dataset", "id"] D.string
   |> D.andThen toIntTupleDecoder
 
 
+-- TODO: drop
 pathDecoder : D.Decoder BoxPath
 pathDecoder =
   D.at ["target", "dataset", "path"] D.string

@@ -1,4 +1,4 @@
-module Feature.MouseAPI exposing (hoverHandler, isHovered, update, sub)
+module Feature.MouseAPI exposing (mousedownHandler, hoverHandler, isHovered, update, sub)
 
 import Box
 import Box.Size as Size
@@ -12,7 +12,7 @@ import Utils as U
 
 import Browser.Events as Events
 import Html exposing (Attribute)
-import Html.Events exposing (on)
+import Html.Events exposing (on, custom)
 import Json.Decode as D
 import Random
 import String exposing (fromInt)
@@ -28,6 +28,20 @@ hoverHandler : List (Attribute Msg)
 hoverHandler =
   [ on "mouseenter" (mouseDecoder Mouse.Hover)
   , on "mouseleave" (mouseDecoder Mouse.Unhover)
+  ]
+
+
+mousedownHandler : Id -> BoxPath -> List (Attribute Msg)
+mousedownHandler topicId boxPath =
+  [ custom "mousedown"
+    (U.pointDecoder |> D.andThen
+      (\pos -> D.succeed
+        { message = Mouse <| Mouse.DownOnItem "dmx-topic" topicId boxPath pos
+        , stopPropagation = True
+        , preventDefault = False
+        }
+      )
+    )
   ]
 
 
@@ -276,15 +290,9 @@ sub {present} =
     NoDrag _ -> mouseDownSub
 
 
--- TODO: attach mousedown listeners to elements directly.
--- All the "pointer-events: none" could be removed then.
 mouseDownSub : Sub Msg
 mouseDownSub =
-  Events.onMouseDown <| D.oneOf
-    [ D.map Mouse <| D.map4 Mouse.DownOnItem
-        U.classDecoder U.idDecoder U.pathDecoder U.pointDecoder
-    , D.succeed (Mouse Mouse.Down)
-    ]
+  Events.onMouseDown <| D.succeed <| Mouse Mouse.Down
 
 
 dragSub : Sub Msg
