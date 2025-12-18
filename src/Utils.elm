@@ -157,7 +157,7 @@ logError funcName text val =
 
 fail : String -> a -> v -> v
 fail funcName args val =
-  Logger.log ("--> @" ++ funcName ++ " failed " ++ Logger.toString args) val
+  Logger.log ("--> @" ++ funcName ++ " " ++ Logger.toString args ++ " failed") val
 
 
 call : String -> a -> v -> v

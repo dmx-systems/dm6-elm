@@ -117,7 +117,8 @@ boxInfo boxId boxPath model =
         )
       )
     Nothing ->
-      ( ([], []), Rectangle 0 0 0 0, ( {w = "0", h = "0"}, [] ))
+      U.fail "boxInfo" {boxId = boxId, boxPath = boxPath}
+        ( ([], []), Rectangle 0 0 0 0, ( {w = "0", h = "0"}, [] ))
 
 
 nestedBoxStyle : Id -> Rectangle -> BoxPath -> Model -> List (Attribute Msg)

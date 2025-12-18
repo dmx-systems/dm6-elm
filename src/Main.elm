@@ -44,7 +44,7 @@ port onResolveUrl : ((ImageId, String) -> msg) -> Sub msg
 -- MAIN
 
 
-main : Program E.Value UndoModel Msg
+main : Program (E.Value, String) UndoModel Msg
 main =
   Browser.document
     { init = init
@@ -62,15 +62,15 @@ main =
     }
 
 
-init : E.Value -> (UndoModel, Cmd Msg)
-init flags =
+init : (E.Value, String) -> (UndoModel, Cmd Msg)
+init (flags, hash) =
   let
     model = initModel flags
-    -- boxId =
-    --   case NavAPI.boxIdFromHash url of
-    --     Just boxId_ -> boxId_
-    --     Nothing -> model.boxId
-    cmd = Cmd.none -- NavAPI.pushUrl boxId model -- TODO
+    boxId =
+      case NavAPI.boxIdFromHash hash of
+        Just boxId_ -> boxId_
+        Nothing -> model.boxId
+    cmd = NavAPI.pushUrl boxId
   in
   (model, cmd) |> Undo.reset
 

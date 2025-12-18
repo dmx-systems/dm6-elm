@@ -38,7 +38,7 @@ const key = 'dm6-elm'
 const modelStr = localStorage.getItem(key)
 const model = modelStr ? JSON.parse(modelStr) : null
 const app = Elm.Main.init({
-  flags: model
+  flags: [model, location.hash]
 })
 
 app.ports.storeModel.subscribe(model => {

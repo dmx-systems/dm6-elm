@@ -306,7 +306,7 @@ mapTitle : Model -> String
 mapTitle model =
   case Item.topicById model.boxId model of
     Just topic -> Item.topicLabel topic
-    Nothing -> "??"
+    Nothing -> U.fail "mapTitle" model.boxId "??"
 
 
 elemId : String -> Id -> BoxPath -> String

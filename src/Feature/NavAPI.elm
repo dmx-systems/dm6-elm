@@ -50,7 +50,7 @@ hashChanged hash ({present} as undoModel) =
       setFullscreenBox boxId present |> S.storeWith |> Undo.reset
     Nothing ->
       let
-        _ = U.info "hashChanged" <| "No fragment -> redirect to " ++ fromInt present.boxId
+        _ = U.info "hashChanged" <| "No hash -> redirect to " ++ fromInt present.boxId
       in
       (undoModel, pushUrl present.boxId)
 
@@ -78,7 +78,7 @@ setViewport model =
             Ok () -> NoOp
             Err e -> U.logError "setViewport" (U.toString e) NoOp
         )
-    Nothing -> Cmd.none
+    Nothing -> U.fail "setViewport" model.boxId Cmd.none
 
 
 {- Pushes a new box-URL. This results in rendering the given box fullscreen.
@@ -91,9 +91,12 @@ pushUrl boxId =
 
 boxIdFromHash : String -> Maybe BoxId
 boxIdFromHash hash =
-  case String.startsWith "#" hash of
-    True -> case String.dropLeft 1 hash |> String.toInt of
-      Just boxId -> Just boxId
-      Nothing ->
-        U.logError "boxIdFromHash" ("no number after hash in \"" ++ hash ++ "\"") Nothing
-    False -> U.logError "boxIdFromHash" ("\"" ++ hash ++ "\" is not a hash") Nothing
+  case String.isEmpty hash of
+    True -> Nothing
+    False ->
+      case String.startsWith "#" hash of
+        True -> case String.dropLeft 1 hash |> String.toInt of
+          Just boxId -> Just boxId
+          Nothing ->
+            U.logError "boxIdFromHash" ("not a number after hash in \"" ++ hash ++ "\"") Nothing
+        False -> U.logError "boxIdFromHash" ("\"" ++ hash ++ "\" is not a hash") Nothing
