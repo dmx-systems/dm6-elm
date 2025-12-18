@@ -27,7 +27,6 @@ import Html.Attributes exposing (id, style, href)
 import Json.Decode as D
 import Json.Encode as E
 import String exposing (fromInt, fromFloat)
-import Url exposing (Url)
 
 
 
@@ -45,48 +44,47 @@ port onResolveUrl : ((ImageId, String) -> msg) -> Sub msg
 -- MAIN
 
 
-main : Program E.Value UndoModel Msg
+main : Program (E.Value, String) UndoModel Msg
 main =
-  Browser.application
+  Browser.document
     { init = init
     , view = view
     , update = update
     , subscriptions =
       (\model -> Sub.batch
-        [ MouseAPI.subs model
+        [ MouseAPI.sub model
+        , NavAPI.sub
         , onScroll Scrolled
         , onPickFile FilePicked
         , onResolveUrl UrlResolved
         ]
       )
-    , onUrlChange = Nav << Nav.UrlChanged
-    , onUrlRequest = Nav << Nav.LinkClicked
     }
 
 
-init : E.Value -> Url -> Key -> (UndoModel, Cmd Msg)
-init flags url key =
+init : (E.Value, String) -> (UndoModel, Cmd Msg)
+init (flags, hash) =
   let
-    model = initModel flags key
+    model = initModel flags
     boxId =
-      case NavAPI.boxIdFromUrl url of
+      case NavAPI.boxIdFromHash hash of
         Just boxId_ -> boxId_
         Nothing -> model.boxId
-    cmd = NavAPI.pushUrl boxId model
+    cmd = NavAPI.pushUrl boxId
   in
   (model, cmd) |> Undo.reset
 
 
-initModel : E.Value -> Key -> Model
-initModel flags key =
+initModel : E.Value -> Model
+initModel flags =
   case flags |> D.decodeValue (D.null True) of
     Ok True ->
       let
         _ = U.info "init" "localStorage: empty"
       in
-      Model.init key
+      Model.init
     _ ->
-      case flags |> D.decodeValue (Model.decoder key) of
+      case flags |> D.decodeValue Model.decoder of
         Ok model ->
           let
             _ = U.info "init" ("localStorage: " ++ bytes ++ " bytes")
@@ -97,7 +95,7 @@ initModel flags key =
           let
             _ = U.logError "init" "localStorage" e
           in
-          Model.init key
+          Model.init
 
 
 

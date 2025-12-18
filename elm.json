@@ -15,13 +15,13 @@
             "elm/random": "1.0.0",
             "elm/svg": "1.0.1",
             "elm/time": "1.0.0",
-            "elm/url": "1.0.0",
             "elm-community/undo-redo": "3.0.0",
             "feathericons/elm-feather": "1.5.0"
         },
         "indirect": {
             "elm/parser": "1.1.0",
             "elm/regex": "1.0.0",
+            "elm/url": "1.0.0",
             "elm/virtual-dom": "1.0.3",
             "rtfeldman/elm-hex": "1.0.0"
         }

@@ -32,12 +32,11 @@ type alias Model =
   , search : Search.Model
   , icon : Icon.Model
   , selection : Sel.Model
-  , nav : Nav.Model
   }
 
 
-init : Key -> Model
-init key =
+init : Model
+init =
   let
     rootTopic = TopicInfo 0 Nothing C.rootBoxName <| TextSize (Size 0 0) (Size 0 0)
   in
@@ -54,7 +53,6 @@ init key =
   , search = Search.init
   , icon = Icon.init
   , selection = Sel.init
-  , nav = Nav.init key
   }
 
 
@@ -105,8 +103,8 @@ encode model =
     ]
 
 
-decoder : Key -> D.Decoder Model
-decoder key =
+decoder : D.Decoder Model
+decoder =
   D.succeed Model
   |> required "items" (D.list itemDecoder |> D.andThen toDictDecoder)
   |> required "boxes" (D.list boxDecoder |> D.andThen toDictDecoder)
@@ -120,4 +118,3 @@ decoder key =
   |> hardcoded Search.init
   |> hardcoded Icon.init
   |> hardcoded Sel.init
-  |> hardcoded (Nav.init key)

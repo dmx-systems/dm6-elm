@@ -369,7 +369,7 @@ revealRelTopic (topicId, assocId) model =
 fullscreen : BoxId -> Model -> (Model, Cmd Msg)
 fullscreen boxId model =
   ( model |> closeMenu
-  , NavAPI.pushUrl boxId model
+  , NavAPI.pushUrl boxId
   )
 
 
