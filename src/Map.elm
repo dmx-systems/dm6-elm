@@ -270,6 +270,35 @@ topicLabelStyle =
   ]
 
 
+viewLabelTopic : TopicInfo -> TopicProps -> BoxPath -> Model -> List (Html Msg)
+viewLabelTopic topic props boxPath model =
+  let
+    textElem =
+      case TextEditAPI.isEdit topic.id boxPath model of
+        True ->
+          input
+            ( [ id <| Box.elemId "input" topic.id boxPath
+              , value topic.text
+              , onInput (Edit << TextEdit.OnTextInput)
+              --, onBlur (Edit TextEdit.EditEnd) -- TODO
+              , U.onEnterOrEsc (Edit TextEdit.EditEnd)
+              , U.onMouseDownStop NoOp -- Prevent drag initiation
+              ]
+              ++ inputStyle
+            )
+            []
+        False ->
+          div
+            topicLabelStyle
+            [ text <| Item.topicLabel topic ]
+  in
+  [ div
+    (iconBoxStyle props)
+    [ IconAPI.viewTopicIcon topic.id C.topicIconSize topicIconStyle model ]
+  , textElem
+  ]
+
+
 detailTopic : TopicInfo -> TopicProps -> BoxPath -> Model -> TopicRendering
 detailTopic topic props boxPath model =
   let
@@ -282,7 +311,7 @@ detailTopic topic props boxPath model =
               , onInput (Edit << TextEdit.OnTextareaInput)
               --, onBlur (Edit TextEdit.EditEnd) -- TODO
               , U.onEsc (Edit TextEdit.EditEnd)
-              , U.stopPropagationOnMousedown NoOp
+              , U.onMouseDownStop NoOp -- Prevent drag initiation
               ]
               ++ detailTextStyle topic.id boxPath model
               ++ textEditorStyle topic.id model
@@ -375,35 +404,6 @@ blackBoxTopic topic props boxPath model =
       []
     ]
   )
-
-
-viewLabelTopic : TopicInfo -> TopicProps -> BoxPath -> Model -> List (Html Msg)
-viewLabelTopic topic props boxPath model =
-  let
-    textElem =
-      case TextEditAPI.isEdit topic.id boxPath model of
-        True ->
-          input
-            ( [ id <| Box.elemId "input" topic.id boxPath
-              , value topic.text
-              , onInput (Edit << TextEdit.OnTextInput)
-              --, onBlur (Edit TextEdit.EditEnd) -- TODO
-              , U.onEnterOrEsc (Edit TextEdit.EditEnd)
-              , U.stopPropagationOnMousedown NoOp
-              ]
-              ++ inputStyle
-            )
-            []
-        False ->
-          div
-            topicLabelStyle
-            [ text <| Item.topicLabel topic ]
-  in
-  [ div
-    (iconBoxStyle props)
-    [ IconAPI.viewTopicIcon topic.id C.topicIconSize topicIconStyle model ]
-  , textElem
-  ]
 
 
 topicFlexboxStyle : TopicInfo -> TopicProps -> BoxPath -> Model -> List (Attribute Msg)

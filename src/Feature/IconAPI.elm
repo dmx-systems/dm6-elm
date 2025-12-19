@@ -50,7 +50,7 @@ viewIconList =
         ( [ class "tool"
           , title iconName
           , onClick (Just iconName |> Icon.SetIcon |> Icon)
-          , U.stopPropagationOnMousedown NoOp
+          , U.onMouseDownStop NoOp -- Prevent icon menu closing
           ]
           ++ iconButtonStyle
         )

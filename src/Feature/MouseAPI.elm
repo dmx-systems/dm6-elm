@@ -65,7 +65,7 @@ update msg ({present} as undoModel) =
 
 mouseDown : Cmd Msg
 mouseDown =
-  command <| MouseDown Nothing
+  command <| Cancel Nothing
 
 
 mouseDownOnItem : Class -> Id -> BoxPath -> Point -> Model -> (Model, Cmd Msg)
@@ -73,7 +73,7 @@ mouseDownOnItem class id boxPath pos model =
   ( model
     |> setDragState (WaitForStartTime class id boxPath pos)
   , Cmd.batch
-    [ command <| MouseDown <| Just (id, boxPath)
+    [ command <| Cancel <| Just (id, boxPath)
     , Task.perform (Mouse << Mouse.Time) Time.now
     ]
   )

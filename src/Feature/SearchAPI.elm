@@ -72,7 +72,7 @@ viewTraversalResult model =
 viewSearchtMenu : List Id -> Model -> Html Msg
 viewSearchtMenu topicIds model =
   div
-    ( [ U.stopPropagationOnMousedown NoOp ] -- Prevent menu closing to detect item click
+    ( [ U.onMouseDownStop NoOp ] -- Prevent search menu closing
       ++ searchResultStyle
       ++ menuStyle
     )
@@ -103,7 +103,7 @@ viewSearchtMenu topicIds model =
 viewTraversalMenu : List (Id, Id) -> Model -> Html Msg
 viewTraversalMenu relTopicIds model =
   div
-    ( [ U.stopPropagationOnMousedown NoOp ] -- Prevent menu closing to detect item click
+    ( [ U.onMouseDownStop NoOp ] -- Prevent traversal menu closing
       ++ traversalResultStyle
       ++ menuStyle
     )
@@ -204,8 +204,8 @@ viewFullscreenButton id isDisabled model =
           , title "Fullscreen"
           , onClick <| Search <| Search.Fullscreen id
           , disabled isDisabled
-          , U.stopPropagation "mouseover" NoOp -- don't highlight menu item along with button
-          , U.stopPropagation "mouseout" NoOp -- don't highlight menu item along with button
+          , U.onMouseOverStop NoOp -- don't highlight menu item along with button
+          , U.onMouseOutStop NoOp -- don't highlight menu item along with button
           -- mousedown propagation is stopped by parent (menu) already, preventing menu closing
           ]
           ++ fullscreenButtonStyle

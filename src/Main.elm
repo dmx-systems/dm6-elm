@@ -276,7 +276,7 @@ update msg ({present} as undoModel) =
       origPos targetId targetPath pos present |> S.store |> Undo.push undoModel
     TopicDragged -> present |> S.store |> Undo.swap undoModel
     ItemClicked itemId boxPath -> select itemId boxPath present |> Undo.swap undoModel
-    MouseDown maybeTarget -> resetUI maybeTarget present |> Undo.swap undoModel
+    Cancel maybeTarget -> cancelUI maybeTarget present |> Undo.swap undoModel
     -- feature modules
     Tool toolMsg -> ToolAPI.update toolMsg undoModel
     Edit editMsg -> TextEditAPI.update editMsg undoModel
@@ -337,8 +337,8 @@ select itemId boxPath model =
   )
 
 
-resetUI : Maybe (Id, BoxPath) -> Model -> (Model, Cmd Msg)
-resetUI maybeTarget model =
+cancelUI : Maybe (Id, BoxPath) -> Model -> (Model, Cmd Msg)
+cancelUI maybeTarget model =
   let
     shouldClear =
       case maybeTarget of

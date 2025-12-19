@@ -198,7 +198,7 @@ viewCaret itemId boxId model =
   in
   button
     ( [ onClick <| Tool <| Tool.ToggleDisplay itemId boxId
-      , U.stopPropagationOnMousedown NoOp
+      , U.onMouseDownStop NoOp
       ]
       ++ caretStyle
     )
@@ -222,7 +222,7 @@ viewTextButton label msg isEnabled =
   button
     ( [ onClick msg
       , disabled <| not isEnabled
-      , U.stopPropagationOnMousedown NoOp
+      , U.onMouseDownStop NoOp
       ]
       ++ textButtonStyle
     )
@@ -246,7 +246,7 @@ viewIconButton label icon iconSize msg isEnabled extraStyle =
       , title label
       , onClick msg
       , disabled <| not isEnabled
-      , U.stopPropagationOnMousedown NoOp
+      , U.onMouseDownStop NoOp
       ]
       ++ iconButtonStyle
       ++ extraStyle
