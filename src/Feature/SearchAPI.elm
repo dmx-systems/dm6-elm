@@ -160,13 +160,14 @@ menuItemStyle : Bool -> Bool -> List (Attribute Msg)
 menuItemStyle isDisabled isHover =
   let
     (color, bgColor, pointerEvents) =
-      if isDisabled then
-        (C.disabledColor, "unset", "none")
-      else
-        ( "unset"
-        , if isHover then C.hoverColor else "unset"
-        , "unset"
-        )
+      case isDisabled of
+        True ->
+          (C.disabledColor, "unset", "none")
+        False ->
+          ( "unset"
+          , if isHover then C.hoverColor else "unset"
+          , "unset"
+          )
   in
   [ style "display" "flex"
   , style "align-items" "center"
@@ -190,7 +191,6 @@ viewItemText topic =
     , style "overflow" "hidden"
     , style "text-overflow" "ellipsis"
     , style "white-space" "nowrap"
-    , style "pointer-events" "none"
     ]
     [ text <| Item.topicLabel topic ]
 
@@ -200,15 +200,17 @@ viewFullscreenButton id isDisabled model =
   case Item.isBox id model of
     True ->
       button
-      ( [ class "tool"
-        , title "Fullscreen"
-        , onClick <| Search <| Search.Fullscreen id
-        , disabled isDisabled
-        -- the parent (menu) stops propagation anyways
-        ]
-        ++ fullscreenButtonStyle
-      )
-      [ IconAPI.view "maximize-2" 16 [] ]
+        ( [ class "tool"
+          , title "Fullscreen"
+          , onClick <| Search <| Search.Fullscreen id
+          , disabled isDisabled
+          , U.stopPropagation "mouseover" NoOp -- don't highlight menu item along with button
+          , U.stopPropagation "mouseout" NoOp -- don't highlight menu item along with button
+          -- mousedown propagation is stopped by parent (menu) already, preventing menu closing
+          ]
+          ++ fullscreenButtonStyle
+        )
+        [ IconAPI.view "maximize-2" 16 [] ]
     False -> text ""
 
 

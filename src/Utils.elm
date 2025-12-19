@@ -40,9 +40,15 @@ keyDecoder key msg_ =
   keyCode |> D.andThen isKey
 
 
+-- TODO: drop this in favor for next one?
 stopPropagationOnMousedown : msg -> Attribute msg
 stopPropagationOnMousedown msg_ =
   stopPropagationOn "mousedown" <| D.succeed (msg_, True)
+
+
+stopPropagation : String -> msg -> Attribute msg
+stopPropagation eventName msg_ =
+  stopPropagationOn eventName <| D.succeed (msg_, True)
 
 
 

@@ -249,31 +249,24 @@ labelTopic topic props boxPath model =
   )
 
 
-viewLabelTopic : TopicInfo -> TopicProps -> BoxPath -> Model -> List (Html Msg)
-viewLabelTopic topic props boxPath model =
-  let
-    textElem =
-      if TextEditAPI.isEdit topic.id boxPath model then
-        input
-          ( [ id <| Box.elemId "input" topic.id boxPath
-            , value topic.text
-            , onInput (Edit << TextEdit.OnTextInput)
-            --, onBlur (Edit TextEdit.EditEnd) -- TODO
-            , U.onEnterOrEsc (Edit TextEdit.EditEnd)
-            , U.stopPropagationOnMousedown NoOp
-            ]
-            ++ topicInputStyle
-          )
-          []
-      else
-        div
-          topicLabelStyle
-          [ text <| Item.topicLabel topic ]
-  in
-  [ div
-    (topicIconBoxStyle props)
-    [ IconAPI.viewTopicIcon topic.id C.topicIconSize topicIconStyle model ]
-  , textElem
+inputStyle : List (Attribute Msg)
+inputStyle =
+  [ style "font-family" C.mainFont -- Default for <input> is "-apple-system" (on Mac)
+  , style "font-size" <| fromInt C.contentFontSize ++ "px"
+  , style "font-weight" C.topicLabelWeight
+  , style "width" "100%"
+  , style "position" "relative"
+  , style "left" "-4px"
+  ]
+
+
+topicLabelStyle : List (Attribute Msg)
+topicLabelStyle =
+  [ style "font-size" <| fromInt C.contentFontSize ++ "px"
+  , style "font-weight" C.topicLabelWeight
+  , style "overflow" "hidden"
+  , style "text-overflow" "ellipsis"
+  , style "white-space" "nowrap"
   ]
 
 
@@ -281,29 +274,30 @@ detailTopic : TopicInfo -> TopicProps -> BoxPath -> Model -> TopicRendering
 detailTopic topic props boxPath model =
   let
     textElem =
-      if TextEditAPI.isEdit topic.id boxPath model then
-        textarea
-          ( [ id <| Box.elemId "input" topic.id boxPath
-            , value topic.text
-            , onInput (Edit << TextEdit.OnTextareaInput)
-            --, onBlur (Edit TextEdit.EditEnd) -- TODO
-            , U.onEsc (Edit TextEdit.EditEnd)
-            , U.stopPropagationOnMousedown NoOp
-            ]
-            ++ detailTextStyle topic.id boxPath model
-            ++ textEditorStyle topic.id model
-          )
-          []
-      else
-        div
-          ( detailTextStyle topic.id boxPath model
-            ++ textViewStyle
-          )
-          ( TextEditAPI.markdown topic.text model )
+      case TextEditAPI.isEdit topic.id boxPath model of
+        True ->
+          textarea
+            ( [ id <| Box.elemId "input" topic.id boxPath
+              , value topic.text
+              , onInput (Edit << TextEdit.OnTextareaInput)
+              --, onBlur (Edit TextEdit.EditEnd) -- TODO
+              , U.onEsc (Edit TextEdit.EditEnd)
+              , U.stopPropagationOnMousedown NoOp
+              ]
+              ++ detailTextStyle topic.id boxPath model
+              ++ textEditorStyle topic.id model
+            )
+            []
+        False ->
+          div
+            ( detailTextStyle topic.id boxPath model
+              ++ textViewStyle
+            )
+            ( TextEditAPI.markdown topic.text model )
   in
   ( detailTopicStyle props
   , [ div
-      ( topicIconBoxStyle props
+      ( iconBoxStyle props
         ++ detailTopicIconBoxStyle
         ++ selectionStyle topic.id boxPath model
       )
@@ -340,7 +334,6 @@ textViewStyle : List (Attribute Msg)
 textViewStyle =
   [ style "min-width" <| fromFloat (C.topicSize.w - C.topicSize.h) ++ "px"
   , style "max-width" "max-content"
-  , style "pointer-events" "none"
   ]
 
 
@@ -373,9 +366,7 @@ blackBoxTopic : TopicInfo -> TopicProps -> BoxPath -> Model -> TopicRendering
 blackBoxTopic topic props boxPath model =
   ( topicPosStyle props
   , [ div
-      (topicFlexboxStyle topic props boxPath model
-        ++ blackBoxStyle
-      )
+      (topicFlexboxStyle topic props boxPath model)
       (viewLabelTopic topic props boxPath model
         ++ viewItemCount topic.id props model
       )
@@ -384,6 +375,67 @@ blackBoxTopic topic props boxPath model =
       []
     ]
   )
+
+
+viewLabelTopic : TopicInfo -> TopicProps -> BoxPath -> Model -> List (Html Msg)
+viewLabelTopic topic props boxPath model =
+  let
+    textElem =
+      case TextEditAPI.isEdit topic.id boxPath model of
+        True ->
+          input
+            ( [ id <| Box.elemId "input" topic.id boxPath
+              , value topic.text
+              , onInput (Edit << TextEdit.OnTextInput)
+              --, onBlur (Edit TextEdit.EditEnd) -- TODO
+              , U.onEnterOrEsc (Edit TextEdit.EditEnd)
+              , U.stopPropagationOnMousedown NoOp
+              ]
+              ++ inputStyle
+            )
+            []
+        False ->
+          div
+            topicLabelStyle
+            [ text <| Item.topicLabel topic ]
+  in
+  [ div
+    (iconBoxStyle props)
+    [ IconAPI.viewTopicIcon topic.id C.topicIconSize topicIconStyle model ]
+  , textElem
+  ]
+
+
+topicFlexboxStyle : TopicInfo -> TopicProps -> BoxPath -> Model -> List (Attribute Msg)
+topicFlexboxStyle topic props boxPath model =
+  let
+    r12 = fromInt C.topicRadius ++ "px"
+    r34 = case props.displayMode of
+      BoxD WhiteBox -> "0"
+      _ -> r12
+  in
+  [ style "display" "flex"
+  , style "align-items" "center"
+  , style "gap" "8px"
+  , style "width" <| fromFloat C.topicSize.w ++ "px"
+  , style "height" <| fromFloat C.topicSize.h ++ "px"
+  , style "border-radius" <| r12 ++ " " ++ r12 ++ " " ++ r34 ++ " " ++ r34
+  ]
+  ++ topicBorderStyle topic.id boxPath model
+
+
+ghostTopicStyle : TopicInfo -> BoxPath -> Model -> List (Attribute Msg)
+ghostTopicStyle topic boxPath model =
+  [ style "position" "absolute"
+  , style "left" <| fromInt C.blackBoxOffset ++ "px"
+  , style "top" <| fromInt C.blackBoxOffset ++ "px"
+  , style "width" <| fromFloat C.topicSize.w ++ "px"
+  , style "height" <| fromFloat C.topicSize.h ++ "px"
+  , style "border-radius" <| fromInt C.topicRadius ++ "px"
+  , style "z-index" "-1" -- behind topic
+  ]
+  ++ topicBorderStyle topic.id boxPath model
+  ++ selectionStyle topic.id boxPath model
 
 
 whiteBoxTopic : TopicInfo -> TopicProps -> BoxPath -> Model -> TopicRendering
@@ -524,24 +576,6 @@ accumulateRect posAcc boxId model =
 -- STYLE
 
 
-topicFlexboxStyle : TopicInfo -> TopicProps -> BoxPath -> Model -> List (Attribute Msg)
-topicFlexboxStyle topic props boxPath model =
-  let
-    r12 = fromInt C.topicRadius ++ "px"
-    r34 = case props.displayMode of
-      BoxD WhiteBox -> "0"
-      _ -> r12
-  in
-  [ style "display" "flex"
-  , style "align-items" "center"
-  , style "gap" "8px"
-  , style "width" <| fromFloat C.topicSize.w ++ "px"
-  , style "height" <| fromFloat C.topicSize.h ++ "px"
-  , style "border-radius" <| r12 ++ " " ++ r12 ++ " " ++ r34 ++ " " ++ r34
-  ]
-  ++ topicBorderStyle topic.id boxPath model
-
-
 topicPosStyle : TopicProps -> List (Attribute Msg)
 topicPosStyle { pos } =
   [ style "left" <| fromFloat (pos.x - C.topicW2) ++ "px"
@@ -549,8 +583,8 @@ topicPosStyle { pos } =
   ]
 
 
-topicIconBoxStyle : TopicProps -> List (Attribute Msg)
-topicIconBoxStyle props =
+iconBoxStyle : TopicProps -> List (Attribute Msg)
+iconBoxStyle props =
   let
     r1 = fromInt C.topicRadius ++ "px"
     r4 = case props.displayMode of
@@ -562,7 +596,6 @@ topicIconBoxStyle props =
   , style "height" <| fromFloat C.topicSize.h ++ "px"
   , style "border-radius" <| r1 ++ " 0 0 " ++ r4
   , style "background-color" "black"
-  , style "pointer-events" "none"
   ]
 
 
@@ -572,49 +605,6 @@ detailTopicIconBoxStyle =
   [ style "padding-left" <| fromFloat C.topicBorderWidth ++ "px"
   , style "width" <| fromFloat (C.topicSize.h - C.topicBorderWidth) ++ "px"
   ]
-
-
-topicLabelStyle : List (Attribute Msg)
-topicLabelStyle =
-  [ style "font-size" <| fromInt C.contentFontSize ++ "px"
-  , style "font-weight" C.topicLabelWeight
-  , style "overflow" "hidden"
-  , style "text-overflow" "ellipsis"
-  , style "white-space" "nowrap"
-  , style "pointer-events" "none"
-  ]
-
-
-topicInputStyle : List (Attribute Msg)
-topicInputStyle =
-  [ style "font-family" C.mainFont -- Default for <input> is "-apple-system" (on Mac)
-  , style "font-size" <| fromInt C.contentFontSize ++ "px"
-  , style "font-weight" C.topicLabelWeight
-  , style "width" "100%"
-  , style "position" "relative"
-  , style "left" "-4px"
-  , style "pointer-events" "initial" -- TODO: needed?
-  ]
-
-
-blackBoxStyle : List (Attribute Msg)
-blackBoxStyle =
-  [ style "pointer-events" "none" ]
-
-
-ghostTopicStyle : TopicInfo -> BoxPath -> Model -> List (Attribute Msg)
-ghostTopicStyle topic boxPath model =
-  [ style "position" "absolute"
-  , style "left" <| fromInt C.blackBoxOffset ++ "px"
-  , style "top" <| fromInt C.blackBoxOffset ++ "px"
-  , style "width" <| fromFloat C.topicSize.w ++ "px"
-  , style "height" <| fromFloat C.topicSize.h ++ "px"
-  , style "border-radius" <| fromInt C.topicRadius ++ "px"
-  , style "pointer-events" "none"
-  , style "z-index" "-1" -- behind topic
-  ]
-  ++ topicBorderStyle topic.id boxPath model
-  ++ selectionStyle topic.id boxPath model
 
 
 topicBorderStyle : Id -> BoxPath -> Model -> List (Attribute Msg)
