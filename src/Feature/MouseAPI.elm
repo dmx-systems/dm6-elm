@@ -1,4 +1,4 @@
-module Feature.MouseAPI exposing (mousedownHandler, hoverHandler, isHovered, update, sub)
+module Feature.MouseAPI exposing (mouseDownHandler, hoverHandler, isHovered, update, sub)
 
 import Box
 import Box.Size as Size
@@ -12,7 +12,7 @@ import Utils as U
 
 import Browser.Events as Events
 import Html exposing (Attribute)
-import Html.Events exposing (on, custom)
+import Html.Events exposing (onMouseEnter, onMouseLeave, stopPropagationOn)
 import Json.Decode as D
 import Random
 import String exposing (fromInt)
@@ -24,22 +24,21 @@ import Time exposing (Posix, posixToMillis)
 -- VIEW
 
 
-hoverHandler : List (Attribute Msg)
-hoverHandler =
-  [ on "mouseenter" (mouseDecoder Mouse.Hover)
-  , on "mouseleave" (mouseDecoder Mouse.Unhover)
+hoverHandler : Id -> BoxPath -> List (Attribute Msg)
+hoverHandler topicId boxPath =
+  [ onMouseEnter <| Mouse <| Mouse.Hover "dmx-topic" topicId boxPath
+  , onMouseLeave <| Mouse <| Mouse.Unhover "dmx-topic" topicId boxPath
   ]
 
 
-mousedownHandler : Id -> BoxPath -> List (Attribute Msg)
-mousedownHandler topicId boxPath =
-  [ custom "mousedown"
+mouseDownHandler : Id -> BoxPath -> List (Attribute Msg)
+mouseDownHandler topicId boxPath =
+  [stopPropagationOn "mousedown"
     (U.pointDecoder |> D.andThen
       (\pos -> D.succeed
-        { message = Mouse <| Mouse.DownOnItem "dmx-topic" topicId boxPath pos
-        , stopPropagation = True
-        , preventDefault = False
-        }
+        ( Mouse <| Mouse.DownOnItem "dmx-topic" topicId boxPath pos
+        , True
+        )
       )
     )
   ]
@@ -301,8 +300,3 @@ dragSub =
     [ Events.onMouseMove <| D.map Mouse <| D.map Mouse.Move U.pointDecoder
     , Events.onMouseUp <| D.map Mouse <| D.succeed Mouse.Up
     ]
-
-
-mouseDecoder : (Class -> Id -> BoxPath -> Mouse.Msg) -> D.Decoder Msg
-mouseDecoder msg =
-  D.map Mouse <| D.map3 msg U.classDecoder U.idDecoder U.pathDecoder

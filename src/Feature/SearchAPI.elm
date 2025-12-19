@@ -17,8 +17,8 @@ import Utils as U
 
 import Dict
 import Html exposing (Html, Attribute, button, div, input, text)
-import Html.Attributes exposing (attribute, class, disabled, style, title, value)
-import Html.Events exposing (onClick, onInput, onFocus, on)
+import Html.Attributes exposing (class, disabled, style, title, value)
+import Html.Events exposing (onClick, onMouseOver, onMouseOut, onInput, onFocus)
 import Json.Decode as D
 import String exposing (fromInt)
 
@@ -72,11 +72,7 @@ viewTraversalResult model =
 viewSearchtMenu : List Id -> Model -> Html Msg
 viewSearchtMenu topicIds model =
   div
-    ( [ on "click" (topicDecoder Search.ClickTopic)
-      , on "mouseover" (topicDecoder Search.HoverTopic)
-      , on "mouseout" (topicDecoder Search.UnhoverTopic)
-      , U.stopPropagationOnMousedown NoOp
-      ]
+    ( [ U.stopPropagationOnMousedown NoOp ] -- Prevent menu closing to detect item click
       ++ searchResultStyle
       ++ menuStyle
     )
@@ -89,7 +85,10 @@ viewSearchtMenu topicIds model =
         case Item.topicById id model of
           Just topic ->
             div
-              ( [ attribute "data-id" (fromInt id) ]
+              ( [ onClick <| Search <| Search.ClickTopic id
+                , onMouseOver <| Search <| Search.HoverTopic id
+                , onMouseOut <| Search <| Search.UnhoverTopic id
+                ]
                 ++ menuItemStyle isDisabled isHover
               )
               [ viewTopicIcon topic model
@@ -104,11 +103,7 @@ viewSearchtMenu topicIds model =
 viewTraversalMenu : List (Id, Id) -> Model -> Html Msg
 viewTraversalMenu relTopicIds model =
   div
-    ( [ on "click" (relTopicDecoder Search.ClickRelTopic)
-      , on "mouseover" (relTopicDecoder Search.HoverRelTopic)
-      , on "mouseout" (relTopicDecoder Search.UnhoverRelTopic)
-      , U.stopPropagationOnMousedown NoOp
-      ]
+    ( [ U.stopPropagationOnMousedown NoOp ] -- Prevent menu closing to detect item click
       ++ traversalResultStyle
       ++ menuStyle
     )
@@ -121,7 +116,10 @@ viewTraversalMenu relTopicIds model =
         case Item.topicById id model of
           Just topic ->
             div
-              ( [ attribute "data-id" <| fromInt id ++ "," ++ fromInt assocId ]
+              ( [ onClick <| Search <| Search.ClickRelTopic (id, assocId)
+                , onMouseOver <| Search <| Search.HoverRelTopic (id, assocId)
+                , onMouseOut <| Search <| Search.UnhoverRelTopic (id, assocId)
+                ]
                 ++ menuItemStyle isDisabled isHover
               )
               [ viewTopicIcon topic model
@@ -252,16 +250,6 @@ revealBoxId model =
         Just boxId -> Just boxId
         Nothing -> Nothing
     Closed -> Nothing
-
-
-topicDecoder : (Id -> Search.Msg) -> D.Decoder Msg
-topicDecoder msg =
-  D.map Search <| D.map msg U.idDecoder
-
-
-relTopicDecoder : ((Id, Id) -> Search.Msg) -> D.Decoder Msg
-relTopicDecoder msg =
-  D.map Search <| D.map msg U.idTupleDecoder
 
 
 

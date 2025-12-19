@@ -17,7 +17,7 @@ import Utils as U
 
 import Dict
 import Html exposing (Html, Attribute, div, text, input, textarea)
-import Html.Attributes exposing (id, style, attribute, value)
+import Html.Attributes exposing (id, style, value)
 import Html.Events exposing (onInput)
 import String exposing (fromInt, fromFloat)
 import Svg exposing (Svg, svg, g, line, path)
@@ -64,7 +64,6 @@ view boxId boxPath model =
         topics
     , svg
         ( [ width svgSize.w, height svgSize.h ]
-          ++ topicAttr boxId boxPath model
           ++ svgStyle
         )
         [ g
@@ -210,9 +209,9 @@ viewTopic topic props boxPath model =
     (style, children) = render topic props boxPath model
   in
   div
-    ( topicAttr topic.id boxPath model
-      ++ MouseAPI.hoverHandler
-      ++ MouseAPI.mousedownHandler topic.id boxPath
+    ( topicAttr topic.id boxPath
+      ++ MouseAPI.hoverHandler topic.id boxPath
+      ++ MouseAPI.mouseDownHandler topic.id boxPath
       ++ topicStyle topic.id boxId model
       ++ style
     )
@@ -221,16 +220,9 @@ viewTopic topic props boxPath model =
     )
 
 
-topicAttr : Id -> BoxPath -> Model -> List (Attribute Msg)
-topicAttr topicId boxPath model =
-  if model.boxId == topicId then
-    [] -- TODO: the fullscreen box would require dedicated event handling, e.g. panning?
-  else
-    [ id <| Box.elemId "topic" topicId boxPath
-    , attribute "class" "dmx-topic"
-    , attribute "data-id" (fromInt topicId)
-    , attribute "data-path" (Box.fromPath boxPath)
-    ]
+topicAttr : Id -> BoxPath -> List (Attribute Msg)
+topicAttr topicId boxPath =
+  [ id <| Box.elemId "topic" topicId boxPath ]
 
 
 topicStyle : Id -> BoxId -> Model -> List (Attribute Msg)
