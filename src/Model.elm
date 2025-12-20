@@ -10,7 +10,6 @@ import Feature.TextEdit as TextEdit
 import Feature.Tool as Tool
 import ModelParts exposing (..)
 
-import Browser.Navigation exposing (Key)
 import Dict exposing (Dict)
 import Json.Decode as D
 import Json.Decode.Pipeline exposing (required, hardcoded)
@@ -74,7 +73,7 @@ type Msg
   | MoveTopicToBox Id BoxId Point Id BoxPath Point -- start point, random point (for target)
   | TopicDragged
   | ItemClicked Id BoxPath
-  | Cancel (Maybe (Id, BoxPath))
+  | Cancel (Maybe (Id, BoxPath)) -- target
   -- feature modules
   | Tool Tool.Msg
   | Edit TextEdit.Msg

@@ -3,7 +3,6 @@ port module Feature.NavAPI exposing (boxIdFromHash, pushUrl, update, sub)
 import Box
 import Box.Size as Size
 import Feature.Nav as Nav
-import Feature.SelAPI as SelAPI
 import Model exposing (Model, Msg(..))
 import ModelParts exposing (..)
 import Storage as S
@@ -60,10 +59,11 @@ setFullscreenBox boxId model =
   let
     newModel = { model | boxId = boxId }
   in
-  ( newModel
-    |> SelAPI.clear -- TODO: add closeMenu etc. calls?
-    |> Size.auto
-  , setViewport newModel
+  ( newModel |> Size.auto
+  , Cmd.batch
+      [ setViewport newModel
+      , U.command <| Cancel Nothing
+      ]
   )
 
 

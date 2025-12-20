@@ -1,4 +1,5 @@
-module Feature.IconAPI exposing (view, viewTopicIcon, viewMenu, closeMenu, update)
+module Feature.IconAPI exposing (view, viewTopicIcon, viewPicker, openPicker, closePicker,
+  update)
 
 import Feature.Icon as Icon
 import Feature.SelAPI as SelAPI
@@ -20,19 +21,19 @@ import FeatherIcons as FI
 -- VIEW
 
 
-viewMenu : Model -> List (Html Msg)
-viewMenu model =
-  case model.icon.menu of
+viewPicker : Model -> List (Html Msg)
+viewPicker model =
+  case model.icon.picker of
     Icon.Open ->
       [ div
-        iconMenuStyle
+        pickerStyle
         viewIconList
       ]
     Icon.Closed -> []
 
 
-iconMenuStyle : List (Attribute Msg)
-iconMenuStyle =
+pickerStyle : List (Attribute Msg)
+pickerStyle =
   [ style "position" "absolute"
   , style "left" "35px"
   , style "width" "288px"
@@ -49,8 +50,8 @@ viewIconList =
       button
         ( [ class "tool"
           , title iconName
-          , onClick (Just iconName |> Icon.SetIcon |> Icon)
-          , U.onMouseDownStop NoOp -- Prevent icon menu closing
+          , onClick (Just iconName |> Icon.IconSelected |> Icon)
+          , U.onMouseDownStop NoOp -- Prevent icon picker closing
           ]
           ++ iconButtonStyle
         )
@@ -94,21 +95,20 @@ view iconName size style_ =
 update : Icon.Msg -> UndoModel -> (UndoModel, Cmd Msg)
 update msg ({present} as undoModel) =
   case msg of
-    Icon.OpenMenu -> (openMenu present, Cmd.none) |> Undo.swap undoModel
-    Icon.SetIcon maybeIcon -> setIcon maybeIcon present
-      |> closeMenu
+    Icon.IconSelected maybeIcon -> setIcon maybeIcon present
+      |> closePicker
       |> S.store
       |> Undo.push undoModel
 
 
-openMenu : Model -> Model
-openMenu ({icon} as model) =
-  { model | icon = { icon | menu = Icon.Open }}
+openPicker : Model -> Model
+openPicker ({icon} as model) =
+  { model | icon = { icon | picker = Icon.Open }}
 
 
-closeMenu : Model -> Model
-closeMenu ({icon} as model) =
-  { model | icon = { icon | menu = Icon.Closed }}
+closePicker : Model -> Model
+closePicker ({icon} as model) =
+  { model | icon = { icon | picker = Icon.Closed }}
 
 
 setIcon : Maybe Icon -> Model -> Model

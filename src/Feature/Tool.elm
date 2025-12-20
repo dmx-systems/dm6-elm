@@ -16,6 +16,7 @@ type Msg
   | Redo
   -- Item Tools
   | Edit
+  | Icon
   | Delete
   | Remove
   | Fullscreen BoxId

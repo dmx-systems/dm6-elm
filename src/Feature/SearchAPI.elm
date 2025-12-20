@@ -19,7 +19,6 @@ import Dict
 import Html exposing (Html, Attribute, button, div, input, text)
 import Html.Attributes exposing (class, disabled, style, title, value)
 import Html.Events exposing (onClick, onMouseOver, onMouseOut, onInput, onFocus)
-import Json.Decode as D
 import String exposing (fromInt)
 
 

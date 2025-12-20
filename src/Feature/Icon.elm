@@ -8,19 +8,18 @@ import ModelParts exposing (Icon)
 
 
 type alias Model =
-  { menu : Menu }
+  { picker : Picker }
 
 
 init : Model
 init =
-  { menu = Closed }
+  { picker = Closed }
 
 
-type Menu
+type Picker
   = Open
   | Closed
 
 
 type Msg
-  = OpenMenu
-  | SetIcon (Maybe Icon)
+  = IconSelected (Maybe Icon)

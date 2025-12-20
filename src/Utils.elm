@@ -7,6 +7,7 @@ import Html.Events exposing (on, stopPropagationOn, keyCode)
 import Json.Decode as D
 import Logger
 import String exposing (fromInt)
+import Task
 
 
 
@@ -14,26 +15,26 @@ import String exposing (fromInt)
 
 
 onEsc : msg -> Attribute msg
-onEsc msg_ =
-  on "keydown" (keyDecoder 27 msg_)
+onEsc msg =
+  on "keydown" (keyDecoder 27 msg)
 
 
 onEnterOrEsc : msg -> Attribute msg
-onEnterOrEsc msg_ =
+onEnterOrEsc msg =
   on "keydown"
     ( D.oneOf
-      [ keyDecoder 13 msg_
-      , keyDecoder 27 msg_
+      [ keyDecoder 13 msg
+      , keyDecoder 27 msg
       ]
     )
 
 
 keyDecoder : Int -> msg -> D.Decoder msg
-keyDecoder key msg_ =
+keyDecoder key msg =
   let
     isKey code =
       if code == key then
-        D.succeed msg_
+        D.succeed msg
       else
         D.fail "not that key"
   in
@@ -41,23 +42,23 @@ keyDecoder key msg_ =
 
 
 onMouseDownStop : msg -> Attribute msg
-onMouseDownStop msg_ =
-  stopPropagation "mousedown" msg_
+onMouseDownStop msg =
+  stopPropagation "mousedown" msg
 
 
 onMouseOverStop : msg -> Attribute msg
-onMouseOverStop msg_ =
-  stopPropagation "mouseover" msg_
+onMouseOverStop msg =
+  stopPropagation "mouseover" msg
 
 
 onMouseOutStop : msg -> Attribute msg
-onMouseOutStop msg_ =
-  stopPropagation "mouseout" msg_
+onMouseOutStop msg =
+  stopPropagation "mouseout" msg
 
 
 stopPropagation : String -> msg -> Attribute msg
-stopPropagation eventName msg_ =
-  stopPropagationOn eventName <| D.succeed (msg_, True)
+stopPropagation eventName msg =
+  stopPropagationOn eventName <| D.succeed (msg, True)
 
 
 
@@ -69,6 +70,15 @@ pointDecoder =
   D.map2 Point
     (D.field "clientX" D.float)
     (D.field "clientY" D.float)
+
+
+
+-- COMMAND
+
+
+command : msg -> Cmd msg
+command msg =
+  Task.succeed () |> Task.perform (\_ -> msg)
 
 
 

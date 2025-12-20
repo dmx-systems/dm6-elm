@@ -5,7 +5,6 @@ import Box.Size as Size
 import Config as C
 import Feature.IconAPI as IconAPI
 import Feature.MouseAPI as MouseAPI
-import Feature.Nav as Nav
 import Feature.NavAPI as NavAPI
 import Feature.SearchAPI as SearchAPI
 import Feature.SelAPI as SelAPI
@@ -20,7 +19,6 @@ import Undo exposing (UndoModel)
 import Utils as U
 
 import Browser
-import Browser.Navigation exposing (Key)
 import Dict
 import Html exposing (Html, Attribute, div, text, br, a)
 import Html.Attributes exposing (id, style, href)
@@ -347,7 +345,7 @@ cancelUI maybeTarget model =
   in
   ( model
     |> (if shouldClear then SelAPI.clear else identity)
-    |> IconAPI.closeMenu
+    |> IconAPI.closePicker
     |> SearchAPI.closeMenu
   , Cmd.none
   )

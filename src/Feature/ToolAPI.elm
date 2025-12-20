@@ -4,7 +4,6 @@ import Box
 import Box.Size as Size
 import Box.Transfer as Transfer
 import Config as C
-import Feature.Icon as Icon
 import Feature.IconAPI as IconAPI
 import Feature.MouseAPI as MouseAPI
 import Feature.NavAPI as NavAPI
@@ -48,8 +47,8 @@ viewGlobalTools model =
   , SearchAPI.viewInput model
   , div
     importExportStyle
-    [ viewTextButton "Import" (Tool Tool.Import) True
-    , viewTextButton "Export" (Tool Tool.Export) True
+    [ viewTextButton "Import" (Tool Tool.Import)
+    , viewTextButton "Export" (Tool Tool.Export)
     ]
   ]
 
@@ -117,7 +116,7 @@ viewToolbar itemId boxId model =
   let
     topicTools =
       [ viewItemButton "Edit" "edit-3" (Tool Tool.Edit) True
-      , viewItemButton "Choose Icon" "image" (Icon Icon.OpenMenu) True
+      , viewItemButton "Select Icon" "image" (Tool Tool.Icon) True
       , viewItemButton "Traverse" "share-2" (Search Search.Traverse) True
       , viewItemButton "Delete" "trash" (Tool Tool.Delete) True
       , viewItemButton "Remove" "x" (Tool Tool.Remove) True
@@ -137,7 +136,7 @@ viewToolbar itemId boxId model =
     ( toolbarStyle itemId boxId model )
     ( topicTools
       ++ boxTools
-      ++ IconAPI.viewMenu model
+      ++ IconAPI.viewPicker model
       ++ SearchAPI.viewTraversalResult model
     )
 
@@ -217,16 +216,20 @@ caretStyle =
 
 -- Buttons
 
-viewTextButton : String -> Msg -> Bool -> Html Msg
-viewTextButton label msg isEnabled =
+viewTextButton : String -> Msg -> Html Msg
+viewTextButton label msg =
   button
-    ( [ onClick msg
-      , disabled <| not isEnabled
-      , U.onMouseDownStop NoOp
-      ]
+    ( [ onClick msg ]
       ++ textButtonStyle
     )
     [ text label ]
+
+
+textButtonStyle : List (Attribute Msg)
+textButtonStyle =
+  [ style "font-family" C.mainFont
+  , style "font-size" <| fromInt C.toolFontSize ++ "px"
+  ]
 
 
 viewMapButton : String -> String -> Msg -> Bool -> Html Msg
@@ -252,13 +255,6 @@ viewIconButton label icon iconSize msg isEnabled extraStyle =
       ++ extraStyle
     )
     [ IconAPI.view icon iconSize [] ]
-
-
-textButtonStyle : List (Attribute Msg)
-textButtonStyle =
-  [ style "font-family" C.mainFont
-  , style "font-size" <| fromInt C.toolFontSize ++ "px"
-  ]
 
 
 iconButtonStyle : List (Attribute Msg)
@@ -287,6 +283,7 @@ update msg ({present} as undoModel) =
     Tool.Redo -> Undo.redo undoModel
     -- Item Tools
     Tool.Edit -> edit present |> S.storeWith |> Undo.swap undoModel
+    Tool.Icon -> (IconAPI.openPicker present, Cmd.none) |> Undo.swap undoModel
     Tool.Delete -> delete present |> S.store |> Undo.push undoModel
     Tool.Remove -> remove present |> S.store |> Undo.push undoModel
     Tool.Fullscreen boxId -> (undoModel, NavAPI.pushUrl boxId)

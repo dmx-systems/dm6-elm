@@ -65,7 +65,7 @@ update msg ({present} as undoModel) =
 
 mouseDown : Cmd Msg
 mouseDown =
-  command <| Cancel Nothing
+  U.command <| Cancel Nothing
 
 
 mouseDownOnItem : Class -> Id -> BoxPath -> Point -> Model -> (Model, Cmd Msg)
@@ -73,7 +73,7 @@ mouseDownOnItem class id boxPath pos model =
   ( model
     |> setDragState (WaitForStartTime class id boxPath pos)
   , Cmd.batch
-    [ command <| Cancel <| Just (id, boxPath)
+    [ U.command <| Cancel <| Just (id, boxPath)
     , Task.perform (Mouse << Mouse.Time) Time.now
     ]
   )
@@ -173,7 +173,7 @@ mouseUp model =
           let
             _ = U.info "mouseUp" "topic drag ended w/o target"
           in
-          command <| TopicDragged
+          U.command <| TopicDragged
         Drag DraftAssoc id boxPath _ _ (Just (targetId, targetPath)) ->
           let
             _ = U.info "mouseUp" ("assoc drawn from " ++ fromInt id ++ " (box " ++ Box.fromPath
@@ -183,7 +183,7 @@ mouseUp model =
             isSameBox = boxId == Box.firstId targetPath
           in
           case isSameBox of
-            True -> command <| AddAssoc id targetId boxId
+            True -> U.command <| AddAssoc id targetId boxId
             False -> Cmd.none
         Drag DraftAssoc _ _ _ _ _ ->
           let
@@ -194,7 +194,7 @@ mouseUp model =
           let
             _ = U.info "mouseUp" "item not moved -> ItemClicked"
           in
-          command <| ItemClicked id boxPath
+          U.command <| ItemClicked id boxPath
         _ ->
           U.logError "mouseUp"
             ("Received \"Up\" message when dragState is " ++ U.toString model.mouse.dragState)
@@ -268,11 +268,6 @@ isHovered itemId boxId model =
     NoDrag (Just (itemId_, boxId_ :: _ )) ->
       itemId == itemId_ && boxId == boxId_ -- TODO: box path?
     _ -> False
-
-
-command : Msg -> Cmd Msg
-command msg =
-  Task.succeed () |> Task.perform (\_ -> msg)
 
 
 
