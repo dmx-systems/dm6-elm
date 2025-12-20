@@ -8,7 +8,7 @@ import Feature.MouseAPI as MouseAPI
 import Feature.NavAPI as NavAPI
 import Feature.SearchAPI as SearchAPI
 import Feature.SelAPI as SelAPI
-import Feature.TextEditAPI as TextEditAPI
+import Feature.TextAPI as TextAPI
 import Feature.ToolAPI as ToolAPI
 import Item
 import Map
@@ -231,7 +231,7 @@ viewMeasure model =
     ( [ id "measure" ]
       ++ measureStyle
     )
-    [ text model.edit.measureText
+    [ text model.text.measure
     , br [] []
     ]
 
@@ -277,7 +277,7 @@ update msg ({present} as undoModel) =
     Cancel maybeTarget -> cancelUI maybeTarget present |> Undo.swap undoModel
     -- feature modules
     Tool toolMsg -> ToolAPI.update toolMsg undoModel
-    Edit editMsg -> TextEditAPI.update editMsg undoModel
+    Text textMsg -> TextAPI.update textMsg undoModel
     Mouse mouseMsg -> MouseAPI.update mouseMsg undoModel
     Search searchMsg -> SearchAPI.update searchMsg undoModel
     Icon iconMenuMsg -> IconAPI.update iconMenuMsg undoModel
@@ -347,7 +347,7 @@ cancelUI maybeTarget model =
   |> (if shouldClear then SelAPI.clear else identity)
   |> IconAPI.closePicker
   |> SearchAPI.closeMenu
-  |> TextEditAPI.leaveEdit
+  |> TextAPI.leaveEdit
 
 
 updateScrollPos : Point -> Model -> Model

@@ -10,7 +10,7 @@ import Feature.NavAPI as NavAPI
 import Feature.Search as Search
 import Feature.SearchAPI as SearchAPI
 import Feature.SelAPI as SelAPI
-import Feature.TextEditAPI as TextEditAPI
+import Feature.TextAPI as TextAPI
 import Feature.Tool as Tool
 import Item
 import Model exposing (Model, Msg(..))
@@ -97,7 +97,7 @@ viewItemTools itemId boxPath model =
     boxId = Box.firstId boxPath
     toolbar =
       if SelAPI.isSelectedPath itemId boxPath model then
-        if TextEditAPI.isEdit itemId boxPath model then
+        if TextAPI.isEdit itemId boxPath model then
           [ viewTextToolbar itemId boxId model ]
         else
           [ viewToolbar itemId boxId model ]
@@ -308,7 +308,7 @@ addTopic model =
   newModel
   |> Box.addItem topicId props boxId
   |> SelAPI.select topicId [ boxId ]
-  |> TextEditAPI.enterEdit topicId [ boxId ]
+  |> TextAPI.enterEdit topicId [ boxId ]
 
 
 -- TODO: factor out addTopic() common code
@@ -325,13 +325,13 @@ addBox model =
   |> Box.addBox topicId
   |> Box.addItem topicId props boxId
   |> SelAPI.select topicId [ boxId ]
-  |> TextEditAPI.enterEdit topicId [ boxId ]
+  |> TextAPI.enterEdit topicId [ boxId ]
 
 
 edit : Model -> (Model, Cmd Msg)
 edit model =
   case SelAPI.single model of
-    Just (topicId, boxPath) -> TextEditAPI.enterEdit topicId boxPath model
+    Just (topicId, boxPath) -> TextAPI.enterEdit topicId boxPath model
     Nothing -> U.logError "edit" "called when there is no single selection" (model, Cmd.none)
 
 

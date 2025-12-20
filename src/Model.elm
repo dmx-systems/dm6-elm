@@ -6,7 +6,7 @@ import Feature.Mouse as Mouse
 import Feature.Nav as Nav
 import Feature.Search as Search
 import Feature.Sel as Sel
-import Feature.TextEdit as TextEdit
+import Feature.Text as Text
 import Feature.Tool as Tool
 import ModelParts exposing (..)
 
@@ -26,7 +26,7 @@ type alias Model =
   ----- transient -----
   , imageCache : Dict ImageId String -- Int -> blob: URL
   -- feature modules
-  , edit : TextEdit.Model
+  , text : Text.Model
   , mouse : Mouse.Model
   , search : Search.Model
   , icon : Icon.Model
@@ -47,7 +47,7 @@ init =
   ----- transient -----
   , imageCache = Dict.empty
   -- feature modules
-  , edit = TextEdit.init
+  , text = Text.init
   , mouse = Mouse.init
   , search = Search.init
   , icon = Icon.init
@@ -59,7 +59,7 @@ initTransient : Model -> Model
 initTransient model =
   { model
   -- feature modules
-  | edit = TextEdit.init
+  | text = Text.init
   , mouse = Mouse.init
   , search = Search.init
   , icon = Icon.init
@@ -76,7 +76,7 @@ type Msg
   | Cancel (Maybe (Id, BoxPath)) -- target
   -- feature modules
   | Tool Tool.Msg
-  | Edit TextEdit.Msg
+  | Text Text.Msg
   | Mouse Mouse.Msg
   | Search Search.Msg
   | Icon Icon.Msg
@@ -112,7 +112,7 @@ decoder =
   ----- transient -----
   |> hardcoded Dict.empty
   -- feature modules
-  |> hardcoded TextEdit.init
+  |> hardcoded Text.init
   |> hardcoded Mouse.init
   |> hardcoded Search.init
   |> hardcoded Icon.init

@@ -3,7 +3,7 @@ module Box.Size exposing (auto)
 import Box
 import Config as C
 import Feature.Mouse exposing (DragState(..), DragMode(..))
-import Feature.TextEdit exposing (EditState(..))
+import Feature.Text exposing (EditState(..))
 import Item
 import Map.Model as MM
 import Model exposing (Model)
@@ -86,7 +86,7 @@ topicExtent pos =
 detailTopicExtent : Id -> BoxPath -> Point -> Model -> Rectangle
 detailTopicExtent topicId boxPath pos model =
   let
-    isEdit = model.edit.state == ItemEdit topicId boxPath -- TODO: use TextEditAPI (cyclic atm)
+    isEdit = model.text.edit == Edit topicId boxPath -- TODO: use TextAPI (cyclic atm)
     get = if isEdit then .editor else .view
     maybeSize =
       case Item.topicSize topicId get model of

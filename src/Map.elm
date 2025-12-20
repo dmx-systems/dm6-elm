@@ -6,7 +6,7 @@ import Feature.IconAPI as IconAPI
 import Feature.Mouse exposing (DragState(..), DragMode(..))
 import Feature.MouseAPI as MouseAPI
 import Feature.SelAPI as SelAPI
-import Feature.TextEditAPI as TextEditAPI
+import Feature.TextAPI as TextAPI
 import Feature.ToolAPI as ToolAPI
 import Item
 import Map.Model as MM
@@ -272,9 +272,9 @@ viewLabelTopic : TopicInfo -> TopicProps -> BoxPath -> Model -> List (Html Msg)
 viewLabelTopic topic props boxPath model =
   let
     textElem =
-      case TextEditAPI.isEdit topic.id boxPath model of
+      case TextAPI.isEdit topic.id boxPath model of
         True ->
-          TextEditAPI.viewInput topic boxPath inputStyle
+          TextAPI.viewInput topic boxPath inputStyle
         False ->
           div
             topicLabelStyle
@@ -291,9 +291,9 @@ detailTopic : TopicInfo -> TopicProps -> BoxPath -> Model -> TopicRendering
 detailTopic topic props boxPath model =
   let
     textElem =
-      case TextEditAPI.isEdit topic.id boxPath model of
+      case TextAPI.isEdit topic.id boxPath model of
         True ->
-          TextEditAPI.viewTextarea topic boxPath
+          TextAPI.viewTextarea topic boxPath
             ( detailTextStyle topic.id boxPath model
               ++ textEditorStyle topic.id model
             )
@@ -302,7 +302,7 @@ detailTopic topic props boxPath model =
             ( detailTextStyle topic.id boxPath model
               ++ textViewStyle
             )
-            ( TextEditAPI.markdown topic.text model )
+            ( TextAPI.markdown topic.text model )
   in
   ( detailTopicStyle props
   , [ div

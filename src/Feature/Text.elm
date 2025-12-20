@@ -1,24 +1,24 @@
-module Feature.TextEdit exposing (..)
+module Feature.Text exposing (..)
 
 import ModelParts exposing (Id, BoxPath, Size, SizeField)
 
 
 
 type alias Model =
-  { state : EditState
-  , measureText : String
+  { edit : EditState
+  , measure : String
   }
 
 
 init : Model
 init =
-  { state = NoEdit
-  , measureText = ""
+  { edit = NoEdit
+  , measure = ""
   }
 
 
 type EditState
-  = ItemEdit Id BoxPath
+  = Edit Id BoxPath
   | NoEdit
 
 

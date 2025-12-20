@@ -1,9 +1,9 @@
-module Feature.TextEditAPI exposing (viewInput, viewTextarea, enterEdit, leaveEdit, isEdit,
+module Feature.TextAPI exposing (viewInput, viewTextarea, enterEdit, leaveEdit, isEdit,
   markdown, update)
 
 import Box
 import Box.Size as Size -- TODO: don't import, let caller do the sizing instead
-import Feature.TextEdit as TextEdit exposing (EditState(..))
+import Feature.Text as Text exposing (EditState(..))
 import Item
 import Model exposing (Model, Msg(..))
 import ModelParts exposing (..)
@@ -17,7 +17,7 @@ import Dict
 import Html exposing (Html, Attribute, input, textarea, text)
 import Html.Attributes exposing (id, value)
 import Html.Events exposing (onInput)
-import Markdown.Block as Block exposing (Block, Inline(..))
+import Markdown.Block as Block exposing (Block)
 import Markdown.Parser as Parser
 import Markdown.Renderer as Renderer
 
@@ -31,8 +31,8 @@ viewInput topic boxPath style =
   input
     ( [ id <| Box.elemId "input" topic.id boxPath
       , value topic.text
-      , onInput (Edit << TextEdit.OnTextInput)
-      , U.onEnterOrEsc (Edit TextEdit.LeaveEdit)
+      , onInput (Text << Text.OnTextInput)
+      , U.onEnterOrEsc (Text Text.LeaveEdit)
       , U.onMouseDownStop NoOp -- Prevent drag initiation
       ]
       ++ style
@@ -45,8 +45,8 @@ viewTextarea topic boxPath style =
   textarea
     ( [ id <| Box.elemId "input" topic.id boxPath
       , value topic.text
-      , onInput (Edit << TextEdit.OnTextareaInput)
-      , U.onEsc (Edit TextEdit.LeaveEdit)
+      , onInput (Text << Text.OnTextareaInput)
+      , U.onEsc (Text Text.LeaveEdit)
       , U.onMouseDownStop NoOp -- Prevent drag initiation
       ]
       ++ style
@@ -58,21 +58,21 @@ viewTextarea topic boxPath style =
 -- UPDATE
 
 
-update : TextEdit.Msg -> UndoModel -> (UndoModel, Cmd Msg)
+update : Text.Msg -> UndoModel -> (UndoModel, Cmd Msg)
 update msg ({present} as undoModel) =
   case msg of
-    TextEdit.OnTextInput text -> onTextInput text present |> S.store
+    Text.OnTextInput text -> onTextInput text present |> S.store
       |> Undo.swap undoModel
-    TextEdit.OnTextareaInput text -> onTextareaInput text present |> S.storeWith
+    Text.OnTextareaInput text -> onTextareaInput text present |> S.storeWith
       |> Undo.swap undoModel
-    TextEdit.GotTextSize topicId sizeField size ->
+    Text.GotTextSize topicId sizeField size ->
       ( present
         |> Item.setTopicSize topicId sizeField size
         |> Size.auto
       , Cmd.none
       )
       |> Undo.swap undoModel
-    TextEdit.LeaveEdit -> leaveEdit present |> Undo.swap undoModel
+    Text.LeaveEdit -> leaveEdit present |> Undo.swap undoModel
 
 
 enterEdit : Id -> BoxPath -> Model -> (Model, Cmd Msg)
@@ -80,7 +80,7 @@ enterEdit topicId boxPath model =
   let
     newModel =
       model
-      |> setEditState (ItemEdit topicId boxPath)
+      |> setEditState (Edit topicId boxPath)
       |> switchTopicDisplay topicId (Box.firstId boxPath)
       |> Size.auto
   in
@@ -89,8 +89,8 @@ enterEdit topicId boxPath model =
 
 leaveEdit : Model -> (Model, Cmd Msg)
 leaveEdit model =
-  case model.edit.state of
-    ItemEdit topicId boxPath ->
+  case model.text.edit of
+    Edit topicId boxPath ->
       let
         elemId = Box.elemId "topic" topicId boxPath
       in
@@ -115,23 +115,23 @@ switchTopicDisplay topicId boxId model =
 
 onTextInput : String -> Model -> Model
 onTextInput text model =
-  case model.edit.state of
-    ItemEdit topicId _ ->
+  case model.text.edit of
+    Edit topicId _ ->
       Item.updateTopic topicId
         (\topic -> { topic | text = text })
         model
-    NoEdit -> U.logError "onTextInput" "called when edit.state is NoEdit" model
+    NoEdit -> U.logError "onTextInput" "called when text.edit is NoEdit" model
 
 
 onTextareaInput : String -> Model -> (Model, Cmd Msg)
 onTextareaInput text model =
-  case model.edit.state of
-    ItemEdit topicId _ ->
+  case model.text.edit of
+    Edit topicId _ ->
       Item.updateTopic topicId
         (\topic -> { topic | text = text })
         model
       |> measureText text topicId
-    NoEdit -> U.logError "onTextareaInput" "called when edit.state is NoEdit" (model, Cmd.none)
+    NoEdit -> U.logError "onTextareaInput" "called when text.edit is NoEdit" (model, Cmd.none)
 
 
 measureText : String -> Id -> Model -> (Model, Cmd Msg)
@@ -146,8 +146,8 @@ measureElement elemId topicId sizeField =
   Dom.getElement elemId |> Task.attempt
     (\result ->
       case result of
-        Ok {element} -> Edit
-          (TextEdit.GotTextSize topicId sizeField
+        Ok {element} -> Text
+          (Text.GotTextSize topicId sizeField
             (Size element.width element.height)
           )
         Err err -> U.logError "measureElement" (U.toString err) NoOp
@@ -158,9 +158,9 @@ focus : Model -> Cmd Msg
 focus model =
   let
     elemId =
-      case model.edit.state of
-        ItemEdit id boxPath -> Box.elemId "input" id boxPath
-        NoEdit -> U.logError "focus" "called when edit.state is NoEdit" ""
+      case model.text.edit of
+        Edit id boxPath -> Box.elemId "input" id boxPath
+        NoEdit -> U.logError "focus" "called when text.edit is NoEdit" ""
   in
   Dom.focus elemId |> Task.attempt
     (\result ->
@@ -172,17 +172,17 @@ focus model =
 
 isEdit : Id -> BoxPath -> Model -> Bool
 isEdit topicId boxPath model =
-  model.edit.state == ItemEdit topicId boxPath
+  model.text.edit == Edit topicId boxPath
 
 
 setEditState : EditState -> Model -> Model
-setEditState state ({edit} as model) =
-  { model | edit = { edit | state = state }}
+setEditState state ({text} as model) =
+  { model | text = { text | edit = state }}
 
 
 setMeasureText : String -> Model -> Model
-setMeasureText text ({edit} as model) =
-  { model | edit = { edit | measureText = text }}
+setMeasureText text_ ({text} as model) =
+  { model | text = { text | measure = text_ }}
 
 
 
@@ -205,7 +205,7 @@ resolveImageUrls model blocks =
     ( Block.walkInlines
       (\inline ->
         case inline of
-          Image url title altInlines ->
+          Block.Image url title altInlines ->
             -- let
             --   _ = U.info "resolveImageUrls" (url, title, altInlines)
             -- in
@@ -215,7 +215,7 @@ resolveImageUrls model blocks =
     )
 
 
-resolveImageUrl : String -> Maybe String -> List Inline -> Model -> Inline
+resolveImageUrl : String -> Maybe String -> List Block.Inline -> Model -> Block.Inline
 resolveImageUrl url title altInlines model =
   let
     newUrl =
@@ -234,7 +234,7 @@ resolveImageUrl url title altInlines model =
           in
           url
   in
-  Image newUrl title altInlines
+  Block.Image newUrl title altInlines
 
 
 imageId : String -> Maybe ImageId
