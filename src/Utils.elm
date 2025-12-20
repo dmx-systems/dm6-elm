@@ -40,39 +40,28 @@ keyDecoder key msg_ =
   keyCode |> D.andThen isKey
 
 
-stopPropagationOnMousedown : msg -> Attribute msg
-stopPropagationOnMousedown msg_ =
-  stopPropagationOn "mousedown" <| D.succeed (msg_, True)
+onMouseDownStop : msg -> Attribute msg
+onMouseDownStop msg_ =
+  stopPropagation "mousedown" msg_
+
+
+onMouseOverStop : msg -> Attribute msg
+onMouseOverStop msg_ =
+  stopPropagation "mouseover" msg_
+
+
+onMouseOutStop : msg -> Attribute msg
+onMouseOutStop msg_ =
+  stopPropagation "mouseout" msg_
+
+
+stopPropagation : String -> msg -> Attribute msg
+stopPropagation eventName msg_ =
+  stopPropagationOn eventName <| D.succeed (msg_, True)
 
 
 
 -- DECODER
-
-
-classDecoder : D.Decoder Class
-classDecoder =
-  D.oneOf
-    [ D.at ["target", "className"] D.string -- HTML elements
-    , D.at ["target", "className", "baseVal"] D.string -- SVG elements
-    ]
-
-
-idDecoder : D.Decoder Id
-idDecoder =
-  D.at ["target", "dataset", "id"] D.string
-  |> D.andThen toIntDecoder
-
-
-idTupleDecoder : D.Decoder (Id, Id)
-idTupleDecoder =
-  D.at ["target", "dataset", "id"] D.string
-  |> D.andThen toIntTupleDecoder
-
-
-pathDecoder : D.Decoder BoxPath
-pathDecoder =
-  D.at ["target", "dataset", "path"] D.string
-  |> D.andThen toIntListDecoder
 
 
 pointDecoder : D.Decoder Point
@@ -80,38 +69,6 @@ pointDecoder =
   D.map2 Point
     (D.field "clientX" D.float)
     (D.field "clientY" D.float)
-
-
---
-
-toIntDecoder : String -> D.Decoder Int
-toIntDecoder str =
-  case String.toInt str of
-    Just int -> D.succeed int
-    Nothing -> D.fail <| "\"" ++ str ++ "\" is not an Int"
-
-
-toIntTupleDecoder : String -> D.Decoder (Int, Int)
-toIntTupleDecoder string =
-  D.succeed <|
-    case toIntList string of
-      [int1, int2] -> (int1, int2)
-      _ -> logError "toIntTupleDecoder" ("\"" ++ string ++ "\" is not a pair") (-1, -1)
-
-
-toIntListDecoder : String -> D.Decoder (List Int)
-toIntListDecoder string =
-  D.succeed <| toIntList string
-
-
-toIntList : String -> List Int
-toIntList string =
-  string |> String.split "," |> List.map
-    (\str ->
-      case str |> String.toInt of
-        Just int -> int
-        Nothing -> logError "toIntList" ("\"" ++ str ++ "\" is not an Int") -1
-    )
 
 
 

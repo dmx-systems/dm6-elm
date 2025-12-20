@@ -1,4 +1,4 @@
-module Feature.MouseAPI exposing (hoverHandler, isHovered, update, sub)
+module Feature.MouseAPI exposing (mouseDownHandler, hoverHandler, isHovered, update, sub)
 
 import Box
 import Box.Size as Size
@@ -12,7 +12,7 @@ import Utils as U
 
 import Browser.Events as Events
 import Html exposing (Attribute)
-import Html.Events exposing (on)
+import Html.Events exposing (onMouseEnter, onMouseLeave, stopPropagationOn)
 import Json.Decode as D
 import Random
 import String exposing (fromInt)
@@ -24,10 +24,23 @@ import Time exposing (Posix, posixToMillis)
 -- VIEW
 
 
-hoverHandler : List (Attribute Msg)
-hoverHandler =
-  [ on "mouseenter" (mouseDecoder Mouse.Hover)
-  , on "mouseleave" (mouseDecoder Mouse.Unhover)
+hoverHandler : Id -> BoxPath -> List (Attribute Msg)
+hoverHandler topicId boxPath =
+  [ onMouseEnter <| Mouse <| Mouse.Hover "dmx-topic" topicId boxPath
+  , onMouseLeave <| Mouse <| Mouse.Unhover "dmx-topic" topicId boxPath
+  ]
+
+
+mouseDownHandler : Id -> BoxPath -> List (Attribute Msg)
+mouseDownHandler topicId boxPath =
+  [stopPropagationOn "mousedown"
+    (U.pointDecoder |> D.andThen
+      (\pos -> D.succeed
+        ( Mouse <| Mouse.DownOnItem "dmx-topic" topicId boxPath pos
+        , True
+        )
+      )
+    )
   ]
 
 
@@ -52,7 +65,7 @@ update msg ({present} as undoModel) =
 
 mouseDown : Cmd Msg
 mouseDown =
-  command <| MouseDown Nothing
+  command <| Cancel Nothing
 
 
 mouseDownOnItem : Class -> Id -> BoxPath -> Point -> Model -> (Model, Cmd Msg)
@@ -60,7 +73,7 @@ mouseDownOnItem class id boxPath pos model =
   ( model
     |> setDragState (WaitForStartTime class id boxPath pos)
   , Cmd.batch
-    [ command <| MouseDown <| Just (id, boxPath)
+    [ command <| Cancel <| Just (id, boxPath)
     , Task.perform (Mouse << Mouse.Time) Time.now
     ]
   )
@@ -276,15 +289,9 @@ sub {present} =
     NoDrag _ -> mouseDownSub
 
 
--- TODO: attach mousedown listeners to elements directly.
--- All the "pointer-events: none" could be removed then.
 mouseDownSub : Sub Msg
 mouseDownSub =
-  Events.onMouseDown <| D.oneOf
-    [ D.map Mouse <| D.map4 Mouse.DownOnItem
-        U.classDecoder U.idDecoder U.pathDecoder U.pointDecoder
-    , D.succeed (Mouse Mouse.Down)
-    ]
+  Events.onMouseDown <| D.succeed <| Mouse Mouse.Down
 
 
 dragSub : Sub Msg
@@ -293,8 +300,3 @@ dragSub =
     [ Events.onMouseMove <| D.map Mouse <| D.map Mouse.Move U.pointDecoder
     , Events.onMouseUp <| D.map Mouse <| D.succeed Mouse.Up
     ]
-
-
-mouseDecoder : (Class -> Id -> BoxPath -> Mouse.Msg) -> D.Decoder Msg
-mouseDecoder msg =
-  D.map Mouse <| D.map3 msg U.classDecoder U.idDecoder U.pathDecoder
