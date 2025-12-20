@@ -308,7 +308,7 @@ addTopic model =
   newModel
   |> Box.addItem topicId props boxId
   |> SelAPI.select topicId [ boxId ]
-  |> TextEditAPI.startEdit topicId [ boxId ]
+  |> TextEditAPI.enterEdit topicId [ boxId ]
 
 
 -- TODO: factor out addTopic() common code
@@ -325,13 +325,13 @@ addBox model =
   |> Box.addBox topicId
   |> Box.addItem topicId props boxId
   |> SelAPI.select topicId [ boxId ]
-  |> TextEditAPI.startEdit topicId [ boxId ]
+  |> TextEditAPI.enterEdit topicId [ boxId ]
 
 
 edit : Model -> (Model, Cmd Msg)
 edit model =
   case SelAPI.single model of
-    Just (topicId, boxPath) -> TextEditAPI.startEdit topicId boxPath model
+    Just (topicId, boxPath) -> TextEditAPI.enterEdit topicId boxPath model
     Nothing -> U.logError "edit" "called when there is no single selection" (model, Cmd.none)
 
 

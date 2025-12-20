@@ -1,4 +1,5 @@
-module Feature.TextEditAPI exposing (update, startEdit, isEdit, markdown)
+module Feature.TextEditAPI exposing (viewInput, viewTextarea, enterEdit, leaveEdit, isEdit,
+  markdown, update)
 
 import Box
 import Box.Size as Size -- TODO: don't import, let caller do the sizing instead
@@ -13,10 +14,44 @@ import Utils as U
 
 import Browser.Dom as Dom
 import Dict
-import Html exposing (Html, text)
+import Html exposing (Html, Attribute, input, textarea, text)
+import Html.Attributes exposing (id, value)
+import Html.Events exposing (onInput)
 import Markdown.Block as Block exposing (Block, Inline(..))
 import Markdown.Parser as Parser
 import Markdown.Renderer as Renderer
+
+
+
+-- VIEW
+
+
+viewInput : TopicInfo -> BoxPath -> List (Attribute Msg) -> Html Msg
+viewInput topic boxPath style =
+  input
+    ( [ id <| Box.elemId "input" topic.id boxPath
+      , value topic.text
+      , onInput (Edit << TextEdit.OnTextInput)
+      , U.onEnterOrEsc (Edit TextEdit.LeaveEdit)
+      , U.onMouseDownStop NoOp -- Prevent drag initiation
+      ]
+      ++ style
+    )
+    []
+
+
+viewTextarea : TopicInfo -> BoxPath -> List (Attribute Msg) -> Html Msg
+viewTextarea topic boxPath style =
+  textarea
+    ( [ id <| Box.elemId "input" topic.id boxPath
+      , value topic.text
+      , onInput (Edit << TextEdit.OnTextareaInput)
+      , U.onEsc (Edit TextEdit.LeaveEdit)
+      , U.onMouseDownStop NoOp -- Prevent drag initiation
+      ]
+      ++ style
+    )
+    []
 
 
 
@@ -37,11 +72,11 @@ update msg ({present} as undoModel) =
       , Cmd.none
       )
       |> Undo.swap undoModel
-    TextEdit.EditEnd -> endEdit present |> Undo.swap undoModel
+    TextEdit.LeaveEdit -> leaveEdit present |> Undo.swap undoModel
 
 
-startEdit : Id -> BoxPath -> Model -> (Model, Cmd Msg)
-startEdit topicId boxPath model =
+enterEdit : Id -> BoxPath -> Model -> (Model, Cmd Msg)
+enterEdit topicId boxPath model =
   let
     newModel =
       model
@@ -52,8 +87,8 @@ startEdit topicId boxPath model =
   (newModel, focus newModel)
 
 
-endEdit : Model -> (Model, Cmd Msg)
-endEdit model =
+leaveEdit : Model -> (Model, Cmd Msg)
+leaveEdit model =
   case model.edit.state of
     ItemEdit topicId boxPath ->
       let
@@ -64,7 +99,7 @@ endEdit model =
         |> Size.auto
       , measureElement elemId topicId View
       )
-    NoEdit -> U.logError "endEdit" "called when edit.state is NoEdit" (model, Cmd.none)
+    NoEdit -> (model, Cmd.none)
 
 
 switchTopicDisplay : Id -> BoxId -> Model -> Model

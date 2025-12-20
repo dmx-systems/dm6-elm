@@ -6,19 +6,17 @@ import Feature.IconAPI as IconAPI
 import Feature.Mouse exposing (DragState(..), DragMode(..))
 import Feature.MouseAPI as MouseAPI
 import Feature.SelAPI as SelAPI
-import Feature.TextEdit as TextEdit
 import Feature.TextEditAPI as TextEditAPI
 import Feature.ToolAPI as ToolAPI
 import Item
 import Map.Model as MM
-import Model exposing (Model, Msg(..))
+import Model exposing (Model, Msg)
 import ModelParts exposing (..)
 import Utils as U
 
 import Dict
-import Html exposing (Html, Attribute, div, text, input, textarea)
-import Html.Attributes exposing (id, style, value)
-import Html.Events exposing (onInput)
+import Html exposing (Html, Attribute, div, text)
+import Html.Attributes exposing (id, style)
 import String exposing (fromInt, fromFloat)
 import Svg exposing (Svg, svg, g, line, path)
 import Svg.Attributes exposing (width, height, x1, y1, x2, y2, d, stroke, fill, transform,
@@ -276,17 +274,7 @@ viewLabelTopic topic props boxPath model =
     textElem =
       case TextEditAPI.isEdit topic.id boxPath model of
         True ->
-          input
-            ( [ id <| Box.elemId "input" topic.id boxPath
-              , value topic.text
-              , onInput (Edit << TextEdit.OnTextInput)
-              --, onBlur (Edit TextEdit.EditEnd) -- TODO
-              , U.onEnterOrEsc (Edit TextEdit.EditEnd)
-              , U.onMouseDownStop NoOp -- Prevent drag initiation
-              ]
-              ++ inputStyle
-            )
-            []
+          TextEditAPI.viewInput topic boxPath inputStyle
         False ->
           div
             topicLabelStyle
@@ -305,18 +293,10 @@ detailTopic topic props boxPath model =
     textElem =
       case TextEditAPI.isEdit topic.id boxPath model of
         True ->
-          textarea
-            ( [ id <| Box.elemId "input" topic.id boxPath
-              , value topic.text
-              , onInput (Edit << TextEdit.OnTextareaInput)
-              --, onBlur (Edit TextEdit.EditEnd) -- TODO
-              , U.onEsc (Edit TextEdit.EditEnd)
-              , U.onMouseDownStop NoOp -- Prevent drag initiation
-              ]
-              ++ detailTextStyle topic.id boxPath model
+          TextEditAPI.viewTextarea topic boxPath
+            ( detailTextStyle topic.id boxPath model
               ++ textEditorStyle topic.id model
             )
-            []
         False ->
           div
             ( detailTextStyle topic.id boxPath model

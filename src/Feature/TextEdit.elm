@@ -26,4 +26,4 @@ type Msg
   = OnTextInput String
   | OnTextareaInput String
   | GotTextSize Id SizeField Size
-  | EditEnd -- TODO: drop it, expose API instead
+  | LeaveEdit

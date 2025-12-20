@@ -343,12 +343,11 @@ cancelUI maybeTarget model =
         Just (itemId, boxPath) -> not <| SelAPI.isSelected itemId (Box.firstId boxPath) model
         Nothing -> True
   in
-  ( model
-    |> (if shouldClear then SelAPI.clear else identity)
-    |> IconAPI.closePicker
-    |> SearchAPI.closeMenu
-  , Cmd.none
-  )
+  model
+  |> (if shouldClear then SelAPI.clear else identity)
+  |> IconAPI.closePicker
+  |> SearchAPI.closeMenu
+  |> TextEditAPI.leaveEdit
 
 
 updateScrollPos : Point -> Model -> Model
