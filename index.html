@@ -109,8 +109,8 @@ fpInput.addEventListener('change', () => {
   saveFile(file, imageId)   // don't need to wait
 })
 document.body.appendChild(fpInput)
-app.ports.filePicker.subscribe(([topicId, imageId]) => {
-  console.log('$$filePicker', 'topicId', topicId, 'imageId', imageId)
+app.ports.imageFilePicker.subscribe(([topicId, imageId]) => {
+  console.log('$$imageFilePicker', 'topicId', topicId, 'imageId', imageId)
   fpInput.dataset.topicId = topicId     // update value before clicking
   fpInput.dataset.imageId = imageId     // update value before clicking
   fpInput.value = ''                    // allow re-selecting same file

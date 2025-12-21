@@ -1,5 +1,5 @@
-module Feature.TextAPI exposing (viewInput, viewTextarea, enterEdit, leaveEdit, isEdit,
-  markdown, update)
+port module Feature.TextAPI exposing (viewInput, viewTextarea, enterEdit, leaveEdit, isEdit,
+  markdown, openImageFilePicker, update, sub)
 
 import Box
 import Box.Size as Size -- TODO: don't import, let caller do the sizing instead
@@ -20,6 +20,25 @@ import Html.Events exposing (onInput)
 import Markdown.Block as Block exposing (Block)
 import Markdown.Parser as Parser
 import Markdown.Renderer as Renderer
+import String exposing (fromInt)
+
+
+
+-- PORTS
+
+
+port imageFilePicker : (Id, ImageId) -> Cmd msg
+
+port onPickFile : ((Id, ImageId) -> msg) -> Sub msg
+
+
+
+-- SUBSCRIPTIONS
+
+
+sub : Sub Msg
+sub =
+  onPickFile (Text << Text.FilePicked)
 
 
 
@@ -72,6 +91,8 @@ update msg ({present} as undoModel) =
         |> S.store
         |> Undo.swap undoModel
     Text.LeaveEdit -> leaveEdit present |> Undo.swap undoModel
+    Text.FilePicked (topicId, imageId) -> insertImage topicId imageId present
+      |> Undo.swap undoModel
 
 
 enterEdit : Id -> BoxPath -> Model -> (Model, Cmd Msg)
@@ -116,9 +137,8 @@ onTextInput : String -> Model -> Model
 onTextInput text model =
   case model.text.edit of
     Edit topicId _ ->
-      Item.updateTopic topicId
-        (\topic -> { topic | text = text })
-        model
+      model
+        |> setTopicText topicId text
     NoEdit -> U.logError "onTextInput" "called when text.edit is NoEdit" model
 
 
@@ -126,15 +146,14 @@ onTextareaInput : String -> Model -> (Model, Cmd Msg)
 onTextareaInput text model =
   case model.text.edit of
     Edit topicId _ ->
-      Item.updateTopic topicId
-        (\topic -> { topic | text = text })
-        model
-      |> measureText text topicId
+      model
+        |> setTopicText topicId text
+        |> measureText topicId text
     NoEdit -> U.logError "onTextareaInput" "called when text.edit is NoEdit" (model, Cmd.none)
 
 
-measureText : String -> Id -> Model -> (Model, Cmd Msg)
-measureText text topicId model =
+measureText : Id -> String -> Model -> (Model, Cmd Msg)
+measureText topicId text model =
   ( model |> setMeasureText text
   , measureElement "measure" topicId Editor
   )
@@ -174,6 +193,12 @@ isEdit topicId boxPath model =
   model.text.edit == Edit topicId boxPath
 
 
+setTopicText : Id -> String -> Model -> Model
+setTopicText topicId text model =
+  model |> Item.updateTopic topicId
+    (\topic -> { topic | text = text })
+
+
 setEditState : EditState -> Model -> Model
 setEditState state ({text} as model) =
   { model | text = { text | edit = state }}
@@ -198,6 +223,30 @@ markdown source model =
     |> Result.withDefault [ text "Markdown Problem!" ]
 
 
+openImageFilePicker : Id -> Model -> (Model, Cmd Msg)
+openImageFilePicker topicId model =
+  let
+    imageId = model.nextId
+  in
+  ( model |> Item.nextId
+  , imageFilePicker (topicId, imageId)
+  )
+
+
+insertImage : Id -> ImageId -> Model -> (Model, Cmd Msg)
+insertImage topicId imageId model =
+  case Item.topicById topicId model of
+    Just { text } ->
+      let
+        image = "![image](app://image/" ++ fromInt imageId ++ ")"
+        newText = text ++ image
+      in
+      model
+        |> setTopicText topicId newText
+        |> measureText topicId newText
+    Nothing -> (model, Cmd.none)
+
+
 resolveImageUrls : Model -> List Block -> List Block
 resolveImageUrls model blocks =
   blocks |> List.map
@@ -205,9 +254,6 @@ resolveImageUrls model blocks =
       (\inline ->
         case inline of
           Block.Image url title altInlines ->
-            -- let
-            --   _ = U.info "resolveImageUrls" (url, title, altInlines)
-            -- in
             resolveImageUrl url title altInlines model
           _ -> inline
       )
@@ -218,13 +264,13 @@ resolveImageUrl : String -> Maybe String -> List Block.Inline -> Model -> Block.
 resolveImageUrl url title altInlines model =
   let
     newUrl =
-      case imageId url of
-        Just imageId_ ->
-          case model.imageCache |> Dict.get imageId_ of
+      case imageIdFromUrl url of
+        Just imageId ->
+          case model.imageCache |> Dict.get imageId of
             Just blobUrl -> blobUrl
             Nothing ->
               let
-                _ = U.info "resolveImageUrl" ("MISSING", imageId_)
+                _ = U.info "resolveImageUrl" ("MISSING", imageId)
               in
               url
         Nothing ->
@@ -236,8 +282,8 @@ resolveImageUrl url title altInlines model =
   Block.Image newUrl title altInlines
 
 
-imageId : String -> Maybe ImageId
-imageId url =
+imageIdFromUrl : String -> Maybe ImageId
+imageIdFromUrl url =
   url
     |> String.split "/"
     |> List.reverse

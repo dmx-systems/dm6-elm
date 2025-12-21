@@ -45,7 +45,7 @@ init =
   , boxId = rootBoxId
   , nextId = 1
   ----- transient -----
-  , imageCache = Dict.empty
+  , imageCache = Dict.empty -- TODO: move to Text module, but should survive a map switch
   -- feature modules
   , text = Text.init
   , mouse = Mouse.init
@@ -83,7 +83,6 @@ type Msg
   | Nav Nav.Msg
   --
   | Scrolled Point
-  | FilePicked (Id, ImageId)
   | UrlResolved (ImageId, String)
   | NoOp
 

@@ -1,6 +1,6 @@
 module Feature.Text exposing (..)
 
-import ModelParts exposing (Id, BoxPath, Size, SizeField)
+import ModelParts exposing (Id, ImageId, BoxPath, Size, SizeField)
 
 
 
@@ -27,3 +27,4 @@ type Msg
   | OnTextareaInput String
   | GotTextSize Id SizeField Size
   | LeaveEdit
+  | FilePicked (Id, ImageId)

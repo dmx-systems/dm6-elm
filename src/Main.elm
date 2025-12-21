@@ -33,8 +33,6 @@ import String exposing (fromInt, fromFloat)
 
 port onScroll : (Point -> msg) -> Sub msg
 
-port onPickFile : ((Id, ImageId) -> msg) -> Sub msg
-
 port onResolveUrl : ((ImageId, String) -> msg) -> Sub msg
 
 
@@ -51,9 +49,9 @@ main =
     , subscriptions =
       (\model -> Sub.batch
         [ MouseAPI.sub model
+        , TextAPI.sub
         , NavAPI.sub
         , onScroll Scrolled
-        , onPickFile FilePicked
         , onResolveUrl UrlResolved
         ]
       )
@@ -284,7 +282,6 @@ update msg ({present} as undoModel) =
     Nav navMsg -> NavAPI.update navMsg undoModel
     --
     Scrolled pos -> updateScrollPos pos present |> S.store |> Undo.swap undoModel
-    FilePicked (topicId, imageId) -> insertImage topicId imageId present |> Undo.swap undoModel
     UrlResolved (imageId, url) -> cacheImageUrl imageId url present |> Undo.swap undoModel
     NoOp -> (undoModel, Cmd.none)
 
@@ -353,17 +350,6 @@ cancelUI maybeTarget model =
 updateScrollPos : Point -> Model -> Model
 updateScrollPos pos model =
   Box.updateScrollPos model.boxId (\_ -> pos) model
-
-
-insertImage : Id -> ImageId -> Model -> (Model, Cmd Msg)
-insertImage topicId imageId model =
-  let
-    markdown = "![image](app://image/" ++ fromInt imageId ++ ")"
-  in
-  ( model |> Item.updateTopic topicId
-    (\topic -> { topic | text = topic.text ++ markdown })
-  , Cmd.none
-  )
 
 
 cacheImageUrl : ImageId -> String -> Model -> (Model, Cmd Msg)

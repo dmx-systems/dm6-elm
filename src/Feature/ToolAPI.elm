@@ -1,4 +1,4 @@
-port module Feature.ToolAPI exposing (viewGlobalTools, viewMapTools, viewItemTools, update)
+module Feature.ToolAPI exposing (viewGlobalTools, viewMapTools, viewItemTools, update)
 
 import Box
 import Box.Size as Size
@@ -23,13 +23,6 @@ import Html exposing (Html, Attribute, div, span, text, button)
 import Html.Attributes exposing (class, style, title, disabled)
 import Html.Events exposing (onClick)
 import String exposing (fromInt)
-
-
-
--- PORTS
-
-
-port filePicker : (Id, ImageId) -> Cmd msg
 
 
 
@@ -152,7 +145,7 @@ viewTextToolbar itemId boxId model =
   div
     ( toolbarStyle itemId boxId model )
     [ viewItemButton "Insert Image" "image" (Tool <| Tool.Image itemId) True False
-    , viewItemButton "Done" "check" (Tool <| Tool.LeaveEdit) True False
+    , viewItemButton "Done" "check" (Tool Tool.LeaveEdit) True False
     ]
 
 
@@ -302,7 +295,8 @@ update msg ({present} as undoModel) =
     Tool.ToggleDisplay topicId boxId -> toggleDisplay topicId boxId present |> S.store
       |> Undo.swap undoModel
     -- Text Tools
-    Tool.Image topicId -> insertImage topicId present |> S.storeWith |> Undo.swap undoModel
+    Tool.Image topicId -> TextAPI.openImageFilePicker topicId present |> S.storeWith
+      |> Undo.swap undoModel
     Tool.LeaveEdit -> TextAPI.leaveEdit present |> Undo.swap undoModel
 
 
@@ -400,13 +394,3 @@ toggleDisplay topicId boxId model =
       |> Box.setDisplayMode topicId boxId displayMode
       |> Size.auto
     _ -> model
-
-
-insertImage : Id -> Model -> (Model, Cmd Msg)
-insertImage topicId model =
-  let
-    imageId = model.nextId
-  in
-  ( model |> Item.nextId
-  , filePicker (topicId, imageId)
-  )
