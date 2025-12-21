@@ -43,7 +43,7 @@ viewGlobalTools model =
   let
     isHome = model.boxId == rootBoxId
   in
-  [ viewIconButton "Show Home Map" "home" 20 (Tool Tool.Home) (not isHome) homeButtonStyle
+  [ viewIconButton "Show Home Map" "home" 20 (Tool Tool.Home) (not isHome) True homeButtonStyle
   , SearchAPI.viewInput model
   , div
     importExportStyle
@@ -53,7 +53,7 @@ viewGlobalTools model =
   ]
 
 
-homeButtonStyle : List (Attribute Msg)
+homeButtonStyle : Attributes Msg
 homeButtonStyle =
   [ style "position" "relative"
   , style "top" "1px"
@@ -61,7 +61,7 @@ homeButtonStyle =
   ]
 
 
-importExportStyle : List (Attribute Msg)
+importExportStyle : Attributes Msg
 importExportStyle =
   [ style "white-space" "nowrap" ]
 
@@ -81,7 +81,7 @@ viewMapTools undoModel =
   ]
 
 
-mapToolsStyle : List (Attribute Msg)
+mapToolsStyle : Attributes Msg
 mapToolsStyle =
   [ style "position" "fixed"
   , style "bottom" "20px"
@@ -115,17 +115,18 @@ viewToolbar : Id -> BoxId -> Model -> Html Msg
 viewToolbar itemId boxId model =
   let
     topicTools =
-      [ viewItemButton "Edit" "edit-3" (Tool Tool.Edit) True
-      , viewItemButton "Select Icon" "image" (Tool Tool.Icon) True
-      , viewItemButton "Traverse" "share-2" (Search Search.Traverse) True
-      , viewItemButton "Delete" "trash" (Tool Tool.Delete) True
-      , viewItemButton "Remove" "x" (Tool Tool.Remove) True
+      [ viewItemButton "Edit" "edit-3" (Tool Tool.Edit) True True
+      , viewItemButton "Select Icon" "image" (Tool Tool.Icon) True True
+      , viewItemButton "Traverse" "share-2" (Search Search.Traverse) True True
+      , viewItemButton "Delete" "trash" (Tool Tool.Delete) True True
+      , viewItemButton "Remove" "x" (Tool Tool.Remove) True True
       ]
     boxTools =
       if Item.isBox itemId model then
         [ viewSpacer
-        , viewItemButton "Fullscreen" "maximize-2" (Tool <| Tool.Fullscreen itemId) True
+        , viewItemButton "Fullscreen" "maximize-2" (Tool <| Tool.Fullscreen itemId) True True
         , viewItemButton "Unbox" "external-link" (Tool <| Tool.Unbox itemId boxId) (not unboxed)
+            True
         ]
       else
         []
@@ -147,14 +148,14 @@ viewTextToolbar : Id -> BoxId -> Model -> Html Msg
 viewTextToolbar itemId boxId model =
   div
     ( toolbarStyle itemId boxId model )
-    [ viewItemButton "Insert Image" "image" (Tool <| Tool.Image itemId) True
-    , viewItemButton "Insert Link" "link-2" (Tool Tool.Link) True
+    [ viewItemButton "Insert Image" "image" (Tool <| Tool.Image itemId) True False
+    , viewItemButton "Insert Link" "link-2" (Tool Tool.Link) True False
     ]
 
 
 --
 
-toolbarStyle : Id -> BoxId -> Model -> List (Attribute Msg)
+toolbarStyle : Id -> BoxId -> Model -> Attributes Msg
 toolbarStyle itemId boxId model =
   let
     offset =
@@ -204,7 +205,7 @@ viewCaret itemId boxId model =
     [ IconAPI.view icon 20 [] ]
 
 
-caretStyle : List (Attribute Msg)
+caretStyle : Attributes Msg
 caretStyle =
   [ style "position" "absolute"
   , style "top" "1px"
@@ -225,7 +226,7 @@ viewTextButton label msg =
     [ text label ]
 
 
-textButtonStyle : List (Attribute Msg)
+textButtonStyle : Attributes Msg
 textButtonStyle =
   [ style "font-family" C.mainFont
   , style "font-size" <| fromInt C.toolFontSize ++ "px"
@@ -234,30 +235,36 @@ textButtonStyle =
 
 viewMapButton : String -> String -> Msg -> Bool -> Html Msg
 viewMapButton label icon msg isEnabled =
-  viewIconButton label icon C.mapToolbarIconSize msg isEnabled []
+  viewIconButton label icon C.mapToolbarIconSize msg isEnabled True []
 
 
-viewItemButton : String -> String -> Msg -> Bool -> Html Msg
-viewItemButton label icon msg isEnabled =
-  viewIconButton label icon C.itemToolbarIconSize msg isEnabled []
+viewItemButton : String -> String -> Msg -> Bool -> Bool -> Html Msg
+viewItemButton label icon msg isEnabled shouldCancel =
+  viewIconButton label icon C.itemToolbarIconSize msg isEnabled shouldCancel []
 
 
-viewIconButton : String -> String -> Float -> Msg -> Bool -> List (Attribute Msg) -> Html Msg
-viewIconButton label icon iconSize msg isEnabled extraStyle =
+viewIconButton : String -> String -> Float -> Msg -> Bool -> Bool -> Attributes Msg -> Html Msg
+viewIconButton label icon iconSize msg isEnabled shouldCancel extraStyle =
+  let
+    stop =
+      case shouldCancel of
+        True -> []
+        False -> [ U.onMouseDownStop NoOp ]
+  in
   button
     ( [ class "tool"
       , title label
       , onClick msg
       , disabled <| not isEnabled
-      , U.onMouseDownStop NoOp
       ]
+      ++ stop
       ++ iconButtonStyle
       ++ extraStyle
     )
     [ IconAPI.view icon iconSize [] ]
 
 
-iconButtonStyle : List (Attribute Msg)
+iconButtonStyle : Attributes Msg
 iconButtonStyle =
   [ style "border" "none"
   , style "background-color" "transparent"

@@ -26,7 +26,7 @@ import Markdown.Renderer as Renderer
 -- VIEW
 
 
-viewInput : TopicInfo -> BoxPath -> List (Attribute Msg) -> Html Msg
+viewInput : TopicInfo -> BoxPath -> Attributes Msg -> Html Msg
 viewInput topic boxPath style =
   input
     ( [ id <| Box.elemId "input" topic.id boxPath
@@ -40,7 +40,7 @@ viewInput topic boxPath style =
     []
 
 
-viewTextarea : TopicInfo -> BoxPath -> List (Attribute Msg) -> Html Msg
+viewTextarea : TopicInfo -> BoxPath -> Attributes Msg -> Html Msg
 viewTextarea topic boxPath style =
   textarea
     ( [ id <| Box.elemId "input" topic.id boxPath

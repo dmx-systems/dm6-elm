@@ -38,11 +38,11 @@ type alias BoxInfo =
   ( ( List (Html Msg), List (Svg Msg) )
   , Rectangle
   , ( { w: String, h: String }
-    , List (Attribute Msg)
+    , Attributes Msg
     )
   )
 
-type alias TopicRendering = (List (Attribute Msg), List (Html Msg))
+type alias TopicRendering = (Attributes Msg, List (Html Msg))
 
 
 
@@ -74,7 +74,7 @@ view boxId boxPath model =
     ]
 
 
-topicLayerStyle : Rectangle -> List (Attribute Msg)
+topicLayerStyle : Rectangle -> Attributes Msg
 topicLayerStyle boxRect =
   [ style "position" "absolute"
   , style "left" <| fromFloat -boxRect.x1 ++ "px"
@@ -82,7 +82,7 @@ topicLayerStyle boxRect =
   ]
 
 
-svgStyle : List (Attribute Msg)
+svgStyle : Attributes Msg
 svgStyle =
   [ style "position" "absolute" -- occupy entire window height (instead 150px default height)
   , style "top" "0"
@@ -90,7 +90,7 @@ svgStyle =
   ]
 
 
-gAttr : BoxId -> Rectangle -> Model -> List (Attribute Msg)
+gAttr : BoxId -> Rectangle -> Model -> Attributes Msg
 gAttr boxId boxRect model =
     [ transform
       <| "translate(" ++ fromFloat -boxRect.x1 ++ " " ++ fromFloat -boxRect.y1 ++ ")"
@@ -118,7 +118,7 @@ boxInfo boxId boxPath model =
         ( ([], []), Rectangle 0 0 0 0, ( {w = "0", h = "0"}, [] ))
 
 
-nestedBoxStyle : Id -> Rectangle -> BoxPath -> Model -> List (Attribute Msg)
+nestedBoxStyle : Id -> Rectangle -> BoxPath -> Model -> Attributes Msg
 nestedBoxStyle topicId rect boxPath model =
   let
     width = rect.x2 - rect.x1
@@ -218,12 +218,12 @@ viewTopic topic props boxPath model =
     )
 
 
-topicAttr : Id -> BoxPath -> List (Attribute Msg)
+topicAttr : Id -> BoxPath -> Attributes Msg
 topicAttr topicId boxPath =
   [ id <| Box.elemId "topic" topicId boxPath ]
 
 
-topicStyle : Id -> BoxId -> Model -> List (Attribute Msg)
+topicStyle : Id -> BoxId -> Model -> Attributes Msg
 topicStyle id boxId model =
   let
     isLimbo = MM.isLimboTopic id boxId model
@@ -247,7 +247,7 @@ labelTopic topic props boxPath model =
   )
 
 
-inputStyle : List (Attribute Msg)
+inputStyle : Attributes Msg
 inputStyle =
   [ style "font-family" C.mainFont -- Default for <input> is "-apple-system" (on Mac)
   , style "font-size" <| fromInt C.contentFontSize ++ "px"
@@ -258,7 +258,7 @@ inputStyle =
   ]
 
 
-topicLabelStyle : List (Attribute Msg)
+topicLabelStyle : Attributes Msg
 topicLabelStyle =
   [ style "font-size" <| fromInt C.contentFontSize ++ "px"
   , style "font-weight" C.topicLabelWeight
@@ -316,7 +316,7 @@ detailTopic topic props boxPath model =
   )
 
 
-detailTopicStyle : TopicProps -> List (Attribute Msg)
+detailTopicStyle : TopicProps -> Attributes Msg
 detailTopicStyle {pos} =
   [ style "display" "flex"
   , style "left" <| fromFloat (pos.x - C.topicW2) ++ "px"
@@ -324,7 +324,7 @@ detailTopicStyle {pos} =
   ]
 
 
-detailTextStyle : Id -> BoxPath -> Model -> List (Attribute Msg)
+detailTextStyle : Id -> BoxPath -> Model -> Attributes Msg
 detailTextStyle topicId boxPath model =
   let
     r = fromInt C.topicRadius ++ "px"
@@ -339,14 +339,14 @@ detailTextStyle topicId boxPath model =
   ++ selectionStyle topicId boxPath model
 
 
-textViewStyle : List (Attribute Msg)
+textViewStyle : Attributes Msg
 textViewStyle =
   [ style "min-width" <| fromFloat (C.topicSize.w - C.topicSize.h) ++ "px"
   , style "max-width" "max-content"
   ]
 
 
-textEditorStyle : Id -> Model -> List (Attribute Msg)
+textEditorStyle : Id -> Model -> Attributes Msg
 textEditorStyle topicId model =
   let
     height = case Item.topicSize topicId .editor model of
@@ -362,7 +362,7 @@ textEditorStyle topicId model =
   ]
 
 
-topicIconStyle : List (Attribute Msg)
+topicIconStyle : Attributes Msg
 topicIconStyle =
   [ style "position" "relative"
   , style "top" <| fromFloat ((C.topicSize.h - C.topicIconSize) / 2) ++ "px"
@@ -386,7 +386,7 @@ blackBoxTopic topic props boxPath model =
   )
 
 
-topicFlexboxStyle : TopicInfo -> TopicProps -> BoxPath -> Model -> List (Attribute Msg)
+topicFlexboxStyle : TopicInfo -> TopicProps -> BoxPath -> Model -> Attributes Msg
 topicFlexboxStyle topic props boxPath model =
   let
     r12 = fromInt C.topicRadius ++ "px"
@@ -404,7 +404,7 @@ topicFlexboxStyle topic props boxPath model =
   ++ topicBorderStyle topic.id boxPath model
 
 
-ghostTopicStyle : TopicInfo -> BoxPath -> Model -> List (Attribute Msg)
+ghostTopicStyle : TopicInfo -> BoxPath -> Model -> Attributes Msg
 ghostTopicStyle topic boxPath model =
   [ style "position" "absolute"
   , style "left" <| fromInt C.blackBoxOffset ++ "px"
@@ -458,7 +458,7 @@ viewItemCount topicId props model =
   ]
 
 
-itemCountStyle : List (Attribute Msg)
+itemCountStyle : Attributes Msg
 itemCountStyle =
   [ style "font-size" <| fromInt C.contentFontSize ++ "px"
   , style "position" "absolute"
@@ -556,14 +556,14 @@ accumulateRect posAcc boxId model =
 -- STYLE
 
 
-topicPosStyle : TopicProps -> List (Attribute Msg)
+topicPosStyle : TopicProps -> Attributes Msg
 topicPosStyle { pos } =
   [ style "left" <| fromFloat (pos.x - C.topicW2) ++ "px"
   , style "top" <| fromFloat (pos.y - C.topicH2) ++ "px"
   ]
 
 
-iconBoxStyle : TopicProps -> List (Attribute Msg)
+iconBoxStyle : TopicProps -> Attributes Msg
 iconBoxStyle props =
   let
     r1 = fromInt C.topicRadius ++ "px"
@@ -579,7 +579,7 @@ iconBoxStyle props =
   ]
 
 
-detailTopicIconBoxStyle : List (Attribute Msg)
+detailTopicIconBoxStyle : Attributes Msg
 detailTopicIconBoxStyle =
   -- icon box correction as detail topic has no border, in contrast to label topic
   [ style "padding-left" <| fromFloat C.topicBorderWidth ++ "px"
@@ -587,7 +587,7 @@ detailTopicIconBoxStyle =
   ]
 
 
-topicBorderStyle : Id -> BoxPath -> Model -> List (Attribute Msg)
+topicBorderStyle : Id -> BoxPath -> Model -> Attributes Msg
 topicBorderStyle id boxPath model =
   let
     isTarget_ = isTarget id boxPath
@@ -605,7 +605,7 @@ topicBorderStyle id boxPath model =
   ]
 
 
-selectionStyle : Id -> BoxPath -> Model -> List (Attribute Msg)
+selectionStyle : Id -> BoxPath -> Model -> Attributes Msg
 selectionStyle topicId boxPath model =
   case SelAPI.isSelectedPath topicId boxPath model of
     True -> [ style "box-shadow" "gray 5px 5px 5px" ]
@@ -686,7 +686,7 @@ taxiLine pos1 pos2 assoc boxId model =
       []
 
 
-lineStyle : Maybe AssocInfo -> BoxId -> Model -> List (Attribute Msg)
+lineStyle : Maybe AssocInfo -> BoxId -> Model -> Attributes Msg
 lineStyle assoc boxId model =
   let
     color =

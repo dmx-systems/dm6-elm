@@ -1,10 +1,11 @@
 module ModelParts exposing (Item, ItemInfo(..), TopicInfo, AssocInfo, Items, Id, AssocIds, Icon,
   Size, SizeField(..), TextSize, ItemType, RoleType, Box, Boxes, BoxId, Class, Delta, BoxItems,
   BoxPath, rootBoxId, BoxItem, ViewProps(..), TopicProps, AssocProps, DisplayMode(..),
-  TopicDisplay(..), BoxDisplay(..), Point, Rectangle, ImageId, encodeItem, encodeBox,
-  itemDecoder, boxDecoder, toDictDecoder)
+  TopicDisplay(..), BoxDisplay(..), Point, Rectangle, ImageId, Attributes, encodeItem,
+  encodeBox, itemDecoder, boxDecoder, toDictDecoder)
 
 import Dict exposing (Dict)
+import Html exposing (Attribute)
 import Json.Decode as D
 import Json.Encode as E
 import Set exposing (Set)
@@ -71,6 +72,8 @@ type alias Icon = String -- name of feather icon, https://feathericons.com
 type alias ItemType = String -- a type URI, e.g. "dmx.association"
 type alias RoleType = String -- a role type URI, e.g. "dmx.default"
 type alias ImageId = Int
+type alias Attributes msg = List (Attribute msg)
+
 
 
 -- Box

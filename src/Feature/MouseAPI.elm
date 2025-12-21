@@ -24,14 +24,14 @@ import Time exposing (Posix, posixToMillis)
 -- VIEW
 
 
-hoverHandler : Id -> BoxPath -> List (Attribute Msg)
+hoverHandler : Id -> BoxPath -> Attributes Msg
 hoverHandler topicId boxPath =
   [ onMouseEnter <| Mouse <| Mouse.Hover "dmx-topic" topicId boxPath
   , onMouseLeave <| Mouse <| Mouse.Unhover "dmx-topic" topicId boxPath
   ]
 
 
-mouseDownHandler : Id -> BoxPath -> List (Attribute Msg)
+mouseDownHandler : Id -> BoxPath -> Attributes Msg
 mouseDownHandler topicId boxPath =
   [stopPropagationOn "mousedown"
     (U.pointDecoder |> D.andThen

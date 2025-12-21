@@ -41,7 +41,7 @@ viewInput model =
     ]
 
 
-searchInputStyle : List (Attribute Msg)
+searchInputStyle : Attributes Msg
 searchInputStyle =
   [ style "width" "100px" ]
 
@@ -130,7 +130,7 @@ viewTraversalMenu relTopicIds model =
     )
 
 
-searchResultStyle : List (Attribute Msg)
+searchResultStyle : Attributes Msg
 searchResultStyle =
   [ style "top" <| fromInt (C.appHeaderHeight - 5) ++ "px"
   , style "right" "20px"
@@ -138,12 +138,12 @@ searchResultStyle =
   ]
 
 
-traversalResultStyle : List (Attribute Msg)
+traversalResultStyle : Attributes Msg
 traversalResultStyle =
   [ style "left" "65px" ]
 
 
-menuStyle : List (Attribute Msg)
+menuStyle : Attributes Msg
 menuStyle =
   [ style "position" "absolute"
   , style "width" "210px"
@@ -155,7 +155,7 @@ menuStyle =
   ]
 
 
-menuItemStyle : Bool -> Bool -> List (Attribute Msg)
+menuItemStyle : Bool -> Bool -> Attributes Msg
 menuItemStyle isDisabled isHover =
   let
     (color, bgColor, pointerEvents) =
@@ -213,7 +213,7 @@ viewFullscreenButton id isDisabled model =
     False -> text ""
 
 
-fullscreenButtonStyle : List (Attribute Msg)
+fullscreenButtonStyle : Attributes Msg
 fullscreenButtonStyle =
   [ style "border" "none"
   , style "background-color" "transparent"
