@@ -24,4 +24,4 @@ type Msg
   | ToggleDisplay Id BoxId
   -- Text Tools
   | Image Id
-  | Link
+  | LeaveEdit

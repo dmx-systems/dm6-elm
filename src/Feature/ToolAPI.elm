@@ -98,7 +98,10 @@ viewItemTools itemId boxPath model =
     toolbar =
       if SelAPI.isSelectedPath itemId boxPath model then
         if TextAPI.isEdit itemId boxPath model then
-          [ viewTextToolbar itemId boxId model ]
+          if Item.isBox itemId model then
+            []
+          else
+            [ viewTextToolbar itemId boxId model ]
         else
           [ viewToolbar itemId boxId model ]
       else
@@ -149,7 +152,7 @@ viewTextToolbar itemId boxId model =
   div
     ( toolbarStyle itemId boxId model )
     [ viewItemButton "Insert Image" "image" (Tool <| Tool.Image itemId) True False
-    , viewItemButton "Insert Link" "link-2" (Tool Tool.Link) True False
+    , viewItemButton "Done" "check" (Tool <| Tool.LeaveEdit) True False
     ]
 
 
@@ -289,7 +292,7 @@ update msg ({present} as undoModel) =
     Tool.Undo -> Undo.undo undoModel
     Tool.Redo -> Undo.redo undoModel
     -- Item Tools
-    Tool.Edit -> edit present |> S.storeWith |> Undo.swap undoModel
+    Tool.Edit -> edit present |> S.storeWith |> Undo.push undoModel
     Tool.Icon -> (IconAPI.openPicker present, Cmd.none) |> Undo.swap undoModel
     Tool.Delete -> delete present |> S.store |> Undo.push undoModel
     Tool.Remove -> remove present |> S.store |> Undo.push undoModel
@@ -300,7 +303,7 @@ update msg ({present} as undoModel) =
       |> Undo.swap undoModel
     -- Text Tools
     Tool.Image topicId -> insertImage topicId present |> S.storeWith |> Undo.swap undoModel
-    Tool.Link -> (undoModel, Cmd.none) -- TODO
+    Tool.LeaveEdit -> TextAPI.leaveEdit present |> Undo.swap undoModel
 
 
 addTopic : Model -> (Model, Cmd Msg)

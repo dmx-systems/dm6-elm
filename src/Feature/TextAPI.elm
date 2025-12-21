@@ -66,12 +66,11 @@ update msg ({present} as undoModel) =
     Text.OnTextareaInput text -> onTextareaInput text present |> S.storeWith
       |> Undo.swap undoModel
     Text.GotTextSize topicId sizeField size ->
-      ( present
+      present
         |> Item.setTopicSize topicId sizeField size
         |> Size.auto
-      , Cmd.none
-      )
-      |> Undo.swap undoModel
+        |> S.store
+        |> Undo.swap undoModel
     Text.LeaveEdit -> leaveEdit present |> Undo.swap undoModel
 
 
@@ -192,11 +191,11 @@ setMeasureText text_ ({text} as model) =
 markdown : String -> Model -> List (Html Msg)
 markdown source model =
   source
-  |> Parser.parse
-  |> Result.withDefault []
-  |> resolveImageUrls model
-  |> Renderer.render Renderer.defaultHtmlRenderer
-  |> Result.withDefault [ text "Markdown Problem!" ]
+    |> Parser.parse
+    |> Result.withDefault []
+    |> resolveImageUrls model
+    |> Renderer.render Renderer.defaultHtmlRenderer
+    |> Result.withDefault [ text "Markdown Problem!" ]
 
 
 resolveImageUrls : Model -> List Block -> List Block
@@ -240,7 +239,7 @@ resolveImageUrl url title altInlines model =
 imageId : String -> Maybe ImageId
 imageId url =
   url
-  |> String.split "/"
-  |> List.reverse
-  |> List.head
-  |> Maybe.andThen String.toInt
+    |> String.split "/"
+    |> List.reverse
+    |> List.head
+    |> Maybe.andThen String.toInt
