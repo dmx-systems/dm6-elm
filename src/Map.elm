@@ -15,7 +15,7 @@ import ModelParts exposing (..)
 import Utils as U
 
 import Dict
-import Html exposing (Html, Attribute, div, text)
+import Html exposing (Html, div, text)
 import Html.Attributes exposing (id, style)
 import String exposing (fromInt, fromFloat)
 import Svg exposing (Svg, svg, g, line, path)

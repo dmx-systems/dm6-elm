@@ -104,7 +104,7 @@ fpInput.addEventListener('change', () => {
   const file = fpInput.files[0]
   const topicId = Number(fpInput.dataset.topicId)
   const imageId = Number(fpInput.dataset.imageId)
-  app.ports.onPickFile.send([topicId, imageId])
+  app.ports.onPickImageFile.send([topicId, imageId])
   createUrlAndSend(file, imageId)
   saveFile(file, imageId)   // don't need to wait
 })

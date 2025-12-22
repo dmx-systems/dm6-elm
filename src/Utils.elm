@@ -127,11 +127,6 @@ fail funcName args val =
   Logger.log ("--> @" ++ funcName ++ " " ++ Logger.toString args ++ " failed") val
 
 
-call : String -> a -> v -> v
-call funcName args val =
-  Logger.log ("@" ++ funcName ++ " " ++ Logger.toString args ++ " -->") val
-
-
 info : String -> v -> v
 info funcName val =
   Logger.log ("@" ++ funcName) val

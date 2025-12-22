@@ -16,7 +16,7 @@ import Undo exposing (UndoModel)
 import Utils as U
 
 import Dict
-import Html exposing (Html, Attribute, button, div, input, text)
+import Html exposing (Html, button, div, input, text)
 import Html.Attributes exposing (class, disabled, style, title, value)
 import Html.Events exposing (onClick, onMouseOver, onMouseOut, onInput, onFocus)
 import String exposing (fromInt)
@@ -34,6 +34,7 @@ viewInput model =
       ( [ value model.search.text
         , onInput (Search << Search.Input)
         , onFocus (Search Search.FocusInput)
+        , U.onMouseDownStop NoOp -- Don't clear selection
         ]
         ++ searchInputStyle
       )
@@ -222,7 +223,7 @@ fullscreenButtonStyle =
 
 isItemDisabled : Id -> Model -> Bool
 isItemDisabled topicId model =
-  case revealBoxId model of
+  case SelAPI.revelationBoxId model of
     Just boxId -> Box.hasDeepItem topicId boxId model
     Nothing -> False
 
@@ -239,18 +240,6 @@ isRelTopicHover relTopic model =
   case model.search.menu of
     RelTopics _ (Just relTopic_) -> relTopic_ == relTopic
     _ -> False
-
-
-{- The box where to reveal search/traversal results -}
-revealBoxId : Model -> Maybe Id
-revealBoxId model =
-  case model.search.menu of
-    Topics _ _ -> Just model.boxId
-    RelTopics _ _ ->
-      case SelAPI.singleBoxId model of
-        Just boxId -> Just boxId
-        Nothing -> Nothing
-    Closed -> Nothing
 
 
 
@@ -337,21 +326,24 @@ onUnhoverRelTopic ({search} as model) =
 
 revealTopic : Id -> Model -> Model
 revealTopic topicId model =
-  model
-  |> revealItem topicId model.boxId
-  |> closeMenu
-  -- FIXME: auto-size?
+  case SelAPI.revelationBoxId model of
+    Just boxId ->
+      model
+        |> Box.revealItem topicId boxId
+        |> closeMenu
+        |> Size.auto
+    Nothing -> model
 
 
 revealRelTopic : (Id, Id) -> Model -> Model
 revealRelTopic (topicId, assocId) model =
-  case SelAPI.singleBoxId model of
+  case SelAPI.revelationBoxId model of
     Just boxId ->
       model
-      |> revealItem topicId boxId
-      |> revealItem assocId boxId
-      |> closeMenu
-      |> Size.auto
+        |> Box.revealItem topicId boxId
+        |> Box.revealItem assocId boxId
+        |> closeMenu
+        |> Size.auto
     Nothing -> model
 
 
@@ -396,21 +388,6 @@ isMatch : String -> String -> Bool
 isMatch searchText text =
   not (searchText |> String.isEmpty)
   && String.contains (String.toLower searchText) (String.toLower text)
-
-
-revealItem : Id -> BoxId -> Model -> Model
-revealItem itemId boxId model =
-  if Box.hasItem boxId itemId model then
-    let
-      _ = U.info "revealItem" <| fromInt itemId ++ " is in " ++ fromInt boxId
-    in
-    Box.showItem itemId boxId model
-  else
-    let
-      _ = U.info "revealItem" <| fromInt itemId ++ " not in " ++ fromInt boxId
-      props = Box.initItemProps itemId boxId model
-    in
-    Box.addItem itemId props boxId model
 
 
 closeMenu : Model -> Model

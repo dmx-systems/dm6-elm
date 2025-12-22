@@ -14,7 +14,7 @@ import Utils as U
 
 import Browser.Dom as Dom
 import Dict
-import Html exposing (Html, Attribute, input, textarea, text)
+import Html exposing (Html, input, textarea, text)
 import Html.Attributes exposing (id, value)
 import Html.Events exposing (onInput)
 import Markdown.Block as Block exposing (Block)
@@ -29,7 +29,7 @@ import String exposing (fromInt)
 
 port imageFilePicker : (Id, ImageId) -> Cmd msg
 
-port onPickFile : ((Id, ImageId) -> msg) -> Sub msg
+port onPickImageFile : ((Id, ImageId) -> msg) -> Sub msg
 
 
 
@@ -38,7 +38,7 @@ port onPickFile : ((Id, ImageId) -> msg) -> Sub msg
 
 sub : Sub Msg
 sub =
-  onPickFile (Text << Text.FilePicked)
+  onPickImageFile (Text << Text.ImageFilePicked)
 
 
 
@@ -91,7 +91,7 @@ update msg ({present} as undoModel) =
         |> S.store
         |> Undo.swap undoModel
     Text.LeaveEdit -> leaveEdit present |> Undo.swap undoModel
-    Text.FilePicked (topicId, imageId) -> insertImage topicId imageId present
+    Text.ImageFilePicked (topicId, imageId) -> insertImage topicId imageId present
       |> Undo.swap undoModel
 
 

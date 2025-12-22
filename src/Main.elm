@@ -20,7 +20,7 @@ import Utils as U
 
 import Browser
 import Dict
-import Html exposing (Html, Attribute, div, text, br, a)
+import Html exposing (Html, div, text, br, a)
 import Html.Attributes exposing (id, style, href)
 import Json.Decode as D
 import Json.Encode as E

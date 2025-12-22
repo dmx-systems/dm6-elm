@@ -19,7 +19,7 @@ import Storage as S
 import Undo exposing (UndoModel)
 import Utils as U
 
-import Html exposing (Html, Attribute, div, span, text, button)
+import Html exposing (Html, div, span, text, button)
 import Html.Attributes exposing (class, style, title, disabled)
 import Html.Events exposing (onClick)
 import String exposing (fromInt)

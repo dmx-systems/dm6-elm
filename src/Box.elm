@@ -139,6 +139,21 @@ updateTopicProps topicId boxId transform model =
     )
 
 
+revealItem : Id -> BoxId -> Model -> Model
+revealItem itemId boxId model =
+  if hasItem boxId itemId model then
+    let
+      _ = U.info "revealItem" <| fromInt itemId ++ " is in " ++ fromInt boxId
+    in
+    showItem itemId boxId model
+  else
+    let
+      _ = U.info "revealItem" <| fromInt itemId ++ " not in " ++ fromInt boxId
+      props = initItemProps itemId boxId model
+    in
+    addItem itemId props boxId model
+
+
 {-| Initial props for a newly revealed item -}
 initItemProps : Id -> BoxId -> Model -> ViewProps
 initItemProps itemId boxId model =

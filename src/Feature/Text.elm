@@ -27,4 +27,4 @@ type Msg
   | OnTextareaInput String
   | GotTextSize Id SizeField Size
   | LeaveEdit
-  | FilePicked (Id, ImageId)
+  | ImageFilePicked (Id, ImageId)

@@ -11,7 +11,6 @@ import Undo exposing (UndoModel)
 import Utils as U
 
 import Browser.Events as Events
-import Html exposing (Attribute)
 import Html.Events exposing (onMouseEnter, onMouseLeave, stopPropagationOn)
 import Json.Decode as D
 import Random

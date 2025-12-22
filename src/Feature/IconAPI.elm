@@ -11,7 +11,7 @@ import Undo exposing (UndoModel)
 import Utils as U
 
 import Dict
-import Html exposing (Html, Attribute, div, text, button)
+import Html exposing (Html, div, text, button)
 import Html.Attributes exposing (class, title, style)
 import Html.Events exposing (onClick)
 import FeatherIcons as FI

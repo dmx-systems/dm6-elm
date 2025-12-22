@@ -102,10 +102,10 @@ isLimboAssoc assocId boxId model =
 
 limboState : Model -> Maybe (Id, Maybe Id, BoxId) -- (topic ID, assoc ID, box ID)
 limboState model =
-  case model.search.menu of
-    Topics _ (Just topicId) -> Just (topicId, Nothing, model.boxId)
-    RelTopics _ (Just (topicId, assocId)) ->
-      case SelAPI.singleBoxId model of
-        Just boxId -> Just (topicId, Just assocId, boxId)
-        Nothing -> Nothing
-    _ -> Nothing
+  case SelAPI.revelationBoxId model of
+    Just boxId ->
+      case model.search.menu of
+        Topics _ (Just topicId) -> Just (topicId, Nothing, boxId)
+        RelTopics _ (Just (topicId, assocId)) -> Just (topicId, Just assocId, boxId)
+        _ -> Nothing
+    Nothing -> Nothing
