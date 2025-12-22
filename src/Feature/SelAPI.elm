@@ -1,5 +1,5 @@
 module Feature.SelAPI exposing (select, clear, isSelected, isSelectedPath, single,
-  revelationBoxId)
+  revelationBoxId, revelationBoxPath)
 
 import Feature.Search exposing (Menu(..))
 import Feature.Sel exposing (Selection)
@@ -48,29 +48,26 @@ isSelectedPath itemId boxPath model =
 {- The box where to reveal search/traversal results -}
 revelationBoxId : Model -> Maybe BoxId
 revelationBoxId model =
+  case revelationBoxPath model of
+    Just (boxId :: _) -> Just boxId
+    _ -> Nothing
+
+
+revelationBoxPath : Model -> Maybe BoxPath
+revelationBoxPath model =
   case model.search.menu of
     Topics _ _ ->
       case single model of
-        Just (id, _) ->
+        Just (id, boxPath) ->
           case Item.isBox id model of
-            True -> Just id
-            False -> Just model.boxId
-        Nothing -> Just model.boxId
+            True -> Just (id :: boxPath)
+            False -> Just [ model.boxId ]
+        Nothing -> Just [ model.boxId ]
     RelTopics _ _ ->
-      case singleBoxId model of
-        Just boxId -> Just boxId
+      case single model of
+        Just (_, boxPath) -> Just boxPath
         Nothing -> Nothing
     Closed -> Nothing
-
-
-singleBoxId : Model -> Maybe BoxId
-singleBoxId model =
-  case single model of
-    Just (_, boxPath) ->
-      case boxPath of
-        boxId :: _ -> Just boxId
-        [] -> Nothing
-    Nothing -> Nothing
 
 
 single : Model -> Maybe (Id, BoxPath)

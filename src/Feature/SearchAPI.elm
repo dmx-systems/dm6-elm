@@ -326,25 +326,27 @@ onUnhoverRelTopic ({search} as model) =
 
 revealTopic : Id -> Model -> Model
 revealTopic topicId model =
-  case SelAPI.revelationBoxId model of
-    Just boxId ->
+  case SelAPI.revelationBoxPath model of
+    Just (boxId :: _ as boxPath) ->
       model
         |> Box.revealItem topicId boxId
         |> closeMenu
+        |> SelAPI.select topicId boxPath
         |> Size.auto
-    Nothing -> model
+    _ -> model
 
 
 revealRelTopic : (Id, Id) -> Model -> Model
 revealRelTopic (topicId, assocId) model =
-  case SelAPI.revelationBoxId model of
-    Just boxId ->
+  case SelAPI.revelationBoxPath model of
+    Just (boxId :: _ as boxPath) ->
       model
         |> Box.revealItem topicId boxId
         |> Box.revealItem assocId boxId
         |> closeMenu
+        |> SelAPI.select topicId boxPath
         |> Size.auto
-    Nothing -> model
+    _ -> model
 
 
 fullscreen : BoxId -> Model -> (Model, Cmd Msg)
