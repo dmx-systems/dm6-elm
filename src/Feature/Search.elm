@@ -5,35 +5,34 @@ import ModelParts exposing (Id, BoxId)
 
 
 type alias Model =
-  { text : String
-  , menu : Menu
+  { term : String
+  , result : SearchResult
   }
 
 
 init : Model
 init =
-  { text = ""
-  , menu = Closed
+  { term = ""
+  , result = NoSearch
   }
 
 
-type Menu
+type SearchResult
   = Topics (List Id) (Maybe Id) -- hovered topic
   | RelTopics (List (Id, Id)) (Maybe (Id, Id)) -- hovered related topic (topic ID, assoc ID)
-  | Closed
+  | NoSearch
 
 
 type Msg
   -- Search
   = Input String
-  | FocusInput
-  | HoverTopic Id
-  | UnhoverTopic Id
-  | ClickTopic Id
+  | InputFocused
+  | TopicHovered Id
+  | TopicUnhovered Id
+  | TopicClicked Id
   -- Traverse
-  | Traverse
-  | HoverRelTopic (Id, Id)
-  | UnhoverRelTopic (Id, Id)
-  | ClickRelTopic (Id, Id)
-  -- Fullscreen
+  | RelTopicHovered (Id, Id)
+  | RelTopicUnhovered (Id, Id)
+  | RelTopicClicked (Id, Id)
+  -- Fullscreen (Search & Traverse)
   | Fullscreen BoxId

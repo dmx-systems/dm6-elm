@@ -1,12 +1,12 @@
-module Feature.SearchAPI exposing (viewInput, viewSearchResult, viewTraversalResult, closeMenu,
-  update)
+module Feature.SearchAPI exposing (viewInput, viewSearchResult, viewTraversalResult, traverse,
+  closeMenu, update)
 
 import Box
 import Box.Size as Size
 import Config as C
 import Feature.IconAPI as IconAPI
 import Feature.NavAPI as NavAPI
-import Feature.Search as Search exposing (Menu(..))
+import Feature.Search as Search exposing (SearchResult(..))
 import Feature.SelAPI as SelAPI
 import Item
 import Model exposing (Model, Msg(..))
@@ -31,9 +31,9 @@ viewInput model =
   div
     []
     [ input
-      ( [ value model.search.text
+      ( [ value model.search.term
         , onInput (Search << Search.Input)
-        , onFocus (Search Search.FocusInput)
+        , onFocus (Search Search.InputFocused)
         , U.onMouseDownStop NoOp -- Don't clear selection
         ]
         ++ searchInputStyle
@@ -49,7 +49,7 @@ searchInputStyle =
 
 viewSearchResult : Model -> List (Html Msg)
 viewSearchResult model =
-  case model.search.menu of
+  case model.search.result of
     Topics topicIds _ ->
       if not (topicIds |> List.isEmpty) then
         [ viewSearchtMenu topicIds model ]
@@ -60,7 +60,7 @@ viewSearchResult model =
 
 viewTraversalResult : Model -> List (Html Msg)
 viewTraversalResult model =
-  case model.search.menu of
+  case model.search.result of
     RelTopics relTopicIds _ ->
       if not (relTopicIds |> List.isEmpty) then
         [ viewTraversalMenu relTopicIds model ]
@@ -85,9 +85,9 @@ viewSearchtMenu topicIds model =
         case Item.topicById id model of
           Just topic ->
             div
-              ( [ onClick <| Search <| Search.ClickTopic id
-                , onMouseOver <| Search <| Search.HoverTopic id
-                , onMouseOut <| Search <| Search.UnhoverTopic id
+              ( [ onClick <| Search <| Search.TopicClicked id
+                , onMouseOver <| Search <| Search.TopicHovered id
+                , onMouseOut <| Search <| Search.TopicUnhovered id
                 ]
                 ++ menuItemStyle isDisabled isHover
               )
@@ -116,9 +116,9 @@ viewTraversalMenu relTopicIds model =
         case Item.topicById id model of
           Just topic ->
             div
-              ( [ onClick <| Search <| Search.ClickRelTopic (id, assocId)
-                , onMouseOver <| Search <| Search.HoverRelTopic (id, assocId)
-                , onMouseOut <| Search <| Search.UnhoverRelTopic (id, assocId)
+              ( [ onClick <| Search <| Search.RelTopicClicked (id, assocId)
+                , onMouseOver <| Search <| Search.RelTopicHovered (id, assocId)
+                , onMouseOut <| Search <| Search.RelTopicUnhovered (id, assocId)
                 ]
                 ++ menuItemStyle isDisabled isHover
               )
@@ -230,14 +230,14 @@ isItemDisabled topicId model =
 
 isTopicHover : Id -> Model -> Bool
 isTopicHover topicId model =
-  case model.search.menu of
+  case model.search.result of
     Topics _ (Just topicId_) -> topicId_ == topicId
     _ -> False
 
 
 isRelTopicHover : (Id, Id) -> Model -> Bool
 isRelTopicHover relTopic model =
-  case model.search.menu of
+  case model.search.result of
     RelTopics _ (Just relTopic_) -> relTopic_ == relTopic
     _ -> False
 
@@ -250,78 +250,80 @@ update : Search.Msg -> UndoModel -> (UndoModel, Cmd Msg)
 update msg ({present} as undoModel) =
   case msg of
     -- Search
-    Search.Input text -> (onTextInput text present, Cmd.none) |> Undo.swap undoModel
-    Search.FocusInput -> (onFocusInput present, Cmd.none) |> Undo.swap undoModel
-    Search.HoverTopic topicId -> (onHoverTopic topicId present, Cmd.none) |> Undo.swap undoModel
-    Search.UnhoverTopic _ -> (onUnhoverTopic present, Cmd.none) |> Undo.swap undoModel
-    Search.ClickTopic topicId -> revealTopic topicId present |> S.store |> Undo.push undoModel
-    -- Traverse
-    Search.Traverse -> (traverse present, Cmd.none) |> Undo.swap undoModel
-    Search.HoverRelTopic relTopicId -> (onHoverRelTopic relTopicId present, Cmd.none)
+    Search.Input term -> (setSearchTerm term present, Cmd.none) |> Undo.swap undoModel
+    Search.InputFocused -> (onInputFocused present, Cmd.none) |> Undo.swap undoModel
+    Search.TopicHovered topicId -> (onTopicHovered topicId present, Cmd.none)
       |> Undo.swap undoModel
-    Search.UnhoverRelTopic _ -> (onUnhoverRelTopic present, Cmd.none) |> Undo.swap undoModel
-    Search.ClickRelTopic relTopicId -> revealRelTopic relTopicId present |> S.store
+    Search.TopicUnhovered _ -> (onTopicUnhovered present, Cmd.none) |> Undo.swap undoModel
+    Search.TopicClicked topicId -> revealTopic topicId present |> S.store |> Undo.push undoModel
+    -- Traverse
+    Search.RelTopicHovered relTopicId -> (onRelTopicHovered relTopicId present, Cmd.none)
+      |> Undo.swap undoModel
+    Search.RelTopicUnhovered _ -> (onRelTopicUnhovered present, Cmd.none) |> Undo.swap undoModel
+    Search.RelTopicClicked relTopicId -> revealRelTopic relTopicId present |> S.store
       |> Undo.push undoModel
-    -- Fullscreen
-    Search.Fullscreen boxId -> fullscreen boxId present |> Undo.swap undoModel
+    -- Fullscreen (Search & Traverse)
+    Search.Fullscreen boxId -> (undoModel, NavAPI.pushUrl boxId)
 
 
-onTextInput : String -> Model -> Model
-onTextInput text ({search} as model) =
-  { model | search = { search | text = text }}
-  |> searchTopics
+setSearchTerm : String -> Model -> Model
+setSearchTerm term model =
+  model
+    |> setTerm term
+    |> searchTopics
 
 
-onFocusInput : Model -> Model
-onFocusInput = searchTopics
+onInputFocused : Model -> Model
+onInputFocused =
+  searchTopics
 
 
-onHoverTopic : Id -> Model -> Model
-onHoverTopic topicId ({search} as model) =
-  case model.search.menu of
+onTopicHovered : Id -> Model -> Model
+onTopicHovered topicId model =
+  case model.search.result of
     Topics topicIds _ ->
       -- update hover state
-      { model | search = { search | menu = Topics topicIds (Just topicId) }}
-      |> Size.auto
+      model
+        |> setResult (Topics topicIds <| Just topicId)
+        |> Size.auto
     _ ->
-      U.logError "onHoverTopic" "Received \"HoverTopic\" when search.menu is not Topics" model
+      U.logError "onTopicHovered" "search.result is not Topics" model
 
 
-onHoverRelTopic : (Id, Id) -> Model -> Model
-onHoverRelTopic relTopicId ({search} as model) =
-  case model.search.menu of
+onRelTopicHovered : (Id, Id) -> Model -> Model
+onRelTopicHovered relTopicId model =
+  case model.search.result of
     RelTopics relTopicIds _ ->
       -- update hover state
-      { model | search = { search | menu = RelTopics relTopicIds (Just relTopicId) }}
-      |> Size.auto
+      model
+        |> setResult (RelTopics relTopicIds <| Just relTopicId)
+        |> Size.auto
     _ ->
-      U.logError "onHoverRelTopic"
-        "Received \"HoverRelTopic\" when search.menu is not RelTopics" model
+      U.logError "onRelTopicHovered" "search.result is not RelTopics" model
 
 
-onUnhoverTopic : Model -> Model
-onUnhoverTopic ({search} as model) =
-  case model.search.menu of
+onTopicUnhovered : Model -> Model
+onTopicUnhovered model =
+  case model.search.result of
     Topics topicIds _ ->
       -- update hover state
-      { model | search = { search | menu = Topics topicIds Nothing }}
-      |> Size.auto
+      model
+        |> setResult (Topics topicIds Nothing)
+        |> Size.auto
     _ ->
-      U.logError "onUnhoverTopic"
-        "Received \"UnhoverTopic\" when search.menu is not Topics"
-        model
+      U.logError "onTopicUnhovered" "search.result is not Topics" model
 
 
-onUnhoverRelTopic : Model -> Model
-onUnhoverRelTopic ({search} as model) =
-  case model.search.menu of
+onRelTopicUnhovered : Model -> Model
+onRelTopicUnhovered model =
+  case model.search.result of
     RelTopics relTopicIds _ ->
       -- update hover state
-      { model | search = { search | menu = RelTopics relTopicIds Nothing }}
-      |> Size.auto
+      model
+        |> setResult (RelTopics relTopicIds Nothing)
+        |> Size.auto
     _ ->
-      U.logError "onUnhoverRelTopic"
-        "Received \"UnhoverRelTopic\" when search.menu is not RelTopics" model
+      U.logError "onRelTopicUnhovered" "search.result is not RelTopics" model
 
 
 revealTopic : Id -> Model -> Model
@@ -349,33 +351,26 @@ revealRelTopic (topicId, assocId) model =
     _ -> model
 
 
-fullscreen : BoxId -> Model -> (Model, Cmd Msg)
-fullscreen boxId model =
-  ( model |> closeMenu
-  , NavAPI.pushUrl boxId
-  )
-
-
+-- "searchTopics" instead "search" avoids shadowing
 searchTopics : Model -> Model
-searchTopics ({search} as model) =
+searchTopics model =
   let
     topicIds = model.items |> Dict.foldr
       (\id item topicIdsAcc ->
         case item.info of
           Topic {text} ->
-            if isMatch model.search.text text then
-              id :: topicIdsAcc
-            else
-              topicIdsAcc
+            case isMatch text model.search.term of
+              True -> id :: topicIdsAcc
+              False -> topicIdsAcc
           Assoc _ -> topicIdsAcc
       )
       []
   in
-  { model | search = { search | menu = Topics topicIds Nothing }}
+  model |> setResult (Topics topicIds Nothing)
 
 
 traverse : Model -> Model
-traverse ({search} as model) =
+traverse model =
   let
     relTopicIds =
       case SelAPI.single model of
@@ -383,15 +378,25 @@ traverse ({search} as model) =
           Item.relatedItems itemId model
         Nothing -> [] -- TODO: log error
   in
-  { model | search = { search | menu = RelTopics relTopicIds Nothing }}
+  model |> setResult (RelTopics relTopicIds Nothing)
 
 
 isMatch : String -> String -> Bool
-isMatch searchText text =
-  not (searchText |> String.isEmpty)
-  && String.contains (String.toLower searchText) (String.toLower text)
+isMatch text searchTerm =
+  not (searchTerm |> String.isEmpty)
+    && String.contains (String.toLower searchTerm) (String.toLower text)
 
 
 closeMenu : Model -> Model
-closeMenu ({search} as model) =
-  { model | search = { search | menu = Closed }}
+closeMenu model =
+  model |> setResult NoSearch
+
+
+setTerm : String -> Model -> Model
+setTerm term ({search} as model) =
+  { model | search = { search | term = term }}
+
+
+setResult : SearchResult -> Model -> Model
+setResult result ({search} as model) =
+  { model | search = { search | result = result }}

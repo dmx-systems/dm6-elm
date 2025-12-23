@@ -36,7 +36,7 @@ viewGlobalTools model =
   let
     isHome = model.boxId == rootBoxId
   in
-  [ viewIconButton "Show Home Map" "home" 20 (Tool Tool.Home) (not isHome) True homeButtonStyle
+  [ viewIconButton "Show Home Map" "home" 20 (Tool Tool.Home) isHome True homeButtonStyle
   , SearchAPI.viewInput model
   , div
     importExportStyle
@@ -65,11 +65,11 @@ viewMapTools : UndoModel -> List (Html Msg)
 viewMapTools undoModel =
   [ div
     mapToolsStyle
-    [ viewMapButton "Add Topic" "plus-circle" (Tool Tool.AddTopic) True
-    , viewMapButton "Add Box" "plus-square" (Tool Tool.AddBox) True
+    [ viewMapButton "Add Topic" "plus-circle" (Tool Tool.AddTopic) False
+    , viewMapButton "Add Box" "plus-square" (Tool Tool.AddBox) False
     , viewSpacer
-    , viewMapButton "Undo" "rotate-ccw" (Tool Tool.Undo) (Undo.hasPast undoModel)
-    , viewMapButton "Redo" "rotate-cw" (Tool Tool.Redo) (Undo.hasFuture undoModel)
+    , viewMapButton "Undo" "rotate-ccw" (Tool Tool.Undo) (not <| Undo.hasPast undoModel)
+    , viewMapButton "Redo" "rotate-cw" (Tool Tool.Redo) (not <| Undo.hasFuture undoModel)
     ]
   ]
 
@@ -111,18 +111,17 @@ viewToolbar : Id -> BoxId -> Model -> Html Msg
 viewToolbar itemId boxId model =
   let
     topicTools =
-      [ viewItemButton "Edit" "edit-3" (Tool Tool.Edit) True True
-      , viewItemButton "Select Icon" "image" (Tool Tool.Icon) True True
-      , viewItemButton "Traverse" "share-2" (Search Search.Traverse) True True
-      , viewItemButton "Delete" "trash" (Tool Tool.Delete) True True
-      , viewItemButton "Remove" "x" (Tool Tool.Remove) True True
+      [ viewItemButton "Edit" "edit-3" (Tool Tool.Edit) False True
+      , viewItemButton "Select Icon" "image" (Tool Tool.Icon) False True
+      , viewItemButton "Traverse" "share-2" (Tool Tool.Traverse) False True
+      , viewItemButton "Delete" "trash" (Tool Tool.Delete) False True
+      , viewItemButton "Remove" "x" (Tool Tool.Remove) False True
       ]
     boxTools =
       if Item.isBox itemId model then
         [ viewSpacer
-        , viewItemButton "Fullscreen" "maximize-2" (Tool <| Tool.Fullscreen itemId) True True
-        , viewItemButton "Unbox" "external-link" (Tool <| Tool.Unbox itemId boxId) (not unboxed)
-            True
+        , viewItemButton "Fullscreen" "maximize-2" (Tool <| Tool.Fullscreen itemId) False True
+        , viewItemButton "Unbox" "external-link" (Tool <| Tool.Unbox itemId boxId) unboxed True
         ]
       else
         []
@@ -144,8 +143,8 @@ viewTextToolbar : Id -> BoxId -> Model -> Html Msg
 viewTextToolbar itemId boxId model =
   div
     ( toolbarStyle itemId boxId model )
-    [ viewItemButton "Insert Image" "image" (Tool <| Tool.Image itemId) True False
-    , viewItemButton "Done" "check" (Tool Tool.LeaveEdit) True False
+    [ viewItemButton "Insert Image" "image" (Tool <| Tool.Image itemId) False False
+    , viewItemButton "Done" "check" (Tool Tool.LeaveEdit) False False
     ]
 
 
@@ -230,17 +229,17 @@ textButtonStyle =
 
 
 viewMapButton : String -> String -> Msg -> Bool -> Html Msg
-viewMapButton label icon msg isEnabled =
-  viewIconButton label icon C.mapToolbarIconSize msg isEnabled True []
+viewMapButton label icon msg isDisabled =
+  viewIconButton label icon C.mapToolbarIconSize msg isDisabled True []
 
 
 viewItemButton : String -> String -> Msg -> Bool -> Bool -> Html Msg
-viewItemButton label icon msg isEnabled shouldCancel =
-  viewIconButton label icon C.itemToolbarIconSize msg isEnabled shouldCancel []
+viewItemButton label icon msg isDisabled shouldCancel =
+  viewIconButton label icon C.itemToolbarIconSize msg isDisabled shouldCancel []
 
 
 viewIconButton : String -> String -> Float -> Msg -> Bool -> Bool -> Attributes Msg -> Html Msg
-viewIconButton label icon iconSize msg isEnabled shouldCancel extraStyle =
+viewIconButton label icon iconSize msg isDisabled shouldCancel extraStyle =
   let
     stop =
       case shouldCancel of
@@ -251,7 +250,7 @@ viewIconButton label icon iconSize msg isEnabled shouldCancel extraStyle =
     ( [ class "tool"
       , title label
       , onClick msg
-      , disabled <| not isEnabled
+      , disabled isDisabled
       ]
       ++ stop
       ++ iconButtonStyle
@@ -287,6 +286,7 @@ update msg ({present} as undoModel) =
     -- Item Tools
     Tool.Edit -> edit present |> S.storeWith |> Undo.push undoModel
     Tool.Icon -> (IconAPI.openPicker present, Cmd.none) |> Undo.swap undoModel
+    Tool.Traverse -> (SearchAPI.traverse present, Cmd.none) |> Undo.swap undoModel
     Tool.Delete -> delete present |> S.store |> Undo.push undoModel
     Tool.Remove -> remove present |> S.store |> Undo.push undoModel
     Tool.Fullscreen boxId -> (undoModel, NavAPI.pushUrl boxId)

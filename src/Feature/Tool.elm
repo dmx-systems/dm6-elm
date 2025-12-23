@@ -17,10 +17,11 @@ type Msg
   -- Item Tools
   | Edit
   | Icon
+  | Traverse
   | Delete
   | Remove
-  | Fullscreen BoxId
-  | Unbox BoxId BoxId
+  | Fullscreen BoxId  -- box only
+  | Unbox BoxId BoxId -- box only
   | ToggleDisplay Id BoxId
   -- Text Tools
   | Image Id

@@ -2,7 +2,7 @@ module Map.Model exposing (topicsToRender, assocsToRender, isLimboTopic, isLimbo
   limboState)
 
 import Box
-import Feature.Search exposing (Menu(..))
+import Feature.Search exposing (SearchResult(..))
 import Feature.SelAPI as SelAPI
 import Model exposing (Model)
 import ModelParts exposing (..)
@@ -104,7 +104,7 @@ limboState : Model -> Maybe (Id, Maybe Id, BoxId) -- (topic ID, assoc ID, box ID
 limboState model =
   case SelAPI.revelationBoxId model of
     Just boxId ->
-      case model.search.menu of
+      case model.search.result of
         Topics _ (Just topicId) -> Just (topicId, Nothing, boxId)
         RelTopics _ (Just (topicId, assocId)) -> Just (topicId, Just assocId, boxId)
         _ -> Nothing

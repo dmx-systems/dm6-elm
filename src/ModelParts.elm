@@ -37,6 +37,7 @@ type alias TopicInfo =
   }
 
 
+-- TODO: remodel
 type alias AssocInfo =
   { id : Id
   , itemType : ItemType -- serialized as "type", field can't be named "type", a reserved word

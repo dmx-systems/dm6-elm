@@ -1,7 +1,7 @@
 module Feature.SelAPI exposing (select, clear, isSelected, isSelectedPath, single,
   revelationBoxId, revelationBoxPath)
 
-import Feature.Search exposing (Menu(..))
+import Feature.Search exposing (SearchResult(..))
 import Feature.Sel exposing (Selection)
 import Item
 import Model exposing (Model)
@@ -55,7 +55,7 @@ revelationBoxId model =
 
 revelationBoxPath : Model -> Maybe BoxPath
 revelationBoxPath model =
-  case model.search.menu of
+  case model.search.result of
     Topics _ _ ->
       case single model of
         Just (id, boxPath) ->
@@ -67,7 +67,7 @@ revelationBoxPath model =
       case single model of
         Just (_, boxPath) -> Just boxPath
         Nothing -> Nothing
-    Closed -> Nothing
+    NoSearch -> Nothing
 
 
 single : Model -> Maybe (Id, BoxPath)
