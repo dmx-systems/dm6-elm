@@ -58,10 +58,10 @@ boxItems_ boxItems targetItems model =
   boxItems |> Dict.values |> List.filter Box.isVisible |> List.foldr
     (\boxItem targetItemsAcc ->
       case targetItemsAcc |> Dict.get boxItem.id of
-        Just {pinned} ->
-          if pinned then
+        Just item ->
+          if item |> Box.isPinned then
             -- don't box pinned items, only remove the assoc
-            Box.removeItem_ boxItem.parentAssocId targetItemsAcc model
+            Box.removeItem_ boxItem.boxAssocId targetItemsAcc model
           else
             let
               items = Box.removeItem_ boxItem.id targetItemsAcc model
@@ -109,20 +109,21 @@ unboxTopic boxItem targetItems model =
       case targetItems |> Dict.get boxItem.id of
         Just item ->
           -- if box item exists (= was revealed before) ...
-          -- 1) set it to "pinned" unless it is hidden
+          -- 1) set it to "pinned" if visible already
           -- 2) abort further unboxing if it's display mode is BlackBox or WhiteBox
           let
-            _ = U.info "unboxTopic" { item | hidden = False, pinned = not item.hidden }
+            newItem = { item | visibility = Visible <| Box.isVisible item }
+            _ = U.info "unboxTopic" newItem
           in
-          ({ item | hidden = False, pinned = not item.hidden }, isAbort item)
+          (newItem, isAbort item)
         Nothing ->
           -- by default (when no box item exists) an unboxed box will also be unboxed
-          -- FIXME: set item's parentAssocId?
+          -- FIXME: set item's boxAssocId?
           if Item.isBox boxItem.id model then
             (setUnboxed boxItem, False)
           else
             (boxItem, False)
-    assocToInsert = targetAssocItem boxItem.parentAssocId targetItems
+    assocToInsert = targetAssocItem boxItem.boxAssocId targetItems
   in
   ( targetItems
     |> Dict.insert topicToInsert.id topicToInsert
@@ -167,6 +168,6 @@ Part of unboxing. FIXDOC
 targetAssocItem : Id -> BoxItems -> BoxItem
 targetAssocItem assocId targetItems =
   case targetItems |> Dict.get assocId of
-    Just item -> { item | hidden = False }
-    Nothing -> BoxItem assocId -1 False False (AssocV AssocProps) -- hidden/pinned=False
-    -- FIXME: set item's parentAssocId?
+    Just item -> { item | visibility = Visible False } -- TODO: pinning?
+    Nothing -> BoxItem assocId -1 (Visible False) (AssocV AssocProps) -- Pinned=False
+    -- FIXME: set item's boxAssocId?

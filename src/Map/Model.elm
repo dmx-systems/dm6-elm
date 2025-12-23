@@ -36,7 +36,7 @@ topicsToRender box model =
                   <| effectiveDisplayMode topicId box.id model
                   <| Box.initTopicProps topicId box.id model
             in
-            [ BoxItem topicId -1 False False props ] -- TODO: explain -1 False False
+            [ BoxItem topicId -1 Removed props ] -- TODO: explain -1 Removed
           else
             []
         Nothing -> []

@@ -1,8 +1,8 @@
 module ModelParts exposing (Item, ItemInfo(..), TopicInfo, AssocInfo, Items, Id, AssocIds, Icon,
   Size, SizeField(..), TextSize, ItemType, RoleType, Box, Boxes, BoxId, Class, Delta, BoxItems,
-  BoxPath, rootBoxId, BoxItem, ViewProps(..), TopicProps, AssocProps, DisplayMode(..),
-  TopicDisplay(..), BoxDisplay(..), Point, Rectangle, ImageId, Attributes, encodeItem,
-  encodeBox, itemDecoder, boxDecoder, toDictDecoder)
+  BoxPath, rootBoxId, BoxItem, Visibility(..), ViewProps(..), TopicProps, AssocProps,
+  DisplayMode(..), TopicDisplay(..), BoxDisplay(..), Point, Rectangle, ImageId, Attributes,
+  encodeItem, encodeBox, itemDecoder, boxDecoder, toDictDecoder)
 
 import Dict exposing (Dict)
 import Html exposing (Attribute)
@@ -94,6 +94,7 @@ type alias Class = String -- a CSS class, e.g. "dmx-topic"
 type alias Delta = Point
 type alias BoxItems = Dict Id BoxItem
 type alias BoxPath = List BoxId
+type alias Pinned = Bool
 
 
 rootBoxId : BoxId
@@ -102,11 +103,15 @@ rootBoxId = 0
 
 type alias BoxItem =
   { id : Id
-  , parentAssocId : Id -- TODO: drop it? Compute from Item's "assocIds" field instead?
-  , hidden : Bool -- TODO: replace hidden/pinned by custom type: Hidden/Visible/Pinned?
-  , pinned : Bool
+  , boxAssocId : Id
+  , visibility : Visibility
   , props : ViewProps
   }
+
+
+type Visibility
+  = Visible Pinned
+  | Removed
 
 
 type ViewProps
@@ -229,9 +234,8 @@ encodeBoxItem : BoxItem -> E.Value
 encodeBoxItem item =
   E.object
     [ ("id", E.int item.id)
-    , ("parentAssocId", E.int item.parentAssocId)
-    , ("hidden", E.bool item.hidden)
-    , ("pinned", E.bool item.pinned)
+    , ("boxAssocId", E.int item.boxAssocId)
+    , ("visibility", encodeVisibility item.visibility)
     , case item.props of
         TopicV topicProps ->
           ( "topicProps"
@@ -249,6 +253,16 @@ encodeBoxItem item =
           , E.object []
           )
     ]
+
+
+encodeVisibility : Visibility -> E.Value
+encodeVisibility visibility =
+  E.string
+    (case visibility of
+      Visible True -> "Pinned"
+      Visible False -> "Visible"
+      Removed -> "Removed"
+    )
 
 
 encodeDisplayName : DisplayMode -> E.Value
@@ -334,11 +348,10 @@ boxDecoder =
 
 boxItemDecoder : D.Decoder BoxItem
 boxItemDecoder =
-  D.map5 BoxItem
+  D.map4 BoxItem
     (D.field "id" D.int)
-    (D.field "parentAssocId" D.int)
-    (D.field "hidden" D.bool)
-    (D.field "pinned" D.bool)
+    (D.field "boxAssocId" D.int)
+    (D.field "visibility" D.string |> D.andThen visibilityDecoder)
     (D.oneOf
       [ D.field "topicProps" <| D.map TopicV <| D.map2 TopicProps
         (D.field "pos" <| D.map2 Point
@@ -357,6 +370,15 @@ toDictDecoder items =
   |> List.map (\item -> (item.id, item))
   |> Dict.fromList
   |> D.succeed
+
+
+visibilityDecoder : String -> D.Decoder Visibility
+visibilityDecoder str =
+  case str of
+    "Pinned" -> D.succeed (Visible True)
+    "Visible" -> D.succeed (Visible False)
+    "Removed" -> D.succeed (Removed)
+    _ -> D.fail <| "\"" ++ str ++ "\" is an invalid visibility"
 
 
 displayModeDecoder : String -> D.Decoder DisplayMode

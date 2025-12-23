@@ -224,22 +224,24 @@ Can be used for both, topics and associations.
 addItem : Id -> ViewProps -> BoxId -> Model -> Model
 addItem itemId props boxId model =
   let
-    ( newModel, parentAssocId ) = Item.addAssoc
+    ( newModel, boxAssocId ) = Item.addAssoc
       "dmx.composition"
       "dmx.child" itemId
       "dmx.parent" boxId
       model
-    boxItem = BoxItem itemId parentAssocId False False props -- hidden=False, pinned=False
+    boxItem = BoxItem itemId boxAssocId (Visible False) props -- Pinned=False
     _ = U.info "addItem"
-      { itemId = itemId, parentAssocId = parentAssocId, props = props, boxId = boxId}
+      { itemId = itemId, boxAssocId = boxAssocId, props = props, boxId = boxId}
   in
   newModel |> update boxId
     (\box -> { box | items = box.items |> Dict.insert itemId boxItem })
 
 
-{-| Presumption: the item *is* contained in the box. Sets its "hidden" flag to False.
+{-| Sets the item's "visibility" field to Visible (Pinned=False).
+Presumption: the item *is* contained in the box.
 Can be used for both, topics and associations.
-If the item is *not* contained in the box, or its "hidden" flag is False already, its a no-op.
+If the item is *not* contained in the box, or its "visibility" field is Visible already,
+its a no-op.
 Logs an error if box does not exist.
 -}
 showItem : Id -> BoxId -> Model -> Model
@@ -249,7 +251,12 @@ showItem itemId boxId model =
       { box | items = box.items |> Dict.update itemId
         (\maybeItem ->
           case maybeItem of
-            Just boxItem -> Just { boxItem | hidden = False }
+            Just boxItem -> Just
+              { boxItem | visibility =
+                case boxItem.visibility of
+                  Visible _ -> boxItem.visibility
+                  Removed -> Visible False
+              }
             Nothing -> Nothing
         )
       }
@@ -270,7 +277,7 @@ removeItem_ itemId items model =
       itemId
       (\item_ ->
         case item_ of
-          Just item -> Just { item | hidden = True }
+          Just item -> Just { item | visibility = Removed }
           Nothing -> Nothing
       )
     )
@@ -314,7 +321,14 @@ isAssoc item =
 {-| useful as a filter predicate -}
 isVisible : BoxItem -> Bool
 isVisible item =
-  not item.hidden
+  case item.visibility of
+    Visible _ -> True
+    Removed -> False
+
+
+isPinned : BoxItem -> Bool
+isPinned item =
+  item.visibility == Visible True
 
 
 mapTitle : Model -> String
