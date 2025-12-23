@@ -77,8 +77,8 @@ view boxId boxPath model =
 topicLayerStyle : Rectangle -> Attributes Msg
 topicLayerStyle boxRect =
   [ style "position" "absolute"
-  , style "left" <| fromFloat -boxRect.x1 ++ "px"
-  , style "top" <| fromFloat -boxRect.y1 ++ "px"
+  , style "left" <| fromInt -boxRect.x1 ++ "px"
+  , style "top" <| fromInt -boxRect.y1 ++ "px"
   ]
 
 
@@ -93,7 +93,7 @@ svgStyle =
 gAttr : BoxId -> Rectangle -> Model -> Attributes Msg
 gAttr boxId boxRect model =
     [ transform
-      <| "translate(" ++ fromFloat -boxRect.x1 ++ " " ++ fromFloat -boxRect.y1 ++ ")"
+      <| "translate(" ++ fromInt -boxRect.x1 ++ " " ++ fromInt -boxRect.y1 ++ ")"
     ]
 
 
@@ -104,8 +104,8 @@ boxInfo boxId boxPath model =
     Just box ->
       ( viewItems box boxPath model
       , box.rect
-      , ( { w = (box.rect.x2 - box.rect.x1) |> round |> fromInt
-          , h = (box.rect.y2 - box.rect.y1) |> round |> fromInt
+      , ( { w = (box.rect.x2 - box.rect.x1) |> fromInt
+          , h = (box.rect.y2 - box.rect.y1) |> fromInt
           }
         , if model.boxId == boxId then
             []
@@ -126,10 +126,10 @@ nestedBoxStyle topicId rect boxPath model =
     r = fromInt C.whiteBoxRadius ++ "px"
   in
   [ style "position" "absolute"
-  , style "left" <| fromFloat -C.topicBorderWidth ++ "px"
-  , style "top" <| fromFloat (C.topicSize.h - 2 * C.topicBorderWidth) ++ "px"
-  , style "width" <| fromFloat width ++ "px"
-  , style "height" <| fromFloat height ++ "px"
+  , style "left" <| fromInt -C.topicBorderWidth ++ "px"
+  , style "top" <| fromInt (C.topicSize.h - 2 * C.topicBorderWidth) ++ "px"
+  , style "width" <| fromInt width ++ "px"
+  , style "height" <| fromInt height ++ "px"
   , style "border-radius" <| "0 " ++ r ++ " " ++ r ++ " " ++ r
   ]
   ++ topicBorderStyle topicId boxPath model
@@ -319,8 +319,8 @@ detailTopic topic props boxPath model =
 detailTopicStyle : TopicProps -> Attributes Msg
 detailTopicStyle {pos} =
   [ style "display" "flex"
-  , style "left" <| fromFloat (pos.x - C.topicW2) ++ "px"
-  , style "top" <| fromFloat (pos.y - C.topicH2) ++ "px"
+  , style "left" <| fromInt (pos.x - C.topicW2) ++ "px"
+  , style "top" <| fromInt (pos.y - C.topicH2) ++ "px"
   ]
 
 
@@ -330,7 +330,7 @@ detailTextStyle topicId boxPath model =
     r = fromInt C.topicRadius ++ "px"
   in
   [ style "font-size" <| fromInt C.contentFontSize ++ "px"
-  , style "width" <| fromFloat C.topicDetailMaxWidth ++ "px"
+  , style "width" <| fromInt C.topicDetailMaxWidth ++ "px"
   , style "line-height" <| fromFloat C.topicLineHeight
   , style "padding" <| fromInt C.topicDetailPadding ++ "px"
   , style "border-radius" <| "0 " ++ r ++ " " ++ r ++ " " ++ r
@@ -341,7 +341,7 @@ detailTextStyle topicId boxPath model =
 
 textViewStyle : Attributes Msg
 textViewStyle =
-  [ style "min-width" <| fromFloat (C.topicSize.w - C.topicSize.h) ++ "px"
+  [ style "min-width" <| fromInt (C.topicSize.w - C.topicSize.h) ++ "px"
   , style "max-width" "max-content"
   ]
 
@@ -354,8 +354,8 @@ textEditorStyle topicId model =
       Nothing -> 0
   in
   [ style "position" "relative"
-  , style "top" <| fromFloat -C.topicBorderWidth ++ "px"
-  , style "height" <| fromFloat height ++ "px"
+  , style "top" <| fromInt -C.topicBorderWidth ++ "px"
+  , style "height" <| fromInt height ++ "px"
   , style "font-family" C.editorFont
   , style "border-color" "black" -- <textarea> default is some lightgray
   , style "resize" "none"
@@ -365,8 +365,8 @@ textEditorStyle topicId model =
 topicIconStyle : Attributes Msg
 topicIconStyle =
   [ style "position" "relative"
-  , style "top" <| fromFloat ((C.topicSize.h - C.topicIconSize) / 2) ++ "px"
-  , style "left" <| fromFloat ((C.topicSize.h - C.topicIconSize) / 2) ++ "px"
+  , style "top" <| fromInt ((C.topicSize.h - C.topicIconSize) // 2) ++ "px"
+  , style "left" <| fromInt ((C.topicSize.h - C.topicIconSize) // 2) ++ "px"
   , style "color" "white"
   ]
 
@@ -397,8 +397,8 @@ topicFlexboxStyle topic props boxPath model =
   [ style "display" "flex"
   , style "align-items" "center"
   , style "gap" "8px"
-  , style "width" <| fromFloat C.topicSize.w ++ "px"
-  , style "height" <| fromFloat C.topicSize.h ++ "px"
+  , style "width" <| fromInt C.topicSize.w ++ "px"
+  , style "height" <| fromInt C.topicSize.h ++ "px"
   , style "border-radius" <| r12 ++ " " ++ r12 ++ " " ++ r34 ++ " " ++ r34
   ]
   ++ topicBorderStyle topic.id boxPath model
@@ -409,8 +409,8 @@ ghostTopicStyle topic boxPath model =
   [ style "position" "absolute"
   , style "left" <| fromInt C.blackBoxOffset ++ "px"
   , style "top" <| fromInt C.blackBoxOffset ++ "px"
-  , style "width" <| fromFloat C.topicSize.w ++ "px"
-  , style "height" <| fromFloat C.topicSize.h ++ "px"
+  , style "width" <| fromInt C.topicSize.w ++ "px"
+  , style "height" <| fromInt C.topicSize.h ++ "px"
   , style "border-radius" <| fromInt C.topicRadius ++ "px"
   , style "z-index" "-1" -- behind topic
   ]
@@ -558,8 +558,8 @@ accumulateRect posAcc boxId model =
 
 topicPosStyle : TopicProps -> Attributes Msg
 topicPosStyle { pos } =
-  [ style "left" <| fromFloat (pos.x - C.topicW2) ++ "px"
-  , style "top" <| fromFloat (pos.y - C.topicH2) ++ "px"
+  [ style "left" <| fromInt (pos.x - C.topicW2) ++ "px"
+  , style "top" <| fromInt (pos.y - C.topicH2) ++ "px"
   ]
 
 
@@ -572,8 +572,8 @@ iconBoxStyle props =
       _ -> r1
   in
   [ style "flex" "none"
-  , style "width" <| fromFloat C.topicSize.h ++ "px"
-  , style "height" <| fromFloat C.topicSize.h ++ "px"
+  , style "width" <| fromInt C.topicSize.h ++ "px"
+  , style "height" <| fromInt C.topicSize.h ++ "px"
   , style "border-radius" <| r1 ++ " 0 0 " ++ r4
   , style "background-color" "black"
   ]
@@ -582,8 +582,8 @@ iconBoxStyle props =
 detailTopicIconBoxStyle : Attributes Msg
 detailTopicIconBoxStyle =
   -- icon box correction as detail topic has no border, in contrast to label topic
-  [ style "padding-left" <| fromFloat C.topicBorderWidth ++ "px"
-  , style "width" <| fromFloat (C.topicSize.h - C.topicBorderWidth) ++ "px"
+  [ style "padding-left" <| fromInt C.topicBorderWidth ++ "px"
+  , style "width" <| fromInt (C.topicSize.h - C.topicBorderWidth) ++ "px"
   ]
 
 
@@ -598,7 +598,7 @@ topicBorderStyle id boxPath model =
       Drag DraftAssoc _ boxPath_ _ _ target -> isTarget_ target && boxPath_ == boxPath
       _ -> False
   in
-  [ style "border-width" <| fromFloat C.topicBorderWidth ++ "px"
+  [ style "border-width" <| fromInt C.topicBorderWidth ++ "px"
   , style "border-style" <| if targeted then "dashed" else "solid"
   , style "box-sizing" "border-box"
   , style "background-color" "white"
@@ -623,10 +623,10 @@ isTarget topicId boxPath target_ =
 directLine : Point -> Point -> Maybe AssocInfo -> BoxId -> Model -> Svg Msg
 directLine pos1 pos2 assoc boxId model =
   line
-    ( [ x1 <| fromFloat pos1.x
-      , y1 <| fromFloat pos1.y
-      , x2 <| fromFloat pos2.x
-      , y2 <| fromFloat pos2.y
+    ( [ x1 <| fromInt pos1.x
+      , y1 <| fromInt pos1.y
+      , x2 <| fromInt pos2.x
+      , y2 <| fromInt pos2.y
       ] ++ lineStyle assoc boxId model
     )
     []
@@ -637,19 +637,19 @@ taxiLine : Point -> Point -> Maybe AssocInfo -> BoxId -> Model -> Svg Msg
 taxiLine pos1 pos2 assoc boxId model =
   if abs (pos2.x - pos1.x) < 2 * C.assocRadius then -- straight vertical
     let
-      xm = (pos1.x + pos2.x) / 2
+      xm = (pos1.x + pos2.x) // 2
     in
     path
-      ( [ d ("M " ++ fromFloat xm ++ " " ++ fromFloat pos1.y ++ " V " ++ fromFloat pos2.y)
+      ( [ d ("M " ++ fromInt xm ++ " " ++ fromInt pos1.y ++ " V " ++ fromInt pos2.y)
         ] ++ lineStyle assoc boxId model
       )
       []
   else if abs (pos2.y - pos1.y) < 2 * C.assocRadius then -- straight horizontal
     let
-      ym = (pos1.y + pos2.y) / 2
+      ym = (pos1.y + pos2.y) // 2
     in
     path
-      ( [ d ("M " ++ fromFloat pos1.x ++ " " ++ fromFloat ym ++ " H " ++ fromFloat pos2.x)
+      ( [ d ("M " ++ fromInt pos1.x ++ " " ++ fromInt ym ++ " H " ++ fromInt pos2.x)
         ] ++ lineStyle assoc boxId model
       )
       []
@@ -657,11 +657,11 @@ taxiLine pos1 pos2 assoc boxId model =
     let
       sx = if pos2.x > pos1.x then 1 else -1 -- sign x
       sy = if pos2.y > pos1.y then -1 else 1 -- sign y
-      ym = (pos1.y + pos2.y) / 2 -- y mean
-      x1 = fromFloat (pos1.x + sx * C.assocRadius)
-      x2 = fromFloat (pos2.x - sx * C.assocRadius)
-      y1 = fromFloat (ym + sy * C.assocRadius)
-      y2 = fromFloat (ym - sy * C.assocRadius)
+      ym = (pos1.y + pos2.y) // 2 -- y mean
+      x1 = fromInt (pos1.x + sx * C.assocRadius)
+      x2 = fromInt (pos2.x - sx * C.assocRadius)
+      y1 = fromInt (ym + sy * C.assocRadius)
+      y2 = fromInt (ym - sy * C.assocRadius)
       sweep1 =
         if sy == 1 then
           if sx == 1 then 1 else 0
@@ -670,16 +670,16 @@ taxiLine pos1 pos2 assoc boxId model =
       sweep2 = 1 - sweep1
       sw1 = fromInt sweep1
       sw2 = fromInt sweep2
-      r = fromFloat C.assocRadius
+      r = fromInt C.assocRadius
     in
     path
       ( [ d
-          ( "M " ++ fromFloat pos1.x ++ " " ++ fromFloat pos1.y ++
+          ( "M " ++ fromInt pos1.x ++ " " ++ fromInt pos1.y ++
             " V " ++ y1 ++
-            " A " ++ r ++ " " ++ r ++ " 0 0 " ++ sw1 ++ " " ++ x1 ++ " " ++ fromFloat ym ++
+            " A " ++ r ++ " " ++ r ++ " 0 0 " ++ sw1 ++ " " ++ x1 ++ " " ++ fromInt ym ++
             " H " ++ x2 ++
-            " A " ++ r ++ " " ++ r ++ " 0 0 " ++ sw2 ++ " " ++ fromFloat pos2.x ++ " " ++ y2 ++
-            " V " ++ fromFloat pos2.y
+            " A " ++ r ++ " " ++ r ++ " 0 0 " ++ sw2 ++ " " ++ fromInt pos2.x ++ " " ++ y2 ++
+            " V " ++ fromInt pos2.y
           )
         ] ++ lineStyle assoc boxId model
       )

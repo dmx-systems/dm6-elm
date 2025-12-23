@@ -212,8 +212,8 @@ point =
   in
   Random.map2
     (\x y -> Point (cx + x) (cy + y))
-    (Random.float 0 rw)
-    (Random.float 0 rh)
+    (Random.int 0 rw)
+    (Random.int 0 rh)
 
 
 hover : Class -> Id -> BoxPath -> Model -> Model

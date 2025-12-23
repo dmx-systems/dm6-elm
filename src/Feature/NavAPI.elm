@@ -71,7 +71,7 @@ setViewport : Model -> Cmd Msg
 setViewport model =
   case Box.byIdOrLog model.boxId model of
     Just box ->
-      Dom.setViewportOf "main" box.scroll.x box.scroll.y
+      Dom.setViewportOf "main" (toFloat box.scroll.x) (toFloat box.scroll.y)
       |> Task.attempt
         (\result ->
           case result of

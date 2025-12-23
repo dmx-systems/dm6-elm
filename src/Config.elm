@@ -34,13 +34,13 @@ initBoxText = "New Box"
 
 topicWidth = 156
 topicHeight = 28 -- also width/height of square icon box
-topicW2 = topicWidth / 2
-topicH2 = topicHeight / 2
+topicW2 = topicWidth // 2
+topicH2 = topicHeight // 2
 topicSize = Size topicWidth topicHeight
 topicLabelWeight = "bold" -- "normal"
 topicDetailSize = Size
   (topicWidth - topicHeight) -- detail width does not include icon box
-  (topicLineHeight * contentFontSize + 2 * (topicDetailPadding + topicBorderWidth))
+  <| round (topicLineHeight * contentFontSize + 2 * (topicDetailPadding + topicBorderWidth))
 topicDetailMaxWidth = 300
 topicDetailPadding = 8
 topicLineHeight = 1.5

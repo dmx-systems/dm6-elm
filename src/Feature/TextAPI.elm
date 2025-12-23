@@ -166,7 +166,7 @@ measureElement elemId topicId sizeField =
       case result of
         Ok {element} -> Text
           (Text.GotTextSize topicId sizeField
-            (Size element.width element.height)
+            <| Size (round element.width) (round element.height)
           )
         Err err -> U.logError "measureElement" (U.toString err) NoOp
     )

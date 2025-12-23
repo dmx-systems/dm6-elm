@@ -67,7 +67,7 @@ iconButtonStyle =
   ]
 
 
-viewTopicIcon : Id -> Float -> Attributes Msg -> Model -> Html Msg
+viewTopicIcon : Id -> Int -> Attributes Msg -> Model -> Html Msg
 viewTopicIcon topicId size style_ model =
   case Item.topicById topicId model of
     Just topic ->
@@ -78,12 +78,12 @@ viewTopicIcon topicId size style_ model =
     Nothing -> text "?"
 
 
-view : String -> Float -> Attributes Msg -> Html Msg
+view : String -> Int -> Attributes Msg -> Html Msg
 view iconName size style_ =
   case FI.icons |> Dict.get iconName of
     Just icon ->
       icon
-      |> FI.withSize size
+      |> FI.withSize (toFloat size)
       |> FI.toHtml style_
     Nothing -> text "??"
 

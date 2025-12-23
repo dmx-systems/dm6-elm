@@ -238,7 +238,7 @@ viewItemButton label icon msg isDisabled shouldCancel =
   viewIconButton label icon C.itemToolbarIconSize msg isDisabled shouldCancel []
 
 
-viewIconButton : String -> String -> Float -> Msg -> Bool -> Bool -> Attributes Msg -> Html Msg
+viewIconButton : String -> String -> Int -> Msg -> Bool -> Bool -> Attributes Msg -> Html Msg
 viewIconButton label icon iconSize msg isDisabled shouldCancel extraStyle =
   let
     stop =

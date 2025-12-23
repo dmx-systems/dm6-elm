@@ -243,10 +243,10 @@ measureStyle =
   , style "font-size" <| fromInt C.contentFontSize ++ "px"
   , style "line-height" <| fromFloat C.topicLineHeight
   , style "padding" <| fromInt C.topicDetailPadding ++ "px"
-  , style "width" <| fromFloat C.topicDetailMaxWidth ++ "px"
-  , style "min-width" <| fromFloat (C.topicSize.w - C.topicSize.h) ++ "px"
+  , style "width" <| fromInt C.topicDetailMaxWidth ++ "px"
+  , style "min-width" <| fromInt (C.topicSize.w - C.topicSize.h) ++ "px"
   , style "max-width" "max-content"
-  , style "border-width" <| fromFloat C.topicBorderWidth ++ "px"
+  , style "border-width" <| fromInt C.topicBorderWidth ++ "px"
   , style "border-style" "solid"
   , style "box-sizing" "border-box"
   ]

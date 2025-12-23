@@ -68,8 +68,8 @@ stopPropagation eventName msg =
 pointDecoder : D.Decoder Point
 pointDecoder =
   D.map2 Point
-    (D.field "clientX" D.float)
-    (D.field "clientY" D.float)
+    (D.field "clientX" D.int)
+    (D.field "clientY" D.int)
 
 
 

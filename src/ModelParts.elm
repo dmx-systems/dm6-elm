@@ -60,8 +60,8 @@ type SizeField
 
 
 type alias Size =
-  { w : Float
-  , h : Float
+  { w : Int
+  , h : Int
   }
 
 
@@ -146,16 +146,16 @@ type BoxDisplay
 
 
 type alias Point =
-  { x : Float
-  , y : Float
+  { x : Int
+  , y : Int
   }
 
 
 type alias Rectangle =
-  { x1 : Float
-  , y1 : Float
-  , x2 : Float
-  , y2 : Float
+  { x1 : Int
+  , y1 : Int
+  , x2 : Int
+  , y2 : Int
   }
 
 
@@ -198,13 +198,13 @@ encodeTextSize : TextSize -> E.Value
 encodeTextSize size =
   E.object
     [ ("view", E.object
-        [ ("w", E.float size.view.w)
-        , ("h", E.float size.view.h)
+        [ ("w", E.int size.view.w)
+        , ("h", E.int size.view.h)
         ]
       )
     , ("editor", E.object
-        [ ("w", E.float size.editor.w)
-        , ("h", E.float size.editor.h)
+        [ ("w", E.int size.editor.w)
+        , ("h", E.int size.editor.h)
         ]
       )
     ]
@@ -215,15 +215,15 @@ encodeBox box =
   E.object
     [ ("id", E.int box.id)
     , ("rect", E.object
-        [ ("x1", E.float box.rect.x1)
-        , ("y1", E.float box.rect.y1)
-        , ("x2", E.float box.rect.x2)
-        , ("y2", E.float box.rect.y2)
+        [ ("x1", E.int box.rect.x1)
+        , ("y1", E.int box.rect.y1)
+        , ("x2", E.int box.rect.x2)
+        , ("y2", E.int box.rect.y2)
         ]
       )
     , ("scroll", E.object
-        [ ("x", E.float box.scroll.x)
-        , ("y", E.float box.scroll.y)
+        [ ("x", E.int box.scroll.x)
+        , ("y", E.int box.scroll.y)
         ]
       )
     , ("items", box.items |> Dict.values |> E.list encodeBoxItem)
@@ -241,8 +241,8 @@ encodeBoxItem item =
           ( "topicProps"
           , E.object
             [ ("pos", E.object
-                [ ("x", E.float topicProps.pos.x)
-                , ("y", E.float topicProps.pos.y)
+                [ ("x", E.int topicProps.pos.x)
+                , ("y", E.int topicProps.pos.y)
                 ]
               )
             , ("display", encodeDisplayName topicProps.displayMode)
@@ -313,12 +313,12 @@ textSizeDecoder : D.Decoder TextSize
 textSizeDecoder =
   (D.field "size" <| D.map2 TextSize
     (D.field "view" <| D.map2 Size
-      (D.field "w" D.float)
-      (D.field "h" D.float)
+      (D.field "w" D.int)
+      (D.field "h" D.int)
     )
     (D.field "editor" <| D.map2 Size
-      (D.field "w" D.float)
-      (D.field "h" D.float)
+      (D.field "w" D.int)
+      (D.field "h" D.int)
     )
   )
 
@@ -334,14 +334,14 @@ boxDecoder =
   D.map4 Box
     (D.field "id" D.int)
     (D.field "rect" <| D.map4 Rectangle
-      (D.field "x1" D.float)
-      (D.field "y1" D.float)
-      (D.field "x2" D.float)
-      (D.field "y2" D.float)
+      (D.field "x1" D.int)
+      (D.field "y1" D.int)
+      (D.field "x2" D.int)
+      (D.field "y2" D.int)
     )
     (D.field "scroll" <| D.map2 Point
-      (D.field "x" D.float)
-      (D.field "y" D.float)
+      (D.field "x" D.int)
+      (D.field "y" D.int)
     )
     (D.field "items" (D.list boxItemDecoder |> D.andThen toDictDecoder))
 
@@ -355,8 +355,8 @@ boxItemDecoder =
     (D.oneOf
       [ D.field "topicProps" <| D.map TopicV <| D.map2 TopicProps
         (D.field "pos" <| D.map2 Point
-          (D.field "x" D.float)
-          (D.field "y" D.float)
+          (D.field "x" D.int)
+          (D.field "y" D.int)
         )
         (D.field "display" D.string |> D.andThen displayModeDecoder)
       , D.field "assocProps" <| D.succeed (AssocV AssocProps)
