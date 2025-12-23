@@ -93,7 +93,7 @@ viewSearchtMenu topicIds model =
               )
               [ viewTopicIcon topic model
               , viewItemText topic
-              , viewFullscreenButton id isDisabled model
+              , viewFullscreenButton id model
               ]
           Nothing -> text "??"
       )
@@ -124,7 +124,7 @@ viewTraversalMenu relTopicIds model =
               )
               [ viewTopicIcon topic model
               , viewItemText topic -- TODO: render assoc info
-              , viewFullscreenButton id isDisabled model
+              , viewFullscreenButton id model
               ]
           Nothing -> text "??"
       )
@@ -195,15 +195,14 @@ viewItemText topic =
     [ text <| Item.topicLabel topic ]
 
 
-viewFullscreenButton : Id -> Bool -> Model -> Html Msg
-viewFullscreenButton id isDisabled model =
+viewFullscreenButton : Id -> Model -> Html Msg
+viewFullscreenButton id model =
   case Item.isBox id model of
     True ->
       button
         ( [ class "tool"
           , title "Fullscreen"
           , onClick <| Search <| Search.Fullscreen id
-          , disabled isDisabled
           , U.onMouseOverStop NoOp -- don't highlight menu item along with button
           , U.onMouseOutStop NoOp -- don't highlight menu item along with button
           -- mousedown propagation is stopped by parent (menu) already, preventing menu closing
@@ -218,6 +217,7 @@ fullscreenButtonStyle : Attributes Msg
 fullscreenButtonStyle =
   [ style "border" "none"
   , style "background-color" "transparent"
+  , style "pointer-events" "initial"
   ]
 
 
