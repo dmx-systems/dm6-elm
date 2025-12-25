@@ -2,6 +2,13 @@
 
 ## Version History
 
+**0.3.1** -- Dec 25, 2025
+
+* Fix:
+    * Search/Traversal result's "Fullscreen" buttons don't create cycle
+* Improvement:
+    * Disable Fullscreen button if box is displayed fullscreen already
+
 **0.3** -- Dec 24, 2025
 
 * Markdown
@@ -82,4 +89,4 @@ Project begin -- Jun 11, 2025
 
 ---
 Jörg Richter  
-Dec 24, 2025
+Dec 25, 2025
