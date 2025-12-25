@@ -41,6 +41,11 @@ keyDecoder key msg =
   keyCode |> D.andThen isKey
 
 
+onClickStop : msg -> Attribute msg
+onClickStop msg =
+  stopPropagation "click" msg
+
+
 onMouseDownStop : msg -> Attribute msg
 onMouseDownStop msg =
   stopPropagation "mousedown" msg

@@ -1,4 +1,5 @@
 src/Logger.elm
+.vite/
 dist/
 elm-stuff/
 node_modules/

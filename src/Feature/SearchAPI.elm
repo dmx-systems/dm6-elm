@@ -202,7 +202,7 @@ viewFullscreenButton id model =
       button
         ( [ class "tool"
           , title "Fullscreen"
-          , onClick <| Search <| Search.Fullscreen id
+          , U.onClickStop <| Search <| Search.Fullscreen id
           , U.onMouseOverStop NoOp -- don't highlight menu item along with button
           , U.onMouseOutStop NoOp -- don't highlight menu item along with button
           -- mousedown propagation is stopped by parent (menu) already, preventing menu closing
