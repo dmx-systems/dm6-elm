@@ -197,11 +197,15 @@ viewItemText topic =
 
 viewFullscreenButton : Id -> Model -> Html Msg
 viewFullscreenButton id model =
+  let
+    isDisabled = model.boxId == id
+  in
   case Item.isBox id model of
     True ->
       button
         ( [ class "tool"
           , title "Fullscreen"
+          , disabled isDisabled
           , U.onClickStop <| Search <| Search.Fullscreen id
           , U.onMouseOverStop NoOp -- don't highlight menu item along with button
           , U.onMouseOutStop NoOp -- don't highlight menu item along with button
