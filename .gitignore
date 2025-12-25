@@ -1,10 +1,8 @@
-dm6-elm.html
-main.js
-main.min.js
 src/Logger.elm
+dist/
 elm-stuff/
+node_modules/
 review/
-userdata/
 .DS_Store
 *.sublime-project
 *.sublime-workspace
