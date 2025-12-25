@@ -2,6 +2,7 @@
   "devDependencies": {
     "terser": "^5.44.1",
     "vite": "^7.3.0",
-    "vite-plugin-elm": "^3.0.1"
+    "vite-plugin-elm": "^3.0.1",
+    "vite-plugin-singlefile": "^2.3.0"
   }
 }

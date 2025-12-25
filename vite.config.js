@@ -1,7 +1,11 @@
 import elm from 'vite-plugin-elm'
+import { viteSingleFile } from 'vite-plugin-singlefile'
 
 export default {
-  plugins: [elm()],
+  plugins: [
+    elm(),
+    viteSingleFile()
+  ],
   build: {
     minify: 'terser',
     terserOptions: {
