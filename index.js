@@ -43,7 +43,8 @@ app.ports.exportJSON.subscribe(async () => {
 
 async function createZip(modelStr) {
   const files = {
-    'dm6-elm.json': strToU8(modelStr)
+    'dm6-elm.json': strToU8(modelStr),
+    'images': await imagesToZip()
   }
   const zipData = await new Promise((resolve, reject) => {
     zip(files, {level: 6}, (err, data) => {
@@ -52,6 +53,30 @@ async function createZip(modelStr) {
     })
   })
   return new Blob([zipData], {type: 'application/zip'})
+}
+
+async function imagesToZip() {
+  const ids = await loadAllImageIds()
+  const files = await Promise.all(
+    ids.map(async id => {
+      const file = await loadFile(id)
+      const name = id + '.' + getExtension(file.name)
+      const u8 = await file.bytes()
+      return [name, u8]
+    })
+  )
+  const images = files.reduce(
+    (acc, file) => {
+      acc[file[0]] = file[1]
+      return acc
+    }, {}
+  )
+  return images
+}
+
+function getExtension(filename) {
+  const i = filename.lastIndexOf('.')
+  return i > 0 ? filename.slice(i + 1) : ''
 }
 
 // Scrolling
@@ -106,7 +131,7 @@ const dbPromise = new Promise((resolve, reject) => {
   request.onerror = () => reject(request.error)
 })
 
-loadAllImages()
+resolveAllImages()
 
 async function saveFile(file, fileId) {
   console.log('$$saveFile', fileId, file)
@@ -154,7 +179,7 @@ async function loadAllImageIds() {
   })
 }
 
-function loadAllImages() {
+function resolveAllImages() {   // TODO: resolve selectively
   loadAllImageIds().then(ids => ids.forEach(id =>
     loadFile(id).then(file =>
       createUrlAndSend(file, id)
