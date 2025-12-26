@@ -4,5 +4,8 @@
     "vite": "^7.3.0",
     "vite-plugin-elm": "^3.0.1",
     "vite-plugin-singlefile": "^2.3.0"
+  },
+  "dependencies": {
+    "fflate": "^0.8.2"
   }
 }

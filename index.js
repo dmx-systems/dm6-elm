@@ -1,4 +1,5 @@
 import { Elm } from './src/Main.elm'
+import { zip, strToU8 } from 'fflate'
 
 const key = 'dm6-elm'
 const modelStr = localStorage.getItem(key)
@@ -7,42 +8,51 @@ const app = Elm.Main.init({
   flags: [model, location.hash]
 })
 
+// Save to local storage
 app.ports.storeModel.subscribe(model => {
   localStorage.setItem(key, JSON.stringify(model))
 })
 
+// Import to local storage
+const input = document.createElement('input')
+input.type = 'file'
+input.style.display = 'none'
+input.addEventListener('change', async () => {
+  localStorage.setItem(key, await input.files[0].text())
+  location.reload()
+})
+document.body.appendChild(input)
 app.ports.importJSON.subscribe(() => {
-  const id = 'dm6-elm-importer'
-  const input = document.getElementById(id) || document.createElement('input')
-  if (!input.id) {
-    input.id = id
-    input.type = 'file'
-    input.style.display = 'none'
-    input.addEventListener('change', async () => {
-      localStorage.setItem(key, await input.files[0].text())
-      location.reload()
-    })
-    document.body.appendChild(input)
-  }
+  input.value = ''    // allow re-selecting same file
   input.click()
 })
 
-app.ports.exportJSON.subscribe(() => {
-  const id = 'dm6-elm-exporter'
+// Export local storage
+const anchor = document.createElement('a')
+anchor.download = 'dm6-elm-export.zip'
+anchor.style.display = 'none'
+document.body.appendChild(anchor)
+app.ports.exportJSON.subscribe(async () => {
   const modelStr = localStorage.getItem(key)
-  const anchor = document.getElementById(id) || document.createElement('a')
-  const file = new File([modelStr], 'not-used')
-  const url = URL.createObjectURL(file)
-  if (!anchor.id) {
-    anchor.id = id
-    anchor.download = 'dm6-elm-export.json'
-    anchor.style.display = 'none'
-    document.body.appendChild(anchor)
-  }
-  anchor.setAttribute('href', url)
+  const zipBlob = await createZip(modelStr)
+  const url = URL.createObjectURL(zipBlob)
+  anchor.href = url
   anchor.click()
   URL.revokeObjectURL(url)
 })
+
+async function createZip(modelStr) {
+  const files = {
+    'dm6-elm.json': strToU8(modelStr)
+  }
+  const zipData = await new Promise((resolve, reject) => {
+    zip(files, {level: 6}, (err, data) => {
+      if (err) reject(err)
+      else resolve(data)
+    })
+  })
+  return new Blob([zipData], {type: 'application/zip'})
+}
 
 // Scrolling
 const main = document.getElementById('main')
