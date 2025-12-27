@@ -19,11 +19,13 @@ input.type = 'file'
 input.accept = '.zip'
 input.style.display = 'none'
 input.addEventListener('change', async () => {
-  const zipData = await input.files[0].bytes()
+  const zipData = await u8(input.files[0])
   const content = await readZipFile(zipData)
   localStorage.setItem(key, content.modelStr)
-  content.images.map(({id, blob}) => storeImageBlob(id, blob))
-  // location.reload() -- TODO
+  await Promise.all(
+    content.images.map(({id, blob}) => storeImageBlob(id, blob))
+  )
+  location.reload()
 })
 document.body.appendChild(input)
 app.ports.importJSON.subscribe(() => {
@@ -31,7 +33,8 @@ app.ports.importJSON.subscribe(() => {
   input.click()
 })
 
-// returns promise for {modelStr, images: [{id, blob}]}
+// Reads a zip file and returns a representation of its contents, that is a promise for an
+// object {modelStr, images: [{id, blob}]}
 function readZipFile(zipData) {
   return new Promise((resolve, reject) => {
     unzip(zipData, (err, entries) => {
@@ -98,7 +101,7 @@ async function imagesToZip() {
       const blob = await loadImageBlob(id)
       const filename = id + '.' + mimeToExt(blob.type)
       console.log('image to zip', blob.type, '->', filename)
-      const u8 = await blob.bytes()
+      const u8 = await u8(blob)
       return [filename, u8]
     })
   )
@@ -156,7 +159,7 @@ fpInput.addEventListener('change', async () => {
   const imageId = Number(fpInput.dataset.imageId)
   app.ports.onPickImageFile.send([topicId, imageId])
   resolveImage(imageId, blob)
-  storeImageBlob(imageId, blob)   // don't need to wait
+  storeImageBlob(imageId, blob)         // don't need to wait for completion
 })
 document.body.appendChild(fpInput)
 app.ports.imageFilePicker.subscribe(([topicId, imageId]) => {
@@ -168,7 +171,12 @@ app.ports.imageFilePicker.subscribe(([topicId, imageId]) => {
 })
 
 async function blobFromFile(file) {
-  return new Blob([await file.bytes()], {type: file.type})
+  return new Blob([await u8(file)], {type: file.type})
+}
+
+async function u8(blob) {
+  // Note: blob.bytes() not available in Safari 17.6 on Monterey
+  return new Uint8Array(await blob.arrayBuffer())
 }
 
 const dbName = 'dm6-elm'
@@ -186,6 +194,7 @@ const dbPromise = new Promise((resolve, reject) => {
 
 resolveAllImages()
 
+// Returns a promise resolved once storage is complete
 async function storeImageBlob(id, blob) {
   console.log('$$storeImageBlob', id, blob)
   const db = await dbPromise
