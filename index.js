@@ -8,7 +8,7 @@ const app = Elm.Main.init({
   flags: [model, location.hash]
 })
 
-// Save to local storage
+// Store in local storage
 app.ports.storeModel.subscribe(model => {
   localStorage.setItem(key, JSON.stringify(model))
 })
@@ -95,11 +95,11 @@ async function imagesToZip() {
   const ids = await loadAllImageIds()
   const files = await Promise.all(
     ids.map(async id => {
-      const file = await loadImageBlob(id)
-      const name = id + '.' + mimeToExt(file.type)
-      console.log('image to zip', file.type, '->', name)
-      const u8 = await file.bytes()
-      return [name, u8]
+      const blob = await loadImageBlob(id)
+      const filename = id + '.' + mimeToExt(blob.type)
+      console.log('image to zip', blob.type, '->', filename)
+      const u8 = await blob.bytes()
+      return [filename, u8]
     })
   )
   const images = files.reduce(
@@ -146,13 +146,17 @@ app.ports.setHash.subscribe(function (hash) {
 const fpInput = document.createElement('input')
 fpInput.type = 'file'
 fpInput.style.display = 'none'
-fpInput.addEventListener('change', () => {
+fpInput.addEventListener('change', async () => {
   const file = fpInput.files[0]
+  // Note: when populating the DB by import from zip file, there will be sole Blobs stored, not
+  // Files. At the other hand when user inserts an image via file picker, it will give us a File
+  // object. We want uniformly have Blobs in the DB. So we explicitly create a Blob from File.
+  const blob = await blobFromFile(file)
   const topicId = Number(fpInput.dataset.topicId)
   const imageId = Number(fpInput.dataset.imageId)
   app.ports.onPickImageFile.send([topicId, imageId])
-  resolveImage(imageId, file)
-  storeImageBlob(imageId, file)   // don't need to wait
+  resolveImage(imageId, blob)
+  storeImageBlob(imageId, blob)   // don't need to wait
 })
 document.body.appendChild(fpInput)
 app.ports.imageFilePicker.subscribe(([topicId, imageId]) => {
@@ -162,6 +166,10 @@ app.ports.imageFilePicker.subscribe(([topicId, imageId]) => {
   fpInput.value = ''                    // allow re-selecting same file
   fpInput.click()
 })
+
+async function blobFromFile(file) {
+  return new Blob([await file.bytes()], {type: file.type})
+}
 
 const dbName = 'dm6-elm'
 const objectStoreName = 'images'
@@ -186,7 +194,6 @@ async function storeImageBlob(id, blob) {
     const store = tx.objectStore(objectStoreName)
     const request = store.put(blob, id)
     request.onsuccess = () => {
-      console.log('--> stored', id, blob)
       resolve()
     }
     request.onerror = () => reject(request.error)
