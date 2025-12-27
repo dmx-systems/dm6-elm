@@ -1,5 +1,5 @@
 import { Elm } from './src/Main.elm'
-import { zip, strToU8 } from 'fflate'
+import { zip, unzip, strToU8, strFromU8 } from 'fflate'
 
 const key = 'dm6-elm'
 const modelStr = localStorage.getItem(key)
@@ -13,13 +13,32 @@ app.ports.storeModel.subscribe(model => {
   localStorage.setItem(key, JSON.stringify(model))
 })
 
-// Import to local storage
+// Import from zip
 const input = document.createElement('input')
 input.type = 'file'
+input.accept = '.zip'
 input.style.display = 'none'
 input.addEventListener('change', async () => {
-  localStorage.setItem(key, await input.files[0].text())
-  location.reload()
+  const zipData = await input.files[0].bytes()
+  unzip(zipData, (err, entries) => {
+    if (err) {
+      console.error('Invalid ZIP:', err)
+      return
+    }
+    let modelStr
+    Object.entries(entries).forEach(([path, data]) => {
+      console.log('path', path)
+      if (path === 'dm6-elm.json') {
+        modelStr = strFromU8(data)
+      }
+    })
+    if (modelStr) {
+      localStorage.setItem(key, modelStr)
+      location.reload()
+    } else {
+      console.log('Wrong ZIP: dm6-elm.json not found -> import aborted')
+    }
+  })
 })
 document.body.appendChild(input)
 app.ports.importJSON.subscribe(() => {
@@ -27,7 +46,7 @@ app.ports.importJSON.subscribe(() => {
   input.click()
 })
 
-// Export local storage
+// Export to zip
 const anchor = document.createElement('a')
 anchor.download = 'dm6-elm-export.zip'
 anchor.style.display = 'none'
