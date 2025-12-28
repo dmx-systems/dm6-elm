@@ -176,6 +176,7 @@ initTopicProps topicId boxId model =
     )
 
 
+{-| Logs an error if box does not exist. -}
 initTopicPos : BoxId -> Model -> Point
 initTopicPos boxId model =
   case byIdOrLog boxId model of
@@ -195,6 +196,14 @@ itemByIdOrLog itemId boxId model =
         Just boxItem -> Just boxItem
         Nothing -> U.itemNotInBox "itemByIdOrLog" itemId box.id Nothing
     )
+
+
+{-| Logs an error if box does not exist. -}
+isEmpty : BoxId -> Model -> Bool
+isEmpty boxId model =
+  case byIdOrLog boxId model of
+    Just box -> box.items |> Dict.values |> List.any isVisible |> not
+    Nothing -> False
 
 
 {-| Logs an error if box does not exist. -}

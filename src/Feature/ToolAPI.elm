@@ -100,7 +100,7 @@ viewItemTools itemId boxPath model =
         []
     caret =
       case MouseAPI.isHovered itemId boxId model of
-        True -> [ viewCaret itemId boxId model ]
+        True -> viewCaret itemId boxId model
         False -> []
   in
   toolbar ++ caret
@@ -178,25 +178,29 @@ viewSpacer =
     []
 
 
-viewCaret : Id -> BoxId -> Model -> Html Msg
+viewCaret : Id -> BoxId -> Model -> List (Html Msg)
 viewCaret itemId boxId model =
-  let
-    icon =
-      case Box.displayMode itemId boxId model of
-        Just (TopicD LabelOnly) -> "chevron-right"
-        Just (TopicD Detail) -> "chevron-down"
-        Just (BoxD BlackBox) -> "chevron-right"
-        Just (BoxD WhiteBox) -> "chevron-down"
-        Just (BoxD Unboxed) -> "chevron-down"
-        Nothing -> "??"
-  in
-  button
-    ( [ onClick <| Tool <| Tool.ToggleDisplay itemId boxId
-      , U.onMouseDownStop NoOp
-      ]
-      ++ caretStyle
-    )
-    [ IconAPI.view icon 20 [] ]
+  if  Item.isBox itemId model && Box.isEmpty itemId model then
+    []
+  else
+    let
+      icon =
+        case Box.displayMode itemId boxId model of
+          Just (TopicD LabelOnly) -> "chevron-right"
+          Just (TopicD Detail) -> "chevron-down"
+          Just (BoxD BlackBox) -> "chevron-right"
+          Just (BoxD WhiteBox) -> "chevron-down"
+          Just (BoxD Unboxed) -> "chevron-down"
+          Nothing -> "??"
+    in
+    [ button
+        ( [ onClick <| Tool <| Tool.ToggleDisplay itemId boxId
+          , U.onMouseDownStop NoOp -- prevent cancel UI
+          ]
+          ++ caretStyle
+        )
+        [ IconAPI.view icon 20 [] ]
+    ]
 
 
 caretStyle : Attributes Msg
