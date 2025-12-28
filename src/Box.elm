@@ -206,6 +206,14 @@ isEmpty boxId model =
     Nothing -> False
 
 
+{-| Logs an error if box does not exist, or topic is not in box, or ID refers not a topic (but
+an association).
+-}
+isUnboxed : Id -> BoxId -> Model -> Bool
+isUnboxed topicId boxId model =
+  displayMode topicId boxId model == Just (BoxD Unboxed)
+
+
 {-| Logs an error if box does not exist. -}
 hasItem : BoxId -> Id -> Model -> Bool
 hasItem boxId itemId model =

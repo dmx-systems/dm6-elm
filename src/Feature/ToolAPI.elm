@@ -120,12 +120,11 @@ viewToolbar itemId boxId model =
       if Item.isBox itemId model then
         [ viewSpacer
         , viewItemButton "Fullscreen" "maximize-2" (Tool <| Tool.Fullscreen itemId) False True
-        , viewItemButton "Unbox" "external-link" (Tool <| Tool.Unbox itemId boxId) unboxed True
+        , viewItemButton "Unbox" "external-link" (Tool <| Tool.Unbox itemId boxId) disabled True
         ]
       else
         []
-    unboxed =
-      Box.displayMode itemId boxId model == Just (BoxD Unboxed)
+    disabled = Box.isEmpty itemId model || Box.isUnboxed itemId boxId model
   in
   div
     ( toolbarStyle itemId boxId model )
