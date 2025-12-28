@@ -70,21 +70,21 @@ anchor.download = 'dm6-elm-export.zip'
 anchor.style.display = 'none'
 document.body.appendChild(anchor)
 app.ports.exportJSON.subscribe(async () => {
-  const zipBlob = await createZipBlob()
+  const zipBlob = await createZip()
   const url = URL.createObjectURL(zipBlob)
   anchor.href = url
   anchor.click()
   URL.revokeObjectURL(url)
 })
 
-async function createZipBlob() {
+async function createZip() {
   const modelStr = localStorage.getItem(key)
   const content = {
-    'dm6-elm.json': strToU8(modelStr),
+    'dm6-elm.json': [strToU8(modelStr), {level: 6}],    // only compress the json
     'images': await imagesToZip()
   }
   const zipData = await new Promise((resolve, reject) => {
-    zip(content, {level: 6}, (err, data) => {
+    zip(content, {level: 0}, (err, data) => {           // don't compress the images
       if (err) reject(err)
       else resolve(data)
     })
@@ -97,12 +97,7 @@ async function createZipBlob() {
 async function imagesToZip() {
   const ids = await loadAllImageIds()
   const files = await Promise.all(
-    ids.map(async id => {
-      const blob = await loadImage(id)
-      const filename = id + '.' + mimeToExt(blob.type)
-      console.log('image to zip', blob.type, '->', filename)
-      return [filename, await u8(blob)]
-    })
+    ids.map(imageToZipEntry)
   )
   const images = files.reduce(
     (acc, file) => {
@@ -111,6 +106,13 @@ async function imagesToZip() {
     }, {}
   )
   return images
+}
+
+async function imageToZipEntry(id) {
+  const blob = await loadImage(id)
+  const filename = id + '.' + mimeToExt(blob.type)
+  console.log('image to zip', blob.type, '->', filename)
+  return [filename, await u8(blob)]
 }
 
 function getMimeType(filename) {
