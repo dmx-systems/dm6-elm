@@ -23,7 +23,7 @@ input.addEventListener('change', async () => {
   const content = await readZipFile(zipData)
   localStorage.setItem(key, content.modelStr)
   await Promise.all(
-    content.images.map(({id, blob}) => storeImageBlob(id, blob))
+    content.images.map(({id, blob}) => storeImage(id, blob))
   )
   location.reload()
 })
@@ -92,17 +92,16 @@ async function createZipBlob() {
   return new Blob([zipData], {type: 'application/zip'})
 }
 
-// Transforms images from Indexed DB into {filename: imageU8} object, ready for being zipped.
-// Returns a promise for that object.
+// Loads all images from Indexed DB and transforms them into {filename: imageU8} object,
+// ready for being zipped. Returns a promise for that object.
 async function imagesToZip() {
   const ids = await loadAllImageIds()
   const files = await Promise.all(
     ids.map(async id => {
-      const blob = await loadImageBlob(id)
+      const blob = await loadImage(id)
       const filename = id + '.' + mimeToExt(blob.type)
       console.log('image to zip', blob.type, '->', filename)
-      const u8 = await u8(blob)
-      return [filename, u8]
+      return [filename, await u8(blob)]
     })
   )
   const images = files.reduce(
@@ -148,6 +147,7 @@ app.ports.setHash.subscribe(function (hash) {
 // Image file picker
 const fpInput = document.createElement('input')
 fpInput.type = 'file'
+fpInput.accept = 'image/*'
 fpInput.style.display = 'none'
 fpInput.addEventListener('change', async () => {
   const file = fpInput.files[0]
@@ -159,7 +159,7 @@ fpInput.addEventListener('change', async () => {
   const imageId = Number(fpInput.dataset.imageId)
   app.ports.onPickImageFile.send([topicId, imageId])
   resolveImage(imageId, blob)
-  storeImageBlob(imageId, blob)         // don't need to wait for completion
+  storeImage(imageId, blob)             // don't need to wait for completion
 })
 document.body.appendChild(fpInput)
 app.ports.imageFilePicker.subscribe(([topicId, imageId]) => {
@@ -195,8 +195,8 @@ const dbPromise = new Promise((resolve, reject) => {
 resolveAllImages()
 
 // Returns a promise resolved once storage is complete
-async function storeImageBlob(id, blob) {
-  console.log('$$storeImageBlob', id, blob)
+async function storeImage(id, blob) {
+  console.log('$$storeImage', id, blob)
   const db = await dbPromise
   return new Promise((resolve, reject) => {
     const tx = db.transaction(objectStoreName, 'readwrite')
@@ -209,7 +209,8 @@ async function storeImageBlob(id, blob) {
   })
 }
 
-async function loadImageBlob(id) {
+// Returns a promise resolving to a Blob
+async function loadImage(id) {
   const db = await dbPromise
   return new Promise((resolve, reject) => {
     const tx = db.transaction(objectStoreName, "readonly")
@@ -242,7 +243,7 @@ async function loadAllImageIds() {
 
 function resolveAllImages() {   // TODO: resolve selectively
   loadAllImageIds().then(ids => ids.forEach(id =>
-    loadImageBlob(id).then(blob =>
+    loadImage(id).then(blob =>
       resolveImage(id, blob)
     )
   ))
