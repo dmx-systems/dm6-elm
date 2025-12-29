@@ -103,20 +103,20 @@ addAssoc itemType role1 player1 role2 player2 model =
     item = Item id (Assoc assoc) Set.empty
   in
   ( { model | items = model.items |> Dict.insert id item }
-    |> insertAssocId_ id player1
-    |> insertAssocId_ id player2
-    |> nextId
+      |> insertAssocId_ id player1
+      |> insertAssocId_ id player2
+      |> nextId
   , id
   )
 
 
-remove : Id -> Model -> Model
-remove itemId model =
+delete : Id -> Model -> Model
+delete itemId model =
   assocIds itemId model |> Set.foldr
-    remove -- recursion
+    delete -- recursion
     model
-    |> removeAssocRefs_ itemId
-    |> remove_ itemId
+      |> removeAssocRefs_ itemId
+      |> delete_ itemId
 
 
 removeAssocRefs_ : Id -> Model -> Model
@@ -126,18 +126,18 @@ removeAssocRefs_ itemId model =
       case info of
         Assoc assoc ->
           model
-          |> removeAssocId_ assoc.id assoc.player1
-          |> removeAssocId_ assoc.id assoc.player2
+            |> removeAssocId_ assoc.id assoc.player1
+            |> removeAssocId_ assoc.id assoc.player2
         Topic _ -> model
     Nothing -> model -- error is already logged
 
 
-remove_ : Id -> Model -> Model
-remove_ itemId model =
+delete_ : Id -> Model -> Model
+delete_ itemId model =
   { model
     | items = model.items |> Dict.remove itemId -- delete item
     , boxes = model.boxes |> Dict.map -- delete item from all boxes
-      (\_ box -> { box | items = box.items |> Dict.remove itemId })
+      (\_ box -> { box | items = box.items |> Dict.remove itemId }) -- FIXME: use Box.removeItem
   }
 
 
@@ -164,6 +164,9 @@ otherPlayerId assocId playerId model =
     Nothing -> -1 -- error is already logged
 
 
+{-| Returns an item's associations (their Ids).
+Logs an error if item does not exist.
+-}
 assocIds : Id -> Model -> AssocIds
 assocIds itemId model =
   case byId itemId model of

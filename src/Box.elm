@@ -61,14 +61,14 @@ topicPos topicId boxId model =
     Nothing -> U.fail "topicPos" {topicId = topicId, boxId = boxId} Nothing
 
 
-{-| Logs an error if box does not exist or if topic is not in box -}
+{-| Logs an error if box does not exist, or if topic is not in box -}
 setTopicPos : Id -> BoxId -> Point -> Model -> Model
 setTopicPos topicId boxId pos model =
   model |> updateTopicProps topicId boxId
     (\props -> { props | pos = pos })
 
 
-{-| Logs an error if box does not exist or if topic is not in box
+{-| Logs an error if box does not exist, or if topic is not in box
 TODO: make it "updateTopicPos" and take a transform function
 -}
 setTopicPosByDelta : Id -> BoxId -> Delta -> Model -> Model
@@ -97,14 +97,14 @@ displayMode topicId boxId model =
 setDisplayMode : Id -> BoxId -> DisplayMode -> Model -> Model
 setDisplayMode topicId boxId display model =
   model
-  |> updateDisplayMode topicId boxId (\_ -> display)
+    |> updateDisplayMode topicId boxId (\_ -> display)
 
 
 updateDisplayMode : Id -> BoxId -> (DisplayMode -> DisplayMode) -> Model -> Model
 updateDisplayMode topicId boxId transform model =
   model
-  |> updateTopicProps topicId boxId
-    (\props -> { props | displayMode = transform props.displayMode })
+    |> updateTopicProps topicId boxId
+      (\props -> { props | displayMode = transform props.displayMode })
 
 
 {-| Logs an error if box does not exist, or topic is not in box, or ID refers not a topic (but
@@ -120,7 +120,10 @@ topicProps topicId boxId model =
     Nothing -> U.fail "topicProps" {topicId = topicId, boxId = boxId} Nothing
 
 
-{-| Logs an error if box does not exist or if topic is not in box -}
+{-| Canonical TopicProps transformation.
+Logs an error if box does not exist, or topic is not in box, or ID refers not a topic (but
+an association).
+-}
 updateTopicProps : Id -> BoxId -> (TopicProps -> TopicProps) -> Model -> Model
 updateTopicProps topicId boxId transform model =
   model |> update boxId
@@ -187,7 +190,7 @@ initTopicPos boxId model =
     Nothing -> Point 0 0 -- error is already logged
 
 
-{-| Logs an error if box does not exist or item is not in box. -}
+{-| Logs an error if box does not exist, or item is not in box. -}
 itemByIdOrLog : Id -> BoxId -> Model -> Maybe BoxItem
 itemByIdOrLog itemId boxId model =
   byIdOrLog boxId model |> Maybe.andThen
@@ -196,22 +199,6 @@ itemByIdOrLog itemId boxId model =
         Just boxItem -> Just boxItem
         Nothing -> U.itemNotInBox "itemByIdOrLog" itemId box.id Nothing
     )
-
-
-{-| Logs an error if box does not exist. -}
-isEmpty : BoxId -> Model -> Bool
-isEmpty boxId model =
-  case byIdOrLog boxId model of
-    Just box -> box.items |> Dict.values |> List.any isVisible |> not
-    Nothing -> False
-
-
-{-| Logs an error if box does not exist, or topic is not in box, or ID refers not a topic (but
-an association).
--}
-isUnboxed : Id -> BoxId -> Model -> Bool
-isUnboxed topicId boxId model =
-  displayMode topicId boxId model == Just (BoxD Unboxed)
 
 
 {-| Logs an error if box does not exist. -}
@@ -236,7 +223,7 @@ hasDeepItem boxId itemId model =
 {-| Adds an item to a box and creates a connecting association.
 Presumption: the item is not yet contained in the box. Otherwise the existing box-item would be
 overridden and another association still be created. This is not what you want.
-Can be used for both, topics and associations.
+It's a generic operation: works for both, topics and associations.
 -}
 addItem : Id -> ViewProps -> BoxId -> Model -> Model
 addItem itemId props boxId model =
@@ -256,10 +243,10 @@ addItem itemId props boxId model =
 
 {-| Sets the item's "visibility" field to Visible (Pinned=False).
 Presumption: the item *is* contained in the box.
-Can be used for both, topics and associations.
-If the item is *not* contained in the box, or its "visibility" field is Visible already,
-its a no-op.
+Its a no-op if the item is *not* contained in the box, or its "visibility" field is Visible
+already.
 Logs an error if box does not exist.
+It's a generic operation: works for both, topics and associations.
 -}
 showItem : Id -> BoxId -> Model -> Model
 showItem itemId boxId model =
@@ -272,7 +259,7 @@ showItem itemId boxId model =
               { boxItem | visibility =
                 case boxItem.visibility of
                   Visible _ -> boxItem.visibility
-                  Removed -> Visible False
+                  Removed -> Visible False -- Pinned=False
               }
             Nothing -> Nothing
         )
@@ -280,27 +267,79 @@ showItem itemId boxId model =
     )
 
 
+{-| Removes an item from a box, along its associations in that box context.
+Its a no-op if the item is *not* contained in the box.
+Logs an error if box does not exist.
+It's a generic operation: works for both, topics and associations.
+Note: while this functions supports associations as players in associations,
+at the moment DM6 Elm makes no use of it.
+-}
 removeItem : Id -> BoxId -> Model -> Model
 removeItem itemId boxId model =
-  model |> update boxId
-    (\box -> { box | items = removeItem_ itemId box.items model })
+  model
+    |> update boxId
+      (\box ->
+        { box | items = removeItem_ itemId box.items model }
+      )
+    |> resetBoxDisplayMode boxId
 
 
+resetBoxDisplayMode : BoxId -> Model -> Model
+resetBoxDisplayMode boxId model =
+  case isEmpty boxId model of
+    True -> model
+      |> updateTopicPropsInAllBoxes boxId
+        (\props -> { props | displayMode = BoxD BlackBox })
+    False -> model
+
+
+updateTopicPropsInAllBoxes : Id -> (TopicProps -> TopicProps) -> Model -> Model
+updateTopicPropsInAllBoxes topicId transform model =
+  { model | boxes = model.boxes |> Dict.map
+    (\_ box ->
+      { box | items = box.items |> Dict.update topicId
+        (\item_ ->
+          case item_ of
+            Just item ->
+              case item.props of
+                TopicV props -> Just
+                  { item | props = TopicV (transform props) }
+                AssocV _ -> U.topicMismatch "updateTopicPropsInAllBoxes" topicId item_
+            Nothing -> Nothing
+        )
+      }
+    )
+  }
+
+
+{-| Removes an item from a box, along its associations in that box context.
+Its a no-op if the item is *not* contained in the box.
+Low-level API to operate on given BoxItems directly
+-}
 removeItem_ : Id -> BoxItems -> Model -> BoxItems
 removeItem_ itemId items model =
   assocsOfPlayer_ itemId items model |> List.foldr
-    (\assocId itemsAcc -> removeItem_ assocId itemsAcc model)
-    (items |> Dict.update
-      itemId
-      (\item_ ->
-        case item_ of
-          Just item -> Just { item | visibility = Removed }
-          Nothing -> Nothing
-      )
+    (\assocId itemsAcc -> removeItem_ assocId itemsAcc model) -- recursion
+    (removeItem__ itemId items)
+
+
+{-| Removes an item (sets its visibility to Removed) from a set of BoxItems.
+Its a no-op if the item is *not* contained in the set of BoxItems.
+Low-level API that does NOT remove the item's associations.
+-}
+removeItem__ : Id -> BoxItems -> BoxItems
+removeItem__ itemId items =
+  items |> Dict.update itemId
+    (\item_ ->
+      case item_ of
+        Just item -> Just { item | visibility = Removed }
+        Nothing -> Nothing
     )
 
 
-{-| Logs an error if box does not exist. -}
+{-| Canonical box transformation.
+Logs an error if box does not exist.
+-}
 update : BoxId -> (Box -> Box) -> Model -> Model
 update boxId transform model =
   { model | boxes = model.boxes |> Dict.update boxId
@@ -312,13 +351,32 @@ update boxId transform model =
   }
 
 
+{-| Returns a player's associations (their Ids) in the given box context (BoxItems).
+Low-level API to operate on given BoxItems directly.
+-}
 assocsOfPlayer_ : Id -> BoxItems -> Model -> List Id
 assocsOfPlayer_ playerId items model =
   items
-  |> Dict.values
-  |> List.filter isAssoc
-  |> List.map .id
-  |> List.filter (Item.hasPlayer playerId model)
+    |> Dict.values
+    |> List.filter isAssoc
+    |> List.map .id
+    |> List.filter (Item.hasPlayer playerId model)
+
+
+{-| Logs an error if box does not exist. -}
+isEmpty : BoxId -> Model -> Bool
+isEmpty boxId model =
+  case byIdOrLog boxId model of
+    Just box -> box.items |> Dict.values |> List.any isVisible |> not
+    Nothing -> False
+
+
+{-| Logs an error if box does not exist, or topic is not in box, or ID refers not a topic (but
+an association).
+-}
+isUnboxed : Id -> BoxId -> Model -> Bool
+isUnboxed topicId boxId model =
+  displayMode topicId boxId model == Just (BoxD Unboxed)
 
 
 {-| useful as a filter predicate -}

@@ -306,8 +306,8 @@ addAssocAndAddToBox itemType role1 player1 role2 player2 boxId model =
   Box.addItem assocId props boxId newModel
 
 
-moveTopicToBox : Id -> BoxId -> Point -> Id -> BoxPath -> Point -> Model -> Model
-moveTopicToBox topicId boxId origPos targetId targetPath pos model =
+moveTopicToBox : Id -> BoxId -> Point -> BoxId -> BoxPath -> Point -> Model -> Model
+moveTopicToBox topicId boxId origPos targetBoxId targetPath pos model =
   let
     props_ =
       Box.topicProps topicId boxId model
@@ -316,11 +316,11 @@ moveTopicToBox topicId boxId origPos targetId targetPath pos model =
   case props_ of
     Just props ->
       model
-      |> Box.removeItem topicId boxId
-      |> Box.setTopicPos topicId boxId origPos
-      |> Box.addItem topicId props targetId
-      |> SelAPI.select targetId targetPath
-      |> Size.auto
+        |> Box.removeItem topicId boxId
+        |> Box.setTopicPos topicId boxId origPos
+        |> Box.addItem topicId props targetBoxId
+        |> SelAPI.select targetBoxId targetPath
+        |> Size.auto
     Nothing -> model
 
 
@@ -341,10 +341,10 @@ cancelUI maybeTarget model =
         Nothing -> True
   in
   model
-  |> (if shouldClear then SelAPI.clear else identity)
-  |> IconAPI.closePicker
-  |> SearchAPI.closeMenu
-  |> TextAPI.leaveEdit
+    |> (if shouldClear then SelAPI.clear else identity)
+    |> IconAPI.closePicker
+    |> SearchAPI.closeMenu
+    |> TextAPI.leaveEdit
 
 
 updateScrollPos : Point -> Model -> Model

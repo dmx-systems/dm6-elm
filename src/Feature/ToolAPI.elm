@@ -118,13 +118,15 @@ viewToolbar itemId boxId model =
       ]
     boxTools =
       if Item.isBox itemId model then
+        let
+          disabled = Box.isEmpty itemId model || Box.isUnboxed itemId boxId model
+        in
         [ viewSpacer
         , viewItemButton "Fullscreen" "maximize-2" (Tool <| Tool.Fullscreen itemId) False True
         , viewItemButton "Unbox" "external-link" (Tool <| Tool.Unbox itemId boxId) disabled True
         ]
       else
         []
-    disabled = Box.isEmpty itemId model || Box.isUnboxed itemId boxId model
   in
   div
     ( toolbarStyle itemId boxId model )
@@ -347,7 +349,7 @@ delete model =
     newModel = model.selection.items
       |> List.map Tuple.first
       |> List.foldr
-        (\itemId modelAcc -> Item.remove itemId modelAcc)
+        (\itemId modelAcc -> Item.delete itemId modelAcc)
         model
   in
   newModel

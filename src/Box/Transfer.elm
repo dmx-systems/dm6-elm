@@ -50,12 +50,12 @@ transferContent boxId targetBoxId transfer model =
 
 
 {-| Transfer function, Boxing.
-Iterates the box items (recursively) and sets corresponding target items to hidden.
+Removes the content items (recursively) from the target items.
 Returns the updated target items.
 -}
 boxItems_ : BoxItems -> BoxItems -> Model -> BoxItems
-boxItems_ boxItems targetItems model =
-  boxItems |> Dict.values |> List.filter Box.isVisible |> List.foldr
+boxItems_ contentItems targetItems model =
+  contentItems |> Dict.values |> List.filter Box.isVisible |> List.foldr
     (\boxItem targetItemsAcc ->
       case targetItemsAcc |> Dict.get boxItem.id of
         Just item ->
@@ -75,12 +75,12 @@ boxItems_ boxItems targetItems model =
 
 
 {-| Transfer function, Unboxing.
-Iterates the box items (recursively) and reveals corresponding target items.
+Reveals the content items (recursively) among the target items.
 Returns the updated target items.
 -}
 unboxItems_ : BoxItems -> BoxItems -> Model -> BoxItems
-unboxItems_ boxItems targetItems model =
-  boxItems |> Dict.values |> List.filter Box.isVisible |> List.foldr
+unboxItems_ contentItems targetItems model =
+  contentItems |> Dict.values |> List.filter Box.isVisible |> List.foldr
     (\boxItem targetItemsAcc ->
       case boxItem.props of
         TopicV _ ->

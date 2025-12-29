@@ -115,8 +115,8 @@ type Visibility
 
 
 type ViewProps
-  = TopicV TopicProps
-  | AssocV AssocProps
+  = TopicV TopicProps -- TODO: rename TopicP
+  | AssocV AssocProps -- TODO: rename AssocP
 
 
 type alias TopicProps =
