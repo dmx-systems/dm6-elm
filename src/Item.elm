@@ -11,6 +11,9 @@ import String exposing (fromInt)
 
 
 
+{-| Returns a topic by ID.
+Logs an error if no such topic exists, or ID refers not a topic (but an association).
+-}
 topicById : Id -> Model -> Maybe TopicInfo
 topicById topicId model =
   case byId topicId model of
@@ -21,6 +24,9 @@ topicById topicId model =
     Nothing -> U.fail "topicById" topicId Nothing
 
 
+{-| Returns an association by ID.
+Logs an error if no such association exists, or ID refers not an association (but a topic).
+-}
 assocById : Id -> Model -> Maybe AssocInfo
 assocById assocId model =
   case byId assocId model of
@@ -31,6 +37,9 @@ assocById assocId model =
     Nothing -> U.fail "assocById" assocId Nothing
 
 
+{-| Returns an item by ID.
+Logs an error if no such item exists.
+-}
 byId : Id -> Model -> Maybe Item
 byId itemId model =
   case model.items |> Dict.get itemId of
@@ -110,37 +119,6 @@ addAssoc itemType role1 player1 role2 player2 model =
   )
 
 
-delete : Id -> Model -> Model
-delete itemId model =
-  assocIds itemId model |> Set.foldr
-    delete -- recursion
-    model
-      |> removeAssocRefs_ itemId
-      |> delete_ itemId
-
-
-removeAssocRefs_ : Id -> Model -> Model
-removeAssocRefs_ itemId model =
-  case byId itemId model of
-    Just {info} ->
-      case info of
-        Assoc assoc ->
-          model
-            |> removeAssocId_ assoc.id assoc.player1
-            |> removeAssocId_ assoc.id assoc.player2
-        Topic _ -> model
-    Nothing -> model -- error is already logged
-
-
-delete_ : Id -> Model -> Model
-delete_ itemId model =
-  { model
-    | items = model.items |> Dict.remove itemId -- delete item
-    , boxes = model.boxes |> Dict.map -- delete item from all boxes
-      (\_ box -> { box | items = box.items |> Dict.remove itemId }) -- FIXME: use Box.removeItem
-  }
-
-
 relatedItems : Id -> Model -> List (Id, Id)
 relatedItems itemId model =
   assocIds itemId model |> Set.foldr
@@ -164,7 +142,7 @@ otherPlayerId assocId playerId model =
     Nothing -> -1 -- error is already logged
 
 
-{-| Returns an item's associations (their Ids).
+{-| Returns the item's set of association IDs.
 Logs an error if item does not exist.
 -}
 assocIds : Id -> Model -> AssocIds
@@ -174,18 +152,22 @@ assocIds itemId model =
     Nothing -> Set.empty -- error is already logged
 
 
+{-| Inserts an association ID into the item's set of association IDs.
+No-op if the association ID is in the set already.
+Logs an error if item does not exist.
+Low-level API for maintaining the association ID set.
+-}
 insertAssocId_ : Id -> Id -> Model -> Model
 insertAssocId_ assocId itemId model =
-  model
-  |> update itemId (\item -> {item | assocIds = item.assocIds |> Set.insert assocId})
+  model |> update itemId
+    (\item ->
+      {item | assocIds = item.assocIds |> Set.insert assocId}
+    )
 
 
-removeAssocId_ : Id -> Id -> Model -> Model
-removeAssocId_ assocId itemId model =
-  model
-  |> update itemId (\item -> {item | assocIds = item.assocIds |> Set.remove assocId})
-
-
+{-| Canonical item transformation.
+Logs an error if item does not exist.
+-}
 update : Id -> (Item -> Item) -> Model -> Model
 update itemId transform model =
   { model | items = model.items |> Dict.update itemId
@@ -204,8 +186,7 @@ hasPlayer playerId model assocId =
     Nothing -> False
 
 
-{-| useful as a filter predicate
--}
+{-| useful as a filter predicate -}
 isTopic : Item -> Bool
 isTopic item =
   case item.info of
@@ -213,8 +194,7 @@ isTopic item =
     Assoc _ -> False
 
 
-{-| useful as a filter predicate
--}
+{-| useful as a filter predicate -}
 isAssoc : Item -> Bool
 isAssoc item =
   not (isTopic item)

@@ -349,7 +349,7 @@ delete model =
     newModel = model.selection.items
       |> List.map Tuple.first
       |> List.foldr
-        (\itemId modelAcc -> Item.delete itemId modelAcc)
+        (\itemId modelAcc -> Box.deleteItem itemId modelAcc)
         model
   in
   newModel

@@ -20,7 +20,7 @@ import Set exposing (Set)
 type alias Item =
   { id : Id
   , info : ItemInfo
-  , assocIds : AssocIds
+  , assocIds : AssocIds -- The associations the item is involved in (as a "player")
   }
 
 
