@@ -121,48 +121,6 @@ topicProps topicId boxId model =
     Nothing -> U.fail "topicProps" {topicId = topicId, boxId = boxId} Nothing
 
 
-{-| Canonical TopicProps transformation.
-Logs an error if box does not exist, or topic is not in box, or ID refers not a topic (but
-an association).
--}
-updateTopicProps : Id -> BoxId -> (TopicProps -> TopicProps) -> Model -> Model
-updateTopicProps topicId boxId transform model =
-  model |> update boxId
-    (\box ->
-      { box | items = box.items |> Dict.update topicId
-        (\item_ ->
-          case item_ of
-            Just item ->
-              case item.props of
-                TopicV props -> Just
-                  { item | props = TopicV (transform props) }
-                AssocV _ -> U.topicMismatch "updateTopicProps" topicId Nothing
-            Nothing -> U.illegalItemId "updateTopicProps" topicId Nothing
-        )
-      }
-    )
-
-
--- TODO: factor out updateTopicProps common core
-updateTopicPropsInAllBoxes : Id -> (TopicProps -> TopicProps) -> Model -> Model
-updateTopicPropsInAllBoxes topicId transform model =
-  { model | boxes = model.boxes |> Dict.map
-    (\_ box ->
-      { box | items = box.items |> Dict.update topicId
-        (\item_ ->
-          case item_ of
-            Just item ->
-              case item.props of
-                TopicV props -> Just
-                  { item | props = TopicV (transform props) }
-                AssocV _ -> U.topicMismatch "updateTopicPropsInAllBoxes" topicId item_
-            Nothing -> Nothing
-        )
-      }
-    )
-  }
-
-
 revealItem : Id -> BoxId -> Model -> Model
 revealItem itemId boxId model =
   if hasItem boxId itemId model then
@@ -301,7 +259,7 @@ removeItem itemId boxId model =
         (\box ->
           { box | items = removeItem_ itemId box.items model }
         )
-    |> resetBoxDisplayMode boxId
+    |> resetEmptyBox boxId
 
 
 {-| Removes an item from a box, along its associations in that box context.
@@ -359,8 +317,9 @@ assocsOfPlayer_ playerId items model =
 
 deleteItem : Id -> Model -> Model
 deleteItem itemId model =
-  deleteItem_ itemId model
-  -- TODO: reset display mode of all empty boxes
+  model
+    |> deleteItem_ itemId
+    |> resetAllEmptyBoxes
 
 
 {-| Deletes an item, along its associations, and removes them from all boxes.
@@ -371,7 +330,8 @@ at the moment DM6 Elm makes no use of it.
 -}
 deleteItem_ : Id -> Model -> Model
 deleteItem_ itemId model =
-  Item.assocIds itemId model |> Set.foldr deleteItem_ model -- recursion
+  Item.assocIds itemId model
+    |> Set.foldr deleteItem_ model -- recursion
     |> deleteAssocRefs_ itemId
     |> deleteItem__ itemId
 
@@ -422,15 +382,64 @@ deleteItem__ itemId model =
   }
 
 
+resetAllEmptyBoxes : Model -> Model
+resetAllEmptyBoxes model =
+  model.boxes
+    |> Dict.keys
+    |> List.foldr resetEmptyBox model
+
+
 --
 
-resetBoxDisplayMode : BoxId -> Model -> Model
-resetBoxDisplayMode boxId model =
+resetEmptyBox : BoxId -> Model -> Model
+resetEmptyBox boxId model =
   case isEmpty boxId model of
     True -> model
       |> updateTopicPropsInAllBoxes boxId
         (\props -> { props | displayMode = BoxD BlackBox })
     False -> model
+
+
+{-| Canonical TopicProps transformation.
+Logs an error if box does not exist, or topic is not in box, or ID refers not a topic (but
+an association).
+-}
+updateTopicProps : Id -> BoxId -> (TopicProps -> TopicProps) -> Model -> Model
+updateTopicProps topicId boxId transform model =
+  model |> update boxId
+    (\box ->
+      { box | items = box.items |> Dict.update topicId
+        (\item_ ->
+          case item_ of
+            Just item ->
+              case item.props of
+                TopicV props -> Just
+                  { item | props = TopicV (transform props) }
+                AssocV _ -> U.topicMismatch "updateTopicProps" topicId Nothing
+            Nothing -> U.illegalItemId "updateTopicProps" topicId Nothing
+        )
+      }
+    )
+
+
+-- TODO: factor out updateTopicProps common core
+updateTopicPropsInAllBoxes : Id -> (TopicProps -> TopicProps) -> Model -> Model
+updateTopicPropsInAllBoxes topicId transform model =
+  { model | boxes = model.boxes |> Dict.map
+    (\_ box ->
+      { box | items = box.items |> Dict.update topicId
+        (\item_ ->
+          case item_ of
+            Just item ->
+              case item.props of
+                TopicV props -> Just
+                  { item | props = TopicV (transform props) }
+                AssocV _ -> U.topicMismatch "updateTopicPropsInAllBoxes" topicId item_
+            Nothing -> Nothing
+        )
+      }
+    )
+  }
 
 
 {-| Logs an error if box does not exist. -}
