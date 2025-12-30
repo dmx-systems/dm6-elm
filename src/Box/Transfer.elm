@@ -112,7 +112,8 @@ unboxTopic boxItem targetItems model =
           -- 1) set it to "pinned" if visible already
           -- 2) abort further unboxing if it's display mode is BlackBox or WhiteBox
           let
-            newItem = { item | visibility = Visible <| Box.isVisible item }
+            isPinned = if Box.isVisible item then Pinned else Unpinned
+            newItem = { item | visibility = Visible isPinned }
             _ = U.info "unboxTopic" newItem
           in
           (newItem, isAbort item)
@@ -168,6 +169,6 @@ Part of unboxing. FIXDOC
 targetAssocItem : Id -> BoxItems -> BoxItem
 targetAssocItem assocId targetItems =
   case targetItems |> Dict.get assocId of
-    Just item -> { item | visibility = Visible False } -- TODO: pinning?
-    Nothing -> BoxItem assocId -1 (Visible False) (AssocP AssocProps) -- Pinned=False
+    Just item -> { item | visibility = Visible Unpinned } -- TODO: pinning?
+    Nothing -> BoxItem assocId -1 (Visible Unpinned) (AssocP AssocProps)
     -- FIXME: set item's boxAssocId?

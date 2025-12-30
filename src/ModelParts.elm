@@ -1,8 +1,8 @@
 module ModelParts exposing (Item, ItemInfo(..), TopicInfo, AssocInfo, Items, Id, AssocIds, Icon,
   Size, SizeField(..), TextSize, ItemType, RoleType, Box, Boxes, BoxId, Class, Delta, BoxItems,
-  BoxPath, rootBoxId, BoxItem, Visibility(..), ItemProps(..), TopicProps, AssocProps,
-  DisplayMode(..), TopicDisplay(..), BoxDisplay(..), Point, Rectangle, ImageId, Attributes,
-  encodeItem, encodeBox, itemDecoder, boxDecoder, toDictDecoder)
+  BoxPath, rootBoxId, BoxItem, Visibility(..), PinnedState(..), ItemProps(..), TopicProps,
+  AssocProps, DisplayMode(..), TopicDisplay(..), BoxDisplay(..), Point, Rectangle, ImageId,
+  Attributes, encodeItem, encodeBox, itemDecoder, boxDecoder, toDictDecoder)
 
 import Dict exposing (Dict)
 import Html exposing (Attribute)
@@ -94,7 +94,6 @@ type alias Class = String -- a CSS class, e.g. "dmx-topic"
 type alias Delta = Point
 type alias BoxItems = Dict Id BoxItem
 type alias BoxPath = List BoxId
-type alias Pinned = Bool
 
 
 rootBoxId : BoxId
@@ -110,8 +109,13 @@ type alias BoxItem =
 
 
 type Visibility
-  = Visible Pinned
+  = Visible PinnedState
   | Removed
+
+
+type PinnedState
+  = Pinned
+  | Unpinned
 
 
 type ItemProps
@@ -259,8 +263,8 @@ encodeVisibility : Visibility -> E.Value
 encodeVisibility visibility =
   E.string
     (case visibility of
-      Visible True -> "Pinned"
-      Visible False -> "Visible"
+      Visible Pinned -> "Pinned"
+      Visible Unpinned -> "Visible"
       Removed -> "Removed"
     )
 
@@ -375,8 +379,8 @@ toDictDecoder items =
 visibilityDecoder : String -> D.Decoder Visibility
 visibilityDecoder str =
   case str of
-    "Pinned" -> D.succeed (Visible True)
-    "Visible" -> D.succeed (Visible False)
+    "Pinned" -> D.succeed (Visible Pinned)
+    "Visible" -> D.succeed (Visible Unpinned)
     "Removed" -> D.succeed (Removed)
     _ -> D.fail <| "\"" ++ str ++ "\" is an invalid visibility"
 

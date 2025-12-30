@@ -216,7 +216,7 @@ addItem itemId props boxId model =
       "dmx.child" itemId
       "dmx.parent" boxId
       model
-    boxItem = BoxItem itemId boxAssocId (Visible False) props -- Pinned=False
+    boxItem = BoxItem itemId boxAssocId (Visible Unpinned) props
     _ = U.info "addItem"
       { itemId = itemId, boxAssocId = boxAssocId, props = props, boxId = boxId}
   in
@@ -241,7 +241,7 @@ showItem_ itemId boxId model =
               { boxItem | visibility =
                 case boxItem.visibility of
                   Visible _ -> boxItem.visibility
-                  Removed -> Visible False -- Pinned=False
+                  Removed -> Visible Unpinned
               }
             Nothing -> Nothing
         )
@@ -486,7 +486,7 @@ isVisible item =
 
 isPinned : BoxItem -> Bool
 isPinned item =
-  item.visibility == Visible True
+  item.visibility == Visible Pinned
 
 
 mapTitle : Model -> String
