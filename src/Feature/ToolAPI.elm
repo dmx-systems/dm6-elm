@@ -111,7 +111,7 @@ viewToolbar itemId boxId model =
   let
     topicTools =
       [ viewItemButton "Edit" "edit-3" (Tool Tool.Edit) False True
-      , viewItemButton "Select Icon" "image" (Tool Tool.Icon) False True
+      , viewItemButton "Select Icon" "smile" (Tool Tool.Icon) False True
       , viewItemButton "Traverse" "share-2" (Tool Tool.Traverse) False True
       , viewItemButton "Delete" "trash" (Tool Tool.Delete) False True
       , viewItemButton "Remove" "x" (Tool Tool.Remove) False True
@@ -308,7 +308,7 @@ addTopic : Model -> (Model, Cmd Msg)
 addTopic model =
   let
     boxId = model.boxId
-    ( newModel, topicId ) = Item.addTopic C.initTopicText Nothing model
+    ( newModel, topicId ) = Item.addTopic C.initTopicText C.initTopicIcon model
     props = TopicP <| TopicProps
       ( Box.initTopicPos boxId model )
       ( TopicD LabelOnly )
@@ -324,7 +324,7 @@ addBox : Model -> (Model, Cmd Msg)
 addBox model =
   let
     boxId = model.boxId
-    ( newModel, topicId ) = Item.addTopic C.initBoxText Nothing model
+    ( newModel, topicId ) = Item.addTopic C.initBoxText C.initBoxIcon model
     props = TopicP <| TopicProps
       ( Box.initTopicPos boxId model )
       ( BoxD BlackBox )
