@@ -309,7 +309,7 @@ addTopic model =
   let
     boxId = model.boxId
     ( newModel, topicId ) = Item.addTopic C.initTopicText Nothing model
-    props = TopicV <| TopicProps
+    props = TopicP <| TopicProps
       ( Box.initTopicPos boxId model )
       ( TopicD LabelOnly )
   in
@@ -325,7 +325,7 @@ addBox model =
   let
     boxId = model.boxId
     ( newModel, topicId ) = Item.addTopic C.initBoxText Nothing model
-    props = TopicV <| TopicProps
+    props = TopicP <| TopicProps
       ( Box.initTopicPos boxId model )
       ( BoxD BlackBox )
   in

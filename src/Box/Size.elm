@@ -60,7 +60,7 @@ accumulateItem boxItem boxPath rectAcc model =
 calcItemRect : BoxItem -> BoxPath -> Model -> (Rectangle, Model)
 calcItemRect boxItem boxPath model =
   case boxItem.props of
-    TopicV {pos, displayMode} ->
+    TopicP {pos, displayMode} ->
       case displayMode of
         TopicD LabelOnly -> (topicExtent pos, model)
         TopicD Detail -> (detailTopicExtent boxItem.id boxPath pos model, model)
@@ -71,7 +71,7 @@ calcItemRect boxItem boxPath model =
           in
           (boxExtent pos rect_, model_)
         BoxD Unboxed -> (topicExtent pos, model)
-    AssocV _ -> (Rectangle 0 0 0 0, model) -- never called
+    AssocP _ -> (Rectangle 0 0 0 0, model) -- never called
 
 
 topicExtent : Point -> Rectangle

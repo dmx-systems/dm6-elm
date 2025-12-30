@@ -1,4 +1,8 @@
-module Box exposing (..)
+module Box exposing (byId, byIdOrLog, update, updateRect, updateScrollPos, topicPos,
+  setTopicPos, setTopicPosByDelta, displayMode, setDisplayMode, updateDisplayMode, topicProps,
+  initTopicProps, initTopicPos, hasItem, hasDeepItem, addBox, addItem, revealItem, removeItem,
+  removeItem_, deleteItem, isEmpty, isUnboxed, isTopic, isAssoc, isVisible, isPinned, mapTitle,
+  elemId, firstId, fromPath)
 
 import Config as C
 import Item
@@ -65,7 +69,7 @@ topicPos topicId boxId model =
 {-| Logs an error if box does not exist, or if topic is not in box -}
 setTopicPos : Id -> BoxId -> Point -> Model -> Model
 setTopicPos topicId boxId pos model =
-  model |> updateTopicProps topicId boxId
+  model |> updateTopicProps_ topicId boxId
     (\props -> { props | pos = pos })
 
 
@@ -74,7 +78,7 @@ TODO: make it "updateTopicPos" and take a transform function
 -}
 setTopicPosByDelta : Id -> BoxId -> Delta -> Model -> Model
 setTopicPosByDelta topicId boxId delta model =
-  model |> updateTopicProps topicId boxId
+  model |> updateTopicProps_ topicId boxId
     (\props ->
       { props | pos =
         Point
@@ -104,7 +108,7 @@ setDisplayMode topicId boxId display model =
 updateDisplayMode : Id -> BoxId -> (DisplayMode -> DisplayMode) -> Model -> Model
 updateDisplayMode topicId boxId transform model =
   model
-    |> updateTopicProps topicId boxId
+    |> updateTopicProps_ topicId boxId
       (\props -> { props | displayMode = transform props.displayMode })
 
 
@@ -113,11 +117,11 @@ an association).
 -}
 topicProps : Id -> BoxId -> Model -> Maybe TopicProps
 topicProps topicId boxId model =
-  case itemByIdOrLog topicId boxId model of
+  case itemByIdOrLog_ topicId boxId model of
     Just boxItem ->
       case boxItem.props of
-        TopicV props -> Just props
-        AssocV _ -> U.topicMismatch "topicProps" topicId Nothing
+        TopicP props -> Just props
+        AssocP _ -> U.topicMismatch "topicProps" topicId Nothing
     Nothing -> U.fail "topicProps" {topicId = topicId, boxId = boxId} Nothing
 
 
@@ -127,24 +131,24 @@ revealItem itemId boxId model =
     let
       _ = U.info "revealItem" <| fromInt itemId ++ " is in " ++ fromInt boxId
     in
-    showItem itemId boxId model
+    showItem_ itemId boxId model
   else
     let
       _ = U.info "revealItem" <| fromInt itemId ++ " not in " ++ fromInt boxId
-      props = initItemProps itemId boxId model
+      props = initItemProps_ itemId boxId model
     in
     addItem itemId props boxId model
 
 
 {-| Initial props for a newly revealed item -}
-initItemProps : Id -> BoxId -> Model -> ViewProps
-initItemProps itemId boxId model =
+initItemProps_ : Id -> BoxId -> Model -> ItemProps
+initItemProps_ itemId boxId model =
   case Item.byId itemId model of
     Just item ->
       case item.info of
-        Topic _ -> TopicV <| initTopicProps itemId boxId model
-        Assoc _ -> AssocV {}
-    Nothing -> AssocV {} -- error is already logged
+        Topic _ -> TopicP <| initTopicProps itemId boxId model
+        Assoc _ -> AssocP {}
+    Nothing -> AssocP {} -- error is already logged
 
 
 {-| Initial props for a newly revealed topic -}
@@ -170,13 +174,13 @@ initTopicPos boxId model =
 
 
 {-| Logs an error if box does not exist, or item is not in box. -}
-itemByIdOrLog : Id -> BoxId -> Model -> Maybe BoxItem
-itemByIdOrLog itemId boxId model =
+itemByIdOrLog_ : Id -> BoxId -> Model -> Maybe BoxItem
+itemByIdOrLog_ itemId boxId model =
   byIdOrLog boxId model |> Maybe.andThen
     (\box ->
       case box.items |> Dict.get itemId of
         Just boxItem -> Just boxItem
-        Nothing -> U.itemNotInBox "itemByIdOrLog" itemId box.id Nothing
+        Nothing -> U.itemNotInBox "itemByIdOrLog_" itemId box.id Nothing
     )
 
 
@@ -204,7 +208,7 @@ Presumption: the item is not yet contained in the box. Otherwise the existing bo
 overridden and another association still be created. This is not what you want.
 It's a generic operation: works for both, topics and associations.
 -}
-addItem : Id -> ViewProps -> BoxId -> Model -> Model
+addItem : Id -> ItemProps -> BoxId -> Model -> Model
 addItem itemId props boxId model =
   let
     ( newModel, boxAssocId ) = Item.addAssoc
@@ -226,8 +230,8 @@ No-op if the item is *not* contained in the box, or its "visibility" field is Vi
 Logs an error if box does not exist.
 It's a generic operation: works for both, topics and associations.
 -}
-showItem : Id -> BoxId -> Model -> Model
-showItem itemId boxId model =
+showItem_ : Id -> BoxId -> Model -> Model
+showItem_ itemId boxId model =
   model |> update boxId
     (\box ->
       { box | items = box.items |> Dict.update itemId
@@ -259,12 +263,12 @@ removeItem itemId boxId model =
         (\box ->
           { box | items = removeItem_ itemId box.items model }
         )
-    |> resetEmptyBox boxId
+    |> resetEmptyBox_ boxId
 
 
 {-| Removes an item from a box, along its associations in that box context.
 No-op if the item is *not* contained in the box.
-Low-level API to operate on given BoxItems directly
+Convenience API to operate on given BoxItems directly
 -}
 removeItem_ : Id -> BoxItems -> Model -> BoxItems
 removeItem_ itemId items model =
@@ -386,16 +390,16 @@ resetAllEmptyBoxes : Model -> Model
 resetAllEmptyBoxes model =
   model.boxes
     |> Dict.keys
-    |> List.foldr resetEmptyBox model
+    |> List.foldr resetEmptyBox_ model
 
 
 --
 
-resetEmptyBox : BoxId -> Model -> Model
-resetEmptyBox boxId model =
+resetEmptyBox_ : BoxId -> Model -> Model
+resetEmptyBox_ boxId model =
   case isEmpty boxId model of
     True -> model
-      |> updateTopicPropsInAllBoxes boxId
+      |> updateTopicPropsInAllBoxes_ boxId
         (\props -> { props | displayMode = BoxD BlackBox })
     False -> model
 
@@ -404,8 +408,8 @@ resetEmptyBox boxId model =
 Logs an error if box does not exist, or topic is not in box, or ID refers not a topic (but
 an association).
 -}
-updateTopicProps : Id -> BoxId -> (TopicProps -> TopicProps) -> Model -> Model
-updateTopicProps topicId boxId transform model =
+updateTopicProps_ : Id -> BoxId -> (TopicProps -> TopicProps) -> Model -> Model
+updateTopicProps_ topicId boxId transform model =
   model |> update boxId
     (\box ->
       { box | items = box.items |> Dict.update topicId
@@ -413,18 +417,18 @@ updateTopicProps topicId boxId transform model =
           case item_ of
             Just item ->
               case item.props of
-                TopicV props -> Just
-                  { item | props = TopicV (transform props) }
-                AssocV _ -> U.topicMismatch "updateTopicProps" topicId Nothing
-            Nothing -> U.illegalItemId "updateTopicProps" topicId Nothing
+                TopicP props -> Just
+                  { item | props = TopicP (transform props) }
+                AssocP _ -> U.topicMismatch "updateTopicProps_" topicId Nothing
+            Nothing -> U.illegalItemId "updateTopicProps_" topicId Nothing
         )
       }
     )
 
 
--- TODO: factor out updateTopicProps common core
-updateTopicPropsInAllBoxes : Id -> (TopicProps -> TopicProps) -> Model -> Model
-updateTopicPropsInAllBoxes topicId transform model =
+-- TODO: factor out updateTopicProps_ common core
+updateTopicPropsInAllBoxes_ : Id -> (TopicProps -> TopicProps) -> Model -> Model
+updateTopicPropsInAllBoxes_ topicId transform model =
   { model | boxes = model.boxes |> Dict.map
     (\_ box ->
       { box | items = box.items |> Dict.update topicId
@@ -432,9 +436,9 @@ updateTopicPropsInAllBoxes topicId transform model =
           case item_ of
             Just item ->
               case item.props of
-                TopicV props -> Just
-                  { item | props = TopicV (transform props) }
-                AssocV _ -> U.topicMismatch "updateTopicPropsInAllBoxes" topicId item_
+                TopicP props -> Just
+                  { item | props = TopicP (transform props) }
+                AssocP _ -> U.topicMismatch "updateTopicPropsInAllBoxes_" topicId item_
             Nothing -> Nothing
         )
       }
@@ -462,8 +466,8 @@ isUnboxed topicId boxId model =
 isTopic : BoxItem -> Bool
 isTopic item =
   case item.props of
-    TopicV _ -> True
-    AssocV _ -> False
+    TopicP _ -> True
+    AssocP _ -> False
 
 
 {-| useful as a filter predicate -}

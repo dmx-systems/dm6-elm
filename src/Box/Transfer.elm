@@ -83,7 +83,7 @@ unboxItems_ contentItems targetItems model =
   contentItems |> Dict.values |> List.filter Box.isVisible |> List.foldr
     (\boxItem targetItemsAcc ->
       case boxItem.props of
-        TopicV _ ->
+        TopicP _ ->
           let
             (items, abort) = unboxTopic boxItem targetItemsAcc model
           in
@@ -93,7 +93,7 @@ unboxItems_ contentItems targetItems model =
             case Box.byId boxItem.id model of
               Just box_ -> unboxItems_ box_.items items model -- recursion
               Nothing -> items
-        AssocV _ ->
+        AssocP _ ->
           unboxAssoc boxItem targetItemsAcc
     )
     targetItems
@@ -145,21 +145,21 @@ setUnboxed : BoxItem -> BoxItem
 setUnboxed item =
   { item | props =
     case item.props of
-      TopicV props -> TopicV { props | displayMode = BoxD Unboxed }
-      AssocV props -> AssocV props
+      TopicP props -> TopicP { props | displayMode = BoxD Unboxed }
+      AssocP props -> AssocP props
   }
 
 
 isAbort : BoxItem -> Bool
 isAbort item =
   case item.props of
-    TopicV props ->
+    TopicP props ->
       case props.displayMode of
         BoxD BlackBox -> True
         BoxD WhiteBox -> True
         BoxD Unboxed -> False
         TopicD _ -> False
-    AssocV _ -> False
+    AssocP _ -> False
 
 
 {-| Returns the target item to reveal that corresponds to the box item.
@@ -169,5 +169,5 @@ targetAssocItem : Id -> BoxItems -> BoxItem
 targetAssocItem assocId targetItems =
   case targetItems |> Dict.get assocId of
     Just item -> { item | visibility = Visible False } -- TODO: pinning?
-    Nothing -> BoxItem assocId -1 (Visible False) (AssocV AssocProps) -- Pinned=False
+    Nothing -> BoxItem assocId -1 (Visible False) (AssocP AssocProps) -- Pinned=False
     -- FIXME: set item's boxAssocId?

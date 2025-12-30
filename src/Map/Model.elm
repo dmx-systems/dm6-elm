@@ -21,8 +21,8 @@ topicsToRender box model =
         { boxItem
         | props =
           case boxItem.props of
-            TopicV props -> TopicV <| effectiveDisplayMode boxItem.id box.id model props
-            AssocV _ -> U.logError "topicsToRender" "Found assoc in a topic list" boxItem.props
+            TopicP props -> TopicP <| effectiveDisplayMode boxItem.id box.id model props
+            AssocP _ -> U.logError "topicsToRender" "Found assoc in a topic list" boxItem.props
         }
       )
     limboTopic =
@@ -32,7 +32,7 @@ topicsToRender box model =
             let
               _ = U.info "viewLimboTopic" (topicId, "not in box", box.id)
               props =
-                TopicV
+                TopicP
                   <| effectiveDisplayMode topicId box.id model
                   <| Box.initTopicProps topicId box.id model
             in
@@ -84,8 +84,8 @@ isLimboItem item boxId model =
   let
     isLimbo =
       case item.props of
-        TopicV _ -> isLimboTopic
-        AssocV _ -> isLimboAssoc
+        TopicP _ -> isLimboTopic
+        AssocP _ -> isLimboAssoc
   in
   isLimbo item.id boxId model
 

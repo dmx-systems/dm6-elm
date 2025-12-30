@@ -301,7 +301,7 @@ addAssocAndAddToBox : ItemType -> RoleType -> Id -> RoleType -> Id -> BoxId -> M
 addAssocAndAddToBox itemType role1 player1 role2 player2 boxId model =
   let
     (newModel, assocId) = Item.addAssoc itemType role1 player1 role2 player2 model
-    props = AssocV AssocProps
+    props = AssocP AssocProps
   in
   Box.addItem assocId props boxId newModel
 
@@ -311,7 +311,7 @@ moveTopicToBox topicId boxId origPos targetBoxId targetPath pos model =
   let
     props_ =
       Box.topicProps topicId boxId model
-      |> Maybe.andThen (\props -> Just (TopicV { props | pos = pos }))
+      |> Maybe.andThen (\props -> Just (TopicP { props | pos = pos }))
   in
   case props_ of
     Just props ->

@@ -145,7 +145,7 @@ viewItems box boxPath model =
       MM.topicsToRender box model |> List.map
         (\{id, props} ->
           case (Item.topicById id model, props) of
-            (Just topic, TopicV tProps) -> viewTopic topic tProps newPath model
+            (Just topic, TopicP tProps) -> viewTopic topic tProps newPath model
             _ -> U.logError "viewItems" ("problem with topic " ++ fromInt id) (text "")
         )
     assocs =

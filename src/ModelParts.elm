@@ -1,6 +1,6 @@
 module ModelParts exposing (Item, ItemInfo(..), TopicInfo, AssocInfo, Items, Id, AssocIds, Icon,
   Size, SizeField(..), TextSize, ItemType, RoleType, Box, Boxes, BoxId, Class, Delta, BoxItems,
-  BoxPath, rootBoxId, BoxItem, Visibility(..), ViewProps(..), TopicProps, AssocProps,
+  BoxPath, rootBoxId, BoxItem, Visibility(..), ItemProps(..), TopicProps, AssocProps,
   DisplayMode(..), TopicDisplay(..), BoxDisplay(..), Point, Rectangle, ImageId, Attributes,
   encodeItem, encodeBox, itemDecoder, boxDecoder, toDictDecoder)
 
@@ -105,7 +105,7 @@ type alias BoxItem =
   { id : Id
   , boxAssocId : Id
   , visibility : Visibility
-  , props : ViewProps
+  , props : ItemProps
   }
 
 
@@ -114,9 +114,9 @@ type Visibility
   | Removed
 
 
-type ViewProps
-  = TopicV TopicProps -- TODO: rename TopicP
-  | AssocV AssocProps -- TODO: rename AssocP
+type ItemProps
+  = TopicP TopicProps
+  | AssocP AssocProps
 
 
 type alias TopicProps =
@@ -237,7 +237,7 @@ encodeBoxItem item =
     , ("boxAssocId", E.int item.boxAssocId)
     , ("visibility", encodeVisibility item.visibility)
     , case item.props of
-        TopicV topicProps ->
+        TopicP topicProps ->
           ( "topicProps"
           , E.object
             [ ("pos", E.object
@@ -248,7 +248,7 @@ encodeBoxItem item =
             , ("display", encodeDisplayName topicProps.displayMode)
             ]
           )
-        AssocV assosProps ->
+        AssocP assosProps ->
           ( "assocProps"
           , E.object []
           )
@@ -353,13 +353,13 @@ boxItemDecoder =
     (D.field "boxAssocId" D.int)
     (D.field "visibility" D.string |> D.andThen visibilityDecoder)
     (D.oneOf
-      [ D.field "topicProps" <| D.map TopicV <| D.map2 TopicProps
+      [ D.field "topicProps" <| D.map TopicP <| D.map2 TopicProps
         (D.field "pos" <| D.map2 Point
           (D.field "x" D.int)
           (D.field "y" D.int)
         )
         (D.field "display" D.string |> D.andThen displayModeDecoder)
-      , D.field "assocProps" <| D.succeed (AssocV AssocProps)
+      , D.field "assocProps" <| D.succeed (AssocP AssocProps)
       ]
     )
 
