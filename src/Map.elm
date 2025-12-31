@@ -707,9 +707,8 @@ lineStyle assoc boxId model =
 lineDasharray : Maybe AssocInfo -> String
 lineDasharray assoc =
   case assoc of
-    Just {itemType} ->
-      case itemType of
-        "dmx.association" -> "5 0" -- solid
-        "dmx.composition" -> "5" -- dotted
-        _ -> "1" -- error
+    Just {assocType} ->
+      case assocType of
+        Crosslink -> "5 0" -- solid
+        Hierarchy -> "5" -- dotted
     Nothing -> "5 0" -- solid

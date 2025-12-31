@@ -1,6 +1,6 @@
-module ModelParts exposing (Item, ItemInfo(..), TopicInfo, AssocInfo, Items, Id, AssocIds, Icon,
-  Size, SizeField(..), TextSize, ItemType, RoleType, Box, Boxes, BoxId, Class, Delta, BoxItems,
-  BoxPath, rootBoxId, BoxItem, Visibility(..), PinnedState(..), ItemProps(..), TopicProps,
+module ModelParts exposing (Id, Item, Items, ItemInfo(..), AssocIds, TopicInfo, Icon, TextSize,
+  Size, SizeField(..), AssocInfo, AssocType(..), Box, Boxes, BoxId, Class, Delta, BoxItems,
+  BoxPath, rootBoxId, BoxItem, Visibility(..), Pinned(..), ItemProps(..), TopicProps,
   AssocProps, DisplayMode(..), TopicDisplay(..), BoxDisplay(..), Point, Rectangle, ImageId,
   Attributes, encodeItem, encodeBox, itemDecoder, boxDecoder, toDictDecoder)
 
@@ -37,15 +37,17 @@ type alias TopicInfo =
   }
 
 
--- TODO: remodel
 type alias AssocInfo =
   { id : Id
-  , itemType : ItemType -- serialized as "type", field can't be named "type", a reserved word
-  , role1 : RoleType
+  , assocType : AssocType -- serialized as "type", field can't be named "type", a reserved word
   , player1 : Id
-  , role2 : RoleType
   , player2 : Id
   }
+
+
+type AssocType
+  = Hierarchy
+  | Crosslink
 
 
 type alias TextSize =
@@ -70,8 +72,6 @@ type alias Items = Dict Id Item
 type alias Id = Int
 type alias AssocIds = Set Id
 type alias Icon = String -- name of feather icon, https://feathericons.com
-type alias ItemType = String -- a type URI, e.g. "dmx.association"
-type alias RoleType = String -- a role type URI, e.g. "dmx.default"
 type alias ImageId = Int
 type alias Attributes msg = List (Attribute msg)
 
@@ -109,11 +109,11 @@ type alias BoxItem =
 
 
 type Visibility
-  = Visible PinnedState
+  = Visible Pinned
   | Removed
 
 
-type PinnedState
+type Pinned
   = Pinned
   | Unpinned
 
@@ -187,10 +187,8 @@ encodeItem item =
         ( "assoc"
         , E.object
           [ ("id", E.int assoc.id)
-          , ("type", E.string assoc.itemType)
-          , ("role1", E.string assoc.role1)
+          , ("type", encodeAssocType assoc.assocType)
           , ("player1", E.int assoc.player1)
-          , ("role2", E.string assoc.role2)
           , ("player2", E.int assoc.player2)
           , ("assocIds", E.set E.int item.assocIds)
           ]
@@ -212,6 +210,15 @@ encodeTextSize size =
         ]
       )
     ]
+
+
+encodeAssocType : AssocType -> E.Value
+encodeAssocType assocType =
+  E.string
+    ( case assocType of
+        Hierarchy -> "Hierarchy"
+        Crosslink -> "Crosslink"
+    )
 
 
 encodeBox : Box -> E.Value
@@ -300,12 +307,10 @@ itemDecoder =
     , D.field "assoc"
       (D.map3 Item
         (D.field "id" D.int)
-        (D.map Assoc <| D.map6 AssocInfo
+        (D.map Assoc <| D.map4 AssocInfo
           (D.field "id" D.int)
-          (D.field "type" D.string)
-          (D.field "role1" D.string)
+          (D.field "type" D.string |> D.andThen assocTypeDecoder)
           (D.field "player1" D.int)
-          (D.field "role2" D.string)
           (D.field "player2" D.int)
         )
         assocIdsDecoder
@@ -330,7 +335,15 @@ textSizeDecoder =
 assocIdsDecoder : D.Decoder AssocIds
 assocIdsDecoder =
   D.field "assocIds" (D.list D.int)
-  |> D.andThen (Set.fromList >> D.succeed)
+    |> D.andThen (Set.fromList >> D.succeed)
+
+
+assocTypeDecoder : String -> D.Decoder AssocType
+assocTypeDecoder str =
+  case str of
+    "Hierarchy" -> D.succeed Hierarchy
+    "Crosslink" -> D.succeed Crosslink
+    _ -> D.fail <| "\"" ++ str ++ "\" is an invalid AssocType"
 
 
 boxDecoder : D.Decoder Box
@@ -371,9 +384,9 @@ boxItemDecoder =
 toDictDecoder : List { item | id : Id } -> D.Decoder (Dict Int { item | id : Id })
 toDictDecoder items =
   items
-  |> List.map (\item -> (item.id, item))
-  |> Dict.fromList
-  |> D.succeed
+    |> List.map (\item -> (item.id, item))
+    |> Dict.fromList
+    |> D.succeed
 
 
 visibilityDecoder : String -> D.Decoder Visibility
@@ -382,7 +395,7 @@ visibilityDecoder str =
     "Pinned" -> D.succeed (Visible Pinned)
     "Visible" -> D.succeed (Visible Unpinned)
     "Removed" -> D.succeed (Removed)
-    _ -> D.fail <| "\"" ++ str ++ "\" is an invalid visibility"
+    _ -> D.fail <| "\"" ++ str ++ "\" is an invalid Visibility"
 
 
 displayModeDecoder : String -> D.Decoder DisplayMode
@@ -393,7 +406,7 @@ displayModeDecoder str =
     "BlackBox" -> D.succeed (BoxD BlackBox)
     "WhiteBox" -> D.succeed (BoxD WhiteBox)
     "Unboxed" -> D.succeed (BoxD Unboxed)
-    _ -> D.fail <| "\"" ++ str ++ "\" is an invalid display mode"
+    _ -> D.fail <| "\"" ++ str ++ "\" is an invalid DisplayMode"
 
 
 maybeString : String -> D.Decoder (Maybe String)

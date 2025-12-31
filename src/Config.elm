@@ -9,7 +9,7 @@ import ModelParts exposing (Point, Size)
 
 rootBoxName = "DM6 Elm"
 version = "0.4-snapshot"
-date = "Dec 30, 2025"
+date = "Dec 31, 2025"
 
 appHeaderHeight = 36
 
@@ -30,7 +30,7 @@ toolbarColor = "#e9e9ed" -- Firefox button color
 
 initTopicPos = Point 104 72
 initTopicText = "New Topic"
-initTopicIcon = Just "circle"
+initTopicIcon = Just "disc"
 initBoxText = "New Box"
 initBoxIcon = Just "archive"
 

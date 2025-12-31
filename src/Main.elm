@@ -289,18 +289,14 @@ update msg ({present} as undoModel) =
 -- Presumption: both players exist in same box
 addAssoc : Id -> Id -> BoxId -> Model -> Model
 addAssoc player1 player2 boxId model =
-  addAssocAndAddToBox
-    "dmx.association"
-    "dmx.default" player1
-    "dmx.default" player2
-    boxId model
+  addAssocAndAddToBox Crosslink player1 player2 boxId model
 
 
 -- Presumption: both players exist in same box
-addAssocAndAddToBox : ItemType -> RoleType -> Id -> RoleType -> Id -> BoxId -> Model -> Model
-addAssocAndAddToBox itemType role1 player1 role2 player2 boxId model =
+addAssocAndAddToBox : AssocType -> Id -> Id -> BoxId -> Model -> Model
+addAssocAndAddToBox assocType player1 player2 boxId model =
   let
-    (newModel, assocId) = Item.addAssoc itemType role1 player1 role2 player2 model
+    (newModel, assocId) = Item.addAssoc assocType player1 player2 model
     props = AssocP AssocProps
   in
   Box.addItem assocId props boxId newModel

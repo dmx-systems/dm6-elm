@@ -211,11 +211,7 @@ It's a generic operation: works for both, topics and associations.
 addItem : Id -> ItemProps -> BoxId -> Model -> Model
 addItem itemId props boxId model =
   let
-    ( newModel, boxAssocId ) = Item.addAssoc
-      "dmx.composition"
-      "dmx.child" itemId
-      "dmx.parent" boxId
-      model
+    ( newModel, boxAssocId ) = Item.addAssoc Hierarchy boxId itemId model
     boxItem = BoxItem itemId boxAssocId (Visible Unpinned) props
     _ = U.info "addItem"
       { itemId = itemId, boxAssocId = boxAssocId, props = props, boxId = boxId}

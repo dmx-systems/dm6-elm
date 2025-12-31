@@ -104,11 +104,11 @@ addTopic text icon model =
   )
 
 
-addAssoc : ItemType -> RoleType -> Id -> RoleType -> Id -> Model -> (Model, Id)
-addAssoc itemType role1 player1 role2 player2 model =
+addAssoc : AssocType -> Id -> Id -> Model -> (Model, Id)
+addAssoc assocType player1 player2 model =
   let
     id = model.nextId
-    assoc = AssocInfo id itemType role1 player1 role2 player2
+    assoc = AssocInfo id assocType player1 player2
     item = Item id (Assoc assoc) Set.empty
   in
   ( { model | items = model.items |> Dict.insert id item }
