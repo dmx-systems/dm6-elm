@@ -87,10 +87,10 @@ type alias Box =
   }
 
 
-type alias Boxes = Dict Id Box
+type alias Boxes = Dict BoxId Box
 
 type alias BoxId = Id
-type alias Class = String -- a CSS class, e.g. "dmx-topic"
+type alias Class = String -- a CSS class, e.g. "dmx-topic" -- TODO: drop!
 type alias Delta = Point
 type alias BoxItems = Dict Id BoxItem
 type alias BoxPath = List BoxId

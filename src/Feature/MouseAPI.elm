@@ -1,4 +1,5 @@
-module Feature.MouseAPI exposing (mouseDownHandler, hoverHandler, isHovered, update, sub)
+module Feature.MouseAPI exposing (mouseDownHandler, hoverHandler, assocClickHandler, isHovered,
+  update, sub)
 
 import Box
 import Box.Size as Size
@@ -11,7 +12,7 @@ import Undo exposing (UndoModel)
 import Utils as U
 
 import Browser.Events as Events
-import Html.Events exposing (onMouseEnter, onMouseLeave, stopPropagationOn)
+import Html.Events exposing (onClick, onMouseEnter, onMouseLeave, stopPropagationOn)
 import Json.Decode as D
 import Random
 import String exposing (fromInt)
@@ -23,6 +24,19 @@ import Time exposing (Posix, posixToMillis)
 -- VIEW
 
 
+mouseDownHandler : Id -> BoxPath -> Attributes Msg
+mouseDownHandler topicId boxPath =
+  [ stopPropagationOn "mousedown"
+      ( U.pointDecoder |> D.andThen
+          (\pos -> D.succeed
+            ( Mouse <| Mouse.DownOnItem "dmx-topic" topicId boxPath pos
+            , True -- stopPropagation
+            )
+          )
+      )
+  ]
+
+
 hoverHandler : Id -> BoxPath -> Attributes Msg
 hoverHandler topicId boxPath =
   [ onMouseEnter <| Mouse <| Mouse.Hover "dmx-topic" topicId boxPath
@@ -30,17 +44,9 @@ hoverHandler topicId boxPath =
   ]
 
 
-mouseDownHandler : Id -> BoxPath -> Attributes Msg
-mouseDownHandler topicId boxPath =
-  [stopPropagationOn "mousedown"
-    (U.pointDecoder |> D.andThen
-      (\pos -> D.succeed
-        ( Mouse <| Mouse.DownOnItem "dmx-topic" topicId boxPath pos
-        , True
-        )
-      )
-    )
-  ]
+assocClickHandler : Id -> BoxPath -> Attributes Msg
+assocClickHandler assocId boxPath =
+  [ onClick <| Mouse <| Mouse.AssocClicked assocId boxPath ]
 
 
 
@@ -50,6 +56,7 @@ mouseDownHandler topicId boxPath =
 update : Mouse.Msg -> UndoModel -> (UndoModel, Cmd Msg)
 update msg ({present} as undoModel) =
   case msg of
+    -- Topic
     Mouse.Down -> (undoModel, mouseDown)
     Mouse.DownOnItem class id boxPath pos -> mouseDownOnItem class id boxPath pos present
       |> Undo.swap undoModel
@@ -60,6 +67,8 @@ update msg ({present} as undoModel) =
     Mouse.Unhover class id boxPath -> (unhover class id boxPath present, Cmd.none)
       |> Undo.swap undoModel
     Mouse.Time time -> timeArrived time undoModel
+    -- Association
+    Mouse.AssocClicked id boxPath -> (undoModel, U.command <| ItemClicked id boxPath)
 
 
 mouseDown : Cmd Msg

@@ -29,6 +29,7 @@ type DragMode
 
 
 type Msg
+  -- Topic
   = Down -- mouse down somewhere
   | DownOnItem Class Id BoxPath Point -- mouse down on an item where a drag can be engaged
   | Move Point
@@ -36,3 +37,5 @@ type Msg
   | Hover Class Id BoxPath
   | Unhover Class Id BoxPath
   | Time Time.Posix
+  -- Association
+  | AssocClicked Id BoxPath

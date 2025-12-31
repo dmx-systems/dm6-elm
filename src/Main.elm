@@ -323,7 +323,7 @@ moveTopicToBox topicId boxId origPos targetBoxId targetPath pos model =
 select : Id -> BoxPath -> Model -> (Model, Cmd Msg)
 select itemId boxPath model =
   ( model
-    |> SelAPI.select itemId boxPath
+      |> SelAPI.select itemId boxPath
   , Cmd.none
   )
 

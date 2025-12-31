@@ -49,7 +49,7 @@ type alias TopicRendering = (Attributes Msg, List (Html Msg))
 -- VIEW
 
 
--- For a fullscreen box boxPath is empty
+-- For the fullscreen box boxPath is empty
 view : BoxId -> BoxPath -> Model -> Html Msg
 view boxId boxPath model =
   let
@@ -97,7 +97,7 @@ gAttr boxId boxRect model =
     ]
 
 
--- For a fullscreen box boxPath is empty
+-- For the fullscreen box boxPath is empty
 boxInfo : BoxId -> BoxPath -> Model -> BoxInfo
 boxInfo boxId boxPath model =
   case Box.byIdOrLog boxId model of
@@ -136,7 +136,7 @@ nestedBoxStyle topicId rect boxPath model =
   ++ selectionStyle topicId boxPath model
 
 
--- For a fullscreen box boxPath is empty
+-- For the fullscreen box boxPath is empty
 viewItems : Box -> BoxPath -> Model -> (List (Html Msg), List (Svg Msg))
 viewItems box boxPath model =
   let
@@ -152,7 +152,11 @@ viewItems box boxPath model =
       MM.assocsToRender box model |> List.map
         (\{id} ->
           case Item.assocById id model of
-            Just assoc -> viewAssoc assoc box.id model
+            Just assoc ->
+              let
+                clickHandler = MouseAPI.assocClickHandler id newPath
+              in
+              viewAssoc assoc box.id clickHandler model
             _ -> U.logError "viewItems" ("problem with assoc " ++ fromInt id) (text "")
         )
   in
@@ -177,7 +181,7 @@ viewLimboAssoc boxId model =
             Just assoc ->
               if Box.hasItem boxId topicId model then
                 -- only if related topic is in box we can call high-level viewAssoc()
-                [ viewAssoc assoc boxId model ]
+                [ viewAssoc assoc boxId [] model ]
               else
                 -- otherwise we call low-level lineFunc() with topic default position
                 let
@@ -185,7 +189,7 @@ viewLimboAssoc boxId model =
                 in
                 case Box.topicPos sourceTopicId boxId model of
                   Just pos ->
-                    [ lineFunc pos (Box.initTopicPos boxId model) (Just assoc) boxId model ]
+                    [ lineFunc pos (Box.initTopicPos boxId model) (Just assoc) boxId [] model ]
                   Nothing -> []
             Nothing -> []
       else
@@ -466,13 +470,15 @@ itemCountStyle =
   ]
 
 
-viewAssoc : AssocInfo -> BoxId -> Model -> Svg Msg
-viewAssoc assoc boxId model =
+-- Association Rendering
+
+viewAssoc : AssocInfo -> BoxId -> Attributes Msg -> Model -> Svg Msg
+viewAssoc assoc boxId attrs model =
   let
     geom = assocGeometry assoc boxId model
   in
   case geom of
-    Just (pos1, pos2) -> lineFunc pos1 pos2 (Just assoc) boxId model
+    Just (pos1, pos2) -> lineFunc pos1 pos2 (Just assoc) boxId attrs model
     Nothing -> text "" -- TODO
 
 
@@ -498,7 +504,7 @@ viewAssocDraft boxId model =
               (pos.x + box.scroll.x)
               (pos.y + box.scroll.y - C.appHeaderHeight)
           in
-          [ lineFunc origPos (relPos pagePos boxPath model) Nothing boxId model ]
+          [ lineFunc origPos (relPos pagePos boxPath model) Nothing boxId [] model ]
         _ -> []
     _ -> []
 
@@ -550,6 +556,112 @@ accumulateRect posAcc boxId model =
       (posAcc.x - box.rect.x1)
       (posAcc.y - box.rect.y1)
     Nothing -> Point 0 0 -- error is already logged
+
+
+-- One possible lineFunc
+directLine : Point -> Point -> Maybe AssocInfo -> BoxId -> Attributes Msg -> Model -> Svg Msg
+directLine pos1 pos2 maybeAssoc boxId attrs model =
+  line
+    ( [ x1 <| fromInt pos1.x
+      , y1 <| fromInt pos1.y
+      , x2 <| fromInt pos2.x
+      , y2 <| fromInt pos2.y
+      ]
+      ++ lineStyle maybeAssoc boxId model
+      ++ attrs
+    )
+    []
+
+
+-- One possible lineFunc
+taxiLine : Point -> Point -> Maybe AssocInfo -> BoxId -> Attributes Msg -> Model -> Svg Msg
+taxiLine pos1 pos2 maybeAssoc boxId attrs model =
+  -- straight vertical
+  if abs (pos2.x - pos1.x) < 2 * C.assocRadius then
+    let
+      xm = (pos1.x + pos2.x) // 2
+    in
+    path
+      ( [ d ("M " ++ fromInt xm ++ " " ++ fromInt pos1.y ++ " V " ++ fromInt pos2.y)
+        ]
+        ++ lineStyle maybeAssoc boxId model
+        ++ attrs
+      )
+      []
+  -- straight horizontal
+  else if abs (pos2.y - pos1.y) < 2 * C.assocRadius then
+    let
+      ym = (pos1.y + pos2.y) // 2
+    in
+    path
+      ( [ d ("M " ++ fromInt pos1.x ++ " " ++ fromInt ym ++ " H " ++ fromInt pos2.x)
+        ]
+        ++ lineStyle maybeAssoc boxId model
+        ++ attrs
+      )
+      []
+  -- 5 segment taxi line
+  else
+    let
+      sx = if pos2.x > pos1.x then 1 else -1 -- sign x
+      sy = if pos2.y > pos1.y then -1 else 1 -- sign y
+      ym = (pos1.y + pos2.y) // 2 -- y mean
+      x1 = fromInt (pos1.x + sx * C.assocRadius)
+      x2 = fromInt (pos2.x - sx * C.assocRadius)
+      y1 = fromInt (ym + sy * C.assocRadius)
+      y2 = fromInt (ym - sy * C.assocRadius)
+      sweep1 =
+        if sy == 1 then
+          if sx == 1 then 1 else 0
+        else
+          if sx == 1 then 0 else 1
+      sweep2 = 1 - sweep1
+      sw1 = fromInt sweep1
+      sw2 = fromInt sweep2
+      r = fromInt C.assocRadius
+    in
+    path
+      ( [ d
+          ( "M " ++ fromInt pos1.x ++ " " ++ fromInt pos1.y ++
+            " V " ++ y1 ++
+            " A " ++ r ++ " " ++ r ++ " 0 0 " ++ sw1 ++ " " ++ x1 ++ " " ++ fromInt ym ++
+            " H " ++ x2 ++
+            " A " ++ r ++ " " ++ r ++ " 0 0 " ++ sw2 ++ " " ++ fromInt pos2.x ++ " " ++ y2 ++
+            " V " ++ fromInt pos2.y
+          )
+        ]
+        ++ lineStyle maybeAssoc boxId model
+        ++ attrs
+      )
+      []
+
+
+lineStyle : Maybe AssocInfo -> BoxId -> Model -> Attributes Msg
+lineStyle assoc boxId model =
+  let
+    color =
+      case assoc of
+        Just {id} ->
+          case MM.isLimboAssoc id boxId model of
+            True -> C.assocLimboColor
+            False -> C.assocColor
+        Nothing -> C.assocLimboColor
+  in
+  [ stroke color
+  , strokeWidth <| fromFloat C.assocWidth ++ "px"
+  , strokeDasharray <| lineDasharray assoc
+  , fill "none"
+  ]
+
+
+lineDasharray : Maybe AssocInfo -> String
+lineDasharray assoc =
+  case assoc of
+    Just {assocType} ->
+      case assocType of
+        Crosslink -> "5 0" -- solid
+        Hierarchy -> "5" -- dotted
+    Nothing -> "5 0" -- solid
 
 
 
@@ -617,98 +729,3 @@ isTarget topicId boxPath target_ =
   case target_ of
     Just target -> target == (topicId, boxPath)
     Nothing -> False
-
-
--- One possible lineFunc
-directLine : Point -> Point -> Maybe AssocInfo -> BoxId -> Model -> Svg Msg
-directLine pos1 pos2 assoc boxId model =
-  line
-    ( [ x1 <| fromInt pos1.x
-      , y1 <| fromInt pos1.y
-      , x2 <| fromInt pos2.x
-      , y2 <| fromInt pos2.y
-      ] ++ lineStyle assoc boxId model
-    )
-    []
-
-
--- One possible lineFunc
-taxiLine : Point -> Point -> Maybe AssocInfo -> BoxId -> Model -> Svg Msg
-taxiLine pos1 pos2 assoc boxId model =
-  if abs (pos2.x - pos1.x) < 2 * C.assocRadius then -- straight vertical
-    let
-      xm = (pos1.x + pos2.x) // 2
-    in
-    path
-      ( [ d ("M " ++ fromInt xm ++ " " ++ fromInt pos1.y ++ " V " ++ fromInt pos2.y)
-        ] ++ lineStyle assoc boxId model
-      )
-      []
-  else if abs (pos2.y - pos1.y) < 2 * C.assocRadius then -- straight horizontal
-    let
-      ym = (pos1.y + pos2.y) // 2
-    in
-    path
-      ( [ d ("M " ++ fromInt pos1.x ++ " " ++ fromInt ym ++ " H " ++ fromInt pos2.x)
-        ] ++ lineStyle assoc boxId model
-      )
-      []
-  else -- 5 segment taxi line
-    let
-      sx = if pos2.x > pos1.x then 1 else -1 -- sign x
-      sy = if pos2.y > pos1.y then -1 else 1 -- sign y
-      ym = (pos1.y + pos2.y) // 2 -- y mean
-      x1 = fromInt (pos1.x + sx * C.assocRadius)
-      x2 = fromInt (pos2.x - sx * C.assocRadius)
-      y1 = fromInt (ym + sy * C.assocRadius)
-      y2 = fromInt (ym - sy * C.assocRadius)
-      sweep1 =
-        if sy == 1 then
-          if sx == 1 then 1 else 0
-        else
-          if sx == 1 then 0 else 1
-      sweep2 = 1 - sweep1
-      sw1 = fromInt sweep1
-      sw2 = fromInt sweep2
-      r = fromInt C.assocRadius
-    in
-    path
-      ( [ d
-          ( "M " ++ fromInt pos1.x ++ " " ++ fromInt pos1.y ++
-            " V " ++ y1 ++
-            " A " ++ r ++ " " ++ r ++ " 0 0 " ++ sw1 ++ " " ++ x1 ++ " " ++ fromInt ym ++
-            " H " ++ x2 ++
-            " A " ++ r ++ " " ++ r ++ " 0 0 " ++ sw2 ++ " " ++ fromInt pos2.x ++ " " ++ y2 ++
-            " V " ++ fromInt pos2.y
-          )
-        ] ++ lineStyle assoc boxId model
-      )
-      []
-
-
-lineStyle : Maybe AssocInfo -> BoxId -> Model -> Attributes Msg
-lineStyle assoc boxId model =
-  let
-    color =
-      case assoc of
-        Just {id} ->
-          case MM.isLimboAssoc id boxId model of
-            True -> C.assocLimboColor
-            False -> C.assocColor
-        Nothing -> C.assocLimboColor
-  in
-  [ stroke color
-  , strokeWidth <| fromFloat C.assocWidth ++ "px"
-  , strokeDasharray <| lineDasharray assoc
-  , fill "none"
-  ]
-
-
-lineDasharray : Maybe AssocInfo -> String
-lineDasharray assoc =
-  case assoc of
-    Just {assocType} ->
-      case assocType of
-        Crosslink -> "5 0" -- solid
-        Hierarchy -> "5" -- dotted
-    Nothing -> "5 0" -- solid
