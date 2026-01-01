@@ -57,22 +57,24 @@ view boxId boxPath model =
   in
   div
     boxStyle
-    [ div
-        ( topicLayerStyle boxRect )
-        topics
-    , svg
-        ( [ width svgSize.w, height svgSize.h ]
-          ++ svgStyle
-        )
-        [ svgDefs
-        , g
-            ( gAttr boxId boxRect model )
-            ( assocs
-              ++ viewLimboAssoc boxId model
-              ++ viewAssocDraft boxId model
-            )
-        ]
-    ]
+    ( [ div
+          ( topicLayerStyle boxRect )
+          topics
+      , svg
+          ( [ width svgSize.w, height svgSize.h ]
+            ++ svgStyle
+          )
+          [ svgDefs
+          , g
+              ( gAttr boxId boxRect model )
+              ( assocs
+                ++ viewLimboAssoc boxId model
+                ++ viewAssocDraft boxId model
+              )
+          ]
+      ]
+      ++ ToolAPI.viewToolbar (boxId :: boxPath) model
+    )
 
 
 topicLayerStyle : Rectangle -> Attributes Msg
@@ -216,6 +218,8 @@ viewLimboAssoc boxId model =
         []
     _ -> []
 
+
+-- Topic Rendering
 
 viewTopic : TopicInfo -> TopicProps -> BoxPath -> Model -> Html Msg
 viewTopic topic props boxPath model =
@@ -559,22 +563,11 @@ viewAssoc : AssocInfo -> BoxPath -> Attributes Msg -> Model -> Svg Msg
 viewAssoc assoc boxPath attrs model =
   let
     boxId = Box.firstId boxPath
-    geom = assocGeometry assoc boxId model
+    geom = Box.assocGeometry assoc boxId model
   in
   case geom of
     Just (pos1, pos2) -> lineFunc pos1 pos2 (Just assoc) boxPath attrs model
     Nothing -> text "" -- TODO
-
-
-assocGeometry : AssocInfo -> BoxId -> Model -> Maybe (Point, Point)
-assocGeometry assoc boxId model =
-  let
-    pos1 = Box.topicPos assoc.player1 boxId model
-    pos2 = Box.topicPos assoc.player2 boxId model
-  in
-  case Maybe.map2 (\p1 p2 -> (p1, p2)) pos1 pos2 of
-    Just geometry -> Just geometry
-    Nothing -> U.fail "assocGeometry" { assoc = assoc, boxId = boxId } Nothing
 
 
 viewAssocDraft : BoxId -> Model -> List (Svg Msg)

@@ -1,8 +1,8 @@
 module Box exposing (byId, byIdOrLog, update, updateRect, updateScrollPos, topicPos,
   setTopicPos, setTopicPosByDelta, displayMode, setDisplayMode, updateDisplayMode, topicProps,
-  initTopicProps, initTopicPos, hasItem, hasDeepItem, addBox, addItem, revealItem, removeItem,
-  removeItem_, deleteItem, isEmpty, isUnboxed, isTopic, isAssoc, isVisible, isPinned, mapTitle,
-  elemId, firstId, fromPath)
+  initTopicProps, initTopicPos, assocGeometry, hasItem, hasDeepItem, addBox, addItem,
+  revealItem, removeItem, removeItem_, deleteItem, isEmpty, isUnboxed, isTopic, isAssoc,
+  isVisible, isPinned, mapTitle, elemId, firstId, fromPath)
 
 import Config as C
 import Item
@@ -123,6 +123,17 @@ topicProps topicId boxId model =
         TopicP props -> Just props
         AssocP _ -> U.topicMismatch "topicProps" topicId Nothing
     Nothing -> U.fail "topicProps" {topicId = topicId, boxId = boxId} Nothing
+
+
+assocGeometry : AssocInfo -> BoxId -> Model -> Maybe (Point, Point)
+assocGeometry assoc boxId model =
+  let
+    pos1 = topicPos assoc.player1 boxId model
+    pos2 = topicPos assoc.player2 boxId model
+  in
+  case Maybe.map2 (\p1 p2 -> (p1, p2)) pos1 pos2 of
+    Just geometry -> Just geometry
+    Nothing -> U.fail "assocGeometry" { assoc = assoc, boxId = boxId } Nothing
 
 
 revealItem : Id -> BoxId -> Model -> Model

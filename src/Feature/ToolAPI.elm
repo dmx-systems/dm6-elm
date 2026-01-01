@@ -1,4 +1,5 @@
-module Feature.ToolAPI exposing (viewGlobalTools, viewMapTools, viewItemTools, update)
+module Feature.ToolAPI exposing (viewGlobalTools, viewMapTools, viewItemTools, viewToolbar,
+  update)
 
 import Box
 import Box.Size as Size
@@ -95,7 +96,7 @@ viewItemTools itemId boxPath model =
           else
             [ viewTextToolbar itemId boxId model ]
         else
-          [ viewToolbar itemId boxId model ]
+          [ viewTopicToolbar itemId boxId model ]
       else
         []
     caret =
@@ -106,8 +107,8 @@ viewItemTools itemId boxPath model =
   toolbar ++ caret
 
 
-viewToolbar : Id -> BoxId -> Model -> Html Msg
-viewToolbar itemId boxId model =
+viewTopicToolbar : Id -> BoxId -> Model -> Html Msg
+viewTopicToolbar itemId boxId model =
   let
     topicTools =
       [ viewItemButton "Edit" "edit-3" (Tool Tool.Edit) False True
@@ -137,18 +138,41 @@ viewToolbar itemId boxId model =
     )
 
 
--- Text Tools
+viewToolbar : BoxPath -> Model -> List (Html Msg)
+viewToolbar boxPath model =
+  let
+    boxId = Box.firstId boxPath
+  in
+  case SelAPI.single model of
+    Just (id, boxPath_) ->
+      if boxPath_ == boxPath then
+        case Item.byId id model of
+          Just {info} ->
+            case info of
+              Topic topic -> []
+              Assoc assoc ->
+                case (Box.assocGeometry assoc boxId model, Box.byIdOrLog boxId model) of
+                  (Just (p1, p2), Just {rect}) ->
+                    let
+                      x = (p1.x + p2.x) // 2 - rect.x1
+                      y = (p1.y + p2.y) // 2 - rect.y1
+                    in
+                    [ viewAssocToolbar <| Point x y ]
+                  _ -> []
+          Nothing -> []
+      else
+        []
+    Nothing -> []
 
-viewTextToolbar : Id -> BoxId -> Model -> Html Msg
-viewTextToolbar itemId boxId model =
+
+viewAssocToolbar : Point -> Html Msg
+viewAssocToolbar pos =
   div
-    ( toolbarStyle itemId boxId model )
-    [ viewItemButton "Insert Image" "image" (Tool <| Tool.Image itemId) False False
-    , viewItemButton "Done" "check" (Tool Tool.LeaveEdit) False False
+    ( assocToolbarStyle pos )
+    [ viewItemButton "Delete" "trash" (Tool Tool.Delete) False False
+    , viewItemButton "Remove" "x" (Tool Tool.Remove) False False
     ]
 
-
---
 
 toolbarStyle : Id -> BoxId -> Model -> Attributes Msg
 toolbarStyle itemId boxId model =
@@ -169,6 +193,32 @@ toolbarStyle itemId boxId model =
   , style "z-index" "2"
   ]
 
+
+assocToolbarStyle : Point -> Attributes Msg
+assocToolbarStyle pos =
+  [ style "position" "absolute"
+  , style "top" <| fromInt pos.y ++ "px"
+  , style "left" <| fromInt pos.x ++ "px"
+  , style "white-space" "nowrap"
+  , style "background-color" C.toolbarColor
+  , style "border-radius" <| fromInt C.topicRadius ++ "px"
+  , style "padding" "4px 3px 0"
+  , style "z-index" "2"
+  ]
+
+
+-- Text Tools
+
+viewTextToolbar : Id -> BoxId -> Model -> Html Msg
+viewTextToolbar itemId boxId model =
+  div
+    ( toolbarStyle itemId boxId model )
+    [ viewItemButton "Insert Image" "image" (Tool <| Tool.Image itemId) False False
+    , viewItemButton "Done" "check" (Tool Tool.LeaveEdit) False False
+    ]
+
+
+--
 
 viewSpacer : Html Msg
 viewSpacer =
@@ -314,9 +364,9 @@ addTopic model =
       ( TopicD LabelOnly )
   in
   newModel
-  |> Box.addItem topicId props boxId
-  |> SelAPI.select topicId [ boxId ]
-  |> TextAPI.enterEdit topicId [ boxId ]
+    |> Box.addItem topicId props boxId
+    |> SelAPI.select topicId [ boxId ]
+    |> TextAPI.enterEdit topicId [ boxId ]
 
 
 -- TODO: factor out addTopic() common code
@@ -330,10 +380,10 @@ addBox model =
       ( BoxD BlackBox )
   in
   newModel
-  |> Box.addBox topicId
-  |> Box.addItem topicId props boxId
-  |> SelAPI.select topicId [ boxId ]
-  |> TextAPI.enterEdit topicId [ boxId ]
+    |> Box.addBox topicId
+    |> Box.addItem topicId props boxId
+    |> SelAPI.select topicId [ boxId ]
+    |> TextAPI.enterEdit topicId [ boxId ]
 
 
 edit : Model -> (Model, Cmd Msg)
@@ -353,8 +403,8 @@ delete model =
         model
   in
   newModel
-  |> SelAPI.clear
-  |> Size.auto
+    |> SelAPI.clear
+    |> Size.auto
 
 
 remove : Model -> Model
@@ -366,15 +416,15 @@ remove model =
         model
   in
   newModel
-  |> SelAPI.clear
-  |> Size.auto
+    |> SelAPI.clear
+    |> Size.auto
 
 
 unbox : BoxId -> BoxId -> Model -> Model
 unbox boxId targetBoxId model =
   Transfer.unboxContent boxId targetBoxId model
-  |> Box.setDisplayMode boxId targetBoxId (BoxD Unboxed)
-  |> Size.auto
+    |> Box.setDisplayMode boxId targetBoxId (BoxD Unboxed)
+    |> Size.auto
 
 
 toggleDisplay : Id -> BoxId -> Model -> Model
@@ -395,6 +445,6 @@ toggleDisplay topicId boxId model =
   case (newModel, newDisplayMode) of
     (newModel_, Just displayMode) ->
       newModel_
-      |> Box.setDisplayMode topicId boxId displayMode
-      |> Size.auto
+        |> Box.setDisplayMode topicId boxId displayMode
+        |> Size.auto
     _ -> model
