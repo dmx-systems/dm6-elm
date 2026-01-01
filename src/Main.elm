@@ -307,7 +307,7 @@ moveTopicToBox topicId boxId origPos targetBoxId targetPath pos model =
   let
     props_ =
       Box.topicProps topicId boxId model
-      |> Maybe.andThen (\props -> Just (TopicP { props | pos = pos }))
+        |> Maybe.andThen (\props -> Just (TopicP { props | pos = pos }))
   in
   case props_ of
     Just props ->

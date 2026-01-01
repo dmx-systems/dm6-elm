@@ -18,9 +18,9 @@ import Dict
 import Html exposing (Html, div, text)
 import Html.Attributes exposing (id, style)
 import String exposing (fromInt, fromFloat)
-import Svg exposing (Svg, svg, g, line, path)
+import Svg exposing (Svg, svg, g, line, path, defs, node)
 import Svg.Attributes exposing (width, height, x1, y1, x2, y2, d, stroke, fill, transform,
-  strokeWidth, strokeDasharray)
+  strokeWidth, strokeDasharray, dx, dy, stdDeviation, floodColor, filter)
 
 
 
@@ -64,12 +64,13 @@ view boxId boxPath model =
         ( [ width svgSize.w, height svgSize.h ]
           ++ svgStyle
         )
-        [ g
-          ( gAttr boxId boxRect model )
-          ( assocs
-            ++ viewLimboAssoc boxId model
-            ++ viewAssocDraft boxId model
-          )
+        [ svgDefs
+        , g
+            ( gAttr boxId boxRect model )
+            ( assocs
+              ++ viewLimboAssoc boxId model
+              ++ viewAssocDraft boxId model
+            )
         ]
     ]
 
@@ -88,6 +89,23 @@ svgStyle =
   , style "top" "0"
   , style "left" "0"
   ]
+
+
+svgDefs : Svg Msg
+svgDefs =
+  defs
+    []
+    [ Svg.filter
+        [ id "shadow" ]
+        [ node "feDropShadow"
+            [ dx <| fromInt C.assocDropShadow.dx
+            , dy <| fromInt C.assocDropShadow.dy
+            , stdDeviation <| fromInt C.assocDropShadow.stdDeviation
+            , floodColor C.assocDropShadow.floodColor
+            ]
+            []
+        ]
+    ]
 
 
 gAttr : BoxId -> Rectangle -> Model -> Attributes Msg
@@ -156,7 +174,7 @@ viewItems box boxPath model =
               let
                 clickHandler = MouseAPI.assocClickHandler id newPath
               in
-              viewAssoc assoc box.id clickHandler model
+              viewAssoc assoc newPath clickHandler model
             _ -> U.logError "viewItems" ("problem with assoc " ++ fromInt id) (text "")
         )
   in
@@ -181,7 +199,8 @@ viewLimboAssoc boxId model =
             Just assoc ->
               if Box.hasItem boxId topicId model then
                 -- only if related topic is in box we can call high-level viewAssoc()
-                [ viewAssoc assoc boxId [] model ]
+                [ viewAssoc assoc [boxId] [] model ] -- simple box path sufficient for geometry,
+                                                     -- limbo assoc is never selected
               else
                 -- otherwise we call low-level lineFunc() with topic default position
                 let
@@ -189,7 +208,8 @@ viewLimboAssoc boxId model =
                 in
                 case Box.topicPos sourceTopicId boxId model of
                   Just pos ->
-                    [ lineFunc pos (Box.initTopicPos boxId model) (Just assoc) boxId [] model ]
+                    [ lineFunc pos (Box.initTopicPos boxId model) (Just assoc) [boxId] [] model
+                    ] -- simple box path sufficient for geometry, limbo assoc is never selected
                   Nothing -> []
             Nothing -> []
       else
@@ -366,6 +386,30 @@ textEditorStyle topicId model =
   ]
 
 
+iconBoxStyle : TopicProps -> Attributes Msg
+iconBoxStyle props =
+  let
+    r1 = fromInt C.topicRadius ++ "px"
+    r4 = case props.displayMode of
+      BoxD WhiteBox -> "0"
+      _ -> r1
+  in
+  [ style "flex" "none"
+  , style "width" <| fromInt C.topicSize.h ++ "px"
+  , style "height" <| fromInt C.topicSize.h ++ "px"
+  , style "border-radius" <| r1 ++ " 0 0 " ++ r4
+  , style "background-color" "black"
+  ]
+
+
+detailTopicIconBoxStyle : Attributes Msg
+detailTopicIconBoxStyle =
+  -- icon box correction as detail topic has no border, in contrast to label topic
+  [ style "padding-left" <| fromInt C.topicBorderWidth ++ "px"
+  , style "width" <| fromInt (C.topicSize.h - C.topicBorderWidth) ++ "px"
+  ]
+
+
 topicIconStyle : Attributes Msg
 topicIconStyle =
   [ style "position" "relative"
@@ -388,6 +432,13 @@ blackBoxTopic topic props boxPath model =
       []
     ]
   )
+
+
+topicPosStyle : TopicProps -> Attributes Msg
+topicPosStyle { pos } =
+  [ style "left" <| fromInt (pos.x - C.topicW2) ++ "px"
+  , style "top" <| fromInt (pos.y - C.topicH2) ++ "px"
+  ]
 
 
 topicFlexboxStyle : TopicInfo -> TopicProps -> BoxPath -> Model -> Attributes Msg
@@ -420,6 +471,38 @@ ghostTopicStyle topic boxPath model =
   ]
   ++ topicBorderStyle topic.id boxPath model
   ++ selectionStyle topic.id boxPath model
+
+
+topicBorderStyle : Id -> BoxPath -> Model -> Attributes Msg
+topicBorderStyle id boxPath model =
+  let
+    isTarget_ = isTarget id boxPath
+    targeted = case model.mouse.dragState of
+      -- can't move a topic to a box where it is already, can happen if mouse moves very quick
+      -- can't create assoc when both topics are in different box
+      Drag DragTopic _ (boxId_ :: _) _ _ target -> isTarget_ target && boxId_ /= id
+      Drag DraftAssoc _ boxPath_ _ _ target -> isTarget_ target && boxPath_ == boxPath
+      _ -> False
+  in
+  [ style "border-width" <| fromInt C.topicBorderWidth ++ "px"
+  , style "border-style" <| if targeted then "dashed" else "solid"
+  , style "box-sizing" "border-box"
+  , style "background-color" "white"
+  ]
+
+
+isTarget : Id -> BoxPath -> Maybe (Id, BoxPath) -> Bool
+isTarget topicId boxPath target_ =
+  case target_ of
+    Just target -> target == (topicId, boxPath)
+    Nothing -> False
+
+
+selectionStyle : Id -> BoxPath -> Model -> Attributes Msg
+selectionStyle topicId boxPath model =
+  case SelAPI.isSelectedPath topicId boxPath model of
+    True -> [ style "box-shadow" C.topicBoxShadow ]
+    False -> []
 
 
 whiteBoxTopic : TopicInfo -> TopicProps -> BoxPath -> Model -> TopicRendering
@@ -472,13 +555,14 @@ itemCountStyle =
 
 -- Association Rendering
 
-viewAssoc : AssocInfo -> BoxId -> Attributes Msg -> Model -> Svg Msg
-viewAssoc assoc boxId attrs model =
+viewAssoc : AssocInfo -> BoxPath -> Attributes Msg -> Model -> Svg Msg
+viewAssoc assoc boxPath attrs model =
   let
+    boxId = Box.firstId boxPath
     geom = assocGeometry assoc boxId model
   in
   case geom of
-    Just (pos1, pos2) -> lineFunc pos1 pos2 (Just assoc) boxId attrs model
+    Just (pos1, pos2) -> lineFunc pos1 pos2 (Just assoc) boxPath attrs model
     Nothing -> text "" -- TODO
 
 
@@ -504,7 +588,8 @@ viewAssocDraft boxId model =
               (pos.x + box.scroll.x)
               (pos.y + box.scroll.y - C.appHeaderHeight)
           in
-          [ lineFunc origPos (relPos pagePos boxPath model) Nothing boxId [] model ]
+          [ lineFunc origPos (relPos pagePos boxPath model) Nothing [boxId] [] model ]
+          -- simple box path sufficient for geometry, draft assoc is never selected
         _ -> []
     _ -> []
 
@@ -559,23 +644,30 @@ accumulateRect posAcc boxId model =
 
 
 -- One possible lineFunc
-directLine : Point -> Point -> Maybe AssocInfo -> BoxId -> Attributes Msg -> Model -> Svg Msg
-directLine pos1 pos2 maybeAssoc boxId attrs model =
+directLine : Point -> Point -> Maybe AssocInfo -> BoxPath -> Attributes Msg -> Model -> Svg Msg
+directLine pos1 pos2 maybeAssoc boxPath attrs model =
+  let
+    boxId = Box.firstId boxPath
+  in
   line
     ( [ x1 <| fromInt pos1.x
       , y1 <| fromInt pos1.y
       , x2 <| fromInt pos2.x
       , y2 <| fromInt pos2.y
       ]
-      ++ lineStyle maybeAssoc boxId model
       ++ attrs
+      ++ lineStyle maybeAssoc boxId model
+      ++ lineSelectionStyle maybeAssoc boxPath model
     )
     []
 
 
 -- One possible lineFunc
-taxiLine : Point -> Point -> Maybe AssocInfo -> BoxId -> Attributes Msg -> Model -> Svg Msg
-taxiLine pos1 pos2 maybeAssoc boxId attrs model =
+taxiLine : Point -> Point -> Maybe AssocInfo -> BoxPath -> Attributes Msg -> Model -> Svg Msg
+taxiLine pos1 pos2 maybeAssoc boxPath attrs model =
+  let
+    boxId = Box.firstId boxPath
+  in
   -- straight vertical
   if abs (pos2.x - pos1.x) < 2 * C.assocRadius then
     let
@@ -584,8 +676,9 @@ taxiLine pos1 pos2 maybeAssoc boxId attrs model =
     path
       ( [ d ("M " ++ fromInt xm ++ " " ++ fromInt pos1.y ++ " V " ++ fromInt pos2.y)
         ]
-        ++ lineStyle maybeAssoc boxId model
         ++ attrs
+        ++ lineStyle maybeAssoc boxId model
+        ++ lineSelectionStyle maybeAssoc boxPath model
       )
       []
   -- straight horizontal
@@ -596,8 +689,9 @@ taxiLine pos1 pos2 maybeAssoc boxId attrs model =
     path
       ( [ d ("M " ++ fromInt pos1.x ++ " " ++ fromInt ym ++ " H " ++ fromInt pos2.x)
         ]
-        ++ lineStyle maybeAssoc boxId model
         ++ attrs
+        ++ lineStyle maybeAssoc boxId model
+        ++ lineSelectionStyle maybeAssoc boxPath model
       )
       []
   -- 5 segment taxi line
@@ -622,16 +716,17 @@ taxiLine pos1 pos2 maybeAssoc boxId attrs model =
     in
     path
       ( [ d
-          ( "M " ++ fromInt pos1.x ++ " " ++ fromInt pos1.y ++
-            " V " ++ y1 ++
-            " A " ++ r ++ " " ++ r ++ " 0 0 " ++ sw1 ++ " " ++ x1 ++ " " ++ fromInt ym ++
-            " H " ++ x2 ++
-            " A " ++ r ++ " " ++ r ++ " 0 0 " ++ sw2 ++ " " ++ fromInt pos2.x ++ " " ++ y2 ++
-            " V " ++ fromInt pos2.y
-          )
+            ( "M " ++ fromInt pos1.x ++ " " ++ fromInt pos1.y ++
+              " V " ++ y1 ++
+              " A " ++ r ++ " " ++ r ++ " 0 0 " ++ sw1 ++ " " ++ x1 ++ " " ++ fromInt ym ++
+              " H " ++ x2 ++
+              " A " ++ r ++ " " ++ r ++ " 0 0 " ++ sw2 ++ " " ++ fromInt pos2.x ++ " " ++ y2 ++
+              " V " ++ fromInt pos2.y
+            )
         ]
-        ++ lineStyle maybeAssoc boxId model
         ++ attrs
+        ++ lineStyle maybeAssoc boxId model
+        ++ lineSelectionStyle maybeAssoc boxPath model
       )
       []
 
@@ -654,6 +749,16 @@ lineStyle assoc boxId model =
   ]
 
 
+lineSelectionStyle : Maybe AssocInfo -> BoxPath -> Model -> Attributes Msg
+lineSelectionStyle maybeAssoc boxPath model =
+  case maybeAssoc of
+    Just {id} ->
+      case SelAPI.isSelectedPath id boxPath model of
+        True -> [ filter "url(#shadow)" ]
+        False -> []
+    Nothing -> []
+
+
 lineDasharray : Maybe AssocInfo -> String
 lineDasharray assoc =
   case assoc of
@@ -662,70 +767,3 @@ lineDasharray assoc =
         Crosslink -> "5 0" -- solid
         Hierarchy -> "5" -- dotted
     Nothing -> "5 0" -- solid
-
-
-
--- STYLE
-
-
-topicPosStyle : TopicProps -> Attributes Msg
-topicPosStyle { pos } =
-  [ style "left" <| fromInt (pos.x - C.topicW2) ++ "px"
-  , style "top" <| fromInt (pos.y - C.topicH2) ++ "px"
-  ]
-
-
-iconBoxStyle : TopicProps -> Attributes Msg
-iconBoxStyle props =
-  let
-    r1 = fromInt C.topicRadius ++ "px"
-    r4 = case props.displayMode of
-      BoxD WhiteBox -> "0"
-      _ -> r1
-  in
-  [ style "flex" "none"
-  , style "width" <| fromInt C.topicSize.h ++ "px"
-  , style "height" <| fromInt C.topicSize.h ++ "px"
-  , style "border-radius" <| r1 ++ " 0 0 " ++ r4
-  , style "background-color" "black"
-  ]
-
-
-detailTopicIconBoxStyle : Attributes Msg
-detailTopicIconBoxStyle =
-  -- icon box correction as detail topic has no border, in contrast to label topic
-  [ style "padding-left" <| fromInt C.topicBorderWidth ++ "px"
-  , style "width" <| fromInt (C.topicSize.h - C.topicBorderWidth) ++ "px"
-  ]
-
-
-topicBorderStyle : Id -> BoxPath -> Model -> Attributes Msg
-topicBorderStyle id boxPath model =
-  let
-    isTarget_ = isTarget id boxPath
-    targeted = case model.mouse.dragState of
-      -- can't move a topic to a box where it is already, can happen if mouse moves very quick
-      -- can't create assoc when both topics are in different box
-      Drag DragTopic _ (boxId_ :: _) _ _ target -> isTarget_ target && boxId_ /= id
-      Drag DraftAssoc _ boxPath_ _ _ target -> isTarget_ target && boxPath_ == boxPath
-      _ -> False
-  in
-  [ style "border-width" <| fromInt C.topicBorderWidth ++ "px"
-  , style "border-style" <| if targeted then "dashed" else "solid"
-  , style "box-sizing" "border-box"
-  , style "background-color" "white"
-  ]
-
-
-selectionStyle : Id -> BoxPath -> Model -> Attributes Msg
-selectionStyle topicId boxPath model =
-  case SelAPI.isSelectedPath topicId boxPath model of
-    True -> [ style "box-shadow" "gray 5px 5px 5px" ]
-    False -> []
-
-
-isTarget : Id -> BoxPath -> Maybe (Id, BoxPath) -> Bool
-isTarget topicId boxPath target_ =
-  case target_ of
-    Just target -> target == (topicId, boxPath)
-    Nothing -> False
