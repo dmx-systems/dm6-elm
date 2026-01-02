@@ -36,12 +36,12 @@ viewGlobalTools model =
   let
     isHome = model.boxId == rootBoxId
   in
-  [ viewIconButton "Show Home Map" "home" 20 (Tool Tool.Home) isHome True homeButtonStyle
+  [ viewIconButton "Show Home Map" "home" 20 Tool.Home isHome Nothing homeButtonStyle
   , SearchAPI.viewInput model
   , div
     importExportStyle
-    [ viewTextButton "Import" (Tool Tool.Import)
-    , viewTextButton "Export" (Tool Tool.Export)
+    [ viewTextButton "Import" Tool.Import
+    , viewTextButton "Export" Tool.Export
     ]
   ]
 
@@ -65,11 +65,11 @@ viewMapTools : UndoModel -> List (Html Msg)
 viewMapTools undoModel =
   [ div
     mapToolsStyle
-    [ viewMapButton "Add Topic" "plus-circle" (Tool Tool.AddTopic) False
-    , viewMapButton "Add Box" "plus-square" (Tool Tool.AddBox) False
+    [ viewMapButton "Add Topic" "plus-circle" Tool.AddTopic False
+    , viewMapButton "Add Box" "plus-square" Tool.AddBox False
     , viewSpacer
-    , viewMapButton "Undo" "rotate-ccw" (Tool Tool.Undo) (not <| Undo.hasPast undoModel)
-    , viewMapButton "Redo" "rotate-cw" (Tool Tool.Redo) (not <| Undo.hasFuture undoModel)
+    , viewMapButton "Undo" "rotate-ccw" Tool.Undo (not <| Undo.hasPast undoModel)
+    , viewMapButton "Redo" "rotate-cw" Tool.Redo (not <| Undo.hasFuture undoModel)
     ]
   ]
 
@@ -84,18 +84,18 @@ mapToolsStyle =
 
 -- Item Tools
 
--- Per-item -- TODO: naming
+-- Per-Topic, rendered as topic children -- TODO: naming
 viewItemTools : Id -> BoxPath -> Model -> List (Html Msg)
 viewItemTools itemId boxPath model =
   let
     boxId = Box.firstId boxPath
   in
-  case MouseAPI.isHovered itemId boxId model of
+  case MouseAPI.isHovered itemId boxId model of -- TODO: operate on boxPath
     True -> viewCaret itemId boxId model
     False -> []
 
 
--- Per-box -- TODO: naming
+-- Per-box, rendered as box children -- TODO: naming
 viewToolbar : BoxPath -> Model -> List (Html Msg)
 viewToolbar boxPath model =
   let
@@ -115,13 +115,10 @@ viewToolbar boxPath model =
                         (topicPos.x - rect.x1 - C.topicW2)
                         (topicPos.y - rect.y1 - C.topicH2 - 29) -- TODO: 29 ≈ toolbar height
                     in
-                    if TextAPI.isEdit itemId boxPath model then
-                      if Item.isBox itemId model then
-                        []
-                      else
-                        [ viewTextToolbar pos itemId boxId model ]
-                    else
-                      [ viewTopicToolbar pos itemId boxId model ]
+                    case (TextAPI.isEdit itemId boxPath model, Item.isBox itemId model) of
+                      (False, _) -> [ viewTopicToolbar pos itemId boxPath model ]
+                      (True, False) -> [ viewTextToolbar pos itemId boxPath ]
+                      _ -> []
                   Nothing -> []
               Assoc assoc ->
                 case Box.assocGeometry assoc boxId model of
@@ -131,7 +128,7 @@ viewToolbar boxPath model =
                         ((p1.x + p2.x) // 2 - rect.x1)
                         ((p1.y + p2.y) // 2 - rect.y1)
                     in
-                    [ viewAssocToolbar pos ]
+                    [ viewAssocToolbar pos itemId boxPath ]
                   Nothing -> []
           _ -> []
       else
@@ -139,24 +136,26 @@ viewToolbar boxPath model =
     Nothing -> []
 
 
-viewTopicToolbar : Point -> Id -> BoxId -> Model -> Html Msg
-viewTopicToolbar pos itemId boxId model =
+viewTopicToolbar : Point -> Id -> BoxPath -> Model -> Html Msg
+viewTopicToolbar pos topicId boxPath model =
   let
+    boxId = Box.firstId boxPath
+    target = (topicId, boxPath)
     topicTools =
-      [ viewButton "Edit" "edit-3" (Tool Tool.Edit) False False
-      , viewButton "Select Icon" "smile" (Tool Tool.Icon) False False
-      , viewButton "Traverse" "share-2" (Tool Tool.Traverse) False False
-      , viewButton "Delete" "trash" (Tool Tool.Delete) False False
-      , viewButton "Remove" "x" (Tool Tool.Remove) False False
+      [ viewButton "Edit" "edit-3" Tool.Edit False target
+      , viewButton "Select Icon" "smile" Tool.Icon False target
+      , viewButton "Traverse" "share-2" Tool.Traverse False target
+      , viewButton "Delete" "trash" Tool.Delete False target
+      , viewButton "Remove" "x" Tool.Remove False target
       ]
     boxTools =
-      if Item.isBox itemId model then
+      if Item.isBox topicId model then
         let
-          isDisabled = Box.isEmpty itemId model || Box.isUnboxed itemId boxId model
+          isDisabled = Box.isEmpty topicId model || Box.isUnboxed topicId boxId model
         in
         [ viewSpacer
-        , viewButton "Fullscreen" "maximize-2" (Tool <| Tool.Fullscreen itemId) False False
-        , viewButton "Unbox" "external-link" (Tool <| Tool.Unbox itemId boxId) isDisabled False
+        , viewButton "Fullscreen" "maximize-2" (Tool.Fullscreen topicId) False target
+        , viewButton "Unbox" "external-link" (Tool.Unbox topicId boxId) isDisabled target
         ]
       else
         []
@@ -170,21 +169,27 @@ viewTopicToolbar pos itemId boxId model =
     )
 
 
-viewTextToolbar : Point -> Id -> BoxId -> Model -> Html Msg
-viewTextToolbar pos itemId boxId model =
+viewTextToolbar : Point -> Id -> BoxPath -> Html Msg
+viewTextToolbar pos itemId boxPath =
+  let
+    target = (itemId, boxPath)
+  in
   div
     ( toolbarStyle pos )
-    [ viewButton "Insert Image" "image" (Tool <| Tool.Image itemId) False False
-    , viewButton "Done" "check" (Tool Tool.LeaveEdit) False False
+    [ viewButton "Insert Image" "image" (Tool.Image itemId) False target
+    , viewButton "Done" "check" Tool.LeaveEdit False target
     ]
 
 
-viewAssocToolbar : Point -> Html Msg
-viewAssocToolbar pos =
+viewAssocToolbar : Point -> Id -> BoxPath -> Html Msg
+viewAssocToolbar pos itemId boxPath =
+  let
+    target = (itemId, boxPath)
+  in
   div
     ( toolbarStyle pos )
-    [ viewButton "Delete" "trash" (Tool Tool.Delete) False False
-    , viewButton "Remove" "x" (Tool Tool.Remove) False False
+    [ viewButton "Delete" "trash" Tool.Delete False target
+    , viewButton "Remove" "x" Tool.Remove False target
     ]
 
 
@@ -197,7 +202,7 @@ toolbarStyle pos =
   , style "background-color" C.toolbarColor
   , style "border-radius" <| fromInt C.topicRadius ++ "px"
   , style "padding" "4px 3px 0"
-  , style "z-index" "2"
+  , style "z-index" "4"
   ]
 
 
@@ -249,10 +254,10 @@ caretStyle =
 
 -- Buttons
 
-viewTextButton : String -> Msg -> Html Msg
+viewTextButton : String -> Tool.Msg -> Html Msg
 viewTextButton label msg =
   button
-    ( [ onClick msg ]
+    ( [ onClick <| Tool msg ]
       ++ textButtonStyle
     )
     [ text label ]
@@ -265,31 +270,26 @@ textButtonStyle =
   ]
 
 
-viewMapButton : String -> String -> Msg -> Bool -> Html Msg
+viewMapButton : String -> String -> Tool.Msg -> Bool -> Html Msg
 viewMapButton label icon msg isDisabled =
-  viewIconButton label icon C.mapToolbarIconSize msg isDisabled True []
+  viewIconButton label icon C.mapToolbarIconSize msg isDisabled Nothing []
 
 
-viewButton : String -> String -> Msg -> Bool -> Bool -> Html Msg
-viewButton label icon msg isDisabled shouldCancel =
-  viewIconButton label icon C.itemToolbarIconSize msg isDisabled shouldCancel []
+viewButton : String -> String -> Tool.Msg -> Bool -> (Id, BoxPath) -> Html Msg
+viewButton label icon msg isDisabled target =
+  viewIconButton label icon C.itemToolbarIconSize msg isDisabled (Just target) []
 
 
-viewIconButton : String -> String -> Int -> Msg -> Bool -> Bool -> Attributes Msg -> Html Msg
-viewIconButton label icon iconSize msg isDisabled shouldCancel extraStyle =
-  let
-    stop =
-      case shouldCancel of
-        True -> []
-        False -> [ U.onMouseDownStop NoOp ]
-  in
+viewIconButton : String -> String -> Int -> Tool.Msg -> Bool -> Maybe (Id, BoxPath)
+                                                                  -> Attributes Msg -> Html Msg
+viewIconButton label icon iconSize msg isDisabled maybeTarget extraStyle =
   button
     ( [ class "tool"
       , title label
-      , onClick msg
+      , onClick <| Tool msg
       , disabled isDisabled
+      , U.onMouseDownStop <| Cancel maybeTarget
       ]
-      ++ stop
       ++ iconButtonStyle
       ++ extraStyle
     )

@@ -63,7 +63,7 @@ onMouseOutStop msg =
 
 stopPropagation : String -> msg -> Attribute msg
 stopPropagation eventName msg =
-  stopPropagationOn eventName <| D.succeed (msg, True)
+  stopPropagationOn eventName <| D.succeed (msg, True) -- stopPropagation=True
 
 
 
