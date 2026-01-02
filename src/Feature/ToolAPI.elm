@@ -46,7 +46,7 @@ viewGlobalTools model =
   ]
 
 
-homeButtonStyle : Attributes Msg
+homeButtonStyle : Attrs Msg
 homeButtonStyle =
   [ style "position" "relative"
   , style "top" "1px"
@@ -54,7 +54,7 @@ homeButtonStyle =
   ]
 
 
-importExportStyle : Attributes Msg
+importExportStyle : Attrs Msg
 importExportStyle =
   [ style "white-space" "nowrap" ]
 
@@ -74,7 +74,7 @@ viewMapTools undoModel =
   ]
 
 
-mapToolsStyle : Attributes Msg
+mapToolsStyle : Attrs Msg
 mapToolsStyle =
   [ style "position" "fixed"
   , style "bottom" "20px"
@@ -193,7 +193,7 @@ viewAssocToolbar pos itemId boxPath =
     ]
 
 
-toolbarStyle : Point -> Attributes Msg
+toolbarStyle : Point -> Attrs Msg
 toolbarStyle pos =
   [ style "position" "absolute"
   , style "top" <| fromInt pos.y ++ "px"
@@ -242,7 +242,7 @@ viewCaret itemId boxId model =
     ]
 
 
-caretStyle : Attributes Msg
+caretStyle : Attrs Msg
 caretStyle =
   [ style "position" "absolute"
   , style "top" "1px"
@@ -263,7 +263,7 @@ viewTextButton label msg =
     [ text label ]
 
 
-textButtonStyle : Attributes Msg
+textButtonStyle : Attrs Msg
 textButtonStyle =
   [ style "font-family" C.mainFont
   , style "font-size" <| fromInt C.toolFontSize ++ "px"
@@ -281,7 +281,7 @@ viewButton label icon msg isDisabled target =
 
 
 viewIconButton : String -> String -> Int -> Tool.Msg -> Bool -> Maybe (Id, BoxPath)
-                                                                  -> Attributes Msg -> Html Msg
+                                                                  -> Attrs Msg -> Html Msg
 viewIconButton label icon iconSize msg isDisabled maybeTarget extraStyle =
   button
     ( [ class "tool"
@@ -296,7 +296,7 @@ viewIconButton label icon iconSize msg isDisabled maybeTarget extraStyle =
     [ IconAPI.view icon iconSize [] ]
 
 
-iconButtonStyle : Attributes Msg
+iconButtonStyle : Attrs Msg
 iconButtonStyle =
   [ style "border" "none"
   , style "background-color" "transparent"
@@ -378,27 +378,19 @@ edit model =
 
 delete : Model -> Model
 delete model =
-  let
-    newModel = model.selection.items
-      |> List.map Tuple.first
-      |> List.foldr
-        (\itemId modelAcc -> Box.deleteItem itemId modelAcc)
-        model
-  in
-  newModel
+  model.selection.items
+    |> List.map Tuple.first
+    |> List.foldr Box.deleteItem model
     |> SelAPI.clear
     |> Size.auto
 
 
 remove : Model -> Model
 remove model =
-  let
-    newModel = model.selection.items
-      |> List.foldr
-        (\(itemId, boxPath) modelAcc -> Box.removeItem itemId (Box.firstId boxPath) modelAcc)
-        model
-  in
-  newModel
+  model.selection.items
+    |> List.foldr
+      (\(itemId, boxPath) modelAcc -> Box.removeItem itemId (Box.firstId boxPath) modelAcc)
+      model
     |> SelAPI.clear
     |> Size.auto
 

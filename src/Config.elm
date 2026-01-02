@@ -58,6 +58,7 @@ topicBorderWidth = 1
 topicRadius = 7
 
 assocWidth = 2 -- float
+assocHitArea = 20
 assocRadius = 14 -- should not be bigger than half topicSize height
 assocColor = "black"
 assocDelayMillis = 200

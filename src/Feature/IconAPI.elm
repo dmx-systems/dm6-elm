@@ -32,7 +32,7 @@ viewPicker model =
     Icon.Closed -> []
 
 
-pickerStyle : Attributes Msg
+pickerStyle : Attrs Msg
 pickerStyle =
   [ style "position" "absolute"
   , style "left" "35px"
@@ -59,7 +59,7 @@ viewIconList =
     )
 
 
-iconButtonStyle : Attributes Msg
+iconButtonStyle : Attrs Msg
 iconButtonStyle =
   [ style "border" "none"
   , style "margin" "8px"
@@ -67,7 +67,7 @@ iconButtonStyle =
   ]
 
 
-viewTopicIcon : Id -> Int -> Attributes Msg -> Model -> Html Msg
+viewTopicIcon : Id -> Int -> Attrs Msg -> Model -> Html Msg
 viewTopicIcon topicId size style_ model =
   case Item.topicById topicId model of
     Just topic ->
@@ -78,7 +78,7 @@ viewTopicIcon topicId size style_ model =
     Nothing -> text "?"
 
 
-view : String -> Int -> Attributes Msg -> Html Msg
+view : String -> Int -> Attrs Msg -> Html Msg
 view iconName size style_ =
   case FI.icons |> Dict.get iconName of
     Just icon ->

@@ -125,7 +125,7 @@ view ({present} as undoModel) =
     ]
 
 
-appStyle : Attributes Msg
+appStyle : Attrs Msg
 appStyle =
   [ style "display" "flex"
   , style "flex-direction" "column"
@@ -136,7 +136,7 @@ appStyle =
   ]
 
 
-headerStyle : Attributes Msg
+headerStyle : Attrs Msg
 headerStyle =
   [ style "display" "flex"
   , style "align-items" "center"
@@ -154,7 +154,7 @@ viewMapTitle model =
     [ text <| Box.mapTitle model ]
 
 
-mapTitleStyle : Attributes Msg
+mapTitleStyle : Attrs Msg
 mapTitleStyle =
   [ style "font-size" "24px"
   , style "font-weight" "bold"
@@ -171,7 +171,7 @@ viewSpacer =
   []
 
 
-mainStyle : Attributes Msg
+mainStyle : Attrs Msg
 mainStyle =
   [ style "position" "relative"
   , style "flex-grow" "1"
@@ -206,7 +206,7 @@ viewFooter =
     ]
 
 
-footerStyle : Attributes Msg
+footerStyle : Attrs Msg
 footerStyle =
   [ style "font-family" C.mainFont
   , style "font-size" <| fromInt C.footerFontSize ++ "px"
@@ -218,7 +218,7 @@ footerStyle =
   ]
 
 
-linkStyle : Attributes Msg
+linkStyle : Attrs Msg
 linkStyle =
   [ style "color" "lightgray" ]
 
@@ -234,7 +234,7 @@ viewMeasure model =
     ]
 
 
-measureStyle : Attributes Msg
+measureStyle : Attrs Msg
 measureStyle =
   [ style "position" "fixed"
   , style "visibility" "hidden"
