@@ -84,53 +84,85 @@ mapToolsStyle =
 
 -- Item Tools
 
+-- Per-item -- TODO: naming
 viewItemTools : Id -> BoxPath -> Model -> List (Html Msg)
 viewItemTools itemId boxPath model =
   let
     boxId = Box.firstId boxPath
-    toolbar =
-      if SelAPI.isSelectedPath itemId boxPath model then
-        if TextAPI.isEdit itemId boxPath model then
-          if Item.isBox itemId model then
-            []
-          else
-            [ viewTextToolbar itemId boxId model ]
-        else
-          [ viewTopicToolbar itemId boxId model ]
+  in
+  case MouseAPI.isHovered itemId boxId model of
+    True -> viewCaret itemId boxId model
+    False -> []
+
+
+-- Per-box -- TODO: naming
+viewToolbar : BoxPath -> Model -> List (Html Msg)
+viewToolbar boxPath model =
+  let
+    boxId = Box.firstId boxPath
+  in
+  case SelAPI.single model of
+    Just (itemId, selBoxPath) ->
+      if selBoxPath == boxPath then
+        case (Item.byId itemId model, Box.byIdOrLog boxId model) of
+          (Just {info}, Just {rect}) ->
+            case info of
+              Topic topic ->
+                case Box.topicPos itemId boxId model of
+                  Just topicPos ->
+                    let
+                      pos = Point
+                        (topicPos.x - rect.x1 - C.topicW2)
+                        (topicPos.y - rect.y1 - C.topicH2 - 29) -- TODO: 29 ≈ toolbar height
+                    in
+                    if TextAPI.isEdit itemId boxPath model then
+                      if Item.isBox itemId model then
+                        []
+                      else
+                        [ viewTextToolbar pos itemId boxId model ]
+                    else
+                      [ viewTopicToolbar pos itemId boxId model ]
+                  Nothing -> []
+              Assoc assoc ->
+                case Box.assocGeometry assoc boxId model of
+                  Just (p1, p2) ->
+                    let
+                      pos = Point
+                        ((p1.x + p2.x) // 2 - rect.x1)
+                        ((p1.y + p2.y) // 2 - rect.y1)
+                    in
+                    [ viewAssocToolbar pos ]
+                  Nothing -> []
+          _ -> []
       else
         []
-    caret =
-      case MouseAPI.isHovered itemId boxId model of
-        True -> viewCaret itemId boxId model
-        False -> []
-  in
-  toolbar ++ caret
+    Nothing -> []
 
 
-viewTopicToolbar : Id -> BoxId -> Model -> Html Msg
-viewTopicToolbar itemId boxId model =
+viewTopicToolbar : Point -> Id -> BoxId -> Model -> Html Msg
+viewTopicToolbar pos itemId boxId model =
   let
     topicTools =
-      [ viewItemButton "Edit" "edit-3" (Tool Tool.Edit) False True
-      , viewItemButton "Select Icon" "smile" (Tool Tool.Icon) False True
-      , viewItemButton "Traverse" "share-2" (Tool Tool.Traverse) False True
-      , viewItemButton "Delete" "trash" (Tool Tool.Delete) False True
-      , viewItemButton "Remove" "x" (Tool Tool.Remove) False True
+      [ viewButton "Edit" "edit-3" (Tool Tool.Edit) False False
+      , viewButton "Select Icon" "smile" (Tool Tool.Icon) False False
+      , viewButton "Traverse" "share-2" (Tool Tool.Traverse) False False
+      , viewButton "Delete" "trash" (Tool Tool.Delete) False False
+      , viewButton "Remove" "x" (Tool Tool.Remove) False False
       ]
     boxTools =
       if Item.isBox itemId model then
         let
-          disabled = Box.isEmpty itemId model || Box.isUnboxed itemId boxId model
+          isDisabled = Box.isEmpty itemId model || Box.isUnboxed itemId boxId model
         in
         [ viewSpacer
-        , viewItemButton "Fullscreen" "maximize-2" (Tool <| Tool.Fullscreen itemId) False True
-        , viewItemButton "Unbox" "external-link" (Tool <| Tool.Unbox itemId boxId) disabled True
+        , viewButton "Fullscreen" "maximize-2" (Tool <| Tool.Fullscreen itemId) False False
+        , viewButton "Unbox" "external-link" (Tool <| Tool.Unbox itemId boxId) isDisabled False
         ]
       else
         []
   in
   div
-    ( toolbarStyle itemId boxId model )
+    ( toolbarStyle pos )
     ( topicTools
       ++ boxTools
       ++ IconAPI.viewPicker model
@@ -138,64 +170,26 @@ viewTopicToolbar itemId boxId model =
     )
 
 
-viewToolbar : BoxPath -> Model -> List (Html Msg)
-viewToolbar boxPath model =
-  let
-    boxId = Box.firstId boxPath
-  in
-  case SelAPI.single model of
-    Just (id, boxPath_) ->
-      if boxPath_ == boxPath then
-        case Item.byId id model of
-          Just {info} ->
-            case info of
-              Topic topic -> []
-              Assoc assoc ->
-                case (Box.assocGeometry assoc boxId model, Box.byIdOrLog boxId model) of
-                  (Just (p1, p2), Just {rect}) ->
-                    let
-                      x = (p1.x + p2.x) // 2 - rect.x1
-                      y = (p1.y + p2.y) // 2 - rect.y1
-                    in
-                    [ viewAssocToolbar <| Point x y ]
-                  _ -> []
-          Nothing -> []
-      else
-        []
-    Nothing -> []
+viewTextToolbar : Point -> Id -> BoxId -> Model -> Html Msg
+viewTextToolbar pos itemId boxId model =
+  div
+    ( toolbarStyle pos )
+    [ viewButton "Insert Image" "image" (Tool <| Tool.Image itemId) False False
+    , viewButton "Done" "check" (Tool Tool.LeaveEdit) False False
+    ]
 
 
 viewAssocToolbar : Point -> Html Msg
 viewAssocToolbar pos =
   div
-    ( assocToolbarStyle pos )
-    [ viewItemButton "Delete" "trash" (Tool Tool.Delete) False False
-    , viewItemButton "Remove" "x" (Tool Tool.Remove) False False
+    ( toolbarStyle pos )
+    [ viewButton "Delete" "trash" (Tool Tool.Delete) False False
+    , viewButton "Remove" "x" (Tool Tool.Remove) False False
     ]
 
 
-toolbarStyle : Id -> BoxId -> Model -> Attributes Msg
-toolbarStyle itemId boxId model =
-  let
-    offset =
-      case Box.displayMode itemId boxId model of
-        Just (TopicD Detail) -> 1
-        Just (BoxD BlackBox) -> 1
-        _ -> 0
-  in
-  [ style "position" "absolute"
-  , style "top" <| fromInt (offset - 30) ++ "px"
-  , style "left" <| fromInt (offset - 1) ++ "px"
-  , style "white-space" "nowrap"
-  , style "background-color" C.toolbarColor
-  , style "border-radius" <| fromInt C.topicRadius ++ "px"
-  , style "padding" "4px 3px 0"
-  , style "z-index" "2"
-  ]
-
-
-assocToolbarStyle : Point -> Attributes Msg
-assocToolbarStyle pos =
+toolbarStyle : Point -> Attributes Msg
+toolbarStyle pos =
   [ style "position" "absolute"
   , style "top" <| fromInt pos.y ++ "px"
   , style "left" <| fromInt pos.x ++ "px"
@@ -205,17 +199,6 @@ assocToolbarStyle pos =
   , style "padding" "4px 3px 0"
   , style "z-index" "2"
   ]
-
-
--- Text Tools
-
-viewTextToolbar : Id -> BoxId -> Model -> Html Msg
-viewTextToolbar itemId boxId model =
-  div
-    ( toolbarStyle itemId boxId model )
-    [ viewItemButton "Insert Image" "image" (Tool <| Tool.Image itemId) False False
-    , viewItemButton "Done" "check" (Tool Tool.LeaveEdit) False False
-    ]
 
 
 --
@@ -287,8 +270,8 @@ viewMapButton label icon msg isDisabled =
   viewIconButton label icon C.mapToolbarIconSize msg isDisabled True []
 
 
-viewItemButton : String -> String -> Msg -> Bool -> Bool -> Html Msg
-viewItemButton label icon msg isDisabled shouldCancel =
+viewButton : String -> String -> Msg -> Bool -> Bool -> Html Msg
+viewButton label icon msg isDisabled shouldCancel =
   viewIconButton label icon C.itemToolbarIconSize msg isDisabled shouldCancel []
 
 
