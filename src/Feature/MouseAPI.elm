@@ -79,11 +79,11 @@ mouseDown =
 mouseDownOnItem : Class -> Id -> BoxPath -> Point -> Model -> (Model, Cmd Msg)
 mouseDownOnItem class id boxPath pos model =
   ( model
-    |> setDragState (WaitForStartTime class id boxPath pos)
+      |> setDragState (WaitForStartTime class id boxPath pos)
   , Cmd.batch
-    [ U.command <| Cancel <| Just (id, boxPath)
-    , Task.perform (Mouse << Mouse.Time) Time.now
-    ]
+      [ U.command <| Cancel <| Just (id, boxPath)
+      , Task.perform (Mouse << Mouse.Time) Time.now
+      ]
   )
 
 
@@ -94,11 +94,9 @@ timeArrived time ({present} as undoModel) =
       let
         dragState = DragEngaged time class id boxPath pos
       in
-      (setDragState dragState present, Cmd.none)
-      |> Undo.swap undoModel
+      (setDragState dragState present, Cmd.none) |> Undo.swap undoModel
     WaitForEndTime startTime class id boxPath pos ->
       let
-        -- _ = U.info "endTimeArrived" {delay = delay}
         delay = posixToMillis time - posixToMillis startTime
         (dragMode, undo) =
           case delay > C.assocDelayMillis of
@@ -113,8 +111,7 @@ timeArrived time ({present} as undoModel) =
                 Nothing -> NoDrag Nothing -- error is already logged
             _ -> NoDrag Nothing -- the error will be logged in performDrag
       in
-      (setDragState dragState present, Cmd.none)
-      |> undo undoModel
+      (setDragState dragState present, Cmd.none) |> undo undoModel
     _ ->
       U.logError "timeArrived" "Received Time when dragState is not WaitFor..Time"
         (undoModel, Cmd.none)
@@ -127,8 +124,6 @@ mouseMove pos model =
       ( setDragState (WaitForEndTime time class id boxPath pos_) model
       , Task.perform (Mouse << Mouse.Time) Time.now
       )
-    -- WaitForEndTime _ _ _ _ _ ->
-    --   ( model, Cmd.none ) -- ignore -- TODO: can this happen? Is a move listener registered?
     Drag _ _ _ _ _ _ ->
       ( performDrag pos model, Cmd.none )
     _ -> U.logError "mouseMove"
@@ -152,7 +147,7 @@ performDrag pos model =
       in
       -- update lastPos
       setDragState (Drag dragMode id boxPath origPos pos target) newModel
-      |> Size.auto
+        |> Size.auto
     _ -> U.logError "performDrag"
       ("Received \"Move\" message when dragState is " ++ U.toString model.mouse.dragState)
       model
@@ -230,24 +225,25 @@ hover class targetId targetPath model =
   case model.mouse.dragState of
     Drag dragMode id boxPath origPos lastPos _ ->
       let
-        isSelf = (id, Box.firstId boxPath) == (targetId, Box.firstId targetPath)
         isBox = Item.isBox targetId model
+        isCyclic = Box.hasDeepItem id targetId model
         target =
-          -- the hovered item is a potential drop target if
-          -- 1. the hovered item is not the item being dragged (can't drop on self), AND
-          -- 2. the hovered item is a box OR draft assoc is in progress
-          if not isSelf && (isBox || dragMode == DraftAssoc) then
+          -- the hovered item (targetId) is a drop target if it is
+          -- 1. a box AND
+          -- 2. not contained in the item/box being dragged (id), this would create a cycle OR
+          -- 3. draft assoc is in progress
+          if isBox && not isCyclic || dragMode == DraftAssoc then
             Just (targetId, targetPath)
           else
             Nothing
       in
       -- update target
       model
-      |> setDragState (Drag dragMode id boxPath origPos lastPos target)
+       |> setDragState (Drag dragMode id boxPath origPos lastPos target)
     NoDrag _ ->
       -- update target
       model
-      |> setDragState (NoDrag <| Just (targetId, targetPath))
+       |> setDragState (NoDrag <| Just (targetId, targetPath))
     _ -> model
 
 
@@ -257,11 +253,11 @@ unhover class targetId targetPath model =
     Drag dragMode id boxPath origPos lastPos _ ->
       -- reset target
       model
-      |> setDragState (Drag dragMode id boxPath origPos lastPos Nothing)
+       |> setDragState (Drag dragMode id boxPath origPos lastPos Nothing)
     NoDrag _ ->
       -- reset target
       model
-      |> setDragState (NoDrag Nothing)
+       |> setDragState (NoDrag Nothing)
     _ -> model
 
 

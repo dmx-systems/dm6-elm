@@ -210,7 +210,7 @@ hasDeepItem boxId itemId model =
   else
     case byId boxId model of
       Just box -> box.items |> Dict.keys |> List.any
-        (\id -> hasDeepItem id itemId model)
+        (\id -> hasDeepItem id itemId model) -- recursion
       Nothing -> False
 
 

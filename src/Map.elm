@@ -118,9 +118,9 @@ svgDefs =
 
 gAttr : BoxId -> Rectangle -> Model -> Attrs Msg
 gAttr boxId boxRect model =
-    [ transform
+  [ transform
       <| "translate(" ++ fromInt -boxRect.x1 ++ " " ++ fromInt -boxRect.y1 ++ ")"
-    ]
+  ]
 
 
 -- For the fullscreen box boxPath is empty
