@@ -18,9 +18,9 @@ import Dict
 import Html exposing (Html, div, text)
 import Html.Attributes exposing (id, style)
 import String exposing (fromInt, fromFloat)
-import Svg exposing (Svg, svg, g, node)
-import Svg.Attributes exposing (width, height, x1, y1, x2, y2, d, stroke, fill, transform,
-  strokeWidth, strokeDasharray, dx, dy, stdDeviation, floodColor, filter)
+import Svg exposing (Svg)
+import Svg.Attributes exposing (width, height, x, y, x1, y1, x2, y2, d, stroke, fill, transform,
+  strokeWidth, strokeDasharray, dx, dy, stdDeviation, floodColor, filter, filterUnits)
 
 
 
@@ -60,12 +60,12 @@ view boxId boxPath model =
     ( [ div
           ( topicLayerStyle boxRect )
           topics
-      , svg
+      , Svg.svg
           ( [ width svgSize.w, height svgSize.h ]
             ++ svgStyle
           )
           [ svgDefs
-          , g
+          , Svg.g
               ( gAttr boxId boxRect model )
               ( assocs
                 ++ viewLimboAssoc boxId model
@@ -98,8 +98,14 @@ svgDefs =
   Svg.defs
     []
     [ Svg.filter
-        [ id "shadow" ]
-        [ node "feDropShadow"
+        [ id "shadow"
+        , x "-100%"
+        , y "-100%"
+        , width "200%"
+        , height "200%"
+        , filterUnits "userSpaceOnUse"
+        ]
+        [ Svg.node "feDropShadow"
             [ dx <| fromInt C.assocDropShadow.dx
             , dy <| fromInt C.assocDropShadow.dy
             , stdDeviation <| fromInt C.assocDropShadow.stdDeviation
@@ -243,7 +249,7 @@ viewTopic topic props boxPath model =
       ++ style
     )
     ( children
-      ++ ToolAPI.viewItemTools topic.id boxPath model
+      ++ ToolAPI.viewTopicTools topic.id boxPath model
     )
 
 
