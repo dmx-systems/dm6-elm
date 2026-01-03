@@ -1,4 +1,5 @@
-module Feature.ToolAPI exposing (viewGlobalTools, viewMapTools, viewItemTools, update)
+module Feature.ToolAPI exposing (viewGlobalTools, viewMapTools, viewToolbar, viewTopicTools,
+  update)
 
 import Box
 import Box.Size as Size
@@ -35,17 +36,17 @@ viewGlobalTools model =
   let
     isHome = model.boxId == rootBoxId
   in
-  [ viewIconButton "Show Home Map" "home" 20 (Tool Tool.Home) isHome True homeButtonStyle
+  [ viewIconButton "Show Home Map" "home" 20 Tool.Home isHome Nothing homeButtonStyle
   , SearchAPI.viewInput model
   , div
     importExportStyle
-    [ viewTextButton "Import" (Tool Tool.Import)
-    , viewTextButton "Export" (Tool Tool.Export)
+    [ viewTextButton "Import" Tool.Import
+    , viewTextButton "Export" Tool.Export
     ]
   ]
 
 
-homeButtonStyle : Attributes Msg
+homeButtonStyle : Attrs Msg
 homeButtonStyle =
   [ style "position" "relative"
   , style "top" "1px"
@@ -53,7 +54,7 @@ homeButtonStyle =
   ]
 
 
-importExportStyle : Attributes Msg
+importExportStyle : Attrs Msg
 importExportStyle =
   [ style "white-space" "nowrap" ]
 
@@ -64,16 +65,16 @@ viewMapTools : UndoModel -> List (Html Msg)
 viewMapTools undoModel =
   [ div
     mapToolsStyle
-    [ viewMapButton "Add Topic" "plus-circle" (Tool Tool.AddTopic) False
-    , viewMapButton "Add Box" "plus-square" (Tool Tool.AddBox) False
+    [ viewMapButton "Add Topic" "plus-circle" Tool.AddTopic False
+    , viewMapButton "Add Box" "plus-square" Tool.AddBox False
     , viewSpacer
-    , viewMapButton "Undo" "rotate-ccw" (Tool Tool.Undo) (not <| Undo.hasPast undoModel)
-    , viewMapButton "Redo" "rotate-cw" (Tool Tool.Redo) (not <| Undo.hasFuture undoModel)
+    , viewMapButton "Undo" "rotate-ccw" Tool.Undo (not <| Undo.hasPast undoModel)
+    , viewMapButton "Redo" "rotate-cw" Tool.Redo (not <| Undo.hasFuture undoModel)
     ]
   ]
 
 
-mapToolsStyle : Attributes Msg
+mapToolsStyle : Attrs Msg
 mapToolsStyle =
   [ style "position" "fixed"
   , style "bottom" "20px"
@@ -83,53 +84,73 @@ mapToolsStyle =
 
 -- Item Tools
 
-viewItemTools : Id -> BoxPath -> Model -> List (Html Msg)
-viewItemTools itemId boxPath model =
+-- Topic/Assoc toolbar, rendered by Map.view as box children
+viewToolbar : BoxPath -> Model -> List (Html Msg)
+viewToolbar boxPath model =
   let
     boxId = Box.firstId boxPath
-    toolbar =
-      if SelAPI.isSelectedPath itemId boxPath model then
-        if TextAPI.isEdit itemId boxPath model then
-          if Item.isBox itemId model then
-            []
-          else
-            [ viewTextToolbar itemId boxId model ]
-        else
-          [ viewToolbar itemId boxId model ]
+  in
+  case SelAPI.single model of
+    Just (itemId, selBoxPath) ->
+      if selBoxPath == boxPath then
+        case (Item.byId itemId model, Box.byIdOrLog boxId model) of
+          (Just {info}, Just {rect}) ->
+            case info of
+              Topic topic ->
+                case Box.topicPos itemId boxId model of
+                  Just topicPos ->
+                    let
+                      pos = Point
+                        (topicPos.x - rect.x1 - C.topicW2)
+                        (topicPos.y - rect.y1 - C.topicH2 - 29) -- TODO: 29 ≈ toolbar height
+                    in
+                    case (TextAPI.isEdit itemId boxPath model, Item.isBox itemId model) of
+                      (False, _) -> [ viewTopicToolbar pos itemId boxPath model ]
+                      (True, False) -> [ viewTextToolbar pos itemId boxPath ]
+                      _ -> []
+                  Nothing -> []
+              Assoc assoc ->
+                case Box.assocGeometry assoc boxId model of
+                  Just (p1, p2) ->
+                    let
+                      pos = Point
+                        ((p1.x + p2.x) // 2 - rect.x1 - 32) -- TODO: 32 ≈ toolbar width / 2
+                        ((p1.y + p2.y) // 2 - rect.y1 - 13) -- TODO: 13 ≈ toolbar height / 2
+                    in
+                    [ viewAssocToolbar pos itemId boxPath ]
+                  Nothing -> []
+          _ -> []
       else
         []
-    caret =
-      case MouseAPI.isHovered itemId boxId model of
-        True -> viewCaret itemId boxId model
-        False -> []
-  in
-  toolbar ++ caret
+    Nothing -> []
 
 
-viewToolbar : Id -> BoxId -> Model -> Html Msg
-viewToolbar itemId boxId model =
+viewTopicToolbar : Point -> Id -> BoxPath -> Model -> Html Msg
+viewTopicToolbar pos topicId boxPath model =
   let
+    boxId = Box.firstId boxPath
+    target = (topicId, boxPath)
     topicTools =
-      [ viewItemButton "Edit" "edit-3" (Tool Tool.Edit) False True
-      , viewItemButton "Select Icon" "smile" (Tool Tool.Icon) False True
-      , viewItemButton "Traverse" "share-2" (Tool Tool.Traverse) False True
-      , viewItemButton "Delete" "trash" (Tool Tool.Delete) False True
-      , viewItemButton "Remove" "x" (Tool Tool.Remove) False True
+      [ viewButton "Edit" "edit-3" Tool.Edit False target
+      , viewButton "Select Icon" "smile" Tool.Icon False target
+      , viewButton "Traverse" "share-2" Tool.Traverse False target
+      , viewButton "Delete" "trash" Tool.Delete False target
+      , viewButton "Remove" "x" Tool.Remove False target
       ]
     boxTools =
-      if Item.isBox itemId model then
+      if Item.isBox topicId model then
         let
-          disabled = Box.isEmpty itemId model || Box.isUnboxed itemId boxId model
+          isDisabled = Box.isEmpty topicId model || Box.isUnboxed topicId boxId model
         in
         [ viewSpacer
-        , viewItemButton "Fullscreen" "maximize-2" (Tool <| Tool.Fullscreen itemId) False True
-        , viewItemButton "Unbox" "external-link" (Tool <| Tool.Unbox itemId boxId) disabled True
+        , viewButton "Fullscreen" "maximize-2" (Tool.Fullscreen topicId) False target
+        , viewButton "Unbox" "external-link" (Tool.Unbox topicId boxId) isDisabled target
         ]
       else
         []
   in
   div
-    ( toolbarStyle itemId boxId model )
+    ( toolbarStyle pos )
     ( topicTools
       ++ boxTools
       ++ IconAPI.viewPicker model
@@ -137,36 +158,40 @@ viewToolbar itemId boxId model =
     )
 
 
--- Text Tools
-
-viewTextToolbar : Id -> BoxId -> Model -> Html Msg
-viewTextToolbar itemId boxId model =
+viewTextToolbar : Point -> Id -> BoxPath -> Html Msg
+viewTextToolbar pos itemId boxPath =
+  let
+    target = (itemId, boxPath)
+  in
   div
-    ( toolbarStyle itemId boxId model )
-    [ viewItemButton "Insert Image" "image" (Tool <| Tool.Image itemId) False False
-    , viewItemButton "Done" "check" (Tool Tool.LeaveEdit) False False
+    ( toolbarStyle pos )
+    [ viewButton "Insert Image" "image" (Tool.Image itemId) False target
+    , viewButton "Done" "check" Tool.LeaveEdit False target
     ]
 
 
---
-
-toolbarStyle : Id -> BoxId -> Model -> Attributes Msg
-toolbarStyle itemId boxId model =
+viewAssocToolbar : Point -> Id -> BoxPath -> Html Msg
+viewAssocToolbar pos itemId boxPath =
   let
-    offset =
-      case Box.displayMode itemId boxId model of
-        Just (TopicD Detail) -> 1
-        Just (BoxD BlackBox) -> 1
-        _ -> 0
+    target = (itemId, boxPath)
   in
+  div
+    ( toolbarStyle pos )
+    [ viewButton "Delete" "trash" Tool.Delete False target
+    , viewButton "Remove" "x" Tool.Remove False target
+    ]
+
+
+toolbarStyle : Point -> Attrs Msg
+toolbarStyle pos =
   [ style "position" "absolute"
-  , style "top" <| fromInt (offset - 30) ++ "px"
-  , style "left" <| fromInt (offset - 1) ++ "px"
+  , style "top" <| fromInt pos.y ++ "px"
+  , style "left" <| fromInt pos.x ++ "px"
   , style "white-space" "nowrap"
   , style "background-color" C.toolbarColor
   , style "border-radius" <| fromInt C.topicRadius ++ "px"
   , style "padding" "4px 3px 0"
-  , style "z-index" "2"
+  , style "z-index" "4"
   ]
 
 
@@ -179,14 +204,25 @@ viewSpacer =
     []
 
 
+-- Extra topic-specific tools, rendered by Map.view as topic children
+viewTopicTools : Id -> BoxPath -> Model -> List (Html Msg)
+viewTopicTools topicId boxPath model =
+  let
+    boxId = Box.firstId boxPath
+  in
+  case MouseAPI.isHovered topicId boxId model of -- TODO: use boxPath
+    True -> viewCaret topicId boxId model
+    False -> []
+
+
 viewCaret : Id -> BoxId -> Model -> List (Html Msg)
-viewCaret itemId boxId model =
-  if  Item.isBox itemId model && Box.isEmpty itemId model then
+viewCaret topicId boxId model =
+  if  Item.isBox topicId model && Box.isEmpty topicId model then
     []
   else
     let
       icon =
-        case Box.displayMode itemId boxId model of
+        case Box.displayMode topicId boxId model of
           Just (TopicD LabelOnly) -> "chevron-right"
           Just (TopicD Detail) -> "chevron-down"
           Just (BoxD BlackBox) -> "chevron-right"
@@ -195,7 +231,7 @@ viewCaret itemId boxId model =
           Nothing -> "??"
     in
     [ button
-        ( [ onClick <| Tool <| Tool.ToggleDisplay itemId boxId
+        ( [ onClick <| Tool <| Tool.ToggleDisplay topicId boxId
           , U.onMouseDownStop NoOp -- prevent cancel UI
           ]
           ++ caretStyle
@@ -204,7 +240,7 @@ viewCaret itemId boxId model =
     ]
 
 
-caretStyle : Attributes Msg
+caretStyle : Attrs Msg
 caretStyle =
   [ style "position" "absolute"
   , style "top" "1px"
@@ -216,54 +252,49 @@ caretStyle =
 
 -- Buttons
 
-viewTextButton : String -> Msg -> Html Msg
+viewTextButton : String -> Tool.Msg -> Html Msg
 viewTextButton label msg =
   button
-    ( [ onClick msg ]
+    ( [ onClick <| Tool msg ]
       ++ textButtonStyle
     )
     [ text label ]
 
 
-textButtonStyle : Attributes Msg
+textButtonStyle : Attrs Msg
 textButtonStyle =
   [ style "font-family" C.mainFont
   , style "font-size" <| fromInt C.toolFontSize ++ "px"
   ]
 
 
-viewMapButton : String -> String -> Msg -> Bool -> Html Msg
+viewMapButton : String -> String -> Tool.Msg -> Bool -> Html Msg
 viewMapButton label icon msg isDisabled =
-  viewIconButton label icon C.mapToolbarIconSize msg isDisabled True []
+  viewIconButton label icon C.mapToolbarIconSize msg isDisabled Nothing []
 
 
-viewItemButton : String -> String -> Msg -> Bool -> Bool -> Html Msg
-viewItemButton label icon msg isDisabled shouldCancel =
-  viewIconButton label icon C.itemToolbarIconSize msg isDisabled shouldCancel []
+viewButton : String -> String -> Tool.Msg -> Bool -> (Id, BoxPath) -> Html Msg
+viewButton label icon msg isDisabled target =
+  viewIconButton label icon C.itemToolbarIconSize msg isDisabled (Just target) []
 
 
-viewIconButton : String -> String -> Int -> Msg -> Bool -> Bool -> Attributes Msg -> Html Msg
-viewIconButton label icon iconSize msg isDisabled shouldCancel extraStyle =
-  let
-    stop =
-      case shouldCancel of
-        True -> []
-        False -> [ U.onMouseDownStop NoOp ]
-  in
+viewIconButton : String -> String -> Int -> Tool.Msg -> Bool -> Maybe (Id, BoxPath)
+                                                                  -> Attrs Msg -> Html Msg
+viewIconButton label icon iconSize msg isDisabled maybeTarget extraStyle =
   button
     ( [ class "tool"
       , title label
-      , onClick msg
+      , onClick <| Tool msg
       , disabled isDisabled
+      , U.onMouseDownStop <| Cancel maybeTarget
       ]
-      ++ stop
       ++ iconButtonStyle
       ++ extraStyle
     )
     [ IconAPI.view icon iconSize [] ]
 
 
-iconButtonStyle : Attributes Msg
+iconButtonStyle : Attrs Msg
 iconButtonStyle =
   [ style "border" "none"
   , style "background-color" "transparent"
@@ -314,9 +345,9 @@ addTopic model =
       ( TopicD LabelOnly )
   in
   newModel
-  |> Box.addItem topicId props boxId
-  |> SelAPI.select topicId [ boxId ]
-  |> TextAPI.enterEdit topicId [ boxId ]
+    |> Box.addItem topicId props boxId
+    |> SelAPI.select topicId [ boxId ]
+    |> TextAPI.enterEdit topicId [ boxId ]
 
 
 -- TODO: factor out addTopic() common code
@@ -330,10 +361,10 @@ addBox model =
       ( BoxD BlackBox )
   in
   newModel
-  |> Box.addBox topicId
-  |> Box.addItem topicId props boxId
-  |> SelAPI.select topicId [ boxId ]
-  |> TextAPI.enterEdit topicId [ boxId ]
+    |> Box.addBox topicId
+    |> Box.addItem topicId props boxId
+    |> SelAPI.select topicId [ boxId ]
+    |> TextAPI.enterEdit topicId [ boxId ]
 
 
 edit : Model -> (Model, Cmd Msg)
@@ -345,36 +376,28 @@ edit model =
 
 delete : Model -> Model
 delete model =
-  let
-    newModel = model.selection.items
-      |> List.map Tuple.first
-      |> List.foldr
-        (\itemId modelAcc -> Box.deleteItem itemId modelAcc)
-        model
-  in
-  newModel
-  |> SelAPI.clear
-  |> Size.auto
+  model.selection.items
+    |> List.map Tuple.first
+    |> List.foldr Box.deleteItem model
+    |> SelAPI.clear
+    |> Size.auto
 
 
 remove : Model -> Model
 remove model =
-  let
-    newModel = model.selection.items
-      |> List.foldr
-        (\(itemId, boxPath) modelAcc -> Box.removeItem itemId (Box.firstId boxPath) modelAcc)
-        model
-  in
-  newModel
-  |> SelAPI.clear
-  |> Size.auto
+  model.selection.items
+    |> List.foldr
+      (\(itemId, boxPath) modelAcc -> Box.removeItem itemId (Box.firstId boxPath) modelAcc)
+      model
+    |> SelAPI.clear
+    |> Size.auto
 
 
 unbox : BoxId -> BoxId -> Model -> Model
 unbox boxId targetBoxId model =
   Transfer.unboxContent boxId targetBoxId model
-  |> Box.setDisplayMode boxId targetBoxId (BoxD Unboxed)
-  |> Size.auto
+    |> Box.setDisplayMode boxId targetBoxId (BoxD Unboxed)
+    |> Size.auto
 
 
 toggleDisplay : Id -> BoxId -> Model -> Model
@@ -395,6 +418,6 @@ toggleDisplay topicId boxId model =
   case (newModel, newDisplayMode) of
     (newModel_, Just displayMode) ->
       newModel_
-      |> Box.setDisplayMode topicId boxId displayMode
-      |> Size.auto
+        |> Box.setDisplayMode topicId boxId displayMode
+        |> Size.auto
     _ -> model

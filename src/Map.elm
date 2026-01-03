@@ -18,9 +18,9 @@ import Dict
 import Html exposing (Html, div, text)
 import Html.Attributes exposing (id, style)
 import String exposing (fromInt, fromFloat)
-import Svg exposing (Svg, svg, g, line, path)
-import Svg.Attributes exposing (width, height, x1, y1, x2, y2, d, stroke, fill, transform,
-  strokeWidth, strokeDasharray)
+import Svg exposing (Svg)
+import Svg.Attributes exposing (width, height, x, y, x1, y1, x2, y2, d, stroke, fill, transform,
+  strokeWidth, strokeDasharray, dx, dy, stdDeviation, floodColor, filter, filterUnits)
 
 
 
@@ -38,18 +38,18 @@ type alias BoxInfo =
   ( ( List (Html Msg), List (Svg Msg) )
   , Rectangle
   , ( { w: String, h: String }
-    , Attributes Msg
+    , Attrs Msg
     )
   )
 
-type alias TopicRendering = (Attributes Msg, List (Html Msg))
+type alias TopicRendering = (Attrs Msg, List (Html Msg))
 
 
 
 -- VIEW
 
 
--- For a fullscreen box boxPath is empty
+-- For the fullscreen box boxPath is empty
 view : BoxId -> BoxPath -> Model -> Html Msg
 view boxId boxPath model =
   let
@@ -57,24 +57,27 @@ view boxId boxPath model =
   in
   div
     boxStyle
-    [ div
-        ( topicLayerStyle boxRect )
-        topics
-    , svg
-        ( [ width svgSize.w, height svgSize.h ]
-          ++ svgStyle
-        )
-        [ g
-          ( gAttr boxId boxRect model )
-          ( assocs
-            ++ viewLimboAssoc boxId model
-            ++ viewAssocDraft boxId model
+    ( [ div
+          ( topicLayerStyle boxRect )
+          topics
+      , Svg.svg
+          ( [ width svgSize.w, height svgSize.h ]
+            ++ svgStyle
           )
-        ]
-    ]
+          [ svgDefs
+          , Svg.g
+              ( gAttr boxId boxRect model )
+              ( assocs
+                ++ viewLimboAssoc boxId model
+                ++ viewAssocDraft boxId model
+              )
+          ]
+      ]
+      ++ ToolAPI.viewToolbar (boxId :: boxPath) model
+    )
 
 
-topicLayerStyle : Rectangle -> Attributes Msg
+topicLayerStyle : Rectangle -> Attrs Msg
 topicLayerStyle boxRect =
   [ style "position" "absolute"
   , style "left" <| fromInt -boxRect.x1 ++ "px"
@@ -82,7 +85,7 @@ topicLayerStyle boxRect =
   ]
 
 
-svgStyle : Attributes Msg
+svgStyle : Attrs Msg
 svgStyle =
   [ style "position" "absolute" -- occupy entire window height (instead 150px default height)
   , style "top" "0"
@@ -90,14 +93,37 @@ svgStyle =
   ]
 
 
-gAttr : BoxId -> Rectangle -> Model -> Attributes Msg
+svgDefs : Svg Msg
+svgDefs =
+  Svg.defs
+    []
+    [ Svg.filter
+        [ id "shadow"
+        , x "-100%"
+        , y "-100%"
+        , width "200%"
+        , height "200%"
+        , filterUnits "userSpaceOnUse"
+        ]
+        [ Svg.node "feDropShadow"
+            [ dx <| fromInt C.assocDropShadow.dx
+            , dy <| fromInt C.assocDropShadow.dy
+            , stdDeviation <| fromInt C.assocDropShadow.stdDeviation
+            , floodColor C.assocDropShadow.floodColor
+            ]
+            []
+        ]
+    ]
+
+
+gAttr : BoxId -> Rectangle -> Model -> Attrs Msg
 gAttr boxId boxRect model =
     [ transform
       <| "translate(" ++ fromInt -boxRect.x1 ++ " " ++ fromInt -boxRect.y1 ++ ")"
     ]
 
 
--- For a fullscreen box boxPath is empty
+-- For the fullscreen box boxPath is empty
 boxInfo : BoxId -> BoxPath -> Model -> BoxInfo
 boxInfo boxId boxPath model =
   case Box.byIdOrLog boxId model of
@@ -118,7 +144,7 @@ boxInfo boxId boxPath model =
         ( ([], []), Rectangle 0 0 0 0, ( {w = "0", h = "0"}, [] ))
 
 
-nestedBoxStyle : Id -> Rectangle -> BoxPath -> Model -> Attributes Msg
+nestedBoxStyle : Id -> Rectangle -> BoxPath -> Model -> Attrs Msg
 nestedBoxStyle topicId rect boxPath model =
   let
     width = rect.x2 - rect.x1
@@ -136,7 +162,7 @@ nestedBoxStyle topicId rect boxPath model =
   ++ selectionStyle topicId boxPath model
 
 
--- For a fullscreen box boxPath is empty
+-- For the fullscreen box boxPath is empty
 viewItems : Box -> BoxPath -> Model -> (List (Html Msg), List (Svg Msg))
 viewItems box boxPath model =
   let
@@ -149,12 +175,17 @@ viewItems box boxPath model =
             _ -> U.logError "viewItems" ("problem with topic " ++ fromInt id) (text "")
         )
     assocs =
-      MM.assocsToRender box model |> List.map
-        (\{id} ->
+      MM.assocsToRender box model |> List.foldr
+        (\{id} svgAcc ->
           case Item.assocById id model of
-            Just assoc -> viewAssoc assoc box.id model
-            _ -> U.logError "viewItems" ("problem with assoc " ++ fromInt id) (text "")
+            Just assoc ->
+              let
+                clickHandler = MouseAPI.assocClickHandler id newPath
+              in
+              svgAcc ++ viewAssoc assoc newPath clickHandler model
+            _ -> U.logError "viewItems" ("problem with assoc " ++ fromInt id) svgAcc
         )
+        []
   in
   (topics, assocs)
 
@@ -177,7 +208,8 @@ viewLimboAssoc boxId model =
             Just assoc ->
               if Box.hasItem boxId topicId model then
                 -- only if related topic is in box we can call high-level viewAssoc()
-                [ viewAssoc assoc boxId model ]
+                viewAssoc assoc [boxId] [] model -- simple box path is sufficient for geometry,
+                                                 -- limbo assoc is never selected
               else
                 -- otherwise we call low-level lineFunc() with topic default position
                 let
@@ -185,13 +217,16 @@ viewLimboAssoc boxId model =
                 in
                 case Box.topicPos sourceTopicId boxId model of
                   Just pos ->
-                    [ lineFunc pos (Box.initTopicPos boxId model) (Just assoc) boxId model ]
+                    lineFunc pos (Box.initTopicPos boxId model) (Just assoc) [boxId] [] model
+                    -- simple box path is sufficient for geometry, limbo assoc is never selected
                   Nothing -> []
             Nothing -> []
       else
         []
     _ -> []
 
+
+-- Topic Rendering
 
 viewTopic : TopicInfo -> TopicProps -> BoxPath -> Model -> Html Msg
 viewTopic topic props boxPath model =
@@ -214,16 +249,16 @@ viewTopic topic props boxPath model =
       ++ style
     )
     ( children
-      ++ ToolAPI.viewItemTools topic.id boxPath model
+      ++ ToolAPI.viewTopicTools topic.id boxPath model
     )
 
 
-topicAttr : Id -> BoxPath -> Attributes Msg
+topicAttr : Id -> BoxPath -> Attrs Msg
 topicAttr topicId boxPath =
   [ id <| Box.elemId "topic" topicId boxPath ]
 
 
-topicStyle : Id -> BoxId -> Model -> Attributes Msg
+topicStyle : Id -> BoxId -> Model -> Attrs Msg
 topicStyle id boxId model =
   let
     isLimbo = MM.isLimboTopic id boxId model
@@ -247,7 +282,7 @@ labelTopic topic props boxPath model =
   )
 
 
-inputStyle : Attributes Msg
+inputStyle : Attrs Msg
 inputStyle =
   [ style "font-family" C.mainFont -- Default for <input> is "-apple-system" (on Mac)
   , style "font-size" <| fromInt C.contentFontSize ++ "px"
@@ -258,7 +293,7 @@ inputStyle =
   ]
 
 
-topicLabelStyle : Attributes Msg
+topicLabelStyle : Attrs Msg
 topicLabelStyle =
   [ style "font-size" <| fromInt C.contentFontSize ++ "px"
   , style "font-weight" C.topicLabelWeight
@@ -316,7 +351,7 @@ detailTopic topic props boxPath model =
   )
 
 
-detailTopicStyle : TopicProps -> Attributes Msg
+detailTopicStyle : TopicProps -> Attrs Msg
 detailTopicStyle {pos} =
   [ style "display" "flex"
   , style "left" <| fromInt (pos.x - C.topicW2) ++ "px"
@@ -324,7 +359,7 @@ detailTopicStyle {pos} =
   ]
 
 
-detailTextStyle : Id -> BoxPath -> Model -> Attributes Msg
+detailTextStyle : Id -> BoxPath -> Model -> Attrs Msg
 detailTextStyle topicId boxPath model =
   let
     r = fromInt C.topicRadius ++ "px"
@@ -339,14 +374,14 @@ detailTextStyle topicId boxPath model =
   ++ selectionStyle topicId boxPath model
 
 
-textViewStyle : Attributes Msg
+textViewStyle : Attrs Msg
 textViewStyle =
   [ style "min-width" <| fromInt (C.topicSize.w - C.topicSize.h) ++ "px"
   , style "max-width" "max-content"
   ]
 
 
-textEditorStyle : Id -> Model -> Attributes Msg
+textEditorStyle : Id -> Model -> Attrs Msg
 textEditorStyle topicId model =
   let
     height = case Item.topicSize topicId .editor model of
@@ -362,7 +397,31 @@ textEditorStyle topicId model =
   ]
 
 
-topicIconStyle : Attributes Msg
+iconBoxStyle : TopicProps -> Attrs Msg
+iconBoxStyle props =
+  let
+    r1 = fromInt C.topicRadius ++ "px"
+    r4 = case props.displayMode of
+      BoxD WhiteBox -> "0"
+      _ -> r1
+  in
+  [ style "flex" "none"
+  , style "width" <| fromInt C.topicSize.h ++ "px"
+  , style "height" <| fromInt C.topicSize.h ++ "px"
+  , style "border-radius" <| r1 ++ " 0 0 " ++ r4
+  , style "background-color" "black"
+  ]
+
+
+detailTopicIconBoxStyle : Attrs Msg
+detailTopicIconBoxStyle =
+  -- icon box correction as detail topic has no border, in contrast to label topic
+  [ style "padding-left" <| fromInt C.topicBorderWidth ++ "px"
+  , style "width" <| fromInt (C.topicSize.h - C.topicBorderWidth) ++ "px"
+  ]
+
+
+topicIconStyle : Attrs Msg
 topicIconStyle =
   [ style "position" "relative"
   , style "top" <| fromInt ((C.topicSize.h - C.topicIconSize) // 2) ++ "px"
@@ -386,7 +445,14 @@ blackBoxTopic topic props boxPath model =
   )
 
 
-topicFlexboxStyle : TopicInfo -> TopicProps -> BoxPath -> Model -> Attributes Msg
+topicPosStyle : TopicProps -> Attrs Msg
+topicPosStyle { pos } =
+  [ style "left" <| fromInt (pos.x - C.topicW2) ++ "px"
+  , style "top" <| fromInt (pos.y - C.topicH2) ++ "px"
+  ]
+
+
+topicFlexboxStyle : TopicInfo -> TopicProps -> BoxPath -> Model -> Attrs Msg
 topicFlexboxStyle topic props boxPath model =
   let
     r12 = fromInt C.topicRadius ++ "px"
@@ -404,7 +470,7 @@ topicFlexboxStyle topic props boxPath model =
   ++ topicBorderStyle topic.id boxPath model
 
 
-ghostTopicStyle : TopicInfo -> BoxPath -> Model -> Attributes Msg
+ghostTopicStyle : TopicInfo -> BoxPath -> Model -> Attrs Msg
 ghostTopicStyle topic boxPath model =
   [ style "position" "absolute"
   , style "left" <| fromInt C.blackBoxOffset ++ "px"
@@ -416,6 +482,38 @@ ghostTopicStyle topic boxPath model =
   ]
   ++ topicBorderStyle topic.id boxPath model
   ++ selectionStyle topic.id boxPath model
+
+
+topicBorderStyle : Id -> BoxPath -> Model -> Attrs Msg
+topicBorderStyle id boxPath model =
+  let
+    isTarget_ = isTarget id boxPath
+    targeted = case model.mouse.dragState of
+      -- can't move a topic to a box where it is already, can happen if mouse moves very quick
+      -- can't create assoc when both topics are in different box
+      Drag DragTopic _ (boxId_ :: _) _ _ target -> isTarget_ target && boxId_ /= id
+      Drag DraftAssoc _ boxPath_ _ _ target -> isTarget_ target && boxPath_ == boxPath
+      _ -> False
+  in
+  [ style "border-width" <| fromInt C.topicBorderWidth ++ "px"
+  , style "border-style" <| if targeted then "dashed" else "solid"
+  , style "box-sizing" "border-box"
+  , style "background-color" "white"
+  ]
+
+
+isTarget : Id -> BoxPath -> Maybe (Id, BoxPath) -> Bool
+isTarget topicId boxPath target_ =
+  case target_ of
+    Just target -> target == (topicId, boxPath)
+    Nothing -> False
+
+
+selectionStyle : Id -> BoxPath -> Model -> Attrs Msg
+selectionStyle topicId boxPath model =
+  case SelAPI.isSelectedPath topicId boxPath model of
+    True -> [ style "box-shadow" C.topicBoxShadow ]
+    False -> []
 
 
 whiteBoxTopic : TopicInfo -> TopicProps -> BoxPath -> Model -> TopicRendering
@@ -458,7 +556,7 @@ viewItemCount topicId props model =
   ]
 
 
-itemCountStyle : Attributes Msg
+itemCountStyle : Attrs Msg
 itemCountStyle =
   [ style "font-size" <| fromInt C.contentFontSize ++ "px"
   , style "position" "absolute"
@@ -466,25 +564,17 @@ itemCountStyle =
   ]
 
 
-viewAssoc : AssocInfo -> BoxId -> Model -> Svg Msg
-viewAssoc assoc boxId model =
+-- Association Rendering
+
+viewAssoc : AssocInfo -> BoxPath -> Attrs Msg -> Model -> List (Svg Msg)
+viewAssoc assoc boxPath clickHandler model =
   let
-    geom = assocGeometry assoc boxId model
+    boxId = Box.firstId boxPath
+    geom = Box.assocGeometry assoc boxId model
   in
   case geom of
-    Just (pos1, pos2) -> lineFunc pos1 pos2 (Just assoc) boxId model
-    Nothing -> text "" -- TODO
-
-
-assocGeometry : AssocInfo -> BoxId -> Model -> Maybe (Point, Point)
-assocGeometry assoc boxId model =
-  let
-    pos1 = Box.topicPos assoc.player1 boxId model
-    pos2 = Box.topicPos assoc.player2 boxId model
-  in
-  case Maybe.map2 (\p1 p2 -> (p1, p2)) pos1 pos2 of
-    Just geometry -> Just geometry
-    Nothing -> U.fail "assocGeometry" { assoc = assoc, boxId = boxId } Nothing
+    Just (pos1, pos2) -> lineFunc pos1 pos2 (Just assoc) boxPath clickHandler model
+    Nothing -> []
 
 
 viewAssocDraft : BoxId -> Model -> List (Svg Msg)
@@ -498,7 +588,8 @@ viewAssocDraft boxId model =
               (pos.x + box.scroll.x)
               (pos.y + box.scroll.y - C.appHeaderHeight)
           in
-          [ lineFunc origPos (relPos pagePos boxPath model) Nothing boxId model ]
+          lineFunc origPos (relPos pagePos boxPath model) Nothing [boxId] [] model
+          -- simple box path is sufficient for geometry, draft assoc is never selected
         _ -> []
     _ -> []
 
@@ -552,108 +643,43 @@ accumulateRect posAcc boxId model =
     Nothing -> Point 0 0 -- error is already logged
 
 
-
--- STYLE
-
-
-topicPosStyle : TopicProps -> Attributes Msg
-topicPosStyle { pos } =
-  [ style "left" <| fromInt (pos.x - C.topicW2) ++ "px"
-  , style "top" <| fromInt (pos.y - C.topicH2) ++ "px"
-  ]
-
-
-iconBoxStyle : TopicProps -> Attributes Msg
-iconBoxStyle props =
-  let
-    r1 = fromInt C.topicRadius ++ "px"
-    r4 = case props.displayMode of
-      BoxD WhiteBox -> "0"
-      _ -> r1
-  in
-  [ style "flex" "none"
-  , style "width" <| fromInt C.topicSize.h ++ "px"
-  , style "height" <| fromInt C.topicSize.h ++ "px"
-  , style "border-radius" <| r1 ++ " 0 0 " ++ r4
-  , style "background-color" "black"
-  ]
-
-
-detailTopicIconBoxStyle : Attributes Msg
-detailTopicIconBoxStyle =
-  -- icon box correction as detail topic has no border, in contrast to label topic
-  [ style "padding-left" <| fromInt C.topicBorderWidth ++ "px"
-  , style "width" <| fromInt (C.topicSize.h - C.topicBorderWidth) ++ "px"
-  ]
-
-
-topicBorderStyle : Id -> BoxPath -> Model -> Attributes Msg
-topicBorderStyle id boxPath model =
-  let
-    isTarget_ = isTarget id boxPath
-    targeted = case model.mouse.dragState of
-      -- can't move a topic to a box where it is already, can happen if mouse moves very quick
-      -- can't create assoc when both topics are in different box
-      Drag DragTopic _ (boxId_ :: _) _ _ target -> isTarget_ target && boxId_ /= id
-      Drag DraftAssoc _ boxPath_ _ _ target -> isTarget_ target && boxPath_ == boxPath
-      _ -> False
-  in
-  [ style "border-width" <| fromInt C.topicBorderWidth ++ "px"
-  , style "border-style" <| if targeted then "dashed" else "solid"
-  , style "box-sizing" "border-box"
-  , style "background-color" "white"
-  ]
-
-
-selectionStyle : Id -> BoxPath -> Model -> Attributes Msg
-selectionStyle topicId boxPath model =
-  case SelAPI.isSelectedPath topicId boxPath model of
-    True -> [ style "box-shadow" "gray 5px 5px 5px" ]
-    False -> []
-
-
-isTarget : Id -> BoxPath -> Maybe (Id, BoxPath) -> Bool
-isTarget topicId boxPath target_ =
-  case target_ of
-    Just target -> target == (topicId, boxPath)
-    Nothing -> False
-
-
 -- One possible lineFunc
-directLine : Point -> Point -> Maybe AssocInfo -> BoxId -> Model -> Svg Msg
-directLine pos1 pos2 assoc boxId model =
+directLine : Point -> Point -> Maybe AssocInfo -> BoxPath -> Attrs Msg -> Model
+                                                                               -> List (Svg Msg)
+directLine pos1 pos2 maybeAssoc boxPath clickHandler model =
   line
-    ( [ x1 <| fromInt pos1.x
+    Svg.line
+      [ x1 <| fromInt pos1.x
       , y1 <| fromInt pos1.y
       , x2 <| fromInt pos2.x
       , y2 <| fromInt pos2.y
-      ] ++ lineStyle assoc boxId model
-    )
-    []
+      ]
+      clickHandler maybeAssoc boxPath model
 
 
 -- One possible lineFunc
-taxiLine : Point -> Point -> Maybe AssocInfo -> BoxId -> Model -> Svg Msg
-taxiLine pos1 pos2 assoc boxId model =
-  if abs (pos2.x - pos1.x) < 2 * C.assocRadius then -- straight vertical
+taxiLine : Point -> Point -> Maybe AssocInfo -> BoxPath -> Attrs Msg -> Model -> List (Svg Msg)
+taxiLine pos1 pos2 maybeAssoc boxPath clickHandler model =
+  -- straight vertical
+  if abs (pos2.x - pos1.x) < 2 * C.assocRadius then
     let
       xm = (pos1.x + pos2.x) // 2
     in
-    path
-      ( [ d ("M " ++ fromInt xm ++ " " ++ fromInt pos1.y ++ " V " ++ fromInt pos2.y)
-        ] ++ lineStyle assoc boxId model
-      )
-      []
-  else if abs (pos2.y - pos1.y) < 2 * C.assocRadius then -- straight horizontal
+    line
+      Svg.path
+        [ d ("M " ++ fromInt xm ++ " " ++ fromInt pos1.y ++ " V " ++ fromInt pos2.y) ]
+        clickHandler maybeAssoc boxPath model
+  -- straight horizontal
+  else if abs (pos2.y - pos1.y) < 2 * C.assocRadius then
     let
       ym = (pos1.y + pos2.y) // 2
     in
-    path
-      ( [ d ("M " ++ fromInt pos1.x ++ " " ++ fromInt ym ++ " H " ++ fromInt pos2.x)
-        ] ++ lineStyle assoc boxId model
-      )
-      []
-  else -- 5 segment taxi line
+    line
+      Svg.path
+        [ d ("M " ++ fromInt pos1.x ++ " " ++ fromInt ym ++ " H " ++ fromInt pos2.x) ]
+        clickHandler maybeAssoc boxPath model
+  -- 5 segment taxi line
+  else
     let
       sx = if pos2.x > pos1.x then 1 else -1 -- sign x
       sy = if pos2.y > pos1.y then -1 else 1 -- sign y
@@ -672,21 +698,44 @@ taxiLine pos1 pos2 assoc boxId model =
       sw2 = fromInt sweep2
       r = fromInt C.assocRadius
     in
-    path
-      ( [ d
-          ( "M " ++ fromInt pos1.x ++ " " ++ fromInt pos1.y ++
-            " V " ++ y1 ++
-            " A " ++ r ++ " " ++ r ++ " 0 0 " ++ sw1 ++ " " ++ x1 ++ " " ++ fromInt ym ++
-            " H " ++ x2 ++
-            " A " ++ r ++ " " ++ r ++ " 0 0 " ++ sw2 ++ " " ++ fromInt pos2.x ++ " " ++ y2 ++
-            " V " ++ fromInt pos2.y
-          )
-        ] ++ lineStyle assoc boxId model
+    line
+      Svg.path
+        [ d
+            ( "M " ++ fromInt pos1.x ++ " " ++ fromInt pos1.y ++
+              " V " ++ y1 ++
+              " A " ++ r ++ " " ++ r ++ " 0 0 " ++ sw1 ++ " " ++ x1 ++ " " ++ fromInt ym ++
+              " H " ++ x2 ++
+              " A " ++ r ++ " " ++ r ++ " 0 0 " ++ sw2 ++ " " ++ fromInt pos2.x ++ " " ++ y2 ++
+              " V " ++ fromInt pos2.y
+            )
+        ]
+        clickHandler maybeAssoc boxPath model
+
+
+type alias SvgDir = Attrs Msg -> List (Svg Msg) -> Svg Msg
+
+
+line : SvgDir -> Attrs Msg -> Attrs Msg -> Maybe AssocInfo -> BoxPath -> Model -> List (Svg Msg)
+line svgDir geometry clickHandler maybeAssoc boxPath model =
+  let
+    boxId = Box.firstId boxPath
+  in
+  [ svgDir -- visible line
+      ( geometry
+        ++ lineStyle maybeAssoc boxId model
+        ++ lineSelectionStyle maybeAssoc boxPath model
       )
       []
+  , svgDir -- hit area
+      ( geometry
+        ++ clickHandler
+        ++ lineHitAreaStyle
+      )
+      []
+  ]
 
 
-lineStyle : Maybe AssocInfo -> BoxId -> Model -> Attributes Msg
+lineStyle : Maybe AssocInfo -> BoxId -> Model -> Attrs Msg
 lineStyle assoc boxId model =
   let
     color =
@@ -702,6 +751,24 @@ lineStyle assoc boxId model =
   , strokeDasharray <| lineDasharray assoc
   , fill "none"
   ]
+
+
+lineHitAreaStyle : Attrs Msg
+lineHitAreaStyle =
+  [ stroke "transparent"
+  , strokeWidth <| fromInt C.assocHitArea ++ "px"
+  , fill "none"
+  ]
+
+
+lineSelectionStyle : Maybe AssocInfo -> BoxPath -> Model -> Attrs Msg
+lineSelectionStyle maybeAssoc boxPath model =
+  case maybeAssoc of
+    Just {id} ->
+      case SelAPI.isSelectedPath id boxPath model of
+        True -> [ filter "url(#shadow)" ]
+        False -> []
+    Nothing -> []
 
 
 lineDasharray : Maybe AssocInfo -> String
