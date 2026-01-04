@@ -209,42 +209,42 @@ viewTopicTools : Id -> BoxPath -> Model -> List (Html Msg)
 viewTopicTools topicId boxPath model =
   let
     boxId = Box.firstId boxPath
+    isHovered = MouseAPI.isHovered topicId boxId model -- TODO: use boxPath
+    isEmptyBox = Item.isBox topicId model && Box.isEmpty topicId model
+    isEdit = TextAPI.isEdit topicId boxPath model
   in
-  case MouseAPI.isHovered topicId boxId model of -- TODO: use boxPath
-    True -> viewCaret topicId boxId model
-    False -> []
-
-
-viewCaret : Id -> BoxId -> Model -> List (Html Msg)
-viewCaret topicId boxId model =
-  if  Item.isBox topicId model && Box.isEmpty topicId model then
-    []
+  if isHovered && not isEmptyBox && not isEdit then
+    [ viewCaret topicId boxId model ]
   else
-    let
-      icon =
-        case Box.displayMode topicId boxId model of
-          Just (TopicD LabelOnly) -> "chevron-right"
-          Just (TopicD Detail) -> "chevron-down"
-          Just (BoxD BlackBox) -> "chevron-right"
-          Just (BoxD WhiteBox) -> "chevron-down"
-          Just (BoxD Unboxed) -> "chevron-down"
-          Nothing -> "??"
-    in
-    [ button
-        ( [ onClick <| Tool <| Tool.ToggleDisplay topicId boxId
-          , U.onMouseDownStop NoOp -- prevent cancel UI
-          ]
-          ++ caretStyle
-        )
-        [ IconAPI.view icon 20 [] ]
-    ]
+    []
+
+
+viewCaret : Id -> BoxId -> Model -> Html Msg
+viewCaret topicId boxId model =
+  let
+    icon =
+      case Box.displayMode topicId boxId model of
+        Just (TopicD LabelOnly) -> "chevron-right"
+        Just (TopicD Detail) -> "chevron-down"
+        Just (BoxD BlackBox) -> "chevron-right"
+        Just (BoxD WhiteBox) -> "chevron-down"
+        Just (BoxD Unboxed) -> "chevron-down"
+        Nothing -> "??"
+  in
+  button
+    ( [ onClick <| Tool <| Tool.ToggleDisplay topicId boxId
+      , U.onMouseDownStop NoOp -- prevent cancel UI
+      ]
+      ++ caretStyle
+    )
+    [ IconAPI.view icon 20 [] ]
 
 
 caretStyle : Attrs Msg
 caretStyle =
   [ style "position" "absolute"
-  , style "top" "1px"
-  , style "left" "-27px"
+  , style "top" "2px"
+  , style "left" "-26px"
   , style "background-color" "transparent"
   , style "border" "none"
   ]
