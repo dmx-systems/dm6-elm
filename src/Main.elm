@@ -330,17 +330,26 @@ select itemId boxPath model =
 
 cancelUI : Maybe (Id, BoxPath) -> Model -> (Model, Cmd Msg)
 cancelUI maybeTarget model =
-  let
-    shouldClear =
-      case maybeTarget of
-        Just (itemId, boxPath) -> not <| SelAPI.isSelected itemId (Box.firstId boxPath) model
-        Nothing -> True
-  in
   model
-    |> (if shouldClear then SelAPI.clear else identity)
     |> IconAPI.closePicker
     |> SearchAPI.closeMenu
-    |> TextAPI.leaveEdit
+    |> cancelUIWith maybeTarget
+
+
+cancelUIWith : Maybe (Id, BoxPath) -> Model -> (Model, Cmd Msg)
+cancelUIWith maybeTarget model =
+  let
+    isTargetSelected =
+      case maybeTarget of
+        Just (itemId, boxPath) -> SelAPI.isSelected itemId (Box.firstId boxPath) model
+        Nothing -> False
+  in
+  if isTargetSelected then
+    ( model, Cmd.none ) -- keep selection and edit mode
+  else
+    model
+      |> SelAPI.clear
+      |> TextAPI.leaveEdit
 
 
 updateScrollPos : Point -> Model -> Model

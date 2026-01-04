@@ -159,21 +159,21 @@ viewTopicToolbar pos topicId boxPath model =
 
 
 viewTextToolbar : Point -> Id -> BoxPath -> Html Msg
-viewTextToolbar pos itemId boxPath =
+viewTextToolbar pos topicId boxPath =
   let
-    target = (itemId, boxPath)
+    target = (topicId, boxPath)
   in
   div
     ( toolbarStyle pos )
-    [ viewButton "Insert Image" "image" (Tool.Image itemId) False target
+    [ viewButton "Insert Image" "image" (Tool.Image topicId) False target
     , viewButton "Done" "check" Tool.LeaveEdit False target
     ]
 
 
 viewAssocToolbar : Point -> Id -> BoxPath -> Html Msg
-viewAssocToolbar pos itemId boxPath =
+viewAssocToolbar pos assocId boxPath =
   let
-    target = (itemId, boxPath)
+    target = (assocId, boxPath)
   in
   div
     ( toolbarStyle pos )
