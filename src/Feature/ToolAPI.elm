@@ -1,5 +1,5 @@
 module Feature.ToolAPI exposing (viewGlobalTools, viewMapTools, viewToolbar, viewTopicTools,
-  update)
+  closeMenu, update)
 
 import Box
 import Box.Size as Size
@@ -43,9 +43,12 @@ viewGlobalTools model =
     [ viewTextButton "Import" Tool.Import
     , viewTextButton "Export" Tool.Export
     ]
+  , viewIconButton "Settings" "menu" 20 Tool.Menu False Nothing homeButtonStyle
   ]
+  ++ viewMenu model
 
 
+-- TODO
 homeButtonStyle : Attrs Msg
 homeButtonStyle =
   [ style "position" "relative"
@@ -57,6 +60,30 @@ homeButtonStyle =
 importExportStyle : Attrs Msg
 importExportStyle =
   [ style "white-space" "nowrap" ]
+
+
+viewMenu : Model -> List (Html Msg)
+viewMenu model =
+  if model.tool.menu then
+    [ div
+        menuStyle
+        []
+    ]
+  else
+    []
+
+
+menuStyle : Attrs Msg
+menuStyle =
+  [ style "position" "absolute"
+  , style "top" "32px"
+  , style "right" "10px"
+  , style "width" "280px"
+  , style "height" "180px"
+  , style "border" "1px solid lightgray"
+  , style "background-color" "white"
+  , style "z-index" "5"
+  ]
 
 
 -- Map Tools
@@ -311,6 +338,7 @@ update msg ({present} as undoModel) =
   case msg of
     -- Global Tools
     Tool.Home -> (undoModel, NavAPI.pushUrl rootBoxId)
+    Tool.Menu -> (openMenu present, Cmd.none) |> Undo.swap undoModel
     Tool.Import -> (present, S.importJSON ()) |> Undo.swap undoModel
     Tool.Export -> (present, S.exportJSON ()) |> Undo.swap undoModel
     -- Map Tools
@@ -333,6 +361,16 @@ update msg ({present} as undoModel) =
     Tool.Image topicId -> TextAPI.openImageFilePicker topicId present |> S.storeWith
       |> Undo.swap undoModel
     Tool.LeaveEdit -> TextAPI.leaveEdit present |> Undo.swap undoModel
+
+
+openMenu : Model -> Model
+openMenu model =
+  { model | tool = { menu = True }}
+
+
+closeMenu : Model -> Model
+closeMenu model =
+  { model | tool = { menu = False }}
 
 
 addTopic : Model -> (Model, Cmd Msg)

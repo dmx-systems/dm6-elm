@@ -26,6 +26,7 @@ type alias Model =
   ----- transient -----
   , imageCache : Dict ImageId String -- Int -> blob: URL
   -- feature modules
+  , tool : Tool.Model
   , text : Text.Model
   , mouse : Mouse.Model
   , search : Search.Model
@@ -47,6 +48,7 @@ init =
   ----- transient -----
   , imageCache = Dict.empty -- TODO: move to Text module, but should survive a map switch
   -- feature modules
+  , tool = Tool.init
   , text = Text.init
   , mouse = Mouse.init
   , search = Search.init
@@ -59,7 +61,8 @@ initTransient : Model -> Model
 initTransient model =
   { model
   -- feature modules
-  | text = Text.init
+  | tool = Tool.init
+  , text = Text.init
   , mouse = Mouse.init
   , search = Search.init
   , icon = Icon.init
@@ -98,6 +101,7 @@ encode model =
     , ("boxes", model.boxes |> Dict.values |> E.list encodeBox)
     , ("boxId", E.int model.boxId)
     , ("nextId", E.int model.nextId)
+    -- TODO: Tool module state
     ]
 
 
@@ -111,6 +115,7 @@ decoder =
   ----- transient -----
   |> hardcoded Dict.empty
   -- feature modules
+  |> hardcoded Tool.init -- TODO
   |> hardcoded Text.init
   |> hardcoded Mouse.init
   |> hardcoded Search.init

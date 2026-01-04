@@ -4,9 +4,19 @@ import ModelParts exposing (Id, BoxId)
 
 
 
+type alias Model =
+  { menu : Bool }
+
+
+init : Model
+init =
+  { menu = False }
+
+
 type Msg
   -- Global Tools
   = Home
+  | Menu
   | Import
   | Export
   -- Map Tools
@@ -20,7 +30,7 @@ type Msg
   | Traverse
   | Delete
   | Remove
-  | Fullscreen BoxId  -- box only
+  | Fullscreen BoxId -- box only
   | Unbox BoxId BoxId -- box only
   | ToggleDisplay Id BoxId
   -- Text Tools
