@@ -15,7 +15,7 @@ appHeaderHeight = 36
 
 mainFont = "sans-serif"
 editorFont = "monospace"
-toolFontSize = 13
+toolFontSize = 15
 contentFontSize = 13
 footerFontSize = 13
 
