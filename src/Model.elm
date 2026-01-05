@@ -23,7 +23,6 @@ type alias Model =
   , boxes : Boxes
   , boxId : BoxId -- the box rendered fullscreen
   , nextId : Id
-  ----- transient -----
   , imageCache : Dict ImageId String -- Int -> blob: URL
   -- feature modules
   , tool : Tool.Model
@@ -45,7 +44,6 @@ init =
     <| Box rootBoxId (Rectangle 0 0 0 0) (Point 0 0) Dict.empty
   , boxId = rootBoxId
   , nextId = 1
-  ----- transient -----
   , imageCache = Dict.empty -- TODO: move to Text module, but should survive a map switch
   -- feature modules
   , tool = Tool.init
@@ -96,28 +94,27 @@ type Msg
 
 encode : Model -> E.Value
 encode model =
-  E.object
+  E.object <|
     [ ("items", model.items |> Dict.values |> E.list encodeItem)
     , ("boxes", model.boxes |> Dict.values |> E.list encodeBox)
     , ("boxId", E.int model.boxId)
     , ("nextId", E.int model.nextId)
-    -- TODO: Tool module state
     ]
+    ++ Tool.encode model.tool
 
 
 decoder : D.Decoder Model
 decoder =
   D.succeed Model
-  |> required "items" (D.list itemDecoder |> D.andThen toDictDecoder)
-  |> required "boxes" (D.list boxDecoder |> D.andThen toDictDecoder)
-  |> required "boxId" D.int
-  |> required "nextId" D.int
-  ----- transient -----
-  |> hardcoded Dict.empty
-  -- feature modules
-  |> hardcoded Tool.init -- TODO
-  |> hardcoded Text.init
-  |> hardcoded Mouse.init
-  |> hardcoded Search.init
-  |> hardcoded Icon.init
-  |> hardcoded Sel.init
+    |> required "items" (D.list itemDecoder |> D.andThen toDictDecoder)
+    |> required "boxes" (D.list boxDecoder |> D.andThen toDictDecoder)
+    |> required "boxId" D.int
+    |> required "nextId" D.int
+    |> hardcoded Dict.empty
+    -- feature modules
+    |> required "tool" Tool.decoder
+    |> hardcoded Text.init
+    |> hardcoded Mouse.init
+    |> hardcoded Search.init
+    |> hardcoded Icon.init
+    |> hardcoded Sel.init

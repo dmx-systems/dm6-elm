@@ -214,11 +214,10 @@ encodeTextSize size =
 
 encodeAssocType : AssocType -> E.Value
 encodeAssocType assocType =
-  E.string
-    ( case assocType of
-        Hierarchy -> "Hierarchy"
-        Crosslink -> "Crosslink"
-    )
+  E.string <|
+    case assocType of
+      Hierarchy -> "Hierarchy"
+      Crosslink -> "Crosslink"
 
 
 encodeBox : Box -> E.Value
@@ -268,24 +267,22 @@ encodeBoxItem item =
 
 encodeVisibility : Visibility -> E.Value
 encodeVisibility visibility =
-  E.string
-    (case visibility of
+  E.string <|
+    case visibility of
       Visible Pinned -> "Pinned"
       Visible Unpinned -> "Visible"
       Removed -> "Removed"
-    )
 
 
 encodeDisplayName : DisplayMode -> E.Value
 encodeDisplayName displayMode =
-  E.string
-    (case displayMode of
+  E.string <|
+    case displayMode of
       TopicD LabelOnly -> "LabelOnly"
       TopicD Detail -> "Detail"
       BoxD BlackBox -> "BlackBox"
       BoxD WhiteBox -> "WhiteBox"
       BoxD Unboxed -> "Unboxed"
-    )
 
 
 -- Decode
@@ -411,8 +408,7 @@ displayModeDecoder str =
 
 maybeString : String -> D.Decoder (Maybe String)
 maybeString str =
-  D.succeed
-    ( case str of
-        "" -> Nothing
-        _ -> Just str
-    )
+  D.succeed <|
+    case str of
+      "" -> Nothing
+      _ -> Just str

@@ -385,7 +385,7 @@ update msg ({present} as undoModel) =
     -- Global Tools
     Tool.Home -> (undoModel, NavAPI.pushUrl rootBoxId)
     Tool.Menu -> (openMenu present, Cmd.none) |> Undo.swap undoModel
-    Tool.Set lineStyle -> (setLineStyle lineStyle present, Cmd.none) |> Undo.push undoModel
+    Tool.Set lineStyle -> setLineStyle lineStyle present |> S.store |> Undo.push undoModel
     Tool.Import -> (present, S.importJSON ()) |> Undo.swap undoModel
     Tool.Export -> (present, S.exportJSON ()) |> Undo.swap undoModel
     -- Map Tools
