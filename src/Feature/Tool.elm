@@ -5,18 +5,28 @@ import ModelParts exposing (Id, BoxId)
 
 
 type alias Model =
-  { menu : Bool }
+  { menu : Bool
+  , lineStyle : LineStyle
+  }
 
 
 init : Model
 init =
-  { menu = False }
+  { menu = False
+  , lineStyle = Cornered
+  }
+
+
+type LineStyle
+  = Cornered
+  | Straight
 
 
 type Msg
   -- Global Tools
   = Home
   | Menu
+  | Set LineStyle
   | Import
   | Export
   -- Map Tools

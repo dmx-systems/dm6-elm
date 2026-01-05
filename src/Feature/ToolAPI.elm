@@ -11,7 +11,7 @@ import Feature.NavAPI as NavAPI
 import Feature.SearchAPI as SearchAPI
 import Feature.SelAPI as SelAPI
 import Feature.TextAPI as TextAPI
-import Feature.Tool as Tool
+import Feature.Tool as Tool exposing (LineStyle(..))
 import Item
 import Model exposing (Model, Msg(..))
 import ModelParts exposing (..)
@@ -54,15 +54,18 @@ homeButtonStyle =
 
 viewMenu : Model -> List (Html Msg)
 viewMenu model =
+  let
+    is = (==) model.tool.lineStyle
+  in
   if model.tool.menu then
     [ div
         menuStyle
         [ div headingStyle [ text "Line Style" ]
         , div
             []
-            [ viewRadioButton "Straight" NoOp False
+            [ viewRadioButton "Cornered" (Tool.Set Cornered) <| is Cornered
             , hGap 20
-            , viewRadioButton "Cornered" NoOp False
+            , viewRadioButton "Straight" (Tool.Set Straight) <| is Straight
             ]
         , vGap 32
         , div headingStyle [ text "Database" ]
@@ -86,12 +89,12 @@ menuStyle =
   , style "right" "8px"
   , style "border" "1px solid lightgray"
   , style "background-color" "white"
-  , style "padding" "22px 18px 16px"
+  , style "padding" "24px 18px 16px"
   , style "z-index" "5"
   ]
 
 
-viewRadioButton : String -> Msg -> Bool -> Html Msg
+viewRadioButton : String -> Tool.Msg -> Bool -> Html Msg
 viewRadioButton label_ msg isChecked  =
   label
     [ U.onMouseDownStop NoOp ]
@@ -99,7 +102,7 @@ viewRadioButton label_ msg isChecked  =
       ( [ type_ "radio"
         , name "line-style"
         , checked isChecked
-        , onClick msg
+        , onClick <| Tool msg
         ]
         ++ radioButtonStyle
       )
@@ -382,6 +385,7 @@ update msg ({present} as undoModel) =
     -- Global Tools
     Tool.Home -> (undoModel, NavAPI.pushUrl rootBoxId)
     Tool.Menu -> (openMenu present, Cmd.none) |> Undo.swap undoModel
+    Tool.Set lineStyle -> (setLineStyle lineStyle present, Cmd.none) |> Undo.push undoModel
     Tool.Import -> (present, S.importJSON ()) |> Undo.swap undoModel
     Tool.Export -> (present, S.exportJSON ()) |> Undo.swap undoModel
     -- Map Tools
@@ -406,15 +410,29 @@ update msg ({present} as undoModel) =
     Tool.LeaveEdit -> TextAPI.leaveEdit present |> Undo.swap undoModel
 
 
+-- Global Tools
+
 openMenu : Model -> Model
 openMenu model =
-  { model | tool = { menu = True }}
+  setMenu True model
 
 
 closeMenu : Model -> Model
 closeMenu model =
-  { model | tool = { menu = False }}
+  setMenu False model
 
+
+setMenu : Bool -> Model -> Model
+setMenu isOpen ({tool} as model) =
+  { model | tool = { tool | menu = isOpen }}
+
+
+setLineStyle : Tool.LineStyle -> Model -> Model
+setLineStyle lineStyle ({tool} as model) =
+  { model | tool = { tool | lineStyle = lineStyle }}
+
+
+-- Map Tools
 
 addTopic : Model -> (Model, Cmd Msg)
 addTopic model =
@@ -447,6 +465,8 @@ addBox model =
     |> SelAPI.select topicId [ boxId ]
     |> TextAPI.enterEdit topicId [ boxId ]
 
+
+-- Item Tools
 
 edit : Model -> (Model, Cmd Msg)
 edit model =
