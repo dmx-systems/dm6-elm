@@ -1,7 +1,6 @@
 module Undo exposing (UndoModel, undo, redo, push, swap, reset, hasPast, hasFuture)
 
 import Model exposing (Model, Msg)
-import Storage as S
 
 import UndoList exposing (UndoList)
 
@@ -17,26 +16,14 @@ type alias UndoModel = UndoList Model
 -- BASIC OPERATIONS
 
 
-undo : UndoModel -> (UndoModel, Cmd Msg)
+undo : UndoModel -> UndoModel
 undo undoModel =
-  let
-    newUndoModel = UndoList.undo undoModel
-    newModel = Model.initTransient newUndoModel.present
-  in
-  newModel
-  |> S.store
-  |> swap newUndoModel
+  UndoList.undo undoModel
 
 
-redo : UndoModel -> (UndoModel, Cmd Msg)
+redo : UndoModel -> UndoModel
 redo undoModel =
-  let
-    newUndoModel = UndoList.redo undoModel
-    newModel = Model.initTransient newUndoModel.present
-  in
-  newModel
-  |> S.store
-  |> swap newUndoModel
+  UndoList.redo undoModel
 
 
 
@@ -65,10 +52,10 @@ reset (model, cmd) =
 hasPast : UndoModel -> Bool
 hasPast undoModel =
   undoModel
-  |> UndoList.hasPast
+    |> UndoList.hasPast
 
 
 hasFuture : UndoModel -> Bool
 hasFuture undoModel =
   undoModel
-  |> UndoList.hasFuture
+    |> UndoList.hasFuture

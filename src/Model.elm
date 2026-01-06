@@ -55,19 +55,6 @@ init =
   }
 
 
-initTransient : Model -> Model
-initTransient model =
-  { model
-  -- feature modules
-  | tool = Tool.init
-  , text = Text.init
-  , mouse = Mouse.init
-  , search = Search.init
-  , icon = Icon.init
-  , selection = Sel.init
-  }
-
-
 type Msg
   -- gestures detected by Mouse module
   = AddAssoc Id Id BoxId
@@ -99,8 +86,8 @@ encode model =
     , ("boxes", model.boxes |> Dict.values |> E.list encodeBox)
     , ("boxId", E.int model.boxId)
     , ("nextId", E.int model.nextId)
+    , ("tool", Tool.encode model.tool)
     ]
-    ++ Tool.encode model.tool
 
 
 decoder : D.Decoder Model

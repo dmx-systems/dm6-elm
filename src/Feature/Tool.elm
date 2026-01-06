@@ -55,12 +55,10 @@ type Msg
 -- JSON
 
 
-encode : Model -> List (String, E.Value)
+encode : Model -> E.Value
 encode model =
-  [ ( "tool", E.object
-      [ ( "lineStyle", encodeLineStyle model.lineStyle ) ]
-    )
-  ]
+  E.object
+    [ ( "lineStyle", encodeLineStyle model.lineStyle ) ]
 
 
 encodeLineStyle : LineStyle -> E.Value

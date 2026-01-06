@@ -391,8 +391,8 @@ update msg ({present} as undoModel) =
     -- Map Tools
     Tool.AddTopic -> addTopic present |> S.storeWith |> Undo.push undoModel
     Tool.AddBox -> addBox present |> S.storeWith |> Undo.push undoModel
-    Tool.Undo -> Undo.undo undoModel
-    Tool.Redo -> Undo.redo undoModel
+    Tool.Undo -> undoModel |> Undo.undo |> store
+    Tool.Redo -> undoModel |> Undo.redo |> store
     -- Item Tools
     Tool.Edit -> edit present |> S.storeWith |> Undo.push undoModel
     Tool.Icon -> (IconAPI.openPicker present, Cmd.none) |> Undo.swap undoModel
@@ -449,7 +449,7 @@ addTopic model =
     |> TextAPI.enterEdit topicId [ boxId ]
 
 
--- TODO: factor out addTopic() common code
+-- TODO: factor out addTopic() common code?
 addBox : Model -> (Model, Cmd Msg)
 addBox model =
   let
@@ -464,6 +464,12 @@ addBox model =
     |> Box.addItem topicId props boxId
     |> SelAPI.select topicId [ boxId ]
     |> TextAPI.enterEdit topicId [ boxId ]
+
+
+store : UndoModel -> (UndoModel, Cmd Msg)
+store undoModel =
+  ( undoModel, undoModel.present |> S.storeCmd )
+
 
 
 -- Item Tools
