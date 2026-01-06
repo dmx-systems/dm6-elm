@@ -7,6 +7,7 @@ import Feature.Mouse exposing (DragState(..), DragMode(..))
 import Feature.MouseAPI as MouseAPI
 import Feature.SelAPI as SelAPI
 import Feature.TextAPI as TextAPI
+import Feature.Tool exposing (LineStyle(..))
 import Feature.ToolAPI as ToolAPI
 import Item
 import Map.Model as MM
@@ -24,13 +25,6 @@ import Svg.Attributes exposing (width, height, x, y, x1, y1, x2, y2, d, stroke, 
 
 
 
--- CONFIG
-
-
-lineFunc = taxiLine -- or directLine
-
-
-
 -- MODEL
 
 
@@ -42,7 +36,12 @@ type alias BoxInfo =
     )
   )
 
+
 type alias TopicRendering = (Attrs Msg, List (Html Msg))
+
+
+type alias LineRenderer
+  = Point -> Point -> Maybe AssocInfo -> BoxPath -> Attrs Msg -> Model -> List (Svg Msg)
 
 
 
@@ -211,14 +210,16 @@ viewLimboAssoc boxId model =
                 viewAssoc assoc [boxId] [] model -- simple box path is sufficient for geometry,
                                                  -- limbo assoc is never selected
               else
-                -- otherwise we call low-level lineFunc() with topic default position
+                -- otherwise we call low-level lineRenderer() with topic default position
                 let
                   sourceTopicId = Item.otherPlayerId assocId topicId model
                 in
                 case Box.topicPos sourceTopicId boxId model of
                   Just pos ->
-                    lineFunc pos (Box.initTopicPos boxId model) (Just assoc) [boxId] [] model
-                    -- simple box path is sufficient for geometry, limbo assoc is never selected
+                    (lineRenderer model)
+                      pos (Box.initTopicPos boxId model) (Just assoc)
+                      [boxId] [] model -- simple box path is sufficient for geometry,
+                                       -- limbo assoc is never selected
                   Nothing -> []
             Nothing -> []
       else
@@ -573,7 +574,7 @@ viewAssoc assoc boxPath clickHandler model =
     geom = Box.assocGeometry assoc boxId model
   in
   case geom of
-    Just (pos1, pos2) -> lineFunc pos1 pos2 (Just assoc) boxPath clickHandler model
+    Just (pos1, pos2) -> (lineRenderer model) pos1 pos2 (Just assoc) boxPath clickHandler model
     Nothing -> []
 
 
@@ -588,7 +589,7 @@ viewAssocDraft boxId model =
               (pos.x + box.scroll.x)
               (pos.y + box.scroll.y - C.appHeaderHeight)
           in
-          lineFunc origPos (relPos pagePos boxPath model) Nothing [boxId] [] model
+          (lineRenderer model) origPos (relPos pagePos boxPath model) Nothing [boxId] [] model
           -- simple box path is sufficient for geometry, draft assoc is never selected
         _ -> []
     _ -> []
@@ -637,17 +638,23 @@ accumulatePos posAcc boxId parentBoxId boxIds model =
 accumulateRect : Point -> BoxId -> Model -> Point
 accumulateRect posAcc boxId model =
   case Box.byIdOrLog boxId model of
-    Just box -> Point
-      (posAcc.x - box.rect.x1)
-      (posAcc.y - box.rect.y1)
+    Just box ->
+      Point
+        (posAcc.x - box.rect.x1)
+        (posAcc.y - box.rect.y1)
     Nothing -> Point 0 0 -- error is already logged
 
 
--- One possible lineFunc
-directLine : Point -> Point -> Maybe AssocInfo -> BoxPath -> Attrs Msg -> Model
-                                                                               -> List (Svg Msg)
-directLine pos1 pos2 maybeAssoc boxPath clickHandler model =
-  line
+lineRenderer : Model -> LineRenderer
+lineRenderer model =
+  case model.tool.lineStyle of
+    Cornered -> corneredLine
+    Straight -> straightLine
+
+
+straightLine : LineRenderer
+straightLine pos1 pos2 maybeAssoc boxPath clickHandler model =
+  viewLineWithHitArea
     Svg.line
       [ x1 <| fromInt pos1.x
       , y1 <| fromInt pos1.y
@@ -657,15 +664,14 @@ directLine pos1 pos2 maybeAssoc boxPath clickHandler model =
       clickHandler maybeAssoc boxPath model
 
 
--- One possible lineFunc
-taxiLine : Point -> Point -> Maybe AssocInfo -> BoxPath -> Attrs Msg -> Model -> List (Svg Msg)
-taxiLine pos1 pos2 maybeAssoc boxPath clickHandler model =
+corneredLine : LineRenderer
+corneredLine pos1 pos2 maybeAssoc boxPath clickHandler model =
   -- straight vertical
   if abs (pos2.x - pos1.x) < 2 * C.assocRadius then
     let
       xm = (pos1.x + pos2.x) // 2
     in
-    line
+    viewLineWithHitArea
       Svg.path
         [ d ("M " ++ fromInt xm ++ " " ++ fromInt pos1.y ++ " V " ++ fromInt pos2.y) ]
         clickHandler maybeAssoc boxPath model
@@ -674,11 +680,11 @@ taxiLine pos1 pos2 maybeAssoc boxPath clickHandler model =
     let
       ym = (pos1.y + pos2.y) // 2
     in
-    line
+    viewLineWithHitArea
       Svg.path
         [ d ("M " ++ fromInt pos1.x ++ " " ++ fromInt ym ++ " H " ++ fromInt pos2.x) ]
         clickHandler maybeAssoc boxPath model
-  -- 5 segment taxi line
+  -- 5 segment cornered line
   else
     let
       sx = if pos2.x > pos1.x then 1 else -1 -- sign x
@@ -698,7 +704,7 @@ taxiLine pos1 pos2 maybeAssoc boxPath clickHandler model =
       sw2 = fromInt sweep2
       r = fromInt C.assocRadius
     in
-    line
+    viewLineWithHitArea
       Svg.path
         [ d
             ( "M " ++ fromInt pos1.x ++ " " ++ fromInt pos1.y ++
@@ -712,21 +718,25 @@ taxiLine pos1 pos2 maybeAssoc boxPath clickHandler model =
         clickHandler maybeAssoc boxPath model
 
 
-type alias SvgDir = Attrs Msg -> List (Svg Msg) -> Svg Msg
+type alias LineWithHitArea =
+  SvgElement -> Attrs Msg -> Attrs Msg -> Maybe AssocInfo -> BoxPath -> Model -> List (Svg Msg)
 
 
-line : SvgDir -> Attrs Msg -> Attrs Msg -> Maybe AssocInfo -> BoxPath -> Model -> List (Svg Msg)
-line svgDir geometry clickHandler maybeAssoc boxPath model =
+type alias SvgElement = Attrs Msg -> List (Svg Msg) -> Svg Msg
+
+
+viewLineWithHitArea : LineWithHitArea
+viewLineWithHitArea svgElement geometry clickHandler maybeAssoc boxPath model =
   let
     boxId = Box.firstId boxPath
   in
-  [ svgDir -- visible line
+  [ svgElement -- visible line
       ( geometry
         ++ lineStyle maybeAssoc boxId model
         ++ lineSelectionStyle maybeAssoc boxPath model
       )
       []
-  , svgDir -- hit area
+  , svgElement -- hit area
       ( geometry
         ++ clickHandler
         ++ lineHitAreaStyle

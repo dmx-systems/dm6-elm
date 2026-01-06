@@ -1,5 +1,5 @@
 module Feature.ToolAPI exposing (viewGlobalTools, viewMapTools, viewToolbar, viewTopicTools,
-  update)
+  closeMenu, update)
 
 import Box
 import Box.Size as Size
@@ -11,7 +11,7 @@ import Feature.NavAPI as NavAPI
 import Feature.SearchAPI as SearchAPI
 import Feature.SelAPI as SelAPI
 import Feature.TextAPI as TextAPI
-import Feature.Tool as Tool
+import Feature.Tool as Tool exposing (LineStyle(..))
 import Item
 import Model exposing (Model, Msg(..))
 import ModelParts exposing (..)
@@ -19,8 +19,8 @@ import Storage as S
 import Undo exposing (UndoModel)
 import Utils as U
 
-import Html exposing (Html, div, span, text, button)
-import Html.Attributes exposing (class, style, title, disabled)
+import Html exposing (Html, div, span, text, button, input, label)
+import Html.Attributes exposing (class, style, title, name, type_, disabled, checked)
 import Html.Events exposing (onClick)
 import String exposing (fromInt)
 
@@ -38,14 +38,12 @@ viewGlobalTools model =
   in
   [ viewIconButton "Show Home Map" "home" 20 Tool.Home isHome Nothing homeButtonStyle
   , SearchAPI.viewInput model
-  , div
-    importExportStyle
-    [ viewTextButton "Import" Tool.Import
-    , viewTextButton "Export" Tool.Export
-    ]
+  , viewIconButton "Settings" "menu" 20 Tool.Menu False Nothing homeButtonStyle
   ]
+  ++ viewMenu model
 
 
+-- TODO
 homeButtonStyle : Attrs Msg
 homeButtonStyle =
   [ style "position" "relative"
@@ -54,9 +52,109 @@ homeButtonStyle =
   ]
 
 
-importExportStyle : Attrs Msg
-importExportStyle =
-  [ style "white-space" "nowrap" ]
+viewMenu : Model -> List (Html Msg)
+viewMenu model =
+  let
+    is = (==) model.tool.lineStyle
+  in
+  if model.tool.menu then
+    [ div
+        menuStyle
+        [ div headingStyle [ text "Line Style" ]
+        , div
+            []
+            [ viewRadioButton "Cornered" (Tool.Set Cornered) <| is Cornered
+            , hGap 20
+            , viewRadioButton "Straight" (Tool.Set Straight) <| is Straight
+            ]
+        , vGap 32
+        , div headingStyle [ text "Database" ]
+        , div
+            []
+            [ viewTextButton "Import" Tool.Import
+            , hGap 20
+            , viewTextButton "Export" Tool.Export
+            ]
+        ]
+    ]
+  else
+    []
+
+
+menuStyle : Attrs Msg
+menuStyle =
+  [ style "font-size" <| fromInt C.toolFontSize ++ "px"
+  , style "position" "absolute"
+  , style "top" "32px"
+  , style "right" "8px"
+  , style "border" "1px solid lightgray"
+  , style "background-color" "white"
+  , style "padding" "24px 18px 16px"
+  , style "z-index" "5"
+  ]
+
+
+viewRadioButton : String -> Tool.Msg -> Bool -> Html Msg
+viewRadioButton label_ msg isChecked  =
+  label
+    [ U.onMouseDownStop NoOp ]
+    [ input
+      ( [ type_ "radio"
+        , name "line-style"
+        , checked isChecked
+        , onClick <| Tool msg
+        ]
+        ++ radioButtonStyle
+      )
+      []
+    , text label_
+    ]
+
+
+viewTextButton : String -> Tool.Msg -> Html Msg
+viewTextButton label msg =
+  button
+    ( [ onClick <| Tool msg
+      , U.onMouseDownStop NoOp
+      ]
+      ++ textButtonStyle
+    )
+    [ text label ]
+
+
+headingStyle : Attrs Msg
+headingStyle =
+  [ style "font-weight" "bold"
+  , style "margin-bottom" "14px"
+  ]
+
+
+radioButtonStyle : Attrs Msg
+radioButtonStyle =
+  [ style "margin" "0 6px 0 0" ]
+
+
+textButtonStyle : Attrs Msg
+textButtonStyle =
+  [ style "font-family" C.mainFont
+  , style "font-size" <| fromInt C.toolFontSize ++ "px"
+  ]
+
+
+hGap : Int -> Html Msg
+hGap gap =
+  span
+    [ style "display" "inline-block"
+    , style "width" <| fromInt gap ++ "px"
+    ]
+    []
+
+
+vGap : Int -> Html Msg
+vGap gap =
+  div
+    [ style "height" <| fromInt gap ++ "px" ]
+    []
 
 
 -- Map Tools
@@ -67,7 +165,7 @@ viewMapTools undoModel =
     mapToolsStyle
     [ viewMapButton "Add Topic" "plus-circle" Tool.AddTopic False
     , viewMapButton "Add Box" "plus-square" Tool.AddBox False
-    , viewSpacer
+    , hGap 14
     , viewMapButton "Undo" "rotate-ccw" Tool.Undo (not <| Undo.hasPast undoModel)
     , viewMapButton "Redo" "rotate-cw" Tool.Redo (not <| Undo.hasFuture undoModel)
     ]
@@ -142,7 +240,7 @@ viewTopicToolbar pos topicId boxPath model =
         let
           isDisabled = Box.isEmpty topicId model || Box.isUnboxed topicId boxId model
         in
-        [ viewSpacer
+        [ hGap 14
         , viewButton "Fullscreen" "maximize-2" (Tool.Fullscreen topicId) False target
         , viewButton "Unbox" "external-link" (Tool.Unbox topicId boxId) isDisabled target
         ]
@@ -195,15 +293,6 @@ toolbarStyle pos =
   ]
 
 
-viewSpacer : Html Msg
-viewSpacer =
-  span
-    [ style "display" "inline-block"
-    , style "width" "14px"
-    ]
-    []
-
-
 -- Extra topic-specific tools, rendered by Map.view as topic children
 viewTopicTools : Id -> BoxPath -> Model -> List (Html Msg)
 viewTopicTools topicId boxPath model =
@@ -250,23 +339,7 @@ caretStyle =
   ]
 
 
--- Buttons
-
-viewTextButton : String -> Tool.Msg -> Html Msg
-viewTextButton label msg =
-  button
-    ( [ onClick <| Tool msg ]
-      ++ textButtonStyle
-    )
-    [ text label ]
-
-
-textButtonStyle : Attrs Msg
-textButtonStyle =
-  [ style "font-family" C.mainFont
-  , style "font-size" <| fromInt C.toolFontSize ++ "px"
-  ]
-
+-- Icon Buttons
 
 viewMapButton : String -> String -> Tool.Msg -> Bool -> Html Msg
 viewMapButton label icon msg isDisabled =
@@ -311,13 +384,15 @@ update msg ({present} as undoModel) =
   case msg of
     -- Global Tools
     Tool.Home -> (undoModel, NavAPI.pushUrl rootBoxId)
+    Tool.Menu -> (openMenu present, Cmd.none) |> Undo.swap undoModel
+    Tool.Set lineStyle -> setLineStyle lineStyle present |> S.store |> Undo.push undoModel
     Tool.Import -> (present, S.importJSON ()) |> Undo.swap undoModel
     Tool.Export -> (present, S.exportJSON ()) |> Undo.swap undoModel
     -- Map Tools
     Tool.AddTopic -> addTopic present |> S.storeWith |> Undo.push undoModel
     Tool.AddBox -> addBox present |> S.storeWith |> Undo.push undoModel
-    Tool.Undo -> Undo.undo undoModel
-    Tool.Redo -> Undo.redo undoModel
+    Tool.Undo -> undoModel |> Undo.undo |> store
+    Tool.Redo -> undoModel |> Undo.redo |> store
     -- Item Tools
     Tool.Edit -> edit present |> S.storeWith |> Undo.push undoModel
     Tool.Icon -> (IconAPI.openPicker present, Cmd.none) |> Undo.swap undoModel
@@ -335,6 +410,30 @@ update msg ({present} as undoModel) =
     Tool.LeaveEdit -> TextAPI.leaveEdit present |> Undo.swap undoModel
 
 
+-- Global Tools
+
+openMenu : Model -> Model
+openMenu model =
+  setMenu True model
+
+
+closeMenu : Model -> Model
+closeMenu model =
+  setMenu False model
+
+
+setMenu : Bool -> Model -> Model
+setMenu isOpen ({tool} as model) =
+  { model | tool = { tool | menu = isOpen }}
+
+
+setLineStyle : Tool.LineStyle -> Model -> Model
+setLineStyle lineStyle ({tool} as model) =
+  { model | tool = { tool | lineStyle = lineStyle }}
+
+
+-- Map Tools
+
 addTopic : Model -> (Model, Cmd Msg)
 addTopic model =
   let
@@ -350,7 +449,7 @@ addTopic model =
     |> TextAPI.enterEdit topicId [ boxId ]
 
 
--- TODO: factor out addTopic() common code
+-- TODO: factor out addTopic() common code?
 addBox : Model -> (Model, Cmd Msg)
 addBox model =
   let
@@ -366,6 +465,14 @@ addBox model =
     |> SelAPI.select topicId [ boxId ]
     |> TextAPI.enterEdit topicId [ boxId ]
 
+
+store : UndoModel -> (UndoModel, Cmd Msg)
+store undoModel =
+  ( undoModel, undoModel.present |> S.storeCmd )
+
+
+
+-- Item Tools
 
 edit : Model -> (Model, Cmd Msg)
 edit model =

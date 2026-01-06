@@ -103,23 +103,23 @@ view ({present} as undoModel) =
   Browser.Document
     "DM6 Elm"
     [ div
-      appStyle
-      [ div
-        headerStyle
-        ( [ viewMapTitle present
-          , viewSpacer
+        appStyle
+          [ div
+              headerStyle
+              ( [ viewMapTitle present
+                , viewSpacer
+                ]
+                ++ ToolAPI.viewGlobalTools present
+                ++ SearchAPI.viewSearchResult present -- TODO: move to "main" for scroll along?
+              )
+          , div
+              ( [ id "main" ]
+                ++ mainStyle
+              )
+              ( [ Map.view present.boxId [] present ] -- boxPath = []
+                ++ ToolAPI.viewMapTools undoModel
+              )
           ]
-          ++ ToolAPI.viewGlobalTools present
-          ++ SearchAPI.viewSearchResult present -- TODO: move to "main" for scrolling along?
-        )
-      , div
-        ( [ id "main" ]
-          ++ mainStyle
-        )
-        ( [ Map.view present.boxId [] present ] -- boxPath = []
-          ++ ToolAPI.viewMapTools undoModel
-        )
-      ]
     , viewFooter
     , viewMeasure present
     ]
@@ -142,7 +142,7 @@ headerStyle =
   , style "align-items" "center"
   , style "gap" "18px"
   , style "height" <| fromInt C.appHeaderHeight ++ "px"
-  , style "padding" "0 8px"
+  , style "padding" "0 10px"
   , style "background-color" C.toolbarColor
   ]
 
@@ -333,6 +333,7 @@ cancelUI maybeTarget model =
   model
     |> IconAPI.closePicker
     |> SearchAPI.closeMenu
+    |> ToolAPI.closeMenu
     |> cancelUIWith maybeTarget
 
 
