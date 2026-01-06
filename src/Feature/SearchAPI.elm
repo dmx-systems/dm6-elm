@@ -134,7 +134,7 @@ viewTraversalMenu relTopicIds model =
 searchResultStyle : Attrs Msg
 searchResultStyle =
   [ style "top" <| fromInt (C.appHeaderHeight - 5) ++ "px"
-  , style "right" "72px"
+  , style "right" "48px"
   , style "z-index" "3" -- before topics (1,2)
   ]
 

@@ -47,14 +47,14 @@ main =
     , view = view
     , update = update
     , subscriptions =
-      (\model -> Sub.batch
-        [ MouseAPI.sub model
-        , TextAPI.sub
-        , NavAPI.sub
-        , onScroll Scrolled
-        , onResolveUrl UrlResolved
-        ]
-      )
+        (\model -> Sub.batch
+          [ MouseAPI.sub model
+          , TextAPI.sub
+          , NavAPI.sub
+          , onScroll Scrolled
+          , onResolveUrl UrlResolved
+          ]
+        )
     }
 
 
@@ -140,7 +140,7 @@ headerStyle : Attrs Msg
 headerStyle =
   [ style "display" "flex"
   , style "align-items" "center"
-  , style "gap" "18px"
+  , style "gap" "10px"
   , style "height" <| fromInt C.appHeaderHeight ++ "px"
   , style "padding" "0 10px"
   , style "background-color" C.toolbarColor
@@ -184,25 +184,25 @@ viewFooter =
   div
     footerStyle
     [ div
-      []
-      [ text C.version ]
+        []
+        [ text C.version ]
     , div
-      []
-      [ text C.date ]
+        []
+        [ text C.date ]
     , div
-      []
-      [ text "Source: "
-      , a
-        ( [ href "https://github.com/dmx-systems/dm6-elm" ]
+        []
+        [ text "Source: "
+        , a
+            ( [ href "https://github.com/dmx-systems/dm6-elm" ]
+              ++ linkStyle
+            )
+            [ text "GitHub" ]
+        ]
+    , a
+        ( [ href "https://dmx.berlin" ]
           ++ linkStyle
         )
-        [ text "GitHub" ]
-      ]
-    , a
-      ( [ href "https://dmx.berlin" ]
-        ++ linkStyle
-      )
-      [ text "DMX Systems" ]
+        [ text "DMX Systems" ]
     ]
 
 

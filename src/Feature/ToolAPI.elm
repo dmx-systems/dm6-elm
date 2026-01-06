@@ -43,12 +43,10 @@ viewGlobalTools model =
   ++ viewMenu model
 
 
--- TODO
 homeButtonStyle : Attrs Msg
 homeButtonStyle =
   [ style "position" "relative"
   , style "top" "1px"
-  , style "left" "8px"
   ]
 
 
@@ -86,7 +84,7 @@ menuStyle =
   [ style "font-size" <| fromInt C.toolFontSize ++ "px"
   , style "position" "absolute"
   , style "top" "32px"
-  , style "right" "8px"
+  , style "right" "10px"
   , style "border" "1px solid lightgray"
   , style "background-color" "white"
   , style "padding" "24px 18px 16px"
@@ -177,6 +175,8 @@ mapToolsStyle =
   [ style "position" "fixed"
   , style "bottom" "20px"
   , style "left" "4px"
+  , style "display" "flex"
+  , style "gap" "4px"
   ]
 
 
@@ -285,10 +285,11 @@ toolbarStyle pos =
   [ style "position" "absolute"
   , style "top" <| fromInt pos.y ++ "px"
   , style "left" <| fromInt pos.x ++ "px"
-  , style "white-space" "nowrap"
+  , style "display" "flex"
+  , style "gap" "4px"
   , style "background-color" C.toolbarColor
   , style "border-radius" <| fromInt C.topicRadius ++ "px"
-  , style "padding" "4px 3px 0"
+  , style "padding" "4px 5px 0"
   , style "z-index" "4"
   ]
 
@@ -371,7 +372,6 @@ iconButtonStyle : Attrs Msg
 iconButtonStyle =
   [ style "border" "none"
   , style "background-color" "transparent"
-  , style "margin" "0 2px"
   ]
 
 
