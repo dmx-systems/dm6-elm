@@ -439,7 +439,7 @@ addTopic : Model -> (Model, Cmd Msg)
 addTopic model =
   let
     boxId = model.boxId
-    ( newModel, topicId ) = Item.addTopic C.initTopicText C.initTopicIcon model
+    ( newModel, topicId ) = Item.addTopic "" C.initTopicIcon model
     props = TopicP <| TopicProps
       ( Box.initTopicPos boxId model )
       ( TopicD LabelOnly )
@@ -455,7 +455,7 @@ addBox : Model -> (Model, Cmd Msg)
 addBox model =
   let
     boxId = model.boxId
-    ( newModel, topicId ) = Item.addTopic C.initBoxText C.initBoxIcon model
+    ( newModel, topicId ) = Item.addTopic "" C.initBoxIcon model
     props = TopicP <| TopicProps
       ( Box.initTopicPos boxId model )
       ( BoxD BlackBox )

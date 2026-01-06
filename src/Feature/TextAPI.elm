@@ -3,6 +3,7 @@ port module Feature.TextAPI exposing (viewInput, viewTextarea, enterEdit, leaveE
 
 import Box
 import Box.Size as Size -- TODO: don't import, let caller do the sizing instead
+import Config as C
 import Feature.Text as Text exposing (EditState(..))
 import Item
 import Model exposing (Model, Msg(..))
@@ -15,7 +16,7 @@ import Utils as U
 import Browser.Dom as Dom
 import Dict
 import Html exposing (Html, input, textarea, text)
-import Html.Attributes exposing (id, value)
+import Html.Attributes exposing (id, value, placeholder)
 import Html.Events exposing (onInput)
 import Markdown.Block as Block exposing (Block)
 import Markdown.Parser as Parser
@@ -50,6 +51,7 @@ viewInput topic boxPath style =
   input
     ( [ id <| Box.elemId "input" topic.id boxPath
       , value topic.text
+      , placeholder C.initBoxText
       , onInput (Text << Text.OnTextInput)
       , U.onEnterOrEsc (Text Text.LeaveEdit)
       , U.onMouseDownStop NoOp -- Prevent drag initiation
@@ -64,6 +66,7 @@ viewTextarea topic boxPath style =
   textarea
     ( [ id <| Box.elemId "input" topic.id boxPath
       , value topic.text
+      , placeholder C.initTopicText
       , onInput (Text << Text.OnTextareaInput)
       , U.onEsc (Text Text.LeaveEdit)
       , U.onMouseDownStop NoOp -- Prevent drag initiation
