@@ -29,7 +29,7 @@ mouseDownHandler topicId boxPath =
   [ stopPropagationOn "mousedown"
       ( U.pointDecoder |> D.andThen
           (\pos -> D.succeed
-            ( Mouse <| Mouse.DownOnItem "dmx-topic" topicId boxPath pos
+            ( Mouse <| Mouse.DownOnItem topicId boxPath pos
             , True -- stopPropagation
             )
           )
@@ -39,8 +39,8 @@ mouseDownHandler topicId boxPath =
 
 hoverHandler : Id -> BoxPath -> Attrs Msg
 hoverHandler topicId boxPath =
-  [ onMouseEnter <| Mouse <| Mouse.Hover "dmx-topic" topicId boxPath
-  , onMouseLeave <| Mouse <| Mouse.Unhover "dmx-topic" topicId boxPath
+  [ onMouseEnter <| Mouse <| Mouse.Hover topicId boxPath
+  , onMouseLeave <| Mouse <| Mouse.Unhover topicId boxPath
   ]
 
 
@@ -58,13 +58,13 @@ update msg ({present} as undoModel) =
   case msg of
     -- Topic
     Mouse.Down -> (undoModel, mouseDown)
-    Mouse.DownOnItem class id boxPath pos -> mouseDownOnItem class id boxPath pos present
+    Mouse.DownOnItem id boxPath pos -> mouseDownOnItem id boxPath pos present
       |> Undo.swap undoModel
     Mouse.Move pos -> mouseMove pos present |> Undo.swap undoModel
     Mouse.Up -> mouseUp present |> Undo.swap undoModel
-    Mouse.Hover class id boxPath -> (hover class id boxPath present, Cmd.none)
+    Mouse.Hover id boxPath -> (hover id boxPath present, Cmd.none)
       |> Undo.swap undoModel
-    Mouse.Unhover class id boxPath -> (unhover class id boxPath present, Cmd.none)
+    Mouse.Unhover id boxPath -> (unhover id boxPath present, Cmd.none)
       |> Undo.swap undoModel
     Mouse.Time time -> timeArrived time undoModel
     -- Association
@@ -76,10 +76,10 @@ mouseDown =
   U.command <| Cancel Nothing
 
 
-mouseDownOnItem : Class -> Id -> BoxPath -> Point -> Model -> (Model, Cmd Msg)
-mouseDownOnItem class id boxPath pos model =
+mouseDownOnItem : Id -> BoxPath -> Point -> Model -> (Model, Cmd Msg)
+mouseDownOnItem id boxPath pos model =
   ( model
-      |> setDragState (WaitForStartTime class id boxPath pos)
+      |> setDragState (WaitForStartTime id boxPath pos)
   , Cmd.batch
       [ U.command <| Cancel <| Just (id, boxPath)
       , Task.perform (Mouse << Mouse.Time) Time.now
@@ -90,12 +90,12 @@ mouseDownOnItem class id boxPath pos model =
 timeArrived : Posix -> UndoModel -> (UndoModel, Cmd Msg)
 timeArrived time ({present} as undoModel) =
   case present.mouse.dragState of
-    WaitForStartTime class id boxPath pos ->
+    WaitForStartTime id boxPath pos ->
       let
-        dragState = DragEngaged time class id boxPath pos
+        dragState = DragEngaged time id boxPath pos
       in
       (setDragState dragState present, Cmd.none) |> Undo.swap undoModel
-    WaitForEndTime startTime class id boxPath pos ->
+    WaitForEndTime startTime id boxPath pos ->
       let
         delay = posixToMillis time - posixToMillis startTime
         (dragMode, undo) =
@@ -104,12 +104,9 @@ timeArrived time ({present} as undoModel) =
             False -> (DragTopic, Undo.push)
         maybeOrigPos = Box.topicPos id (Box.firstId boxPath) present
         dragState =
-          case class of
-            "dmx-topic" ->
-              case maybeOrigPos of
-                Just origPos -> Drag dragMode id boxPath origPos pos Nothing
-                Nothing -> NoDrag Nothing -- error is already logged
-            _ -> NoDrag Nothing -- the error will be logged in performDrag
+          case maybeOrigPos of
+            Just origPos -> Drag dragMode id boxPath origPos pos Nothing
+            Nothing -> NoDrag Nothing -- error is already logged
       in
       (setDragState dragState present, Cmd.none) |> undo undoModel
     _ ->
@@ -120,8 +117,8 @@ timeArrived time ({present} as undoModel) =
 mouseMove : Point -> Model -> (Model, Cmd Msg)
 mouseMove pos model =
   case model.mouse.dragState of
-    DragEngaged time class id boxPath pos_ ->
-      ( setDragState (WaitForEndTime time class id boxPath pos_) model
+    DragEngaged time id boxPath pos_ ->
+      ( setDragState (WaitForEndTime time id boxPath pos_) model
       , Task.perform (Mouse << Mouse.Time) Time.now
       )
     Drag _ _ _ _ _ _ ->
@@ -193,7 +190,7 @@ mouseUp model =
             _ = U.info "mouseUp" "assoc ended w/o target"
           in
           Cmd.none
-        DragEngaged _ _ id boxPath _ ->
+        DragEngaged _ id boxPath _ ->
           let
             _ = U.info "mouseUp" "item not moved -> ItemClicked"
           in
@@ -220,8 +217,8 @@ point =
     (Random.int 0 rh)
 
 
-hover : Class -> Id -> BoxPath -> Model -> Model
-hover class targetId targetPath model =
+hover : Id -> BoxPath -> Model -> Model
+hover targetId targetPath model =
   case model.mouse.dragState of
     Drag dragMode id boxPath origPos lastPos _ ->
       let
@@ -247,8 +244,8 @@ hover class targetId targetPath model =
     _ -> model
 
 
-unhover : Class -> Id -> BoxPath -> Model -> Model
-unhover class targetId targetPath model =
+unhover : Id -> BoxPath -> Model -> Model
+unhover targetId targetPath model =
   case model.mouse.dragState of
     Drag dragMode id boxPath origPos lastPos _ ->
       -- reset target
@@ -281,9 +278,9 @@ isHovered itemId boxId model =
 sub : UndoModel -> Sub Msg
 sub {present} =
   case present.mouse.dragState of
-    WaitForStartTime _ _ _ _ -> Sub.none
-    WaitForEndTime _ _ _ _ _ -> Sub.none
-    DragEngaged _ _ _ _ _ -> dragSub
+    WaitForStartTime _ _ _ -> Sub.none
+    WaitForEndTime _ _ _ _ -> Sub.none
+    DragEngaged _ _ _ _ -> dragSub
     Drag _ _ _ _ _ _ -> dragSub
     NoDrag _ -> mouseDownSub
 

@@ -7,7 +7,7 @@ import ModelParts exposing (Point, Size)
 -- CONFIG
 
 
-rootBoxName = "DM6 Elm"
+homeBoxName = "DM6 Elm"
 version = "0.4-snapshot"
 date = "Jan 6, 2026"
 
@@ -31,9 +31,11 @@ assocDropShadow =
   , floodColor = "black" -- SVG default
   }
 
+globalToolsIconSize = 20
 mapToolbarIconSize = 22
-itemToolbarIconSize = 18
+toolbarIconSize = 18
 toolbarColor = "#e9e9ed" -- Firefox button color
+caretIconSize = 20
 
 initTopicPos = Point 104 72
 initTopicText = "New Topic"

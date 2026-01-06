@@ -15,9 +15,9 @@ init =
 
 
 type DragState
-  = WaitForStartTime Class Id BoxPath Point -- start point (mouse)
-  | DragEngaged Time.Posix Class Id BoxPath Point -- start point (mouse)
-  | WaitForEndTime Time.Posix Class Id BoxPath Point -- start point (mouse)
+  = WaitForStartTime Id BoxPath Point -- start point (mouse)
+  | DragEngaged Time.Posix Id BoxPath Point -- start point (mouse)
+  | WaitForEndTime Time.Posix Id BoxPath Point -- start point (mouse)
   | Drag DragMode Id BoxPath Point Point (Maybe (Id, BoxPath)) -- orig topic pos
                                                                -- last point (mouse)
   | NoDrag (Maybe (Id, BoxPath)) -- hover target
@@ -31,11 +31,11 @@ type DragMode
 type Msg
   -- Topic
   = Down -- mouse down somewhere
-  | DownOnItem Class Id BoxPath Point -- mouse down on an item where a drag can be engaged
+  | DownOnItem Id BoxPath Point -- mouse down on an item where a drag can be engaged
   | Move Point
   | Up
-  | Hover Class Id BoxPath
-  | Unhover Class Id BoxPath
+  | Hover Id BoxPath
+  | Unhover Id BoxPath
   | Time Time.Posix
   -- Association
   | AssocClicked Id BoxPath

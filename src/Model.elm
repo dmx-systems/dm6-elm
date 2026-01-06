@@ -37,12 +37,12 @@ type alias Model =
 init : Model
 init =
   let
-    rootTopic = TopicInfo 0 Nothing C.rootBoxName <| TextSize (Size 0 0) (Size 0 0)
+    homeTopic = TopicInfo 0 Nothing C.homeBoxName <| TextSize (Size 0 0) (Size 0 0)
   in
-  { items = Dict.singleton 0 <| Item 0 (Topic rootTopic) Set.empty
-  , boxes = Dict.singleton rootBoxId
-    <| Box rootBoxId (Rectangle 0 0 0 0) (Point 0 0) Dict.empty
-  , boxId = rootBoxId
+  { items = Dict.singleton 0 <| Item 0 (Topic homeTopic) Set.empty
+  , boxes = Dict.singleton homeBoxId
+    <| Box homeBoxId (Rectangle 0 0 0 0) (Point 0 0) Dict.empty
+  , boxId = homeBoxId
   , nextId = 1
   , imageCache = Dict.empty -- TODO: move to Text module, but should survive a map switch
   -- feature modules

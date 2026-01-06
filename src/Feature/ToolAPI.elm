@@ -34,11 +34,12 @@ import String exposing (fromInt)
 viewGlobalTools : Model -> List (Html Msg)
 viewGlobalTools model =
   let
-    isHome = model.boxId == rootBoxId
+    isHome = model.boxId == homeBoxId
+    iconSize = C.globalToolsIconSize
   in
-  [ viewIconButton "Show Home Map" "home" 20 Tool.Home isHome Nothing homeButtonStyle
+  [ viewIconButton "Show Home Map" "home" iconSize Tool.Home isHome Nothing homeButtonStyle
   , SearchAPI.viewInput model
-  , viewIconButton "Settings" "menu" 20 Tool.Menu False Nothing homeButtonStyle
+  , viewIconButton "Settings" "menu" iconSize Tool.Menu False Nothing homeButtonStyle
   ]
   ++ viewMenu model
 
@@ -327,7 +328,7 @@ viewCaret topicId boxId model =
       ]
       ++ caretStyle
     )
-    [ IconAPI.view icon 20 [] ]
+    [ IconAPI.view icon C.caretIconSize [] ]
 
 
 caretStyle : Attrs Msg
@@ -342,14 +343,14 @@ caretStyle =
 
 -- Icon Buttons
 
+viewButton : String -> String -> Tool.Msg -> Bool -> (Id, BoxPath) -> Html Msg
+viewButton label icon msg isDisabled target =
+  viewIconButton label icon C.toolbarIconSize msg isDisabled (Just target) []
+
+
 viewMapButton : String -> String -> Tool.Msg -> Bool -> Html Msg
 viewMapButton label icon msg isDisabled =
   viewIconButton label icon C.mapToolbarIconSize msg isDisabled Nothing []
-
-
-viewButton : String -> String -> Tool.Msg -> Bool -> (Id, BoxPath) -> Html Msg
-viewButton label icon msg isDisabled target =
-  viewIconButton label icon C.itemToolbarIconSize msg isDisabled (Just target) []
 
 
 viewIconButton : String -> String -> Int -> Tool.Msg -> Bool -> Maybe (Id, BoxPath)
@@ -383,7 +384,7 @@ update : Tool.Msg -> UndoModel -> (UndoModel, Cmd Msg)
 update msg ({present} as undoModel) =
   case msg of
     -- Global Tools
-    Tool.Home -> (undoModel, NavAPI.pushUrl rootBoxId)
+    Tool.Home -> (undoModel, NavAPI.pushUrl homeBoxId)
     Tool.Menu -> (openMenu present, Cmd.none) |> Undo.swap undoModel
     Tool.Set lineStyle -> setLineStyle lineStyle present |> S.store |> Undo.push undoModel
     Tool.Import -> (present, S.importJSON ()) |> Undo.swap undoModel

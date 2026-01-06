@@ -1,8 +1,8 @@
 module ModelParts exposing (Id, Item, Items, ItemInfo(..), AssocIds, TopicInfo, Icon, TextSize,
-  Size, SizeField(..), AssocInfo, AssocType(..), Box, Boxes, BoxId, Class, Delta, BoxItems,
-  BoxPath, rootBoxId, BoxItem, Visibility(..), Pinned(..), ItemProps(..), TopicProps,
-  AssocProps, DisplayMode(..), TopicDisplay(..), BoxDisplay(..), Point, Rectangle, ImageId,
-  Attrs, encodeItem, encodeBox, itemDecoder, boxDecoder, toDictDecoder)
+  Size, SizeField(..), AssocInfo, AssocType(..), Box, Boxes, BoxId, Delta, BoxItems, BoxPath,
+  homeBoxId, BoxItem, Visibility(..), Pinned(..), ItemProps(..), TopicProps, AssocProps,
+  DisplayMode(..), TopicDisplay(..), BoxDisplay(..), Point, Rectangle, ImageId, Attrs,
+  encodeItem, encodeBox, itemDecoder, boxDecoder, toDictDecoder)
 
 import Dict exposing (Dict)
 import Html exposing (Attribute)
@@ -90,14 +90,13 @@ type alias Box =
 type alias Boxes = Dict BoxId Box
 
 type alias BoxId = Id
-type alias Class = String -- a CSS class, e.g. "dmx-topic" -- TODO: drop!
 type alias Delta = Point
 type alias BoxItems = Dict Id BoxItem
 type alias BoxPath = List BoxId
 
 
-rootBoxId : BoxId
-rootBoxId = 0
+homeBoxId : BoxId
+homeBoxId = 0
 
 
 type alias BoxItem =
