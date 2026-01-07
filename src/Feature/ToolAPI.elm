@@ -301,10 +301,9 @@ viewTopicTools topicId boxPath model =
   let
     boxId = Box.firstId boxPath
     isHovered = MouseAPI.isHovered topicId boxId model -- TODO: use boxPath
-    isEmptyBox = Item.isBox topicId model && Box.isEmpty topicId model
     isEdit = TextAPI.isEdit topicId boxPath model
   in
-  if isHovered && not isEmptyBox && not isEdit then
+  if isHovered && not isEdit then
     [ viewCaret topicId boxId model ]
   else
     []

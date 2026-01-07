@@ -53,9 +53,9 @@ assocsToRender box model =
 itemsToRender : Box -> (BoxItem -> Bool) -> Model -> List BoxItem
 itemsToRender box filter model =
   box.items
-  |> Dict.values
-  |> List.filter filter
-  |> List.filter (shouldItemRender box.id model)
+    |> Dict.values
+    |> List.filter filter
+    |> List.filter (shouldItemRender box.id model)
 
 
 shouldItemRender : BoxId -> Model -> BoxItem -> Bool

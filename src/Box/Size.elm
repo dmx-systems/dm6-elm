@@ -18,8 +18,8 @@ import Utils as U
 auto : Model -> Model
 auto model =
   model
-  |> calcBoxRect [ model.boxId ]
-  |> Tuple.second
+    |> calcBoxRect [ model.boxId ]
+    |> Tuple.second
 
 
 {-| Calculates the box's "rect" (recursively) and modifies the model accordingly.
@@ -35,12 +35,16 @@ calcBoxRect boxPath model =
   case Box.byIdOrLog boxId model of
     Just box ->
       let
+        topics = MM.topicsToRender box model
         (rect, model_) =
-          MM.topicsToRender box model |> List.foldr
-            (\boxItem (rectAcc, modelAcc) ->
-              accumulateItem boxItem boxPath rectAcc modelAcc
-            )
-            (Rectangle 0 0 0 0, model)
+          if topics |> List.isEmpty then
+            (C.whiteBoxEmpty, model)
+          else
+            topics |> List.foldr
+              (\boxItem (rectAcc, modelAcc) ->
+                accumulateItem boxItem boxPath rectAcc modelAcc
+              )
+              (Rectangle 0 0 0 0, model)
         newRect = addBoxPadding rect
       in
       ( newRect
@@ -158,16 +162,16 @@ updateBoxGeometry boxPath newRect oldRect model =
       if isDragInProgress then
         if isOnDragPath then
           model
-          |> setBoxRect boxId newRect
-          |> adjustBoxPos boxId parentBoxId newRect oldRect
-          -- if boxes are revealed more than once only those within the drag-path
-          -- get the position adjustment, the other box's positions remain stable
+            |> setBoxRect boxId newRect
+            |> adjustBoxPos boxId parentBoxId newRect oldRect
+            -- if boxes are revealed more than once only those within the drag-path
+            -- get the position adjustment, the other box's positions remain stable
         else
           if isBoxInDragPath then
             model
             -- do nothing, postpone box's geometry update until reaching drag-path,
             -- otherwise, when reaching drag-path, the box's rect would be updated
-            -- already and position adjustment will calculate 0
+            -- already and position adjustment would calculate 0
           else
             model |> setBoxRect boxId newRect
       else

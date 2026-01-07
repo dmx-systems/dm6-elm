@@ -1,6 +1,6 @@
 module Config exposing (..)
 
-import ModelParts exposing (Point, Size)
+import ModelParts exposing (Point, Size, Rectangle)
 
 
 
@@ -68,5 +68,8 @@ assocDelayMillis = 200
 whiteBoxRange = Size 250 150
 whiteBoxRadius = 14
 whiteBoxPadding = 12
+whiteBoxEmpty = Rectangle 0 0
+  (topicWidth + 2 * topicBorderWidth)
+  (topicHeight + 2 * topicBorderWidth)
 
 blackBoxOffset = 5
