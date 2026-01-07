@@ -1,5 +1,5 @@
 module Feature.SelAPI exposing (select, clear, isSelected, isSelectedPath, single,
-  revelationBoxId, revelationBoxPath)
+  revelationBoxId, revelationBoxPath, landingBoxPath)
 
 import Box
 import Feature.Search exposing (SearchResult(..))
@@ -53,24 +53,31 @@ revelationBoxId model =
     _ -> Nothing
 
 
+{- The box where to reveal search/traversal results, entire path -}
 revelationBoxPath : Model -> Maybe BoxPath
 revelationBoxPath model =
   case model.search.result of
     Topics _ _ ->
-      case single model of
-        Just (id, boxPath) ->
-          let
-            boxId = Box.firstId boxPath
-          in
-          case Box.displayMode id boxId model of
-            Just (BoxD WhiteBox) -> Just (id :: boxPath)
-            _ -> Just [ model.boxId ]
-        Nothing -> Just [ model.boxId ]
+      Just <| landingBoxPath model
     RelTopics _ _ ->
       case single model of
         Just (_, boxPath) -> Just boxPath
         Nothing -> Nothing
     NoSearch -> Nothing
+
+
+{- The box where both lands, 1) newly created things and 2) search results, entire path -}
+landingBoxPath : Model -> BoxPath
+landingBoxPath model =
+  case single model of
+    Just (id, boxPath) ->
+      let
+        boxId = Box.firstId boxPath
+      in
+      case Box.displayMode id boxId model of
+        Just (BoxD WhiteBox) -> id :: boxPath
+        _ -> [ model.boxId ]
+    Nothing -> [ model.boxId ]
 
 
 single : Model -> Maybe (Id, BoxPath)

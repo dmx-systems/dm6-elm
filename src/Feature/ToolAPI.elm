@@ -160,13 +160,21 @@ vGap gap =
 
 viewMapTools : UndoModel -> List (Html Msg)
 viewMapTools undoModel =
+  let
+    target =
+      case SelAPI.landingBoxPath undoModel.present of
+        topicId :: boxPath -> Just (topicId, boxPath)
+        [] -> Nothing
+  in
   [ div
     mapToolsStyle
-    [ viewMapButton "Add Topic" "plus-circle" Tool.AddTopic False
-    , viewMapButton "Add Box" "plus-square" Tool.AddBox False
+    -- The add-buttons must not clear the selection but still close menus.
+    -- So we set the box where added things land as the target.
+    [ viewMapButton "Add Topic" "plus-circle" Tool.AddTopic False target
+    , viewMapButton "Add Box" "plus-square" Tool.AddBox False target
     , hGap 14
-    , viewMapButton "Undo" "rotate-ccw" Tool.Undo (not <| Undo.hasPast undoModel)
-    , viewMapButton "Redo" "rotate-cw" Tool.Redo (not <| Undo.hasFuture undoModel)
+    , viewMapButton "Undo" "rotate-ccw" Tool.Undo (not <| Undo.hasPast undoModel) Nothing
+    , viewMapButton "Redo" "rotate-cw" Tool.Redo (not <| Undo.hasFuture undoModel) Nothing
     ]
   ]
 
@@ -347,9 +355,9 @@ viewButton label icon msg isDisabled target =
   viewIconButton label icon C.toolbarIconSize msg isDisabled (Just target) []
 
 
-viewMapButton : String -> String -> Tool.Msg -> Bool -> Html Msg
-viewMapButton label icon msg isDisabled =
-  viewIconButton label icon C.mapToolbarIconSize msg isDisabled Nothing []
+viewMapButton : String -> String -> Tool.Msg -> Bool -> Maybe (Id, BoxPath) -> Html Msg
+viewMapButton label icon msg isDisabled maybeTarget =
+  viewIconButton label icon C.mapToolbarIconSize msg isDisabled maybeTarget []
 
 
 viewIconButton : String -> String -> Int -> Tool.Msg -> Bool -> Maybe (Id, BoxPath)
@@ -437,7 +445,8 @@ setLineStyle lineStyle ({tool} as model) =
 addTopic : Model -> (Model, Cmd Msg)
 addTopic model =
   let
-    boxId = model.boxId
+    boxPath = SelAPI.landingBoxPath model
+    boxId = Box.firstId boxPath
     ( newModel, topicId ) = Item.addTopic "" C.initTopicIcon model
     props = TopicP <| TopicProps
       ( Box.initTopicPos boxId model )
@@ -445,15 +454,16 @@ addTopic model =
   in
   newModel
     |> Box.addItem topicId props boxId
-    |> SelAPI.select topicId [ boxId ]
-    |> TextAPI.enterEdit topicId [ boxId ]
+    |> SelAPI.select topicId boxPath
+    |> TextAPI.enterEdit topicId boxPath
 
 
 -- TODO: factor out addTopic() common code?
 addBox : Model -> (Model, Cmd Msg)
 addBox model =
   let
-    boxId = model.boxId
+    boxPath = SelAPI.landingBoxPath model
+    boxId = Box.firstId boxPath
     ( newModel, topicId ) = Item.addTopic "" C.initBoxIcon model
     props = TopicP <| TopicProps
       ( Box.initTopicPos boxId model )
@@ -462,8 +472,8 @@ addBox model =
   newModel
     |> Box.addBox topicId
     |> Box.addItem topicId props boxId
-    |> SelAPI.select topicId [ boxId ]
-    |> TextAPI.enterEdit topicId [ boxId ]
+    |> SelAPI.select topicId boxPath
+    |> TextAPI.enterEdit topicId boxPath
 
 
 store : UndoModel -> (UndoModel, Cmd Msg)
