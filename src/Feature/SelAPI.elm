@@ -1,11 +1,11 @@
 module Feature.SelAPI exposing (select, clear, isSelected, isSelectedPath, single,
   revelationBoxId, revelationBoxPath)
 
+import Box
 import Feature.Search exposing (SearchResult(..))
 import Feature.Sel exposing (Selection)
-import Item
 import Model exposing (Model)
-import ModelParts exposing (Id, BoxId, BoxPath)
+import ModelParts exposing (Id, BoxId, BoxPath, DisplayMode(..), BoxDisplay(..))
 import Utils as U
 
 
@@ -59,9 +59,12 @@ revelationBoxPath model =
     Topics _ _ ->
       case single model of
         Just (id, boxPath) ->
-          case Item.isBox id model of
-            True -> Just (id :: boxPath)
-            False -> Just [ model.boxId ]
+          let
+            boxId = Box.firstId boxPath
+          in
+          case Box.displayMode id boxId model of
+            Just (BoxD WhiteBox) -> Just (id :: boxPath)
+            _ -> Just [ model.boxId ]
         Nothing -> Just [ model.boxId ]
     RelTopics _ _ ->
       case single model of
