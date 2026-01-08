@@ -163,7 +163,7 @@ viewMapTools undoModel =
   let
     target =
       case SelAPI.landingBoxPath undoModel.present of
-        topicId :: boxPath -> Just (topicId, boxPath)
+        boxId :: boxPath -> Just (boxId, boxPath)
         [] -> Nothing
   in
   [ div
@@ -445,32 +445,29 @@ setLineStyle lineStyle ({tool} as model) =
 addTopic : Model -> (Model, Cmd Msg)
 addTopic model =
   let
-    boxPath = SelAPI.landingBoxPath model
-    boxId = Box.firstId boxPath
-    ( newModel, topicId ) = Item.addTopic "" C.initTopicIcon model
-    props = TopicP <| TopicProps
-      ( Box.initTopicPos boxId model )
-      ( TopicD LabelOnly )
+    (newModel, topicId) = Item.addTopic "" C.initTopicIcon model
   in
-  newModel
-    |> Box.addItem topicId props boxId
-    |> SelAPI.select topicId boxPath
-    |> TextAPI.enterEdit topicId boxPath
+  landTopic topicId (TopicD LabelOnly) newModel
 
 
--- TODO: factor out addTopic() common code?
 addBox : Model -> (Model, Cmd Msg)
 addBox model =
   let
+    (newModel, boxId) = Box.addBox model
+  in
+  landTopic boxId (BoxD BlackBox) newModel
+
+
+landTopic : Id -> DisplayMode -> Model -> (Model, Cmd Msg)
+landTopic topicId displayMode model =
+  let
     boxPath = SelAPI.landingBoxPath model
     boxId = Box.firstId boxPath
-    ( newModel, topicId ) = Item.addTopic "" C.initBoxIcon model
     props = TopicP <| TopicProps
       ( Box.initTopicPos boxId model )
-      ( BoxD BlackBox )
+      displayMode
   in
-  newModel
-    |> Box.addBox topicId
+  model
     |> Box.addItem topicId props boxId
     |> SelAPI.select topicId boxPath
     |> TextAPI.enterEdit topicId boxPath

@@ -29,15 +29,15 @@ byId boxId model =
   model.boxes |> Dict.get boxId
 
 
-{-| Presumption: the item exists already.
-TODO: create item along with box?
--}
-addBox : BoxId -> Model -> Model
-addBox boxId model =
-  { model | boxes = model.boxes |> Dict.insert
-    boxId
-    (Box boxId (Rectangle 0 0 0 0) (Point 0 0) Dict.empty)
-  }
+addBox : Model -> (Model, BoxId)
+addBox model =
+  let
+    (newModel, topicId) = Item.addTopic "" C.initBoxIcon model
+    box = Box topicId (Rectangle 0 0 0 0) (Point 0 0) Dict.empty
+  in
+  ( { newModel | boxes = newModel.boxes |> Dict.insert topicId box }
+  , topicId
+  )
 
 
 updateRect : BoxId -> (Rectangle -> Rectangle) -> Model -> Model

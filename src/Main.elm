@@ -334,11 +334,11 @@ cancelUI maybeTarget model =
     |> IconAPI.closePicker
     |> SearchAPI.closeMenu
     |> ToolAPI.closeMenu
-    |> cancelUIWith maybeTarget
+    |> cancelUIWith_ maybeTarget
 
 
-cancelUIWith : Maybe (Id, BoxPath) -> Model -> (Model, Cmd Msg)
-cancelUIWith maybeTarget model =
+cancelUIWith_ : Maybe (Id, BoxPath) -> Model -> (Model, Cmd Msg)
+cancelUIWith_ maybeTarget model =
   let
     isTargetSelected =
       case maybeTarget of
