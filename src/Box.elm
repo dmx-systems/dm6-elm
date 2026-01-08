@@ -29,10 +29,10 @@ byId boxId model =
   model.boxes |> Dict.get boxId
 
 
-addBox : Model -> (Model, BoxId)
-addBox model =
+addBox : String -> Maybe Icon -> Model -> (Model, BoxId)
+addBox text icon model =
   let
-    (newModel, topicId) = Item.addTopic "" C.initBoxIcon model
+    (newModel, topicId) = Item.addTopic text icon model
     box = Box topicId (Rectangle 0 0 0 0) (Point 0 0) Dict.empty
   in
   ( { newModel | boxes = newModel.boxes |> Dict.insert topicId box }

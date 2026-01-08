@@ -453,7 +453,7 @@ addTopic model =
 addBox : Model -> (Model, Cmd Msg)
 addBox model =
   let
-    (newModel, boxId) = Box.addBox model
+    (newModel, boxId) = Box.addBox "" C.initBoxIcon model
   in
   landTopic boxId (BoxD BlackBox) newModel
 

@@ -28,13 +28,19 @@ import String exposing (fromInt)
 
 viewInput : Model -> Html Msg
 viewInput model =
+  let
+    target =
+      case SelAPI.landingBoxPath model of
+        boxId :: boxPath -> Just (boxId, boxPath)
+        [] -> Nothing
+  in
   div
     []
     [ input
       ( [ value model.search.term
         , onInput (Search << Search.Input)
         , onFocus (Search Search.InputFocused)
-        , U.onMouseDownStop NoOp -- Don't clear selection
+        , U.onMouseDownStop <| Cancel target -- Don't clear selection
         ]
         ++ searchInputStyle
       )
@@ -135,7 +141,7 @@ searchResultStyle : Attrs Msg
 searchResultStyle =
   [ style "top" <| fromInt (C.appHeaderHeight - 5) ++ "px"
   , style "right" "48px"
-  , style "z-index" "3" -- before topics (1,2)
+  , style "z-index" "5"
   ]
 
 
