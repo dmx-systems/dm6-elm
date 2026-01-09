@@ -161,10 +161,7 @@ vGap gap =
 viewMapTools : UndoModel -> List (Html Msg)
 viewMapTools undoModel =
   let
-    target =
-      case SelAPI.landingBoxPath undoModel.present of
-        boxId :: boxPath -> Just (boxId, boxPath)
-        [] -> Nothing
+    target = Box.landingTarget undoModel.present
   in
   [ div
     mapToolsStyle
@@ -461,7 +458,7 @@ addBox model =
 landTopic : Id -> DisplayMode -> Model -> (Model, Cmd Msg)
 landTopic topicId displayMode model =
   let
-    boxPath = SelAPI.landingBoxPath model
+    boxPath = Box.landingBoxPath model
     boxId = Box.firstId boxPath
     props = TopicP <| TopicProps
       ( Box.initTopicPos boxId model )

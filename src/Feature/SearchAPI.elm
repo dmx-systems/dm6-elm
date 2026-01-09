@@ -29,10 +29,7 @@ import String exposing (fromInt)
 viewInput : Model -> Html Msg
 viewInput model =
   let
-    target =
-      case SelAPI.landingBoxPath model of
-        boxId :: boxPath -> Just (boxId, boxPath)
-        [] -> Nothing
+    target = Box.landingTarget model
   in
   div
     []
@@ -232,7 +229,7 @@ fullscreenButtonStyle =
 
 isItemDisabled : Id -> Model -> Bool
 isItemDisabled topicId model =
-  case SelAPI.revelationBoxId model of
+  case Box.revelationBoxId model of
     Just boxId -> Box.hasDeepItem topicId boxId model
     Nothing -> False
 
@@ -337,7 +334,7 @@ onRelTopicUnhovered model =
 
 revealTopic : Id -> Model -> Model
 revealTopic topicId model =
-  case SelAPI.revelationBoxPath model of
+  case Box.revelationBoxPath model of
     Just (boxId :: _ as boxPath) ->
       model
         |> Box.revealItem topicId boxId
@@ -349,7 +346,7 @@ revealTopic topicId model =
 
 revealRelTopic : (Id, Id) -> Model -> Model
 revealRelTopic (topicId, assocId) model =
-  case SelAPI.revelationBoxPath model of
+  case Box.revelationBoxPath model of
     Just (boxId :: _ as boxPath) ->
       model
         |> Box.revealItem topicId boxId

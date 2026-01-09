@@ -1,10 +1,13 @@
 module Box exposing (byId, byIdOrLog, update, updateRect, updateScrollPos, topicPos,
   setTopicPos, setTopicPosByDelta, displayMode, setDisplayMode, updateDisplayMode, topicProps,
   initTopicProps, initTopicPos, assocGeometry, hasItem, hasDeepItem, addBox, addItem,
-  revealItem, removeItem, removeItem_, deleteItem, isEmpty, isUnboxed, isTopic, isAssoc,
-  isVisible, isPinned, mapTitle, elemId, firstId, fromPath)
+  revealItem, removeItem, removeItem_, deleteItem, revelationBoxId, revelationBoxPath,
+  landingTarget, landingBoxPath, isEmpty, isUnboxed, isTopic, isAssoc, isVisible, isPinned,
+  mapTitle, elemId, firstId, fromPath)
 
 import Config as C
+import Feature.Search exposing (SearchResult(..))
+import Feature.SelAPI as SelAPI
 import Item
 import Model exposing (Model)
 import ModelParts exposing (..)
@@ -451,6 +454,51 @@ updateTopicPropsInAllBoxes_ topicId transform model =
       }
     )
   }
+
+
+{- The box where to reveal search/traversal results -}
+revelationBoxId : Model -> Maybe BoxId
+revelationBoxId model =
+  case revelationBoxPath model of
+    Just (boxId :: _) -> Just boxId
+    _ -> Nothing
+
+
+{- The box where to reveal search/traversal results, entire path -}
+revelationBoxPath : Model -> Maybe BoxPath
+revelationBoxPath model =
+  case model.search.result of
+    Topics _ _ ->
+      Just <| landingBoxPath model
+    RelTopics _ _ ->
+      case SelAPI.single model of
+        Just (_, boxPath) -> Just boxPath
+        Nothing -> Nothing
+    NoSearch -> Nothing
+
+
+{- The landing box as a selection target. For a fullscreen box Nothing is returned. -}
+landingTarget : Model -> Maybe (BoxId, BoxPath)
+landingTarget model =
+  case landingBoxPath model of
+    [] -> Nothing
+    [ boxId ] -> Nothing -- The fullscreen box is never selected
+    boxId :: boxPath -> Just (boxId, boxPath)
+
+
+{- The box where created things and search results land, entire box path.
+Can be a nested box or a fullsreen box. Returned box path is never empty. -}
+landingBoxPath : Model -> BoxPath
+landingBoxPath model =
+  case SelAPI.single model of
+    Just (id, boxPath) ->
+      let
+        boxId = firstId boxPath
+      in
+      case displayMode id boxId model of
+        Just (BoxD WhiteBox) -> id :: boxPath
+        _ -> [ model.boxId ]
+    Nothing -> [ model.boxId ]
 
 
 {-| Logs an error if box does not exist. -}
