@@ -486,8 +486,8 @@ landingTarget model =
     boxId :: boxPath -> Just (boxId, boxPath)
 
 
-{- The box where created things and search results land, entire box path.
-Can be a nested box or a fullsreen box. Returned box path is never empty. -}
+{- The box where created things and search results land, entire box path, never empty.
+Can be the fullsreen box or a nested box. -}
 landingBoxPath : Model -> BoxPath
 landingBoxPath model =
   case SelAPI.single model of
