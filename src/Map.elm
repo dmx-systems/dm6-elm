@@ -245,7 +245,7 @@ viewTopic topic props boxPath model =
   div
     ( topicAttr topic.id boxPath
       ++ MouseAPI.hoverHandler topic.id boxPath
-      ++ MouseAPI.mouseDownHandler topic.id boxPath
+      ++ MouseAPI.topicDownHandler topic.id boxPath
       ++ topicStyle topic.id boxId model
       ++ style
     )

@@ -48,8 +48,7 @@ main =
     , update = update
     , subscriptions =
         (\model -> Sub.batch
-          [ MouseAPI.sub model
-          , TextAPI.sub
+          [ TextAPI.sub
           , NavAPI.sub
           , onScroll Scrolled
           , onResolveUrl UrlResolved
@@ -103,23 +102,25 @@ view ({present} as undoModel) =
   Browser.Document
     "DM6 Elm"
     [ div
-        appStyle
-          [ div
-              headerStyle
-              ( [ viewMapTitle present
-                , viewSpacer
-                ]
-                ++ ToolAPI.viewGlobalTools present
-                ++ SearchAPI.viewSearchResult present -- TODO: move to "main" for scroll along?
-              )
-          , div
-              ( [ id "main" ]
-                ++ mainStyle
-              )
-              ( [ Map.view present.boxId [] present ] -- boxPath = []
-                ++ ToolAPI.viewMapTools undoModel
-              )
-          ]
+        ( MouseAPI.dragHandler
+          ++ appStyle
+        )
+        [ div
+            headerStyle
+            ( [ viewMapTitle present
+              , viewSpacer
+              ]
+              ++ ToolAPI.viewGlobalTools present
+              ++ SearchAPI.viewSearchResult present -- TODO: move to "main" for scroll along?
+            )
+        , div
+            ( [ id "main" ]
+              ++ mainStyle
+            )
+            ( [ Map.view present.boxId [] present ] -- boxPath = []
+              ++ ToolAPI.viewMapTools undoModel
+            )
+        ]
     , viewFooter
     , viewMeasure present
     ]
@@ -156,7 +157,7 @@ viewMapTitle model =
 
 mapTitleStyle : Attrs Msg
 mapTitleStyle =
-  [ style "font-size" "24px"
+  [ style "font-size" "26px"
   , style "font-weight" "bold"
   , style "overflow" "hidden"
   , style "text-overflow" "ellipsis"

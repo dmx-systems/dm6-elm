@@ -1,5 +1,5 @@
-module Feature.MouseAPI exposing (mouseDownHandler, hoverHandler, assocClickHandler, isHovered,
-  update, sub)
+module Feature.MouseAPI exposing (topicDownHandler, hoverHandler, assocClickHandler,
+  dragHandler, isHovered, update)
 
 import Box
 import Box.Size as Size
@@ -11,8 +11,7 @@ import ModelParts exposing (..)
 import Undo exposing (UndoModel)
 import Utils as U
 
-import Browser.Events as Events
-import Html.Events exposing (onClick, onMouseEnter, onMouseLeave, stopPropagationOn)
+import Html.Events exposing (on, onClick, onMouseEnter, onMouseLeave, stopPropagationOn)
 import Json.Decode as D
 import Random
 import String exposing (fromInt)
@@ -24,12 +23,12 @@ import Time exposing (Posix, posixToMillis)
 -- VIEW
 
 
-mouseDownHandler : Id -> BoxPath -> Attrs Msg
-mouseDownHandler topicId boxPath =
+topicDownHandler : Id -> BoxPath -> Attrs Msg
+topicDownHandler topicId boxPath =
   [ stopPropagationOn "mousedown"
       ( U.pointDecoder |> D.andThen
           (\pos -> D.succeed
-            ( Mouse <| Mouse.DownOnItem topicId boxPath pos
+            ( Mouse <| Mouse.DownOnTopic topicId boxPath pos
             , True -- stopPropagation
             )
           )
@@ -49,6 +48,14 @@ assocClickHandler assocId boxPath =
   [ onClick <| Mouse <| Mouse.AssocClicked assocId boxPath ]
 
 
+dragHandler : Attrs Msg
+dragHandler =
+  [ on "mousedown" <| D.succeed <| Mouse Mouse.Down
+  , on "mousemove" <| D.map Mouse <| D.map Mouse.Move U.pointDecoder
+  , on "mouseup" <| D.map Mouse <| D.succeed Mouse.Up
+  ]
+
+
 
 -- UPDATE
 
@@ -58,7 +65,7 @@ update msg ({present} as undoModel) =
   case msg of
     -- Topic
     Mouse.Down -> (undoModel, mouseDown)
-    Mouse.DownOnItem id boxPath pos -> mouseDownOnItem id boxPath pos present
+    Mouse.DownOnTopic id boxPath pos -> mouseDownOnTopic id boxPath pos present
       |> Undo.swap undoModel
     Mouse.Move pos -> mouseMove pos present |> Undo.swap undoModel
     Mouse.Up -> mouseUp present |> Undo.swap undoModel
@@ -76,12 +83,12 @@ mouseDown =
   U.command <| Cancel Nothing
 
 
-mouseDownOnItem : Id -> BoxPath -> Point -> Model -> (Model, Cmd Msg)
-mouseDownOnItem id boxPath pos model =
+mouseDownOnTopic : Id -> BoxPath -> Point -> Model -> (Model, Cmd Msg)
+mouseDownOnTopic topicId boxPath pos model =
   ( model
-      |> setDragState (WaitForStartTime id boxPath pos)
+      |> setDragState (WaitForStartTime topicId boxPath pos)
   , Cmd.batch
-      [ U.command <| Cancel <| Just (id, boxPath)
+      [ U.command <| Cancel <| Just (topicId, boxPath)
       , Task.perform (Mouse << Mouse.Time) Time.now
       ]
   )
@@ -123,8 +130,7 @@ mouseMove pos model =
       )
     Drag _ _ _ _ _ _ ->
       ( performDrag pos model, Cmd.none )
-    _ -> U.logError "mouseMove"
-      ("Received \"Move\" message when dragState is " ++ U.toString model.mouse.dragState)
+    _ ->
       ( model, Cmd.none )
 
 
@@ -196,9 +202,7 @@ mouseUp model =
           in
           U.command <| ItemClicked id boxPath
         _ ->
-          U.logError "mouseUp"
-            ("Received \"Up\" message when dragState is " ++ U.toString model.mouse.dragState)
-            Cmd.none
+          Cmd.none
   in
   (setDragState (NoDrag Nothing) model, cmd)
 
@@ -269,30 +273,3 @@ isHovered itemId boxId model =
     NoDrag (Just (itemId_, boxId_ :: _ )) ->
       itemId == itemId_ && boxId == boxId_ -- TODO: box path?
     _ -> False
-
-
-
--- SUBSCRIPTIONS
-
-
-sub : UndoModel -> Sub Msg
-sub {present} =
-  case present.mouse.dragState of
-    WaitForStartTime _ _ _ -> Sub.none
-    WaitForEndTime _ _ _ _ -> Sub.none
-    DragEngaged _ _ _ _ -> dragSub
-    Drag _ _ _ _ _ _ -> dragSub
-    NoDrag _ -> mouseDownSub
-
-
-mouseDownSub : Sub Msg
-mouseDownSub =
-  Events.onMouseDown <| D.succeed <| Mouse Mouse.Down
-
-
-dragSub : Sub Msg
-dragSub =
-  Sub.batch
-    [ Events.onMouseMove <| D.map Mouse <| D.map Mouse.Move U.pointDecoder
-    , Events.onMouseUp <| D.map Mouse <| D.succeed Mouse.Up
-    ]

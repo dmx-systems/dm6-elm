@@ -29,9 +29,9 @@ type DragMode
 
 
 type Msg
-  -- Topic
   = Down -- mouse down somewhere
-  | DownOnItem Id BoxPath Point -- mouse down on an item where a drag can be engaged
+  -- Topic
+  | DownOnTopic Id BoxPath Point -- mouse down on topic, drag engaged
   | Move Point
   | Up
   | Hover Id BoxPath
