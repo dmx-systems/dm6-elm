@@ -11,7 +11,7 @@ import ModelParts exposing (..)
 import Undo exposing (UndoModel)
 import Utils as U
 
-import Html.Events exposing (on, onClick, onMouseEnter, onMouseLeave, stopPropagationOn)
+import Html.Events exposing (on, onClick, stopPropagationOn)
 import Json.Decode as D
 import Random
 import String exposing (fromInt)
@@ -25,7 +25,7 @@ import Time exposing (Posix, posixToMillis)
 
 topicDownHandler : Id -> BoxPath -> Attrs Msg
 topicDownHandler topicId boxPath =
-  [ stopPropagationOn "mousedown"
+  [ stopPropagationOn "pointerdown"
       ( U.pointDecoder |> D.andThen
           (\pos -> D.succeed
             ( Mouse <| Mouse.DownOnTopic topicId boxPath pos
@@ -38,8 +38,8 @@ topicDownHandler topicId boxPath =
 
 hoverHandler : Id -> BoxPath -> Attrs Msg
 hoverHandler topicId boxPath =
-  [ onMouseEnter <| Mouse <| Mouse.Hover topicId boxPath
-  , onMouseLeave <| Mouse <| Mouse.Unhover topicId boxPath
+  [ on "pointerenter" <| D.succeed <| Mouse <| Mouse.Hover topicId boxPath
+  , on "pointerleave" <| D.succeed <| Mouse <| Mouse.Unhover topicId boxPath
   ]
 
 
@@ -50,9 +50,9 @@ assocClickHandler assocId boxPath =
 
 dragHandler : Attrs Msg
 dragHandler =
-  [ on "mousedown" <| D.succeed <| Mouse Mouse.Down
-  , on "mousemove" <| D.map Mouse <| D.map Mouse.Move U.pointDecoder
-  , on "mouseup" <| D.map Mouse <| D.succeed Mouse.Up
+  [ on "pointerdown" <| D.succeed <| Mouse Mouse.Down
+  , on "pointermove" <| D.map Mouse <| D.map Mouse.Move U.pointDecoder
+  , on "pointerup" <| D.map Mouse <| D.succeed Mouse.Up
   ]
 
 

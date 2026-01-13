@@ -48,17 +48,17 @@ onClickStop msg =
 
 onMouseDownStop : msg -> Attribute msg
 onMouseDownStop msg =
-  stopPropagation "mousedown" msg
+  stopPropagation "pointerdown" msg
 
 
 onMouseOverStop : msg -> Attribute msg
 onMouseOverStop msg =
-  stopPropagation "mouseover" msg
+  stopPropagation "pointerover" msg
 
 
 onMouseOutStop : msg -> Attribute msg
 onMouseOutStop msg =
-  stopPropagation "mouseout" msg
+  stopPropagation "pointerout" msg
 
 
 stopPropagation : String -> msg -> Attribute msg

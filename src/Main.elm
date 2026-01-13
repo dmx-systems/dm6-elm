@@ -4,6 +4,7 @@ import Box
 import Box.Size as Size
 import Config as C
 import Feature.IconAPI as IconAPI
+import Feature.Mouse as Mouse
 import Feature.MouseAPI as MouseAPI
 import Feature.NavAPI as NavAPI
 import Feature.SearchAPI as SearchAPI
@@ -262,7 +263,7 @@ update msg ({present} as undoModel) =
   let
     _ =
       case msg of
-        Mouse _ -> msg
+        Mouse (Mouse.Move _) -> msg
         _ -> U.info "update" msg
   in
   case msg of

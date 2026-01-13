@@ -18,7 +18,8 @@ import Utils as U
 import Dict
 import Html exposing (Html, button, div, input, text)
 import Html.Attributes exposing (class, disabled, style, title, value)
-import Html.Events exposing (onClick, onMouseOver, onMouseOut, onInput, onFocus)
+import Html.Events exposing (on, onClick, onInput, onFocus)
+import Json.Decode as D
 import String exposing (fromInt)
 
 
@@ -89,8 +90,8 @@ viewSearchtMenu topicIds model =
           Just topic ->
             div
               ( [ onClick <| Search <| Search.TopicClicked id
-                , onMouseOver <| Search <| Search.TopicHovered id
-                , onMouseOut <| Search <| Search.TopicUnhovered id
+                , on "pointerover" <| D.succeed <| Search <| Search.TopicHovered id
+                , on "pointerout" <| D.succeed <| Search <| Search.TopicUnhovered id
                 ]
                 ++ menuItemStyle isDisabled isHover
               )
@@ -119,9 +120,9 @@ viewTraversalMenu relTopicIds model =
         case Item.topicById id model of
           Just topic ->
             div
-              ( [ onClick <| Search <| Search.RelTopicClicked (id, assocId)
-                , onMouseOver <| Search <| Search.RelTopicHovered (id, assocId)
-                , onMouseOut <| Search <| Search.RelTopicUnhovered (id, assocId)
+              ( [ onClick <| Search <| Search.RelTopicClicked relTopic
+                , on "pointerover" <| D.succeed <| Search <| Search.RelTopicHovered relTopic
+                , on "pointerout" <| D.succeed <| Search <| Search.RelTopicUnhovered relTopic
                 ]
                 ++ menuItemStyle isDisabled isHover
               )
