@@ -271,6 +271,7 @@ topicStyle id boxId model =
   [ style "position" "absolute"
   , style "filter" <| if isLimbo then C.topicLimboFilter else "none"
   , style "z-index" <| if isDragging then "1" else if isSelected then "3" else "2"
+  , style "touch-action" "none"
   ]
 
 
