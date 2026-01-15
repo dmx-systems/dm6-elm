@@ -1,5 +1,5 @@
 module Box exposing (byId, byIdOrLog, update, updateRect, updateScrollPos, topicPos,
-  setTopicPos, setTopicPosByDelta, displayMode, setDisplayMode, updateDisplayMode, topicProps,
+  setTopicPos, updateTopicPos, displayMode, setDisplayMode, updateDisplayMode, topicProps,
   initTopicProps, initTopicPos, assocGeometry, hasItem, hasDeepItem, addBox, addItem,
   revealItem, removeItem, removeItem_, deleteItem, revelationBoxId, revelationBoxPath,
   landingTarget, landingBoxPath, isEmpty, isUnboxed, isTopic, isAssoc, isVisible, isPinned,
@@ -76,19 +76,12 @@ setTopicPos topicId boxId pos model =
     (\props -> { props | pos = pos })
 
 
-{-| Logs an error if box does not exist, or if topic is not in box
-TODO: make it "updateTopicPos" and take a transform function
--}
-setTopicPosByDelta : Id -> BoxId -> Delta -> Model -> Model
-setTopicPosByDelta topicId boxId delta model =
-  model |> updateTopicProps_ topicId boxId
-    (\props ->
-      { props | pos =
-        Point
-          (props.pos.x + delta.x)
-          (props.pos.y + delta.y)
-      }
-    )
+{-| Logs an error if box does not exist, or if topic is not in box -}
+updateTopicPos : Id -> BoxId -> (Point -> Point) -> Model -> Model
+updateTopicPos topicId boxId transform model =
+  model
+    |> updateTopicProps_ topicId boxId
+      (\props -> { props | pos = transform props.pos })
 
 
 {-| Logs an error if box does not exist, or topic is not in box, or ID refers not a topic (but

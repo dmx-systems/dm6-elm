@@ -184,13 +184,16 @@ updateBoxGeometry boxPath newRect oldRect model =
 setBoxRect : BoxId -> Rectangle -> Model -> Model
 setBoxRect boxId rect model =
   model
-  |> Box.updateRect boxId (\_ -> rect)
+    |> Box.updateRect boxId (\_ -> rect)
 
 
 adjustBoxPos : BoxId -> BoxId -> Rectangle -> Rectangle -> Model -> Model
 adjustBoxPos boxId parentBoxId newRect oldRect model =
-  model |> Box.setTopicPosByDelta boxId parentBoxId
-    (Point
-      (newRect.x1 - oldRect.x1)
-      (newRect.y1 - oldRect.y1)
-    )
+  model
+    |> Box.updateTopicPos boxId parentBoxId
+      (\oldPos ->
+        (Point
+          (oldPos.x + newRect.x1 - oldRect.x1)
+          (oldPos.y + newRect.y1 - oldRect.y1)
+        )
+      )

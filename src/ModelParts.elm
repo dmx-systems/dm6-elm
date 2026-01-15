@@ -1,5 +1,5 @@
 module ModelParts exposing (Id, Item, Items, ItemInfo(..), AssocIds, TopicInfo, Icon, TextSize,
-  Size, SizeField(..), AssocInfo, AssocType(..), Box, Boxes, BoxId, Delta, BoxItems, BoxPath,
+  Size, SizeField(..), AssocInfo, AssocType(..), Box, Boxes, BoxId, BoxItems, BoxPath,
   homeBoxId, BoxItem, Visibility(..), Pinned(..), ItemProps(..), TopicProps, AssocProps,
   DisplayMode(..), TopicDisplay(..), BoxDisplay(..), Point, Rectangle, ImageId, Attrs,
   encodeItem, encodeBox, itemDecoder, boxDecoder, toDictDecoder)
@@ -90,7 +90,6 @@ type alias Box =
 type alias Boxes = Dict BoxId Box
 
 type alias BoxId = Id
-type alias Delta = Point
 type alias BoxItems = Dict Id BoxItem
 type alias BoxPath = List BoxId
 

@@ -139,13 +139,16 @@ performDrag pos model =
   case model.mouse.dragState of
     Drag dragMode id boxPath origPos lastPos target ->
       let
-        delta = Point
-          (pos.x - lastPos.x)
-          (pos.y - lastPos.y)
         boxId = Box.firstId boxPath
         newModel =
           case dragMode of
-            DragTopic -> Box.setTopicPosByDelta id boxId delta model
+            DragTopic -> Box.updateTopicPos id boxId
+              (\oldPos ->
+                Point
+                  (oldPos.x + pos.x - lastPos.x)
+                  (oldPos.y + pos.y - lastPos.y)
+              )
+              model
             DraftAssoc -> model
       in
       -- update lastPos
