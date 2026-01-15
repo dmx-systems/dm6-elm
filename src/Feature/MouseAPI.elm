@@ -1,7 +1,8 @@
-module Feature.MouseAPI exposing (topicDownHandler, hoverHandler, assocClickHandler,
-  dragHandler, isHovered, update)
+module Feature.MouseAPI exposing (topicDownHandler, assocClickHandler, dragHandler, isHovered,
+  update)
 
 import Box
+import Box.Geometry
 import Box.Size as Size
 import Config as C
 import Feature.Mouse as Mouse exposing (DragState(..), DragMode(..))
@@ -36,13 +37,6 @@ topicDownHandler topicId boxPath =
   ]
 
 
-hoverHandler : Id -> BoxPath -> Attrs Msg
-hoverHandler topicId boxPath =
-  [ on "pointerenter" <| D.succeed <| Mouse <| Mouse.Hover topicId boxPath
-  , on "pointerleave" <| D.succeed <| Mouse <| Mouse.Unhover topicId boxPath
-  ]
-
-
 assocClickHandler : Id -> BoxPath -> Attrs Msg
 assocClickHandler assocId boxPath =
   [ onClick <| Mouse <| Mouse.AssocClicked assocId boxPath ]
@@ -69,10 +63,6 @@ update msg ({present} as undoModel) =
       |> Undo.swap undoModel
     Mouse.Move pos -> mouseMove pos present |> Undo.swap undoModel
     Mouse.Up -> mouseUp present |> Undo.swap undoModel
-    Mouse.Hover id boxPath -> (hover id boxPath present, Cmd.none)
-      |> Undo.swap undoModel
-    Mouse.Unhover id boxPath -> (unhover id boxPath present, Cmd.none)
-      |> Undo.swap undoModel
     Mouse.Time time -> timeArrived time undoModel
     -- Association
     Mouse.AssocClicked id boxPath -> (undoModel, U.command <| ItemClicked id boxPath)
@@ -113,7 +103,7 @@ timeArrived time ({present} as undoModel) =
         dragState =
           case maybeOrigPos of
             Just origPos -> Drag dragMode id boxPath origPos pos Nothing
-            Nothing -> NoDrag Nothing -- error is already logged
+            Nothing -> NoDrag -- error is already logged
       in
       (setDragState dragState present, Cmd.none) |> undo undoModel
     _ ->
@@ -123,15 +113,37 @@ timeArrived time ({present} as undoModel) =
 
 mouseMove : Point -> Model -> (Model, Cmd Msg)
 mouseMove pos model =
-  case model.mouse.dragState of
+  let
+    newModel = enterLeave pos model
+  in
+  case newModel.mouse.dragState of
     DragEngaged time id boxPath pos_ ->
-      ( setDragState (WaitForEndTime time id boxPath pos_) model
+      ( setDragState (WaitForEndTime time id boxPath pos_) newModel
       , Task.perform (Mouse << Mouse.Time) Time.now
       )
     Drag _ _ _ _ _ _ ->
-      ( performDrag pos model, Cmd.none )
+      ( performDrag pos newModel, Cmd.none )
     _ ->
-      ( model, Cmd.none )
+      ( newModel, Cmd.none )
+
+
+enterLeave : Point -> Model -> Model
+enterLeave pos model =
+  case Box.Geometry.pointerTarget pos model of
+    Just target ->
+      case model.mouse.hover of
+        Just oldTarget ->
+          case target /= oldTarget of
+            True ->
+              model
+                |> leave oldTarget
+                |> enter target
+            False -> model
+        Nothing -> enter target model
+    Nothing ->
+      case model.mouse.hover of
+        Just oldTarget -> leave oldTarget model
+        Nothing -> model
 
 
 performDrag : Point -> Model -> Model
@@ -155,8 +167,7 @@ performDrag pos model =
       setDragState (Drag dragMode id boxPath origPos pos target) newModel
         |> Size.auto
     _ -> U.logError "performDrag"
-      ("Received \"Move\" message when dragState is " ++ U.toString model.mouse.dragState)
-      model
+      ("Received \"Move\" when dragState is " ++ U.toString model.mouse.dragState) model
 
 
 mouseUp : Model -> (Model, Cmd Msg)
@@ -207,7 +218,7 @@ mouseUp model =
         _ ->
           Cmd.none
   in
-  (setDragState (NoDrag Nothing) model, cmd)
+  (setDragState NoDrag model, cmd)
 
 
 point : Random.Generator Point
@@ -224,45 +235,45 @@ point =
     (Random.int 0 rh)
 
 
-hover : Id -> BoxPath -> Model -> Model
-hover targetId targetPath model =
-  case model.mouse.dragState of
-    Drag dragMode id boxPath origPos lastPos _ ->
-      let
-        isBox = Item.isBox targetId model
-        isCyclic = Box.hasDeepItem id targetId model
-        target =
-          -- the hovered item (targetId) is a drop target if it is
-          -- 1. a box AND
-          -- 2. not contained in the item/box being dragged (id), this would create a cycle OR
-          -- 3. draft assoc is in progress
-          if isBox && not isCyclic || dragMode == DraftAssoc then
-            Just (targetId, targetPath)
-          else
-            Nothing
-      in
-      -- update target
-      model
-       |> setDragState (Drag dragMode id boxPath origPos lastPos target)
-    NoDrag _ ->
-      -- update target
-      model
-       |> setDragState (NoDrag <| Just (targetId, targetPath))
-    _ -> model
+enter : (Id, BoxPath) -> Model -> Model
+enter (targetId, targetPath) model =
+  let
+    newModel =
+      case model.mouse.dragState of
+        Drag dragMode id boxPath origPos lastPos _ ->
+          let
+            isBox = Item.isBox targetId model
+            isCyclic = Box.hasDeepItem id targetId model
+            target =
+              -- the hovered item (targetId) is a drop target if it is
+              -- 1. a box AND
+              -- 2. not contained in item/box being dragged (id), this would create a cycle OR
+              -- 3. draft assoc is in progress
+              if isBox && not isCyclic || dragMode == DraftAssoc then
+                Just (targetId, targetPath)
+              else
+                Nothing
+          in
+          -- update target
+          model |> setDragState (Drag dragMode id boxPath origPos lastPos target)
+        _ -> model
+  in
+  -- update hover
+  newModel |> setHover (Just (targetId, targetPath))
 
 
-unhover : Id -> BoxPath -> Model -> Model
-unhover targetId targetPath model =
-  case model.mouse.dragState of
-    Drag dragMode id boxPath origPos lastPos _ ->
-      -- reset target
-      model
-       |> setDragState (Drag dragMode id boxPath origPos lastPos Nothing)
-    NoDrag _ ->
-      -- reset target
-      model
-       |> setDragState (NoDrag Nothing)
-    _ -> model
+leave : (Id, BoxPath) -> Model -> Model
+leave (targetId, targetPath) model =
+  let
+    newModel =
+      case model.mouse.dragState of
+        Drag dragMode id boxPath origPos lastPos _ ->
+          -- reset target
+          model |> setDragState (Drag dragMode id boxPath origPos lastPos Nothing)
+        _ -> model
+  in
+  -- reset hover
+  newModel |> setHover Nothing
 
 
 setDragState : DragState -> Model -> Model
@@ -270,9 +281,14 @@ setDragState dragState ({mouse} as model) =
   { model | mouse = { mouse | dragState = dragState }}
 
 
+setHover : Maybe (Id, BoxPath) -> Model -> Model
+setHover hover ({mouse} as model) =
+  { model | mouse = { mouse | hover = hover }}
+
+
 isHovered : Id -> BoxId -> Model -> Bool
 isHovered itemId boxId model =
-  case model.mouse.dragState of
-    NoDrag (Just (itemId_, boxId_ :: _ )) ->
+  case model.mouse.hover of
+    Just (itemId_, boxId_ :: _ ) ->
       itemId == itemId_ && boxId == boxId_ -- TODO: box path?
     _ -> False

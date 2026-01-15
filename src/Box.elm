@@ -1,9 +1,9 @@
-module Box exposing (byId, byIdOrLog, update, updateRect, updateScrollPos, topicPos,
-  setTopicPos, updateTopicPos, displayMode, setDisplayMode, updateDisplayMode, topicProps,
-  initTopicProps, initTopicPos, assocGeometry, hasItem, hasDeepItem, addBox, addItem,
-  revealItem, removeItem, removeItem_, deleteItem, revelationBoxId, revelationBoxPath,
-  landingTarget, landingBoxPath, isEmpty, isUnboxed, isTopic, isAssoc, isVisible, isPinned,
-  mapTitle, elemId, firstId, fromPath)
+module Box exposing (fullscreen, byId, byIdOrLog, update, updateRect, updateScrollPos,
+  visibleTopics, topicPos, setTopicPos, updateTopicPos, displayMode, setDisplayMode,
+  updateDisplayMode, topicProps, initTopicProps, initTopicPos, assocGeometry, hasItem,
+  hasDeepItem, addBox, addItem, revealItem, removeItem, removeItem_, deleteItem,
+  revelationBoxId, revelationBoxPath, landingTarget, landingBoxPath, isEmpty, isUnboxed,
+  isTopic, isAssoc, isVisible, isPinned, mapTitle, elemId, firstId, fromPath)
 
 import Config as C
 import Feature.Search exposing (SearchResult(..))
@@ -17,6 +17,11 @@ import Dict
 import Set
 import String exposing (fromInt)
 
+
+
+fullscreen : Model -> Maybe Box
+fullscreen model =
+  byIdOrLog model.boxId model
 
 
 {-| Logs an error if box does not exist. -}
@@ -57,6 +62,11 @@ updateScrollPos boxId transform model =
     (\box ->
       { box | scroll = transform box.scroll }
     )
+
+
+visibleTopics : Box -> List BoxItem
+visibleTopics box =
+  box.items |> Dict.values |> List.filter isTopic |> List.filter isVisible
 
 
 {-| Logs an error if box does not exist, or topic is not in box, or ID refers not a topic (but
@@ -389,6 +399,7 @@ deleteItem__ itemId model =
   }
 
 
+-- TODO: drop
 resetAllEmptyBoxes : Model -> Model
 resetAllEmptyBoxes model =
   model.boxes
@@ -398,6 +409,7 @@ resetAllEmptyBoxes model =
 
 --
 
+-- TODO: drop
 resetEmptyBox_ : BoxId -> Model -> Model
 resetEmptyBox_ boxId model =
   case isEmpty boxId model of
@@ -430,6 +442,7 @@ updateTopicProps_ topicId boxId transform model =
 
 
 -- TODO: factor out updateTopicProps_ common core
+-- TODO: drop
 updateTopicPropsInAllBoxes_ : Id -> (TopicProps -> TopicProps) -> Model -> Model
 updateTopicPropsInAllBoxes_ topicId transform model =
   { model | boxes = model.boxes |> Dict.map

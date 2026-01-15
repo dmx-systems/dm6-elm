@@ -6,12 +6,16 @@ import Time
 
 
 type alias Model =
-  { dragState : DragState }
+  { dragState : DragState
+  , hover : Maybe (Id, BoxPath)
+  }
 
 
 init : Model
 init =
-  { dragState = NoDrag Nothing }
+  { dragState = NoDrag
+  , hover = Nothing
+  }
 
 
 type DragState
@@ -20,7 +24,7 @@ type DragState
   | WaitForEndTime Time.Posix Id BoxPath Point -- start point (mouse)
   | Drag DragMode Id BoxPath Point Point (Maybe (Id, BoxPath)) -- orig topic pos
                                                                -- last point (mouse)
-  | NoDrag (Maybe (Id, BoxPath)) -- hover target
+  | NoDrag
 
 
 type DragMode
@@ -34,8 +38,6 @@ type Msg
   | DownOnTopic Id BoxPath Point -- mouse down on topic, drag engaged
   | Move Point
   | Up
-  | Hover Id BoxPath
-  | Unhover Id BoxPath
   | Time Time.Posix
   -- Association
   | AssocClicked Id BoxPath

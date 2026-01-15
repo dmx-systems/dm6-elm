@@ -69,7 +69,7 @@ setFullscreenBox boxId model =
 
 setViewport : Model -> Cmd Msg
 setViewport model =
-  case Box.byIdOrLog model.boxId model of
+  case Box.fullscreen model of
     Just box ->
       Dom.setViewportOf "main" (toFloat box.scroll.x) (toFloat box.scroll.y)
       |> Task.attempt

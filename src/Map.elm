@@ -244,7 +244,6 @@ viewTopic topic props boxPath model =
   in
   div
     ( topicAttr topic.id boxPath
-      ++ MouseAPI.hoverHandler topic.id boxPath
       ++ MouseAPI.topicDownHandler topic.id boxPath
       ++ topicStyle topic.id boxId model
       ++ style
@@ -583,7 +582,7 @@ viewAssocDraft : BoxId -> Model -> List (Svg Msg)
 viewAssocDraft boxId model =
   case model.mouse.dragState of
     Drag DraftAssoc _ boxPath origPos pos _ ->
-      case (Box.firstId boxPath == boxId, Box.byIdOrLog model.boxId model) of
+      case (Box.firstId boxPath == boxId, Box.fullscreen model) of
         (True, Just box) ->
           let
             pagePos = Point

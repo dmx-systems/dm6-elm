@@ -76,7 +76,6 @@ type alias ImageId = Int
 type alias Attrs msg = List (Attribute msg)
 
 
-
 -- Box
 
 type alias Box =
