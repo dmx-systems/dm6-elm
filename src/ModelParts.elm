@@ -2,7 +2,7 @@ module ModelParts exposing (Id, Item, Items, ItemInfo(..), AssocIds, TopicInfo, 
   Size, SizeField(..), AssocInfo, AssocType(..), Box, Boxes, BoxId, BoxItems, BoxPath,
   homeBoxId, BoxItem, Visibility(..), Pinned(..), ItemProps(..), TopicProps, AssocProps,
   DisplayMode(..), TopicDisplay(..), BoxDisplay(..), Point, Rectangle, ImageId, Attrs,
-  encodeItem, encodeBox, itemDecoder, boxDecoder, toDictDecoder)
+  PointerType, encodeItem, encodeBox, itemDecoder, boxDecoder, toDictDecoder)
 
 import Dict exposing (Dict)
 import Html exposing (Attribute)
@@ -74,6 +74,7 @@ type alias AssocIds = Set Id
 type alias Icon = String -- name of feather icon, https://feathericons.com
 type alias ImageId = Int
 type alias Attrs msg = List (Attribute msg)
+type alias PointerType = String
 
 
 -- Box

@@ -70,16 +70,14 @@ stopPropagation eventName msg =
 -- DECODER
 
 
-pointDecoder : D.Decoder Point
+pointDecoder : D.Decoder (Point, PointerType)
 pointDecoder =
-  D.map2 Point
-    (D.field "clientX" D.float |> D.andThen toIntDecoder)
-    (D.field "clientY" D.float |> D.andThen toIntDecoder)
-
-
-toIntDecoder : Float -> D.Decoder Int
-toIntDecoder float =
-  round float |> D.succeed
+  D.map2 Tuple.pair
+    ( D.map2 Point
+        (D.field "clientX" D.float |> D.map round)
+        (D.field "clientY" D.float |> D.map round)
+    )
+    ( D.field "pointerType" D.string )
 
 
 

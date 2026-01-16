@@ -35,8 +35,8 @@ type DragMode
 type Msg
   = Down -- mouse down somewhere
   -- Topic
-  | DownOnTopic Id BoxPath Point -- mouse down on topic, drag engaged
-  | Move Point
+  | DownOnTopic Id BoxPath (Point, PointerType) -- mouse down on topic, drag engaged
+  | Move (Point, PointerType)
   | Up
   | Time Time.Posix
   -- Association

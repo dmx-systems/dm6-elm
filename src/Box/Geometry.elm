@@ -49,7 +49,7 @@ isTopicHover topicId boxId pos model =
   -- TODO: display mode
   case (Box.byIdOrLog boxId model, Box.topicPos topicId boxId model) of
     (Just box, Just tp) ->
-      pos.x > tp.x - C.topicW2 - box.rect.x1 &&
+      pos.x > tp.x - C.topicW2 - box.rect.x1 - C.topicHeight && -- left edge includes caret area
       pos.x < tp.x + C.topicW2 - box.rect.x1 &&
       pos.y - C.appHeaderHeight > tp.y - C.topicH2 - box.rect.y1 &&
       pos.y - C.appHeaderHeight < tp.y + C.topicH2 - box.rect.y1

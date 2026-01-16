@@ -336,22 +336,28 @@ cancelUI maybeTarget model =
     |> IconAPI.closePicker
     |> SearchAPI.closeMenu
     |> ToolAPI.closeMenu
-    |> cancelUIWith_ maybeTarget
+    |> cancelUIWith maybeTarget
 
 
-cancelUIWith_ : Maybe (Id, BoxPath) -> Model -> (Model, Cmd Msg)
-cancelUIWith_ maybeTarget model =
+cancelUIWith : Maybe (Id, BoxPath) -> Model -> (Model, Cmd Msg)
+cancelUIWith maybeTarget model =
   let
-    isTargetSelected =
+    isTargeted =
       case maybeTarget of
-        Just (itemId, boxPath) -> SelAPI.isSelected itemId (Box.firstId boxPath) model
+        Just (itemId, boxPath) ->
+          let
+            boxId = Box.firstId boxPath
+          in
+          SelAPI.isSelected itemId boxId model ||
+          MouseAPI.isHovered itemId boxId model
         Nothing -> False
   in
-  if isTargetSelected then
-    ( model, Cmd.none ) -- keep selection and edit mode
+  if isTargeted then
+    ( model, Cmd.none ) -- keep selection, hover state, and edit mode
   else
     model
       |> SelAPI.clear
+      |> MouseAPI.clearHover
       |> TextAPI.leaveEdit
 
 

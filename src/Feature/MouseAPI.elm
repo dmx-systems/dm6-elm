@@ -1,5 +1,5 @@
-module Feature.MouseAPI exposing (topicDownHandler, assocClickHandler, dragHandler, isHovered,
-  update)
+module Feature.MouseAPI exposing (topicDownHandler, assocClickHandler, dragHandler,
+  isDragInProgress, isHovered, clearHover, update)
 
 import Box
 import Box.Geometry
@@ -59,9 +59,9 @@ update msg ({present} as undoModel) =
   case msg of
     -- Topic
     Mouse.Down -> (undoModel, mouseDown)
-    Mouse.DownOnTopic id boxPath pos -> mouseDownOnTopic id boxPath pos present
-      |> Undo.swap undoModel
-    Mouse.Move pos -> mouseMove pos present |> Undo.swap undoModel
+    Mouse.DownOnTopic id boxPath (pos, pointerType) ->
+      mouseDownOnTopic id boxPath pos pointerType present |> Undo.swap undoModel
+    Mouse.Move (pos, _) -> mouseMove pos present |> Undo.swap undoModel
     Mouse.Up -> mouseUp present |> Undo.swap undoModel
     Mouse.Time time -> timeArrived time undoModel
     -- Association
@@ -73,15 +73,23 @@ mouseDown =
   U.command <| Cancel Nothing
 
 
-mouseDownOnTopic : Id -> BoxPath -> Point -> Model -> (Model, Cmd Msg)
-mouseDownOnTopic topicId boxPath pos model =
+mouseDownOnTopic : Id -> BoxPath -> Point -> PointerType -> Model -> (Model, Cmd Msg)
+mouseDownOnTopic topicId boxPath pos pointerType model =
   ( model
+      |> emulateHover topicId boxPath pointerType
       |> setDragState (WaitForStartTime topicId boxPath pos)
   , Cmd.batch
       [ U.command <| Cancel <| Just (topicId, boxPath)
       , Task.perform (Mouse << Mouse.Time) Time.now
       ]
   )
+
+
+emulateHover : Id -> BoxPath -> PointerType -> Model -> Model
+emulateHover topicId boxPath pointerType model =
+  case pointerType == "touch" of
+    True -> model |> setHover (Just (topicId, boxPath))
+    False -> model
 
 
 timeArrived : Posix -> UndoModel -> (UndoModel, Cmd Msg)
@@ -284,6 +292,18 @@ setDragState dragState ({mouse} as model) =
 setHover : Maybe (Id, BoxPath) -> Model -> Model
 setHover hover ({mouse} as model) =
   { model | mouse = { mouse | hover = hover }}
+
+
+clearHover : Model -> Model
+clearHover model =
+  model |> setHover Nothing
+
+
+isDragInProgress : Model -> Bool
+isDragInProgress model =
+  case model.mouse.dragState of
+    Drag _ _ _ _ _ _ -> True
+    _ -> False
 
 
 isHovered : Id -> BoxId -> Model -> Bool
