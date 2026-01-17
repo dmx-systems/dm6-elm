@@ -4,6 +4,7 @@ import Box
 import Config as C
 import Model exposing (Model)
 import ModelParts exposing (..)
+import Utils as U
 
 
 
@@ -18,7 +19,7 @@ pointerTarget pos filterTopicId model =
   findTarget model.boxId [] initPos filterTopicId model
 
 
--- For the fullscreen box boxPath is empty
+-- For a fullscreen box boxPath is empty
 findTarget : Id -> BoxPath -> Point -> Maybe Id -> Model -> Maybe (Id, BoxPath)
 findTarget itemId boxPath pos filterTopicId model =
   case Box.byId itemId model of
@@ -27,21 +28,23 @@ findTarget itemId boxPath pos filterTopicId model =
         items = box |> Box.visibleTopics
         relPos = boxRelPos pos box boxPath model
       in
+      -- TODO: only search inside whiteboxes
       case findInBox items (itemId :: boxPath) relPos filterTopicId model of
         Just target -> Just target
         Nothing ->
           case itemId == model.boxId of
             True -> Nothing
             False ->
-              case isBoxHover box (Box.firstId boxPath) pos model of
+              case isInsideBox pos box (Box.firstId boxPath) model of
                 True -> Just (itemId, boxPath)
                 False -> Nothing
     Nothing ->
-      case isTopicHover itemId (Box.firstId boxPath) pos model of
+      case isInsideTopic pos itemId (Box.firstId boxPath) model of
         True -> Just (itemId, boxPath)
         False -> Nothing
 
 
+-- For a fullscreen box boxPath is empty
 boxRelPos : Point -> Box -> BoxPath -> Model -> Point
 boxRelPos pos box boxPath model =
   case box.id == model.boxId of
@@ -73,18 +76,40 @@ findInBox items boxPath pos filterTopicId model =
         (Nothing, _) -> continueSearch model
 
 
-isBoxHover : Box -> BoxId -> Point -> Model -> Bool
-isBoxHover box boxId pos model =
-  isTopicHover box.id boxId pos model -- TODO: whitebox display
+isInsideTopic : Point -> Id -> BoxId -> Model -> Bool
+isInsideTopic pos topicId boxId model =
+  isInsideTopicHeader pos topicId boxId model -- TODO: detail display
 
 
-isTopicHover : Id -> BoxId -> Point -> Model -> Bool
-isTopicHover topicId boxId pos model =
-  -- TODO: detail display
-  case (Box.byIdOrLog boxId model, Box.topicPos topicId boxId model) of
-    (Just box, Just tp) ->
-      pos.x > tp.x - C.topicW2 - C.topicHeight && -- left edge includes caret area
-      pos.x < tp.x + C.topicW2 &&
-      pos.y > tp.y - C.topicH2 &&
-      pos.y < tp.y + C.topicH2
-    _ -> False
+isInsideBox : Point -> Box -> BoxId -> Model -> Bool
+isInsideBox pos box parentBoxId model =
+  let
+    header = isInsideTopicHeader pos box.id parentBoxId model
+  in
+  case Box.displayMode box.id parentBoxId model of
+    Just (BoxD WhiteBox) -> header || isInsideBoxRect pos box parentBoxId model
+    Just (BoxD BlackBox) -> header
+    Just (BoxD Unboxed) -> header
+    _ -> U.logError "isInsideBox" "Unexpected box display mode" False
+
+
+isInsideTopicHeader : Point -> Id -> BoxId -> Model -> Bool
+isInsideTopicHeader pos topicId boxId model =
+  case Box.topicPos topicId boxId model of
+    Just topicPos ->
+      pos.x > topicPos.x - C.topicW2 - C.topicHeight && -- left edge includes caret area
+      pos.x < topicPos.x + C.topicW2 &&
+      pos.y > topicPos.y - C.topicH2 &&
+      pos.y < topicPos.y + C.topicH2
+    Nothing -> False
+
+
+isInsideBoxRect : Point -> Box -> BoxId -> Model -> Bool
+isInsideBoxRect pos box parentBoxId model =
+  case Box.topicPos box.id parentBoxId model of
+    Just boxPos ->
+      pos.x > boxPos.x - C.topicW2 &&
+      pos.x < boxPos.x - C.topicW2 + box.rect.x2 - box.rect.x1 &&
+      pos.y > boxPos.y + C.topicH2 &&
+      pos.y < boxPos.y + C.topicH2 + box.rect.y2 - box.rect.y1
+    Nothing -> False
