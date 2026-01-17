@@ -9,7 +9,13 @@ import ModelParts exposing (..)
 
 pointerTarget : Point -> Maybe Id -> Model -> Maybe (Id, BoxPath)
 pointerTarget pos filterTopicId model =
-  findTarget model.boxId [] pos filterTopicId model
+  let
+    initPos =
+      Point
+        (pos.x - C.whiteBoxPadding)
+        (pos.y - C.whiteBoxPadding - C.appHeaderHeight)
+  in
+  findTarget model.boxId [] initPos filterTopicId model
 
 
 -- For the fullscreen box boxPath is empty
@@ -17,10 +23,14 @@ findTarget : Id -> BoxPath -> Point -> Maybe Id -> Model -> Maybe (Id, BoxPath)
 findTarget itemId boxPath pos filterTopicId model =
   case Box.byId itemId model of
     Just box ->
-      case findInItems (Box.visibleTopics box) (itemId :: boxPath) pos filterTopicId model of
+      let
+        items = box |> Box.visibleTopics
+        relPos = boxRelPos pos box boxPath model
+      in
+      case findInBox items (itemId :: boxPath) relPos filterTopicId model of
         Just target -> Just target
         Nothing ->
-          case itemId == homeBoxId of
+          case itemId == model.boxId of
             True -> Nothing
             False ->
               case isBoxHover box (Box.firstId boxPath) pos model of
@@ -32,14 +42,27 @@ findTarget itemId boxPath pos filterTopicId model =
         False -> Nothing
 
 
-findInItems : List BoxItem -> BoxPath -> Point -> Maybe Id -> Model -> Maybe (Id, BoxPath)
-findInItems items boxPath pos filterTopicId model =
+boxRelPos : Point -> Box -> BoxPath -> Model -> Point
+boxRelPos pos box boxPath model =
+  case box.id == model.boxId of
+    True -> pos
+    False ->
+      case Box.topicPos box.id (Box.firstId boxPath) model of
+        Just boxPos ->
+          Point
+            (pos.x - boxPos.x + box.rect.x1 + C.topicW2)
+            (pos.y - boxPos.y + box.rect.y1 - C.topicH2)
+        Nothing -> pos
+
+
+findInBox : List BoxItem -> BoxPath -> Point -> Maybe Id -> Model -> Maybe (Id, BoxPath)
+findInBox items boxPath pos filterTopicId model =
   case items of
     [] -> Nothing
     item :: tailItems ->
       let
         maybeTarget = findTarget item.id boxPath pos filterTopicId model -- recursion
-        continueSearch = findInItems tailItems boxPath pos filterTopicId -- recursion
+        continueSearch = findInBox tailItems boxPath pos filterTopicId -- recursion
       in
       case (maybeTarget, filterTopicId) of
         (Just ((targetId, _) as target), Just topicId) ->
@@ -52,16 +75,16 @@ findInItems items boxPath pos filterTopicId model =
 
 isBoxHover : Box -> BoxId -> Point -> Model -> Bool
 isBoxHover box boxId pos model =
-  isTopicHover box.id boxId pos model -- TODO
+  isTopicHover box.id boxId pos model -- TODO: whitebox display
 
 
 isTopicHover : Id -> BoxId -> Point -> Model -> Bool
 isTopicHover topicId boxId pos model =
-  -- TODO: display mode
+  -- TODO: detail display
   case (Box.byIdOrLog boxId model, Box.topicPos topicId boxId model) of
     (Just box, Just tp) ->
-      pos.x > tp.x - C.topicW2 - box.rect.x1 - C.topicHeight && -- left edge includes caret area
-      pos.x < tp.x + C.topicW2 - box.rect.x1 &&
-      pos.y - C.appHeaderHeight > tp.y - C.topicH2 - box.rect.y1 &&
-      pos.y - C.appHeaderHeight < tp.y + C.topicH2 - box.rect.y1
+      pos.x > tp.x - C.topicW2 - C.topicHeight && -- left edge includes caret area
+      pos.x < tp.x + C.topicW2 &&
+      pos.y > tp.y - C.topicH2 &&
+      pos.y < tp.y + C.topicH2
     _ -> False
