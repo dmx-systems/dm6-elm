@@ -324,8 +324,7 @@ moveTopicToBox topicId boxId origPos targetBoxId targetPath pos model =
 
 select : Id -> BoxPath -> Model -> (Model, Cmd Msg)
 select itemId boxPath model =
-  ( model
-      |> SelAPI.select itemId boxPath
+  ( model |> SelAPI.select itemId boxPath
   , Cmd.none
   )
 
@@ -344,13 +343,10 @@ cancelUIWith maybeTarget model =
   let
     isTargeted =
       case maybeTarget of
-        Just (itemId, boxPath) ->
-          let
-            boxId = Box.firstId boxPath
-          in
+        Just (itemId, boxId :: _) ->
           SelAPI.isSelected itemId boxId model ||
           MouseAPI.isHovered itemId boxId model
-        Nothing -> False
+        _ -> False
   in
   if isTargeted then
     ( model, Cmd.none ) -- keep selection, hover state, and edit mode

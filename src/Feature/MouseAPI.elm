@@ -135,25 +135,6 @@ mouseMove pos model =
       ( newModel, Cmd.none )
 
 
-enterLeave : Point -> Model -> Model
-enterLeave pos model =
-  case Box.Geometry.pointerTarget pos model of
-    Just target ->
-      case model.mouse.hover of
-        Just oldTarget ->
-          case target /= oldTarget of
-            True ->
-              model
-                |> leave oldTarget
-                |> enter target
-            False -> model
-        Nothing -> enter target model
-    Nothing ->
-      case model.mouse.hover of
-        Just oldTarget -> leave oldTarget model
-        Nothing -> model
-
-
 performDrag : Point -> Model -> Model
 performDrag pos model =
   case model.mouse.dragState of
@@ -241,6 +222,33 @@ point =
     (\x y -> Point (cx + x) (cy + y))
     (Random.int 0 rw)
     (Random.int 0 rh)
+
+
+{- Emulates enter/leave events by the means of geometry. Based on the given pointer
+coordinate decides whether to call the "enter" and/or "leave" handlers. -}
+enterLeave : Point -> Model -> Model
+enterLeave pos model =
+  let
+    filterTopicId =
+      case model.mouse.dragState of
+        Drag DragTopic topicId _ _ _ _ -> Just topicId
+        _ -> Nothing
+  in
+  case Box.Geometry.pointerTarget pos filterTopicId model of
+    Just target ->
+      case model.mouse.hover of
+        Just oldTarget ->
+          case target /= oldTarget of
+            True ->
+              model
+                |> leave oldTarget
+                |> enter target
+            False -> model
+        Nothing -> enter target model
+    Nothing ->
+      case model.mouse.hover of
+        Just oldTarget -> leave oldTarget model
+        Nothing -> model
 
 
 enter : (Id, BoxPath) -> Model -> Model

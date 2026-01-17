@@ -7,41 +7,52 @@ import ModelParts exposing (..)
 
 
 
-pointerTarget : Point -> Model -> Maybe (Id, BoxPath)
-pointerTarget pos model =
-  findTarget model.boxId [] pos model
+pointerTarget : Point -> Maybe Id -> Model -> Maybe (Id, BoxPath)
+pointerTarget pos filterTopicId model =
+  findTarget model.boxId [] pos filterTopicId model
 
 
 -- For the fullscreen box boxPath is empty
-findTarget : Id -> BoxPath -> Point -> Model -> Maybe (Id, BoxPath)
-findTarget itemId boxPath pos model =
+findTarget : Id -> BoxPath -> Point -> Maybe Id -> Model -> Maybe (Id, BoxPath)
+findTarget itemId boxPath pos filterTopicId model =
   case Box.byId itemId model of
     Just box ->
-      case findInItems (Box.visibleTopics box) (itemId :: boxPath) pos model of
+      case findInItems (Box.visibleTopics box) (itemId :: boxPath) pos filterTopicId model of
         Just target -> Just target
         Nothing ->
-          case isBoxHover box pos of
-            True -> Just (itemId, boxPath)
-            False -> Nothing
+          case itemId == homeBoxId of
+            True -> Nothing
+            False ->
+              case isBoxHover box (Box.firstId boxPath) pos model of
+                True -> Just (itemId, boxPath)
+                False -> Nothing
     Nothing ->
       case isTopicHover itemId (Box.firstId boxPath) pos model of
         True -> Just (itemId, boxPath)
         False -> Nothing
 
 
-findInItems : List BoxItem -> BoxPath -> Point -> Model -> Maybe (Id, BoxPath)
-findInItems items boxPath pos model =
+findInItems : List BoxItem -> BoxPath -> Point -> Maybe Id -> Model -> Maybe (Id, BoxPath)
+findInItems items boxPath pos filterTopicId model =
   case items of
     [] -> Nothing
     item :: tailItems ->
-      case findTarget item.id boxPath pos model of -- recursion
-        Just target -> Just target
-        Nothing -> findInItems tailItems boxPath pos model -- recursion
+      let
+        maybeTarget = findTarget item.id boxPath pos filterTopicId model -- recursion
+        continueSearch = findInItems tailItems boxPath pos filterTopicId -- recursion
+      in
+      case (maybeTarget, filterTopicId) of
+        (Just ((targetId, _) as target), Just topicId) ->
+          case targetId /= topicId of
+            True -> Just target
+            False -> continueSearch model
+        (Just target, Nothing) -> Just target
+        (Nothing, _) -> continueSearch model
 
 
-isBoxHover : Box -> Point -> Bool
-isBoxHover box pos =
-  False -- TODO: check box rect
+isBoxHover : Box -> BoxId -> Point -> Model -> Bool
+isBoxHover box boxId pos model =
+  isTopicHover box.id boxId pos model -- TODO
 
 
 isTopicHover : Id -> BoxId -> Point -> Model -> Bool
