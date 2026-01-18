@@ -1,7 +1,7 @@
-module Box exposing (fullscreen, byId, byIdOrLog, update, updateRect, updateScrollPos,
-  visibleTopics, topicPos, setTopicPos, updateTopicPos, displayMode, setDisplayMode,
-  updateDisplayMode, topicProps, initTopicProps, initTopicPos, assocGeometry, hasItem,
-  hasDeepItem, addBox, addItem, revealItem, removeItem, removeItem_, deleteItem,
+module Box exposing (fullscreen, isFullscreen, byId, byIdOrLog, update, updateRect,
+  updateScrollPos, visibleTopics, topicPos, setTopicPos, updateTopicPos, displayMode,
+  setDisplayMode, updateDisplayMode, topicProps, initTopicProps, initTopicPos, assocGeometry,
+  hasItem, hasDeepItem, addBox, addItem, revealItem, removeItem, removeItem_, deleteItem,
   revelationBoxId, revelationBoxPath, landingTarget, landingBoxPath, isEmpty, isUnboxed,
   isTopic, isAssoc, isVisible, isPinned, mapTitle, elemId, firstId, fromPath)
 
@@ -22,6 +22,11 @@ import String exposing (fromInt)
 fullscreen : Model -> Maybe Box
 fullscreen model =
   byIdOrLog model.boxId model
+
+
+isFullscreen : BoxId -> Model -> Bool
+isFullscreen boxId model =
+  boxId == model.boxId
 
 
 {-| Logs an error if box does not exist. -}

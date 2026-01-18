@@ -106,7 +106,7 @@ detailTopicExtent topicId boxPath pos model =
       Rectangle
         (pos.x - C.topicW2)
         (pos.y - C.topicH2)
-        (pos.x - C.topicW2 + size.w + C.topicSize.h + 2 * C.topicBorderWidth)
+        (pos.x - C.topicW2 + size.w + C.topicHeight + 2 * C.topicBorderWidth)
         (pos.y - C.topicH2 + size.h + 2 * C.topicBorderWidth)
     Nothing -> Rectangle 0 0 0 0 -- error is logged already
 
