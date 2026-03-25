@@ -2,12 +2,28 @@
 
 ## Version History
 
+**0.4** -- Mar 25, 2026
+
+* Basic mobile/touch support (uses pointer events instead mouse events)
+* Select associations
+    * Toolbar operations: Remove, Delete
+* Import/Export based on Zip-file
+    * Images are included
+* Setting menu
+    * Switch line styles ("cornered"/"straight")
+    * Import/Export (moved from global toolbar)
+* Created things and search results are revealed in selected whitebox, if any
+* Created topics/boxes get default icons
+* Fix:
+    * Prohibit dropping box into box if cycle would be created
+
 **0.3.1** -- Dec 25, 2025
 
 * Fix:
     * Search/Traversal result's "Fullscreen" buttons don't create cycle
 * Improvement:
     * Disable Fullscreen button if box is displayed fullscreen already
+* Dev/build system based on Vite
 
 **0.3** -- Dec 24, 2025
 
@@ -89,4 +105,4 @@ Project begin -- Jun 11, 2025
 
 ---
 Jörg Richter  
-Dec 25, 2025
+Mar 25, 2026

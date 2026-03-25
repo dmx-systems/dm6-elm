@@ -204,7 +204,7 @@ viewFooter =
         ( [ href "https://dmx.berlin" ]
           ++ linkStyle
         )
-        [ text "DMX Systems" ]
+        [ text "DMX Berlin" ]
     ]
 
 
