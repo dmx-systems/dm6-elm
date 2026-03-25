@@ -9,7 +9,7 @@ import Utils as U
 
 
 
-{- Finds the target for a pointer position.
+{- Searches the target for a pointer position.
 Returns the target (topic/box Id) and its context (BoxPath), or Nothing -}
 pointerTarget : Point -> Maybe Id -> Model -> Maybe (Id, BoxPath)
 pointerTarget pos filterTopicId model =
@@ -22,12 +22,13 @@ pointerTarget pos filterTopicId model =
   searchInItem initPos model.boxId [] filterTopicId model
 
 
-{- Finds the target for a pointer position, starting at the given item (topic/box Id)
+{- Searches the target for a pointer position, starting at the given item (topic/box Id)
 and context (BoxPath). -}
 searchInItem : Point -> Id -> BoxPath -> Maybe Id -> Model -> Maybe (Id, BoxPath)
 searchInItem pos itemId boxPath filterTopicId model =
   let
-    result = \found -> if found then Just (itemId, boxPath) else Nothing
+    maybeThisItem : Bool -> Maybe (Id, BoxPath)
+    maybeThisItem found = if found then Just (itemId, boxPath) else Nothing
   in
   case Box.byId itemId model of
     Just box ->
@@ -47,15 +48,15 @@ searchInItem pos itemId boxPath filterTopicId model =
           in
           case Box.displayMode itemId parentBoxId model of
             Just (BoxD BlackBox) ->
-              isHeaderHovered model |> result
+              isHeaderHovered model |> maybeThisItem
             Just (BoxD WhiteBox) ->
               case searchBox model of
-                Just target -> Just target
+                Just target -> Just target -- found nested (not this) item
                 Nothing ->
                   isHeaderHovered model ||
-                  isRectHovered model |> result
+                  isRectHovered model |> maybeThisItem
             Just (BoxD Unboxed) ->
-              isHeaderHovered model |> result
+              isHeaderHovered model |> maybeThisItem
             _ -> U.logError "searchInItem" "Unexpected box display mode" Nothing
     Nothing ->
       let
@@ -65,10 +66,10 @@ searchInItem pos itemId boxPath filterTopicId model =
       in
       case Box.displayMode itemId parentBoxId model of
         Just (TopicD LabelOnly) ->
-          isHeaderHovered model |> result
+          isHeaderHovered model |> maybeThisItem
         Just (TopicD Detail) ->
           isHeaderHovered model ||
-          isDetailHovered model |> result
+          isDetailHovered model |> maybeThisItem
         _ -> U.logError "searchInItem" "Unexpected topic display mode" Nothing
 
 
