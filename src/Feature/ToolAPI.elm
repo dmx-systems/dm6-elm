@@ -301,14 +301,16 @@ toolbarStyle pos =
 
 
 -- Extra topic-specific tools, rendered by Map.view as topic children
+-- TODO: remove this "hook" and render caret as box child
 viewTopicTools : Id -> BoxPath -> Model -> List (Html Msg)
 viewTopicTools topicId boxPath model =
   let
     boxId = Box.firstId boxPath
     isHovered = MouseAPI.isHovered topicId boxId model -- TODO: use boxPath
+    isDrag = MouseAPI.isDragInProgress model
     isEdit = TextAPI.isEdit topicId boxPath model
   in
-  if isHovered && not isEdit then
+  if isHovered && not isDrag && not isEdit then
     [ viewCaret topicId boxId model ]
   else
     []

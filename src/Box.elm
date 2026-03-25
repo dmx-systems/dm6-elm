@@ -1,9 +1,9 @@
-module Box exposing (byId, byIdOrLog, update, updateRect, updateScrollPos, topicPos,
-  setTopicPos, setTopicPosByDelta, displayMode, setDisplayMode, updateDisplayMode, topicProps,
-  initTopicProps, initTopicPos, assocGeometry, hasItem, hasDeepItem, addBox, addItem,
-  revealItem, removeItem, removeItem_, deleteItem, revelationBoxId, revelationBoxPath,
-  landingTarget, landingBoxPath, isEmpty, isUnboxed, isTopic, isAssoc, isVisible, isPinned,
-  mapTitle, elemId, firstId, fromPath)
+module Box exposing (fullscreen, isFullscreen, byId, byIdOrLog, update, updateRect,
+  updateScrollPos, visibleTopics, topicPos, setTopicPos, updateTopicPos, displayMode,
+  setDisplayMode, updateDisplayMode, topicProps, initTopicProps, initTopicPos, assocGeometry,
+  hasItem, hasDeepItem, addBox, addItem, revealItem, removeItem, removeItem_, deleteItem,
+  revelationBoxId, revelationBoxPath, landingTarget, landingBoxPath, isEmpty, isUnboxed,
+  isTopic, isAssoc, isVisible, isPinned, mapTitle, elemId, firstId, fromPath)
 
 import Config as C
 import Feature.Search exposing (SearchResult(..))
@@ -17,6 +17,16 @@ import Dict
 import Set
 import String exposing (fromInt)
 
+
+
+fullscreen : Model -> Maybe Box
+fullscreen model =
+  byIdOrLog model.boxId model
+
+
+isFullscreen : BoxId -> Model -> Bool
+isFullscreen boxId model =
+  boxId == model.boxId
 
 
 {-| Logs an error if box does not exist. -}
@@ -59,6 +69,11 @@ updateScrollPos boxId transform model =
     )
 
 
+visibleTopics : Box -> List BoxItem
+visibleTopics box =
+  box.items |> Dict.values |> List.filter isTopic |> List.filter isVisible
+
+
 {-| Logs an error if box does not exist, or topic is not in box, or ID refers not a topic (but
 an association).
 -}
@@ -76,19 +91,12 @@ setTopicPos topicId boxId pos model =
     (\props -> { props | pos = pos })
 
 
-{-| Logs an error if box does not exist, or if topic is not in box
-TODO: make it "updateTopicPos" and take a transform function
--}
-setTopicPosByDelta : Id -> BoxId -> Delta -> Model -> Model
-setTopicPosByDelta topicId boxId delta model =
-  model |> updateTopicProps_ topicId boxId
-    (\props ->
-      { props | pos =
-        Point
-          (props.pos.x + delta.x)
-          (props.pos.y + delta.y)
-      }
-    )
+{-| Logs an error if box does not exist, or if topic is not in box -}
+updateTopicPos : Id -> BoxId -> (Point -> Point) -> Model -> Model
+updateTopicPos topicId boxId transform model =
+  model
+    |> updateTopicProps_ topicId boxId
+      (\props -> { props | pos = transform props.pos })
 
 
 {-| Logs an error if box does not exist, or topic is not in box, or ID refers not a topic (but
@@ -396,6 +404,7 @@ deleteItem__ itemId model =
   }
 
 
+-- TODO: drop
 resetAllEmptyBoxes : Model -> Model
 resetAllEmptyBoxes model =
   model.boxes
@@ -405,6 +414,7 @@ resetAllEmptyBoxes model =
 
 --
 
+-- TODO: drop
 resetEmptyBox_ : BoxId -> Model -> Model
 resetEmptyBox_ boxId model =
   case isEmpty boxId model of
@@ -437,6 +447,7 @@ updateTopicProps_ topicId boxId transform model =
 
 
 -- TODO: factor out updateTopicProps_ common core
+-- TODO: drop
 updateTopicPropsInAllBoxes_ : Id -> (TopicProps -> TopicProps) -> Model -> Model
 updateTopicPropsInAllBoxes_ topicId transform model =
   { model | boxes = model.boxes |> Dict.map
@@ -486,8 +497,8 @@ landingTarget model =
     boxId :: boxPath -> Just (boxId, boxPath)
 
 
-{- The box where created things and search results land, entire box path.
-Can be a nested box or a fullsreen box. Returned box path is never empty. -}
+{- The box where created things and search results land, entire box path, never empty.
+Can be the fullsreen box or a nested box. -}
 landingBoxPath : Model -> BoxPath
 landingBoxPath model =
   case SelAPI.single model of

@@ -106,7 +106,7 @@ detailTopicExtent topicId boxPath pos model =
       Rectangle
         (pos.x - C.topicW2)
         (pos.y - C.topicH2)
-        (pos.x - C.topicW2 + size.w + C.topicSize.h + 2 * C.topicBorderWidth)
+        (pos.x - C.topicW2 + size.w + C.topicHeight + 2 * C.topicBorderWidth)
         (pos.y - C.topicH2 + size.h + 2 * C.topicBorderWidth)
     Nothing -> Rectangle 0 0 0 0 -- error is logged already
 
@@ -184,13 +184,16 @@ updateBoxGeometry boxPath newRect oldRect model =
 setBoxRect : BoxId -> Rectangle -> Model -> Model
 setBoxRect boxId rect model =
   model
-  |> Box.updateRect boxId (\_ -> rect)
+    |> Box.updateRect boxId (\_ -> rect)
 
 
 adjustBoxPos : BoxId -> BoxId -> Rectangle -> Rectangle -> Model -> Model
 adjustBoxPos boxId parentBoxId newRect oldRect model =
-  model |> Box.setTopicPosByDelta boxId parentBoxId
-    (Point
-      (newRect.x1 - oldRect.x1)
-      (newRect.y1 - oldRect.y1)
-    )
+  model
+    |> Box.updateTopicPos boxId parentBoxId
+      (\oldPos ->
+        (Point
+          (oldPos.x + newRect.x1 - oldRect.x1)
+          (oldPos.y + newRect.y1 - oldRect.y1)
+        )
+      )

@@ -4,6 +4,7 @@ import Box
 import Box.Size as Size
 import Config as C
 import Feature.IconAPI as IconAPI
+import Feature.Mouse as Mouse
 import Feature.MouseAPI as MouseAPI
 import Feature.NavAPI as NavAPI
 import Feature.SearchAPI as SearchAPI
@@ -48,8 +49,7 @@ main =
     , update = update
     , subscriptions =
         (\model -> Sub.batch
-          [ MouseAPI.sub model
-          , TextAPI.sub
+          [ TextAPI.sub
           , NavAPI.sub
           , onScroll Scrolled
           , onResolveUrl UrlResolved
@@ -103,23 +103,25 @@ view ({present} as undoModel) =
   Browser.Document
     "DM6 Elm"
     [ div
-        appStyle
-          [ div
-              headerStyle
-              ( [ viewMapTitle present
-                , viewSpacer
-                ]
-                ++ ToolAPI.viewGlobalTools present
-                ++ SearchAPI.viewSearchResult present -- TODO: move to "main" for scroll along?
-              )
-          , div
-              ( [ id "main" ]
-                ++ mainStyle
-              )
-              ( [ Map.view present.boxId [] present ] -- boxPath = []
-                ++ ToolAPI.viewMapTools undoModel
-              )
-          ]
+        ( MouseAPI.dragHandler
+          ++ appStyle
+        )
+        [ div
+            headerStyle
+            ( [ viewMapTitle present
+              , viewSpacer
+              ]
+              ++ ToolAPI.viewGlobalTools present
+              ++ SearchAPI.viewSearchResult present -- TODO: move to "main" for scroll along?
+            )
+        , div
+            ( [ id "main" ]
+              ++ mainStyle
+            )
+            ( [ Map.view present.boxId [] present ] -- boxPath = []
+              ++ ToolAPI.viewMapTools undoModel
+            )
+        ]
     , viewFooter
     , viewMeasure present
     ]
@@ -156,7 +158,7 @@ viewMapTitle model =
 
 mapTitleStyle : Attrs Msg
 mapTitleStyle =
-  [ style "font-size" "24px"
+  [ style "font-size" "26px"
   , style "font-weight" "bold"
   , style "overflow" "hidden"
   , style "text-overflow" "ellipsis"
@@ -261,7 +263,7 @@ update msg ({present} as undoModel) =
   let
     _ =
       case msg of
-        Mouse _ -> msg
+        Mouse (Mouse.Move _) -> msg
         _ -> U.info "update" msg
   in
   case msg of
@@ -322,8 +324,7 @@ moveTopicToBox topicId boxId origPos targetBoxId targetPath pos model =
 
 select : Id -> BoxPath -> Model -> (Model, Cmd Msg)
 select itemId boxPath model =
-  ( model
-      |> SelAPI.select itemId boxPath
+  ( model |> SelAPI.select itemId boxPath
   , Cmd.none
   )
 
@@ -334,22 +335,25 @@ cancelUI maybeTarget model =
     |> IconAPI.closePicker
     |> SearchAPI.closeMenu
     |> ToolAPI.closeMenu
-    |> cancelUIWith_ maybeTarget
+    |> cancelUIWith maybeTarget
 
 
-cancelUIWith_ : Maybe (Id, BoxPath) -> Model -> (Model, Cmd Msg)
-cancelUIWith_ maybeTarget model =
+cancelUIWith : Maybe (Id, BoxPath) -> Model -> (Model, Cmd Msg)
+cancelUIWith maybeTarget model =
   let
-    isTargetSelected =
+    isTargeted =
       case maybeTarget of
-        Just (itemId, boxPath) -> SelAPI.isSelected itemId (Box.firstId boxPath) model
-        Nothing -> False
+        Just (itemId, boxId :: _) ->
+          SelAPI.isSelected itemId boxId model ||
+          MouseAPI.isHovered itemId boxId model
+        _ -> False
   in
-  if isTargetSelected then
-    ( model, Cmd.none ) -- keep selection and edit mode
+  if isTargeted then
+    ( model, Cmd.none ) -- keep selection, hover state, and edit mode
   else
     model
       |> SelAPI.clear
+      |> MouseAPI.clearHover
       |> TextAPI.leaveEdit
 
 

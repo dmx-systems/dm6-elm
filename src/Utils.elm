@@ -48,17 +48,17 @@ onClickStop msg =
 
 onMouseDownStop : msg -> Attribute msg
 onMouseDownStop msg =
-  stopPropagation "mousedown" msg
+  stopPropagation "pointerdown" msg
 
 
 onMouseOverStop : msg -> Attribute msg
 onMouseOverStop msg =
-  stopPropagation "mouseover" msg
+  stopPropagation "pointerover" msg
 
 
 onMouseOutStop : msg -> Attribute msg
 onMouseOutStop msg =
-  stopPropagation "mouseout" msg
+  stopPropagation "pointerout" msg
 
 
 stopPropagation : String -> msg -> Attribute msg
@@ -70,16 +70,14 @@ stopPropagation eventName msg =
 -- DECODER
 
 
-pointDecoder : D.Decoder Point
+pointDecoder : D.Decoder (Point, PointerType)
 pointDecoder =
-  D.map2 Point
-    (D.field "clientX" D.float |> D.andThen toIntDecoder)
-    (D.field "clientY" D.float |> D.andThen toIntDecoder)
-
-
-toIntDecoder : Float -> D.Decoder Int
-toIntDecoder float =
-  round float |> D.succeed
+  D.map2 Tuple.pair
+    ( D.map2 Point
+        (D.field "clientX" D.float |> D.map round)
+        (D.field "clientY" D.float |> D.map round)
+    )
+    ( D.field "pointerType" D.string )
 
 
 
@@ -129,7 +127,7 @@ illegalId funcName item id val =
 
 logError : String -> String -> v -> v
 logError funcName text val =
-  Logger.log ("### ERROR @" ++ funcName ++ ": " ++ text) val
+  Logger.log ("💣ERROR @" ++ funcName ++ ": " ++ text) val
 
 
 fail : String -> a -> v -> v
