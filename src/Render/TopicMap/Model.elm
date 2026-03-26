@@ -1,5 +1,5 @@
-module Map.Model exposing (topicsToRender, assocsToRender, isLimboTopic, isLimboAssoc,
-  limboState)
+module Render.TopicMap.Model exposing (topicsToRender, assocsToRender, isLimboTopic,
+  isLimboAssoc, limboState)
 
 import Box
 import Feature.Search exposing (SearchResult(..))

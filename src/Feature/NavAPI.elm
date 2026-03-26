@@ -1,10 +1,10 @@
 port module Feature.NavAPI exposing (boxIdFromHash, pushUrl, update, sub)
 
 import Box
-import Box.Size as Size
 import Feature.Nav as Nav
 import Model exposing (Model, Msg(..))
 import ModelParts exposing (..)
+import Render.TopicMap.Size as Size
 import Storage as S
 import Undo exposing (UndoModel)
 import Utils as U

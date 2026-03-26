@@ -2,8 +2,6 @@ module Feature.ToolAPI exposing (viewGlobalTools, viewMapTools, viewToolbar, vie
   closeMenu, update)
 
 import Box
-import Box.Size as Size
-import Box.Transfer as Transfer
 import Config as C
 import Feature.IconAPI as IconAPI
 import Feature.MouseAPI as MouseAPI
@@ -15,6 +13,8 @@ import Feature.Tool as Tool exposing (LineStyle(..))
 import Item
 import Model exposing (Model, Msg(..))
 import ModelParts exposing (..)
+import Render.TopicMap.Size as Size
+import Render.TopicMap.Transfer as Transfer
 import Storage as S
 import Undo exposing (UndoModel)
 import Utils as U

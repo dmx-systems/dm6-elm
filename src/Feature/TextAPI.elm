@@ -2,12 +2,12 @@ port module Feature.TextAPI exposing (viewInput, viewTextarea, enterEdit, leaveE
   markdown, openImageFilePicker, update, sub)
 
 import Box
-import Box.Size as Size -- TODO: don't import, let caller do the sizing instead
 import Config as C
 import Feature.Text as Text exposing (EditState(..))
 import Item
 import Model exposing (Model, Msg(..))
 import ModelParts exposing (..)
+import Render.TopicMap.Size as Size -- TODO: don't import, let caller do the sizing instead
 import Storage as S
 import Task
 import Undo exposing (UndoModel)

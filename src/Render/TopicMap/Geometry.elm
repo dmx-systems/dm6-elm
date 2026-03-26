@@ -1,4 +1,4 @@
-module Box.Geometry exposing (pointerTarget)
+module Render.TopicMap.Geometry exposing (pointerTarget)
 
 import Box
 import Config as C

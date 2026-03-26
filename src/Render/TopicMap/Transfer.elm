@@ -1,4 +1,4 @@
-module Box.Transfer exposing (boxContent, unboxContent)
+module Render.TopicMap.Transfer exposing (boxContent, unboxContent)
 
 import Box
 import Item

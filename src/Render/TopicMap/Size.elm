@@ -1,11 +1,11 @@
-module Box.Size exposing (auto)
+module Render.TopicMap.Size exposing (auto)
 
 import Box
 import Config as C
 import Feature.Mouse exposing (DragState(..), DragMode(..))
 import Feature.Text exposing (EditState(..))
 import Item
-import Map.Model as MM
+import Render.TopicMap.Model as MM
 import Model exposing (Model)
 import ModelParts exposing (..)
 import Utils as U

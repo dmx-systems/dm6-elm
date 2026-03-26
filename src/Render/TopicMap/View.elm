@@ -1,4 +1,4 @@
-module Map exposing (view)
+module Render.TopicMap.View exposing (view)
 
 import Box
 import Config as C
@@ -10,7 +10,7 @@ import Feature.TextAPI as TextAPI
 import Feature.Tool exposing (LineStyle(..))
 import Feature.ToolAPI as ToolAPI
 import Item
-import Map.Model as MM
+import Render.TopicMap.Model as MM
 import Model exposing (Model, Msg)
 import ModelParts exposing (..)
 import Utils as U

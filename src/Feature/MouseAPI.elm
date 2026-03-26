@@ -2,13 +2,13 @@ module Feature.MouseAPI exposing (topicDownHandler, assocClickHandler, dragHandl
   isDragInProgress, isHovered, clearHover, update)
 
 import Box
-import Box.Geometry
-import Box.Size as Size
 import Config as C
 import Feature.Mouse as Mouse exposing (DragState(..), DragMode(..))
 import Item
 import Model exposing (Model, Msg(..))
 import ModelParts exposing (..)
+import Render.TopicMap.Geometry as Geometry
+import Render.TopicMap.Size as Size
 import Undo exposing (UndoModel)
 import Utils as U
 
@@ -234,7 +234,7 @@ enterLeave pos model =
         Drag DragTopic topicId _ _ _ _ -> Just topicId
         _ -> Nothing
   in
-  case Box.Geometry.pointerTarget pos filterTopicId model of
+  case Geometry.pointerTarget pos filterTopicId model of
     Just target ->
       case model.mouse.hover of
         Just oldTarget ->
