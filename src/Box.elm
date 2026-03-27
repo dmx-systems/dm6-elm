@@ -281,7 +281,6 @@ removeItem itemId boxId model =
         (\box ->
           { box | items = removeItem_ itemId box.items model }
         )
-    |> resetEmptyBox_ boxId
 
 
 {-| Removes an item from a box, along its associations in that box context.
@@ -341,7 +340,6 @@ deleteItem : Id -> Model -> Model
 deleteItem itemId model =
   model
     |> deleteItem_ itemId
-    |> resetAllEmptyBoxes
 
 
 {-| Deletes an item, along its associations, and removes them from all boxes.
@@ -404,25 +402,7 @@ deleteItem__ itemId model =
   }
 
 
--- TODO: drop
-resetAllEmptyBoxes : Model -> Model
-resetAllEmptyBoxes model =
-  model.boxes
-    |> Dict.keys
-    |> List.foldr resetEmptyBox_ model
-
-
 --
-
--- TODO: drop
-resetEmptyBox_ : BoxId -> Model -> Model
-resetEmptyBox_ boxId model =
-  case isEmpty boxId model of
-    True -> model
-      |> updateTopicPropsInAllBoxes_ boxId
-        (\props -> { props | displayMode = BoxD BlackBox })
-    False -> model
-
 
 {-| Canonical TopicProps transformation.
 Logs an error if box does not exist, or topic is not in box, or ID refers not a topic (but
@@ -444,27 +424,6 @@ updateTopicProps_ topicId boxId transform model =
         )
       }
     )
-
-
--- TODO: factor out updateTopicProps_ common core
--- TODO: drop
-updateTopicPropsInAllBoxes_ : Id -> (TopicProps -> TopicProps) -> Model -> Model
-updateTopicPropsInAllBoxes_ topicId transform model =
-  { model | boxes = model.boxes |> Dict.map
-    (\_ box ->
-      { box | items = box.items |> Dict.update topicId
-        (\item_ ->
-          case item_ of
-            Just item ->
-              case item.props of
-                TopicP props -> Just
-                  { item | props = TopicP (transform props) }
-                AssocP _ -> U.topicMismatch "updateTopicPropsInAllBoxes_" topicId item_
-            Nothing -> Nothing
-        )
-      }
-    )
-  }
 
 
 {- The box where to reveal search/traversal results -}
