@@ -1,7 +1,6 @@
 module Feature.SearchAPI exposing (viewInput, viewSearchResult, viewTraversalResult, traverse,
   closeMenu, update)
 
-import Box
 import Config as C
 import Feature.IconAPI as IconAPI
 import Feature.NavAPI as NavAPI
@@ -10,6 +9,7 @@ import Feature.SelAPI as SelAPI
 import Item
 import Model exposing (Model, Msg(..))
 import ModelParts exposing (..)
+import Render.TopicMap.Box as Box
 import Render.TopicMap.Size as Size
 import Storage as S
 import Undo exposing (UndoModel)

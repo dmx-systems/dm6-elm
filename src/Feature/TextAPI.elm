@@ -1,12 +1,13 @@
 port module Feature.TextAPI exposing (viewInput, viewTextarea, enterEdit, leaveEdit, isEdit,
   markdown, openImageFilePicker, update, sub)
 
-import Box
 import Config as C
 import Feature.Text as Text exposing (EditState(..))
 import Item
 import Model exposing (Model, Msg(..))
 import ModelParts exposing (..)
+import Render.TopicMap exposing (DisplayMode(..), TopicDisplay(..))
+import Render.TopicMap.Box as Box
 import Render.TopicMap.Size as Size -- TODO: don't import, let caller do the sizing instead
 import Storage as S
 import Task

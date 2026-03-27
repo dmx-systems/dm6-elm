@@ -9,6 +9,7 @@ import Feature.Sel as Sel
 import Feature.Text as Text
 import Feature.Tool as Tool
 import ModelParts exposing (..)
+import Render.TopicMap as TopicMap
 
 import Dict exposing (Dict)
 import Json.Decode as D
@@ -24,6 +25,8 @@ type alias Model =
   , boxId : BoxId -- the box rendered fullscreen
   , nextId : Id
   , imageCache : Dict ImageId String -- Int -> blob: URL
+  -- renderer modules
+  , topicMap : TopicMap.Model
   -- feature modules
   , tool : Tool.Model
   , text : Text.Model
@@ -40,11 +43,12 @@ init =
     homeTopic = TopicInfo 0 Nothing C.homeBoxName <| TextSize (Size 0 0) (Size 0 0)
   in
   { items = Dict.singleton 0 <| Item 0 (Topic homeTopic) Set.empty
-  , boxes = Dict.singleton homeBoxId
-    <| Box homeBoxId (Rectangle 0 0 0 0) (Point 0 0) Dict.empty
+  , boxes = Dict.singleton homeBoxId <| Box homeBoxId
   , boxId = homeBoxId
   , nextId = 1
   , imageCache = Dict.empty -- TODO: move to Text module, but should survive a map switch
+  -- renderer modules
+  , topicMap = TopicMap.init
   -- feature modules
   , tool = Tool.init
   , text = Text.init
@@ -98,6 +102,7 @@ decoder =
     |> required "boxId" D.int
     |> required "nextId" D.int
     |> hardcoded Dict.empty
+    |> hardcoded { boxes = Dict.empty } -- TODO: decode topicMap
     -- feature modules
     |> required "tool" Tool.decoder
     |> hardcoded Text.init

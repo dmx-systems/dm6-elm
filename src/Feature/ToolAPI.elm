@@ -13,6 +13,9 @@ import Feature.Tool as Tool exposing (LineStyle(..))
 import Item
 import Model exposing (Model, Msg(..))
 import ModelParts exposing (..)
+import Render.TopicMap exposing (ItemProps(..), TopicProps, DisplayMode(..), TopicDisplay(..),
+  BoxDisplay(..))
+import Render.TopicMap.Box as TMBox
 import Render.TopicMap.Size as Size
 import Render.TopicMap.Transfer as Transfer
 import Storage as S
@@ -161,7 +164,7 @@ vGap gap =
 viewMapTools : UndoModel -> List (Html Msg)
 viewMapTools undoModel =
   let
-    target = Box.landingTarget undoModel.present
+    target = TMBox.landingTarget undoModel.present
   in
   [ div
     mapToolsStyle
@@ -192,16 +195,16 @@ mapToolsStyle =
 viewToolbar : BoxPath -> Model -> List (Html Msg)
 viewToolbar boxPath model =
   let
-    boxId = Box.firstId boxPath
+    boxId = TMBox.firstId boxPath
   in
   case SelAPI.single model of
     Just (itemId, selBoxPath) ->
       if selBoxPath == boxPath then
-        case (Item.byId itemId model, Box.byIdOrLog boxId model) of
+        case (Item.byId itemId model, TMBox.byIdOrLog boxId model) of
           (Just {info}, Just {rect}) ->
             case info of
               Topic topic ->
-                case Box.topicPos itemId boxId model of
+                case TMBox.topicPos itemId boxId model of
                   Just topicPos ->
                     let
                       pos = Point
@@ -214,7 +217,7 @@ viewToolbar boxPath model =
                       _ -> []
                   Nothing -> []
               Assoc assoc ->
-                case Box.assocGeometry assoc boxId model of
+                case TMBox.assocGeometry assoc boxId model of
                   Just (p1, p2) ->
                     let
                       pos = Point
@@ -232,7 +235,7 @@ viewToolbar boxPath model =
 viewTopicToolbar : Point -> Id -> BoxPath -> Model -> Html Msg
 viewTopicToolbar pos topicId boxPath model =
   let
-    boxId = Box.firstId boxPath
+    boxId = TMBox.firstId boxPath
     target = (topicId, boxPath)
     topicTools =
       [ viewButton "Edit" "edit-3" Tool.Edit False target
@@ -244,7 +247,7 @@ viewTopicToolbar pos topicId boxPath model =
     boxTools =
       if Item.isBox topicId model then
         let
-          isDisabled = Box.isEmpty topicId model || Box.isUnboxed topicId boxId model
+          isDisabled = TMBox.isEmpty topicId model || TMBox.isUnboxed topicId boxId model
         in
         [ hGap 14
         , viewButton "Fullscreen" "maximize-2" (Tool.Fullscreen topicId) False target
@@ -305,7 +308,7 @@ toolbarStyle pos =
 viewTopicTools : Id -> BoxPath -> Model -> List (Html Msg)
 viewTopicTools topicId boxPath model =
   let
-    boxId = Box.firstId boxPath
+    boxId = TMBox.firstId boxPath
     isHovered = MouseAPI.isHovered topicId boxId model -- TODO: use boxPath
     isDrag = MouseAPI.isDragInProgress model
     isEdit = TextAPI.isEdit topicId boxPath model
@@ -320,7 +323,7 @@ viewCaret : Id -> BoxId -> Model -> Html Msg
 viewCaret topicId boxId model =
   let
     icon =
-      case Box.displayMode topicId boxId model of
+      case TMBox.displayMode topicId boxId model of
         Just (TopicD LabelOnly) -> "chevron-right"
         Just (TopicD Detail) -> "chevron-down"
         Just (BoxD BlackBox) -> "chevron-right"
@@ -460,14 +463,14 @@ addBox model =
 landTopic : Id -> DisplayMode -> Model -> (Model, Cmd Msg)
 landTopic topicId displayMode model =
   let
-    boxPath = Box.landingBoxPath model
-    boxId = Box.firstId boxPath
+    boxPath = TMBox.landingBoxPath model
+    boxId = TMBox.firstId boxPath
     props = TopicP <| TopicProps
-      ( Box.initTopicPos boxId model )
+      ( TMBox.initTopicPos boxId model )
       displayMode
   in
   model
-    |> Box.addItem topicId props boxId
+    |> TMBox.addItem topicId props boxId
     |> SelAPI.select topicId boxPath
     |> TextAPI.enterEdit topicId boxPath
 
@@ -500,7 +503,7 @@ remove : Model -> Model
 remove model =
   model.selection.items
     |> List.foldr
-      (\(itemId, boxPath) modelAcc -> Box.removeItem itemId (Box.firstId boxPath) modelAcc)
+      (\(itemId, boxPath) modelAcc -> TMBox.removeItem itemId (TMBox.firstId boxPath) modelAcc)
       model
     |> SelAPI.clear
     |> Size.auto
@@ -509,7 +512,7 @@ remove model =
 unbox : BoxId -> BoxId -> Model -> Model
 unbox boxId targetBoxId model =
   Transfer.unboxContent boxId targetBoxId model
-    |> Box.setDisplayMode boxId targetBoxId (BoxD Unboxed)
+    |> TMBox.setDisplayMode boxId targetBoxId (BoxD Unboxed)
     |> Size.auto
 
 
@@ -517,7 +520,7 @@ toggleDisplay : Id -> BoxId -> Model -> Model
 toggleDisplay topicId boxId model =
   let
     (newModel, newDisplayMode) =
-      case Box.displayMode topicId boxId model of
+      case TMBox.displayMode topicId boxId model of
         Just (TopicD LabelOnly) -> (model, Just <| TopicD Detail)
         Just (TopicD Detail) -> (model, Just <| TopicD LabelOnly)
         Just (BoxD BlackBox) -> (model, Just <| BoxD WhiteBox)
@@ -531,6 +534,6 @@ toggleDisplay topicId boxId model =
   case (newModel, newDisplayMode) of
     (newModel_, Just displayMode) ->
       newModel_
-        |> Box.setDisplayMode topicId boxId displayMode
+        |> TMBox.setDisplayMode topicId boxId displayMode
         |> Size.auto
     _ -> model

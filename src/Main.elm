@@ -1,6 +1,5 @@
 port module Main exposing (..)
 
-import Box
 import Config as C
 import Feature.IconAPI as IconAPI
 import Feature.Mouse as Mouse
@@ -13,6 +12,8 @@ import Feature.ToolAPI as ToolAPI
 import Item
 import Model exposing (Model, Msg(..))
 import ModelParts exposing (..)
+import Render.TopicMap exposing (ItemProps(..), AssocProps)
+import Render.TopicMap.Box as Box
 import Render.TopicMap.Size as Size
 import Render.TopicMap.View as Map
 import Storage as S

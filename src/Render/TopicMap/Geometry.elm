@@ -1,10 +1,12 @@
 module Render.TopicMap.Geometry exposing (pointerTarget)
 
-import Box
 import Config as C
 import Item
 import Model exposing (Model)
-import ModelParts exposing (..)
+import ModelParts exposing (Id, BoxId, BoxPath, Point)
+import Render.TopicMap exposing (Box, BoxItem, DisplayMode(..), TopicDisplay(..),
+  BoxDisplay(..))
+import Render.TopicMap.Box as TMBox
 import Utils as U
 
 
@@ -30,23 +32,23 @@ searchInItem pos itemId boxPath filterTopicId model =
     maybeThisItem : Bool -> Maybe (Id, BoxPath)
     maybeThisItem found = if found then Just (itemId, boxPath) else Nothing
   in
-  case Box.byId itemId model of
+  case TMBox.byId itemId model of
     Just box ->
       let
-        items = Box.visibleTopics box
+        items = TMBox.visibleTopics box
         relPos = boxRelPos pos box boxPath model
         searchBox = searchInItems relPos items (itemId :: boxPath) filterTopicId
       in
       -- Note: for a fullscreen box boxPath is empty
-      case Box.isFullscreen itemId model of
+      case TMBox.isFullscreen itemId model of
         True -> searchBox model
         False ->
           let
-            parentBoxId = Box.firstId boxPath
+            parentBoxId = TMBox.firstId boxPath
             isHeaderHovered = isTopicHeaderHovered pos box.id parentBoxId
             isRectHovered = isBoxRectHovered pos box parentBoxId
           in
-          case Box.displayMode itemId parentBoxId model of
+          case TMBox.displayMode itemId parentBoxId model of
             Just (BoxD BlackBox) ->
               isHeaderHovered model |> maybeThisItem
             Just (BoxD WhiteBox) ->
@@ -60,11 +62,11 @@ searchInItem pos itemId boxPath filterTopicId model =
             _ -> U.logError "searchInItem" "Unexpected box display mode" Nothing
     Nothing ->
       let
-        parentBoxId = Box.firstId boxPath
+        parentBoxId = TMBox.firstId boxPath
         isHeaderHovered = isTopicHeaderHovered pos itemId parentBoxId
         isDetailHovered = isTopicDetailHovered pos itemId parentBoxId
       in
-      case Box.displayMode itemId parentBoxId model of
+      case TMBox.displayMode itemId parentBoxId model of
         Just (TopicD LabelOnly) ->
           isHeaderHovered model |> maybeThisItem
         Just (TopicD Detail) ->
@@ -94,10 +96,10 @@ searchInItems pos items boxPath filterTopicId model =
 -- For a fullscreen box boxPath is empty
 boxRelPos : Point -> Box -> BoxPath -> Model -> Point
 boxRelPos pos box boxPath model =
-  case Box.isFullscreen box.id model of
+  case TMBox.isFullscreen box.id model of
     True -> pos
     False ->
-      case Box.topicPos box.id (Box.firstId boxPath) model of
+      case TMBox.topicPos box.id (TMBox.firstId boxPath) model of
         Just boxPos ->
           Point
             (pos.x - boxPos.x + box.rect.x1 + C.topicW2)
@@ -109,7 +111,7 @@ boxRelPos pos box boxPath model =
 
 isTopicHeaderHovered : Point -> Id -> BoxId -> Model -> Bool
 isTopicHeaderHovered pos topicId boxId model =
-  case Box.topicPos topicId boxId model of
+  case TMBox.topicPos topicId boxId model of
     Just topicPos ->
       pos.x > topicPos.x - C.topicW2 - C.topicHeight && -- left edge includes caret area
       pos.x < topicPos.x + C.topicW2 &&
@@ -120,7 +122,7 @@ isTopicHeaderHovered pos topicId boxId model =
 
 isTopicDetailHovered : Point -> Id -> BoxId -> Model -> Bool
 isTopicDetailHovered pos topicId boxId model =
-  case (Box.topicPos topicId boxId model, Item.topicSize topicId .view model) of
+  case (TMBox.topicPos topicId boxId model, Item.topicSize topicId .view model) of
     (Just topicPos, Just size) ->
       pos.x > topicPos.x - C.topicW2 + C.topicHeight &&
       pos.x < topicPos.x - C.topicW2 + C.topicHeight + size.w &&
@@ -131,7 +133,7 @@ isTopicDetailHovered pos topicId boxId model =
 
 isBoxRectHovered : Point -> Box -> BoxId -> Model -> Bool
 isBoxRectHovered pos box parentBoxId model =
-  case Box.topicPos box.id parentBoxId model of
+  case TMBox.topicPos box.id parentBoxId model of
     Just boxPos ->
       pos.x > boxPos.x - C.topicW2 &&
       pos.x < boxPos.x - C.topicW2 + box.rect.x2 - box.rect.x1 &&

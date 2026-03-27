@@ -1,6 +1,5 @@
 module Render.TopicMap.Size exposing (auto)
 
-import Box
 import Config as C
 import Feature.Mouse exposing (DragState(..), DragMode(..))
 import Feature.Text exposing (EditState(..))
@@ -8,6 +7,9 @@ import Item
 import Render.TopicMap.Model as MM
 import Model exposing (Model)
 import ModelParts exposing (..)
+import Render.TopicMap exposing (BoxItem, ItemProps(..), DisplayMode(..), TopicDisplay(..),
+  BoxDisplay(..))
+import Render.TopicMap.Box as Box
 import Utils as U
 
 

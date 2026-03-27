@@ -1,12 +1,12 @@
 module Feature.MouseAPI exposing (topicDownHandler, assocClickHandler, dragHandler,
   isDragInProgress, isHovered, clearHover, update)
 
-import Box
 import Config as C
 import Feature.Mouse as Mouse exposing (DragState(..), DragMode(..))
 import Item
 import Model exposing (Model, Msg(..))
 import ModelParts exposing (..)
+import Render.TopicMap.Box as Box
 import Render.TopicMap.Geometry as Geometry
 import Render.TopicMap.Size as Size
 import Undo exposing (UndoModel)

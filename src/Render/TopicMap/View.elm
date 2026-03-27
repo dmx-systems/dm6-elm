@@ -1,6 +1,5 @@
 module Render.TopicMap.View exposing (view)
 
-import Box
 import Config as C
 import Feature.IconAPI as IconAPI
 import Feature.Mouse exposing (DragState(..), DragMode(..))
@@ -10,9 +9,13 @@ import Feature.TextAPI as TextAPI
 import Feature.Tool exposing (LineStyle(..))
 import Feature.ToolAPI as ToolAPI
 import Item
+import Render.TopicMap exposing (Box, ItemProps(..), TopicProps, DisplayMode(..),
+  TopicDisplay(..), BoxDisplay(..))
+import Render.TopicMap.Box as TMBox
 import Render.TopicMap.Model as MM
 import Model exposing (Model, Msg)
-import ModelParts exposing (..)
+import ModelParts exposing (Id, BoxId, BoxPath, TopicInfo, AssocInfo, AssocType(..), Point,
+  Rectangle, Attrs)
 import Utils as U
 
 import Dict
@@ -125,7 +128,7 @@ gAttr boxId boxRect model =
 -- For the fullscreen box boxPath is empty
 boxInfo : BoxId -> BoxPath -> Model -> BoxInfo
 boxInfo boxId boxPath model =
-  case Box.byIdOrLog boxId model of
+  case TMBox.byIdOrLog boxId model of
     Just box ->
       ( viewItems box boxPath model
       , box.rect
@@ -194,7 +197,7 @@ viewLimboAssoc boxId model =
   case MM.limboState model of
     Just (topicId, Just assocId, limboBoxId) ->
       if boxId == limboBoxId then
-        if Box.hasItem boxId assocId model then
+        if TMBox.hasItem boxId assocId model then
           let
             _ = U.info "viewLimboAssoc" (assocId, "is in box", boxId)
           in
@@ -205,7 +208,7 @@ viewLimboAssoc boxId model =
           in
           case Item.assocById assocId model of
             Just assoc ->
-              if Box.hasItem boxId topicId model then
+              if TMBox.hasItem boxId topicId model then
                 -- only if related topic is in box we can call high-level viewAssoc()
                 viewAssoc assoc [boxId] [] model -- simple box path is sufficient for geometry,
                                                  -- limbo assoc is never selected
@@ -214,10 +217,10 @@ viewLimboAssoc boxId model =
                 let
                   sourceTopicId = Item.otherPlayerId assocId topicId model
                 in
-                case Box.topicPos sourceTopicId boxId model of
+                case TMBox.topicPos sourceTopicId boxId model of
                   Just pos ->
                     (lineRenderer model)
-                      pos (Box.initTopicPos boxId model) (Just assoc)
+                      pos (TMBox.initTopicPos boxId model) (Just assoc)
                       [boxId] [] model -- simple box path is sufficient for geometry,
                                        -- limbo assoc is never selected
                   Nothing -> []
@@ -232,7 +235,7 @@ viewLimboAssoc boxId model =
 viewTopic : TopicInfo -> TopicProps -> BoxPath -> Model -> Html Msg
 viewTopic topic props boxPath model =
   let
-    boxId = Box.firstId boxPath
+    boxId = TMBox.firstId boxPath
     render =
       case props.displayMode of
         TopicD LabelOnly -> labelTopic
@@ -255,7 +258,7 @@ viewTopic topic props boxPath model =
 
 topicAttr : Id -> BoxPath -> Attrs Msg
 topicAttr topicId boxPath =
-  [ id <| Box.elemId "topic" topicId boxPath ]
+  [ id <| TMBox.elemId "topic" topicId boxPath ]
 
 
 topicStyle : Id -> BoxId -> Model -> Attrs Msg
@@ -547,8 +550,8 @@ viewItemCount topicId props model =
       case props.displayMode of
         TopicD _ -> 0
         BoxD _ ->
-          case Box.byIdOrLog topicId model of
-            Just box -> box.items |> Dict.values |> List.filter Box.isVisible |> List.length
+          case TMBox.byIdOrLog topicId model of
+            Just box -> box.items |> Dict.values |> List.filter TMBox.isVisible |> List.length
             Nothing -> 0
   in
   [ div
@@ -570,8 +573,8 @@ itemCountStyle =
 viewAssoc : AssocInfo -> BoxPath -> Attrs Msg -> Model -> List (Svg Msg)
 viewAssoc assoc boxPath clickHandler model =
   let
-    boxId = Box.firstId boxPath
-    geom = Box.assocGeometry assoc boxId model
+    boxId = TMBox.firstId boxPath
+    geom = TMBox.assocGeometry assoc boxId model
   in
   case geom of
     Just (pos1, pos2) -> (lineRenderer model) pos1 pos2 (Just assoc) boxPath clickHandler model
@@ -582,7 +585,7 @@ viewAssocDraft : BoxId -> Model -> List (Svg Msg)
 viewAssocDraft boxId model =
   case model.mouse.dragState of
     Drag DraftAssoc _ boxPath origPos pos _ ->
-      case (Box.firstId boxPath == boxId, Box.fullscreen model) of
+      case (TMBox.firstId boxPath == boxId, TMBox.fullscreen model) of
         (True, Just box) ->
           let
             pagePos = Point
@@ -623,7 +626,7 @@ accumulatePos posAcc boxId parentBoxId boxIds model =
   let
     {x, y} = accumulateRect posAcc boxId model
   in
-  case Box.topicPos boxId parentBoxId model of
+  case TMBox.topicPos boxId parentBoxId model of
     Just boxPos ->
       absPos -- recursion
         (parentBoxId :: boxIds)
@@ -637,7 +640,7 @@ accumulatePos posAcc boxId parentBoxId boxIds model =
 
 accumulateRect : Point -> BoxId -> Model -> Point
 accumulateRect posAcc boxId model =
-  case Box.byIdOrLog boxId model of
+  case TMBox.byIdOrLog boxId model of
     Just box ->
       Point
         (posAcc.x - box.rect.x1)
@@ -728,7 +731,7 @@ type alias SvgElement = Attrs Msg -> List (Svg Msg) -> Svg Msg
 viewLineWithHitArea : LineWithHitArea
 viewLineWithHitArea svgElement geometry clickHandler maybeAssoc boxPath model =
   let
-    boxId = Box.firstId boxPath
+    boxId = TMBox.firstId boxPath
   in
   [ svgElement -- visible line
       ( geometry

@@ -1,9 +1,11 @@
 module Render.TopicMap.Transfer exposing (boxContent, unboxContent)
 
-import Box
 import Item
 import Model exposing (Model)
 import ModelParts exposing (..)
+import Render.TopicMap exposing (BoxItems, BoxItem, Visibility(..), Pinned(..), ItemProps(..),
+  AssocProps, DisplayMode(..), BoxDisplay(..))
+import Render.TopicMap.Box as Box
 import Utils as U
 
 import Dict
