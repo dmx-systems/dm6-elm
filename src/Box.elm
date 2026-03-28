@@ -30,24 +30,18 @@ addBox_ boxId model =
 
 -- Delete Item
 
-deleteItem : Id -> Model -> Model
-deleteItem itemId model =
-  model
-    |> deleteItem_ itemId
-
-
 {-| Deletes an item, along its associations, and removes them from all boxes.
 Logs an error if no such item exists.
 It's a generic operation: works for both, topics and associations.
 Note: while this functions supports associations as players in associations,
 at the moment DM6 Elm makes no use of it.
 -}
-deleteItem_ : Id -> Model -> Model
-deleteItem_ itemId model =
+deleteItem : Id -> Model -> Model
+deleteItem itemId model =
   Item.assocIds itemId model
-    |> Set.foldr deleteItem_ model -- recursion
+    |> Set.foldr deleteItem model -- recursion
     |> deleteAssocRefs_ itemId
-    |> deleteItem__ itemId
+    |> deleteItem_ itemId
 
 
 {-| Removes the association ID from both player's set of association IDs.
@@ -85,8 +79,8 @@ deleteAssocId_ assocId itemId model =
 No-op if there is no such item.
 Low-level API that does NOT delete the item's associations.
 -}
-deleteItem__ : Id -> Model -> Model
-deleteItem__ itemId ({topicMap} as model) =
+deleteItem_ : Id -> Model -> Model
+deleteItem_ itemId ({topicMap} as model) =
   { model
   | items = model.items |> Dict.remove itemId -- delete item
   , topicMap = topicMap |> Dict.map -- delete item from all boxes

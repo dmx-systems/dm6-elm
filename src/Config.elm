@@ -9,7 +9,7 @@ import ModelParts exposing (Point, Size, Rectangle)
 
 homeBoxName = "DM6 Elm"
 version = "0.5-SNAPSHOT"
-date = "Mar 28, 2026"
+date = "Mar 29, 2026"
 
 appHeaderHeight = 36
 
