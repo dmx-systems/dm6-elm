@@ -85,11 +85,14 @@ type Msg
 
 encode : Model -> E.Value
 encode model =
-  E.object <|
+  E.object
     [ ("items", model.items |> Dict.values |> E.list encodeItem)
     , ("boxes", model.boxes |> Dict.values |> E.list encodeBox)
     , ("boxId", E.int model.boxId)
     , ("nextId", E.int model.nextId)
+    -- renderer modules
+    , ("topicMap", TopicMap.encode model.topicMap)
+    -- feature modules
     , ("tool", Tool.encode model.tool)
     ]
 
@@ -101,8 +104,9 @@ decoder =
     |> required "boxes" (D.list boxDecoder |> D.andThen toDictDecoder)
     |> required "boxId" D.int
     |> required "nextId" D.int
-    |> hardcoded Dict.empty
-    |> hardcoded { topicMaps = Dict.empty } -- TODO: decode topicMap
+    |> hardcoded Dict.empty -- imageCache
+    -- renderer modules
+    |> required "topicMap" TopicMap.decoder
     -- feature modules
     |> required "tool" Tool.decoder
     |> hardcoded Text.init

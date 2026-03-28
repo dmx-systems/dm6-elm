@@ -1,6 +1,6 @@
 module Render.TopicMap exposing (Model, TopicMap, MapItems, MapItem, Visibility(..),
   Pinned(..), ItemProps(..), TopicProps, AssocProps, DisplayMode(..), TopicDisplay(..),
-  BoxDisplay(..), init, encodeBox, boxDecoder)
+  BoxDisplay(..), init, encode, decoder)
 
 import ModelParts exposing (Id, BoxId, Point, Rectangle, homeBoxId, toDictDecoder)
 import Dict exposing (Dict)
@@ -9,15 +9,12 @@ import Json.Encode as E
 
 
 
-type alias Model =
-  { topicMaps : TopicMaps }
+type alias Model = TopicMaps
 
 
 init : Model
 init =
-  { topicMaps = Dict.singleton homeBoxId
-    <| TopicMap homeBoxId (Rectangle 0 0 0 0) (Point 0 0) Dict.empty
-  }
+  Dict.singleton homeBoxId <| TopicMap homeBoxId (Rectangle 0 0 0 0) (Point 0 0) Dict.empty
 
 
 type alias TopicMaps = Dict BoxId TopicMap
@@ -89,28 +86,33 @@ type BoxDisplay
 
 -- Encode
 
-encodeBox : TopicMap -> E.Value
-encodeBox box =
+encode : Model -> E.Value
+encode model =
+  model |> Dict.values |> E.list encodeTopicMap
+
+
+encodeTopicMap : TopicMap -> E.Value
+encodeTopicMap map =
   E.object
-    [ ("id", E.int box.id)
+    [ ("id", E.int map.id)
     , ("rect", E.object
-        [ ("x1", E.int box.rect.x1)
-        , ("y1", E.int box.rect.y1)
-        , ("x2", E.int box.rect.x2)
-        , ("y2", E.int box.rect.y2)
+        [ ("x1", E.int map.rect.x1)
+        , ("y1", E.int map.rect.y1)
+        , ("x2", E.int map.rect.x2)
+        , ("y2", E.int map.rect.y2)
         ]
       )
     , ("scroll", E.object
-        [ ("x", E.int box.scroll.x)
-        , ("y", E.int box.scroll.y)
+        [ ("x", E.int map.scroll.x)
+        , ("y", E.int map.scroll.y)
         ]
       )
-    , ("items", box.items |> Dict.values |> E.list encodeBoxItem)
+    , ("items", map.items |> Dict.values |> E.list encodeMapItem)
     ]
 
 
-encodeBoxItem : MapItem -> E.Value
-encodeBoxItem item =
+encodeMapItem : MapItem -> E.Value
+encodeMapItem item =
   E.object
     [ ("id", E.int item.id)
     , ("boxAssocId", E.int item.boxAssocId)
@@ -156,8 +158,13 @@ encodeDisplayName displayMode =
 
 -- Decode
 
-boxDecoder : D.Decoder TopicMap
-boxDecoder =
+decoder : D.Decoder Model
+decoder =
+  D.list topicMapDecoder |> D.andThen toDictDecoder
+
+
+topicMapDecoder : D.Decoder TopicMap
+topicMapDecoder =
   D.map4 TopicMap
     (D.field "id" D.int)
     (D.field "rect" <| D.map4 Rectangle
@@ -170,11 +177,11 @@ boxDecoder =
       (D.field "x" D.int)
       (D.field "y" D.int)
     )
-    (D.field "items" (D.list boxItemDecoder |> D.andThen toDictDecoder))
+    (D.field "items" (D.list mapItemDecoder |> D.andThen toDictDecoder))
 
 
-boxItemDecoder : D.Decoder MapItem
-boxItemDecoder =
+mapItemDecoder : D.Decoder MapItem
+mapItemDecoder =
   D.map4 MapItem
     (D.field "id" D.int)
     (D.field "boxAssocId" D.int)

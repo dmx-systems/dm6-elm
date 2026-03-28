@@ -89,10 +89,8 @@ deleteItem__ : Id -> Model -> Model
 deleteItem__ itemId ({topicMap} as model) =
   { model
   | items = model.items |> Dict.remove itemId -- delete item
-  , topicMap =
-    { topicMap | topicMaps = topicMap.topicMaps |> Dict.map -- delete item from all boxes
+  , topicMap = topicMap |> Dict.map -- delete item from all boxes
       (\_ box ->
         { box | items = box.items |> Dict.remove itemId }
       )
-    }
   }

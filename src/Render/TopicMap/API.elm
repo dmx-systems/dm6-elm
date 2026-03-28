@@ -41,7 +41,7 @@ byIdOrLog boxId model =
 
 byId : BoxId -> Model -> Maybe TopicMap
 byId boxId model =
-  model.topicMap.topicMaps |> Dict.get boxId
+  model.topicMap |> Dict.get boxId
 
 
 -- TODO: only init renderer-specific data: (Rectangle 0 0 0 0) (Point 0 0) Dict.empty
@@ -55,7 +55,7 @@ addBox boxId model =
 
 addBox_ : TopicMap -> Model -> Model
 addBox_ box ({topicMap} as model) =
-  { model | topicMap = { topicMap | topicMaps = topicMap.topicMaps |> Dict.insert box.id box } }
+  { model | topicMap = topicMap |> Dict.insert box.id box }
 
 
 updateRect : BoxId -> (Rectangle -> Rectangle) -> Model -> Model
@@ -319,13 +319,12 @@ Logs an error if box does not exist.
 update : BoxId -> (TopicMap -> TopicMap) -> Model -> Model
 update boxId transform ({topicMap} as model) =
   { model | topicMap =
-    { topicMap | topicMaps = topicMap.topicMaps |> Dict.update boxId
+    topicMap |> Dict.update boxId
       (\maybeBox ->
         case maybeBox of
           Just box -> Just (transform box)
           Nothing -> U.illegalBoxId "update" boxId Nothing
       )
-    }
   }
 
 
