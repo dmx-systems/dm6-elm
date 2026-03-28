@@ -4,9 +4,9 @@ import Config as C
 import Item
 import Model exposing (Model)
 import ModelParts exposing (Id, BoxId, BoxPath, Point)
-import Render.TopicMap exposing (Box, BoxItem, DisplayMode(..), TopicDisplay(..),
+import Render.TopicMap exposing (TopicMap, MapItem, DisplayMode(..), TopicDisplay(..),
   BoxDisplay(..))
-import Render.TopicMap.Box as TMBox
+import Render.TopicMap.API as TM
 import Utils as U
 
 
@@ -32,23 +32,23 @@ searchInItem pos itemId boxPath filterTopicId model =
     maybeThisItem : Bool -> Maybe (Id, BoxPath)
     maybeThisItem found = if found then Just (itemId, boxPath) else Nothing
   in
-  case TMBox.byId itemId model of
+  case TM.byId itemId model of
     Just box ->
       let
-        items = TMBox.visibleTopics box
+        items = TM.visibleTopics box
         relPos = boxRelPos pos box boxPath model
         searchBox = searchInItems relPos items (itemId :: boxPath) filterTopicId
       in
       -- Note: for a fullscreen box boxPath is empty
-      case TMBox.isFullscreen itemId model of
+      case TM.isFullscreen itemId model of
         True -> searchBox model
         False ->
           let
-            parentBoxId = TMBox.firstId boxPath
+            parentBoxId = TM.firstId boxPath
             isHeaderHovered = isTopicHeaderHovered pos box.id parentBoxId
             isRectHovered = isBoxRectHovered pos box parentBoxId
           in
-          case TMBox.displayMode itemId parentBoxId model of
+          case TM.displayMode itemId parentBoxId model of
             Just (BoxD BlackBox) ->
               isHeaderHovered model |> maybeThisItem
             Just (BoxD WhiteBox) ->
@@ -62,11 +62,11 @@ searchInItem pos itemId boxPath filterTopicId model =
             _ -> U.logError "searchInItem" "Unexpected box display mode" Nothing
     Nothing ->
       let
-        parentBoxId = TMBox.firstId boxPath
+        parentBoxId = TM.firstId boxPath
         isHeaderHovered = isTopicHeaderHovered pos itemId parentBoxId
         isDetailHovered = isTopicDetailHovered pos itemId parentBoxId
       in
-      case TMBox.displayMode itemId parentBoxId model of
+      case TM.displayMode itemId parentBoxId model of
         Just (TopicD LabelOnly) ->
           isHeaderHovered model |> maybeThisItem
         Just (TopicD Detail) ->
@@ -75,7 +75,7 @@ searchInItem pos itemId boxPath filterTopicId model =
         _ -> U.logError "searchInItem" "Unexpected topic display mode" Nothing
 
 
-searchInItems : Point -> List BoxItem -> BoxPath -> Maybe Id -> Model -> Maybe (Id, BoxPath)
+searchInItems : Point -> List MapItem -> BoxPath -> Maybe Id -> Model -> Maybe (Id, BoxPath)
 searchInItems pos items boxPath filterTopicId model =
   case items of
     [] -> Nothing
@@ -94,12 +94,12 @@ searchInItems pos items boxPath filterTopicId model =
 
 
 -- For a fullscreen box boxPath is empty
-boxRelPos : Point -> Box -> BoxPath -> Model -> Point
+boxRelPos : Point -> TopicMap -> BoxPath -> Model -> Point
 boxRelPos pos box boxPath model =
-  case TMBox.isFullscreen box.id model of
+  case TM.isFullscreen box.id model of
     True -> pos
     False ->
-      case TMBox.topicPos box.id (TMBox.firstId boxPath) model of
+      case TM.topicPos box.id (TM.firstId boxPath) model of
         Just boxPos ->
           Point
             (pos.x - boxPos.x + box.rect.x1 + C.topicW2)
@@ -111,7 +111,7 @@ boxRelPos pos box boxPath model =
 
 isTopicHeaderHovered : Point -> Id -> BoxId -> Model -> Bool
 isTopicHeaderHovered pos topicId boxId model =
-  case TMBox.topicPos topicId boxId model of
+  case TM.topicPos topicId boxId model of
     Just topicPos ->
       pos.x > topicPos.x - C.topicW2 - C.topicHeight && -- left edge includes caret area
       pos.x < topicPos.x + C.topicW2 &&
@@ -122,7 +122,7 @@ isTopicHeaderHovered pos topicId boxId model =
 
 isTopicDetailHovered : Point -> Id -> BoxId -> Model -> Bool
 isTopicDetailHovered pos topicId boxId model =
-  case (TMBox.topicPos topicId boxId model, Item.topicSize topicId .view model) of
+  case (TM.topicPos topicId boxId model, Item.topicSize topicId .view model) of
     (Just topicPos, Just size) ->
       pos.x > topicPos.x - C.topicW2 + C.topicHeight &&
       pos.x < topicPos.x - C.topicW2 + C.topicHeight + size.w &&
@@ -131,9 +131,9 @@ isTopicDetailHovered pos topicId boxId model =
     _ -> False
 
 
-isBoxRectHovered : Point -> Box -> BoxId -> Model -> Bool
+isBoxRectHovered : Point -> TopicMap -> BoxId -> Model -> Bool
 isBoxRectHovered pos box parentBoxId model =
-  case TMBox.topicPos box.id parentBoxId model of
+  case TM.topicPos box.id parentBoxId model of
     Just boxPos ->
       pos.x > boxPos.x - C.topicW2 &&
       pos.x < boxPos.x - C.topicW2 + box.rect.x2 - box.rect.x1 &&

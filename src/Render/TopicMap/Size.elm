@@ -4,12 +4,12 @@ import Config as C
 import Feature.Mouse exposing (DragState(..), DragMode(..))
 import Feature.Text exposing (EditState(..))
 import Item
-import Render.TopicMap.Model as MM
 import Model exposing (Model)
 import ModelParts exposing (..)
-import Render.TopicMap exposing (BoxItem, ItemProps(..), DisplayMode(..), TopicDisplay(..),
+import Render.TopicMap exposing (MapItem, ItemProps(..), DisplayMode(..), TopicDisplay(..),
   BoxDisplay(..))
-import Render.TopicMap.Box as Box
+import Render.TopicMap.API as TM
+import Render.TopicMap.ViewModel as VM
 import Utils as U
 
 
@@ -32,12 +32,12 @@ calculated as well.
 calcBoxRect : BoxPath -> Model -> (Rectangle, Model)
 calcBoxRect boxPath model =
   let
-    boxId = Box.firstId boxPath
+    boxId = TM.firstId boxPath
   in
-  case Box.byIdOrLog boxId model of
+  case TM.byIdOrLog boxId model of
     Just box ->
       let
-        topics = MM.topicsToRender box model
+        topics = VM.topicsToRender box model
         (rect, model_) =
           if topics |> List.isEmpty then
             (C.whiteBoxEmpty, model)
@@ -55,7 +55,7 @@ calcBoxRect boxPath model =
     Nothing -> (Rectangle 0 0 0 0, model)
 
 
-accumulateItem : BoxItem -> BoxPath -> Rectangle -> Model -> (Rectangle, Model)
+accumulateItem : MapItem -> BoxPath -> Rectangle -> Model -> (Rectangle, Model)
 accumulateItem boxItem boxPath rectAcc model =
   let
     (rect, model_) = calcItemRect boxItem boxPath model
@@ -63,7 +63,7 @@ accumulateItem boxItem boxPath rectAcc model =
   (accumulateRect rectAcc rect, model_)
 
 
-calcItemRect : BoxItem -> BoxPath -> Model -> (Rectangle, Model)
+calcItemRect : MapItem -> BoxPath -> Model -> (Rectangle, Model)
 calcItemRect boxItem boxPath model =
   case boxItem.props of
     TopicP {pos, displayMode} ->
@@ -186,13 +186,13 @@ updateBoxGeometry boxPath newRect oldRect model =
 setBoxRect : BoxId -> Rectangle -> Model -> Model
 setBoxRect boxId rect model =
   model
-    |> Box.updateRect boxId (\_ -> rect)
+    |> TM.updateRect boxId (\_ -> rect)
 
 
 adjustBoxPos : BoxId -> BoxId -> Rectangle -> Rectangle -> Model -> Model
 adjustBoxPos boxId parentBoxId newRect oldRect model =
   model
-    |> Box.updateTopicPos boxId parentBoxId
+    |> TM.updateTopicPos boxId parentBoxId
       (\oldPos ->
         (Point
           (oldPos.x + newRect.x1 - oldRect.x1)

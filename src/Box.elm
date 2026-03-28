@@ -3,7 +3,7 @@ module Box exposing (addBox, deleteItem)
 import Item
 import Model exposing (Model)
 import ModelParts exposing (Id, ItemInfo(..), Icon, Box, BoxId)
-import Render.TopicMap.Box as TMBox
+import Render.TopicMap.API as TM
 
 import Dict
 import Set
@@ -18,7 +18,7 @@ addBox text icon model =
   in
   ( newModel
     |> addBox_ topicId
-    |> TMBox.addBox topicId
+    |> TM.addBox topicId
   , topicId
   )
 
@@ -90,7 +90,7 @@ deleteItem__ itemId ({topicMap} as model) =
   { model
   | items = model.items |> Dict.remove itemId -- delete item
   , topicMap =
-    { topicMap | boxes = topicMap.boxes |> Dict.map -- delete item from all boxes
+    { topicMap | topicMaps = topicMap.topicMaps |> Dict.map -- delete item from all boxes
       (\_ box ->
         { box | items = box.items |> Dict.remove itemId }
       )

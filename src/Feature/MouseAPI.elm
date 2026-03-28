@@ -6,7 +6,7 @@ import Feature.Mouse as Mouse exposing (DragState(..), DragMode(..))
 import Item
 import Model exposing (Model, Msg(..))
 import ModelParts exposing (..)
-import Render.TopicMap.Box as Box
+import Render.TopicMap.API as TM
 import Render.TopicMap.Geometry as Geometry
 import Render.TopicMap.Size as Size
 import Undo exposing (UndoModel)
@@ -107,7 +107,7 @@ timeArrived time ({present} as undoModel) =
           case delay > C.assocDelayMillis of
             True -> (DraftAssoc, Undo.swap)
             False -> (DragTopic, Undo.push)
-        maybeOrigPos = Box.topicPos id (Box.firstId boxPath) present
+        maybeOrigPos = TM.topicPos id (TM.firstId boxPath) present
         dragState =
           case maybeOrigPos of
             Just origPos -> Drag dragMode id boxPath origPos pos Nothing
@@ -140,10 +140,10 @@ performDrag pos model =
   case model.mouse.dragState of
     Drag dragMode id boxPath origPos lastPos target ->
       let
-        boxId = Box.firstId boxPath
+        boxId = TM.firstId boxPath
         newModel =
           case dragMode of
-            DragTopic -> Box.updateTopicPos id boxId
+            DragTopic -> TM.updateTopicPos id boxId
               (\oldPos ->
                 Point
                   (oldPos.x + pos.x - lastPos.x)
@@ -166,10 +166,10 @@ mouseUp model =
       case model.mouse.dragState of
         Drag DragTopic id boxPath origPos _ (Just (targetId, targetPath)) ->
           let
-            _ = U.info "mouseUp" ("dropped " ++ fromInt id ++ " (box " ++ Box.fromPath boxPath
-              ++ ") on " ++ fromInt targetId ++ " (box " ++ Box.fromPath targetPath ++ ") --> "
+            _ = U.info "mouseUp" ("dropped " ++ fromInt id ++ " (box " ++ TM.fromPath boxPath
+              ++ ") on " ++ fromInt targetId ++ " (box " ++ TM.fromPath targetPath ++ ") --> "
               ++ if not droppedOnSourceBox then "move topic" else "abort")
-            boxId = Box.firstId boxPath
+            boxId = TM.firstId boxPath
             -- Can this actually happen? Possibly an edge case when rendering lags behind mouse
             -- move, so that mouse leaves topic and enters box (background). FIXME: store model
             droppedOnSourceBox = boxId == targetId
@@ -185,11 +185,11 @@ mouseUp model =
           U.command <| TopicDragged
         Drag DraftAssoc id boxPath _ _ (Just (targetId, targetPath)) ->
           let
-            _ = U.info "mouseUp" ("assoc drawn from " ++ fromInt id ++ " (box " ++ Box.fromPath
-              boxPath ++ ") to " ++ fromInt targetId ++ " (box " ++ Box.fromPath targetPath
+            _ = U.info "mouseUp" ("assoc drawn from " ++ fromInt id ++ " (box " ++ TM.fromPath
+              boxPath ++ ") to " ++ fromInt targetId ++ " (box " ++ TM.fromPath targetPath
               ++ ") --> " ++ if isSameBox then "create assoc" else "abort")
-            boxId = Box.firstId boxPath
-            isSameBox = boxId == Box.firstId targetPath
+            boxId = TM.firstId boxPath
+            isSameBox = boxId == TM.firstId targetPath
           in
           case isSameBox of
             True -> U.command <| AddAssoc id targetId boxId
@@ -259,7 +259,7 @@ enter (targetId, targetPath) model =
         Drag dragMode id boxPath origPos lastPos _ ->
           let
             isBox = Item.isBox targetId model
-            isCyclic = Box.hasDeepItem id targetId model
+            isCyclic = TM.hasDeepItem id targetId model
             target =
               -- the hovered item (targetId) is a drop target if it is
               -- 1. a box AND

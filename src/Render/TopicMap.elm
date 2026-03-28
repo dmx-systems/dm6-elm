@@ -1,4 +1,4 @@
-module Render.TopicMap exposing (Model, Box, Boxes, BoxItems, BoxItem, Visibility(..),
+module Render.TopicMap exposing (Model, TopicMap, MapItems, MapItem, Visibility(..),
   Pinned(..), ItemProps(..), TopicProps, AssocProps, DisplayMode(..), TopicDisplay(..),
   BoxDisplay(..), init, encodeBox, boxDecoder)
 
@@ -10,31 +10,31 @@ import Json.Encode as E
 
 
 type alias Model =
-  { boxes : Boxes }
+  { topicMaps : TopicMaps }
 
 
 init : Model
 init =
-  { boxes = Dict.singleton homeBoxId
-    <| Box homeBoxId (Rectangle 0 0 0 0) (Point 0 0) Dict.empty
+  { topicMaps = Dict.singleton homeBoxId
+    <| TopicMap homeBoxId (Rectangle 0 0 0 0) (Point 0 0) Dict.empty
   }
 
 
-type alias Boxes = Dict BoxId Box
+type alias TopicMaps = Dict BoxId TopicMap
 
 
-type alias Box =
+type alias TopicMap =
   { id : BoxId
   , rect : Rectangle
   , scroll : Point
-  , items : BoxItems
+  , items : MapItems
   }
 
 
-type alias BoxItems = Dict Id BoxItem
+type alias MapItems = Dict Id MapItem
 
 
-type alias BoxItem =
+type alias MapItem =
   { id : Id
   , boxAssocId : Id
   , visibility : Visibility
@@ -89,7 +89,7 @@ type BoxDisplay
 
 -- Encode
 
-encodeBox : Box -> E.Value
+encodeBox : TopicMap -> E.Value
 encodeBox box =
   E.object
     [ ("id", E.int box.id)
@@ -109,7 +109,7 @@ encodeBox box =
     ]
 
 
-encodeBoxItem : BoxItem -> E.Value
+encodeBoxItem : MapItem -> E.Value
 encodeBoxItem item =
   E.object
     [ ("id", E.int item.id)
@@ -156,9 +156,9 @@ encodeDisplayName displayMode =
 
 -- Decode
 
-boxDecoder : D.Decoder Box
+boxDecoder : D.Decoder TopicMap
 boxDecoder =
-  D.map4 Box
+  D.map4 TopicMap
     (D.field "id" D.int)
     (D.field "rect" <| D.map4 Rectangle
       (D.field "x1" D.int)
@@ -173,9 +173,9 @@ boxDecoder =
     (D.field "items" (D.list boxItemDecoder |> D.andThen toDictDecoder))
 
 
-boxItemDecoder : D.Decoder BoxItem
+boxItemDecoder : D.Decoder MapItem
 boxItemDecoder =
-  D.map4 BoxItem
+  D.map4 MapItem
     (D.field "id" D.int)
     (D.field "boxAssocId" D.int)
     (D.field "visibility" D.string |> D.andThen visibilityDecoder)

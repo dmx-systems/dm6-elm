@@ -102,7 +102,7 @@ decoder =
     |> required "boxId" D.int
     |> required "nextId" D.int
     |> hardcoded Dict.empty
-    |> hardcoded { boxes = Dict.empty } -- TODO: decode topicMap
+    |> hardcoded { topicMaps = Dict.empty } -- TODO: decode topicMap
     -- feature modules
     |> required "tool" Tool.decoder
     |> hardcoded Text.init

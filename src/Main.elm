@@ -13,7 +13,7 @@ import Item
 import Model exposing (Model, Msg(..))
 import ModelParts exposing (..)
 import Render.TopicMap exposing (ItemProps(..), AssocProps)
-import Render.TopicMap.Box as Box
+import Render.TopicMap.API as TM
 import Render.TopicMap.Size as Size
 import Render.TopicMap.View as Map
 import Storage as S
@@ -154,7 +154,7 @@ viewMapTitle : Model -> Html Msg
 viewMapTitle model =
   div
     mapTitleStyle
-    [ text <| Box.mapTitle model ]
+    [ text <| TM.mapTitle model ]
 
 
 mapTitleStyle : Attrs Msg
@@ -302,22 +302,22 @@ addAssocAndAddToBox assocType player1 player2 boxId model =
     (newModel, assocId) = Item.addAssoc assocType player1 player2 model
     props = AssocP AssocProps
   in
-  Box.addItem assocId props boxId newModel
+  TM.addItem assocId props boxId newModel
 
 
 moveTopicToBox : Id -> BoxId -> Point -> BoxId -> BoxPath -> Point -> Model -> Model
 moveTopicToBox topicId boxId origPos targetBoxId targetPath pos model =
   let
     props_ =
-      Box.topicProps topicId boxId model
+      TM.topicProps topicId boxId model
         |> Maybe.andThen (\props -> Just (TopicP { props | pos = pos }))
   in
   case props_ of
     Just props ->
       model
-        |> Box.removeItem topicId boxId
-        |> Box.setTopicPos topicId boxId origPos
-        |> Box.addItem topicId props targetBoxId
+        |> TM.removeItem topicId boxId
+        |> TM.setTopicPos topicId boxId origPos
+        |> TM.addItem topicId props targetBoxId
         |> SelAPI.select targetBoxId targetPath
         |> Size.auto
     Nothing -> model
@@ -360,7 +360,7 @@ cancelUIWith maybeTarget model =
 
 updateScrollPos : Point -> Model -> Model
 updateScrollPos pos model =
-  Box.updateScrollPos model.boxId (\_ -> pos) model
+  TM.updateScrollPos model.boxId (\_ -> pos) model
 
 
 cacheImageUrl : ImageId -> String -> Model -> (Model, Cmd Msg)

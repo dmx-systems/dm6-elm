@@ -1,12 +1,12 @@
-module Render.TopicMap.Model exposing (topicsToRender, assocsToRender, isLimboTopic,
+module Render.TopicMap.ViewModel exposing (topicsToRender, assocsToRender, isLimboTopic,
   isLimboAssoc, limboState)
 
 import Feature.Search exposing (SearchResult(..))
 import Model exposing (Model)
 import ModelParts exposing (Id, BoxId)
-import Render.TopicMap exposing (Box, BoxItem, Visibility(..), ItemProps(..), TopicProps,
+import Render.TopicMap exposing (TopicMap, MapItem, Visibility(..), ItemProps(..), TopicProps,
   DisplayMode(..), TopicDisplay(..), BoxDisplay(..))
-import Render.TopicMap.Box as TMBox
+import Render.TopicMap.API as TM
 import Utils as U
 
 import Dict
@@ -14,10 +14,10 @@ import Dict
 
 
 {- Projects box data and search state ("limbo") into a map render model -}
-topicsToRender : Box -> Model -> List BoxItem
+topicsToRender : TopicMap -> Model -> List MapItem
 topicsToRender box model =
   let
-    topics = itemsToRender box TMBox.isTopic model |> List.map
+    topics = itemsToRender box TM.isTopic model |> List.map
       (\boxItem ->
         { boxItem
         | props =
@@ -29,15 +29,15 @@ topicsToRender box model =
     limboTopic =
       case limboState model of
         Just (topicId, _, limboBoxId) ->
-          if limboBoxId == box.id && (not <| TMBox.hasItem box.id topicId model) then
+          if limboBoxId == box.id && (not <| TM.hasItem box.id topicId model) then
             let
               _ = U.info "viewLimboTopic" (topicId, "not in box", box.id)
               props =
                 TopicP
                   <| effectiveDisplayMode topicId box.id model
-                  <| TMBox.initTopicProps topicId box.id model
+                  <| TM.initTopicProps topicId box.id model
             in
-            [ BoxItem topicId -1 Removed props ] -- TODO: explain -1 Removed
+            [ MapItem topicId -1 Removed props ] -- TODO: explain -1 Removed
           else
             []
         Nothing -> []
@@ -46,12 +46,12 @@ topicsToRender box model =
 
 
 {- Projects box data and search state ("limbo") into a map render model -}
-assocsToRender : Box -> Model -> List BoxItem
+assocsToRender : TopicMap -> Model -> List MapItem
 assocsToRender box model =
-  itemsToRender box TMBox.isAssoc model
+  itemsToRender box TM.isAssoc model
 
 
-itemsToRender : Box -> (BoxItem -> Bool) -> Model -> List BoxItem
+itemsToRender : TopicMap -> (MapItem -> Bool) -> Model -> List MapItem
 itemsToRender box filter model =
   box.items
     |> Dict.values
@@ -59,9 +59,9 @@ itemsToRender box filter model =
     |> List.filter (shouldItemRender box.id model)
 
 
-shouldItemRender : BoxId -> Model -> BoxItem -> Bool
+shouldItemRender : BoxId -> Model -> MapItem -> Bool
 shouldItemRender boxId model item =
-  TMBox.isVisible item || isLimboItem item boxId model
+  TM.isVisible item || isLimboItem item boxId model
 
 
 -- Note: "props" is last paramter for piping
@@ -72,7 +72,7 @@ effectiveDisplayMode topicId boxId model props =
       case props.displayMode of
         TopicD _ -> TopicD Detail
         BoxD _ ->
-          case TMBox.isEmpty topicId model of
+          case TM.isEmpty topicId model of
             True -> props.displayMode -- don't whitebox an empty box
             False -> BoxD WhiteBox
     else
@@ -80,7 +80,7 @@ effectiveDisplayMode topicId boxId model props =
   }
 
 
-isLimboItem : BoxItem -> BoxId -> Model -> Bool
+isLimboItem : MapItem -> BoxId -> Model -> Bool
 isLimboItem item boxId model =
   let
     isLimbo =
@@ -107,7 +107,7 @@ isLimboAssoc assocId boxId model =
 
 limboState : Model -> Maybe (Id, Maybe Id, BoxId) -- (topic ID, assoc ID, box ID)
 limboState model =
-  case TMBox.revelationBoxId model of
+  case TM.revelationBoxId model of
     Just boxId ->
       case model.search.result of
         Topics _ (Just topicId) -> Just (topicId, Nothing, boxId)

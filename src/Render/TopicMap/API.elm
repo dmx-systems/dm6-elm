@@ -1,4 +1,4 @@
-module Render.TopicMap.Box exposing (fullscreen, isFullscreen, byId, byIdOrLog, update,
+module Render.TopicMap.API exposing (fullscreen, isFullscreen, byId, byIdOrLog, update,
   updateRect, updateScrollPos, visibleTopics, topicPos, setTopicPos, updateTopicPos,
   displayMode, setDisplayMode, updateDisplayMode, topicProps, initTopicProps, initTopicPos,
   assocGeometry, hasItem, hasDeepItem, addBox, addItem, revealItem, removeItem, removeItem_,
@@ -12,7 +12,7 @@ import Item
 import Model exposing (Model)
 import ModelParts exposing (Id, ItemInfo(..), AssocInfo, AssocType(..), Point, Rectangle, BoxId,
   BoxPath)
-import Render.TopicMap exposing (Box, BoxItems, BoxItem, Visibility(..), Pinned(..),
+import Render.TopicMap exposing (TopicMap, MapItems, MapItem, Visibility(..), Pinned(..),
   ItemProps(..), TopicProps, DisplayMode(..), TopicDisplay(..), BoxDisplay(..))
 import Utils as U
 
@@ -21,7 +21,7 @@ import String exposing (fromInt)
 
 
 
-fullscreen : Model -> Maybe Box
+fullscreen : Model -> Maybe TopicMap
 fullscreen model =
   byIdOrLog model.boxId model
 
@@ -32,30 +32,30 @@ isFullscreen boxId model =
 
 
 {-| Logs an error if box does not exist. -}
-byIdOrLog : BoxId -> Model -> Maybe Box
+byIdOrLog : BoxId -> Model -> Maybe TopicMap
 byIdOrLog boxId model =
   case byId boxId model of
     Just box -> Just box
     Nothing -> U.illegalBoxId "byIdOrLog" boxId Nothing
 
 
-byId : BoxId -> Model -> Maybe Box
+byId : BoxId -> Model -> Maybe TopicMap
 byId boxId model =
-  model.topicMap.boxes |> Dict.get boxId
+  model.topicMap.topicMaps |> Dict.get boxId
 
 
 -- TODO: only init renderer-specific data: (Rectangle 0 0 0 0) (Point 0 0) Dict.empty
 addBox : BoxId -> Model -> Model
 addBox boxId model =
   let
-    box = Box boxId (Rectangle 0 0 0 0) (Point 0 0) Dict.empty
+    box = TopicMap boxId (Rectangle 0 0 0 0) (Point 0 0) Dict.empty
   in
   model |> addBox_ box
 
 
-addBox_ : Box -> Model -> Model
+addBox_ : TopicMap -> Model -> Model
 addBox_ box ({topicMap} as model) =
-  { model | topicMap = { topicMap | boxes = topicMap.boxes |> Dict.insert box.id box } }
+  { model | topicMap = { topicMap | topicMaps = topicMap.topicMaps |> Dict.insert box.id box } }
 
 
 updateRect : BoxId -> (Rectangle -> Rectangle) -> Model -> Model
@@ -74,7 +74,7 @@ updateScrollPos boxId transform model =
     )
 
 
-visibleTopics : Box -> List BoxItem
+visibleTopics : TopicMap -> List MapItem
 visibleTopics box =
   box.items |> Dict.values |> List.filter isTopic |> List.filter isVisible
 
@@ -201,7 +201,7 @@ initTopicPos boxId model =
 
 
 {-| Logs an error if box does not exist, or item is not in box. -}
-itemByIdOrLog_ : Id -> BoxId -> Model -> Maybe BoxItem
+itemByIdOrLog_ : Id -> BoxId -> Model -> Maybe MapItem
 itemByIdOrLog_ itemId boxId model =
   byIdOrLog boxId model |> Maybe.andThen
     (\box ->
@@ -239,7 +239,7 @@ addItem : Id -> ItemProps -> BoxId -> Model -> Model
 addItem itemId props boxId model =
   let
     ( newModel, boxAssocId ) = Item.addAssoc Hierarchy boxId itemId model
-    boxItem = BoxItem itemId boxAssocId (Visible Unpinned) props
+    boxItem = MapItem itemId boxAssocId (Visible Unpinned) props
     _ = U.info "addItem"
       { itemId = itemId, boxAssocId = boxAssocId, props = props, boxId = boxId}
   in
@@ -290,20 +290,20 @@ removeItem itemId boxId model =
 
 {-| Removes an item from a box, along its associations in that box context.
 No-op if the item is *not* contained in the box.
-Convenience API to operate on given BoxItems directly
+Convenience API to operate on given MapItems directly
 -}
-removeItem_ : Id -> BoxItems -> Model -> BoxItems
+removeItem_ : Id -> MapItems -> Model -> MapItems
 removeItem_ itemId items model =
   assocsOfPlayer_ itemId items model |> List.foldr
     (\assocId itemsAcc -> removeItem_ assocId itemsAcc model) -- recursion
     (removeItem__ itemId items)
 
 
-{-| Removes an item (sets its visibility to Removed) from a set of BoxItems.
-No-op if the item is *not* contained in the set of BoxItems.
+{-| Removes an item (sets its visibility to Removed) from a set of MapItems.
+No-op if the item is *not* contained in the set of MapItems.
 Low-level API that does NOT remove the item's associations.
 -}
-removeItem__ : Id -> BoxItems -> BoxItems
+removeItem__ : Id -> MapItems -> MapItems
 removeItem__ itemId items =
   items |> Dict.update itemId
     (\maybeItem ->
@@ -316,10 +316,10 @@ removeItem__ itemId items =
 {-| Canonical box transformation.
 Logs an error if box does not exist.
 -}
-update : BoxId -> (Box -> Box) -> Model -> Model
+update : BoxId -> (TopicMap -> TopicMap) -> Model -> Model
 update boxId transform ({topicMap} as model) =
   { model | topicMap =
-    { topicMap | boxes = topicMap.boxes |> Dict.update boxId
+    { topicMap | topicMaps = topicMap.topicMaps |> Dict.update boxId
       (\maybeBox ->
         case maybeBox of
           Just box -> Just (transform box)
@@ -329,10 +329,10 @@ update boxId transform ({topicMap} as model) =
   }
 
 
-{-| Returns a player's associations (their Ids) in the given box context (BoxItems).
-Low-level API to operate on given BoxItems directly.
+{-| Returns a player's associations (their Ids) in the given box context (MapItems).
+Low-level API to operate on given MapItems directly.
 -}
-assocsOfPlayer_ : Id -> BoxItems -> Model -> List Id
+assocsOfPlayer_ : Id -> MapItems -> Model -> List Id
 assocsOfPlayer_ playerId items model =
   items
     |> Dict.values
@@ -427,7 +427,7 @@ isUnboxed topicId boxId model =
 
 
 {-| useful as a filter predicate -}
-isTopic : BoxItem -> Bool
+isTopic : MapItem -> Bool
 isTopic item =
   case item.props of
     TopicP _ -> True
@@ -435,20 +435,20 @@ isTopic item =
 
 
 {-| useful as a filter predicate -}
-isAssoc : BoxItem -> Bool
+isAssoc : MapItem -> Bool
 isAssoc item =
   not (isTopic item)
 
 
 {-| useful as a filter predicate -}
-isVisible : BoxItem -> Bool
+isVisible : MapItem -> Bool
 isVisible item =
   case item.visibility of
     Visible _ -> True
     Removed -> False
 
 
-isPinned : BoxItem -> Bool
+isPinned : MapItem -> Bool
 isPinned item =
   item.visibility == Visible Pinned
 

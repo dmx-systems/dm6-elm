@@ -7,7 +7,7 @@ import Item
 import Model exposing (Model, Msg(..))
 import ModelParts exposing (..)
 import Render.TopicMap exposing (DisplayMode(..), TopicDisplay(..))
-import Render.TopicMap.Box as Box
+import Render.TopicMap.API as TM
 import Render.TopicMap.Size as Size -- TODO: don't import, let caller do the sizing instead
 import Storage as S
 import Task
@@ -50,7 +50,7 @@ sub =
 viewInput : TopicInfo -> BoxPath -> Attrs Msg -> Html Msg
 viewInput topic boxPath style =
   input
-    ( [ id <| Box.elemId "input" topic.id boxPath
+    ( [ id <| TM.elemId "input" topic.id boxPath
       , value topic.text
       , placeholder C.initBoxText
       , onInput (Text << Text.OnTextInput)
@@ -65,7 +65,7 @@ viewInput topic boxPath style =
 viewTextarea : TopicInfo -> BoxPath -> Attrs Msg -> Html Msg
 viewTextarea topic boxPath style =
   textarea
-    ( [ id <| Box.elemId "input" topic.id boxPath
+    ( [ id <| TM.elemId "input" topic.id boxPath
       , value topic.text
       , placeholder C.initTopicText
       , onInput (Text << Text.OnTextareaInput)
@@ -105,7 +105,7 @@ enterEdit topicId boxPath model =
     newModel =
       model
       |> setEditState (Edit topicId boxPath)
-      |> switchTopicDisplay topicId (Box.firstId boxPath)
+      |> switchTopicDisplay topicId (TM.firstId boxPath)
       |> Size.auto
   in
   (newModel, focus newModel)
@@ -116,7 +116,7 @@ leaveEdit model =
   case model.text.edit of
     Edit topicId boxPath ->
       let
-        elemId = Box.elemId "topic" topicId boxPath
+        elemId = TM.elemId "topic" topicId boxPath
       in
       ( model
         |> setEditState NoEdit
@@ -129,7 +129,7 @@ leaveEdit model =
 switchTopicDisplay : Id -> BoxId -> Model -> Model
 switchTopicDisplay topicId boxId model =
   model
-  |> Box.updateDisplayMode topicId boxId
+  |> TM.updateDisplayMode topicId boxId
     (\displayMode ->
       case displayMode of
         TopicD _ -> TopicD Detail
@@ -181,7 +181,7 @@ focus model =
   let
     elemId =
       case model.text.edit of
-        Edit id boxPath -> Box.elemId "input" id boxPath
+        Edit id boxPath -> TM.elemId "input" id boxPath
         NoEdit -> U.logError "focus" "called when text.edit is NoEdit" ""
   in
   Dom.focus elemId |> Task.attempt

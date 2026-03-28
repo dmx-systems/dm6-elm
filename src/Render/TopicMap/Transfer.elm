@@ -3,9 +3,9 @@ module Render.TopicMap.Transfer exposing (boxContent, unboxContent)
 import Item
 import Model exposing (Model)
 import ModelParts exposing (..)
-import Render.TopicMap exposing (BoxItems, BoxItem, Visibility(..), Pinned(..), ItemProps(..),
+import Render.TopicMap exposing (MapItems, MapItem, Visibility(..), Pinned(..), ItemProps(..),
   AssocProps, DisplayMode(..), BoxDisplay(..))
-import Render.TopicMap.Box as Box
+import Render.TopicMap.API as TM
 import Utils as U
 
 import Dict
@@ -15,7 +15,7 @@ import Dict
 -- MODEL
 
 
-type alias Transfer = BoxItems -> BoxItems -> Model -> BoxItems
+type alias Transfer = MapItems -> MapItems -> Model -> MapItems
 
 
 
@@ -42,9 +42,9 @@ unboxContent boxId targetBoxId model =
 
 transferContent : BoxId -> BoxId -> Transfer -> Model -> Model
 transferContent boxId targetBoxId transfer model =
-  case Box.byIdOrLog boxId model of
+  case TM.byIdOrLog boxId model of
     Just box_ ->
-      model |> Box.update targetBoxId
+      model |> TM.update targetBoxId
         (\targetBox ->
           { targetBox | items = transfer box_.items targetBox.items model }
         )
@@ -55,20 +55,20 @@ transferContent boxId targetBoxId transfer model =
 Removes the content items (recursively) from the target items.
 Returns the updated target items.
 -}
-boxItems_ : BoxItems -> BoxItems -> Model -> BoxItems
+boxItems_ : MapItems -> MapItems -> Model -> MapItems
 boxItems_ contentItems targetItems model =
-  contentItems |> Dict.values |> List.filter Box.isVisible |> List.foldr
+  contentItems |> Dict.values |> List.filter TM.isVisible |> List.foldr
     (\boxItem targetItemsAcc ->
       case targetItemsAcc |> Dict.get boxItem.id of
         Just item ->
-          if item |> Box.isPinned then
+          if item |> TM.isPinned then
             -- don't box pinned items, only remove the assoc
-            Box.removeItem_ boxItem.boxAssocId targetItemsAcc model
+            TM.removeItem_ boxItem.boxAssocId targetItemsAcc model
           else
             let
-              items = Box.removeItem_ boxItem.id targetItemsAcc model
+              items = TM.removeItem_ boxItem.id targetItemsAcc model
             in
-            case Box.byId boxItem.id model of
+            case TM.byId boxItem.id model of
               Just box_ -> boxItems_ box_.items items model -- recursion
               Nothing -> items
         Nothing -> targetItemsAcc -- FIXME: continue unboxing boxes?
@@ -80,9 +80,9 @@ boxItems_ contentItems targetItems model =
 Reveals the content items (recursively) among the target items.
 Returns the updated target items.
 -}
-unboxItems_ : BoxItems -> BoxItems -> Model -> BoxItems
+unboxItems_ : MapItems -> MapItems -> Model -> MapItems
 unboxItems_ contentItems targetItems model =
-  contentItems |> Dict.values |> List.filter Box.isVisible |> List.foldr
+  contentItems |> Dict.values |> List.filter TM.isVisible |> List.foldr
     (\boxItem targetItemsAcc ->
       case boxItem.props of
         TopicP _ ->
@@ -92,7 +92,7 @@ unboxItems_ contentItems targetItems model =
           if abort then
             items
           else
-            case Box.byId boxItem.id model of
+            case TM.byId boxItem.id model of
               Just box_ -> unboxItems_ box_.items items model -- recursion
               Nothing -> items
         AssocP _ ->
@@ -104,7 +104,7 @@ unboxItems_ contentItems targetItems model =
 {-| Returns the target item to reveal that corresponds to the box item.
 Part of unboxing. FIXDOC
 -}
-unboxTopic : BoxItem -> BoxItems -> Model -> (BoxItems, Bool)
+unboxTopic : MapItem -> MapItems -> Model -> (MapItems, Bool)
 unboxTopic boxItem targetItems model =
   let
     (topicToInsert, abort) =
@@ -114,7 +114,7 @@ unboxTopic boxItem targetItems model =
           -- 1) set it to "pinned" if visible already
           -- 2) abort further unboxing if it's display mode is BlackBox or WhiteBox
           let
-            isPinned = if Box.isVisible item then Pinned else Unpinned
+            isPinned = if TM.isVisible item then Pinned else Unpinned
             newItem = { item | visibility = Visible isPinned }
             _ = U.info "unboxTopic" newItem
           in
@@ -135,7 +135,7 @@ unboxTopic boxItem targetItems model =
   )
 
 
-unboxAssoc : BoxItem -> BoxItems -> BoxItems
+unboxAssoc : MapItem -> MapItems -> MapItems
 unboxAssoc boxItem targetItems =
   let
     assocToInsert = targetAssocItem boxItem.id targetItems
@@ -144,7 +144,7 @@ unboxAssoc boxItem targetItems =
     |> Dict.insert assocToInsert.id assocToInsert
 
 
-setUnboxed : BoxItem -> BoxItem
+setUnboxed : MapItem -> MapItem
 setUnboxed item =
   { item | props =
     case item.props of
@@ -153,7 +153,7 @@ setUnboxed item =
   }
 
 
-isAbort : BoxItem -> Bool
+isAbort : MapItem -> Bool
 isAbort item =
   case item.props of
     TopicP props ->
@@ -168,9 +168,9 @@ isAbort item =
 {-| Returns the target item to reveal that corresponds to the box item.
 Part of unboxing. FIXDOC
 -}
-targetAssocItem : Id -> BoxItems -> BoxItem
+targetAssocItem : Id -> MapItems -> MapItem
 targetAssocItem assocId targetItems =
   case targetItems |> Dict.get assocId of
     Just item -> { item | visibility = Visible Unpinned } -- TODO: pinning?
-    Nothing -> BoxItem assocId -1 (Visible Unpinned) (AssocP AssocProps)
+    Nothing -> MapItem assocId -1 (Visible Unpinned) (AssocP AssocProps)
     -- FIXME: set item's boxAssocId?

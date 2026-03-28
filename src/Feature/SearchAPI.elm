@@ -9,7 +9,7 @@ import Feature.SelAPI as SelAPI
 import Item
 import Model exposing (Model, Msg(..))
 import ModelParts exposing (..)
-import Render.TopicMap.Box as Box
+import Render.TopicMap.API as TM
 import Render.TopicMap.Size as Size
 import Storage as S
 import Undo exposing (UndoModel)
@@ -30,7 +30,7 @@ import String exposing (fromInt)
 viewInput : Model -> Html Msg
 viewInput model =
   let
-    target = Box.landingTarget model
+    target = TM.landingTarget model
   in
   div
     []
@@ -230,8 +230,8 @@ fullscreenButtonStyle =
 
 isItemDisabled : Id -> Model -> Bool
 isItemDisabled topicId model =
-  case Box.revelationBoxId model of
-    Just boxId -> Box.hasDeepItem topicId boxId model
+  case TM.revelationBoxId model of
+    Just boxId -> TM.hasDeepItem topicId boxId model
     Nothing -> False
 
 
@@ -335,10 +335,10 @@ onRelTopicUnhovered model =
 
 revealTopic : Id -> Model -> Model
 revealTopic topicId model =
-  case Box.revelationBoxPath model of
+  case TM.revelationBoxPath model of
     Just (boxId :: _ as boxPath) ->
       model
-        |> Box.revealItem topicId boxId
+        |> TM.revealItem topicId boxId
         |> closeMenu
         |> SelAPI.select topicId boxPath
         |> Size.auto
@@ -347,11 +347,11 @@ revealTopic topicId model =
 
 revealRelTopic : (Id, Id) -> Model -> Model
 revealRelTopic (topicId, assocId) model =
-  case Box.revelationBoxPath model of
+  case TM.revelationBoxPath model of
     Just (boxId :: _ as boxPath) ->
       model
-        |> Box.revealItem topicId boxId
-        |> Box.revealItem assocId boxId
+        |> TM.revealItem topicId boxId
+        |> TM.revealItem assocId boxId
         |> closeMenu
         |> SelAPI.select topicId boxPath
         |> Size.auto
