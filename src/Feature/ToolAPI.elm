@@ -13,12 +13,12 @@ import Feature.Tool as Tool exposing (LineStyle(..))
 import Item
 import Model exposing (Model, Msg(..))
 import ModelParts exposing (..)
-import Render.TopicMap exposing (ItemProps(..), TopicProps, DisplayMode(..), TopicDisplay(..),
-  BoxDisplay(..))
-import Render.TopicMap.API as TM
-import Render.TopicMap.Size as Size
-import Render.TopicMap.Transfer as Transfer
 import Storage as S
+import TopicMap.Size as Size
+import TopicMap.TopicMap as TM
+import TopicMap.TopicMapDef exposing (ItemProps(..), TopicProps, DisplayMode(..),
+  TopicDisplay(..), BoxDisplay(..))
+import TopicMap.Transfer as Transfer
 import Undo exposing (UndoModel)
 import Utils as U
 

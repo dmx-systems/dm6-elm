@@ -3,9 +3,9 @@ port module Feature.NavAPI exposing (boxIdFromHash, pushUrl, update, sub)
 import Feature.Nav as Nav
 import Model exposing (Model, Msg(..))
 import ModelParts exposing (..)
-import Render.TopicMap.API as TM
-import Render.TopicMap.Size as Size
 import Storage as S
+import TopicMap.Size as Size
+import TopicMap.TopicMap as TM
 import Undo exposing (UndoModel)
 import Utils as U
 

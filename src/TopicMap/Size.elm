@@ -1,4 +1,4 @@
-module Render.TopicMap.Size exposing (auto)
+module TopicMap.Size exposing (auto)
 
 import Config as C
 import Feature.Mouse exposing (DragState(..), DragMode(..))
@@ -6,10 +6,10 @@ import Feature.Text exposing (EditState(..))
 import Item
 import Model exposing (Model)
 import ModelParts exposing (..)
-import Render.TopicMap exposing (MapItem, ItemProps(..), DisplayMode(..), TopicDisplay(..),
+import TopicMap.TopicMap as TM
+import TopicMap.TopicMapDef exposing (MapItem, ItemProps(..), DisplayMode(..), TopicDisplay(..),
   BoxDisplay(..))
-import Render.TopicMap.API as TM
-import Render.TopicMap.ViewModel as VM
+import TopicMap.ViewModel as VM
 import Utils as U
 
 

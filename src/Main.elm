@@ -12,11 +12,11 @@ import Feature.ToolAPI as ToolAPI
 import Item
 import Model exposing (Model, Msg(..))
 import ModelParts exposing (..)
-import Render.TopicMap exposing (ItemProps(..), AssocProps)
-import Render.TopicMap.API as TM
-import Render.TopicMap.Size as Size
-import Render.TopicMap.View as Map
 import Storage as S
+import TopicMap.Size as Size
+import TopicMap.TopicMap as TM
+import TopicMap.TopicMapDef exposing (ItemProps(..), AssocProps)
+import TopicMap.View as View
 import Undo exposing (UndoModel)
 import Utils as U
 
@@ -119,7 +119,7 @@ view ({present} as undoModel) =
             ( [ id "main" ]
               ++ mainStyle
             )
-            ( [ Map.view present.boxId [] present ] -- boxPath = []
+            ( [ View.view present.boxId [] present ] -- boxPath = []
               ++ ToolAPI.viewMapTools undoModel
             )
         ]

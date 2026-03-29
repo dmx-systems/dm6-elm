@@ -1,4 +1,4 @@
-module Render.TopicMap.View exposing (view)
+module TopicMap.View exposing (view)
 
 import Config as C
 import Feature.IconAPI as IconAPI
@@ -9,13 +9,12 @@ import Feature.TextAPI as TextAPI
 import Feature.Tool exposing (LineStyle(..))
 import Feature.ToolAPI as ToolAPI
 import Item
-import Render.TopicMap exposing (TopicMap, ItemProps(..), TopicProps, DisplayMode(..),
-  TopicDisplay(..), BoxDisplay(..))
-import Render.TopicMap.API as TM
-import Render.TopicMap.ViewModel as VM
 import Model exposing (Model, Msg)
-import ModelParts exposing (Id, BoxId, BoxPath, TopicInfo, AssocInfo, AssocType(..), Point,
-  Rectangle, Attrs)
+import ModelParts exposing (..)
+import TopicMap.TopicMap as TM
+import TopicMap.TopicMapDef exposing (TopicMap, ItemProps(..), TopicProps, DisplayMode(..),
+  TopicDisplay(..), BoxDisplay(..))
+import TopicMap.ViewModel as VM
 import Utils as U
 
 import Dict

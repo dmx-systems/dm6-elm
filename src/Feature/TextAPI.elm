@@ -6,11 +6,11 @@ import Feature.Text as Text exposing (EditState(..))
 import Item
 import Model exposing (Model, Msg(..))
 import ModelParts exposing (..)
-import Render.TopicMap exposing (DisplayMode(..), TopicDisplay(..))
-import Render.TopicMap.API as TM
-import Render.TopicMap.Size as Size -- TODO: don't import, let caller do the sizing instead
 import Storage as S
 import Task
+import TopicMap.Size as Size -- TODO: don't import, let caller do the sizing instead
+import TopicMap.TopicMap as TM
+import TopicMap.TopicMapDef exposing (DisplayMode(..), TopicDisplay(..))
 import Undo exposing (UndoModel)
 import Utils as U
 

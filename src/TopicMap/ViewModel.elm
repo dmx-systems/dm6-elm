@@ -1,12 +1,12 @@
-module Render.TopicMap.ViewModel exposing (topicsToRender, assocsToRender, isLimboTopic,
+module TopicMap.ViewModel exposing (topicsToRender, assocsToRender, isLimboTopic,
   isLimboAssoc, limboState)
 
 import Feature.Search exposing (SearchResult(..))
 import Model exposing (Model)
 import ModelParts exposing (Id, BoxId)
-import Render.TopicMap exposing (TopicMap, MapItem, Visibility(..), ItemProps(..), TopicProps,
-  DisplayMode(..), TopicDisplay(..), BoxDisplay(..))
-import Render.TopicMap.API as TM
+import TopicMap.TopicMap as TM
+import TopicMap.TopicMapDef exposing (TopicMap, MapItem, Visibility(..), ItemProps(..),
+  TopicProps, DisplayMode(..), TopicDisplay(..), BoxDisplay(..))
 import Utils as U
 
 import Dict

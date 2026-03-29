@@ -9,7 +9,7 @@ import Feature.Sel as Sel
 import Feature.Text as Text
 import Feature.Tool as Tool
 import ModelParts exposing (..)
-import Render.TopicMap as TopicMap
+import TopicMap.TopicMapDef as TopicMapDef
 
 import Dict exposing (Dict)
 import Json.Decode as D
@@ -26,7 +26,7 @@ type alias Model =
   , nextId : Id
   , imageCache : Dict ImageId String -- Int -> blob: URL
   -- renderer modules
-  , topicMap : TopicMap.Model
+  , topicMap : TopicMapDef.Model
   -- feature modules
   , tool : Tool.Model
   , text : Text.Model
@@ -48,7 +48,7 @@ init =
   , nextId = 1
   , imageCache = Dict.empty -- TODO: move to Text module, but should survive a map switch
   -- renderer modules
-  , topicMap = TopicMap.init
+  , topicMap = TopicMapDef.init
   -- feature modules
   , tool = Tool.init
   , text = Text.init
@@ -91,7 +91,7 @@ encode model =
     , ("boxId", E.int model.boxId)
     , ("nextId", E.int model.nextId)
     -- renderer modules
-    , ("topicMap", TopicMap.encode model.topicMap)
+    , ("topicMap", TopicMapDef.encode model.topicMap)
     -- feature modules
     , ("tool", Tool.encode model.tool)
     ]
@@ -106,7 +106,7 @@ decoder =
     |> required "nextId" D.int
     |> hardcoded Dict.empty -- imageCache
     -- renderer modules
-    |> required "topicMap" TopicMap.decoder
+    |> required "topicMap" TopicMapDef.decoder
     -- feature modules
     |> required "tool" Tool.decoder
     |> hardcoded Text.init

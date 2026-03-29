@@ -1,4 +1,4 @@
-module Render.TopicMap.API exposing (fullscreen, isFullscreen, byId, byIdOrLog, update,
+module TopicMap.TopicMap exposing (fullscreen, isFullscreen, byId, byIdOrLog, update,
   updateRect, updateScrollPos, visibleTopics, topicPos, setTopicPos, updateTopicPos,
   displayMode, setDisplayMode, updateDisplayMode, topicProps, initTopicProps, initTopicPos,
   assocGeometry, hasItem, hasDeepItem, addBox, addItem, revealItem, removeItem, removeItem_,
@@ -10,9 +10,8 @@ import Feature.Search exposing (SearchResult(..))
 import Feature.SelAPI as SelAPI
 import Item
 import Model exposing (Model)
-import ModelParts exposing (Id, ItemInfo(..), AssocInfo, AssocType(..), Point, Rectangle, BoxId,
-  BoxPath)
-import Render.TopicMap exposing (TopicMap, MapItems, MapItem, Visibility(..), Pinned(..),
+import ModelParts exposing (..)
+import TopicMap.TopicMapDef exposing (TopicMap, MapItems, MapItem, Visibility(..), Pinned(..),
   ItemProps(..), TopicProps, DisplayMode(..), TopicDisplay(..), BoxDisplay(..))
 import Utils as U
 

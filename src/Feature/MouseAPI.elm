@@ -6,9 +6,9 @@ import Feature.Mouse as Mouse exposing (DragState(..), DragMode(..))
 import Item
 import Model exposing (Model, Msg(..))
 import ModelParts exposing (..)
-import Render.TopicMap.API as TM
-import Render.TopicMap.Geometry as Geometry
-import Render.TopicMap.Size as Size
+import TopicMap.Geometry as Geometry
+import TopicMap.Size as Size
+import TopicMap.TopicMap as TM
 import Undo exposing (UndoModel)
 import Utils as U
 

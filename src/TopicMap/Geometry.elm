@@ -1,12 +1,12 @@
-module Render.TopicMap.Geometry exposing (pointerTarget)
+module TopicMap.Geometry exposing (pointerTarget)
 
 import Config as C
 import Item
 import Model exposing (Model)
 import ModelParts exposing (Id, BoxId, BoxPath, Point)
-import Render.TopicMap exposing (TopicMap, MapItem, DisplayMode(..), TopicDisplay(..),
+import TopicMap.TopicMap as TM
+import TopicMap.TopicMapDef exposing (TopicMap, MapItem, DisplayMode(..), TopicDisplay(..),
   BoxDisplay(..))
-import Render.TopicMap.API as TM
 import Utils as U
 
 

@@ -3,7 +3,7 @@ module Box exposing (addBox, deleteItem)
 import Item
 import Model exposing (Model)
 import ModelParts exposing (Id, ItemInfo(..), Icon, Box, BoxId)
-import Render.TopicMap.API as TM
+import TopicMap.TopicMap as TM
 
 import Dict
 import Set

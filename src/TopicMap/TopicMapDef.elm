@@ -1,4 +1,4 @@
-module Render.TopicMap exposing (Model, TopicMap, MapItems, MapItem, Visibility(..),
+module TopicMap.TopicMapDef exposing (Model, TopicMap, MapItems, MapItem, Visibility(..),
   Pinned(..), ItemProps(..), TopicProps, AssocProps, DisplayMode(..), TopicDisplay(..),
   BoxDisplay(..), init, encode, decoder)
 
