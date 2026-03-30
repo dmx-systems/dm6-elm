@@ -168,21 +168,23 @@ mouseUp model =
           let
             _ = U.info "mouseUp" ("dropped " ++ fromInt id ++ " (box " ++ Box.fromPath boxPath
               ++ ") on " ++ fromInt targetId ++ " (box " ++ Box.fromPath targetPath ++ ") --> "
-              ++ if not droppedOnSourceBox then "move topic" else "abort")
+              ++ if shouldMoveToBox then "move topic to box" else "abort")
             boxId = Box.firstId boxPath
-            -- Can this actually happen? Possibly an edge case when rendering lags behind mouse
-            -- move, so that mouse leaves topic and enters box (background). FIXME: store model
-            droppedOnSourceBox = boxId == targetId
+            -- When dragging a topic inside a nested box that box will be the target (this is
+            -- since target is determined by map geometry, not by enter/leave events anymore).
+            -- We distinguish a topic-moved-to-box from a topic-dragged-inside-box by comparing
+            -- the dragged topic's parent box.
+            shouldMoveToBox = boxId /= targetId
             msg = MoveTopicToBox id boxId origPos targetId targetPath
           in
-          case not droppedOnSourceBox of
+          case shouldMoveToBox of
             True -> Random.generate msg point
-            False -> Cmd.none
+            False -> U.command TopicDragged -- store topic pos
         Drag DragTopic _ _ _ _ _ ->
           let
             _ = U.info "mouseUp" "topic drag ended w/o target"
           in
-          U.command <| TopicDragged
+          U.command TopicDragged
         Drag DraftAssoc id boxPath _ _ (Just (targetId, targetPath)) ->
           let
             _ = U.info "mouseUp" ("assoc drawn from " ++ fromInt id ++ " (box " ++ Box.fromPath
