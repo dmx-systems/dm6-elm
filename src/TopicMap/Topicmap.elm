@@ -1,7 +1,7 @@
-module TopicMap.TopicMap exposing (fullscreen, isFullscreen, byId, byIdOrLog, update,
-  updateRect, updateScrollPos, visibleTopics, topicPos, setTopicPos, updateTopicPos,
-  displayMode, setDisplayMode, updateDisplayMode, topicProps, initTopicProps, initTopicPos,
-  assocGeometry, hasItem, hasDeepItem, addBox, addItem, revealItem, removeItem, removeItem_,
+module TopicMap.TopicMap exposing (fullscreen, byId, byIdOrLog, update, updateRect,
+  updateScrollPos, visibleTopics, topicPos, setTopicPos, updateTopicPos, displayMode,
+  setDisplayMode, updateDisplayMode, topicProps, initTopicProps, initTopicPos, assocGeometry,
+  hasItem, hasDeepItem, addTopicMap, addItem, revealItem, removeItem, removeItem_,
   revelationBoxId, revelationBoxPath, landingTarget, landingBoxPath, isEmpty, isUnboxed,
   isTopic, isAssoc, isVisible, isPinned)
 
@@ -26,49 +26,43 @@ fullscreen model =
   byIdOrLog model.boxId model
 
 
-isFullscreen : BoxId -> Model -> Bool
-isFullscreen boxId model =
-  boxId == model.boxId
-
-
 {-| Logs an error if box does not exist. -}
 byIdOrLog : BoxId -> Model -> Maybe TopicMap
-byIdOrLog boxId model =
-  case byId boxId model of
+byIdOrLog mapId model =
+  case byId mapId model of
     Just box -> Just box
-    Nothing -> U.illegalBoxId "byIdOrLog" boxId Nothing
+    Nothing -> U.illegalBoxId "byIdOrLog" mapId Nothing
 
 
 byId : BoxId -> Model -> Maybe TopicMap
-byId boxId model =
-  model.topicMap |> Dict.get boxId
+byId mapId model =
+  model.topicMap |> Dict.get mapId
 
 
--- TODO: only init renderer-specific data: (Rectangle 0 0 0 0) (Point 0 0) Dict.empty
-addBox : BoxId -> Model -> Model
-addBox boxId model =
+addTopicMap : BoxId -> Model -> Model
+addTopicMap mapId model =
   let
-    box = TopicMap boxId (Rectangle 0 0 0 0) (Point 0 0) Dict.empty
+    map = TopicMap mapId (Rectangle 0 0 0 0) (Point 0 0) Dict.empty
   in
-  model |> addBox_ box
+  model |> addTopicMap_ map
 
 
-addBox_ : TopicMap -> Model -> Model
-addBox_ box ({topicMap} as model) =
-  { model | topicMap = topicMap |> Dict.insert box.id box }
+addTopicMap_ : TopicMap -> Model -> Model
+addTopicMap_ map ({topicMap} as model) =
+  { model | topicMap = topicMap |> Dict.insert map.id map }
 
 
 updateRect : BoxId -> (Rectangle -> Rectangle) -> Model -> Model
-updateRect boxId transform model =
-  model |> update boxId
+updateRect mapId transform model =
+  model |> update mapId
     (\box ->
       { box | rect = transform box.rect }
     )
 
 
 updateScrollPos : BoxId -> (Point -> Point) -> Model -> Model
-updateScrollPos boxId transform model =
-  model |> update boxId
+updateScrollPos mapId transform model =
+  model |> update mapId
     (\box ->
       { box | scroll = transform box.scroll }
     )
@@ -83,24 +77,24 @@ visibleTopics box =
 an association).
 -}
 topicPos : Id -> BoxId -> Model -> Maybe Point
-topicPos topicId boxId model =
-  case topicProps topicId boxId model of
+topicPos topicId mapId model =
+  case topicProps topicId mapId model of
     Just { pos } -> Just pos
-    Nothing -> U.fail "topicPos" {topicId = topicId, boxId = boxId} Nothing
+    Nothing -> U.fail "topicPos" {topicId = topicId, mapId = mapId} Nothing
 
 
 {-| Logs an error if box does not exist, or if topic is not in box -}
 setTopicPos : Id -> BoxId -> Point -> Model -> Model
-setTopicPos topicId boxId pos model =
-  model |> updateTopicProps_ topicId boxId
+setTopicPos topicId mapId pos model =
+  model |> updateTopicProps_ topicId mapId
     (\props -> { props | pos = pos })
 
 
 {-| Logs an error if box does not exist, or if topic is not in box -}
 updateTopicPos : Id -> BoxId -> (Point -> Point) -> Model -> Model
-updateTopicPos topicId boxId transform model =
+updateTopicPos topicId mapId transform model =
   model
-    |> updateTopicProps_ topicId boxId
+    |> updateTopicProps_ topicId mapId
       (\props -> { props | pos = transform props.pos })
 
 
@@ -108,23 +102,23 @@ updateTopicPos topicId boxId transform model =
 an association).
 -}
 displayMode : Id -> BoxId -> Model -> Maybe DisplayMode
-displayMode topicId boxId model =
-  case topicProps topicId boxId model of
+displayMode topicId mapId model =
+  case topicProps topicId mapId model of
     Just props -> Just props.displayMode
-    Nothing -> U.fail "displayMode" {topicId = topicId, boxId = boxId} Nothing
+    Nothing -> U.fail "displayMode" {topicId = topicId, mapId = mapId} Nothing
 
 
 {-| Logs an error if box does not exist, or if topic is not in box -}
 setDisplayMode : Id -> BoxId -> DisplayMode -> Model -> Model
-setDisplayMode topicId boxId display model =
+setDisplayMode topicId mapId display model =
   model
-    |> updateDisplayMode topicId boxId (\_ -> display)
+    |> updateDisplayMode topicId mapId (\_ -> display)
 
 
 updateDisplayMode : Id -> BoxId -> (DisplayMode -> DisplayMode) -> Model -> Model
-updateDisplayMode topicId boxId transform model =
+updateDisplayMode topicId mapId transform model =
   model
-    |> updateTopicProps_ topicId boxId
+    |> updateTopicProps_ topicId mapId
       (\props -> { props | displayMode = transform props.displayMode })
 
 
@@ -132,57 +126,57 @@ updateDisplayMode topicId boxId transform model =
 an association).
 -}
 topicProps : Id -> BoxId -> Model -> Maybe TopicProps
-topicProps topicId boxId model =
-  case itemByIdOrLog_ topicId boxId model of
+topicProps topicId mapId model =
+  case itemByIdOrLog_ topicId mapId model of
     Just boxItem ->
       case boxItem.props of
         TopicP props -> Just props
         AssocP _ -> U.topicMismatch "topicProps" topicId Nothing
-    Nothing -> U.fail "topicProps" {topicId = topicId, boxId = boxId} Nothing
+    Nothing -> U.fail "topicProps" {topicId = topicId, mapId = mapId} Nothing
 
 
 assocGeometry : AssocInfo -> BoxId -> Model -> Maybe (Point, Point)
-assocGeometry assoc boxId model =
+assocGeometry assoc mapId model =
   let
-    pos1 = topicPos assoc.player1 boxId model
-    pos2 = topicPos assoc.player2 boxId model
+    pos1 = topicPos assoc.player1 mapId model
+    pos2 = topicPos assoc.player2 mapId model
   in
   case Maybe.map2 (\p1 p2 -> (p1, p2)) pos1 pos2 of
     Just geometry -> Just geometry
-    Nothing -> U.fail "assocGeometry" { assoc = assoc, boxId = boxId } Nothing
+    Nothing -> U.fail "assocGeometry" { assoc = assoc, mapId = mapId } Nothing
 
 
 revealItem : Id -> BoxId -> Model -> Model
-revealItem itemId boxId model =
-  if hasItem boxId itemId model then
+revealItem itemId mapId model =
+  if hasItem mapId itemId model then
     let
-      _ = U.info "revealItem" <| fromInt itemId ++ " is in " ++ fromInt boxId
+      _ = U.info "revealItem" <| fromInt itemId ++ " is in " ++ fromInt mapId
     in
-    showItem_ itemId boxId model
+    showItem_ itemId mapId model
   else
     let
-      _ = U.info "revealItem" <| fromInt itemId ++ " not in " ++ fromInt boxId
-      props = initItemProps_ itemId boxId model
+      _ = U.info "revealItem" <| fromInt itemId ++ " not in " ++ fromInt mapId
+      props = initItemProps_ itemId mapId model
     in
-    addItem itemId props boxId model
+    addItem itemId props mapId model
 
 
 {-| Initial props for a newly revealed item -}
 initItemProps_ : Id -> BoxId -> Model -> ItemProps
-initItemProps_ itemId boxId model =
+initItemProps_ itemId mapId model =
   case Item.byId itemId model of
     Just item ->
       case item.info of
-        Topic _ -> TopicP <| initTopicProps itemId boxId model
+        Topic _ -> TopicP <| initTopicProps itemId mapId model
         Assoc _ -> AssocP {}
     Nothing -> AssocP {} -- error is already logged
 
 
 {-| Initial props for a newly revealed topic -}
 initTopicProps : Id -> BoxId -> Model -> TopicProps
-initTopicProps topicId boxId model =
+initTopicProps topicId mapId model =
   TopicProps
-    ( initTopicPos boxId model )
+    ( initTopicPos mapId model )
     ( case Item.isBox topicId model of
       True -> BoxD BlackBox
       False -> TopicD LabelOnly
@@ -191,8 +185,8 @@ initTopicProps topicId boxId model =
 
 {-| Logs an error if box does not exist. -}
 initTopicPos : BoxId -> Model -> Point
-initTopicPos boxId model =
-  case byIdOrLog boxId model of
+initTopicPos mapId model =
+  case byIdOrLog mapId model of
     Just box ->
       Point
         (C.initTopicPos.x + box.rect.x1 + box.scroll.x)
@@ -202,8 +196,8 @@ initTopicPos boxId model =
 
 {-| Logs an error if box does not exist, or item is not in box. -}
 itemByIdOrLog_ : Id -> BoxId -> Model -> Maybe MapItem
-itemByIdOrLog_ itemId boxId model =
-  byIdOrLog boxId model |> Maybe.andThen
+itemByIdOrLog_ itemId mapId model =
+  byIdOrLog mapId model |> Maybe.andThen
     (\box ->
       case box.items |> Dict.get itemId of
         Just boxItem -> Just boxItem
@@ -211,7 +205,9 @@ itemByIdOrLog_ itemId boxId model =
     )
 
 
-{-| Logs an error if box does not exist. -}
+{-| Logs an error if box does not exist.
+TODO: move to Box
+-}
 hasItem : BoxId -> Id -> Model -> Bool
 hasItem boxId itemId model =
   case byIdOrLog boxId model of
@@ -219,6 +215,8 @@ hasItem boxId itemId model =
     Nothing -> False
 
 
+{-| TODO: move to Box
+-}
 hasDeepItem : BoxId -> Id -> Model -> Bool
 hasDeepItem boxId itemId model =
   if itemId == boxId then
@@ -236,14 +234,14 @@ overridden and another association still be created. This is not what you want.
 It's a generic operation: works for both, topics and associations.
 -}
 addItem : Id -> ItemProps -> BoxId -> Model -> Model
-addItem itemId props boxId model =
+addItem itemId props mapId model =
   let
-    ( newModel, boxAssocId ) = Item.addAssoc Hierarchy boxId itemId model
+    ( newModel, boxAssocId ) = Item.addAssoc Hierarchy mapId itemId model
     boxItem = MapItem itemId boxAssocId (Visible Unpinned) props
     _ = U.info "addItem"
-      { itemId = itemId, boxAssocId = boxAssocId, props = props, boxId = boxId}
+      { itemId = itemId, boxAssocId = boxAssocId, props = props, mapId = mapId}
   in
-  newModel |> update boxId
+  newModel |> update mapId
     (\box -> { box | items = box.items |> Dict.insert itemId boxItem })
 
 
@@ -254,8 +252,8 @@ Logs an error if box does not exist.
 It's a generic operation: works for both, topics and associations.
 -}
 showItem_ : Id -> BoxId -> Model -> Model
-showItem_ itemId boxId model =
-  model |> update boxId
+showItem_ itemId mapId model =
+  model |> update mapId
     (\box ->
       { box | items = box.items |> Dict.update itemId
         (\maybeItem ->
@@ -280,9 +278,9 @@ Note: while this functions supports associations as players in associations,
 at the moment DM6 Elm makes no use of it.
 -}
 removeItem : Id -> BoxId -> Model -> Model
-removeItem itemId boxId model =
+removeItem itemId mapId model =
   model
-    |> update boxId
+    |> update mapId
         (\box ->
           { box | items = removeItem_ itemId box.items model }
         )
@@ -317,13 +315,13 @@ removeItem__ itemId items =
 Logs an error if box does not exist.
 -}
 update : BoxId -> (TopicMap -> TopicMap) -> Model -> Model
-update boxId transform ({topicMap} as model) =
+update mapId transform ({topicMap} as model) =
   { model | topicMap =
-    topicMap |> Dict.update boxId
+    topicMap |> Dict.update mapId
       (\maybeBox ->
         case maybeBox of
           Just box -> Just (transform box)
-          Nothing -> U.illegalBoxId "update" boxId Nothing
+          Nothing -> U.illegalBoxId "update" mapId Nothing
       )
   }
 
@@ -347,8 +345,8 @@ Logs an error if box does not exist, or topic is not in box, or ID refers not a 
 an association).
 -}
 updateTopicProps_ : Id -> BoxId -> (TopicProps -> TopicProps) -> Model -> Model
-updateTopicProps_ topicId boxId transform model =
-  model |> update boxId
+updateTopicProps_ topicId mapId transform model =
+  model |> update mapId
     (\box ->
       { box | items = box.items |> Dict.update topicId
         (\item_ ->
@@ -401,9 +399,9 @@ landingBoxPath model =
   case SelAPI.single model of
     Just (id, boxPath) ->
       let
-        boxId = Box.firstId boxPath
+        mapId = Box.firstId boxPath
       in
-      case displayMode id boxId model of
+      case displayMode id mapId model of
         Just (BoxD WhiteBox) -> id :: boxPath
         _ -> [ model.boxId ]
     Nothing -> [ model.boxId ]
@@ -435,8 +433,8 @@ isTopic item =
 
 {-| useful as a filter predicate -}
 isAssoc : MapItem -> Bool
-isAssoc item =
-  not (isTopic item)
+isAssoc =
+  not << isTopic
 
 
 {-| useful as a filter predicate -}

@@ -41,7 +41,7 @@ searchInItem pos itemId boxPath filterTopicId model =
         searchBox = searchInItems relPos items (itemId :: boxPath) filterTopicId
       in
       -- Note: for a fullscreen box boxPath is empty
-      case TM.isFullscreen itemId model of
+      case Box.isFullscreen itemId model of
         True -> searchBox model
         False ->
           let
@@ -97,7 +97,7 @@ searchInItems pos items boxPath filterTopicId model =
 -- For a fullscreen box boxPath is empty
 boxRelPos : Point -> TopicMap -> BoxPath -> Model -> Point
 boxRelPos pos box boxPath model =
-  case TM.isFullscreen box.id model of
+  case Box.isFullscreen box.id model of
     True -> pos
     False ->
       case TM.topicPos box.id (Box.firstId boxPath) model of

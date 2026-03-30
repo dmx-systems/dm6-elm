@@ -582,17 +582,17 @@ viewAssoc assoc boxPath clickHandler model =
 
 
 viewAssocDraft : BoxId -> Model -> List (Svg Msg)
-viewAssocDraft boxId model =
+viewAssocDraft mapId model =
   case model.mouse.dragState of
     Drag DraftAssoc _ boxPath origPos pos _ ->
-      case (Box.firstId boxPath == boxId, TM.fullscreen model) of
-        (True, Just box) ->
+      case (Box.firstId boxPath == mapId, TM.fullscreen model) of
+        (True, Just map) ->
           let
             pagePos = Point
-              (pos.x + box.scroll.x)
-              (pos.y + box.scroll.y - C.appHeaderHeight)
+              (pos.x + map.scroll.x)
+              (pos.y + map.scroll.y - C.appHeaderHeight)
           in
-          (lineRenderer model) origPos (relPos pagePos boxPath model) Nothing [boxId] [] model
+          (lineRenderer model) origPos (relPos pagePos boxPath model) Nothing [mapId] [] model
           -- simple box path is sufficient for geometry, draft assoc is never selected
         _ -> []
     _ -> []

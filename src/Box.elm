@@ -1,4 +1,4 @@
-module Box exposing (addBox, deleteItem, mapTitle, elemId, firstId, fromPath)
+module Box exposing (addBox, deleteItem, mapTitle, isFullscreen, elemId, firstId, fromPath)
 
 import Item
 import Model exposing (Model)
@@ -99,6 +99,11 @@ mapTitle model =
   case Item.topicById model.boxId model of
     Just topic -> Item.topicLabel topic
     Nothing -> U.fail "mapTitle" model.boxId "??"
+
+
+isFullscreen : BoxId -> Model -> Bool
+isFullscreen boxId model =
+  boxId == model.boxId
 
 
 elemId : String -> Id -> BoxPath -> String

@@ -458,7 +458,7 @@ addBox model =
     (newModel, boxId) = Box.addBox "" C.initBoxIcon model
   in
   newModel
-    |> TM.addBox boxId
+    |> TM.addTopicMap boxId
     |> landTopic boxId (BoxD BlackBox)
 
 
