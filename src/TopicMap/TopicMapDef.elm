@@ -160,7 +160,7 @@ encodeDisplayName displayMode =
 
 decoder : D.Decoder Model
 decoder =
-  D.list topicMapDecoder |> D.andThen toDictDecoder
+  topicMapDecoder |> toDictDecoder
 
 
 topicMapDecoder : D.Decoder TopicMap
@@ -177,7 +177,7 @@ topicMapDecoder =
       (D.field "x" D.int)
       (D.field "y" D.int)
     )
-    (D.field "items" (D.list mapItemDecoder |> D.andThen toDictDecoder))
+    (D.field "items" (mapItemDecoder |> toDictDecoder))
 
 
 mapItemDecoder : D.Decoder MapItem

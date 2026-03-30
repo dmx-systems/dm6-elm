@@ -1,7 +1,7 @@
 module ModelParts exposing (Id, Item, Items, ItemInfo(..), AssocIds, TopicInfo, Icon, TextSize,
-  Size, SizeField(..), Point, Rectangle, AssocInfo, AssocType(..), Box, Boxes, BoxId, BoxPath,
-  homeBoxId, ImageId, Attrs, PointerType, encodeItem, encodeBox, itemDecoder, boxDecoder,
-  toDictDecoder)
+  Size, SizeField(..), Point, Rectangle, AssocInfo, AssocType(..), ItemSets, Box, Boxes, BoxId,
+  BoxPath, homeBoxId, ImageId, Attrs, PointerType, encodeItem, encodeItemSet, encodeBox,
+  itemDecoder, itemSetDecoder, boxDecoder, toDictDecoder)
 
 import Dict exposing (Dict)
 import Html exposing (Attribute)
@@ -12,6 +12,10 @@ import Set exposing (Set)
 
 
 -- TYPES
+
+
+type alias IdRecord r =
+  { r | id : Id }
 
 
 -- Item
@@ -88,6 +92,23 @@ type alias Icon = String -- name of feather icon, https://feathericons.com
 type alias ImageId = Int
 type alias Attrs msg = List (Attribute msg)
 type alias PointerType = String
+
+
+-- Item Set
+
+type alias ItemSets = Dict Id ItemSet
+
+
+type alias ItemSet =
+  { id : Id -- set ID
+  , items : List SetItem
+  }
+
+
+type alias SetItem =
+  { id : Id -- item ID
+  -- TODO: add "dateAdded"
+  }
 
 
 -- Box
@@ -167,6 +188,20 @@ encodeAssocType assocType =
       Crosslink -> "Crosslink"
 
 
+encodeItemSet : ItemSet -> E.Value
+encodeItemSet itemSet =
+  E.object
+    [ ("id", E.int itemSet.id)
+    , ("items",
+        E.list
+          (\setItem ->
+              E.object [("id", E.int setItem.id)]
+          )
+          itemSet.items
+      )
+    ]
+
+
 encodeBox : Box -> E.Value
 encodeBox box =
   E.object
@@ -234,6 +269,17 @@ assocTypeDecoder str =
     _ -> D.fail <| "\"" ++ str ++ "\" is an invalid AssocType"
 
 
+itemSetDecoder : D.Decoder ItemSet
+itemSetDecoder =
+  D.map2 ItemSet
+    (D.field "id" D.int)
+    (D.field "items" <| D.list
+      (D.map SetItem
+        (D.field "id" D.int)
+      )
+    )
+
+
 boxDecoder : D.Decoder Box
 boxDecoder =
   D.map Box
@@ -242,12 +288,14 @@ boxDecoder =
     -- TODO: "renderer"
 
 
-toDictDecoder : List { item | id : Id } -> D.Decoder (Dict Int { item | id : Id })
-toDictDecoder items =
-  items
-    |> List.map (\item -> (item.id, item))
-    |> Dict.fromList
-    |> D.succeed
+toDictDecoder : D.Decoder (IdRecord r) -> D.Decoder (Dict Id (IdRecord r))
+toDictDecoder =
+  D.list >> D.map toDict
+
+
+toDict : List (IdRecord r) -> Dict Id (IdRecord r)
+toDict =
+  List.map (\item -> (item.id, item)) >> Dict.fromList
 
 
 maybeString : String -> D.Decoder (Maybe String)

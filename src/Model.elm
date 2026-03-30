@@ -21,6 +21,7 @@ import Set
 
 type alias Model =
   { items : Items
+  , itemSets: ItemSets
   , boxes : Boxes
   , boxId : BoxId -- the box rendered fullscreen
   , nextId : Id
@@ -43,6 +44,7 @@ init =
     homeTopic = TopicInfo 0 Nothing C.homeBoxName <| TextSize (Size 0 0) (Size 0 0)
   in
   { items = Dict.singleton 0 <| Item 0 (Topic homeTopic) Set.empty
+  , itemSets = Dict.empty -- TODO: init set for box 0
   , boxes = Dict.singleton homeBoxId <| Box homeBoxId
   , boxId = homeBoxId
   , nextId = 1
@@ -87,6 +89,7 @@ encode : Model -> E.Value
 encode model =
   E.object
     [ ("items", model.items |> Dict.values |> E.list encodeItem)
+    , ("itemSets", model.itemSets |> Dict.values |> E.list encodeItemSet)
     , ("boxes", model.boxes |> Dict.values |> E.list encodeBox)
     , ("boxId", E.int model.boxId)
     , ("nextId", E.int model.nextId)
@@ -100,8 +103,9 @@ encode model =
 decoder : D.Decoder Model
 decoder =
   D.succeed Model
-    |> required "items" (D.list itemDecoder |> D.andThen toDictDecoder)
-    |> required "boxes" (D.list boxDecoder |> D.andThen toDictDecoder)
+    |> required "items" (itemDecoder |> toDictDecoder)
+    |> required "itemSets" (itemSetDecoder |> toDictDecoder)
+    |> required "boxes" (boxDecoder |> toDictDecoder)
     |> required "boxId" D.int
     |> required "nextId" D.int
     |> hardcoded Dict.empty -- imageCache
