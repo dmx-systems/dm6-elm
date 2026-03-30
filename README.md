@@ -2,6 +2,11 @@
 
 ## Version History
 
+**0.4.1** -- Mar 30, 2026
+
+* Fix:
+    * Store topic position when dragged within nested box
+
 **0.4** -- Mar 25, 2026
 
 * Basic mobile/touch support (uses pointer events instead mouse events)
@@ -105,4 +110,4 @@ Project begin -- Jun 11, 2025
 
 ---
 Jörg Richter  
-Mar 25, 2026
+Mar 30, 2026
