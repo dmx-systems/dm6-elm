@@ -1,5 +1,6 @@
 module TopicMap.View exposing (view)
 
+import Box
 import Config as C
 import Feature.IconAPI as IconAPI
 import Feature.Mouse exposing (DragState(..), DragMode(..))
@@ -234,7 +235,7 @@ viewLimboAssoc boxId model =
 viewTopic : TopicInfo -> TopicProps -> BoxPath -> Model -> Html Msg
 viewTopic topic props boxPath model =
   let
-    boxId = TM.firstId boxPath
+    boxId = Box.firstId boxPath
     render =
       case props.displayMode of
         TopicD LabelOnly -> labelTopic
@@ -257,7 +258,7 @@ viewTopic topic props boxPath model =
 
 topicAttr : Id -> BoxPath -> Attrs Msg
 topicAttr topicId boxPath =
-  [ id <| TM.elemId "topic" topicId boxPath ]
+  [ id <| Box.elemId "topic" topicId boxPath ]
 
 
 topicStyle : Id -> BoxId -> Model -> Attrs Msg
@@ -572,7 +573,7 @@ itemCountStyle =
 viewAssoc : AssocInfo -> BoxPath -> Attrs Msg -> Model -> List (Svg Msg)
 viewAssoc assoc boxPath clickHandler model =
   let
-    boxId = TM.firstId boxPath
+    boxId = Box.firstId boxPath
     geom = TM.assocGeometry assoc boxId model
   in
   case geom of
@@ -584,7 +585,7 @@ viewAssocDraft : BoxId -> Model -> List (Svg Msg)
 viewAssocDraft boxId model =
   case model.mouse.dragState of
     Drag DraftAssoc _ boxPath origPos pos _ ->
-      case (TM.firstId boxPath == boxId, TM.fullscreen model) of
+      case (Box.firstId boxPath == boxId, TM.fullscreen model) of
         (True, Just box) ->
           let
             pagePos = Point
@@ -730,7 +731,7 @@ type alias SvgElement = Attrs Msg -> List (Svg Msg) -> Svg Msg
 viewLineWithHitArea : LineWithHitArea
 viewLineWithHitArea svgElement geometry clickHandler maybeAssoc boxPath model =
   let
-    boxId = TM.firstId boxPath
+    boxId = Box.firstId boxPath
   in
   [ svgElement -- visible line
       ( geometry

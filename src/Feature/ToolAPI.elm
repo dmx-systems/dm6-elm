@@ -195,7 +195,7 @@ mapToolsStyle =
 viewToolbar : BoxPath -> Model -> List (Html Msg)
 viewToolbar boxPath model =
   let
-    boxId = TM.firstId boxPath
+    boxId = Box.firstId boxPath
   in
   case SelAPI.single model of
     Just (itemId, selBoxPath) ->
@@ -235,7 +235,7 @@ viewToolbar boxPath model =
 viewTopicToolbar : Point -> Id -> BoxPath -> Model -> Html Msg
 viewTopicToolbar pos topicId boxPath model =
   let
-    boxId = TM.firstId boxPath
+    boxId = Box.firstId boxPath
     target = (topicId, boxPath)
     topicTools =
       [ viewButton "Edit" "edit-3" Tool.Edit False target
@@ -308,7 +308,7 @@ toolbarStyle pos =
 viewTopicTools : Id -> BoxPath -> Model -> List (Html Msg)
 viewTopicTools topicId boxPath model =
   let
-    boxId = TM.firstId boxPath
+    boxId = Box.firstId boxPath
     isHovered = MouseAPI.isHovered topicId boxId model -- TODO: use boxPath
     isDrag = MouseAPI.isDragInProgress model
     isEdit = TextAPI.isEdit topicId boxPath model
@@ -457,14 +457,16 @@ addBox model =
   let
     (newModel, boxId) = Box.addBox "" C.initBoxIcon model
   in
-  landTopic boxId (BoxD BlackBox) newModel
+  newModel
+    |> TM.addBox boxId
+    |> landTopic boxId (BoxD BlackBox)
 
 
 landTopic : Id -> DisplayMode -> Model -> (Model, Cmd Msg)
 landTopic topicId displayMode model =
   let
     boxPath = TM.landingBoxPath model
-    boxId = TM.firstId boxPath
+    boxId = Box.firstId boxPath
     props = TopicP <| TopicProps
       ( TM.initTopicPos boxId model )
       displayMode
@@ -503,7 +505,7 @@ remove : Model -> Model
 remove model =
   model.selection.items
     |> List.foldr
-      (\(itemId, boxPath) modelAcc -> TM.removeItem itemId (TM.firstId boxPath) modelAcc)
+      (\(itemId, boxPath) modelAcc -> TM.removeItem itemId (Box.firstId boxPath) modelAcc)
       model
     |> SelAPI.clear
     |> Size.auto

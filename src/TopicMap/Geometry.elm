@@ -1,5 +1,6 @@
 module TopicMap.Geometry exposing (pointerTarget)
 
+import Box
 import Config as C
 import Item
 import Model exposing (Model)
@@ -44,7 +45,7 @@ searchInItem pos itemId boxPath filterTopicId model =
         True -> searchBox model
         False ->
           let
-            parentBoxId = TM.firstId boxPath
+            parentBoxId = Box.firstId boxPath
             isHeaderHovered = isTopicHeaderHovered pos box.id parentBoxId
             isRectHovered = isBoxRectHovered pos box parentBoxId
           in
@@ -62,7 +63,7 @@ searchInItem pos itemId boxPath filterTopicId model =
             _ -> U.logError "searchInItem" "Unexpected box display mode" Nothing
     Nothing ->
       let
-        parentBoxId = TM.firstId boxPath
+        parentBoxId = Box.firstId boxPath
         isHeaderHovered = isTopicHeaderHovered pos itemId parentBoxId
         isDetailHovered = isTopicDetailHovered pos itemId parentBoxId
       in
@@ -99,7 +100,7 @@ boxRelPos pos box boxPath model =
   case TM.isFullscreen box.id model of
     True -> pos
     False ->
-      case TM.topicPos box.id (TM.firstId boxPath) model of
+      case TM.topicPos box.id (Box.firstId boxPath) model of
         Just boxPos ->
           Point
             (pos.x - boxPos.x + box.rect.x1 + C.topicW2)

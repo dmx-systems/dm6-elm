@@ -1,12 +1,13 @@
-module Box exposing (addBox, deleteItem)
+module Box exposing (addBox, deleteItem, mapTitle, elemId, firstId, fromPath)
 
 import Item
 import Model exposing (Model)
-import ModelParts exposing (Id, ItemInfo(..), Icon, Box, BoxId)
-import TopicMap.TopicMap as TM
+import ModelParts exposing (Id, ItemInfo(..), Icon, Box, BoxId, BoxPath)
+import Utils as U
 
 import Dict
 import Set
+import String exposing (fromInt)
 
 
 
@@ -16,9 +17,7 @@ addBox text icon model =
     (newModel, topicId) = Item.addTopic text icon model
     -- TODO: init renderer-specific data: (Rectangle 0 0 0 0) (Point 0 0) Dict.empty
   in
-  ( newModel
-    |> addBox_ topicId
-    |> TM.addBox topicId
+  ( newModel |> addBox_ topicId
   , topicId
   )
 
@@ -88,3 +87,34 @@ deleteItem_ itemId ({topicMap} as model) =
         { box | items = box.items |> Dict.remove itemId }
       )
   }
+
+
+--
+
+{-| Title of fullscreen box.
+TODO: rename
+-}
+mapTitle : Model -> String
+mapTitle model =
+  case Item.topicById model.boxId model of
+    Just topic -> Item.topicLabel topic
+    Nothing -> U.fail "mapTitle" model.boxId "??"
+
+
+elemId : String -> Id -> BoxPath -> String
+elemId name id boxPath =
+  name ++ "-" ++ fromInt id ++ "," ++ fromPath boxPath
+
+
+{-| Logs an error (and returns -1) if boxPath is empty.
+-}
+firstId : BoxPath -> BoxId
+firstId boxPath =
+  case boxPath of
+    boxId :: _ -> boxId
+    [] -> U.logError "firstId" "boxPath is empty!" -1
+
+
+fromPath : BoxPath -> String
+fromPath boxPath =
+  boxPath |> List.map fromInt |> String.join ","

@@ -3,8 +3,9 @@ module TopicMap.TopicMap exposing (fullscreen, isFullscreen, byId, byIdOrLog, up
   displayMode, setDisplayMode, updateDisplayMode, topicProps, initTopicProps, initTopicPos,
   assocGeometry, hasItem, hasDeepItem, addBox, addItem, revealItem, removeItem, removeItem_,
   revelationBoxId, revelationBoxPath, landingTarget, landingBoxPath, isEmpty, isUnboxed,
-  isTopic, isAssoc, isVisible, isPinned, mapTitle, elemId, firstId, fromPath)
+  isTopic, isAssoc, isVisible, isPinned)
 
+import Box
 import Config as C
 import Feature.Search exposing (SearchResult(..))
 import Feature.SelAPI as SelAPI
@@ -400,7 +401,7 @@ landingBoxPath model =
   case SelAPI.single model of
     Just (id, boxPath) ->
       let
-        boxId = firstId boxPath
+        boxId = Box.firstId boxPath
       in
       case displayMode id boxId model of
         Just (BoxD WhiteBox) -> id :: boxPath
@@ -449,29 +450,3 @@ isVisible item =
 isPinned : MapItem -> Bool
 isPinned item =
   item.visibility == Visible Pinned
-
-
-mapTitle : Model -> String
-mapTitle model =
-  case Item.topicById model.boxId model of
-    Just topic -> Item.topicLabel topic
-    Nothing -> U.fail "mapTitle" model.boxId "??"
-
-
-elemId : String -> Id -> BoxPath -> String
-elemId name id boxPath =
-  name ++ "-" ++ fromInt id ++ "," ++ fromPath boxPath
-
-
-{-| Logs an error (and returns -1) if boxPath is empty.
--}
-firstId : BoxPath -> BoxId
-firstId boxPath =
-  case boxPath of
-    boxId :: _ -> boxId
-    [] -> U.logError "firstId" "boxPath is empty!" -1
-
-
-fromPath : BoxPath -> String
-fromPath boxPath =
-  boxPath |> List.map fromInt |> String.join ","

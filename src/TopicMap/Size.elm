@@ -1,5 +1,6 @@
 module TopicMap.Size exposing (auto)
 
+import Box
 import Config as C
 import Feature.Mouse exposing (DragState(..), DragMode(..))
 import Feature.Text exposing (EditState(..))
@@ -32,7 +33,7 @@ calculated as well.
 calcBoxRect : BoxPath -> Model -> (Rectangle, Model)
 calcBoxRect boxPath model =
   let
-    boxId = TM.firstId boxPath
+    boxId = Box.firstId boxPath
   in
   case TM.byIdOrLog boxId model of
     Just box ->

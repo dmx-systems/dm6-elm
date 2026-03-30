@@ -1,5 +1,6 @@
 port module Main exposing (..)
 
+import Box
 import Config as C
 import Feature.IconAPI as IconAPI
 import Feature.Mouse as Mouse
@@ -154,7 +155,7 @@ viewMapTitle : Model -> Html Msg
 viewMapTitle model =
   div
     mapTitleStyle
-    [ text <| TM.mapTitle model ]
+    [ text <| Box.mapTitle model ]
 
 
 mapTitleStyle : Attrs Msg

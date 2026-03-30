@@ -1,6 +1,7 @@
 module Feature.MouseAPI exposing (topicDownHandler, assocClickHandler, dragHandler,
   isDragInProgress, isHovered, clearHover, update)
 
+import Box
 import Config as C
 import Feature.Mouse as Mouse exposing (DragState(..), DragMode(..))
 import Item
@@ -107,7 +108,7 @@ timeArrived time ({present} as undoModel) =
           case delay > C.assocDelayMillis of
             True -> (DraftAssoc, Undo.swap)
             False -> (DragTopic, Undo.push)
-        maybeOrigPos = TM.topicPos id (TM.firstId boxPath) present
+        maybeOrigPos = TM.topicPos id (Box.firstId boxPath) present
         dragState =
           case maybeOrigPos of
             Just origPos -> Drag dragMode id boxPath origPos pos Nothing
@@ -140,7 +141,7 @@ performDrag pos model =
   case model.mouse.dragState of
     Drag dragMode id boxPath origPos lastPos target ->
       let
-        boxId = TM.firstId boxPath
+        boxId = Box.firstId boxPath
         newModel =
           case dragMode of
             DragTopic -> TM.updateTopicPos id boxId
@@ -166,10 +167,10 @@ mouseUp model =
       case model.mouse.dragState of
         Drag DragTopic id boxPath origPos _ (Just (targetId, targetPath)) ->
           let
-            _ = U.info "mouseUp" ("dropped " ++ fromInt id ++ " (box " ++ TM.fromPath boxPath
-              ++ ") on " ++ fromInt targetId ++ " (box " ++ TM.fromPath targetPath ++ ") --> "
+            _ = U.info "mouseUp" ("dropped " ++ fromInt id ++ " (box " ++ Box.fromPath boxPath
+              ++ ") on " ++ fromInt targetId ++ " (box " ++ Box.fromPath targetPath ++ ") --> "
               ++ if not droppedOnSourceBox then "move topic" else "abort")
-            boxId = TM.firstId boxPath
+            boxId = Box.firstId boxPath
             -- Can this actually happen? Possibly an edge case when rendering lags behind mouse
             -- move, so that mouse leaves topic and enters box (background). FIXME: store model
             droppedOnSourceBox = boxId == targetId
@@ -185,11 +186,11 @@ mouseUp model =
           U.command <| TopicDragged
         Drag DraftAssoc id boxPath _ _ (Just (targetId, targetPath)) ->
           let
-            _ = U.info "mouseUp" ("assoc drawn from " ++ fromInt id ++ " (box " ++ TM.fromPath
-              boxPath ++ ") to " ++ fromInt targetId ++ " (box " ++ TM.fromPath targetPath
+            _ = U.info "mouseUp" ("assoc drawn from " ++ fromInt id ++ " (box " ++ Box.fromPath
+              boxPath ++ ") to " ++ fromInt targetId ++ " (box " ++ Box.fromPath targetPath
               ++ ") --> " ++ if isSameBox then "create assoc" else "abort")
-            boxId = TM.firstId boxPath
-            isSameBox = boxId == TM.firstId targetPath
+            boxId = Box.firstId boxPath
+            isSameBox = boxId == Box.firstId targetPath
           in
           case isSameBox of
             True -> U.command <| AddAssoc id targetId boxId

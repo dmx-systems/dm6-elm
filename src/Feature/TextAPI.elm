@@ -1,6 +1,7 @@
 port module Feature.TextAPI exposing (viewInput, viewTextarea, enterEdit, leaveEdit, isEdit,
   markdown, openImageFilePicker, update, sub)
 
+import Box
 import Config as C
 import Feature.Text as Text exposing (EditState(..))
 import Item
@@ -50,7 +51,7 @@ sub =
 viewInput : TopicInfo -> BoxPath -> Attrs Msg -> Html Msg
 viewInput topic boxPath style =
   input
-    ( [ id <| TM.elemId "input" topic.id boxPath
+    ( [ id <| Box.elemId "input" topic.id boxPath
       , value topic.text
       , placeholder C.initBoxText
       , onInput (Text << Text.OnTextInput)
@@ -65,7 +66,7 @@ viewInput topic boxPath style =
 viewTextarea : TopicInfo -> BoxPath -> Attrs Msg -> Html Msg
 viewTextarea topic boxPath style =
   textarea
-    ( [ id <| TM.elemId "input" topic.id boxPath
+    ( [ id <| Box.elemId "input" topic.id boxPath
       , value topic.text
       , placeholder C.initTopicText
       , onInput (Text << Text.OnTextareaInput)
@@ -105,7 +106,7 @@ enterEdit topicId boxPath model =
     newModel =
       model
       |> setEditState (Edit topicId boxPath)
-      |> switchTopicDisplay topicId (TM.firstId boxPath)
+      |> switchTopicDisplay topicId (Box.firstId boxPath)
       |> Size.auto
   in
   (newModel, focus newModel)
@@ -116,7 +117,7 @@ leaveEdit model =
   case model.text.edit of
     Edit topicId boxPath ->
       let
-        elemId = TM.elemId "topic" topicId boxPath
+        elemId = Box.elemId "topic" topicId boxPath
       in
       ( model
         |> setEditState NoEdit
@@ -181,7 +182,7 @@ focus model =
   let
     elemId =
       case model.text.edit of
-        Edit id boxPath -> TM.elemId "input" id boxPath
+        Edit id boxPath -> Box.elemId "input" id boxPath
         NoEdit -> U.logError "focus" "called when text.edit is NoEdit" ""
   in
   Dom.focus elemId |> Task.attempt
