@@ -2,7 +2,7 @@ module Box exposing (addBox, deleteItem, mapTitle, isFullscreen, elemId, firstId
 
 import Item
 import Model exposing (Model)
-import ModelParts exposing (Id, ItemInfo(..), Icon, Box, BoxId, BoxPath)
+import ModelParts exposing (..)
 import Utils as U
 
 import Dict
@@ -15,16 +15,26 @@ addBox : String -> Maybe Icon -> Model -> (Model, BoxId)
 addBox text icon model =
   let
     (newModel, topicId) = Item.addTopic text icon model
-    -- TODO: init renderer-specific data: (Rectangle 0 0 0 0) (Point 0 0) Dict.empty
+    setId = newModel.nextId
+    box = Box topicId setId
+    set = ItemSet setId []
   in
-  ( newModel |> addBox_ topicId
+  ( newModel
+      |> addBox_ box
+      |> addItemSet set
+      |> Item.nextId
   , topicId
   )
 
 
-addBox_ : BoxId -> Model -> Model
-addBox_ boxId model =
-  { model | boxes = model.boxes |> Dict.insert boxId (Box boxId) }
+addBox_ : Box -> Model -> Model
+addBox_ box ({boxes} as model) =
+  { model | boxes = boxes |> Dict.insert box.id box }
+
+
+addItemSet : ItemSet -> Model -> Model
+addItemSet set ({itemSets} as model) =
+  { model | itemSets = itemSets |> Dict.insert set.id set }
 
 
 -- Delete Item

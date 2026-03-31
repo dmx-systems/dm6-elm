@@ -98,10 +98,16 @@ addTopic text icon model =
     topic = TopicInfo id icon text <| TextSize C.topicDetailSize C.topicDetailSize
     item = Item id (Topic topic) Set.empty
   in
-  ( { model | items = model.items |> Dict.insert id item }
-    |> nextId
+  ( model
+      |> addTopic_ item
+      |> nextId
   , id
   )
+
+
+addTopic_ : Item -> Model -> Model
+addTopic_ item ({items} as model) =
+  { model | items = items |> Dict.insert item.id item }
 
 
 addAssoc : AssocType -> Id -> Id -> Model -> (Model, Id)

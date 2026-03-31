@@ -1,7 +1,7 @@
 module ModelParts exposing (Id, Item, Items, ItemInfo(..), AssocIds, TopicInfo, Icon, TextSize,
-  Size, SizeField(..), Point, Rectangle, AssocInfo, AssocType(..), ItemSets, Box, Boxes, BoxId,
-  BoxPath, homeBoxId, ImageId, Attrs, PointerType, encodeItem, encodeItemSet, encodeBox,
-  itemDecoder, itemSetDecoder, boxDecoder, toDictDecoder)
+  Size, SizeField(..), Point, Rectangle, AssocInfo, AssocType(..), ItemSet, ItemSets, Box,
+  Boxes, BoxId, BoxPath, homeBoxId, ImageId, Attrs, PointerType, encodeItem, encodeItemSet,
+  encodeBox, itemDecoder, itemSetDecoder, boxDecoder, toDictDecoder)
 
 import Dict exposing (Dict)
 import Html exposing (Attribute)
@@ -122,7 +122,7 @@ type alias Boxes = Dict BoxId Box
 
 type alias Box =
   { id : BoxId
-  -- TODO: add itemSetId
+  , itemSetId : Id
   -- TODO: add "renderer"
   }
 
@@ -206,7 +206,7 @@ encodeBox : Box -> E.Value
 encodeBox box =
   E.object
     [ ("id", E.int box.id)
-    -- TODO: itemSetId
+    , ("itemSetId", E.int box.itemSetId)
     -- TODO: "renderer"
     ]
 
@@ -282,9 +282,9 @@ itemSetDecoder =
 
 boxDecoder : D.Decoder Box
 boxDecoder =
-  D.map Box
+  D.map2 Box
     (D.field "id" D.int)
-    -- TODO: itemSetId
+    (D.field "itemSetId" D.int)
     -- TODO: "renderer"
 
 
