@@ -1,6 +1,6 @@
 module ModelParts exposing (Id, Item, Items, ItemInfo(..), AssocIds, TopicInfo, Icon, TextSize,
-  Size, SizeField(..), Point, Rectangle, AssocInfo, AssocType(..), ItemSet, ItemSets, Box,
-  Boxes, BoxId, BoxPath, homeBoxId, ImageId, Attrs, PointerType, encodeItem, encodeItemSet,
+  Size, SizeField(..), Point, Rectangle, AssocInfo, AssocType(..), ItemSet, ItemSets, SetItem,
+  Box, Boxes, BoxId, BoxPath, homeBoxId, ImageId, Attrs, PointerType, encodeItem, encodeItemSet,
   encodeBox, itemDecoder, itemSetDecoder, boxDecoder, toDictDecoder)
 
 import Dict exposing (Dict)
@@ -107,6 +107,7 @@ type alias ItemSet =
 
 type alias SetItem =
   { id : Id -- item ID
+  , boxAssocId : Id -- the Hierarchy association which connects the item with the box
   -- TODO: add "dateAdded"
   }
 
@@ -274,8 +275,9 @@ itemSetDecoder =
   D.map2 ItemSet
     (D.field "id" D.int)
     (D.field "items" <| D.list
-      (D.map SetItem
+      (D.map2 SetItem
         (D.field "id" D.int)
+        (D.field "boxAssocId" D.int)
       )
     )
 

@@ -482,7 +482,6 @@ store undoModel =
   ( undoModel, undoModel.present |> S.storeCmd )
 
 
-
 -- Item Tools
 
 edit : Model -> (Model, Cmd Msg)

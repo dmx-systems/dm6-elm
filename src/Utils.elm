@@ -118,6 +118,11 @@ illegalItemId funcName id val =
   illegalId funcName "Item" id val
 
 
+illegalItemSetId : String -> Id -> a -> a
+illegalItemSetId funcName id val =
+  illegalId funcName "ItemSet" id val
+
+
 illegalId : String -> String -> Id -> a -> a
 illegalId funcName item id val =
   logError funcName (fromInt id ++ " is an illegal " ++ item ++ " ID") val

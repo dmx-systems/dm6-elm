@@ -37,7 +37,7 @@ topicsToRender box model =
                   <| effectiveDisplayMode topicId box.id model
                   <| TM.initTopicProps topicId box.id model
             in
-            [ MapItem topicId -1 Removed props ] -- TODO: explain -1 Removed
+            [ MapItem topicId Removed props ] -- TODO: explain Removed
           else
             []
         Nothing -> []

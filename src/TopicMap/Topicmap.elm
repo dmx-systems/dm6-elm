@@ -236,12 +236,10 @@ It's a generic operation: works for both, topics and associations.
 addItem : Id -> ItemProps -> BoxId -> Model -> Model
 addItem itemId props mapId model =
   let
-    ( newModel, boxAssocId ) = Item.addAssoc Hierarchy mapId itemId model
-    boxItem = MapItem itemId boxAssocId (Visible Unpinned) props
-    _ = U.info "addItem"
-      { itemId = itemId, boxAssocId = boxAssocId, props = props, mapId = mapId}
+    boxItem = MapItem itemId (Visible Unpinned) props
+    _ = U.info "addItem" { itemId = itemId, props = props, mapId = mapId}
   in
-  newModel |> update mapId
+  model |> update mapId
     (\box -> { box | items = box.items |> Dict.insert itemId boxItem })
 
 

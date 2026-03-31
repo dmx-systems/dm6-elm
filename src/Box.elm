@@ -11,6 +11,49 @@ import String exposing (fromInt)
 
 
 
+{-| Logs an error if box does not exist. -}
+byIdOrLog : BoxId -> Model -> Maybe Box
+byIdOrLog boxId model =
+  case byId boxId model of
+    Just box -> Just box
+    Nothing -> U.illegalBoxId "byIdOrLog" boxId Nothing
+
+
+byId : BoxId -> Model -> Maybe Box
+byId boxId model =
+  model.boxes |> Dict.get boxId
+
+
+-- Add item to box
+
+addItem : Id -> BoxId -> Model -> Model
+addItem itemId boxId model =
+  case byIdOrLog boxId model of
+    Just box ->
+      let
+        (newModel, boxAssocId) = Item.addAssoc Hierarchy boxId itemId model
+      in
+      { newModel | itemSets = newModel.itemSets |> Dict.update box.itemSetId
+          (\maybeItemSet ->
+            case maybeItemSet of
+              Just itemSet -> Just
+                { itemSet | items = SetItem itemId boxAssocId :: itemSet.items }
+              Nothing -> U.illegalItemSetId "itemSet" box.itemSetId Nothing
+          )
+      }
+    Nothing -> model
+
+
+-- Not used
+itemSetById : Id -> Model -> Maybe ItemSet
+itemSetById setId model =
+  case model.itemSets |> Dict.get setId of
+    Just itemSet -> Just itemSet
+    Nothing -> U.illegalItemSetId "itemSet" setId Nothing
+
+
+-- Create box
+
 addBox : String -> Maybe Icon -> Model -> (Model, BoxId)
 addBox text icon model =
   let
@@ -37,7 +80,7 @@ addItemSet set ({itemSets} as model) =
   { model | itemSets = itemSets |> Dict.insert set.id set }
 
 
--- Delete Item
+-- Delete item
 
 {-| Deletes an item, along its associations, and removes them from all boxes.
 Logs an error if no such item exists.

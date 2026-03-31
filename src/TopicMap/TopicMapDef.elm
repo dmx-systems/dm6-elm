@@ -33,7 +33,6 @@ type alias MapItems = Dict Id MapItem
 
 type alias MapItem =
   { id : Id
-  , boxAssocId : Id
   , visibility : Visibility
   , props : ItemProps
   }
@@ -115,7 +114,6 @@ encodeMapItem : MapItem -> E.Value
 encodeMapItem item =
   E.object
     [ ("id", E.int item.id)
-    , ("boxAssocId", E.int item.boxAssocId)
     , ("visibility", encodeVisibility item.visibility)
     , case item.props of
         TopicP topicProps ->
@@ -182,9 +180,8 @@ topicMapDecoder =
 
 mapItemDecoder : D.Decoder MapItem
 mapItemDecoder =
-  D.map4 MapItem
+  D.map3 MapItem
     (D.field "id" D.int)
-    (D.field "boxAssocId" D.int)
     (D.field "visibility" D.string |> D.andThen visibilityDecoder)
     (D.oneOf
       [ D.field "topicProps" <| D.map TopicP <| D.map2 TopicProps
