@@ -1,4 +1,5 @@
-module Box exposing (addBox, deleteItem, mapTitle, isFullscreen, elemId, firstId, fromPath)
+module Box exposing (addBox, setDisplayMode, updateDisplayMode, deleteItem, mapTitle,
+  isFullscreen, displayMode, elemId, firstId, fromPath)
 
 import Item
 import Model exposing (Model)
@@ -12,23 +13,25 @@ import String exposing (fromInt)
 
 
 {-| Logs an error if box does not exist. -}
-byIdOrLog : BoxId -> Model -> Maybe Box
-byIdOrLog boxId model =
-  case byId boxId model of
-    Just box -> Just box
-    Nothing -> U.illegalBoxId "byIdOrLog" boxId Nothing
-
-
 byId : BoxId -> Model -> Maybe Box
 byId boxId model =
-  model.boxes |> Dict.get boxId
+  case model.boxes |> Dict.get boxId of
+    Just box -> Just box
+    Nothing -> U.illegalBoxId "byId" boxId Nothing
+
+
+itemProps : Id -> Box -> Model -> Maybe BoxItem
+itemProps itemId box model =
+  case box.items |> Dict.get itemId of
+    Just props -> Just props
+    Nothing -> U.illegalItemId "itemProps" itemId Nothing
 
 
 -- Add item to box
 
 addItem : Id -> BoxId -> Model -> Model
 addItem itemId boxId model =
-  case byIdOrLog boxId model of
+  case byId boxId model of
     Just box ->
       let
         (newModel, boxAssocId) = Item.addAssoc Hierarchy boxId itemId model
@@ -42,6 +45,41 @@ addItem itemId boxId model =
           )
       }
     Nothing -> model
+
+
+-- Display Mode
+
+displayMode : Id -> BoxId -> Model -> Maybe DisplayMode
+displayMode topicId boxId model =
+  case byId boxId model |> Maybe.andThen (\box -> itemProps topicId box model) of
+    Just props -> Just props.displayMode
+    Nothing -> U.fail "displayMode" {topicId = topicId, boxId = boxId} Nothing
+
+
+{-| Logs an error if box does not exist, or if topic is not in box -}
+setDisplayMode : Id -> BoxId -> DisplayMode -> Model -> Model
+setDisplayMode topicId boxId display model =
+  model
+    |> updateDisplayMode topicId boxId (\_ -> display)
+
+
+updateDisplayMode : Id -> BoxId -> (DisplayMode -> DisplayMode) -> Model -> Model
+updateDisplayMode topicId boxId transform model =
+  { model | boxes = model.boxes |> Dict.update boxId
+    (\maybeBox ->
+      case maybeBox of
+        Just box -> Just
+          { box | items = box.items |> Dict.update topicId
+            (\maybeItem ->
+              case maybeItem of
+                Just item -> Just
+                  { item | displayMode = transform item.displayMode }
+                Nothing -> Nothing
+            )
+          }
+        Nothing -> Nothing
+    )
+  }
 
 
 -- Not used
@@ -59,7 +97,7 @@ addBox text icon model =
   let
     (newModel, topicId) = Item.addTopic text icon model
     setId = newModel.nextId
-    box = Box topicId setId
+    box = Box topicId setId Dict.empty
     set = ItemSet setId []
   in
   ( newModel

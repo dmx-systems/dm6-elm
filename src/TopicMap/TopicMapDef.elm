@@ -54,7 +54,7 @@ type ItemProps
 
 type alias TopicProps =
   { pos : Point
-  , displayMode : DisplayMode -- serialized as "display", TODO: rename to "display"?
+  , displayMode : DisplayMode -- transient render state? ### TODO: drop?
   }
 
 
@@ -107,7 +107,7 @@ encodeMapItem item =
                 , ("y", E.int topicProps.pos.y)
                 ]
               )
-            , ("display", encodeDisplayName topicProps.displayMode)
+            , ("display", encodeDisplayMode topicProps.displayMode)
             ]
           )
         AssocP assosProps ->
@@ -124,17 +124,6 @@ encodeVisibility visibility =
       Visible Pinned -> "Pinned"
       Visible Unpinned -> "Visible"
       Removed -> "Removed"
-
-
-encodeDisplayName : DisplayMode -> E.Value
-encodeDisplayName displayMode =
-  E.string <|
-    case displayMode of
-      TopicD LabelOnly -> "LabelOnly"
-      TopicD Detail -> "Detail"
-      BoxD BlackBox -> "BlackBox"
-      BoxD WhiteBox -> "WhiteBox"
-      BoxD Unboxed -> "Unboxed"
 
 
 -- Decode

@@ -322,7 +322,7 @@ viewCaret : Id -> BoxId -> Model -> Html Msg
 viewCaret topicId boxId model =
   let
     icon =
-      case TM.displayMode topicId boxId model of
+      case Box.displayMode topicId boxId model of
         Just (TopicD LabelOnly) -> "chevron-right"
         Just (TopicD Detail) -> "chevron-down"
         Just (BoxD BlackBox) -> "chevron-right"
@@ -464,7 +464,7 @@ addBox model =
 landTopic : Id -> DisplayMode -> Model -> (Model, Cmd Msg)
 landTopic topicId displayMode model =
   let
-    boxPath = TM.landingBoxPath model
+    boxPath = SelAPI.landingBoxPath model
     boxId = Box.firstId boxPath
     props = TopicP <| TopicProps
       ( TM.initTopicPos boxId model )
@@ -512,7 +512,7 @@ remove model =
 unbox : BoxId -> BoxId -> Model -> Model
 unbox boxId targetBoxId model =
   Transfer.unboxContent boxId targetBoxId model
-    |> TM.setDisplayMode boxId targetBoxId (BoxD Unboxed)
+    |> Box.setDisplayMode boxId targetBoxId (BoxD Unboxed)
     |> Size.auto
 
 
@@ -520,7 +520,7 @@ toggleDisplay : Id -> BoxId -> Model -> Model
 toggleDisplay topicId boxId model =
   let
     (newModel, newDisplayMode) =
-      case TM.displayMode topicId boxId model of
+      case Box.displayMode topicId boxId model of
         Just (TopicD LabelOnly) -> (model, Just <| TopicD Detail)
         Just (TopicD Detail) -> (model, Just <| TopicD LabelOnly)
         Just (BoxD BlackBox) -> (model, Just <| BoxD WhiteBox)
@@ -534,6 +534,6 @@ toggleDisplay topicId boxId model =
   case (newModel, newDisplayMode) of
     (newModel_, Just displayMode) ->
       newModel_
-        |> TM.setDisplayMode topicId boxId displayMode
+        |> Box.setDisplayMode topicId boxId displayMode
         |> Size.auto
     _ -> model

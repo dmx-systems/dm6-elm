@@ -64,7 +64,7 @@ landingBoxPath model =
       let
         mapId = Box.firstId boxPath
       in
-      case displayMode id mapId model of -- ### FIXME: move DisplayMode model to ModelParts
+      case Box.displayMode id mapId model of
         Just (BoxD WhiteBox) -> id :: boxPath
         _ -> [ model.boxId ]
     Nothing -> [ model.boxId ]

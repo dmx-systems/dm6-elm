@@ -104,9 +104,9 @@ enterEdit topicId boxPath model =
   let
     newModel =
       model
-      |> setEditState (Edit topicId boxPath)
-      |> switchTopicDisplay topicId (Box.firstId boxPath)
-      |> Size.auto
+        |> setEditState (Edit topicId boxPath)
+        |> switchTopicDisplay topicId (Box.firstId boxPath)
+        |> Size.auto
   in
   (newModel, focus newModel)
 
@@ -119,8 +119,8 @@ leaveEdit model =
         elemId = Box.elemId "topic" topicId boxPath
       in
       ( model
-        |> setEditState NoEdit
-        |> Size.auto
+          |> setEditState NoEdit
+          |> Size.auto
       , measureElement elemId topicId View
       )
     NoEdit -> (model, Cmd.none)
@@ -129,12 +129,12 @@ leaveEdit model =
 switchTopicDisplay : Id -> BoxId -> Model -> Model
 switchTopicDisplay topicId boxId model =
   model
-  |> TM.updateDisplayMode topicId boxId
-    (\displayMode ->
-      case displayMode of
-        TopicD _ -> TopicD Detail
-        _ -> displayMode
-    )
+    |> Box.updateDisplayMode topicId boxId
+      (\displayMode ->
+        case displayMode of
+          TopicD _ -> TopicD Detail
+          _ -> displayMode
+      )
 
 
 onTextInput : String -> Model -> Model

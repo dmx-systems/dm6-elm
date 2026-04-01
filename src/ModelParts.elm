@@ -1,8 +1,8 @@
 module ModelParts exposing (Id, Item, Items, ItemInfo(..), AssocIds, TopicInfo, Icon, TextSize,
   Size, SizeField(..), Point, Rectangle, AssocInfo, AssocType(..), ItemSet, ItemSets, SetItem,
-  Box, Boxes, BoxId, BoxPath, homeBoxId, DisplayMode(..), TopicDisplay(..), BoxDisplay(..),
-  ImageId, Attrs, PointerType, encodeItem, encodeItemSet, encodeBox, itemDecoder,
-  itemSetDecoder, boxDecoder, toDictDecoder)
+  Box, Boxes, BoxId, BoxPath, homeBoxId, BoxItem, DisplayMode(..), TopicDisplay(..),
+  BoxDisplay(..), ImageId, Attrs, PointerType, encodeItem, encodeItemSet, encodeBox,
+  encodeDisplayMode, itemDecoder, itemSetDecoder, boxDecoder, toDictDecoder)
 
 import Dict exposing (Dict)
 import Html exposing (Attribute)
@@ -125,7 +125,17 @@ type alias Boxes = Dict BoxId Box
 type alias Box =
   { id : BoxId
   , itemSetId : Id
+  , items : BoxItems
   -- TODO: add "renderer"
+  }
+
+
+type alias BoxItems = Dict Id BoxItem
+
+
+type alias BoxItem =
+  { id : Id
+  , displayMode : DisplayMode -- serialized as "display", TODO: rename to "display"?
   }
 
 
@@ -230,8 +240,28 @@ encodeBox box =
   E.object
     [ ("id", E.int box.id)
     , ("itemSetId", E.int box.itemSetId)
+    , ("items", E.list encodeBoxItem <| Dict.values box.items)
     -- TODO: "renderer"
     ]
+
+
+encodeBoxItem : BoxItem -> E.Value
+encodeBoxItem boxItem =
+  E.object
+    [ ("id", E.int boxItem.id)
+    , ("display", encodeDisplayMode boxItem.displayMode)
+    ]
+
+
+encodeDisplayMode : DisplayMode -> E.Value
+encodeDisplayMode displayMode =
+  E.string <|
+    case displayMode of
+      TopicD LabelOnly -> "LabelOnly"
+      TopicD Detail -> "Detail"
+      BoxD BlackBox -> "BlackBox"
+      BoxD WhiteBox -> "WhiteBox"
+      BoxD Unboxed -> "Unboxed"
 
 
 -- Decode
@@ -306,10 +336,31 @@ itemSetDecoder =
 
 boxDecoder : D.Decoder Box
 boxDecoder =
-  D.map2 Box
+  D.map3 Box
     (D.field "id" D.int)
     (D.field "itemSetId" D.int)
+    (D.field "items" (boxItemDecoder |> toDictDecoder))
     -- TODO: "renderer"
+
+
+boxItemDecoder : D.Decoder BoxItem
+boxItemDecoder =
+  D.map2 BoxItem
+    (D.field "id" D.int)
+    (D.field "display" D.string |> D.andThen displayModeDecoder)
+
+
+-- TODO: eliminate D.andThen
+-- TODO: remove from TopicMapDef
+displayModeDecoder : String -> D.Decoder DisplayMode
+displayModeDecoder str =
+  case str of
+    "LabelOnly" -> D.succeed (TopicD LabelOnly)
+    "Detail" -> D.succeed (TopicD Detail)
+    "BlackBox" -> D.succeed (BoxD BlackBox)
+    "WhiteBox" -> D.succeed (BoxD WhiteBox)
+    "Unboxed" -> D.succeed (BoxD Unboxed)
+    _ -> D.fail <| "\"" ++ str ++ "\" is an invalid DisplayMode"
 
 
 toDictDecoder : D.Decoder (IdRecord r) -> D.Decoder (Dict Id (IdRecord r))

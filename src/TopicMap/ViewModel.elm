@@ -13,17 +13,17 @@ import Dict
 
 
 
-{- Projects box data and search state ("limbo") into a map render model -}
+{- Projects box data and search state ("limbo") into a TopicMap render model -}
 topicsToRender : TopicMap -> Model -> List MapItem
 topicsToRender box model =
   let
     topics = itemsToRender box TM.isTopic model |> List.map
-      (\boxItem ->
-        { boxItem
+      (\mapItem ->
+        { mapItem
         | props =
-          case boxItem.props of
-            TopicP props -> TopicP <| effectiveDisplayMode boxItem.id box.id model props
-            AssocP _ -> U.logError "topicsToRender" "Found assoc in a topic list" boxItem.props
+          case mapItem.props of
+            TopicP props -> TopicP <| effectiveDisplayMode mapItem.id box.id model props
+            AssocP _ -> U.logError "topicsToRender" "Found assoc in a topic list" mapItem.props
         }
       )
     limboTopic =
@@ -45,7 +45,7 @@ topicsToRender box model =
   topics ++ limboTopic
 
 
-{- Projects box data and search state ("limbo") into a map render model -}
+{- Projects box data and search state ("limbo") into a TopicMap render model -}
 assocsToRender : TopicMap -> Model -> List MapItem
 assocsToRender box model =
   itemsToRender box TM.isAssoc model

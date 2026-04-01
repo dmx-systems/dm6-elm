@@ -1,9 +1,9 @@
 module TopicMap.TopicMap exposing (fullscreen, byId, byIdOrLog, update, updateRect,
-  updateScrollPos, visibleTopics, topicPos, setTopicPos, updateTopicPos, displayMode,
-  setDisplayMode, updateDisplayMode, topicProps, initTopicProps, initTopicPos, assocGeometry,
+  updateScrollPos, visibleTopics, topicPos, setTopicPos, updateTopicPos,
+  topicProps, initTopicProps, initTopicPos, assocGeometry,
   hasItem, hasDeepItem, addTopicMap, addItem, revealItem, removeItem, removeItem_,
-  revelationBoxId, revelationBoxPath, landingTarget, landingBoxPath, isEmpty, isUnboxed,
-  isTopic, isAssoc, isVisible, isPinned)
+  revelationBoxId, revelationBoxPath, landingTarget, isEmpty, isUnboxed, isTopic, isAssoc,
+  isVisible, isPinned)
 
 import Box
 import Config as C
@@ -96,30 +96,6 @@ updateTopicPos topicId mapId transform model =
   model
     |> updateTopicProps_ topicId mapId
       (\props -> { props | pos = transform props.pos })
-
-
-{-| Logs an error if box does not exist, or topic is not in box, or ID refers not a topic (but
-an association).
--}
-displayMode : Id -> BoxId -> Model -> Maybe DisplayMode
-displayMode topicId mapId model =
-  case topicProps topicId mapId model of
-    Just props -> Just props.displayMode
-    Nothing -> U.fail "displayMode" {topicId = topicId, mapId = mapId} Nothing
-
-
-{-| Logs an error if box does not exist, or if topic is not in box -}
-setDisplayMode : Id -> BoxId -> DisplayMode -> Model -> Model
-setDisplayMode topicId mapId display model =
-  model
-    |> updateDisplayMode topicId mapId (\_ -> display)
-
-
-updateDisplayMode : Id -> BoxId -> (DisplayMode -> DisplayMode) -> Model -> Model
-updateDisplayMode topicId mapId transform model =
-  model
-    |> updateTopicProps_ topicId mapId
-      (\props -> { props | displayMode = transform props.displayMode })
 
 
 {-| Logs an error if box does not exist, or topic is not in box, or ID refers not a topic (but
@@ -373,7 +349,7 @@ revelationBoxPath : Model -> Maybe BoxPath
 revelationBoxPath model =
   case model.search.result of
     Topics _ _ ->
-      Just <| landingBoxPath model
+      Just <| SelAPI.landingBoxPath model
     RelTopics _ _ ->
       case SelAPI.single model of
         Just (_, boxPath) -> Just boxPath
@@ -384,7 +360,7 @@ revelationBoxPath model =
 {- The landing box as a selection target. For a fullscreen box Nothing is returned. -}
 landingTarget : Model -> Maybe (BoxId, BoxPath)
 landingTarget model =
-  case landingBoxPath model of
+  case SelAPI.landingBoxPath model of
     [] -> Nothing
     [ boxId ] -> Nothing -- The fullscreen box is never selected
     boxId :: boxPath -> Just (boxId, boxPath)
@@ -403,7 +379,7 @@ an association).
 -}
 isUnboxed : Id -> BoxId -> Model -> Bool
 isUnboxed topicId boxId model =
-  displayMode topicId boxId model == Just (BoxD Unboxed)
+  Box.displayMode topicId boxId model == Just (BoxD Unboxed)
 
 
 {-| useful as a filter predicate -}

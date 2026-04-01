@@ -45,7 +45,7 @@ init =
   in
   { items = Dict.singleton 0 <| Item 0 (Topic homeTopic) Set.empty
   , itemSets = Dict.singleton 1 <| ItemSet 1 []
-  , boxes = Dict.singleton homeBoxId <| Box homeBoxId 1
+  , boxes = Dict.singleton homeBoxId <| Box homeBoxId 1 Dict.empty
   , boxId = homeBoxId
   , nextId = 2
   , imageCache = Dict.empty -- TODO: move to Text module, but should survive a map switch

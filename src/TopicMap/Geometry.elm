@@ -48,7 +48,7 @@ searchInItem pos itemId boxPath filterTopicId model =
             isHeaderHovered = isTopicHeaderHovered pos box.id parentBoxId
             isRectHovered = isBoxRectHovered pos box parentBoxId
           in
-          case TM.displayMode itemId parentBoxId model of
+          case Box.displayMode itemId parentBoxId model of
             Just (BoxD BlackBox) ->
               isHeaderHovered model |> maybeThisItem
             Just (BoxD WhiteBox) ->
@@ -66,7 +66,7 @@ searchInItem pos itemId boxPath filterTopicId model =
         isHeaderHovered = isTopicHeaderHovered pos itemId parentBoxId
         isDetailHovered = isTopicDetailHovered pos itemId parentBoxId
       in
-      case TM.displayMode itemId parentBoxId model of
+      case Box.displayMode itemId parentBoxId model of
         Just (TopicD LabelOnly) ->
           isHeaderHovered model |> maybeThisItem
         Just (TopicD Detail) ->
