@@ -4,10 +4,9 @@ import Box
 import Config as C
 import Item
 import Model exposing (Model)
-import ModelParts exposing (Id, BoxId, BoxPath, Point)
+import ModelParts exposing (..)
 import TopicMap.TopicMap as TM
-import TopicMap.TopicMapDef exposing (TopicMap, MapItem, DisplayMode(..), TopicDisplay(..),
-  BoxDisplay(..))
+import TopicMap.TopicMapDef exposing (TopicMap, MapItem)
 import Utils as U
 
 

@@ -8,8 +8,7 @@ import Item
 import Model exposing (Model)
 import ModelParts exposing (..)
 import TopicMap.TopicMap as TM
-import TopicMap.TopicMapDef exposing (MapItem, ItemProps(..), DisplayMode(..), TopicDisplay(..),
-  BoxDisplay(..))
+import TopicMap.TopicMapDef exposing (MapItem, ItemProps(..))
 import TopicMap.ViewModel as VM
 import Utils as U
 

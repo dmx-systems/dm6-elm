@@ -1,7 +1,8 @@
 module ModelParts exposing (Id, Item, Items, ItemInfo(..), AssocIds, TopicInfo, Icon, TextSize,
   Size, SizeField(..), Point, Rectangle, AssocInfo, AssocType(..), ItemSet, ItemSets, SetItem,
-  Box, Boxes, BoxId, BoxPath, homeBoxId, ImageId, Attrs, PointerType, encodeItem, encodeItemSet,
-  encodeBox, itemDecoder, itemSetDecoder, boxDecoder, toDictDecoder)
+  Box, Boxes, BoxId, BoxPath, homeBoxId, DisplayMode(..), TopicDisplay(..), BoxDisplay(..),
+  ImageId, Attrs, PointerType, encodeItem, encodeItemSet, encodeBox, itemDecoder,
+  itemSetDecoder, boxDecoder, toDictDecoder)
 
 import Dict exposing (Dict)
 import Html exposing (Attribute)
@@ -132,6 +133,25 @@ homeBoxId : BoxId
 homeBoxId = 0
 
 
+-- Display Mode
+
+-- TODO: unify TopicDisplay/BoxDisplay -> Expanded/Minimized
+type DisplayMode
+  = TopicD TopicDisplay
+  | BoxD BoxDisplay
+
+
+type TopicDisplay
+  = LabelOnly
+  | Detail
+
+
+type BoxDisplay
+  = BlackBox
+  | WhiteBox
+  | Unboxed -- TODO: drop it, introduce Tree renderer instead
+
+
 
 -- JSON
 
@@ -193,13 +213,15 @@ encodeItemSet : ItemSet -> E.Value
 encodeItemSet itemSet =
   E.object
     [ ("id", E.int itemSet.id)
-    , ("items",
-        E.list
-          (\setItem ->
-              E.object [("id", E.int setItem.id)]
-          )
-          itemSet.items
-      )
+    , ("items", E.list encodeSetItem itemSet.items)
+    ]
+
+
+encodeSetItem : SetItem -> E.Value
+encodeSetItem setItem =
+  E.object
+    [ ("id", E.int setItem.id)
+    , ("boxAssocId", E.int setItem.boxAssocId)
     ]
 
 

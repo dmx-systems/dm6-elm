@@ -13,7 +13,7 @@ import Item
 import Model exposing (Model)
 import ModelParts exposing (..)
 import TopicMap.TopicMapDef exposing (TopicMap, MapItems, MapItem, Visibility(..), Pinned(..),
-  ItemProps(..), TopicProps, DisplayMode(..), TopicDisplay(..), BoxDisplay(..))
+  ItemProps(..), TopicProps)
 import Utils as U
 
 import Dict
@@ -388,21 +388,6 @@ landingTarget model =
     [] -> Nothing
     [ boxId ] -> Nothing -- The fullscreen box is never selected
     boxId :: boxPath -> Just (boxId, boxPath)
-
-
-{- The box where created things and search results land, entire box path, never empty.
-Can be the fullsreen box or a nested box. -}
-landingBoxPath : Model -> BoxPath
-landingBoxPath model =
-  case SelAPI.single model of
-    Just (id, boxPath) ->
-      let
-        mapId = Box.firstId boxPath
-      in
-      case displayMode id mapId model of
-        Just (BoxD WhiteBox) -> id :: boxPath
-        _ -> [ model.boxId ]
-    Nothing -> [ model.boxId ]
 
 
 {-| Logs an error if box does not exist. -}

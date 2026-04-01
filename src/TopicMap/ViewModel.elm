@@ -3,10 +3,10 @@ module TopicMap.ViewModel exposing (topicsToRender, assocsToRender, isLimboTopic
 
 import Feature.Search exposing (SearchResult(..))
 import Model exposing (Model)
-import ModelParts exposing (Id, BoxId)
+import ModelParts exposing (..)
 import TopicMap.TopicMap as TM
 import TopicMap.TopicMapDef exposing (TopicMap, MapItem, Visibility(..), ItemProps(..),
-  TopicProps, DisplayMode(..), TopicDisplay(..), BoxDisplay(..))
+  TopicProps)
 import Utils as U
 
 import Dict

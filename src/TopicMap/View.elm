@@ -13,8 +13,7 @@ import Item
 import Model exposing (Model, Msg)
 import ModelParts exposing (..)
 import TopicMap.TopicMap as TM
-import TopicMap.TopicMapDef exposing (TopicMap, ItemProps(..), TopicProps, DisplayMode(..),
-  TopicDisplay(..), BoxDisplay(..))
+import TopicMap.TopicMapDef exposing (TopicMap, ItemProps(..), TopicProps)
 import TopicMap.ViewModel as VM
 import Utils as U
 

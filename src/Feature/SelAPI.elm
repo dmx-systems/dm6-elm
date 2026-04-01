@@ -1,13 +1,12 @@
-module Feature.SelAPI exposing (select, clear, isSelected, isSelectedPath, single)
+module Feature.SelAPI exposing (select, clear, isSelected, isSelectedPath, single,
+  landingBoxPath)
 
+import Box
 import Feature.Sel exposing (Selection)
 import Model exposing (Model)
-import ModelParts exposing (Id, BoxId, BoxPath)
+import ModelParts exposing (..)
 import Utils as U
 
-
-
--- PUBLIC API
 
 
 select : Id -> BoxPath -> Model -> Model
@@ -49,10 +48,23 @@ single model =
     _ -> Nothing
 
 
-
--- PRIVATE
-
-
 setItems : Selection -> Model -> Model
 setItems items ({selection} as model) =
   { model | selection = { selection | items = items }}
+
+
+--
+
+{- The box where created things and search results land, entire box path, never empty.
+Can be the fullsreen box or a nested box. -}
+landingBoxPath : Model -> BoxPath
+landingBoxPath model =
+  case single model of
+    Just (id, boxPath) ->
+      let
+        mapId = Box.firstId boxPath
+      in
+      case displayMode id mapId model of -- ### FIXME: move DisplayMode model to ModelParts
+        Just (BoxD WhiteBox) -> id :: boxPath
+        _ -> [ model.boxId ]
+    Nothing -> [ model.boxId ]

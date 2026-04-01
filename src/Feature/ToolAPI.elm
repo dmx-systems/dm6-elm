@@ -16,8 +16,7 @@ import ModelParts exposing (..)
 import Storage as S
 import TopicMap.Size as Size
 import TopicMap.TopicMap as TM
-import TopicMap.TopicMapDef exposing (ItemProps(..), TopicProps, DisplayMode(..),
-  TopicDisplay(..), BoxDisplay(..))
+import TopicMap.TopicMapDef exposing (ItemProps(..), TopicProps)
 import TopicMap.Transfer as Transfer
 import Undo exposing (UndoModel)
 import Utils as U

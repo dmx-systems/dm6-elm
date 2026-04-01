@@ -1,8 +1,7 @@
 module TopicMap.TopicMapDef exposing (Model, TopicMap, MapItems, MapItem, Visibility(..),
-  Pinned(..), ItemProps(..), TopicProps, AssocProps, DisplayMode(..), TopicDisplay(..),
-  BoxDisplay(..), init, encode, decoder)
+  Pinned(..), ItemProps(..), TopicProps, AssocProps, init, encode, decoder)
 
-import ModelParts exposing (Id, BoxId, Point, Rectangle, homeBoxId, toDictDecoder)
+import ModelParts exposing (..)
 import Dict exposing (Dict)
 import Json.Decode as D
 import Json.Encode as E
@@ -61,22 +60,6 @@ type alias TopicProps =
 
 type alias AssocProps =
   {}
-
-
-type DisplayMode
-  = TopicD TopicDisplay
-  | BoxD BoxDisplay
-
-
-type TopicDisplay
-  = LabelOnly
-  | Detail
-
-
-type BoxDisplay
-  = BlackBox
-  | WhiteBox
-  | Unboxed
 
 
 
