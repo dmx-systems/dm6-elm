@@ -1,7 +1,7 @@
 module TopicMap.TopicMap exposing (fullscreen, byId, byIdOrLog, update, updateRect,
   updateScrollPos, visibleTopics, topicPos, setTopicPos, updateTopicPos,
   topicProps, initTopicProps, initTopicPos, assocGeometry,
-  hasItem, hasDeepItem, addTopicMap, addItem, revealItem, removeItem, removeItem_,
+  hasItem, hasDeepItem, create, addItem, revealItem, removeItem, removeItem_,
   revelationBoxId, revelationBoxPath, landingTarget, isEmpty, isUnboxed, isTopic, isAssoc,
   isVisible, isPinned)
 
@@ -36,19 +36,21 @@ byIdOrLog mapId model =
 
 byId : BoxId -> Model -> Maybe TopicMap
 byId mapId model =
-  model.topicMap |> Dict.get mapId
+  model.topicMap
+    |> Dict.get mapId
 
 
-addTopicMap : BoxId -> Model -> Model
-addTopicMap mapId model =
+create : BoxId -> Model -> Model
+create mapId model =
   let
     map = TopicMap mapId (Rectangle 0 0 0 0) (Point 0 0) Dict.empty
   in
-  model |> addTopicMap_ map
+  model
+    |> create_ map
 
 
-addTopicMap_ : TopicMap -> Model -> Model
-addTopicMap_ map ({topicMap} as model) =
+create_ : TopicMap -> Model -> Model
+create_ map ({topicMap} as model) =
   { model | topicMap = topicMap |> Dict.insert map.id map }
 
 

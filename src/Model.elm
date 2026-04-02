@@ -63,7 +63,7 @@ init =
 
 type Msg
   -- gestures detected by Mouse module
-  = AddAssoc Id Id BoxId
+  = CreateAssoc Id Id BoxId
   | MoveTopicToBox Id BoxId Point Id BoxPath Point -- start point, random point (for target)
   | TopicDragged
   | ItemClicked Id BoxPath

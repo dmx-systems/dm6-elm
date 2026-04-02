@@ -167,10 +167,10 @@ viewMapTools undoModel =
   in
   [ div
     mapToolsStyle
-    -- The add-buttons must not clear the selection but still close menus.
-    -- So we set the box where added things land as the target.
-    [ viewMapButton "Add Topic" "plus-circle" Tool.AddTopic False target
-    , viewMapButton "Add Box" "plus-square" Tool.AddBox False target
+    -- The create-buttons must not clear the selection but still close menus.
+    -- So we set the box where created things land as the target.
+    [ viewMapButton "Create Topic" "plus-circle" Tool.CreateTopic False target
+    , viewMapButton "Create Box" "plus-square" Tool.CreateBox False target
     , hGap 14
     , viewMapButton "Undo" "rotate-ccw" Tool.Undo (not <| Undo.hasPast undoModel) Nothing
     , viewMapButton "Redo" "rotate-cw" Tool.Redo (not <| Undo.hasFuture undoModel) Nothing
@@ -398,8 +398,8 @@ update msg ({present} as undoModel) =
     Tool.Import -> (present, S.importJSON ()) |> Undo.swap undoModel
     Tool.Export -> (present, S.exportJSON ()) |> Undo.swap undoModel
     -- Map Tools
-    Tool.AddTopic -> addTopic present |> S.storeWith |> Undo.push undoModel
-    Tool.AddBox -> addBox present |> S.storeWith |> Undo.push undoModel
+    Tool.CreateTopic -> createTopic present |> S.storeWith |> Undo.push undoModel
+    Tool.CreateBox -> createBox present |> S.storeWith |> Undo.push undoModel
     Tool.Undo -> undoModel |> Undo.undo |> store
     Tool.Redo -> undoModel |> Undo.redo |> store
     -- Item Tools
@@ -443,21 +443,21 @@ setLineStyle lineStyle ({tool} as model) =
 
 -- Map Tools
 
-addTopic : Model -> (Model, Cmd Msg)
-addTopic model =
+createTopic : Model -> (Model, Cmd Msg)
+createTopic model =
   let
-    (newModel, topicId) = Item.addTopic "" C.initTopicIcon model
+    (newModel, topicId) = Item.createTopic "" C.initTopicIcon model
   in
   landTopic topicId (TopicD LabelOnly) newModel
 
 
-addBox : Model -> (Model, Cmd Msg)
-addBox model =
+createBox : Model -> (Model, Cmd Msg)
+createBox model =
   let
-    (newModel, boxId) = Box.addBox "" C.initBoxIcon model
+    (newModel, boxId) = Box.create "" C.initBoxIcon model
   in
   newModel
-    |> TM.addTopicMap boxId
+    |> TM.create boxId
     |> landTopic boxId (BoxD BlackBox)
 
 

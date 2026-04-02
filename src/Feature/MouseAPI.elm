@@ -195,7 +195,7 @@ mouseUp model =
             isSameBox = boxId == Box.firstId targetPath
           in
           case isSameBox of
-            True -> U.command <| AddAssoc id targetId boxId
+            True -> U.command <| CreateAssoc id targetId boxId
             False -> Cmd.none
         Drag DraftAssoc _ _ _ _ _ ->
           let

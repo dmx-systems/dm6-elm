@@ -33,8 +33,8 @@ type Msg
   | Import
   | Export
   -- Map Tools
-  | AddTopic
-  | AddBox
+  | CreateTopic
+  | CreateBox
   | Undo
   | Redo
   -- Item Tools

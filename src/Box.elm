@@ -1,4 +1,4 @@
-module Box exposing (addBox, setDisplayMode, updateDisplayMode, deleteItem, mapTitle,
+module Box exposing (create, setDisplayMode, updateDisplayMode, deleteItem, mapTitle,
   isFullscreen, displayMode, elemId, firstId, fromPath)
 
 import Item
@@ -34,7 +34,7 @@ addItem itemId boxId model =
   case byId boxId model of
     Just box ->
       let
-        (newModel, boxAssocId) = Item.addAssoc Hierarchy boxId itemId model
+        (newModel, boxAssocId) = Item.createAssoc Hierarchy boxId itemId model
       in
       { newModel | itemSets = newModel.itemSets |> Dict.update box.itemSetId
           (\maybeItemSet ->
@@ -92,29 +92,29 @@ itemSetById setId model =
 
 -- Create box
 
-addBox : String -> Maybe Icon -> Model -> (Model, BoxId)
-addBox text icon model =
+create : String -> Maybe Icon -> Model -> (Model, BoxId)
+create text icon model =
   let
-    (newModel, topicId) = Item.addTopic text icon model
+    (newModel, topicId) = Item.createTopic text icon model
     setId = newModel.nextId
     box = Box topicId setId Dict.empty
     set = ItemSet setId []
   in
   ( newModel
-      |> addBox_ box
-      |> addItemSet set
+      |> create_ box
+      |> createItemSet set
       |> Item.nextId
   , topicId
   )
 
 
-addBox_ : Box -> Model -> Model
-addBox_ box ({boxes} as model) =
+create_ : Box -> Model -> Model
+create_ box ({boxes} as model) =
   { model | boxes = boxes |> Dict.insert box.id box }
 
 
-addItemSet : ItemSet -> Model -> Model
-addItemSet set ({itemSets} as model) =
+createItemSet : ItemSet -> Model -> Model
+createItemSet set ({itemSets} as model) =
   { model | itemSets = itemSets |> Dict.insert set.id set }
 
 

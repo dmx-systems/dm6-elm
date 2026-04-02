@@ -270,7 +270,7 @@ update msg ({present} as undoModel) =
   in
   case msg of
     -- gestures detected by Mouse module
-    AddAssoc player1 player2 boxId -> addAssoc player1 player2 boxId present |> S.store
+    CreateAssoc player1 player2 boxId -> createAssoc player1 player2 boxId present |> S.store
       |> Undo.push undoModel
     MoveTopicToBox topicId boxId origPos targetId targetPath pos -> moveTopicToBox topicId boxId
       origPos targetId targetPath pos present |> S.store |> Undo.push undoModel
@@ -291,16 +291,16 @@ update msg ({present} as undoModel) =
 
 
 -- Presumption: both players exist in same box
-addAssoc : Id -> Id -> BoxId -> Model -> Model
-addAssoc player1 player2 boxId model =
-  addAssocAndAddToBox Crosslink player1 player2 boxId model
+createAssoc : Id -> Id -> BoxId -> Model -> Model
+createAssoc player1 player2 boxId model =
+  createAssocAndAddToBox Crosslink player1 player2 boxId model
 
 
 -- Presumption: both players exist in same box
-addAssocAndAddToBox : AssocType -> Id -> Id -> BoxId -> Model -> Model
-addAssocAndAddToBox assocType player1 player2 boxId model =
+createAssocAndAddToBox : AssocType -> Id -> Id -> BoxId -> Model -> Model
+createAssocAndAddToBox assocType player1 player2 boxId model =
   let
-    (newModel, assocId) = Item.addAssoc assocType player1 player2 model
+    (newModel, assocId) = Item.createAssoc assocType player1 player2 model
     props = AssocP AssocProps
   in
   TM.addItem assocId props boxId newModel
