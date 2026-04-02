@@ -303,6 +303,8 @@ createAssocAndAddToBox assocType player1 player2 boxId model =
     (newModel, assocId) = Item.createAssoc assocType player1 player2 model
     props = AssocP AssocProps
   in
+  -- TODO: update "box" state
+  -- TODO: don't operate on "topicMap" directly
   TM.addItem assocId props boxId newModel
 
 
@@ -316,6 +318,8 @@ moveTopicToBox topicId boxId origPos targetBoxId targetPath pos model =
   case props_ of
     Just props ->
       model
+        -- TODO: update "box" state
+        -- TODO: don't operate on "topicMap" directly
         |> TM.removeItem topicId boxId
         |> TM.setTopicPos topicId boxId origPos
         |> TM.addItem topicId props targetBoxId

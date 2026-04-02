@@ -95,24 +95,6 @@ type alias Attrs msg = List (Attribute msg)
 type alias PointerType = String
 
 
--- Item Set
-
-type alias ItemSets = Dict Id ItemSet
-
-
-type alias ItemSet =
-  { id : Id -- set ID
-  , items : List SetItem
-  }
-
-
-type alias SetItem =
-  { id : Id -- item ID
-  , boxAssocId : Id -- the Hierarchy association which connects the item with the box
-  -- TODO: add "dateAdded"
-  }
-
-
 -- Box
 
 type alias BoxId = Id
@@ -138,6 +120,24 @@ type alias ItemProps =
 
 homeBoxId : BoxId
 homeBoxId = 0
+
+
+-- Item Set
+
+type alias ItemSets = Dict Id ItemSet
+
+
+type alias ItemSet =
+  { id : Id -- set ID
+  , items : List SetItem
+  }
+
+
+type alias SetItem =
+  { id : Id -- item ID
+  , boxAssocId : Id -- the Hierarchy association which connects the item with the box
+  -- TODO: add "dateAdded"
+  }
 
 
 -- Display Mode

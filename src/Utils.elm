@@ -132,7 +132,7 @@ illegalId funcName item id val =
 
 logError : String -> String -> v -> v
 logError funcName text val =
-  Logger.log ("💣ERROR @" ++ funcName ++ ": " ++ text) val
+  Logger.log ("💣 @" ++ funcName ++ ": " ++ text) val
 
 
 fail : String -> a -> v -> v

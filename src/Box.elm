@@ -1,5 +1,5 @@
-module Box exposing (create, setDisplayMode, updateDisplayMode, deleteItem, mapTitle,
-  isFullscreen, displayMode, elemId, firstId, fromPath)
+module Box exposing (create, addItem, displayMode, setDisplayMode, updateDisplayMode,
+  deleteItem, mapTitle, isFullscreen, elemId, firstId, fromPath)
 
 import Item
 import Model exposing (Model)
@@ -24,27 +24,77 @@ itemProps : Id -> Box -> Model -> Maybe ItemProps
 itemProps itemId box model =
   case box.itemProps |> Dict.get itemId of
     Just props -> Just props
-    Nothing -> U.illegalItemId "itemProps" itemId Nothing
+    Nothing -> U.logError "Box.itemProps" "missing entry in box.itemProps" Nothing
+
+
+-- Create box
+
+create : String -> Maybe Icon -> Model -> (Model, BoxId)
+create text icon model =
+  let
+    (newModel, topicId) = Item.createTopic text icon model
+    setId = newModel.nextId
+    box = Box topicId setId Dict.empty
+    set = ItemSet setId []
+  in
+  ( newModel
+      |> create_ box
+      |> createItemSet set
+      |> Item.nextId
+  , topicId
+  )
+
+
+create_ : Box -> Model -> Model
+create_ box ({boxes} as model) =
+  { model | boxes = boxes |> Dict.insert box.id box }
+
+
+createItemSet : ItemSet -> Model -> Model
+createItemSet set ({itemSets} as model) =
+  { model | itemSets = itemSets |> Dict.insert set.id set }
 
 
 -- Add item to box
 
-addItem : Id -> BoxId -> Model -> Model
-addItem itemId boxId model =
+addItem : BoxId -> ItemProps -> Model -> Model
+addItem boxId props model =
   case byId boxId model of
     Just box ->
       let
-        (newModel, boxAssocId) = Item.createAssoc Hierarchy boxId itemId model
+        (newModel, boxAssocId) = Item.createAssoc Hierarchy boxId props.id model
+        setItem = SetItem props.id boxAssocId
       in
-      { newModel | itemSets = newModel.itemSets |> Dict.update box.itemSetId
-          (\maybeItemSet ->
-            case maybeItemSet of
-              Just itemSet -> Just
-                { itemSet | items = SetItem itemId boxAssocId :: itemSet.items }
-              Nothing -> U.illegalItemSetId "itemSet" box.itemSetId Nothing
-          )
-      }
+      newModel
+        |> addToItemSet box.itemSetId setItem
+        |> addToItemProps boxId props
     Nothing -> model
+
+
+addToItemSet : Id -> SetItem -> Model -> Model
+addToItemSet itemSetId setItem ({itemSets} as model) =
+  { model | itemSets =
+    itemSets
+      |> Dict.update itemSetId
+        (\maybeItemSet ->
+          case maybeItemSet of
+            Just itemSet -> Just { itemSet | items = setItem :: itemSet.items }
+            Nothing -> U.illegalItemSetId "Box.addToItemSet" itemSetId Nothing
+        )
+  }
+
+
+addToItemProps : BoxId -> ItemProps -> Model -> Model
+addToItemProps boxId props ({boxes} as model) =
+  { model | boxes =
+    boxes
+      |> Dict.update boxId
+        (\maybeBox ->
+          case maybeBox of
+            Just box -> Just { box | itemProps = box.itemProps |> Dict.insert props.id props }
+            Nothing -> Nothing
+        )
+  }
 
 
 -- Display Mode
@@ -88,34 +138,6 @@ itemSetById setId model =
   case model.itemSets |> Dict.get setId of
     Just itemSet -> Just itemSet
     Nothing -> U.illegalItemSetId "itemSet" setId Nothing
-
-
--- Create box
-
-create : String -> Maybe Icon -> Model -> (Model, BoxId)
-create text icon model =
-  let
-    (newModel, topicId) = Item.createTopic text icon model
-    setId = newModel.nextId
-    box = Box topicId setId Dict.empty
-    set = ItemSet setId []
-  in
-  ( newModel
-      |> create_ box
-      |> createItemSet set
-      |> Item.nextId
-  , topicId
-  )
-
-
-create_ : Box -> Model -> Model
-create_ box ({boxes} as model) =
-  { model | boxes = boxes |> Dict.insert box.id box }
-
-
-createItemSet : ItemSet -> Model -> Model
-createItemSet set ({itemSets} as model) =
-  { model | itemSets = itemSets |> Dict.insert set.id set }
 
 
 -- Delete item

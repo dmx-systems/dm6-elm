@@ -136,6 +136,7 @@ revealItem itemId mapId model =
       _ = U.info "revealItem" <| fromInt itemId ++ " not in " ++ fromInt mapId
       props = initItemProps_ itemId mapId model
     in
+    -- TODO: update "box" state
     addItem itemId props mapId model
 
 
@@ -217,8 +218,9 @@ addItem itemId props mapId model =
     mapItem = MapItem itemId (Visible Unpinned) props
     _ = U.info "addItem" { itemId = itemId, props = props, mapId = mapId}
   in
-  model |> update mapId
-    (\map -> { map | items = map.items |> Dict.insert itemId mapItem })
+  model
+    |> update mapId
+      (\map -> { map | items = map.items |> Dict.insert itemId mapItem })
 
 
 {-| Sets the item's "visibility" field to Visible (Pinned=False).
