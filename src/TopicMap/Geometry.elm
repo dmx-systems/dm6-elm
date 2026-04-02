@@ -33,10 +33,10 @@ searchInItem pos itemId boxPath filterTopicId model =
     maybeThisItem found = if found then Just (itemId, boxPath) else Nothing
   in
   case TM.byId itemId model of
-    Just box ->
+    Just map ->
       let
-        items = TM.visibleTopics box
-        relPos = boxRelPos pos box boxPath model
+        items = TM.visibleTopics map
+        relPos = boxRelPos pos map boxPath model
         searchBox = searchInItems relPos items (itemId :: boxPath) filterTopicId
       in
       -- Note: for a fullscreen box boxPath is empty
@@ -45,8 +45,8 @@ searchInItem pos itemId boxPath filterTopicId model =
         False ->
           let
             parentBoxId = Box.firstId boxPath
-            isHeaderHovered = isTopicHeaderHovered pos box.id parentBoxId
-            isRectHovered = isBoxRectHovered pos box parentBoxId
+            isHeaderHovered = isTopicHeaderHovered pos map.id parentBoxId
+            isRectHovered = isBoxRectHovered pos map parentBoxId
           in
           case Box.displayMode itemId parentBoxId model of
             Just (BoxD BlackBox) ->
@@ -95,15 +95,15 @@ searchInItems pos items boxPath filterTopicId model =
 
 -- For a fullscreen box boxPath is empty
 boxRelPos : Point -> TopicMap -> BoxPath -> Model -> Point
-boxRelPos pos box boxPath model =
-  case Box.isFullscreen box.id model of
+boxRelPos pos map boxPath model =
+  case Box.isFullscreen map.id model of
     True -> pos
     False ->
-      case TM.topicPos box.id (Box.firstId boxPath) model of
+      case TM.topicPos map.id (Box.firstId boxPath) model of
         Just boxPos ->
           Point
-            (pos.x - boxPos.x + box.rect.x1 + C.topicW2)
-            (pos.y - boxPos.y + box.rect.y1 - C.topicH2)
+            (pos.x - boxPos.x + map.rect.x1 + C.topicW2)
+            (pos.y - boxPos.y + map.rect.y1 - C.topicH2)
         Nothing -> pos
 
 
@@ -132,11 +132,11 @@ isTopicDetailHovered pos topicId boxId model =
 
 
 isBoxRectHovered : Point -> TopicMap -> BoxId -> Model -> Bool
-isBoxRectHovered pos box parentBoxId model =
-  case TM.topicPos box.id parentBoxId model of
+isBoxRectHovered pos map parentBoxId model =
+  case TM.topicPos map.id parentBoxId model of
     Just boxPos ->
       pos.x > boxPos.x - C.topicW2 &&
-      pos.x < boxPos.x - C.topicW2 + box.rect.x2 - box.rect.x1 &&
+      pos.x < boxPos.x - C.topicW2 + map.rect.x2 - map.rect.x1 &&
       pos.y > boxPos.y + C.topicH2 &&
-      pos.y < boxPos.y + C.topicH2 + box.rect.y2 - box.rect.y1
+      pos.y < boxPos.y + C.topicH2 + map.rect.y2 - map.rect.y1
     Nothing -> False

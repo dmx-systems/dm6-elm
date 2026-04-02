@@ -26,11 +26,11 @@ fullscreen model =
   byIdOrLog model.boxId model
 
 
-{-| Logs an error if box does not exist. -}
+{-| Logs an error if TopicMap does not exist. -}
 byIdOrLog : BoxId -> Model -> Maybe TopicMap
 byIdOrLog mapId model =
   case byId mapId model of
-    Just box -> Just box
+    Just map -> Just map
     Nothing -> U.illegalBoxId "byIdOrLog" mapId Nothing
 
 
@@ -55,26 +55,26 @@ addTopicMap_ map ({topicMap} as model) =
 updateRect : BoxId -> (Rectangle -> Rectangle) -> Model -> Model
 updateRect mapId transform model =
   model |> update mapId
-    (\box ->
-      { box | rect = transform box.rect }
+    (\map ->
+      { map | rect = transform map.rect }
     )
 
 
 updateScrollPos : BoxId -> (Point -> Point) -> Model -> Model
 updateScrollPos mapId transform model =
   model |> update mapId
-    (\box ->
-      { box | scroll = transform box.scroll }
+    (\map ->
+      { map | scroll = transform map.scroll }
     )
 
 
 visibleTopics : TopicMap -> List MapItem
-visibleTopics box =
-  box.items |> Dict.values |> List.filter isTopic |> List.filter isVisible
+visibleTopics map =
+  map.items |> Dict.values |> List.filter isTopic |> List.filter isVisible
 
 
-{-| Logs an error if box does not exist, or topic is not in box, or ID refers not a topic (but
-an association).
+{-| Logs an error if TopicMap does not exist, or topic is not in TopicMap, or ID refers not a
+topic (but an association).
 -}
 topicPos : Id -> BoxId -> Model -> Maybe Point
 topicPos topicId mapId model =
@@ -83,14 +83,14 @@ topicPos topicId mapId model =
     Nothing -> U.fail "topicPos" {topicId = topicId, mapId = mapId} Nothing
 
 
-{-| Logs an error if box does not exist, or if topic is not in box -}
+{-| Logs an error if TopicMap does not exist, or if topic is not in TopicMap -}
 setTopicPos : Id -> BoxId -> Point -> Model -> Model
 setTopicPos topicId mapId pos model =
   model |> updateTopicProps_ topicId mapId
     (\props -> { props | pos = pos })
 
 
-{-| Logs an error if box does not exist, or if topic is not in box -}
+{-| Logs an error if TopicMap does not exist, or if topic is not in TopicMap -}
 updateTopicPos : Id -> BoxId -> (Point -> Point) -> Model -> Model
 updateTopicPos topicId mapId transform model =
   model
@@ -98,14 +98,14 @@ updateTopicPos topicId mapId transform model =
       (\props -> { props | pos = transform props.pos })
 
 
-{-| Logs an error if box does not exist, or topic is not in box, or ID refers not a topic (but
-an association).
+{-| Logs an error if TopicMap does not exist, or topic is not in TopicMap, or ID refers not a
+topic (but an association).
 -}
 topicProps : Id -> BoxId -> Model -> Maybe TopicProps
 topicProps topicId mapId model =
   case itemByIdOrLog_ topicId mapId model of
-    Just boxItem ->
-      case boxItem.props of
+    Just mapItem ->
+      case mapItem.props of
         TopicP props -> Just props
         AssocP _ -> U.topicMismatch "topicProps" topicId Nothing
     Nothing -> U.fail "topicProps" {topicId = topicId, mapId = mapId} Nothing
@@ -163,10 +163,10 @@ initTopicProps topicId mapId model =
 initTopicPos : BoxId -> Model -> Point
 initTopicPos mapId model =
   case byIdOrLog mapId model of
-    Just box ->
+    Just map ->
       Point
-        (C.initTopicPos.x + box.rect.x1 + box.scroll.x)
-        (C.initTopicPos.y + box.rect.y1 + box.scroll.y)
+        (C.initTopicPos.x + map.rect.x1 + map.scroll.x)
+        (C.initTopicPos.y + map.rect.y1 + map.scroll.y)
     Nothing -> Point 0 0 -- error is already logged
 
 
@@ -174,10 +174,10 @@ initTopicPos mapId model =
 itemByIdOrLog_ : Id -> BoxId -> Model -> Maybe MapItem
 itemByIdOrLog_ itemId mapId model =
   byIdOrLog mapId model |> Maybe.andThen
-    (\box ->
-      case box.items |> Dict.get itemId of
-        Just boxItem -> Just boxItem
-        Nothing -> U.itemNotInBox "itemByIdOrLog_" itemId box.id Nothing
+    (\map ->
+      case map.items |> Dict.get itemId of
+        Just mapItem -> Just mapItem
+        Nothing -> U.itemNotInBox "itemByIdOrLog_" itemId map.id Nothing
     )
 
 
@@ -187,7 +187,7 @@ TODO: move to Box
 hasItem : BoxId -> Id -> Model -> Bool
 hasItem boxId itemId model =
   case byIdOrLog boxId model of
-    Just box -> box.items |> Dict.member itemId
+    Just map -> map.items |> Dict.member itemId
     Nothing -> False
 
 
@@ -199,7 +199,7 @@ hasDeepItem boxId itemId model =
     True
   else
     case byId boxId model of
-      Just box -> box.items |> Dict.keys |> List.any
+      Just map -> map.items |> Dict.keys |> List.any
         (\id -> hasDeepItem id itemId model) -- recursion
       Nothing -> False
 
@@ -212,11 +212,11 @@ It's a generic operation: works for both, topics and associations.
 addItem : Id -> ItemProps -> BoxId -> Model -> Model
 addItem itemId props mapId model =
   let
-    boxItem = MapItem itemId (Visible Unpinned) props
+    mapItem = MapItem itemId (Visible Unpinned) props
     _ = U.info "addItem" { itemId = itemId, props = props, mapId = mapId}
   in
   model |> update mapId
-    (\box -> { box | items = box.items |> Dict.insert itemId boxItem })
+    (\map -> { map | items = map.items |> Dict.insert itemId mapItem })
 
 
 {-| Sets the item's "visibility" field to Visible (Pinned=False).
@@ -228,14 +228,14 @@ It's a generic operation: works for both, topics and associations.
 showItem_ : Id -> BoxId -> Model -> Model
 showItem_ itemId mapId model =
   model |> update mapId
-    (\box ->
-      { box | items = box.items |> Dict.update itemId
+    (\map ->
+      { map | items = map.items |> Dict.update itemId
         (\maybeItem ->
           case maybeItem of
-            Just boxItem -> Just
-              { boxItem | visibility =
-                case boxItem.visibility of
-                  Visible _ -> boxItem.visibility
+            Just mapItem -> Just
+              { mapItem | visibility =
+                case mapItem.visibility of
+                  Visible _ -> mapItem.visibility
                   Removed -> Visible Unpinned
               }
             Nothing -> Nothing
@@ -255,8 +255,8 @@ removeItem : Id -> BoxId -> Model -> Model
 removeItem itemId mapId model =
   model
     |> update mapId
-        (\box ->
-          { box | items = removeItem_ itemId box.items model }
+        (\map ->
+          { map | items = removeItem_ itemId map.items model }
         )
 
 
@@ -285,16 +285,16 @@ removeItem__ itemId items =
     )
 
 
-{-| Canonical box transformation.
-Logs an error if box does not exist.
+{-| Canonical TopicMap transformation.
+Logs an error if TopicMap does not exist.
 -}
 update : BoxId -> (TopicMap -> TopicMap) -> Model -> Model
 update mapId transform ({topicMap} as model) =
   { model | topicMap =
     topicMap |> Dict.update mapId
-      (\maybeBox ->
-        case maybeBox of
-          Just box -> Just (transform box)
+      (\maybeMap ->
+        case maybeMap of
+          Just map -> Just (transform map)
           Nothing -> U.illegalBoxId "update" mapId Nothing
       )
   }
@@ -321,8 +321,8 @@ an association).
 updateTopicProps_ : Id -> BoxId -> (TopicProps -> TopicProps) -> Model -> Model
 updateTopicProps_ topicId mapId transform model =
   model |> update mapId
-    (\box ->
-      { box | items = box.items |> Dict.update topicId
+    (\map ->
+      { map | items = map.items |> Dict.update topicId
         (\item_ ->
           case item_ of
             Just item ->
@@ -370,7 +370,7 @@ landingTarget model =
 isEmpty : BoxId -> Model -> Bool
 isEmpty boxId model =
   case byIdOrLog boxId model of
-    Just box -> box.items |> Dict.values |> List.any isVisible |> not
+    Just map -> map.items |> Dict.values |> List.any isVisible |> not
     Nothing -> False
 
 

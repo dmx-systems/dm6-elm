@@ -1,6 +1,6 @@
 module ModelParts exposing (Id, Item, Items, ItemInfo(..), AssocIds, TopicInfo, Icon, TextSize,
   Size, SizeField(..), Point, Rectangle, AssocInfo, AssocType(..), ItemSet, ItemSets, SetItem,
-  Box, Boxes, BoxId, BoxPath, homeBoxId, BoxItem, DisplayMode(..), TopicDisplay(..),
+  Box, Boxes, BoxId, BoxPath, homeBoxId, ItemProps, DisplayMode(..), TopicDisplay(..),
   BoxDisplay(..), ImageId, Attrs, PointerType, encodeItem, encodeItemSet, encodeBox,
   encodeDisplayMode, itemDecoder, itemSetDecoder, boxDecoder, toDictDecoder)
 
@@ -125,15 +125,12 @@ type alias Boxes = Dict BoxId Box
 type alias Box =
   { id : BoxId
   , itemSetId : Id
-  , items : BoxItems
+  , itemProps : Dict Id ItemProps
   -- TODO: add "renderer"
   }
 
 
-type alias BoxItems = Dict Id BoxItem
-
-
-type alias BoxItem =
+type alias ItemProps =
   { id : Id
   , displayMode : DisplayMode -- serialized as "display", TODO: rename to "display"?
   }
@@ -240,16 +237,16 @@ encodeBox box =
   E.object
     [ ("id", E.int box.id)
     , ("itemSetId", E.int box.itemSetId)
-    , ("items", E.list encodeBoxItem <| Dict.values box.items)
+    , ("itemProps", E.list encodeItemProps <| Dict.values box.itemProps)
     -- TODO: "renderer"
     ]
 
 
-encodeBoxItem : BoxItem -> E.Value
-encodeBoxItem boxItem =
+encodeItemProps : ItemProps -> E.Value
+encodeItemProps itemProps =
   E.object
-    [ ("id", E.int boxItem.id)
-    , ("display", encodeDisplayMode boxItem.displayMode)
+    [ ("id", E.int itemProps.id)
+    , ("display", encodeDisplayMode itemProps.displayMode)
     ]
 
 
@@ -339,13 +336,13 @@ boxDecoder =
   D.map3 Box
     (D.field "id" D.int)
     (D.field "itemSetId" D.int)
-    (D.field "items" (boxItemDecoder |> toDictDecoder))
+    (D.field "itemProps" (boxItemDecoder |> toDictDecoder))
     -- TODO: "renderer"
 
 
-boxItemDecoder : D.Decoder BoxItem
+boxItemDecoder : D.Decoder ItemProps
 boxItemDecoder =
-  D.map2 BoxItem
+  D.map2 ItemProps
     (D.field "id" D.int)
     (D.field "display" D.string |> D.andThen displayModeDecoder)
 

@@ -15,27 +15,27 @@ import Dict
 
 {- Projects box data and search state ("limbo") into a TopicMap render model -}
 topicsToRender : TopicMap -> Model -> List MapItem
-topicsToRender box model =
+topicsToRender map model =
   let
-    topics = itemsToRender box TM.isTopic model |> List.map
+    topics = itemsToRender map TM.isTopic model |> List.map
       (\mapItem ->
         { mapItem
         | props =
           case mapItem.props of
-            TopicP props -> TopicP <| effectiveDisplayMode mapItem.id box.id model props
+            TopicP props -> TopicP <| effectiveDisplayMode mapItem.id map.id model props
             AssocP _ -> U.logError "topicsToRender" "Found assoc in a topic list" mapItem.props
         }
       )
     limboTopic =
       case limboState model of
         Just (topicId, _, limboBoxId) ->
-          if limboBoxId == box.id && (not <| TM.hasItem box.id topicId model) then
+          if limboBoxId == map.id && (not <| TM.hasItem map.id topicId model) then
             let
-              _ = U.info "viewLimboTopic" (topicId, "not in box", box.id)
+              _ = U.info "viewLimboTopic" (topicId, "not in map", map.id)
               props =
                 TopicP
-                  <| effectiveDisplayMode topicId box.id model
-                  <| TM.initTopicProps topicId box.id model
+                  <| effectiveDisplayMode topicId map.id model
+                  <| TM.initTopicProps topicId map.id model
             in
             [ MapItem topicId Removed props ] -- TODO: explain Removed
           else
@@ -47,16 +47,16 @@ topicsToRender box model =
 
 {- Projects box data and search state ("limbo") into a TopicMap render model -}
 assocsToRender : TopicMap -> Model -> List MapItem
-assocsToRender box model =
-  itemsToRender box TM.isAssoc model
+assocsToRender map model =
+  itemsToRender map TM.isAssoc model
 
 
 itemsToRender : TopicMap -> (MapItem -> Bool) -> Model -> List MapItem
-itemsToRender box filter model =
-  box.items
+itemsToRender map filter model =
+  map.items
     |> Dict.values
     |> List.filter filter
-    |> List.filter (shouldItemRender box.id model)
+    |> List.filter (shouldItemRender map.id model)
 
 
 shouldItemRender : BoxId -> Model -> MapItem -> Bool

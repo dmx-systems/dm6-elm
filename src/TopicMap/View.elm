@@ -128,16 +128,16 @@ gAttr boxId boxRect model =
 boxInfo : BoxId -> BoxPath -> Model -> BoxInfo
 boxInfo boxId boxPath model =
   case TM.byIdOrLog boxId model of
-    Just box ->
-      ( viewItems box boxPath model
-      , box.rect
-      , ( { w = (box.rect.x2 - box.rect.x1) |> fromInt
-          , h = (box.rect.y2 - box.rect.y1) |> fromInt
+    Just map ->
+      ( viewItems map boxPath model
+      , map.rect
+      , ( { w = (map.rect.x2 - map.rect.x1) |> fromInt
+          , h = (map.rect.y2 - map.rect.y1) |> fromInt
           }
         , if model.boxId == boxId then
             []
           else
-            nestedBoxStyle boxId box.rect boxPath model
+            nestedBoxStyle boxId map.rect boxPath model
         )
       )
     Nothing ->
@@ -165,18 +165,18 @@ nestedBoxStyle topicId rect boxPath model =
 
 -- For the fullscreen box boxPath is empty
 viewItems : TopicMap -> BoxPath -> Model -> (List (Html Msg), List (Svg Msg))
-viewItems box boxPath model =
+viewItems map boxPath model =
   let
-    newPath = box.id :: boxPath
+    newPath = map.id :: boxPath
     topics =
-      VM.topicsToRender box model |> List.map
+      VM.topicsToRender map model |> List.map
         (\{id, props} ->
           case (Item.topicById id model, props) of
             (Just topic, TopicP tProps) -> viewTopic topic tProps newPath model
             _ -> U.logError "viewItems" ("problem with topic " ++ fromInt id) (text "")
         )
     assocs =
-      VM.assocsToRender box model |> List.foldr
+      VM.assocsToRender map model |> List.foldr
         (\{id} svgAcc ->
           case Item.assocById id model of
             Just assoc ->
@@ -198,12 +198,12 @@ viewLimboAssoc boxId model =
       if boxId == limboBoxId then
         if TM.hasItem boxId assocId model then
           let
-            _ = U.info "viewLimboAssoc" (assocId, "is in box", boxId)
+            _ = U.info "viewLimboAssoc" (assocId, "is in map", boxId)
           in
           [] -- rendered already (viewItems())
         else
           let
-            _ = U.info "viewLimboAssoc" (assocId, "not in box", boxId)
+            _ = U.info "viewLimboAssoc" (assocId, "not in map", boxId)
           in
           case Item.assocById assocId model of
             Just assoc ->
@@ -550,7 +550,7 @@ viewItemCount topicId props model =
         TopicD _ -> 0
         BoxD _ ->
           case TM.byIdOrLog topicId model of
-            Just box -> box.items |> Dict.values |> List.filter TM.isVisible |> List.length
+            Just map -> map.items |> Dict.values |> List.filter TM.isVisible |> List.length
             Nothing -> 0
   in
   [ div
@@ -640,10 +640,10 @@ accumulatePos posAcc boxId parentBoxId boxIds model =
 accumulateRect : Point -> BoxId -> Model -> Point
 accumulateRect posAcc boxId model =
   case TM.byIdOrLog boxId model of
-    Just box ->
+    Just map ->
       Point
-        (posAcc.x - box.rect.x1)
-        (posAcc.y - box.rect.y1)
+        (posAcc.x - map.rect.x1)
+        (posAcc.y - map.rect.y1)
     Nothing -> Point 0 0 -- error is already logged
 
 

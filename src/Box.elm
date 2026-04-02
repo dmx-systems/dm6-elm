@@ -20,9 +20,9 @@ byId boxId model =
     Nothing -> U.illegalBoxId "byId" boxId Nothing
 
 
-itemProps : Id -> Box -> Model -> Maybe BoxItem
+itemProps : Id -> Box -> Model -> Maybe ItemProps
 itemProps itemId box model =
-  case box.items |> Dict.get itemId of
+  case box.itemProps |> Dict.get itemId of
     Just props -> Just props
     Nothing -> U.illegalItemId "itemProps" itemId Nothing
 
@@ -69,7 +69,7 @@ updateDisplayMode topicId boxId transform model =
     (\maybeBox ->
       case maybeBox of
         Just box -> Just
-          { box | items = box.items |> Dict.update topicId
+          { box | itemProps = box.itemProps |> Dict.update topicId
             (\maybeItem ->
               case maybeItem of
                 Just item -> Just
@@ -173,9 +173,11 @@ deleteItem_ : Id -> Model -> Model
 deleteItem_ itemId ({topicMap} as model) =
   { model
   | items = model.items |> Dict.remove itemId -- delete item
+  -- TODO: update "box" state
+  -- TODO: don't operate on "topicMap" directly
   , topicMap = topicMap |> Dict.map -- delete item from all boxes
-      (\_ box ->
-        { box | items = box.items |> Dict.remove itemId }
+      (\_ map ->
+        { map | items = map.items |> Dict.remove itemId }
       )
   }
 

@@ -35,45 +35,45 @@ calcBoxRect boxPath model =
     boxId = Box.firstId boxPath
   in
   case TM.byIdOrLog boxId model of
-    Just box ->
+    Just map ->
       let
-        topics = VM.topicsToRender box model
+        topics = VM.topicsToRender map model
         (rect, model_) =
           if topics |> List.isEmpty then
             (C.whiteBoxEmpty, model)
           else
             topics |> List.foldr
-              (\boxItem (rectAcc, modelAcc) ->
-                accumulateItem boxItem boxPath rectAcc modelAcc
+              (\mapItem (rectAcc, modelAcc) ->
+                accumulateItem mapItem boxPath rectAcc modelAcc
               )
               (Rectangle 0 0 0 0, model)
         newRect = addBoxPadding rect
       in
       ( newRect
-      , updateBoxGeometry boxPath newRect box.rect model_
+      , updateBoxGeometry boxPath newRect map.rect model_
       )
     Nothing -> (Rectangle 0 0 0 0, model)
 
 
 accumulateItem : MapItem -> BoxPath -> Rectangle -> Model -> (Rectangle, Model)
-accumulateItem boxItem boxPath rectAcc model =
+accumulateItem mapItem boxPath rectAcc model =
   let
-    (rect, model_) = calcItemRect boxItem boxPath model
+    (rect, model_) = calcItemRect mapItem boxPath model
   in
   (accumulateRect rectAcc rect, model_)
 
 
 calcItemRect : MapItem -> BoxPath -> Model -> (Rectangle, Model)
-calcItemRect boxItem boxPath model =
-  case boxItem.props of
+calcItemRect mapItem boxPath model =
+  case mapItem.props of
     TopicP {pos, displayMode} ->
       case displayMode of
         TopicD LabelOnly -> (topicExtent pos, model)
-        TopicD Detail -> (detailTopicExtent boxItem.id boxPath pos model, model)
+        TopicD Detail -> (detailTopicExtent mapItem.id boxPath pos model, model)
         BoxD BlackBox -> (topicExtent pos, model)
         BoxD WhiteBox ->
           let
-            (rect_, model_) = calcBoxRect (boxItem.id :: boxPath) model -- recursion
+            (rect_, model_) = calcBoxRect (mapItem.id :: boxPath) model -- recursion
           in
           (boxExtent pos rect_, model_)
         BoxD Unboxed -> (topicExtent pos, model)
