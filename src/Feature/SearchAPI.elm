@@ -1,6 +1,7 @@
 module Feature.SearchAPI exposing (viewInput, viewSearchResult, viewTraversalResult, traverse,
   closeMenu, update)
 
+import Box
 import Config as C
 import Feature.IconAPI as IconAPI
 import Feature.NavAPI as NavAPI
@@ -12,6 +13,7 @@ import ModelParts exposing (..)
 import Storage as S
 import TopicMap.Size as Size
 import TopicMap.TopicMap as TM
+import TopicMap.TopicMapDef exposing (ItemProps(..))
 import Undo exposing (UndoModel)
 import Utils as U
 
@@ -231,7 +233,7 @@ fullscreenButtonStyle =
 isItemDisabled : Id -> Model -> Bool
 isItemDisabled topicId model =
   case TM.revelationBoxId model of
-    Just boxId -> TM.hasDeepItem topicId boxId model
+    Just boxId -> Box.hasDeepItem topicId boxId model
     Nothing -> False
 
 
@@ -338,7 +340,7 @@ revealTopic topicId model =
   case TM.revelationBoxPath model of
     Just (boxId :: _ as boxPath) ->
       model
-        |> TM.revealItem topicId boxId
+        |> revealItem topicId boxId
         |> closeMenu
         |> SelAPI.select topicId boxPath
         |> Size.auto
@@ -350,12 +352,37 @@ revealRelTopic (topicId, assocId) model =
   case TM.revelationBoxPath model of
     Just (boxId :: _ as boxPath) ->
       model
-        |> TM.revealItem topicId boxId
-        |> TM.revealItem assocId boxId
+        |> revealItem topicId boxId
+        |> revealItem assocId boxId
         |> closeMenu
         |> SelAPI.select topicId boxPath
         |> Size.auto
     _ -> model
+
+
+revealItem : Id -> BoxId -> Model -> Model
+revealItem itemId boxId model =
+  if Box.hasItem boxId itemId model then
+    let
+      _ = U.info "revealItem" <| fromInt itemId ++ " is in " ++ fromInt boxId
+    in
+    TM.showItem itemId boxId model
+  else
+    let
+      _ = U.info "revealItem" <| fromInt itemId ++ " not in " ++ fromInt boxId
+      props = TM.initItemProps itemId boxId model
+    in
+    model
+      |> Box.addItem boxId (ItemProps itemId (displayModeFrom props))
+      |> TM.addItem itemId props boxId
+
+
+-- ### TODO: model Box ItemProps for topic/assoc
+displayModeFrom : ItemProps -> DisplayMode
+displayModeFrom props =
+  case props of
+    TopicP {displayMode} -> displayMode
+    AssocP _ -> TopicD LabelOnly  -- ### FIXME
 
 
 -- "searchTopics" instead "search" avoids shadowing

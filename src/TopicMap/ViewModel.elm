@@ -1,6 +1,7 @@
 module TopicMap.ViewModel exposing (topicsToRender, assocsToRender, isLimboTopic,
   isLimboAssoc, limboState)
 
+import Box
 import Feature.Search exposing (SearchResult(..))
 import Model exposing (Model)
 import ModelParts exposing (..)
@@ -29,7 +30,7 @@ topicsToRender map model =
     limboTopic =
       case limboState model of
         Just (topicId, _, limboBoxId) ->
-          if limboBoxId == map.id && (not <| TM.hasItem map.id topicId model) then
+          if limboBoxId == map.id && (not <| Box.hasItem map.id topicId model) then
             let
               _ = U.info "viewLimboTopic" (topicId, "not in map", map.id)
               props =

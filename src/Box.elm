@@ -1,5 +1,5 @@
-module Box exposing (create, addItem, displayMode, setDisplayMode, updateDisplayMode,
-  deleteItem, mapTitle, isFullscreen, elemId, firstId, fromPath)
+module Box exposing (hasItem, hasDeepItem, create, addItem, displayMode, setDisplayMode,
+  updateDisplayMode, deleteItem, mapTitle, isFullscreen, elemId, firstId, fromPath)
 
 import Item
 import Model exposing (Model)
@@ -17,7 +17,7 @@ byId : BoxId -> Model -> Maybe Box
 byId boxId model =
   case model.boxes |> Dict.get boxId of
     Just box -> Just box
-    Nothing -> U.illegalBoxId "byId" boxId Nothing
+    Nothing -> U.illegalBoxId "Box.byId" boxId Nothing
 
 
 itemProps : Id -> Box -> Model -> Maybe ItemProps
@@ -25,6 +25,36 @@ itemProps itemId box model =
   case box.itemProps |> Dict.get itemId of
     Just props -> Just props
     Nothing -> U.logError "Box.itemProps" "missing entry in box.itemProps" Nothing
+
+
+itemSetOf : BoxId -> Model -> Maybe ItemSet
+itemSetOf boxId model =
+  byId boxId model
+    |> Maybe.andThen (\box -> model.itemSets |> Dict.get box.itemSetId)
+
+
+{-| Logs an error if box does not exist.
+-}
+hasItem : BoxId -> Id -> Model -> Bool
+hasItem boxId itemId model =
+  case itemSetOf boxId model of
+    Just itemSet -> itemSet.items |> List.any
+      (\setItem -> setItem.id == itemId)
+    Nothing -> False
+
+
+hasDeepItem : BoxId -> Id -> Model -> Bool
+hasDeepItem boxId itemId model =
+  if itemId == boxId then
+    True
+  else
+    if Item.isBox boxId model then
+      case itemSetOf boxId model of
+        Just itemSet -> itemSet.items |> List.any
+          (\setItem -> hasDeepItem setItem.id itemId model) -- recursion
+        Nothing -> False
+    else
+      False
 
 
 -- Create box
@@ -130,14 +160,6 @@ updateDisplayMode topicId boxId transform model =
         Nothing -> Nothing
     )
   }
-
-
--- Not used
-itemSetById : Id -> Model -> Maybe ItemSet
-itemSetById setId model =
-  case model.itemSets |> Dict.get setId of
-    Just itemSet -> Just itemSet
-    Nothing -> U.illegalItemSetId "itemSet" setId Nothing
 
 
 -- Delete item

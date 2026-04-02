@@ -1,9 +1,8 @@
 module TopicMap.TopicMap exposing (fullscreen, byId, byIdOrLog, update, updateRect,
-  updateScrollPos, visibleTopics, topicPos, setTopicPos, updateTopicPos,
-  topicProps, initTopicProps, initTopicPos, assocGeometry,
-  hasItem, hasDeepItem, create, addItem, revealItem, removeItem, removeItem_,
-  revelationBoxId, revelationBoxPath, landingTarget, isEmpty, isUnboxed, isTopic, isAssoc,
-  isVisible, isPinned)
+  updateScrollPos, visibleTopics, topicPos, setTopicPos, updateTopicPos, topicProps,
+  initItemProps, initTopicProps, initTopicPos, assocGeometry, create, addItem, showItem,
+  removeItem, removeItem_, revelationBoxId, revelationBoxPath, landingTarget, isEmpty,
+  isUnboxed, isTopic, isAssoc, isVisible, isPinned)
 
 import Box
 import Config as C
@@ -124,25 +123,9 @@ assocGeometry assoc mapId model =
     Nothing -> U.fail "assocGeometry" { assoc = assoc, mapId = mapId } Nothing
 
 
-revealItem : Id -> BoxId -> Model -> Model
-revealItem itemId mapId model =
-  if hasItem mapId itemId model then
-    let
-      _ = U.info "revealItem" <| fromInt itemId ++ " is in " ++ fromInt mapId
-    in
-    showItem_ itemId mapId model
-  else
-    let
-      _ = U.info "revealItem" <| fromInt itemId ++ " not in " ++ fromInt mapId
-      props = initItemProps_ itemId mapId model
-    in
-    -- TODO: update "box" state
-    addItem itemId props mapId model
-
-
-{-| Initial props for a newly revealed item -}
-initItemProps_ : Id -> BoxId -> Model -> ItemProps
-initItemProps_ itemId mapId model =
+{-| Initial props for a revealed item -}
+initItemProps : Id -> BoxId -> Model -> ItemProps
+initItemProps itemId mapId model =
   case Item.byId itemId model of
     Just item ->
       case item.info of
@@ -151,7 +134,7 @@ initItemProps_ itemId mapId model =
     Nothing -> AssocP {} -- error is already logged
 
 
-{-| Initial props for a newly revealed topic -}
+{-| Initial props for a revealed topic -}
 initTopicProps : Id -> BoxId -> Model -> TopicProps
 initTopicProps topicId mapId model =
   TopicProps
@@ -184,29 +167,6 @@ itemByIdOrLog_ itemId mapId model =
     )
 
 
-{-| Logs an error if box does not exist.
-TODO: move to Box
--}
-hasItem : BoxId -> Id -> Model -> Bool
-hasItem boxId itemId model =
-  case byIdOrLog boxId model of
-    Just map -> map.items |> Dict.member itemId
-    Nothing -> False
-
-
-{-| TODO: move to Box
--}
-hasDeepItem : BoxId -> Id -> Model -> Bool
-hasDeepItem boxId itemId model =
-  if itemId == boxId then
-    True
-  else
-    case byId boxId model of
-      Just map -> map.items |> Dict.keys |> List.any
-        (\id -> hasDeepItem id itemId model) -- recursion
-      Nothing -> False
-
-
 {-| Adds an item to a box and creates a connecting association.
 Presumption: the item is not yet contained in the box. Otherwise the existing box-item would be
 overridden and another association still be created. This is not what you want.
@@ -229,8 +189,8 @@ No-op if the item is *not* contained in the box, or its "visibility" field is Vi
 Logs an error if box does not exist.
 It's a generic operation: works for both, topics and associations.
 -}
-showItem_ : Id -> BoxId -> Model -> Model
-showItem_ itemId mapId model =
+showItem : Id -> BoxId -> Model -> Model
+showItem itemId mapId model =
   model |> update mapId
     (\map ->
       { map | items = map.items |> Dict.update itemId

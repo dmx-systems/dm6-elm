@@ -196,7 +196,7 @@ viewLimboAssoc boxId model =
   case VM.limboState model of
     Just (topicId, Just assocId, limboBoxId) ->
       if boxId == limboBoxId then
-        if TM.hasItem boxId assocId model then
+        if Box.hasItem boxId assocId model then
           let
             _ = U.info "viewLimboAssoc" (assocId, "is in map", boxId)
           in
@@ -207,7 +207,7 @@ viewLimboAssoc boxId model =
           in
           case Item.assocById assocId model of
             Just assoc ->
-              if TM.hasItem boxId topicId model then
+              if Box.hasItem boxId topicId model then
                 -- only if related topic is in box we can call high-level viewAssoc()
                 viewAssoc assoc [boxId] [] model -- simple box path is sufficient for geometry,
                                                  -- limbo assoc is never selected

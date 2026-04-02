@@ -262,7 +262,7 @@ enter (targetId, targetPath) model =
         Drag dragMode id boxPath origPos lastPos _ ->
           let
             isBox = Item.isBox targetId model
-            isCyclic = TM.hasDeepItem id targetId model
+            isCyclic = Box.hasDeepItem id targetId model
             target =
               -- the hovered item (targetId) is a drop target if it is
               -- 1. a box AND
