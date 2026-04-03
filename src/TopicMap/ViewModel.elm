@@ -68,17 +68,20 @@ shouldItemRender boxId model item =
 -- Note: "props" is last paramter for piping
 effectiveDisplayMode : Id -> BoxId -> Model -> TopicProps -> TopicProps
 effectiveDisplayMode topicId boxId model props =
-  { props | displayMode =
-    if isLimboTopic topicId boxId model then
-      case props.displayMode of
-        TopicD _ -> TopicD Detail
-        BoxD _ ->
-          case TM.isEmpty topicId model of
-            True -> props.displayMode -- don't whitebox an empty box
-            False -> BoxD WhiteBox
-    else
-      props.displayMode
-  }
+  case Box.displayMode topicId boxId model of
+    Just displayMode ->
+      { props | displayMode =
+        if isLimboTopic topicId boxId model then
+          case displayMode of
+            TopicD _ -> TopicD Detail
+            BoxD _ ->
+              case TM.isEmpty topicId model of
+                True -> displayMode -- don't whitebox an empty box
+                False -> BoxD WhiteBox
+        else
+          displayMode
+      }
+    Nothing -> props
 
 
 isLimboItem : MapItem -> BoxId -> Model -> Bool

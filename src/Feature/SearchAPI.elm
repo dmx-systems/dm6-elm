@@ -373,7 +373,7 @@ revealItem itemId boxId model =
       props = TM.initItemProps itemId boxId model
     in
     model
-      |> Box.addItem boxId (ItemProps itemId (displayModeFrom props))
+      |> Box.addItem (ItemProps itemId (displayModeFrom props)) boxId
       |> TM.addItem itemId props boxId
 
 

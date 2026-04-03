@@ -20,17 +20,18 @@ byId boxId model =
     Nothing -> U.illegalBoxId "Box.byId" boxId Nothing
 
 
-itemProps : Id -> Box -> Model -> Maybe ItemProps
-itemProps itemId box model =
+itemPropsOf : Id -> Box -> Model -> Maybe ItemProps
+itemPropsOf itemId box model =
   case box.itemProps |> Dict.get itemId of
     Just props -> Just props
-    Nothing -> U.logError "Box.itemProps" "missing entry in box.itemProps" Nothing
+    Nothing -> U.logError "Box.itemPropsOf" "missing dict entry in box.itemProps" Nothing
 
 
 itemSetOf : BoxId -> Model -> Maybe ItemSet
 itemSetOf boxId model =
-  byId boxId model
-    |> Maybe.andThen (\box -> model.itemSets |> Dict.get box.itemSetId)
+  case byId boxId model of
+    Just box -> model.itemSets |> Dict.get box.itemSetId
+    Nothing -> U.fail "Box.itemSetOf" {boxId = boxId} Nothing
 
 
 {-| Logs an error if box does not exist.
@@ -87,8 +88,8 @@ createItemSet set ({itemSets} as model) =
 
 -- Add item to box
 
-addItem : BoxId -> ItemProps -> Model -> Model
-addItem boxId props model =
+addItem : ItemProps -> BoxId -> Model -> Model
+addItem props boxId model =
   case byId boxId model of
     Just box ->
       let
@@ -96,13 +97,13 @@ addItem boxId props model =
         setItem = SetItem props.id boxAssocId
       in
       newModel
-        |> addToItemSet box.itemSetId setItem
-        |> addToItemProps boxId props
+        |> addToItemSet setItem box.itemSetId
+        |> addToItemProps props boxId
     Nothing -> model
 
 
-addToItemSet : Id -> SetItem -> Model -> Model
-addToItemSet itemSetId setItem ({itemSets} as model) =
+addToItemSet : SetItem -> Id -> Model -> Model
+addToItemSet setItem itemSetId ({itemSets} as model) =
   { model | itemSets =
     itemSets
       |> Dict.update itemSetId
@@ -114,8 +115,8 @@ addToItemSet itemSetId setItem ({itemSets} as model) =
   }
 
 
-addToItemProps : BoxId -> ItemProps -> Model -> Model
-addToItemProps boxId props ({boxes} as model) =
+addToItemProps : ItemProps -> BoxId -> Model -> Model
+addToItemProps props boxId ({boxes} as model) =
   { model | boxes =
     boxes
       |> Dict.update boxId
@@ -131,9 +132,9 @@ addToItemProps boxId props ({boxes} as model) =
 
 displayMode : Id -> BoxId -> Model -> Maybe DisplayMode
 displayMode topicId boxId model =
-  case byId boxId model |> Maybe.andThen (\box -> itemProps topicId box model) of
+  case byId boxId model |> Maybe.andThen (\box -> itemPropsOf topicId box model) of
     Just props -> Just props.displayMode
-    Nothing -> U.fail "displayMode" {topicId = topicId, boxId = boxId} Nothing
+    Nothing -> U.fail "Box.displayMode" {topicId = topicId, boxId = boxId} Nothing
 
 
 {-| Logs an error if box does not exist, or if topic is not in box -}

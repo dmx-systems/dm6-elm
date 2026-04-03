@@ -112,6 +112,7 @@ type alias Box =
   }
 
 
+-- TODO: differentiate topic/assoc
 type alias ItemProps =
   { id : Id
   , displayMode : DisplayMode -- serialized as "display", TODO: rename to "display"?

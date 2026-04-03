@@ -471,7 +471,7 @@ landTopic topicId displayMode model =
       displayMode
   in
   model
-    |> Box.addItem boxId (ItemProps topicId displayMode)
+    |> Box.addItem (ItemProps topicId displayMode) boxId
     |> TM.addItem topicId props boxId
     |> SelAPI.select topicId boxPath
     |> TextAPI.enterEdit topicId boxPath

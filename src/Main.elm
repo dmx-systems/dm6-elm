@@ -310,22 +310,16 @@ createAssocAndAddToBox assocType player1 player2 boxId model =
 
 moveTopicToBox : Id -> BoxId -> Point -> BoxId -> BoxPath -> Point -> Model -> Model
 moveTopicToBox topicId boxId origPos targetBoxId targetPath pos model =
-  let
-    props_ =
-      TM.topicProps topicId boxId model
-        |> Maybe.andThen (\props -> Just (TopicP { props | pos = pos }))
-  in
-  case props_ of
-    Just props ->
+  case (TM.topicProps topicId boxId model, Box.displayMode topicId boxId model) of
+    (Just topicProps, Just displayMode) ->
       model
-        -- TODO: update "box" state
-        -- TODO: don't operate on "topicMap" directly
+        |> Box.addItem (ItemProps topicId displayMode) targetBoxId
         |> TM.removeItem topicId boxId
         |> TM.setTopicPos topicId boxId origPos
-        |> TM.addItem topicId props targetBoxId
+        |> TM.addItem topicId (TopicP { topicProps | pos = pos }) targetBoxId
         |> SelAPI.select targetBoxId targetPath
         |> Size.auto
-    Nothing -> model
+    _ -> model
 
 
 select : Id -> BoxPath -> Model -> (Model, Cmd Msg)
