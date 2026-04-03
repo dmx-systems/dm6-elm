@@ -1,6 +1,7 @@
 module TopicMap.ViewModel exposing (topicsToRender, assocsToRender, isLimboTopic,
   isLimboAssoc, limboState)
 
+import Item
 import Box
 import Feature.Search exposing (SearchResult(..))
 import Model exposing (Model)
@@ -23,25 +24,11 @@ topicsToRender map model =
         { mapItem
         | props =
           case mapItem.props of
-            TopicP props -> TopicP <| effectiveDisplayMode mapItem.id map.id model props
+            TopicP props -> TopicP <| effectiveDisplayMode mapItem.id props map.id model
             AssocP _ -> U.logError "topicsToRender" "Found assoc in a topic list" mapItem.props
         }
       )
-    limboTopic =
-      case limboState model of
-        Just (topicId, _, limboBoxId) ->
-          if limboBoxId == map.id && (not <| Box.hasItem map.id topicId model) then
-            let
-              _ = U.info "viewLimboTopic" (topicId, "not in map", map.id)
-              props =
-                TopicP
-                  <| effectiveDisplayMode topicId map.id model
-                  <| TM.initTopicProps topicId map.id model
-            in
-            [ MapItem topicId Removed props ] -- TODO: explain Removed
-          else
-            []
-        Nothing -> []
+    limboTopic = limboMapItem map.id model
   in
   topics ++ limboTopic
 
@@ -65,23 +52,34 @@ shouldItemRender boxId model item =
   TM.isVisible item || isLimboItem item boxId model
 
 
--- Note: "props" is last paramter for piping
-effectiveDisplayMode : Id -> BoxId -> Model -> TopicProps -> TopicProps
-effectiveDisplayMode topicId boxId model props =
+effectiveDisplayMode : Id -> TopicProps -> BoxId -> Model -> TopicProps
+effectiveDisplayMode topicId props boxId model =
   case Box.displayMode topicId boxId model of
     Just displayMode ->
       { props | displayMode =
         if isLimboTopic topicId boxId model then
-          case displayMode of
-            TopicD _ -> TopicD Detail
-            BoxD _ ->
-              case TM.isEmpty topicId model of
-                True -> displayMode -- don't whitebox an empty box
-                False -> BoxD WhiteBox
+          case Item.isBox topicId model of
+            True -> BoxD WhiteBox
+            False -> TopicD Detail
         else
           displayMode
       }
     Nothing -> props
+
+
+limboMapItem : BoxId -> Model -> List MapItem
+limboMapItem mapId model =
+  case limboState model of
+    Just (topicId, _, limboBoxId) ->
+      if limboBoxId == mapId && (not <| Box.hasItem mapId topicId model) then
+        let
+          _ = U.info "viewLimboTopic" (topicId, "not in map", mapId)
+          props = TopicP <| TM.initLimboTopicProps topicId mapId model
+        in
+        [ MapItem topicId Removed props ] -- TODO: explain Removed
+      else
+        []
+    Nothing -> []
 
 
 isLimboItem : MapItem -> BoxId -> Model -> Bool

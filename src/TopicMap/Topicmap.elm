@@ -1,8 +1,8 @@
 module TopicMap.TopicMap exposing (fullscreen, byId, byIdOrLog, update, updateRect,
   updateScrollPos, visibleTopics, topicPos, setTopicPos, updateTopicPos, topicProps,
-  initItemProps, initTopicProps, initTopicPos, assocGeometry, create, addItem, showItem,
-  removeItem, removeItem_, revelationBoxId, revelationBoxPath, landingTarget, isEmpty,
-  isUnboxed, isTopic, isAssoc, isVisible, isPinned)
+  initItemProps, initTopicProps, initLimboTopicProps, initTopicPos, assocGeometry, create,
+  addItem, showItem, removeItem, removeItem_, revelationBoxId, revelationBoxPath, landingTarget,
+  isEmpty, isUnboxed, isTopic, isAssoc, isVisible, isPinned)
 
 import Box
 import Config as C
@@ -140,10 +140,19 @@ initTopicProps topicId mapId model =
   TopicProps
     ( initTopicPos mapId model )
     ( case Item.isBox topicId model of
-      True -> BoxD BlackBox
-      False -> TopicD LabelOnly
+        True -> BoxD BlackBox
+        False -> TopicD LabelOnly
     )
 
+
+initLimboTopicProps : Id -> BoxId -> Model -> TopicProps
+initLimboTopicProps topicId mapId model =
+  TopicProps
+    ( initTopicPos mapId model )
+    ( case Item.isBox topicId model of
+        True -> BoxD WhiteBox
+        False -> TopicD Detail
+    )
 
 {-| Logs an error if box does not exist. -}
 initTopicPos : BoxId -> Model -> Point
