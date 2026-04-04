@@ -3,6 +3,7 @@ module Feature.ToolAPI exposing (viewGlobalTools, viewMapTools, viewToolbar, vie
 
 import Box
 import Config as C
+import Renderer
 import Feature.IconAPI as IconAPI
 import Feature.MouseAPI as MouseAPI
 import Feature.NavAPI as NavAPI
@@ -251,6 +252,7 @@ viewTopicToolbar pos topicId boxPath model =
         [ hGap 14
         , viewButton "Fullscreen" "maximize-2" (Tool.Fullscreen topicId) False target
         , viewButton "Unbox" "external-link" (Tool.Unbox topicId boxId) isDisabled target
+        , Renderer.viewSelect
         ]
       else
         []

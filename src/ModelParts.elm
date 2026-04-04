@@ -4,6 +4,8 @@ module ModelParts exposing (Id, Item, Items, ItemInfo(..), AssocIds, TopicInfo, 
   BoxDisplay(..), ImageId, Attrs, PointerType, encodeItem, encodeItemSet, encodeBox,
   encodeDisplayMode, itemDecoder, itemSetDecoder, boxDecoder, toDictDecoder)
 
+import RendererDef exposing (Renderer)
+
 import Dict exposing (Dict)
 import Html exposing (Attribute)
 import Json.Decode as D
@@ -108,7 +110,7 @@ type alias Box =
   { id : BoxId
   , itemSetId : Id
   , itemProps : Dict Id ItemProps
-  -- TODO: add "renderer"
+  , renderer : Renderer
   }
 
 
@@ -239,7 +241,7 @@ encodeBox box =
     [ ("id", E.int box.id)
     , ("itemSetId", E.int box.itemSetId)
     , ("itemProps", E.list encodeItemProps <| Dict.values box.itemProps)
-    -- TODO: "renderer"
+    , ("renderer", RendererDef.encode box.renderer)
     ]
 
 
@@ -334,11 +336,11 @@ itemSetDecoder =
 
 boxDecoder : D.Decoder Box
 boxDecoder =
-  D.map3 Box
+  D.map4 Box
     (D.field "id" D.int)
     (D.field "itemSetId" D.int)
     (D.field "itemProps" (boxItemDecoder |> toDictDecoder))
-    -- TODO: "renderer"
+    (D.field "renderer" RendererDef.decoder)
 
 
 boxItemDecoder : D.Decoder ItemProps
@@ -348,7 +350,6 @@ boxItemDecoder =
     (D.field "display" D.string |> D.andThen displayModeDecoder)
 
 
--- TODO: eliminate D.andThen
 -- TODO: remove from TopicMapDef
 displayModeDecoder : String -> D.Decoder DisplayMode
 displayModeDecoder str =
@@ -358,7 +359,7 @@ displayModeDecoder str =
     "BlackBox" -> D.succeed (BoxD BlackBox)
     "WhiteBox" -> D.succeed (BoxD WhiteBox)
     "Unboxed" -> D.succeed (BoxD Unboxed)
-    _ -> D.fail <| "\"" ++ str ++ "\" is an invalid DisplayMode"
+    _ -> D.fail ("\"" ++ str ++ "\" is an invalid DisplayMode")
 
 
 toDictDecoder : D.Decoder (IdRecord r) -> D.Decoder (Dict Id (IdRecord r))

@@ -50,7 +50,10 @@ viewInput model =
 
 searchInputStyle : Attrs Msg
 searchInputStyle =
-  [ style "width" "100px" ]
+  [ style "width" "100px"
+  , style "font-family" C.mainFont
+  , style "font-size" <| fromInt C.contentFontSize ++ "px"
+  ]
 
 
 viewSearchResult : Model -> List (Html Msg)
