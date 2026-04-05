@@ -1,8 +1,8 @@
 module TopicMap.TopicMap exposing (fullscreen, byId, byIdOrLog, update, updateRect,
   updateScrollPos, visibleTopics, topicPos, setTopicPos, updateTopicPos, topicProps,
-  initItemProps, initTopicProps, initLimboTopicProps, initTopicPos, assocGeometry, create,
-  addItem, showItem, removeItem, removeItem_, revelationBoxId, revelationBoxPath, landingTarget,
-  isEmpty, isUnboxed, isTopic, isAssoc, isVisible, isPinned)
+  initItemProps, initLimboTopicProps, initTopicPos, assocGeometry, create, addItem, showItem,
+  removeItem, removeItem_, revelationBoxId, revelationBoxPath, landingTarget, isEmpty,
+  isUnboxed, isTopic, isAssoc, isVisible, isPinned)
 
 import Box
 import Config as C
@@ -16,7 +16,6 @@ import TopicMap.TopicMapDef exposing (TopicMap, MapItems, MapItem, Visibility(..
 import Utils as U
 
 import Dict
-import String exposing (fromInt)
 
 
 

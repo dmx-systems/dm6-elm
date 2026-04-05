@@ -340,7 +340,7 @@ boxDecoder =
     (D.field "id" D.int)
     (D.field "itemSetId" D.int)
     (D.field "itemProps" (boxItemDecoder |> toDictDecoder))
-    (D.field "renderer" RendererDef.decoder)
+    (D.field "renderer" (D.string |> RendererDef.decoder))
 
 
 boxItemDecoder : D.Decoder ItemProps

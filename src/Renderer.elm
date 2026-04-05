@@ -3,10 +3,13 @@ module Renderer exposing (viewSelect)
 import Config as C
 import Model exposing (Msg(..))
 import ModelParts exposing (Attrs)
+import RendererDef exposing (Renderer, decoder, toString)
 import Utils as U
 
 import Html exposing (Html, text, select, option)
-import Html.Attributes exposing (style)
+import Html.Attributes exposing (style, value)
+import Html.Events exposing (on, targetValue)
+import Json.Decode as D
 import String exposing (fromInt)
 
 
@@ -14,14 +17,17 @@ import String exposing (fromInt)
 -- VIEW
 
 
-viewSelect : Html Msg
-viewSelect =
+viewSelect : Renderer -> (Renderer -> Msg) -> Html Msg
+viewSelect renderer tagger =
   select
-    ( [ U.onMouseDownStop NoOp ]
+    ( [ value (toString renderer)
+      , on "input" (D.map tagger (decoder targetValue))
+      , U.onMouseDownStop NoOp
+      ]
       ++ rendererSelectStyle
     )
-    [ option [] [ text "Topic map" ]
-    , option [] [ text "List" ]
+    [ option [ value "TopicMap" ] [ text "Topic map" ]
+    , option [ value "List" ] [ text "List" ]
     ]
 
 

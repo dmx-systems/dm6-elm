@@ -1,6 +1,7 @@
 module Feature.Tool exposing (..)
 
 import ModelParts exposing (Id, BoxId)
+import RendererDef exposing (Renderer)
 
 import Json.Decode as D
 import Json.Encode as E
@@ -45,6 +46,7 @@ type Msg
   | Remove
   | Fullscreen BoxId -- box only
   | Unbox BoxId BoxId -- box only
+  | SelectRenderer Renderer -- box only
   | ToggleDisplay Id BoxId
   -- Text Tools
   | Image Id

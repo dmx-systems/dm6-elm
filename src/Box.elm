@@ -1,10 +1,10 @@
 module Box exposing (hasItem, hasDeepItem, create, addItem, displayMode, setDisplayMode,
-  updateDisplayMode, deleteItem, mapTitle, isFullscreen, elemId, firstId, fromPath)
+  updateDisplayMode, rendererOf, setRenderer, deleteItem, mapTitle, isFullscreen, elemId, firstId, fromPath)
 
 import Item
 import Model exposing (Model)
 import ModelParts exposing (..)
-import RendererDef
+import RendererDef exposing (Renderer)
 import Utils as U
 
 import Dict
@@ -159,6 +159,26 @@ updateDisplayMode topicId boxId transform model =
                 Nothing -> Nothing
             )
           }
+        Nothing -> Nothing
+    )
+  }
+
+
+-- Renderer
+
+rendererOf : BoxId -> Model -> Maybe Renderer
+rendererOf boxId model =
+  case byId boxId model of
+    Just box -> Just box.renderer
+    Nothing -> U.fail "Box.renderer" {boxId = boxId} Nothing
+
+
+setRenderer : BoxId -> Renderer -> Model -> Model
+setRenderer boxId renderer model =
+  { model | boxes = model.boxes |> Dict.update boxId
+    (\maybeBox ->
+      case maybeBox of
+        Just box -> Just { box | renderer = renderer }
         Nothing -> Nothing
     )
   }

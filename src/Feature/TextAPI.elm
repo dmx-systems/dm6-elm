@@ -10,7 +10,6 @@ import ModelParts exposing (..)
 import Storage as S
 import Task
 import TopicMap.Size as Size -- TODO: don't import, let caller do the sizing instead
-import TopicMap.TopicMap as TM
 import Undo exposing (UndoModel)
 import Utils as U
 

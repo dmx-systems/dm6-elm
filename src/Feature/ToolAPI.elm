@@ -14,6 +14,7 @@ import Feature.Tool as Tool exposing (LineStyle(..))
 import Item
 import Model exposing (Model, Msg(..))
 import ModelParts exposing (..)
+import RendererDef exposing (Renderer)
 import Storage as S
 import TopicMap.Size as Size
 import TopicMap.TopicMap as TM
@@ -248,12 +249,17 @@ viewTopicToolbar pos topicId boxPath model =
       if Item.isBox topicId model then
         let
           isDisabled = TM.isEmpty topicId model || TM.isUnboxed topicId boxId model
+          rendererSelect =
+            case Box.rendererOf topicId model of
+              Just renderer ->
+                [ Renderer.viewSelect renderer (Tool << Tool.SelectRenderer) ]
+              Nothing -> []
         in
         [ hGap 14
         , viewButton "Fullscreen" "maximize-2" (Tool.Fullscreen topicId) False target
         , viewButton "Unbox" "external-link" (Tool.Unbox topicId boxId) isDisabled target
-        , Renderer.viewSelect
         ]
+        ++ rendererSelect
       else
         []
   in
@@ -413,6 +419,8 @@ update msg ({present} as undoModel) =
     Tool.Fullscreen boxId -> (undoModel, NavAPI.pushUrl boxId)
     Tool.Unbox boxId targetBoxId -> unbox boxId targetBoxId present |> S.store
       |> Undo.swap undoModel
+    Tool.SelectRenderer renderer -> selectRenderer renderer present |> S.store
+      |> Undo.swap undoModel
     Tool.ToggleDisplay topicId boxId -> toggleDisplay topicId boxId present |> S.store
       |> Undo.swap undoModel
     -- Text Tools
@@ -517,6 +525,13 @@ unbox boxId targetBoxId model =
   Transfer.unboxContent boxId targetBoxId model
     |> Box.setDisplayMode boxId targetBoxId (BoxD Unboxed)
     |> Size.auto
+
+
+selectRenderer : Renderer -> Model -> Model
+selectRenderer renderer model =
+  case SelAPI.single model of
+    Just (topicId, _) -> Box.setRenderer topicId renderer model
+    Nothing -> U.logError "selectRenderer" "called when there is no single selection" model
 
 
 toggleDisplay : Id -> BoxId -> Model -> Model
