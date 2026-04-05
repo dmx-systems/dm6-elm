@@ -1,5 +1,8 @@
-module RendererDef exposing (Renderer(..), encode, decoder, toString)
+module RendererDef exposing (Renderer(..), all, encode, decoder, toName)
 
+-- import Utils as U -- TODO: creates circular dependency
+
+import Dict exposing (Dict)
 import Json.Decode as D
 import Json.Encode as E
 
@@ -13,37 +16,62 @@ type Renderer
   | List
 
 
+type alias RendererInfo =
+  { name : String
+  , label : String
+  , renderer : Renderer
+  }
+
+
+
+-- VALUES
+
+
+-- key = renderer name
+all : Dict String RendererInfo
+all =
+  Dict.fromList
+    [ ("TopicMap", RendererInfo "TopicMap" "Topic Map" TopicMap)
+    , ("List",     RendererInfo "List"     "List"      List)
+    ]
+
+
 
 -- JSON
 
 
 encode : Renderer -> E.Value
 encode =
-  toString >> E.string
+  toName >> E.string
 
 
 decoder : D.Decoder String -> D.Decoder Renderer
 decoder =
   D.andThen
-    (\str ->
-      case fromString str of
+    (\name ->
+      case byName name of
         Just renderer -> D.succeed renderer
-        Nothing -> D.fail ("\"" ++ str ++ "\" is an invalid Renderer")
+        Nothing -> D.fail ("\"" ++ name ++ "\" is an invalid Renderer")
     )
 
 
 --
 
-toString : Renderer -> String
-toString renderer =
-  case renderer of
-    TopicMap -> "TopicMap"
-    List -> "List"
+toName : Renderer -> String
+toName r =
+  let
+    rs =
+      all
+        |> Dict.values
+        |> List.filter (\{renderer} -> renderer == r)
+  in
+  case rs of
+    [{name}] -> name
+    _ -> "" -- U.logError "RendererDef.toName" "" ""
 
 
-fromString : String -> Maybe Renderer
-fromString str =
-  case str of
-    "TopicMap" -> Just TopicMap
-    "List" -> Just List
-    _ -> Nothing
+byName : String -> Maybe Renderer
+byName name =
+  case all |> Dict.get name of
+    Just {renderer} -> Just renderer
+    Nothing -> Nothing

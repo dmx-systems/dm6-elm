@@ -3,9 +3,10 @@ module Renderer exposing (viewSelect)
 import Config as C
 import Model exposing (Msg(..))
 import ModelParts exposing (Attrs)
-import RendererDef exposing (Renderer, decoder, toString)
+import RendererDef exposing (Renderer, all, decoder, toName)
 import Utils as U
 
+import Dict
 import Html exposing (Html, text, select, option)
 import Html.Attributes exposing (style, value)
 import Html.Events exposing (on, targetValue)
@@ -20,19 +21,29 @@ import String exposing (fromInt)
 viewSelect : Renderer -> (Renderer -> Msg) -> Html Msg
 viewSelect renderer tagger =
   select
-    ( [ value (toString renderer)
+    ( [ value (toName renderer)
       , on "input" (D.map tagger (decoder targetValue))
       , U.onMouseDownStop NoOp
       ]
-      ++ rendererSelectStyle
+      ++ selectStyle
     )
-    [ option [ value "TopicMap" ] [ text "Topic map" ]
-    , option [ value "List" ] [ text "List" ]
-    ]
+    viewOptions
 
 
-rendererSelectStyle : Attrs Msg
-rendererSelectStyle =
+viewOptions : List (Html Msg)
+viewOptions =
+  all
+    |> Dict.values
+    |> List.map
+      (\{name, label} ->
+        option
+          [ value name ]
+          [ text label ]
+      )
+
+
+selectStyle : Attrs Msg
+selectStyle =
   [ style "position" "relative"
   , style "top" "-2px"
   , style "left" "3px"
