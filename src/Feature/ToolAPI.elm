@@ -3,7 +3,6 @@ module Feature.ToolAPI exposing (viewGlobalTools, viewMapTools, viewToolbar, vie
 
 import Box
 import Config as C
-import Renderer
 import Feature.IconAPI as IconAPI
 import Feature.MouseAPI as MouseAPI
 import Feature.NavAPI as NavAPI
@@ -23,9 +22,11 @@ import TopicMap.Transfer as Transfer
 import Undo exposing (UndoModel)
 import Utils as U
 
-import Html exposing (Html, div, span, text, button, input, label)
-import Html.Attributes exposing (class, style, title, name, type_, disabled, checked)
-import Html.Events exposing (onClick)
+import Dict
+import Html exposing (Html, div, span, text, button, input, label, select, option)
+import Html.Attributes exposing (class, style, title, name, value, type_, disabled, checked)
+import Html.Events exposing (onClick, on, targetValue)
+import Json.Decode as D
 import String exposing (fromInt)
 
 
@@ -252,7 +253,7 @@ viewTopicToolbar pos topicId boxPath model =
           rendererSelect =
             case Box.rendererOf topicId model of
               Just renderer ->
-                [ Renderer.viewSelect renderer (Tool << Tool.SelectRenderer) ]
+                [ viewSelect renderer (Tool << Tool.SelectRenderer) ]
               Nothing -> []
         in
         [ hGap 14
@@ -270,6 +271,40 @@ viewTopicToolbar pos topicId boxPath model =
       ++ IconAPI.viewPicker model
       ++ SearchAPI.viewTraversalResult model
     )
+
+
+viewSelect : Renderer -> (Renderer -> Msg) -> Html Msg
+viewSelect renderer tagger =
+  select
+    ( [ value (RendererDef.toName renderer)
+      , on "input" (D.map tagger (RendererDef.decoder targetValue))
+      , U.onMouseDownStop NoOp
+      ]
+      ++ selectStyle
+    )
+    viewOptions
+
+
+viewOptions : List (Html Msg)
+viewOptions =
+  RendererDef.all
+    |> Dict.values
+    |> List.map
+      (\{name, label} ->
+        option
+          [ value name ]
+          [ text label ]
+      )
+
+
+selectStyle : Attrs Msg
+selectStyle =
+  [ style "position" "relative"
+  , style "top" "-2px"
+  , style "left" "3px"
+  , style "font-family" C.mainFont
+  , style "font-size" <| fromInt C.contentFontSize ++ "px"
+  ]
 
 
 viewTextToolbar : Point -> Id -> BoxPath -> Html Msg

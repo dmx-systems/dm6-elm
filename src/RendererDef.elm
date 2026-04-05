@@ -60,10 +60,9 @@ decoder =
 toName : Renderer -> String
 toName r =
   let
-    rs =
-      all
-        |> Dict.values
-        |> List.filter (\{renderer} -> renderer == r)
+    rs = all
+      |> Dict.values
+      |> List.filter (\{renderer} -> renderer == r)
   in
   case rs of
     [{name}] -> name
