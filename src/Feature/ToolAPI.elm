@@ -2,6 +2,7 @@ module Feature.ToolAPI exposing (viewGlobalTools, viewMapTools, viewToolbar, vie
   closeMenu, update)
 
 import Box
+import BoxRendererDef exposing (Renderer)
 import Config as C
 import Feature.IconAPI as IconAPI
 import Feature.MouseAPI as MouseAPI
@@ -13,7 +14,6 @@ import Feature.Tool as Tool exposing (LineStyle(..))
 import Item
 import Model exposing (Model, Msg(..))
 import ModelParts exposing (..)
-import BoxRendererDef exposing (Renderer)
 import Storage as S
 import TopicMap.Size as Size
 import TopicMap.TopicMap as TM

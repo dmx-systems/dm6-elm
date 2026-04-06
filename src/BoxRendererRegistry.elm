@@ -3,19 +3,12 @@ module BoxRendererRegistry exposing (view)
 import Box
 import BoxRenderer exposing (BoxRenderer, BoxView)
 import BoxRendererDef exposing (toName)
--- box renderer modules
+-- installed box renderers
 import TopicMap.View
+import TopicList.TopicList
 
 import Dict exposing (Dict)
 import Html exposing (text)
-
-
-
--- TYPES
-
-
-type alias InstalledBoxRenderer =
-  { view : BoxView }
 
 
 
@@ -23,10 +16,11 @@ type alias InstalledBoxRenderer =
 
 
 -- key = renderer name
-registry : Dict String InstalledBoxRenderer
+registry : Dict String {view : BoxView}
 registry =
   Dict.fromList
-    [ ("TopicMap", InstalledBoxRenderer TopicMap.View.view)
+    [ ("TopicMap", {view = TopicMap.View.view})
+    , ("List", {view = TopicList.TopicList.view})
     ]
 
 

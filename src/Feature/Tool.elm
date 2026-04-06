@@ -1,7 +1,7 @@
 module Feature.Tool exposing (..)
 
-import ModelParts exposing (Id, BoxId)
 import BoxRendererDef exposing (Renderer)
+import ModelParts exposing (Id, BoxId)
 
 import Json.Decode as D
 import Json.Encode as E

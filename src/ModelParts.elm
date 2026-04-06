@@ -23,6 +23,9 @@ type alias IdRecord r =
 
 -- Item
 
+type alias Items = Dict Id Item
+
+
 type alias Item =
   { id : Id
   , info : ItemInfo
@@ -86,8 +89,6 @@ type alias Rectangle =
   , y2 : Int
   }
 
-
-type alias Items = Dict Id Item
 
 type alias Id = Int
 type alias AssocIds = Set Id

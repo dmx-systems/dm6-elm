@@ -136,7 +136,7 @@ boxInfo renderBox boxId boxPath model =
       , ( { w = (map.rect.x2 - map.rect.x1) |> fromInt
           , h = (map.rect.y2 - map.rect.y1) |> fromInt
           }
-        , if model.boxId == boxId then
+        , if Box.isFullscreen boxId model then
             []
           else
             nestedBoxStyle boxId map.rect boxPath model

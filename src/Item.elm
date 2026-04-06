@@ -1,6 +1,6 @@
-module Item exposing (topicById, assocById, byId, topicLabel, topicSize, setTopicSize,
-  updateTopic, createTopic, createAssoc, relatedItems, otherPlayerId, assocIds, update,
-  hasPlayer, isBox, nextId)
+module Item exposing (topicById, topicOrNothing, assocById, byId, topicLabel, topicSize,
+  setTopicSize, updateTopic, createTopic, createAssoc, relatedItems, otherPlayerId, assocIds,
+  update, hasPlayer, isBox, nextId)
 
 import Config as C
 import Model exposing (Model)
@@ -22,8 +22,18 @@ topicById topicId model =
     Just {info} ->
       case info of
         Topic topic -> Just topic
-        Assoc _ -> U.topicMismatch "topicById" topicId Nothing
-    Nothing -> U.fail "topicById" topicId Nothing
+        Assoc _ -> U.topicMismatch "Item.topicById" topicId Nothing
+    Nothing -> U.fail "Item.topicById" topicId Nothing
+
+
+topicOrNothing : Id -> Model -> Maybe TopicInfo
+topicOrNothing topicId model =
+  case byId topicId model of
+    Just {info} ->
+      case info of
+        Topic topic -> Just topic
+        Assoc _ -> Nothing
+    Nothing -> U.fail "Item.topicOrNothing" topicId Nothing
 
 
 {-| Returns an association by ID.
@@ -34,9 +44,9 @@ assocById assocId model =
   case byId assocId model of
     Just {info} ->
       case info of
-        Topic _ -> U.assocMismatch "assocById" assocId Nothing
+        Topic _ -> U.assocMismatch "Item.assocById" assocId Nothing
         Assoc assoc -> Just assoc
-    Nothing -> U.fail "assocById" assocId Nothing
+    Nothing -> U.fail "Item.assocById" assocId Nothing
 
 
 {-| Returns an item by ID.
@@ -46,7 +56,7 @@ byId : Id -> Model -> Maybe Item
 byId itemId model =
   case model.items |> Dict.get itemId of
     Just item -> Just item
-    Nothing -> U.illegalItemId "byId" itemId Nothing
+    Nothing -> U.illegalItemId "Item.byId" itemId Nothing
 
 
 topicLabel : TopicInfo -> String
@@ -61,7 +71,7 @@ topicSize : Id -> (TextSize -> Size) -> Model -> Maybe Size
 topicSize topicId get model =
   case topicById topicId model of
     Just { size } -> Just <| get size
-    Nothing -> U.fail "topicSize" {topicId = topicId} Nothing
+    Nothing -> U.fail "Item.topicSize" {topicId = topicId} Nothing
 
 
 {-| Logs an error if box does not exist, or topic is not in box -}
@@ -89,7 +99,7 @@ updateTopic topicId transform model =
     (\item ->
       case item.info of
         Topic topic -> { item | info = Topic <| transform topic }
-        Assoc _  -> U.topicMismatch "updateTopic" topicId item
+        Assoc _  -> U.topicMismatch "Item.updateTopic" topicId item
     )
 
 
@@ -145,7 +155,7 @@ otherPlayerId assocId playerId model =
       else if playerId == player2 then
         player1
       else
-        U.logError "otherPlayerId"
+        U.logError "Item.otherPlayerId"
           (fromInt playerId ++ " is not a player in assoc " ++ fromInt assocId) -1
     Nothing -> -1 -- error is already logged
 
@@ -182,7 +192,7 @@ update itemId transform model =
     (\maybeItem ->
       case maybeItem of
         Just item -> Just <| transform item
-        Nothing -> U.illegalItemId "update" itemId Nothing
+        Nothing -> U.illegalItemId "Item.update" itemId Nothing
     )
   }
 

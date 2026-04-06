@@ -1,5 +1,6 @@
 module Model exposing (..)
 
+import BoxRendererDef
 import Config as C
 import Feature.Icon as Icon
 import Feature.Mouse as Mouse
@@ -9,7 +10,6 @@ import Feature.Sel as Sel
 import Feature.Text as Text
 import Feature.Tool as Tool
 import ModelParts exposing (..)
-import BoxRendererDef
 import TopicMap.TopicMapDef as TopicMapDef
 
 import Dict exposing (Dict)

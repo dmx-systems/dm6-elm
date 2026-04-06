@@ -1,10 +1,11 @@
-module Box exposing (hasItem, hasDeepItem, create, addItem, displayMode, setDisplayMode,
-  updateDisplayMode, rendererOf, setRenderer, deleteItem, mapTitle, isFullscreen, elemId, firstId, fromPath)
+module Box exposing (hasItem, hasDeepItem, topics, create, addItem, displayMode, setDisplayMode,
+  updateDisplayMode, rendererOf, setRenderer, deleteItem, mapTitle, isFullscreen, elemId,
+  firstId, fromPath)
 
+import BoxRendererDef exposing (Renderer)
 import Item
 import Model exposing (Model)
 import ModelParts exposing (..)
-import BoxRendererDef exposing (Renderer)
 import Utils as U
 
 import Dict
@@ -57,6 +58,21 @@ hasDeepItem boxId itemId model =
         Nothing -> False
     else
       False
+
+
+topics : BoxId -> Model -> Maybe (List TopicInfo)
+topics boxId model =
+  case itemSetOf boxId model of
+    Just itemSet -> Just
+      (itemSet.items |> List.foldr
+        (\setItem topicsAcc ->
+          case Item.topicOrNothing setItem.id model of
+            Just topic -> topic :: topicsAcc
+            Nothing -> topicsAcc
+        )
+        []
+      )
+    Nothing -> Nothing
 
 
 -- Create box
