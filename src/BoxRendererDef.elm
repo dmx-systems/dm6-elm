@@ -1,5 +1,6 @@
-module RendererDef exposing (Renderer(..), all, encode, decoder, toName)
+module BoxRendererDef exposing (Renderer(..), all, encode, decoder, toName)
 
+-- import ModelParts exposing (BoxId) -- TODO: creates circular dependency
 -- import Utils as U -- TODO: creates circular dependency
 
 import Dict exposing (Dict)
@@ -66,7 +67,7 @@ toName r =
   in
   case rs of
     [{name}] -> name
-    _ -> "" -- U.logError "RendererDef.toName" "" ""
+    _ -> "" -- U.logError "BoxRendererDef.toName" "" ""
 
 
 byName : String -> Maybe Renderer

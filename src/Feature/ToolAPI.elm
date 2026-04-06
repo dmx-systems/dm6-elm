@@ -13,7 +13,7 @@ import Feature.Tool as Tool exposing (LineStyle(..))
 import Item
 import Model exposing (Model, Msg(..))
 import ModelParts exposing (..)
-import RendererDef exposing (Renderer)
+import BoxRendererDef exposing (Renderer)
 import Storage as S
 import TopicMap.Size as Size
 import TopicMap.TopicMap as TM
@@ -276,8 +276,8 @@ viewTopicToolbar pos topicId boxPath model =
 viewSelect : Renderer -> (Renderer -> Msg) -> Html Msg
 viewSelect renderer tagger =
   select
-    ( [ value (RendererDef.toName renderer)
-      , on "input" (D.map tagger (RendererDef.decoder targetValue))
+    ( [ value (BoxRendererDef.toName renderer)
+      , on "input" (D.map tagger (BoxRendererDef.decoder targetValue))
       , U.onMouseDownStop NoOp
       ]
       ++ selectStyle
@@ -287,7 +287,7 @@ viewSelect renderer tagger =
 
 viewOptions : List (Html Msg)
 viewOptions =
-  RendererDef.all
+  BoxRendererDef.all
     |> Dict.values
     |> List.map
       (\{name, label} ->

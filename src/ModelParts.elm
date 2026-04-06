@@ -4,7 +4,7 @@ module ModelParts exposing (Id, Item, Items, ItemInfo(..), AssocIds, TopicInfo, 
   BoxDisplay(..), ImageId, Attrs, PointerType, encodeItem, encodeItemSet, encodeBox,
   encodeDisplayMode, itemDecoder, itemSetDecoder, boxDecoder, toDictDecoder)
 
-import RendererDef exposing (Renderer)
+import BoxRendererDef exposing (Renderer)
 
 import Dict exposing (Dict)
 import Html exposing (Attribute)
@@ -241,7 +241,7 @@ encodeBox box =
     [ ("id", E.int box.id)
     , ("itemSetId", E.int box.itemSetId)
     , ("itemProps", E.list encodeItemProps <| Dict.values box.itemProps)
-    , ("renderer", RendererDef.encode box.renderer)
+    , ("renderer", BoxRendererDef.encode box.renderer)
     ]
 
 
@@ -340,7 +340,7 @@ boxDecoder =
     (D.field "id" D.int)
     (D.field "itemSetId" D.int)
     (D.field "itemProps" (boxItemDecoder |> toDictDecoder))
-    (D.field "renderer" (D.string |> RendererDef.decoder))
+    (D.field "renderer" (D.string |> BoxRendererDef.decoder))
 
 
 boxItemDecoder : D.Decoder ItemProps

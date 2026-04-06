@@ -13,7 +13,7 @@ import Feature.ToolAPI as ToolAPI
 import Item
 import Model exposing (Model, Msg(..))
 import ModelParts exposing (..)
-import Renderer
+import BoxRendererRegistry
 import Storage as S
 import TopicMap.Size as Size
 import TopicMap.TopicMap as TM
@@ -121,7 +121,7 @@ view ({present} as undoModel) =
             ( [ id "main" ]
               ++ mainStyle
             )
-            ( [ Renderer.view present.boxId [] present ] -- boxPath = []
+            ( [ BoxRendererRegistry.view present.boxId [] present ] -- boxPath = []
               ++ ToolAPI.viewMapTools undoModel
             )
         ]

@@ -1,6 +1,7 @@
 module TopicMap.View exposing (view)
 
 import Box
+import BoxRenderer exposing (BoxRenderer, BoxView)
 import Config as C
 import Feature.IconAPI as IconAPI
 import Feature.Mouse exposing (DragState(..), DragMode(..))
@@ -39,11 +40,12 @@ type alias BoxInfo =
   )
 
 
-type alias TopicRendering = (Attrs Msg, List (Html Msg))
+type alias TopicRendering =
+  (Attrs Msg, List (Html Msg))
 
 
-type alias LineRenderer
-  = Point -> Point -> Maybe AssocInfo -> BoxPath -> Attrs Msg -> Model -> List (Svg Msg)
+type alias LineRenderer =
+  Point -> Point -> Maybe AssocInfo -> BoxPath -> Attrs Msg -> Model -> List (Svg Msg)
 
 
 
@@ -51,10 +53,10 @@ type alias LineRenderer
 
 
 -- For the fullscreen box boxPath is empty
-view : BoxId -> BoxPath -> Model -> Html Msg
-view boxId boxPath model =
+view : BoxView
+view renderBox boxId boxPath model =
   let
-    ((topics, assocs), boxRect, (svgSize, boxStyle)) = boxInfo boxId boxPath model
+    ((topics, assocs), boxRect, (svgSize, boxStyle)) = boxInfo renderBox boxId boxPath model
   in
   div
     boxStyle
@@ -125,11 +127,11 @@ gAttr boxId boxRect model =
 
 
 -- For the fullscreen box boxPath is empty
-boxInfo : BoxId -> BoxPath -> Model -> BoxInfo
-boxInfo boxId boxPath model =
+boxInfo : BoxRenderer -> BoxId -> BoxPath -> Model -> BoxInfo
+boxInfo renderBox boxId boxPath model =
   case TM.byIdOrLog boxId model of
     Just map ->
-      ( viewItems map boxPath model
+      ( viewItems renderBox map boxPath model
       , map.rect
       , ( { w = (map.rect.x2 - map.rect.x1) |> fromInt
           , h = (map.rect.y2 - map.rect.y1) |> fromInt
@@ -164,15 +166,15 @@ nestedBoxStyle topicId rect boxPath model =
 
 
 -- For the fullscreen box boxPath is empty
-viewItems : TopicMap -> BoxPath -> Model -> (List (Html Msg), List (Svg Msg))
-viewItems map boxPath model =
+viewItems : BoxRenderer -> TopicMap -> BoxPath -> Model -> (List (Html Msg), List (Svg Msg))
+viewItems renderBox map boxPath model =
   let
     newPath = map.id :: boxPath
     topics =
       VM.topicsToRender map model |> List.map
         (\{id, props} ->
           case (Item.topicById id model, props) of
-            (Just topic, TopicP tProps) -> viewTopic topic tProps newPath model
+            (Just topic, TopicP tProps) -> viewTopic renderBox topic tProps newPath model
             _ -> U.logError "viewItems" ("problem with topic " ++ fromInt id) (text "")
         )
     assocs =
@@ -231,8 +233,8 @@ viewLimboAssoc boxId model =
 
 -- Topic Rendering
 
-viewTopic : TopicInfo -> TopicProps -> BoxPath -> Model -> Html Msg
-viewTopic topic props boxPath model =
+viewTopic : BoxRenderer -> TopicInfo -> TopicProps -> BoxPath -> Model -> Html Msg
+viewTopic renderBox topic props boxPath model =
   let
     boxId = Box.firstId boxPath
     render =
@@ -240,7 +242,7 @@ viewTopic topic props boxPath model =
         TopicD LabelOnly -> labelTopic
         TopicD Detail -> detailTopic
         BoxD BlackBox -> blackBoxTopic
-        BoxD WhiteBox -> whiteBoxTopic
+        BoxD WhiteBox -> whiteBoxTopic renderBox
         BoxD Unboxed -> unboxedTopic
     (style, children) = render topic props boxPath model
   in
@@ -519,15 +521,15 @@ selectionStyle topicId boxPath model =
     False -> []
 
 
-whiteBoxTopic : TopicInfo -> TopicProps -> BoxPath -> Model -> TopicRendering
-whiteBoxTopic topic props boxPath model =
+whiteBoxTopic : BoxRenderer -> TopicInfo -> TopicProps -> BoxPath -> Model -> TopicRendering
+whiteBoxTopic renderBox topic props boxPath model =
   let
     (style, children) = labelTopic topic props boxPath model
   in
   ( style
   , children
     ++ viewItemCount topic.id props model
-    ++ [ view topic.id boxPath model ]
+    ++ [ renderBox topic.id boxPath model ]
   )
 
 

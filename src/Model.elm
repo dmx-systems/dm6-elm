@@ -9,7 +9,7 @@ import Feature.Sel as Sel
 import Feature.Text as Text
 import Feature.Tool as Tool
 import ModelParts exposing (..)
-import RendererDef
+import BoxRendererDef
 import TopicMap.TopicMapDef as TopicMapDef
 
 import Dict exposing (Dict)
@@ -46,7 +46,7 @@ init =
   in
   { items = Dict.singleton 0 <| Item 0 (Topic homeTopic) Set.empty
   , itemSets = Dict.singleton 1 <| ItemSet 1 []
-  , boxes = Dict.singleton homeBoxId <| Box homeBoxId 1 Dict.empty RendererDef.TopicMap
+  , boxes = Dict.singleton homeBoxId <| Box homeBoxId 1 Dict.empty BoxRendererDef.TopicMap
   , boxId = homeBoxId
   , nextId = 2
   , imageCache = Dict.empty -- TODO: move to Text module, but should survive a map switch
