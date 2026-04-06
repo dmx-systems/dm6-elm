@@ -1,4 +1,6 @@
-module Item exposing (..)
+module Item exposing (topicById, assocById, byId, topicLabel, topicSize, setTopicSize,
+  updateTopic, createTopic, createAssoc, relatedItems, otherPlayerId, assocIds, update,
+  hasPlayer, isBox, nextId)
 
 import Config as C
 import Model exposing (Model)
@@ -91,21 +93,27 @@ updateTopic topicId transform model =
     )
 
 
-addTopic : String -> Maybe Icon -> Model -> (Model, Id)
-addTopic text icon model =
+createTopic : String -> Maybe Icon -> Model -> (Model, Id)
+createTopic text icon model =
   let
     id = model.nextId
     topic = TopicInfo id icon text <| TextSize C.topicDetailSize C.topicDetailSize
     item = Item id (Topic topic) Set.empty
   in
-  ( { model | items = model.items |> Dict.insert id item }
-    |> nextId
+  ( model
+      |> createTopic_ item
+      |> nextId
   , id
   )
 
 
-addAssoc : AssocType -> Id -> Id -> Model -> (Model, Id)
-addAssoc assocType player1 player2 model =
+createTopic_ : Item -> Model -> Model
+createTopic_ item ({items} as model) =
+  { model | items = items |> Dict.insert item.id item }
+
+
+createAssoc : AssocType -> Id -> Id -> Model -> (Model, Id)
+createAssoc assocType player1 player2 model =
   let
     id = model.nextId
     assoc = AssocInfo id assocType player1 player2

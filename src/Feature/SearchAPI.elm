@@ -2,7 +2,6 @@ module Feature.SearchAPI exposing (viewInput, viewSearchResult, viewTraversalRes
   closeMenu, update)
 
 import Box
-import Box.Size as Size
 import Config as C
 import Feature.IconAPI as IconAPI
 import Feature.NavAPI as NavAPI
@@ -12,6 +11,9 @@ import Item
 import Model exposing (Model, Msg(..))
 import ModelParts exposing (..)
 import Storage as S
+import TopicMap.Size as Size
+import TopicMap.TopicMap as TM
+import TopicMap.TopicMapDef exposing (ItemProps(..))
 import Undo exposing (UndoModel)
 import Utils as U
 
@@ -30,7 +32,7 @@ import String exposing (fromInt)
 viewInput : Model -> Html Msg
 viewInput model =
   let
-    target = Box.landingTarget model
+    target = TM.landingTarget model
   in
   div
     []
@@ -48,7 +50,10 @@ viewInput model =
 
 searchInputStyle : Attrs Msg
 searchInputStyle =
-  [ style "width" "100px" ]
+  [ style "width" "100px"
+  , style "font-family" C.mainFont
+  , style "font-size" <| fromInt C.contentFontSize ++ "px"
+  ]
 
 
 viewSearchResult : Model -> List (Html Msg)
@@ -230,7 +235,7 @@ fullscreenButtonStyle =
 
 isItemDisabled : Id -> Model -> Bool
 isItemDisabled topicId model =
-  case Box.revelationBoxId model of
+  case TM.revelationBoxId model of
     Just boxId -> Box.hasDeepItem topicId boxId model
     Nothing -> False
 
@@ -335,10 +340,10 @@ onRelTopicUnhovered model =
 
 revealTopic : Id -> Model -> Model
 revealTopic topicId model =
-  case Box.revelationBoxPath model of
+  case TM.revelationBoxPath model of
     Just (boxId :: _ as boxPath) ->
       model
-        |> Box.revealItem topicId boxId
+        |> revealItem topicId boxId
         |> closeMenu
         |> SelAPI.select topicId boxPath
         |> Size.auto
@@ -347,15 +352,40 @@ revealTopic topicId model =
 
 revealRelTopic : (Id, Id) -> Model -> Model
 revealRelTopic (topicId, assocId) model =
-  case Box.revelationBoxPath model of
+  case TM.revelationBoxPath model of
     Just (boxId :: _ as boxPath) ->
       model
-        |> Box.revealItem topicId boxId
-        |> Box.revealItem assocId boxId
+        |> revealItem topicId boxId
+        |> revealItem assocId boxId
         |> closeMenu
         |> SelAPI.select topicId boxPath
         |> Size.auto
     _ -> model
+
+
+revealItem : Id -> BoxId -> Model -> Model
+revealItem itemId boxId model =
+  if Box.hasItem boxId itemId model then
+    let
+      _ = U.info "revealItem" <| fromInt itemId ++ " is in " ++ fromInt boxId
+    in
+    TM.showItem itemId boxId model
+  else
+    let
+      _ = U.info "revealItem" <| fromInt itemId ++ " not in " ++ fromInt boxId
+      props = TM.initItemProps itemId boxId model
+    in
+    model
+      |> Box.addItem (ItemProps itemId (displayModeFrom props)) boxId
+      |> TM.addItem itemId props boxId
+
+
+-- ### TODO: model Box ItemProps for topic/assoc
+displayModeFrom : ItemProps -> DisplayMode
+displayModeFrom props =
+  case props of
+    TopicP {displayMode} -> displayMode
+    AssocP _ -> TopicD LabelOnly  -- ### FIXME
 
 
 -- "searchTopics" instead "search" avoids shadowing

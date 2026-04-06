@@ -2,7 +2,6 @@ port module Feature.TextAPI exposing (viewInput, viewTextarea, enterEdit, leaveE
   markdown, openImageFilePicker, update, sub)
 
 import Box
-import Box.Size as Size -- TODO: don't import, let caller do the sizing instead
 import Config as C
 import Feature.Text as Text exposing (EditState(..))
 import Item
@@ -10,6 +9,7 @@ import Model exposing (Model, Msg(..))
 import ModelParts exposing (..)
 import Storage as S
 import Task
+import TopicMap.Size as Size -- TODO: don't import, let caller do the sizing instead
 import Undo exposing (UndoModel)
 import Utils as U
 
@@ -103,9 +103,9 @@ enterEdit topicId boxPath model =
   let
     newModel =
       model
-      |> setEditState (Edit topicId boxPath)
-      |> switchTopicDisplay topicId (Box.firstId boxPath)
-      |> Size.auto
+        |> setEditState (Edit topicId boxPath)
+        |> switchTopicDisplay topicId (Box.firstId boxPath)
+        |> Size.auto
   in
   (newModel, focus newModel)
 
@@ -118,8 +118,8 @@ leaveEdit model =
         elemId = Box.elemId "topic" topicId boxPath
       in
       ( model
-        |> setEditState NoEdit
-        |> Size.auto
+          |> setEditState NoEdit
+          |> Size.auto
       , measureElement elemId topicId View
       )
     NoEdit -> (model, Cmd.none)
@@ -128,12 +128,12 @@ leaveEdit model =
 switchTopicDisplay : Id -> BoxId -> Model -> Model
 switchTopicDisplay topicId boxId model =
   model
-  |> Box.updateDisplayMode topicId boxId
-    (\displayMode ->
-      case displayMode of
-        TopicD _ -> TopicD Detail
-        _ -> displayMode
-    )
+    |> Box.updateDisplayMode topicId boxId
+      (\displayMode ->
+        case displayMode of
+          TopicD _ -> TopicD Detail
+          _ -> displayMode
+      )
 
 
 onTextInput : String -> Model -> Model

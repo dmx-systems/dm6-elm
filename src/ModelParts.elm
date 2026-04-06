@@ -1,8 +1,10 @@
 module ModelParts exposing (Id, Item, Items, ItemInfo(..), AssocIds, TopicInfo, Icon, TextSize,
-  Size, SizeField(..), AssocInfo, AssocType(..), Box, Boxes, BoxId, BoxItems, BoxPath,
-  homeBoxId, BoxItem, Visibility(..), Pinned(..), ItemProps(..), TopicProps, AssocProps,
-  DisplayMode(..), TopicDisplay(..), BoxDisplay(..), Point, Rectangle, ImageId, Attrs,
-  PointerType, encodeItem, encodeBox, itemDecoder, boxDecoder, toDictDecoder)
+  Size, SizeField(..), Point, Rectangle, AssocInfo, AssocType(..), ItemSet, ItemSets, SetItem,
+  Box, Boxes, BoxId, BoxPath, homeBoxId, ItemProps, DisplayMode(..), TopicDisplay(..),
+  BoxDisplay(..), ImageId, Attrs, PointerType, encodeItem, encodeItemSet, encodeBox,
+  encodeDisplayMode, itemDecoder, itemSetDecoder, boxDecoder, toDictDecoder)
+
+import BoxRendererDef exposing (Renderer)
 
 import Dict exposing (Dict)
 import Html exposing (Attribute)
@@ -13,6 +15,10 @@ import Set exposing (Set)
 
 
 -- TYPES
+
+
+type alias IdRecord r =
+  { r | id : Id }
 
 
 -- Item
@@ -67,6 +73,20 @@ type alias Size =
   }
 
 
+type alias Point =
+  { x : Int
+  , y : Int
+  }
+
+
+type alias Rectangle =
+  { x1 : Int
+  , y1 : Int
+  , x2 : Int
+  , y2 : Int
+  }
+
+
 type alias Items = Dict Id Item
 
 type alias Id = Int
@@ -79,58 +99,53 @@ type alias PointerType = String
 
 -- Box
 
-type alias Box =
-  { id : BoxId
-  , rect : Rectangle
-  , scroll : Point
-  , items : BoxItems
-  }
+type alias BoxId = Id
+type alias BoxPath = List BoxId
 
 
 type alias Boxes = Dict BoxId Box
 
-type alias BoxId = Id
-type alias BoxItems = Dict Id BoxItem
-type alias BoxPath = List BoxId
+
+type alias Box =
+  { id : BoxId
+  , itemSetId : Id
+  , itemProps : Dict Id ItemProps
+  , renderer : Renderer
+  }
+
+
+-- TODO: differentiate topic/assoc
+type alias ItemProps =
+  { id : Id
+  , displayMode : DisplayMode -- serialized as "display", TODO: rename to "display"?
+  }
 
 
 homeBoxId : BoxId
 homeBoxId = 0
 
 
-type alias BoxItem =
-  { id : Id
-  , boxAssocId : Id
-  , visibility : Visibility
-  , props : ItemProps
+-- Item Set
+
+type alias ItemSets = Dict Id ItemSet
+
+
+type alias ItemSet =
+  { id : Id -- set ID
+  , items : List SetItem
   }
 
 
-type Visibility
-  = Visible Pinned
-  | Removed
-
-
-type Pinned
-  = Pinned
-  | Unpinned
-
-
-type ItemProps
-  = TopicP TopicProps
-  | AssocP AssocProps
-
-
-type alias TopicProps =
-  { pos : Point
-  , displayMode : DisplayMode -- serialized as "display", TODO: rename to "display"?
+type alias SetItem =
+  { id : Id -- item ID
+  , boxAssocId : Id -- the Hierarchy association which connects the item with the box
+  -- TODO: add "dateAdded"
   }
 
 
-type alias AssocProps =
-  {}
+-- Display Mode
 
-
+-- TODO: unify TopicDisplay/BoxDisplay -> Expanded/Minimized
 type DisplayMode
   = TopicD TopicDisplay
   | BoxD BoxDisplay
@@ -144,21 +159,7 @@ type TopicDisplay
 type BoxDisplay
   = BlackBox
   | WhiteBox
-  | Unboxed
-
-
-type alias Point =
-  { x : Int
-  , y : Int
-  }
-
-
-type alias Rectangle =
-  { x1 : Int
-  , y1 : Int
-  , x2 : Int
-  , y2 : Int
-  }
+  | Unboxed -- TODO: drop it, introduce Tree renderer instead
 
 
 
@@ -218,62 +219,42 @@ encodeAssocType assocType =
       Crosslink -> "Crosslink"
 
 
+encodeItemSet : ItemSet -> E.Value
+encodeItemSet itemSet =
+  E.object
+    [ ("id", E.int itemSet.id)
+    , ("items", E.list encodeSetItem itemSet.items)
+    ]
+
+
+encodeSetItem : SetItem -> E.Value
+encodeSetItem setItem =
+  E.object
+    [ ("id", E.int setItem.id)
+    , ("boxAssocId", E.int setItem.boxAssocId)
+    ]
+
+
 encodeBox : Box -> E.Value
 encodeBox box =
   E.object
     [ ("id", E.int box.id)
-    , ("rect", E.object
-        [ ("x1", E.int box.rect.x1)
-        , ("y1", E.int box.rect.y1)
-        , ("x2", E.int box.rect.x2)
-        , ("y2", E.int box.rect.y2)
-        ]
-      )
-    , ("scroll", E.object
-        [ ("x", E.int box.scroll.x)
-        , ("y", E.int box.scroll.y)
-        ]
-      )
-    , ("items", box.items |> Dict.values |> E.list encodeBoxItem)
+    , ("itemSetId", E.int box.itemSetId)
+    , ("itemProps", E.list encodeItemProps <| Dict.values box.itemProps)
+    , ("renderer", BoxRendererDef.encode box.renderer)
     ]
 
 
-encodeBoxItem : BoxItem -> E.Value
-encodeBoxItem item =
+encodeItemProps : ItemProps -> E.Value
+encodeItemProps itemProps =
   E.object
-    [ ("id", E.int item.id)
-    , ("boxAssocId", E.int item.boxAssocId)
-    , ("visibility", encodeVisibility item.visibility)
-    , case item.props of
-        TopicP topicProps ->
-          ( "topicProps"
-          , E.object
-            [ ("pos", E.object
-                [ ("x", E.int topicProps.pos.x)
-                , ("y", E.int topicProps.pos.y)
-                ]
-              )
-            , ("display", encodeDisplayName topicProps.displayMode)
-            ]
-          )
-        AssocP assosProps ->
-          ( "assocProps"
-          , E.object []
-          )
+    [ ("id", E.int itemProps.id)
+    , ("display", encodeDisplayMode itemProps.displayMode)
     ]
 
 
-encodeVisibility : Visibility -> E.Value
-encodeVisibility visibility =
-  E.string <|
-    case visibility of
-      Visible Pinned -> "Pinned"
-      Visible Unpinned -> "Visible"
-      Removed -> "Removed"
-
-
-encodeDisplayName : DisplayMode -> E.Value
-encodeDisplayName displayMode =
+encodeDisplayMode : DisplayMode -> E.Value
+encodeDisplayMode displayMode =
   E.string <|
     case displayMode of
       TopicD LabelOnly -> "LabelOnly"
@@ -341,58 +322,35 @@ assocTypeDecoder str =
     _ -> D.fail <| "\"" ++ str ++ "\" is an invalid AssocType"
 
 
+itemSetDecoder : D.Decoder ItemSet
+itemSetDecoder =
+  D.map2 ItemSet
+    (D.field "id" D.int)
+    (D.field "items" <| D.list
+      (D.map2 SetItem
+        (D.field "id" D.int)
+        (D.field "boxAssocId" D.int)
+      )
+    )
+
+
 boxDecoder : D.Decoder Box
 boxDecoder =
   D.map4 Box
     (D.field "id" D.int)
-    (D.field "rect" <| D.map4 Rectangle
-      (D.field "x1" D.int)
-      (D.field "y1" D.int)
-      (D.field "x2" D.int)
-      (D.field "y2" D.int)
-    )
-    (D.field "scroll" <| D.map2 Point
-      (D.field "x" D.int)
-      (D.field "y" D.int)
-    )
-    (D.field "items" (D.list boxItemDecoder |> D.andThen toDictDecoder))
+    (D.field "itemSetId" D.int)
+    (D.field "itemProps" (boxItemDecoder |> toDictDecoder))
+    (D.field "renderer" (D.string |> BoxRendererDef.decoder))
 
 
-boxItemDecoder : D.Decoder BoxItem
+boxItemDecoder : D.Decoder ItemProps
 boxItemDecoder =
-  D.map4 BoxItem
+  D.map2 ItemProps
     (D.field "id" D.int)
-    (D.field "boxAssocId" D.int)
-    (D.field "visibility" D.string |> D.andThen visibilityDecoder)
-    (D.oneOf
-      [ D.field "topicProps" <| D.map TopicP <| D.map2 TopicProps
-        (D.field "pos" <| D.map2 Point
-          (D.field "x" D.int)
-          (D.field "y" D.int)
-        )
-        (D.field "display" D.string |> D.andThen displayModeDecoder)
-      , D.field "assocProps" <| D.succeed (AssocP AssocProps)
-      ]
-    )
+    (D.field "display" D.string |> D.andThen displayModeDecoder)
 
 
-toDictDecoder : List { item | id : Id } -> D.Decoder (Dict Int { item | id : Id })
-toDictDecoder items =
-  items
-    |> List.map (\item -> (item.id, item))
-    |> Dict.fromList
-    |> D.succeed
-
-
-visibilityDecoder : String -> D.Decoder Visibility
-visibilityDecoder str =
-  case str of
-    "Pinned" -> D.succeed (Visible Pinned)
-    "Visible" -> D.succeed (Visible Unpinned)
-    "Removed" -> D.succeed (Removed)
-    _ -> D.fail <| "\"" ++ str ++ "\" is an invalid Visibility"
-
-
+-- TODO: remove from TopicMapDef
 displayModeDecoder : String -> D.Decoder DisplayMode
 displayModeDecoder str =
   case str of
@@ -401,7 +359,17 @@ displayModeDecoder str =
     "BlackBox" -> D.succeed (BoxD BlackBox)
     "WhiteBox" -> D.succeed (BoxD WhiteBox)
     "Unboxed" -> D.succeed (BoxD Unboxed)
-    _ -> D.fail <| "\"" ++ str ++ "\" is an invalid DisplayMode"
+    _ -> D.fail ("\"" ++ str ++ "\" is an invalid DisplayMode")
+
+
+toDictDecoder : D.Decoder (IdRecord r) -> D.Decoder (Dict Id (IdRecord r))
+toDictDecoder =
+  D.list >> D.map toDict
+
+
+toDict : List (IdRecord r) -> Dict Id (IdRecord r)
+toDict =
+  List.map (\item -> (item.id, item)) >> Dict.fromList
 
 
 maybeString : String -> D.Decoder (Maybe String)

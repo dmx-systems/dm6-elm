@@ -1,10 +1,12 @@
-module Box.Geometry exposing (pointerTarget)
+module TopicMap.Geometry exposing (pointerTarget)
 
 import Box
 import Config as C
 import Item
 import Model exposing (Model)
 import ModelParts exposing (..)
+import TopicMap.TopicMap as TM
+import TopicMap.TopicMapDef exposing (TopicMap, MapItem)
 import Utils as U
 
 
@@ -30,11 +32,11 @@ searchInItem pos itemId boxPath filterTopicId model =
     maybeThisItem : Bool -> Maybe (Id, BoxPath)
     maybeThisItem found = if found then Just (itemId, boxPath) else Nothing
   in
-  case Box.byId itemId model of
-    Just box ->
+  case TM.byId itemId model of
+    Just map ->
       let
-        items = Box.visibleTopics box
-        relPos = boxRelPos pos box boxPath model
+        items = TM.visibleTopics map
+        relPos = boxRelPos pos map boxPath model
         searchBox = searchInItems relPos items (itemId :: boxPath) filterTopicId
       in
       -- Note: for a fullscreen box boxPath is empty
@@ -43,8 +45,8 @@ searchInItem pos itemId boxPath filterTopicId model =
         False ->
           let
             parentBoxId = Box.firstId boxPath
-            isHeaderHovered = isTopicHeaderHovered pos box.id parentBoxId
-            isRectHovered = isBoxRectHovered pos box parentBoxId
+            isHeaderHovered = isTopicHeaderHovered pos map.id parentBoxId
+            isRectHovered = isBoxRectHovered pos map parentBoxId
           in
           case Box.displayMode itemId parentBoxId model of
             Just (BoxD BlackBox) ->
@@ -73,7 +75,7 @@ searchInItem pos itemId boxPath filterTopicId model =
         _ -> U.logError "searchInItem" "Unexpected topic display mode" Nothing
 
 
-searchInItems : Point -> List BoxItem -> BoxPath -> Maybe Id -> Model -> Maybe (Id, BoxPath)
+searchInItems : Point -> List MapItem -> BoxPath -> Maybe Id -> Model -> Maybe (Id, BoxPath)
 searchInItems pos items boxPath filterTopicId model =
   case items of
     [] -> Nothing
@@ -92,16 +94,16 @@ searchInItems pos items boxPath filterTopicId model =
 
 
 -- For a fullscreen box boxPath is empty
-boxRelPos : Point -> Box -> BoxPath -> Model -> Point
-boxRelPos pos box boxPath model =
-  case Box.isFullscreen box.id model of
+boxRelPos : Point -> TopicMap -> BoxPath -> Model -> Point
+boxRelPos pos map boxPath model =
+  case Box.isFullscreen map.id model of
     True -> pos
     False ->
-      case Box.topicPos box.id (Box.firstId boxPath) model of
+      case TM.topicPos map.id (Box.firstId boxPath) model of
         Just boxPos ->
           Point
-            (pos.x - boxPos.x + box.rect.x1 + C.topicW2)
-            (pos.y - boxPos.y + box.rect.y1 - C.topicH2)
+            (pos.x - boxPos.x + map.rect.x1 + C.topicW2)
+            (pos.y - boxPos.y + map.rect.y1 - C.topicH2)
         Nothing -> pos
 
 
@@ -109,7 +111,7 @@ boxRelPos pos box boxPath model =
 
 isTopicHeaderHovered : Point -> Id -> BoxId -> Model -> Bool
 isTopicHeaderHovered pos topicId boxId model =
-  case Box.topicPos topicId boxId model of
+  case TM.topicPos topicId boxId model of
     Just topicPos ->
       pos.x > topicPos.x - C.topicW2 - C.topicHeight && -- left edge includes caret area
       pos.x < topicPos.x + C.topicW2 &&
@@ -120,7 +122,7 @@ isTopicHeaderHovered pos topicId boxId model =
 
 isTopicDetailHovered : Point -> Id -> BoxId -> Model -> Bool
 isTopicDetailHovered pos topicId boxId model =
-  case (Box.topicPos topicId boxId model, Item.topicSize topicId .view model) of
+  case (TM.topicPos topicId boxId model, Item.topicSize topicId .view model) of
     (Just topicPos, Just size) ->
       pos.x > topicPos.x - C.topicW2 + C.topicHeight &&
       pos.x < topicPos.x - C.topicW2 + C.topicHeight + size.w &&
@@ -129,12 +131,12 @@ isTopicDetailHovered pos topicId boxId model =
     _ -> False
 
 
-isBoxRectHovered : Point -> Box -> BoxId -> Model -> Bool
-isBoxRectHovered pos box parentBoxId model =
-  case Box.topicPos box.id parentBoxId model of
+isBoxRectHovered : Point -> TopicMap -> BoxId -> Model -> Bool
+isBoxRectHovered pos map parentBoxId model =
+  case TM.topicPos map.id parentBoxId model of
     Just boxPos ->
       pos.x > boxPos.x - C.topicW2 &&
-      pos.x < boxPos.x - C.topicW2 + box.rect.x2 - box.rect.x1 &&
+      pos.x < boxPos.x - C.topicW2 + map.rect.x2 - map.rect.x1 &&
       pos.y > boxPos.y + C.topicH2 &&
-      pos.y < boxPos.y + C.topicH2 + box.rect.y2 - box.rect.y1
+      pos.y < boxPos.y + C.topicH2 + map.rect.y2 - map.rect.y1
     Nothing -> False

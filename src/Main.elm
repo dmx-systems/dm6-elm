@@ -1,7 +1,6 @@
 port module Main exposing (..)
 
 import Box
-import Box.Size as Size
 import Config as C
 import Feature.IconAPI as IconAPI
 import Feature.Mouse as Mouse
@@ -12,10 +11,14 @@ import Feature.SelAPI as SelAPI
 import Feature.TextAPI as TextAPI
 import Feature.ToolAPI as ToolAPI
 import Item
-import Map
 import Model exposing (Model, Msg(..))
 import ModelParts exposing (..)
+import BoxRendererRegistry
 import Storage as S
+import TopicMap.Size as Size
+import TopicMap.TopicMap as TM
+import TopicMap.TopicMapDef exposing (ItemProps(..), AssocProps)
+--import TopicMap.View as View
 import Undo exposing (UndoModel)
 import Utils as U
 
@@ -118,7 +121,7 @@ view ({present} as undoModel) =
             ( [ id "main" ]
               ++ mainStyle
             )
-            ( [ Map.view present.boxId [] present ] -- boxPath = []
+            ( [ BoxRendererRegistry.view present.boxId [] present ] -- boxPath = []
               ++ ToolAPI.viewMapTools undoModel
             )
         ]
@@ -268,7 +271,7 @@ update msg ({present} as undoModel) =
   in
   case msg of
     -- gestures detected by Mouse module
-    AddAssoc player1 player2 boxId -> addAssoc player1 player2 boxId present |> S.store
+    CreateAssoc player1 player2 boxId -> createAssoc player1 player2 boxId present |> S.store
       |> Undo.push undoModel
     MoveTopicToBox topicId boxId origPos targetId targetPath pos -> moveTopicToBox topicId boxId
       origPos targetId targetPath pos present |> S.store |> Undo.push undoModel
@@ -289,37 +292,35 @@ update msg ({present} as undoModel) =
 
 
 -- Presumption: both players exist in same box
-addAssoc : Id -> Id -> BoxId -> Model -> Model
-addAssoc player1 player2 boxId model =
-  addAssocAndAddToBox Crosslink player1 player2 boxId model
+createAssoc : Id -> Id -> BoxId -> Model -> Model
+createAssoc player1 player2 boxId model =
+  createAssocAndAddToBox Crosslink player1 player2 boxId model
 
 
 -- Presumption: both players exist in same box
-addAssocAndAddToBox : AssocType -> Id -> Id -> BoxId -> Model -> Model
-addAssocAndAddToBox assocType player1 player2 boxId model =
+createAssocAndAddToBox : AssocType -> Id -> Id -> BoxId -> Model -> Model
+createAssocAndAddToBox assocType player1 player2 boxId model =
   let
-    (newModel, assocId) = Item.addAssoc assocType player1 player2 model
+    (newModel, assocId) = Item.createAssoc assocType player1 player2 model
     props = AssocP AssocProps
   in
-  Box.addItem assocId props boxId newModel
+  -- TODO: update "box" state
+  -- TODO: don't operate on "topicMap" directly
+  TM.addItem assocId props boxId newModel
 
 
 moveTopicToBox : Id -> BoxId -> Point -> BoxId -> BoxPath -> Point -> Model -> Model
 moveTopicToBox topicId boxId origPos targetBoxId targetPath pos model =
-  let
-    props_ =
-      Box.topicProps topicId boxId model
-        |> Maybe.andThen (\props -> Just (TopicP { props | pos = pos }))
-  in
-  case props_ of
-    Just props ->
+  case (TM.topicProps topicId boxId model, Box.displayMode topicId boxId model) of
+    (Just topicProps, Just displayMode) ->
       model
-        |> Box.removeItem topicId boxId
-        |> Box.setTopicPos topicId boxId origPos
-        |> Box.addItem topicId props targetBoxId
+        |> Box.addItem (ItemProps topicId displayMode) targetBoxId
+        |> TM.removeItem topicId boxId
+        |> TM.setTopicPos topicId boxId origPos
+        |> TM.addItem topicId (TopicP { topicProps | pos = pos }) targetBoxId
         |> SelAPI.select targetBoxId targetPath
         |> Size.auto
-    Nothing -> model
+    _ -> model
 
 
 select : Id -> BoxPath -> Model -> (Model, Cmd Msg)
@@ -359,7 +360,7 @@ cancelUIWith maybeTarget model =
 
 updateScrollPos : Point -> Model -> Model
 updateScrollPos pos model =
-  Box.updateScrollPos model.boxId (\_ -> pos) model
+  TM.updateScrollPos model.boxId (\_ -> pos) model
 
 
 cacheImageUrl : ImageId -> String -> Model -> (Model, Cmd Msg)

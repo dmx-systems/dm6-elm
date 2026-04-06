@@ -1,6 +1,6 @@
 module Utils exposing (..)
 
-import ModelParts exposing (..)
+import ModelParts exposing (Id, Point, PointerType)
 
 import Html exposing (Attribute)
 import Html.Events exposing (on, stopPropagationOn, keyCode)
@@ -118,6 +118,11 @@ illegalItemId funcName id val =
   illegalId funcName "Item" id val
 
 
+illegalItemSetId : String -> Id -> a -> a
+illegalItemSetId funcName id val =
+  illegalId funcName "ItemSet" id val
+
+
 illegalId : String -> String -> Id -> a -> a
 illegalId funcName item id val =
   logError funcName (fromInt id ++ " is an illegal " ++ item ++ " ID") val
@@ -127,7 +132,7 @@ illegalId funcName item id val =
 
 logError : String -> String -> v -> v
 logError funcName text val =
-  Logger.log ("💣ERROR @" ++ funcName ++ ": " ++ text) val
+  Logger.log ("💥 @" ++ funcName ++ ": " ++ text) val
 
 
 fail : String -> a -> v -> v

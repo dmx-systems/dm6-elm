@@ -2,13 +2,14 @@ module Feature.MouseAPI exposing (topicDownHandler, assocClickHandler, dragHandl
   isDragInProgress, isHovered, clearHover, update)
 
 import Box
-import Box.Geometry
-import Box.Size as Size
 import Config as C
 import Feature.Mouse as Mouse exposing (DragState(..), DragMode(..))
 import Item
 import Model exposing (Model, Msg(..))
 import ModelParts exposing (..)
+import TopicMap.Geometry as Geometry
+import TopicMap.Size as Size
+import TopicMap.TopicMap as TM
 import Undo exposing (UndoModel)
 import Utils as U
 
@@ -107,7 +108,7 @@ timeArrived time ({present} as undoModel) =
           case delay > C.assocDelayMillis of
             True -> (DraftAssoc, Undo.swap)
             False -> (DragTopic, Undo.push)
-        maybeOrigPos = Box.topicPos id (Box.firstId boxPath) present
+        maybeOrigPos = TM.topicPos id (Box.firstId boxPath) present
         dragState =
           case maybeOrigPos of
             Just origPos -> Drag dragMode id boxPath origPos pos Nothing
@@ -143,7 +144,7 @@ performDrag pos model =
         boxId = Box.firstId boxPath
         newModel =
           case dragMode of
-            DragTopic -> Box.updateTopicPos id boxId
+            DragTopic -> TM.updateTopicPos id boxId
               (\oldPos ->
                 Point
                   (oldPos.x + pos.x - lastPos.x)
@@ -194,7 +195,7 @@ mouseUp model =
             isSameBox = boxId == Box.firstId targetPath
           in
           case isSameBox of
-            True -> U.command <| AddAssoc id targetId boxId
+            True -> U.command <| CreateAssoc id targetId boxId
             False -> Cmd.none
         Drag DraftAssoc _ _ _ _ _ ->
           let
@@ -236,7 +237,7 @@ enterLeave pos model =
         Drag DragTopic topicId _ _ _ _ -> Just topicId
         _ -> Nothing
   in
-  case Box.Geometry.pointerTarget pos filterTopicId model of
+  case Geometry.pointerTarget pos filterTopicId model of
     Just target ->
       case model.mouse.hover of
         Just oldTarget ->

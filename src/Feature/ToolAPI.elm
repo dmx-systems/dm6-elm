@@ -2,8 +2,6 @@ module Feature.ToolAPI exposing (viewGlobalTools, viewMapTools, viewToolbar, vie
   closeMenu, update)
 
 import Box
-import Box.Size as Size
-import Box.Transfer as Transfer
 import Config as C
 import Feature.IconAPI as IconAPI
 import Feature.MouseAPI as MouseAPI
@@ -15,13 +13,20 @@ import Feature.Tool as Tool exposing (LineStyle(..))
 import Item
 import Model exposing (Model, Msg(..))
 import ModelParts exposing (..)
+import BoxRendererDef exposing (Renderer)
 import Storage as S
+import TopicMap.Size as Size
+import TopicMap.TopicMap as TM
+import TopicMap.TopicMapDef exposing (ItemProps(..), TopicProps)
+import TopicMap.Transfer as Transfer
 import Undo exposing (UndoModel)
 import Utils as U
 
-import Html exposing (Html, div, span, text, button, input, label)
-import Html.Attributes exposing (class, style, title, name, type_, disabled, checked)
-import Html.Events exposing (onClick)
+import Dict
+import Html exposing (Html, div, span, text, button, input, label, select, option)
+import Html.Attributes exposing (class, style, title, name, value, type_, disabled, checked)
+import Html.Events exposing (onClick, on, targetValue)
+import Json.Decode as D
 import String exposing (fromInt)
 
 
@@ -161,14 +166,14 @@ vGap gap =
 viewMapTools : UndoModel -> List (Html Msg)
 viewMapTools undoModel =
   let
-    target = Box.landingTarget undoModel.present
+    target = TM.landingTarget undoModel.present
   in
   [ div
     mapToolsStyle
-    -- The add-buttons must not clear the selection but still close menus.
-    -- So we set the box where added things land as the target.
-    [ viewMapButton "Add Topic" "plus-circle" Tool.AddTopic False target
-    , viewMapButton "Add Box" "plus-square" Tool.AddBox False target
+    -- The create-buttons must not clear the selection but still close menus.
+    -- So we set the box where created things land as the target.
+    [ viewMapButton "Create Topic" "plus-circle" Tool.CreateTopic False target
+    , viewMapButton "Create Box" "plus-square" Tool.CreateBox False target
     , hGap 14
     , viewMapButton "Undo" "rotate-ccw" Tool.Undo (not <| Undo.hasPast undoModel) Nothing
     , viewMapButton "Redo" "rotate-cw" Tool.Redo (not <| Undo.hasFuture undoModel) Nothing
@@ -197,11 +202,11 @@ viewToolbar boxPath model =
   case SelAPI.single model of
     Just (itemId, selBoxPath) ->
       if selBoxPath == boxPath then
-        case (Item.byId itemId model, Box.byIdOrLog boxId model) of
+        case (Item.byId itemId model, TM.byIdOrLog boxId model) of
           (Just {info}, Just {rect}) ->
             case info of
               Topic topic ->
-                case Box.topicPos itemId boxId model of
+                case TM.topicPos itemId boxId model of
                   Just topicPos ->
                     let
                       pos = Point
@@ -214,7 +219,7 @@ viewToolbar boxPath model =
                       _ -> []
                   Nothing -> []
               Assoc assoc ->
-                case Box.assocGeometry assoc boxId model of
+                case TM.assocGeometry assoc boxId model of
                   Just (p1, p2) ->
                     let
                       pos = Point
@@ -244,12 +249,18 @@ viewTopicToolbar pos topicId boxPath model =
     boxTools =
       if Item.isBox topicId model then
         let
-          isDisabled = Box.isEmpty topicId model || Box.isUnboxed topicId boxId model
+          isDisabled = TM.isEmpty topicId model || TM.isUnboxed topicId boxId model
+          rendererSelect =
+            case Box.rendererOf topicId model of
+              Just renderer ->
+                [ viewSelect renderer (Tool << Tool.SelectRenderer) ]
+              Nothing -> []
         in
         [ hGap 14
         , viewButton "Fullscreen" "maximize-2" (Tool.Fullscreen topicId) False target
         , viewButton "Unbox" "external-link" (Tool.Unbox topicId boxId) isDisabled target
         ]
+        ++ rendererSelect
       else
         []
   in
@@ -260,6 +271,40 @@ viewTopicToolbar pos topicId boxPath model =
       ++ IconAPI.viewPicker model
       ++ SearchAPI.viewTraversalResult model
     )
+
+
+viewSelect : Renderer -> (Renderer -> Msg) -> Html Msg
+viewSelect renderer tagger =
+  select
+    ( [ value (BoxRendererDef.toName renderer)
+      , on "input" (D.map tagger (BoxRendererDef.decoder targetValue))
+      , U.onMouseDownStop NoOp
+      ]
+      ++ selectStyle
+    )
+    viewOptions
+
+
+viewOptions : List (Html Msg)
+viewOptions =
+  BoxRendererDef.all
+    |> Dict.values
+    |> List.map
+      (\{name, label} ->
+        option
+          [ value name ]
+          [ text label ]
+      )
+
+
+selectStyle : Attrs Msg
+selectStyle =
+  [ style "position" "relative"
+  , style "top" "-2px"
+  , style "left" "3px"
+  , style "font-family" C.mainFont
+  , style "font-size" <| fromInt C.contentFontSize ++ "px"
+  ]
 
 
 viewTextToolbar : Point -> Id -> BoxPath -> Html Msg
@@ -396,8 +441,8 @@ update msg ({present} as undoModel) =
     Tool.Import -> (present, S.importJSON ()) |> Undo.swap undoModel
     Tool.Export -> (present, S.exportJSON ()) |> Undo.swap undoModel
     -- Map Tools
-    Tool.AddTopic -> addTopic present |> S.storeWith |> Undo.push undoModel
-    Tool.AddBox -> addBox present |> S.storeWith |> Undo.push undoModel
+    Tool.CreateTopic -> createTopic present |> S.storeWith |> Undo.push undoModel
+    Tool.CreateBox -> createBox present |> S.storeWith |> Undo.push undoModel
     Tool.Undo -> undoModel |> Undo.undo |> store
     Tool.Redo -> undoModel |> Undo.redo |> store
     -- Item Tools
@@ -408,6 +453,8 @@ update msg ({present} as undoModel) =
     Tool.Remove -> remove present |> S.store |> Undo.push undoModel
     Tool.Fullscreen boxId -> (undoModel, NavAPI.pushUrl boxId)
     Tool.Unbox boxId targetBoxId -> unbox boxId targetBoxId present |> S.store
+      |> Undo.swap undoModel
+    Tool.SelectRenderer renderer -> selectRenderer renderer present |> S.store
       |> Undo.swap undoModel
     Tool.ToggleDisplay topicId boxId -> toggleDisplay topicId boxId present |> S.store
       |> Undo.swap undoModel
@@ -441,33 +488,36 @@ setLineStyle lineStyle ({tool} as model) =
 
 -- Map Tools
 
-addTopic : Model -> (Model, Cmd Msg)
-addTopic model =
+createTopic : Model -> (Model, Cmd Msg)
+createTopic model =
   let
-    (newModel, topicId) = Item.addTopic "" C.initTopicIcon model
+    (newModel, topicId) = Item.createTopic "" C.initTopicIcon model
   in
   landTopic topicId (TopicD LabelOnly) newModel
 
 
-addBox : Model -> (Model, Cmd Msg)
-addBox model =
+createBox : Model -> (Model, Cmd Msg)
+createBox model =
   let
-    (newModel, boxId) = Box.addBox "" C.initBoxIcon model
+    (newModel, boxId) = Box.create "" C.initBoxIcon model
   in
-  landTopic boxId (BoxD BlackBox) newModel
+  newModel
+    |> TM.create boxId
+    |> landTopic boxId (BoxD BlackBox)
 
 
 landTopic : Id -> DisplayMode -> Model -> (Model, Cmd Msg)
 landTopic topicId displayMode model =
   let
-    boxPath = Box.landingBoxPath model
+    boxPath = SelAPI.landingBoxPath model
     boxId = Box.firstId boxPath
     props = TopicP <| TopicProps
-      ( Box.initTopicPos boxId model )
+      ( TM.initTopicPos boxId model )
       displayMode
   in
   model
-    |> Box.addItem topicId props boxId
+    |> Box.addItem (ItemProps topicId displayMode) boxId
+    |> TM.addItem topicId props boxId
     |> SelAPI.select topicId boxPath
     |> TextAPI.enterEdit topicId boxPath
 
@@ -475,7 +525,6 @@ landTopic topicId displayMode model =
 store : UndoModel -> (UndoModel, Cmd Msg)
 store undoModel =
   ( undoModel, undoModel.present |> S.storeCmd )
-
 
 
 -- Item Tools
@@ -500,7 +549,7 @@ remove : Model -> Model
 remove model =
   model.selection.items
     |> List.foldr
-      (\(itemId, boxPath) modelAcc -> Box.removeItem itemId (Box.firstId boxPath) modelAcc)
+      (\(itemId, boxPath) modelAcc -> TM.removeItem itemId (Box.firstId boxPath) modelAcc)
       model
     |> SelAPI.clear
     |> Size.auto
@@ -511,6 +560,13 @@ unbox boxId targetBoxId model =
   Transfer.unboxContent boxId targetBoxId model
     |> Box.setDisplayMode boxId targetBoxId (BoxD Unboxed)
     |> Size.auto
+
+
+selectRenderer : Renderer -> Model -> Model
+selectRenderer renderer model =
+  case SelAPI.single model of
+    Just (topicId, _) -> Box.setRenderer topicId renderer model
+    Nothing -> U.logError "selectRenderer" "called when there is no single selection" model
 
 
 toggleDisplay : Id -> BoxId -> Model -> Model

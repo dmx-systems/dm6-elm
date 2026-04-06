@@ -1,11 +1,11 @@
 port module Feature.NavAPI exposing (boxIdFromHash, pushUrl, update, sub)
 
-import Box
-import Box.Size as Size
 import Feature.Nav as Nav
 import Model exposing (Model, Msg(..))
 import ModelParts exposing (..)
 import Storage as S
+import TopicMap.Size as Size
+import TopicMap.TopicMap as TM
 import Undo exposing (UndoModel)
 import Utils as U
 
@@ -69,9 +69,9 @@ setFullscreenBox boxId model =
 
 setViewport : Model -> Cmd Msg
 setViewport model =
-  case Box.fullscreen model of
-    Just box ->
-      Dom.setViewportOf "main" (toFloat box.scroll.x) (toFloat box.scroll.y)
+  case TM.fullscreen model of
+    Just map ->
+      Dom.setViewportOf "main" (toFloat map.scroll.x) (toFloat map.scroll.y)
       |> Task.attempt
         (\result ->
           case result of

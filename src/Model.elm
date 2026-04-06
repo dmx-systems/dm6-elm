@@ -9,6 +9,8 @@ import Feature.Sel as Sel
 import Feature.Text as Text
 import Feature.Tool as Tool
 import ModelParts exposing (..)
+import BoxRendererDef
+import TopicMap.TopicMapDef as TopicMapDef
 
 import Dict exposing (Dict)
 import Json.Decode as D
@@ -20,10 +22,13 @@ import Set
 
 type alias Model =
   { items : Items
+  , itemSets: ItemSets
   , boxes : Boxes
   , boxId : BoxId -- the box rendered fullscreen
   , nextId : Id
   , imageCache : Dict ImageId String -- Int -> blob: URL
+  -- renderer modules
+  , topicMap : TopicMapDef.Model
   -- feature modules
   , tool : Tool.Model
   , text : Text.Model
@@ -40,11 +45,13 @@ init =
     homeTopic = TopicInfo 0 Nothing C.homeBoxName <| TextSize (Size 0 0) (Size 0 0)
   in
   { items = Dict.singleton 0 <| Item 0 (Topic homeTopic) Set.empty
-  , boxes = Dict.singleton homeBoxId
-    <| Box homeBoxId (Rectangle 0 0 0 0) (Point 0 0) Dict.empty
+  , itemSets = Dict.singleton 1 <| ItemSet 1 []
+  , boxes = Dict.singleton homeBoxId <| Box homeBoxId 1 Dict.empty BoxRendererDef.TopicMap
   , boxId = homeBoxId
-  , nextId = 1
+  , nextId = 2
   , imageCache = Dict.empty -- TODO: move to Text module, but should survive a map switch
+  -- renderer modules
+  , topicMap = TopicMapDef.init
   -- feature modules
   , tool = Tool.init
   , text = Text.init
@@ -57,7 +64,7 @@ init =
 
 type Msg
   -- gestures detected by Mouse module
-  = AddAssoc Id Id BoxId
+  = CreateAssoc Id Id BoxId
   | MoveTopicToBox Id BoxId Point Id BoxPath Point -- start point, random point (for target)
   | TopicDragged
   | ItemClicked Id BoxPath
@@ -81,11 +88,15 @@ type Msg
 
 encode : Model -> E.Value
 encode model =
-  E.object <|
+  E.object
     [ ("items", model.items |> Dict.values |> E.list encodeItem)
+    , ("itemSets", model.itemSets |> Dict.values |> E.list encodeItemSet)
     , ("boxes", model.boxes |> Dict.values |> E.list encodeBox)
     , ("boxId", E.int model.boxId)
     , ("nextId", E.int model.nextId)
+    -- renderer modules
+    , ("topicMap", TopicMapDef.encode model.topicMap)
+    -- feature modules
     , ("tool", Tool.encode model.tool)
     ]
 
@@ -93,11 +104,14 @@ encode model =
 decoder : D.Decoder Model
 decoder =
   D.succeed Model
-    |> required "items" (D.list itemDecoder |> D.andThen toDictDecoder)
-    |> required "boxes" (D.list boxDecoder |> D.andThen toDictDecoder)
+    |> required "items" (itemDecoder |> toDictDecoder)
+    |> required "itemSets" (itemSetDecoder |> toDictDecoder)
+    |> required "boxes" (boxDecoder |> toDictDecoder)
     |> required "boxId" D.int
     |> required "nextId" D.int
-    |> hardcoded Dict.empty
+    |> hardcoded Dict.empty -- imageCache
+    -- renderer modules
+    |> required "topicMap" TopicMapDef.decoder
     -- feature modules
     |> required "tool" Tool.decoder
     |> hardcoded Text.init
