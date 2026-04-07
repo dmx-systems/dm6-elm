@@ -38,8 +38,8 @@ viewBox boxId model =
 boxStyle : BoxId -> Model -> Attrs Msg
 boxStyle boxId model =
   let
-    width = 240
-    height = 100
+    width = 240 -- TODO
+    height = 100 -- TODO
     r = fromInt C.whiteBoxRadius ++ "px"
   in
   if Box.isFullscreen boxId model then
@@ -51,6 +51,7 @@ boxStyle boxId model =
     , style "width" <| fromInt width ++ "px"
     , style "height" <| fromInt height ++ "px"
     , style "border-radius" <| "0 " ++ r ++ " " ++ r ++ " " ++ r
+    , style "padding-top" "14px"
     , style "background-color" "white"
     ]
     ++ boxBorderStyle

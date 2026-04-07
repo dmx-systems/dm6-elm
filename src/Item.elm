@@ -26,6 +26,9 @@ topicById topicId model =
     Nothing -> U.fail "Item.topicById" topicId Nothing
 
 
+{-| Returns a topic by ID, or Nothing if the ID refers not a topic (but an association).
+Logs an error if no such item exists.
+-}
 topicOrNothing : Id -> Model -> Maybe TopicInfo
 topicOrNothing topicId model =
   case byId topicId model of

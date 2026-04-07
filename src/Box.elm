@@ -253,7 +253,13 @@ deleteItem_ : Id -> Model -> Model
 deleteItem_ itemId ({topicMap} as model) =
   { model
   | items = model.items |> Dict.remove itemId -- delete item
-  -- TODO: update "box" state
+  , itemSets = model.itemSets |> Dict.map -- delete item from all itemSets
+      (\_ itemSet ->
+        { itemSet | items = itemSet.items |> List.filter
+          (\setItem -> setItem.id /= itemId)
+        }
+      )
+  -- TODO: if item is box delete from "boxes" state as well
   -- TODO: don't operate on "topicMap" directly
   , topicMap = topicMap |> Dict.map -- delete item from all boxes
       (\_ map ->
