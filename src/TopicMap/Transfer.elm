@@ -2,7 +2,7 @@ module TopicMap.Transfer exposing (boxContent, unboxContent)
 
 import Item
 import Model exposing (Model)
-import ModelParts exposing (..)
+import ModelBase exposing (..)
 import TopicMap.TopicMap as TM
 import TopicMap.TopicMapDef exposing (TopicMap, MapItems, MapItem, Visibility(..), Pinned(..),
   ItemProps(..), AssocProps)

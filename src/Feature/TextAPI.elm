@@ -6,7 +6,7 @@ import Config as C
 import Feature.Text as Text exposing (EditState(..))
 import Item
 import Model exposing (Model, Msg(..))
-import ModelParts exposing (..)
+import ModelBase exposing (..)
 import Storage as S
 import Task
 import TopicMap.Size as Size -- TODO: don't import, let caller do the sizing instead

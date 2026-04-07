@@ -6,7 +6,7 @@ import Config as C
 import Feature.Mouse as Mouse exposing (DragState(..), DragMode(..))
 import Item
 import Model exposing (Model, Msg(..))
-import ModelParts exposing (..)
+import ModelBase exposing (..)
 import TopicMap.Geometry as Geometry
 import TopicMap.Size as Size
 import TopicMap.TopicMap as TM

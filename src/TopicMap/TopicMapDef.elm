@@ -1,7 +1,7 @@
 module TopicMap.TopicMapDef exposing (Model, TopicMap, MapItems, MapItem, Visibility(..),
   Pinned(..), ItemProps(..), TopicProps, AssocProps, init, encode, decoder)
 
-import ModelParts exposing (..)
+import ModelBase exposing (..)
 import Dict exposing (Dict)
 import Json.Decode as D
 import Json.Encode as E

@@ -1,6 +1,6 @@
 module Feature.Sel exposing (..)
 
-import ModelParts exposing (Id, BoxPath)
+import ModelBase exposing (Id, BoxPath)
 
 
 

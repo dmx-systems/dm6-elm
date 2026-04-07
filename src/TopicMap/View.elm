@@ -12,7 +12,7 @@ import Feature.Tool exposing (LineStyle(..))
 import Feature.ToolAPI as ToolAPI
 import Item
 import Model exposing (Model, Msg)
-import ModelParts exposing (..)
+import ModelBase exposing (..)
 import TopicMap.TopicMap as TM
 import TopicMap.TopicMapDef exposing (TopicMap, ItemProps(..), TopicProps)
 import TopicMap.ViewModel as VM

@@ -1,6 +1,6 @@
 module Config exposing (..)
 
-import ModelParts exposing (Point, Size, Rectangle)
+import ModelBase exposing (Point, Size, Rectangle)
 
 
 
@@ -9,7 +9,7 @@ import ModelParts exposing (Point, Size, Rectangle)
 
 homeBoxName = "DM6 Elm"
 version = "0.5-SNAPSHOT"
-date = "Apr 6, 2026"
+date = "Apr 7, 2026"
 
 appHeaderHeight = 36
 

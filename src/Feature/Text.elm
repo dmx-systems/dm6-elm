@@ -1,6 +1,6 @@
 module Feature.Text exposing (..)
 
-import ModelParts exposing (Id, ImageId, BoxPath, Size, SizeField)
+import ModelBase exposing (Id, ImageId, BoxPath, Size, SizeField)
 
 
 

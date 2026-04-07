@@ -10,7 +10,7 @@ import Feature.Search exposing (SearchResult(..))
 import Feature.SelAPI as SelAPI
 import Item
 import Model exposing (Model)
-import ModelParts exposing (..)
+import ModelBase exposing (..)
 import TopicMap.TopicMapDef exposing (TopicMap, MapItems, MapItem, Visibility(..), Pinned(..),
   ItemProps(..), TopicProps)
 import Utils as U

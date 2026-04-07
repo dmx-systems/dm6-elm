@@ -13,7 +13,7 @@ import Feature.TextAPI as TextAPI
 import Feature.ToolAPI as ToolAPI
 import Item
 import Model exposing (Model, Msg(..))
-import ModelParts exposing (..)
+import ModelBase exposing (..)
 import Storage as S
 import TopicMap.Size as Size
 import TopicMap.TopicMap as TM

@@ -9,7 +9,7 @@ import Feature.Search as Search exposing (SearchResult(..))
 import Feature.SelAPI as SelAPI
 import Item
 import Model exposing (Model, Msg(..))
-import ModelParts exposing (..)
+import ModelBase exposing (..)
 import Storage as S
 import TopicMap.Size as Size
 import TopicMap.TopicMap as TM

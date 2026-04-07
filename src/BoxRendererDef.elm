@@ -1,6 +1,6 @@
 module BoxRendererDef exposing (Renderer(..), all, encode, decoder, toName)
 
--- import ModelParts exposing (BoxId) -- TODO: creates circular dependency
+-- import ModelBase exposing (BoxId) -- TODO: creates circular dependency
 -- import Utils as U -- TODO: creates circular dependency
 
 import Dict exposing (Dict)

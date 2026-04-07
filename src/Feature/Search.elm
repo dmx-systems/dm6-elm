@@ -1,6 +1,6 @@
 module Feature.Search exposing (..)
 
-import ModelParts exposing (Id, BoxId)
+import ModelBase exposing (Id, BoxId)
 
 
 

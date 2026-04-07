@@ -4,7 +4,7 @@ module Item exposing (topicById, topicOrNothing, assocById, byId, topicLabel, to
 
 import Config as C
 import Model exposing (Model)
-import ModelParts exposing (..)
+import ModelBase exposing (..)
 import Utils as U
 
 import Dict

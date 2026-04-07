@@ -9,7 +9,7 @@ import Feature.Search as Search
 import Feature.Sel as Sel
 import Feature.Text as Text
 import Feature.Tool as Tool
-import ModelParts exposing (..)
+import ModelBase exposing (..)
 import TopicMap.TopicMapDef as TopicMapDef
 
 import Dict exposing (Dict)

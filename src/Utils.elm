@@ -1,6 +1,6 @@
 module Utils exposing (..)
 
-import ModelParts exposing (Id, Point, PointerType)
+import ModelBase exposing (Id, Point, PointerType)
 
 import Html exposing (Attribute)
 import Html.Events exposing (on, stopPropagationOn, keyCode)

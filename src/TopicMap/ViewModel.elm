@@ -5,7 +5,7 @@ import Item
 import Box
 import Feature.Search exposing (SearchResult(..))
 import Model exposing (Model)
-import ModelParts exposing (..)
+import ModelBase exposing (..)
 import TopicMap.TopicMap as TM
 import TopicMap.TopicMapDef exposing (TopicMap, MapItem, Visibility(..), ItemProps(..),
   TopicProps)

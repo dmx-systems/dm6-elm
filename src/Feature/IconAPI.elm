@@ -5,7 +5,7 @@ import Feature.Icon as Icon
 import Feature.SelAPI as SelAPI
 import Item
 import Model exposing (Model, Msg(..))
-import ModelParts exposing (..)
+import ModelBase exposing (..)
 import Storage as S
 import Undo exposing (UndoModel)
 import Utils as U

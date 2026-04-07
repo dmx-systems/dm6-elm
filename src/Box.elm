@@ -5,7 +5,7 @@ module Box exposing (hasItem, hasDeepItem, topics, create, addItem, displayMode,
 import BoxRendererDef exposing (Renderer)
 import Item
 import Model exposing (Model)
-import ModelParts exposing (..)
+import ModelBase exposing (..)
 import Utils as U
 
 import Dict

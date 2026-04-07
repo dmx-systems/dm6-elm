@@ -1,6 +1,6 @@
 module Feature.Icon exposing (..)
 
-import ModelParts exposing (Icon)
+import ModelBase exposing (Icon)
 
 
 

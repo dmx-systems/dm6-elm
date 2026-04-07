@@ -4,7 +4,7 @@ module Feature.SelAPI exposing (select, clear, isSelected, isSelectedPath, singl
 import Box
 import Feature.Sel exposing (Selection)
 import Model exposing (Model)
-import ModelParts exposing (..)
+import ModelBase exposing (..)
 import Utils as U
 
 

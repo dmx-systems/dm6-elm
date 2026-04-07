@@ -5,7 +5,7 @@ import BoxRenderer exposing (BoxRenderer, BoxView)
 import Config as C
 import Item
 import Model exposing (Model, Msg)
-import ModelParts exposing (BoxId, Attrs)
+import ModelBase exposing (BoxId, Attrs)
 
 import Html exposing (Html, ul, li, text)
 import Html.Attributes exposing (style)

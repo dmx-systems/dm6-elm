@@ -1,7 +1,7 @@
 module BoxRenderer exposing (..)
 
 import Model exposing (Model, Msg)
-import ModelParts exposing (BoxId, BoxPath)
+import ModelBase exposing (BoxId, BoxPath)
 
 import Html exposing (Html)
 
@@ -13,7 +13,7 @@ import Html exposing (Html)
 {-| A box renderer basically takes a boxId and returns HTML.
 
 Note: copy in TopicMap.View.elm to avoid a cyclic dependency.
-Can *not* be defined in ModelParts as it needs Model.
+Can *not* be defined in ModelBase as it needs Model.
 Can also not be defined in BoxRendererDef as Model imports BoxRendererDef.
 -> Move it to Model?
 -}

@@ -6,7 +6,7 @@ import Feature.Mouse exposing (DragState(..), DragMode(..))
 import Feature.Text exposing (EditState(..))
 import Item
 import Model exposing (Model)
-import ModelParts exposing (..)
+import ModelBase exposing (..)
 import TopicMap.TopicMap as TM
 import TopicMap.TopicMapDef exposing (MapItem, ItemProps(..))
 import TopicMap.ViewModel as VM
