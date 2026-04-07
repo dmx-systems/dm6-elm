@@ -19,7 +19,7 @@ byId : BoxId -> Model -> Maybe Box
 byId boxId model =
   case model.boxes |> Dict.get boxId of
     Just box -> Just box
-    Nothing -> U.illegalBoxId "Box.byId" boxId Nothing
+    Nothing -> U.boxNotFound "Box.byId" boxId Nothing
 
 
 itemPropsOf : Id -> Box -> Model -> Maybe ItemProps
@@ -127,7 +127,7 @@ addToItemSet setItem itemSetId ({itemSets} as model) =
         (\maybeItemSet ->
           case maybeItemSet of
             Just itemSet -> Just { itemSet | items = setItem :: itemSet.items }
-            Nothing -> U.illegalItemSetId "Box.addToItemSet" itemSetId Nothing
+            Nothing -> U.itemSetNotFound "Box.addToItemSet" itemSetId Nothing
         )
   }
 

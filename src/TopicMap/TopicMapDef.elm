@@ -13,7 +13,7 @@ type alias Model = Dict BoxId TopicMap
 
 init : Model
 init =
-  Dict.singleton homeBoxId <| TopicMap homeBoxId (Rectangle 0 0 0 0) (Point 0 0) Dict.empty
+  Dict.singleton rootBoxId <| TopicMap rootBoxId (Rectangle 0 0 0 0) (Point 0 0) Dict.empty
 
 
 type alias TopicMap =

@@ -56,7 +56,7 @@ byId : Id -> Model -> Maybe Item
 byId itemId model =
   case model.items |> Dict.get itemId of
     Just item -> Just item
-    Nothing -> U.illegalItemId "Item.byId" itemId Nothing
+    Nothing -> U.itemNotFound "Item.byId" itemId Nothing
 
 
 topicLabel : TopicInfo -> String
@@ -192,7 +192,7 @@ update itemId transform model =
     (\maybeItem ->
       case maybeItem of
         Just item -> Just <| transform item
-        Nothing -> U.illegalItemId "Item.update" itemId Nothing
+        Nothing -> U.itemNotFound "Item.update" itemId Nothing
     )
   }
 

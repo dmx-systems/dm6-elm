@@ -1,6 +1,6 @@
 module ModelBase exposing (Id, Item, Items, ItemInfo(..), AssocIds, TopicInfo, Icon, TextSize,
   Size, SizeField(..), Point, Rectangle, AssocInfo, AssocType(..), ItemSet, ItemSets, SetItem,
-  Box, Boxes, BoxId, BoxPath, homeBoxId, ItemProps, DisplayMode(..), TopicDisplay(..),
+  Box, Boxes, BoxId, BoxPath, rootBoxId, ItemProps, DisplayMode(..), TopicDisplay(..),
   BoxDisplay(..), ImageId, Attrs, PointerType, encodeItem, encodeItemSet, encodeBox,
   encodeDisplayMode, itemDecoder, itemSetDecoder, boxDecoder, toDictDecoder)
 
@@ -122,8 +122,8 @@ type alias ItemProps =
   }
 
 
-homeBoxId : BoxId
-homeBoxId = 0
+rootBoxId : BoxId
+rootBoxId = 0
 
 
 -- Item Set

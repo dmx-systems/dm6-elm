@@ -42,12 +42,12 @@ type alias Model =
 init : Model
 init =
   let
-    homeTopic = TopicInfo 0 Nothing C.homeBoxName <| TextSize (Size 0 0) (Size 0 0)
+    rootTopic = TopicInfo 0 Nothing C.rootBoxName <| TextSize (Size 0 0) (Size 0 0)
   in
-  { items = Dict.singleton 0 <| Item 0 (Topic homeTopic) Set.empty
+  { items = Dict.singleton 0 <| Item 0 (Topic rootTopic) Set.empty
   , itemSets = Dict.singleton 1 <| ItemSet 1 []
-  , boxes = Dict.singleton homeBoxId <| Box homeBoxId 1 Dict.empty BoxRendererDef.TopicMap
-  , boxId = homeBoxId
+  , boxes = Dict.singleton rootBoxId <| Box rootBoxId 1 Dict.empty BoxRendererDef.TopicMap
+  , boxId = rootBoxId
   , nextId = 2
   , imageCache = Dict.empty -- TODO: move to Text module, but should survive a map switch
   -- renderer modules

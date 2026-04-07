@@ -29,7 +29,7 @@ byIdOrLog : BoxId -> Model -> Maybe TopicMap
 byIdOrLog mapId model =
   case byId mapId model of
     Just map -> Just map
-    Nothing -> U.illegalBoxId "byIdOrLog" mapId Nothing
+    Nothing -> U.boxNotFound "byIdOrLog" mapId Nothing
 
 
 byId : BoxId -> Model -> Maybe TopicMap
@@ -267,7 +267,7 @@ update mapId transform ({topicMap} as model) =
       (\maybeMap ->
         case maybeMap of
           Just map -> Just (transform map)
-          Nothing -> U.illegalBoxId "update" mapId Nothing
+          Nothing -> U.boxNotFound "update" mapId Nothing
       )
   }
 
@@ -302,7 +302,7 @@ updateTopicProps_ topicId mapId transform model =
                 TopicP props -> Just
                   { item | props = TopicP (transform props) }
                 AssocP _ -> U.topicMismatch "updateTopicProps_" topicId Nothing
-            Nothing -> U.illegalItemId "updateTopicProps_" topicId Nothing
+            Nothing -> U.itemNotFound "updateTopicProps_" topicId Nothing
         )
       }
     )

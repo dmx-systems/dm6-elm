@@ -39,10 +39,10 @@ import String exposing (fromInt)
 viewGlobalTools : Model -> List (Html Msg)
 viewGlobalTools model =
   let
-    isHome = model.boxId == homeBoxId
+    isAtHome = model.boxId == rootBoxId
     iconSize = C.globalToolsIconSize
   in
-  [ viewIconButton "Show Home Map" "home" iconSize Tool.Home isHome Nothing homeButtonStyle
+  [ viewIconButton "Show Home Map" "home" iconSize Tool.Home isAtHome Nothing homeButtonStyle
   , SearchAPI.viewInput model
   , viewIconButton "Settings" "menu" iconSize Tool.Menu False Nothing homeButtonStyle
   ]
@@ -435,7 +435,7 @@ update : Tool.Msg -> UndoModel -> (UndoModel, Cmd Msg)
 update msg ({present} as undoModel) =
   case msg of
     -- Global Tools
-    Tool.Home -> (undoModel, NavAPI.pushUrl homeBoxId)
+    Tool.Home -> (undoModel, NavAPI.pushUrl rootBoxId)
     Tool.Menu -> (openMenu present, Cmd.none) |> Undo.swap undoModel
     Tool.Set lineStyle -> setLineStyle lineStyle present |> S.store |> Undo.push undoModel
     Tool.Import -> (present, S.importJSON ()) |> Undo.swap undoModel

@@ -7,7 +7,7 @@ import ModelBase exposing (Point, Size, Rectangle)
 -- CONFIG
 
 
-homeBoxName = "DM6 Elm"
+rootBoxName = "DM6 Elm"
 version = "0.5-SNAPSHOT"
 date = "Apr 7, 2026"
 

@@ -108,24 +108,24 @@ assocMismatch funcName id val =
   logError funcName (fromInt id ++ " is not an Assoc but a Topic") val
 
 
-illegalBoxId : String -> Id -> a -> a
-illegalBoxId funcName id val =
-  illegalId funcName "Box" id val
+boxNotFound : String -> Id -> a -> a
+boxNotFound funcName id val =
+  notFound funcName "Box" id val
 
 
-illegalItemId : String -> Id -> a -> a
-illegalItemId funcName id val =
-  illegalId funcName "Item" id val
+itemNotFound : String -> Id -> a -> a
+itemNotFound funcName id val =
+  notFound funcName "Item" id val
 
 
-illegalItemSetId : String -> Id -> a -> a
-illegalItemSetId funcName id val =
-  illegalId funcName "ItemSet" id val
+itemSetNotFound : String -> Id -> a -> a
+itemSetNotFound funcName id val =
+  notFound funcName "ItemSet" id val
 
 
-illegalId : String -> String -> Id -> a -> a
-illegalId funcName item id val =
-  logError funcName (fromInt id ++ " is an illegal " ++ item ++ " ID") val
+notFound : String -> String -> Id -> a -> a
+notFound funcName item id val =
+  logError funcName (item ++ " " ++ fromInt id ++ " not found") val
 
 
 --
