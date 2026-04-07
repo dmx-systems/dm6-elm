@@ -169,15 +169,15 @@ viewMapTools undoModel =
     target = TM.landingTarget undoModel.present
   in
   [ div
-    mapToolsStyle
-    -- The create-buttons must not clear the selection but still close menus.
-    -- So we set the box where created things land as the target.
-    [ viewMapButton "Create Topic" "plus-circle" Tool.CreateTopic False target
-    , viewMapButton "Create Box" "plus-square" Tool.CreateBox False target
-    , hGap 14
-    , viewMapButton "Undo" "rotate-ccw" Tool.Undo (not <| Undo.hasPast undoModel) Nothing
-    , viewMapButton "Redo" "rotate-cw" Tool.Redo (not <| Undo.hasFuture undoModel) Nothing
-    ]
+      mapToolsStyle
+      -- The create-buttons must not clear the selection but still close menus.
+      -- So we set the box where created things land as the target.
+      [ viewMapButton "New Topic" "plus-circle" Tool.CreateTopic False target
+      , viewMapButton "New Box" "plus-square" Tool.CreateBox False target
+      , hGap 14
+      , viewMapButton "Undo" "rotate-ccw" Tool.Undo (not <| Undo.hasPast undoModel) Nothing
+      , viewMapButton "Redo" "rotate-cw" Tool.Redo (not <| Undo.hasFuture undoModel) Nothing
+      ]
   ]
 
 

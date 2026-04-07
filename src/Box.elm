@@ -212,24 +212,23 @@ deleteItem : Id -> Model -> Model
 deleteItem itemId model =
   Item.assocIds itemId model
     |> Set.foldr deleteItem model -- recursion
-    |> deleteAssocRefs_ itemId
+    |> removeAssocFromPlayers itemId
     |> deleteItem_ itemId
 
 
 {-| Removes the association ID from both player's set of association IDs.
 No-op if the given ID refers not to an association (but a topic).
 Logs an error no item for the given ID exists.
-Low-level API for maintaining the sets of association IDs.
 -}
-deleteAssocRefs_ : Id -> Model -> Model
-deleteAssocRefs_ assocId model =
+removeAssocFromPlayers : Id -> Model -> Model
+removeAssocFromPlayers assocId model =
   case Item.byId assocId model of
     Just {info} ->
       case info of
         Assoc assoc -> -- Note: assocId and assoc.id are the same
           model
-            |> deleteAssocId_ assoc.id assoc.player1
-            |> deleteAssocId_ assoc.id assoc.player2
+            |> removeAssocFromPlayer assoc.id assoc.player1
+            |> removeAssocFromPlayer assoc.id assoc.player2
         Topic _ -> model
     Nothing -> model -- error is already logged
 
@@ -237,10 +236,9 @@ deleteAssocRefs_ assocId model =
 {-| Removes an association ID from the item's set of association IDs.
 No-op if the given association ID is not in the set.
 Logs an error if item does not exist.
-Low-level API for maintaining the association ID set.
 -}
-deleteAssocId_ : Id -> Id -> Model -> Model
-deleteAssocId_ assocId itemId model =
+removeAssocFromPlayer : Id -> Id -> Model -> Model
+removeAssocFromPlayer assocId itemId model =
   model |> Item.update itemId
     (\item ->
       {item | assocIds = item.assocIds |> Set.remove assocId}
@@ -249,7 +247,7 @@ deleteAssocId_ assocId itemId model =
 
 {-| Deletes an item, and removes it from all boxes.
 No-op if there is no such item.
-Low-level API that does NOT delete the item's associations.
+Low-level function that does NOT delete the item's associations.
 -}
 deleteItem_ : Id -> Model -> Model
 deleteItem_ itemId ({topicMap} as model) =

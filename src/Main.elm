@@ -302,11 +302,12 @@ createAssocAndAddToBox : AssocType -> Id -> Id -> BoxId -> Model -> Model
 createAssocAndAddToBox assocType player1 player2 boxId model =
   let
     (newModel, assocId) = Item.createAssoc assocType player1 player2 model
+    displayMode = TopicD LabelOnly -- ### TODO: generalize topic/assoc display mode
     props = AssocP AssocProps
   in
-  -- TODO: update "box" state
-  -- TODO: don't operate on "topicMap" directly
-  TM.addItem assocId props boxId newModel
+  newModel
+    |> Box.addItem (ItemProps assocId displayMode) boxId
+    |> TM.addItem assocId props boxId -- TODO: don't operate on "topicMap" directly
 
 
 moveTopicToBox : Id -> BoxId -> Point -> BoxId -> BoxPath -> Point -> Model -> Model

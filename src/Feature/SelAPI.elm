@@ -5,6 +5,7 @@ import Box
 import Feature.Sel exposing (Selection)
 import Model exposing (Model)
 import ModelBase exposing (..)
+import String exposing (fromInt)
 import Utils as U
 
 
@@ -12,16 +13,16 @@ import Utils as U
 select : Id -> BoxPath -> Model -> Model
 select itemId boxPath model =
   let
-    _ = U.info "select" (itemId, boxPath)
+    _ = U.info "SelAPI.select" (itemId, boxPath)
   in
   model
-  |> setItems [ (itemId, boxPath) ]
+    |> setItems [ (itemId, boxPath) ]
 
 
 clear : Model -> Model
 clear model =
   model
-  |> setItems []
+    |> setItems []
 
 
 -- TODO: drop this in favor of isSelectedPath (and rename the latter then)?
@@ -38,7 +39,7 @@ isSelected itemId boxId model =
 isSelectedPath : Id -> BoxPath -> Model -> Bool
 isSelectedPath itemId boxPath model =
   model.selection.items
-  |> List.member (itemId, boxPath)
+    |> List.member (itemId, boxPath)
 
 
 single : Model -> Maybe (Id, BoxPath)
@@ -62,9 +63,10 @@ landingBoxPath model =
   case single model of
     Just (id, boxPath) ->
       let
-        mapId = Box.firstId boxPath
+        boxId = Box.firstId boxPath
       in
-      case Box.displayMode id mapId model of
+      case Box.displayMode id boxId model of
         Just (BoxD WhiteBox) -> id :: boxPath
-        _ -> [ model.boxId ]
+        Just _ -> [ model.boxId ]
+        _ -> U.fail "SelAPI.landingBoxPath" { id = id, boxId = boxId} [ model.boxId ]
     Nothing -> [ model.boxId ]
