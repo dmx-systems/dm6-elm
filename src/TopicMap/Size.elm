@@ -76,7 +76,6 @@ calcItemRect mapItem boxPath model =
             (rect_, model_) = calcBoxRect (mapItem.id :: boxPath) model -- recursion
           in
           (boxExtent pos rect_, model_)
-        BoxD Unboxed -> (topicExtent pos, model)
     AssocP _ -> (Rectangle 0 0 0 0, model) -- never called
 
 

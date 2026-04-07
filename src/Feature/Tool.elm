@@ -18,7 +18,6 @@ import Storage as S
 import TopicMap.Size as Size
 import TopicMap.TopicMap as TM
 import TopicMap.TopicMapDef exposing (ItemProps(..), TopicProps)
-import TopicMap.Transfer as Transfer
 import Undo exposing (UndoModel)
 import Utils as U
 
@@ -237,7 +236,6 @@ viewToolbar boxPath model =
 viewTopicToolbar : Point -> Id -> BoxPath -> Model -> Html Msg
 viewTopicToolbar pos topicId boxPath model =
   let
-    boxId = Box.firstId boxPath
     target = (topicId, boxPath)
     topicTools =
       [ viewButton "Edit" "edit-3" ToolDef.Edit False target
@@ -249,16 +247,13 @@ viewTopicToolbar pos topicId boxPath model =
     boxTools =
       if Item.isBox topicId model then
         let
-          isDisabled = TM.isEmpty topicId model || TM.isUnboxed topicId boxId model
           rendererSelect =
             case Box.rendererOf topicId model of
               Just renderer ->
                 [ viewSelect renderer (Tool << ToolDef.SelectRenderer) ]
               Nothing -> []
         in
-        [ hGap 14
-        , viewButton "Fullscreen" "maximize-2" (ToolDef.Fullscreen topicId) False target
-        , viewButton "Unbox" "external-link" (ToolDef.Unbox topicId boxId) isDisabled target
+        [ viewButton "Fullscreen" "maximize-2" (ToolDef.Fullscreen topicId) False target
         ]
         ++ rendererSelect
       else
@@ -370,7 +365,6 @@ viewCaret topicId boxId model =
         Just (TopicD Detail) -> "chevron-down"
         Just (BoxD BlackBox) -> "chevron-right"
         Just (BoxD WhiteBox) -> "chevron-down"
-        Just (BoxD Unboxed) -> "chevron-down"
         Nothing -> "??"
   in
   button
@@ -452,8 +446,6 @@ update msg ({present} as undoModel) =
     ToolDef.Delete -> delete present |> S.store |> Undo.push undoModel
     ToolDef.Remove -> remove present |> S.store |> Undo.push undoModel
     ToolDef.Fullscreen boxId -> (undoModel, Nav.pushUrl boxId)
-    ToolDef.Unbox boxId targetBoxId -> unbox boxId targetBoxId present |> S.store
-      |> Undo.swap undoModel
     ToolDef.SelectRenderer renderer -> selectRenderer renderer present |> S.store
       |> Undo.swap undoModel
     ToolDef.ToggleDisplay topicId boxId -> toggleDisplay topicId boxId present |> S.store
@@ -555,13 +547,6 @@ remove model =
     |> Size.auto
 
 
-unbox : BoxId -> BoxId -> Model -> Model
-unbox boxId targetBoxId model =
-  Transfer.unboxContent boxId targetBoxId model
-    |> Box.setDisplayMode boxId targetBoxId (BoxD Unboxed)
-    |> Size.auto
-
-
 selectRenderer : Renderer -> Model -> Model
 selectRenderer renderer model =
   case Sel.single model of
@@ -578,10 +563,6 @@ toggleDisplay topicId boxId model =
         Just (TopicD Detail) -> (model, Just <| TopicD LabelOnly)
         Just (BoxD BlackBox) -> (model, Just <| BoxD WhiteBox)
         Just (BoxD WhiteBox) -> (model, Just <| BoxD BlackBox)
-        Just (BoxD Unboxed) ->
-          ( Transfer.boxContent topicId boxId model
-          , Just (BoxD BlackBox)
-          )
         Nothing -> (model, Nothing)
   in
   case (newModel, newDisplayMode) of

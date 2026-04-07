@@ -45,7 +45,6 @@ type Msg
   | Delete
   | Remove
   | Fullscreen BoxId -- box only
-  | Unbox BoxId BoxId -- box only
   | SelectRenderer Renderer -- box only
   | ToggleDisplay Id BoxId
   -- Text Tools

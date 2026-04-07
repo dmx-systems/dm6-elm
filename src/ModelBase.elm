@@ -160,7 +160,6 @@ type TopicDisplay
 type BoxDisplay
   = BlackBox
   | WhiteBox
-  | Unboxed -- TODO: drop it, introduce Tree renderer instead
 
 
 
@@ -262,7 +261,6 @@ encodeDisplayMode displayMode =
       TopicD Detail -> "Detail"
       BoxD BlackBox -> "BlackBox"
       BoxD WhiteBox -> "WhiteBox"
-      BoxD Unboxed -> "Unboxed"
 
 
 -- Decode
@@ -359,7 +357,6 @@ displayModeDecoder str =
     "Detail" -> D.succeed (TopicD Detail)
     "BlackBox" -> D.succeed (BoxD BlackBox)
     "WhiteBox" -> D.succeed (BoxD WhiteBox)
-    "Unboxed" -> D.succeed (BoxD Unboxed)
     _ -> D.fail ("\"" ++ str ++ "\" is an invalid DisplayMode")
 
 

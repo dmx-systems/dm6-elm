@@ -1,17 +1,15 @@
-module TopicMap.TopicMap exposing (fullscreen, byId, byIdOrLog, update, updateRect,
-  updateScrollPos, visibleTopics, topicPos, setTopicPos, updateTopicPos, topicProps,
-  initItemProps, initLimboTopicProps, initTopicPos, assocGeometry, create, addItem, showItem,
-  removeItem, removeItem_, revelationBoxId, revelationBoxPath, landingTarget, isEmpty,
-  isUnboxed, isTopic, isAssoc, isVisible, isPinned)
+module TopicMap.TopicMap exposing (fullscreen, byId, byIdOrLog, updateRect, updateScrollPos,
+  visibleTopics, topicPos, setTopicPos, updateTopicPos, topicProps, initItemProps,
+  initLimboTopicProps, initTopicPos, assocGeometry, create, addItem, showItem, removeItem,
+  revelationBoxId, revelationBoxPath, landingTarget, isTopic, isAssoc, isVisible)
 
-import Box
 import Config as C
 import Feature.SearchDef exposing (SearchResult(..))
 import Feature.Sel as Sel
 import Item
 import Model exposing (Model)
 import ModelBase exposing (..)
-import TopicMap.TopicMapDef exposing (TopicMap, MapItems, MapItem, Visibility(..), Pinned(..),
+import TopicMap.TopicMapDef exposing (TopicMap, MapItems, MapItem, Visibility(..),
   ItemProps(..), TopicProps)
 import Utils as U
 
@@ -183,7 +181,7 @@ It's a generic operation: works for both, topics and associations.
 addItem : Id -> ItemProps -> BoxId -> Model -> Model
 addItem itemId props mapId model =
   let
-    mapItem = MapItem itemId (Visible Unpinned) props
+    mapItem = MapItem itemId Visible props
     _ = U.info "addItem" { itemId = itemId, props = props, mapId = mapId}
   in
   model
@@ -191,7 +189,7 @@ addItem itemId props mapId model =
       (\map -> { map | items = map.items |> Dict.insert itemId mapItem })
 
 
-{-| Sets the item's "visibility" field to Visible (Pinned=False).
+{-| Sets the item's "visibility" field to Visible.
 Presumption: the item *is* contained in the box.
 No-op if the item is *not* contained in the box, or its "visibility" field is Visible already.
 Logs an error if box does not exist.
@@ -207,8 +205,8 @@ showItem itemId mapId model =
             Just mapItem -> Just
               { mapItem | visibility =
                 case mapItem.visibility of
-                  Visible _ -> mapItem.visibility
-                  Removed -> Visible Unpinned
+                  Visible -> mapItem.visibility
+                  Removed -> Visible
               }
             Nothing -> Nothing
         )
@@ -338,20 +336,14 @@ landingTarget model =
     boxId :: boxPath -> Just (boxId, boxPath)
 
 
-{-| Logs an error if box does not exist. -}
+{-| Logs an error if box does not exist.
+TODO: not used
+-}
 isEmpty : BoxId -> Model -> Bool
 isEmpty boxId model =
   case byIdOrLog boxId model of
     Just map -> map.items |> Dict.values |> List.any isVisible |> not
     Nothing -> False
-
-
-{-| Logs an error if box does not exist, or topic is not in box, or ID refers not a topic (but
-an association).
--}
-isUnboxed : Id -> BoxId -> Model -> Bool
-isUnboxed topicId boxId model =
-  Box.displayMode topicId boxId model == Just (BoxD Unboxed)
 
 
 {-| useful as a filter predicate -}
@@ -372,10 +364,5 @@ isAssoc =
 isVisible : MapItem -> Bool
 isVisible item =
   case item.visibility of
-    Visible _ -> True
+    Visible -> True
     Removed -> False
-
-
-isPinned : MapItem -> Bool
-isPinned item =
-  item.visibility == Visible Pinned

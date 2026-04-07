@@ -1,7 +1,7 @@
 module TopicList.TopicList exposing (..)
 
 import Box
-import BoxRenderer exposing (BoxRenderer, BoxView)
+import BoxRenderer exposing (BoxView)
 import Config as C
 import Item
 import Model exposing (Model, Msg)

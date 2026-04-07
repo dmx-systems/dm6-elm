@@ -1,5 +1,5 @@
 module TopicMap.TopicMapDef exposing (Model, TopicMap, MapItems, MapItem, Visibility(..),
-  Pinned(..), ItemProps(..), TopicProps, AssocProps, init, encode, decoder)
+  ItemProps(..), TopicProps, AssocProps, init, encode, decoder)
 
 import ModelBase exposing (..)
 import Dict exposing (Dict)
@@ -35,13 +35,8 @@ type alias MapItem =
 
 
 type Visibility
-  = Visible Pinned
+  = Visible
   | Removed
-
-
-type Pinned
-  = Pinned
-  | Unpinned
 
 
 type ItemProps
@@ -118,8 +113,7 @@ encodeVisibility : Visibility -> E.Value
 encodeVisibility visibility =
   E.string <|
     case visibility of
-      Visible Pinned -> "Pinned"
-      Visible Unpinned -> "Visible"
+      Visible -> "Visible"
       Removed -> "Removed"
 
 
@@ -167,9 +161,8 @@ mapItemDecoder =
 visibilityDecoder : String -> D.Decoder Visibility
 visibilityDecoder str =
   case str of
-    "Pinned" -> D.succeed (Visible Pinned)
-    "Visible" -> D.succeed (Visible Unpinned)
-    "Removed" -> D.succeed (Removed)
+    "Visible" -> D.succeed Visible
+    "Removed" -> D.succeed Removed
     _ -> D.fail <| "\"" ++ str ++ "\" is an invalid Visibility"
 
 
@@ -180,5 +173,4 @@ displayModeDecoder str =
     "Detail" -> D.succeed (TopicD Detail)
     "BlackBox" -> D.succeed (BoxD BlackBox)
     "WhiteBox" -> D.succeed (BoxD WhiteBox)
-    "Unboxed" -> D.succeed (BoxD Unboxed)
     _ -> D.fail <| "\"" ++ str ++ "\" is an invalid DisplayMode"

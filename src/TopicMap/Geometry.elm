@@ -57,8 +57,6 @@ searchInItem pos itemId boxPath filterTopicId model =
                 Nothing ->
                   isHeaderHovered model ||
                   isRectHovered model |> maybeThisItem
-            Just (BoxD Unboxed) ->
-              isHeaderHovered model |> maybeThisItem
             _ -> U.logError "searchInItem" "Unexpected box display mode" Nothing
     Nothing ->
       let

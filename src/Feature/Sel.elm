@@ -5,7 +5,6 @@ import Box
 import Feature.SelDef exposing (Selection)
 import Model exposing (Model)
 import ModelBase exposing (..)
-import String exposing (fromInt)
 import Utils as U
 
 

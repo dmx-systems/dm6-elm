@@ -243,7 +243,6 @@ viewTopic renderBox topic props boxPath model =
         TopicD Detail -> detailTopic
         BoxD BlackBox -> blackBoxTopic
         BoxD WhiteBox -> whiteBoxTopic renderBox
-        BoxD Unboxed -> unboxedTopic
     (style, children) = render topic props boxPath model
   in
   div
@@ -530,17 +529,6 @@ whiteBoxTopic renderBox topic props boxPath model =
   , children
     ++ viewItemCount topic.id props model
     ++ [ renderBox topic.id boxPath model ]
-  )
-
-
-unboxedTopic : TopicInfo -> TopicProps -> BoxPath -> Model -> TopicRendering
-unboxedTopic topic props boxPath model =
-  let
-    (style, children) = labelTopic topic props boxPath model
-  in
-  ( style
-  , children
-    ++ viewItemCount topic.id props model
   )
 
 
