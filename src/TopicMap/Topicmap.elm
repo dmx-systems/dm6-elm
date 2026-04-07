@@ -6,8 +6,8 @@ module TopicMap.TopicMap exposing (fullscreen, byId, byIdOrLog, update, updateRe
 
 import Box
 import Config as C
-import Feature.Search exposing (SearchResult(..))
-import Feature.SelAPI as SelAPI
+import Feature.SearchDef exposing (SearchResult(..))
+import Feature.Sel as Sel
 import Item
 import Model exposing (Model)
 import ModelBase exposing (..)
@@ -321,9 +321,9 @@ revelationBoxPath : Model -> Maybe BoxPath
 revelationBoxPath model =
   case model.search.result of
     Topics _ _ ->
-      Just <| SelAPI.landingBoxPath model
+      Just <| Sel.landingBoxPath model
     RelTopics _ _ ->
-      case SelAPI.single model of
+      case Sel.single model of
         Just (_, boxPath) -> Just boxPath
         Nothing -> Nothing
     NoSearch -> Nothing
@@ -332,7 +332,7 @@ revelationBoxPath model =
 {- The landing box as a selection target. For a fullscreen box Nothing is returned. -}
 landingTarget : Model -> Maybe (BoxId, BoxPath)
 landingTarget model =
-  case SelAPI.landingBoxPath model of
+  case Sel.landingBoxPath model of
     [] -> Nothing
     [ boxId ] -> Nothing -- The fullscreen box is never selected
     boxId :: boxPath -> Just (boxId, boxPath)

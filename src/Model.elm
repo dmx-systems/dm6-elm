@@ -2,13 +2,13 @@ module Model exposing (..)
 
 import BoxRendererDef
 import Config as C
-import Feature.Icon as Icon
-import Feature.Mouse as Mouse
-import Feature.Nav as Nav
-import Feature.Search as Search
-import Feature.Sel as Sel
-import Feature.Text as Text
-import Feature.Tool as Tool
+import Feature.IconDef as IconDef
+import Feature.MouseDef as MouseDef
+import Feature.NavDef as NavDef
+import Feature.SearchDef as SearchDef
+import Feature.SelDef as SelDef
+import Feature.TextDef as TextDef
+import Feature.ToolDef as ToolDef
 import ModelBase exposing (..)
 import TopicMap.TopicMapDef as TopicMapDef
 
@@ -30,12 +30,12 @@ type alias Model =
   -- renderer modules
   , topicMap : TopicMapDef.Model
   -- feature modules
-  , tool : Tool.Model
-  , text : Text.Model
-  , mouse : Mouse.Model
-  , search : Search.Model
-  , icon : Icon.Model
-  , selection : Sel.Model
+  , tool : ToolDef.Model
+  , text : TextDef.Model
+  , mouse : MouseDef.Model
+  , search : SearchDef.Model
+  , icon : IconDef.Model
+  , selection : SelDef.Model
   }
 
 
@@ -53,12 +53,12 @@ init =
   -- renderer modules
   , topicMap = TopicMapDef.init
   -- feature modules
-  , tool = Tool.init
-  , text = Text.init
-  , mouse = Mouse.init
-  , search = Search.init
-  , icon = Icon.init
-  , selection = Sel.init
+  , tool = ToolDef.init
+  , text = TextDef.init
+  , mouse = MouseDef.init
+  , search = SearchDef.init
+  , icon = IconDef.init
+  , selection = SelDef.init
   }
 
 
@@ -70,12 +70,12 @@ type Msg
   | ItemClicked Id BoxPath
   | Cancel (Maybe (Id, BoxPath)) -- target
   -- feature modules
-  | Tool Tool.Msg
-  | Text Text.Msg
-  | Mouse Mouse.Msg
-  | Search Search.Msg
-  | Icon Icon.Msg
-  | Nav Nav.Msg
+  | Tool ToolDef.Msg
+  | Text TextDef.Msg
+  | Mouse MouseDef.Msg
+  | Search SearchDef.Msg
+  | Icon IconDef.Msg
+  | Nav NavDef.Msg
   --
   | Scrolled Point
   | UrlResolved (ImageId, String)
@@ -97,7 +97,7 @@ encode model =
     -- renderer modules
     , ("topicMap", TopicMapDef.encode model.topicMap)
     -- feature modules
-    , ("tool", Tool.encode model.tool)
+    , ("tool", ToolDef.encode model.tool)
     ]
 
 
@@ -113,9 +113,9 @@ decoder =
     -- renderer modules
     |> required "topicMap" TopicMapDef.decoder
     -- feature modules
-    |> required "tool" Tool.decoder
-    |> hardcoded Text.init
-    |> hardcoded Mouse.init
-    |> hardcoded Search.init
-    |> hardcoded Icon.init
-    |> hardcoded Sel.init
+    |> required "tool" ToolDef.decoder
+    |> hardcoded TextDef.init
+    |> hardcoded MouseDef.init
+    |> hardcoded SearchDef.init
+    |> hardcoded IconDef.init
+    |> hardcoded SelDef.init

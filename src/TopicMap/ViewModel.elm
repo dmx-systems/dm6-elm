@@ -3,7 +3,7 @@ module TopicMap.ViewModel exposing (topicsToRender, assocsToRender, isLimboTopic
 
 import Item
 import Box
-import Feature.Search exposing (SearchResult(..))
+import Feature.SearchDef exposing (SearchResult(..))
 import Model exposing (Model)
 import ModelBase exposing (..)
 import TopicMap.TopicMap as TM

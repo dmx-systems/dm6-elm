@@ -3,13 +3,13 @@ module TopicMap.View exposing (view)
 import Box
 import BoxRenderer exposing (BoxRenderer, BoxView)
 import Config as C
-import Feature.IconAPI as IconAPI
-import Feature.Mouse exposing (DragState(..), DragMode(..))
-import Feature.MouseAPI as MouseAPI
-import Feature.SelAPI as SelAPI
-import Feature.TextAPI as TextAPI
-import Feature.Tool exposing (LineStyle(..))
-import Feature.ToolAPI as ToolAPI
+import Feature.Icon as Icon
+import Feature.MouseDef exposing (DragState(..), DragMode(..))
+import Feature.Mouse as Mouse
+import Feature.Sel as Sel
+import Feature.Text as Text
+import Feature.ToolDef exposing (LineStyle(..))
+import Feature.Tool as Tool
 import Item
 import Model exposing (Model, Msg)
 import ModelBase exposing (..)
@@ -76,7 +76,7 @@ view renderBox boxId boxPath model =
               )
           ]
       ]
-      ++ ToolAPI.viewToolbar (boxId :: boxPath) model
+      ++ Tool.viewToolbar (boxId :: boxPath) model
     )
 
 
@@ -183,7 +183,7 @@ viewItems renderBox map boxPath model =
           case Item.assocById id model of
             Just assoc ->
               let
-                clickHandler = MouseAPI.assocClickHandler id newPath
+                clickHandler = Mouse.assocClickHandler id newPath
               in
               svgAcc ++ viewAssoc assoc newPath clickHandler model
             _ -> U.logError "viewItems" ("problem with assoc " ++ fromInt id) svgAcc
@@ -248,12 +248,12 @@ viewTopic renderBox topic props boxPath model =
   in
   div
     ( topicAttr topic.id boxPath
-      ++ MouseAPI.topicDownHandler topic.id boxPath
+      ++ Mouse.topicDownHandler topic.id boxPath
       ++ topicStyle topic.id boxId model
       ++ style
     )
     ( children
-      ++ ToolAPI.viewTopicTools topic.id boxPath model
+      ++ Tool.viewTopicTools topic.id boxPath model
     )
 
 
@@ -269,7 +269,7 @@ topicStyle id boxId model =
     isDragging = case model.mouse.dragState of
       Drag DragTopic id_ _ _ _ _ -> id_ == id
       _ -> False
-    isSelected = SelAPI.isSelected id boxId model
+    isSelected = Sel.isSelected id boxId model
   in
   [ style "position" "absolute"
   , style "filter" <| if isLimbo then C.topicLimboFilter else "none"
@@ -312,9 +312,9 @@ viewLabelTopic : TopicInfo -> TopicProps -> BoxPath -> Model -> List (Html Msg)
 viewLabelTopic topic props boxPath model =
   let
     textElem =
-      case TextAPI.isEdit topic.id boxPath model of
+      case Text.isEdit topic.id boxPath model of
         True ->
-          TextAPI.viewInput topic boxPath inputStyle
+          Text.viewInput topic boxPath inputStyle
         False ->
           div
             topicLabelStyle
@@ -322,7 +322,7 @@ viewLabelTopic topic props boxPath model =
   in
   [ div
     (iconBoxStyle props)
-    [ IconAPI.viewTopicIcon topic.id C.topicIconSize topicIconStyle model ]
+    [ Icon.viewTopicIcon topic.id C.topicIconSize topicIconStyle model ]
   , textElem
   ]
 
@@ -331,9 +331,9 @@ detailTopic : TopicInfo -> TopicProps -> BoxPath -> Model -> TopicRendering
 detailTopic topic props boxPath model =
   let
     textElem =
-      case TextAPI.isEdit topic.id boxPath model of
+      case Text.isEdit topic.id boxPath model of
         True ->
-          TextAPI.viewTextarea topic boxPath
+          Text.viewTextarea topic boxPath
             ( detailTextStyle topic.id boxPath model
               ++ textEditorStyle topic.id model
             )
@@ -342,7 +342,7 @@ detailTopic topic props boxPath model =
             ( detailTextStyle topic.id boxPath model
               ++ textViewStyle
             )
-            ( TextAPI.markdown topic.text model )
+            ( Text.markdown topic.text model )
   in
   ( detailTopicStyle props
   , [ div
@@ -350,7 +350,7 @@ detailTopic topic props boxPath model =
         ++ detailTopicIconBoxStyle
         ++ selectionStyle topic.id boxPath model
       )
-      [ IconAPI.viewTopicIcon topic.id C.topicIconSize topicIconStyle model ]
+      [ Icon.viewTopicIcon topic.id C.topicIconSize topicIconStyle model ]
     , textElem
     ]
   )
@@ -516,7 +516,7 @@ isTarget topicId boxPath target_ =
 
 selectionStyle : Id -> BoxPath -> Model -> Attrs Msg
 selectionStyle topicId boxPath model =
-  case SelAPI.isSelectedPath topicId boxPath model of
+  case Sel.isSelectedPath topicId boxPath model of
     True -> [ style "box-shadow" C.topicBoxShadow ]
     False -> []
 
@@ -779,7 +779,7 @@ lineSelectionStyle : Maybe AssocInfo -> BoxPath -> Model -> Attrs Msg
 lineSelectionStyle maybeAssoc boxPath model =
   case maybeAssoc of
     Just {id} ->
-      case SelAPI.isSelectedPath id boxPath model of
+      case Sel.isSelectedPath id boxPath model of
         True -> [ filter "url(#shadow)" ]
         False -> []
     Nothing -> []

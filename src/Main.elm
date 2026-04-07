@@ -3,14 +3,14 @@ port module Main exposing (..)
 import Box
 import BoxRendererRegistry
 import Config as C
-import Feature.IconAPI as IconAPI
+import Feature.Icon as Icon
+import Feature.MouseDef as MouseDef
 import Feature.Mouse as Mouse
-import Feature.MouseAPI as MouseAPI
-import Feature.NavAPI as NavAPI
-import Feature.SearchAPI as SearchAPI
-import Feature.SelAPI as SelAPI
-import Feature.TextAPI as TextAPI
-import Feature.ToolAPI as ToolAPI
+import Feature.Nav as Nav
+import Feature.Search as Search
+import Feature.Sel as Sel
+import Feature.Text as Text
+import Feature.Tool as Tool
 import Item
 import Model exposing (Model, Msg(..))
 import ModelBase exposing (..)
@@ -52,8 +52,8 @@ main =
     , update = update
     , subscriptions =
         (\model -> Sub.batch
-          [ TextAPI.sub
-          , NavAPI.sub
+          [ Text.sub
+          , Nav.sub
           , onScroll Scrolled
           , onResolveUrl UrlResolved
           ]
@@ -66,10 +66,10 @@ init (flags, hash) =
   let
     model = initModel flags
     boxId =
-      case NavAPI.boxIdFromHash hash of
+      case Nav.boxIdFromHash hash of
         Just boxId_ -> boxId_
         Nothing -> model.boxId
-    cmd = NavAPI.pushUrl boxId
+    cmd = Nav.pushUrl boxId
   in
   (model, cmd) |> Undo.reset
 
@@ -106,7 +106,7 @@ view ({present} as undoModel) =
   Browser.Document
     "DM6 Elm"
     [ div
-        ( MouseAPI.dragHandler
+        ( Mouse.dragHandler
           ++ appStyle
         )
         [ div
@@ -114,15 +114,15 @@ view ({present} as undoModel) =
             ( [ viewMapTitle present
               , viewSpacer
               ]
-              ++ ToolAPI.viewGlobalTools present
-              ++ SearchAPI.viewSearchResult present -- TODO: move to "main" for scroll along?
+              ++ Tool.viewGlobalTools present
+              ++ Search.viewSearchResult present -- TODO: move to "main" for scroll along?
             )
         , div
             ( [ id "main" ]
               ++ mainStyle
             )
             ( [ BoxRendererRegistry.view present.boxId [] present ] -- boxPath = []
-              ++ ToolAPI.viewMapTools undoModel
+              ++ Tool.viewMapTools undoModel
             )
         ]
     , viewFooter
@@ -266,7 +266,7 @@ update msg ({present} as undoModel) =
   let
     _ =
       case msg of
-        Mouse (Mouse.Move _) -> msg
+        Mouse (MouseDef.Move _) -> msg
         _ -> U.info "update" msg
   in
   case msg of
@@ -279,12 +279,12 @@ update msg ({present} as undoModel) =
     ItemClicked itemId boxPath -> select itemId boxPath present |> Undo.swap undoModel
     Cancel maybeTarget -> cancelUI maybeTarget present |> Undo.swap undoModel
     -- feature modules
-    Tool toolMsg -> ToolAPI.update toolMsg undoModel
-    Text textMsg -> TextAPI.update textMsg undoModel
-    Mouse mouseMsg -> MouseAPI.update mouseMsg undoModel
-    Search searchMsg -> SearchAPI.update searchMsg undoModel
-    Icon iconMenuMsg -> IconAPI.update iconMenuMsg undoModel
-    Nav navMsg -> NavAPI.update navMsg undoModel
+    Tool toolMsg -> Tool.update toolMsg undoModel
+    Text textMsg -> Text.update textMsg undoModel
+    Mouse mouseMsg -> Mouse.update mouseMsg undoModel
+    Search searchMsg -> Search.update searchMsg undoModel
+    Icon iconMenuMsg -> Icon.update iconMenuMsg undoModel
+    Nav navMsg -> Nav.update navMsg undoModel
     --
     Scrolled pos -> updateScrollPos pos present |> S.store |> Undo.swap undoModel
     UrlResolved (imageId, url) -> cacheImageUrl imageId url present |> Undo.swap undoModel
@@ -319,14 +319,14 @@ moveTopicToBox topicId boxId origPos targetBoxId targetPath pos model =
         |> TM.removeItem topicId boxId
         |> TM.setTopicPos topicId boxId origPos
         |> TM.addItem topicId (TopicP { topicProps | pos = pos }) targetBoxId
-        |> SelAPI.select targetBoxId targetPath
+        |> Sel.select targetBoxId targetPath
         |> Size.auto
     _ -> model
 
 
 select : Id -> BoxPath -> Model -> (Model, Cmd Msg)
 select itemId boxPath model =
-  ( model |> SelAPI.select itemId boxPath
+  ( model |> Sel.select itemId boxPath
   , Cmd.none
   )
 
@@ -334,9 +334,9 @@ select itemId boxPath model =
 cancelUI : Maybe (Id, BoxPath) -> Model -> (Model, Cmd Msg)
 cancelUI maybeTarget model =
   model
-    |> IconAPI.closePicker
-    |> SearchAPI.closeMenu
-    |> ToolAPI.closeMenu
+    |> Icon.closePicker
+    |> Search.closeMenu
+    |> Tool.closeMenu
     |> cancelUIWith maybeTarget
 
 
@@ -346,17 +346,17 @@ cancelUIWith maybeTarget model =
     isTargeted =
       case maybeTarget of
         Just (itemId, boxId :: _) ->
-          SelAPI.isSelected itemId boxId model ||
-          MouseAPI.isHovered itemId boxId model
+          Sel.isSelected itemId boxId model ||
+          Mouse.isHovered itemId boxId model
         _ -> False
   in
   if isTargeted then
     ( model, Cmd.none ) -- keep selection, hover state, and edit mode
   else
     model
-      |> SelAPI.clear
-      |> MouseAPI.clearHover
-      |> TextAPI.leaveEdit
+      |> Sel.clear
+      |> Mouse.clearHover
+      |> Text.leaveEdit
 
 
 updateScrollPos : Point -> Model -> Model
