@@ -1,7 +1,7 @@
 module BoxRenderer exposing (..)
 
 import Model exposing (Model, Msg)
-import ModelBase exposing (BoxId, BoxPath)
+import ModelBase exposing (Id, BoxId, BoxPath, Point)
 
 import Html exposing (Html)
 
@@ -9,6 +9,8 @@ import Html exposing (Html)
 
 -- TYPES
 
+
+-- "view"
 
 {-| A box renderer basically takes a boxId and returns HTML.
 
@@ -28,5 +30,15 @@ Note: the actual box renderers get access to the dispatching box renderer as an 
 their "view" function instead of importing a module. This avoids circular dependencies in
 conjunction with recursively nested renderers.
 -}
-type alias BoxView =
+type alias NestedBoxRenderer =
   BoxRenderer -> BoxRenderer
+
+
+-- "findTopicAt"
+
+type alias TopicGeometry =
+  Point -> Maybe Id -> Model -> Maybe (Id, BoxPath)
+
+
+type alias NestedTopicGeometry =
+  TopicGeometry -> TopicGeometry

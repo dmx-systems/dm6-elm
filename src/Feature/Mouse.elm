@@ -2,12 +2,12 @@ module Feature.Mouse exposing (topicDownHandler, assocClickHandler, dragHandler,
   isDragInProgress, isHovered, clearHover, update)
 
 import Box
+import BoxRenderer exposing (TopicGeometry)
 import Config as C
 import Feature.MouseDef as MouseDef exposing (DragState(..), DragMode(..))
 import Item
 import Model exposing (Model, Msg(..))
 import ModelBase exposing (..)
-import TopicMap.Geometry as Geometry
 import TopicMap.Size as Size
 import TopicMap.TopicMap as TM
 import Undo exposing (UndoModel)
@@ -55,14 +55,14 @@ dragHandler =
 -- UPDATE
 
 
-update : MouseDef.Msg -> UndoModel -> (UndoModel, Cmd Msg)
-update msg ({present} as undoModel) =
+update : MouseDef.Msg -> TopicGeometry -> UndoModel -> (UndoModel, Cmd Msg)
+update msg findTopicAt ({present} as undoModel) =
   case msg of
     -- Topic
     MouseDef.Down -> (undoModel, mouseDown)
     MouseDef.DownOnTopic id boxPath (pos, pointerType) ->
       mouseDownOnTopic id boxPath pos pointerType present |> Undo.swap undoModel
-    MouseDef.Move (pos, _) -> mouseMove pos present |> Undo.swap undoModel
+    MouseDef.Move (pos, _) -> mouseMove pos findTopicAt present |> Undo.swap undoModel
     MouseDef.Up -> mouseUp present |> Undo.swap undoModel
     MouseDef.Time time -> timeArrived time undoModel
     -- Association
@@ -120,10 +120,10 @@ timeArrived time ({present} as undoModel) =
         (undoModel, Cmd.none)
 
 
-mouseMove : Point -> Model -> (Model, Cmd Msg)
-mouseMove pos model =
+mouseMove : Point -> TopicGeometry -> Model -> (Model, Cmd Msg)
+mouseMove pos findTopicAt model =
   let
-    newModel = enterLeave pos model
+    newModel = enterLeave pos findTopicAt model
   in
   case newModel.mouse.dragState of
     DragEngaged time id boxPath pos_ ->
@@ -229,15 +229,15 @@ point =
 
 {- Emulates enter/leave events by the means of geometry. Based on the given pointer
 coordinate decides whether to call the "enter" and/or "leave" handlers. -}
-enterLeave : Point -> Model -> Model
-enterLeave pos model =
+enterLeave : Point -> TopicGeometry -> Model -> Model
+enterLeave pos findTopicAt model =
   let
     excludeTopicId =
       case model.mouse.dragState of
         Drag DragTopic topicId _ _ _ _ -> Just topicId
         _ -> Nothing
   in
-  case Geometry.findTopicAt pos excludeTopicId model of
+  case findTopicAt pos excludeTopicId model of
     Just target ->
       case model.mouse.hover of
         Just oldTarget ->

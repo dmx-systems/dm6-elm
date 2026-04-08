@@ -1,11 +1,11 @@
 module TopicList.TopicList exposing (..)
 
 import Box
-import BoxRenderer exposing (BoxView)
+import BoxRenderer exposing (BoxRenderer)
 import Config as C
 import Item
 import Model exposing (Model, Msg)
-import ModelBase exposing (BoxId, Attrs)
+import ModelBase exposing (BoxId, BoxPath, Attrs)
 
 import Html exposing (Html, ul, li, text)
 import Html.Attributes exposing (style)
@@ -17,7 +17,7 @@ import String exposing (fromInt)
 
 
 -- For the fullscreen box boxPath is empty
-view : BoxView
+view : BoxRenderer -> BoxId -> BoxPath -> Model -> Html Msg
 view renderBox boxId boxPath model =
   ul
     (boxStyle boxId model)

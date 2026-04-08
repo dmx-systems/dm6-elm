@@ -281,7 +281,7 @@ update msg ({present} as undoModel) =
     -- feature modules
     Tool toolMsg -> Tool.update toolMsg undoModel
     Text textMsg -> Text.update textMsg undoModel
-    Mouse mouseMsg -> Mouse.update mouseMsg undoModel
+    Mouse mouseMsg -> Mouse.update mouseMsg BoxRendererRegistry.findTopicAt undoModel
     Search searchMsg -> Search.update searchMsg undoModel
     Icon iconMenuMsg -> Icon.update iconMenuMsg undoModel
     Nav navMsg -> Nav.update navMsg undoModel

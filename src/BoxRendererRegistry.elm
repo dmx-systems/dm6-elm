@@ -1,31 +1,52 @@
-module BoxRendererRegistry exposing (view)
+module BoxRendererRegistry exposing (view, findTopicAt)
 
 import Box
-import BoxRenderer exposing (BoxRenderer, BoxView)
+import BoxRenderer exposing (..)
 import BoxRendererDef exposing (toName)
+import Model exposing (Model, Msg)
+import ModelBase exposing (Id, BoxId, BoxPath, Point)
 -- installed box renderers
 import TopicMap.View
+import TopicMap.Geometry
 import TopicList.TopicList
+import TopicList.Geometry
 
 import Dict exposing (Dict)
-import Html exposing (text)
+import Html exposing (Html, text)
 
+
+
+-- TYPES
+
+
+type alias Renderer =
+  { view : NestedBoxRenderer
+  , findTopicAt : NestedTopicGeometry
+  }
 
 
 -- VALUES
 
 
 -- key = renderer name
-registry : Dict String {view : BoxView}
+registry : Dict String Renderer
 registry =
   Dict.fromList -- Note: custom types can't be used as Dict keys, so we use String
-    [ ("TopicMap", {view = TopicMap.View.view})
-    , ("List", {view = TopicList.TopicList.view})
+    [ ("TopicMap",
+        { view = TopicMap.View.view
+        , findTopicAt = TopicMap.Geometry.findTopicAt
+        }
+      )
+    , ("List",
+        { view = TopicList.TopicList.view
+        , findTopicAt = TopicList.Geometry.findTopicAt
+        }
+      )
     ]
 
 
 
--- VIEW
+--
 
 
 {-| The dispatching box renderer.
@@ -34,11 +55,21 @@ charge. By passing itself it enables a box renderer to call it for rendering nes
 Note: structurally the dispatching box renderer *is* a box renderer: it takes a box ID and
 returns HTML.
 -}
-view : BoxRenderer
+view : BoxId -> BoxPath -> Model -> Html Msg
 view boxId boxPath model =
-  case Box.rendererOf boxId model of
-    Just renderer ->
-      case Dict.get (toName renderer) registry of
-        Just renderFunc -> renderFunc.view view boxId boxPath model
-        Nothing -> text "Renderer ??"
-    Nothing -> text "Renderer ?"
+  dispatch boxId model (text "Renderer ?")
+    (\renderer -> renderer.view view boxId boxPath model)
+
+
+findTopicAt : Point -> Maybe Id -> Model -> Maybe (Id, BoxPath)
+findTopicAt pos excludeTopicId model =
+  dispatch model.boxId model Nothing
+    (\renderer -> renderer.findTopicAt findTopicAt pos excludeTopicId model)
+
+
+dispatch : BoxId -> Model -> r -> (Renderer -> r) -> r
+dispatch boxId model errVal func =
+  Box.rendererOf boxId model
+    |> Maybe.andThen (\r -> registry |> Dict.get (toName r))
+    |> Maybe.map func
+    |> Maybe.withDefault errVal

@@ -1,7 +1,7 @@
 module TopicMap.View exposing (view)
 
 import Box
-import BoxRenderer exposing (BoxRenderer, BoxView)
+import BoxRenderer exposing (BoxRenderer)
 import Config as C
 import Feature.Icon as Icon
 import Feature.MouseDef exposing (DragState(..), DragMode(..))
@@ -53,7 +53,7 @@ type alias LineRenderer =
 
 
 -- For the fullscreen box boxPath is empty
-view : BoxView
+view : BoxRenderer -> BoxId -> BoxPath -> Model -> Html Msg
 view renderBox boxId boxPath model =
   let
     ((topics, assocs), boxRect, (svgSize, boxStyle)) = boxInfo renderBox boxId boxPath model
