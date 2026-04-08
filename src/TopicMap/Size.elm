@@ -34,7 +34,7 @@ calcBoxRect boxPath model =
   let
     boxId = Box.firstId boxPath
   in
-  case TM.byIdOrLog boxId model of
+  case TM.byId boxId model of
     Just map ->
       let
         topics = VM.topicsToRender map model

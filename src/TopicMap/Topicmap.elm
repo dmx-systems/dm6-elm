@@ -1,4 +1,4 @@
-module TopicMap.TopicMap exposing (fullscreen, byId, byIdOrLog, updateRect, updateScrollPos,
+module TopicMap.TopicMap exposing (fullscreen, byId, byIdOrNothing, updateRect, updateScrollPos,
   visibleTopics, topicPos, setTopicPos, updateTopicPos, topicProps, initItemProps,
   initLimboTopicProps, initTopicPos, assocGeometry, create, addItem, showItem, removeItem,
   revelationBoxId, revelationBoxPath, landingTarget, isTopic, isAssoc, isVisible)
@@ -19,19 +19,19 @@ import Dict
 
 fullscreen : Model -> Maybe TopicMap
 fullscreen model =
-  byIdOrLog model.boxId model
+  byId model.boxId model
 
 
 {-| Logs an error if TopicMap does not exist. -}
-byIdOrLog : BoxId -> Model -> Maybe TopicMap
-byIdOrLog mapId model =
-  case byId mapId model of
-    Just map -> Just map
-    Nothing -> U.boxNotFound "byIdOrLog" mapId Nothing
-
-
 byId : BoxId -> Model -> Maybe TopicMap
 byId mapId model =
+  case byIdOrNothing mapId model of
+    Just map -> Just map
+    Nothing -> U.boxNotFound "byId" mapId Nothing
+
+
+byIdOrNothing : BoxId -> Model -> Maybe TopicMap
+byIdOrNothing mapId model =
   model.topicMap
     |> Dict.get mapId
 
@@ -154,7 +154,7 @@ initLimboTopicProps topicId mapId model =
 {-| Logs an error if box does not exist. -}
 initTopicPos : BoxId -> Model -> Point
 initTopicPos mapId model =
-  case byIdOrLog mapId model of
+  case byId mapId model of
     Just map ->
       Point
         (C.initTopicPos.x + map.rect.x1 + map.scroll.x)
@@ -165,7 +165,7 @@ initTopicPos mapId model =
 {-| Logs an error if box does not exist, or item is not in box. -}
 itemByIdOrLog_ : Id -> BoxId -> Model -> Maybe MapItem
 itemByIdOrLog_ itemId mapId model =
-  byIdOrLog mapId model |> Maybe.andThen
+  byId mapId model |> Maybe.andThen
     (\map ->
       case map.items |> Dict.get itemId of
         Just mapItem -> Just mapItem
@@ -341,7 +341,7 @@ TODO: not used
 -}
 isEmpty : BoxId -> Model -> Bool
 isEmpty boxId model =
-  case byIdOrLog boxId model of
+  case byId boxId model of
     Just map -> map.items |> Dict.values |> List.any isVisible |> not
     Nothing -> False
 

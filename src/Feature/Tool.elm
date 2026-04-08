@@ -201,7 +201,7 @@ viewToolbar boxPath model =
   case Sel.single model of
     Just (itemId, selBoxPath) ->
       if selBoxPath == boxPath then
-        case (Item.byId itemId model, TM.byIdOrLog boxId model) of
+        case (Item.byId itemId model, TM.byId boxId model) of
           (Just {info}, Just {rect}) ->
             case info of
               Topic topic ->

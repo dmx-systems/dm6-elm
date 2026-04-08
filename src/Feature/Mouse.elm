@@ -232,12 +232,12 @@ coordinate decides whether to call the "enter" and/or "leave" handlers. -}
 enterLeave : Point -> Model -> Model
 enterLeave pos model =
   let
-    filterTopicId =
+    excludeTopicId =
       case model.mouse.dragState of
         Drag DragTopic topicId _ _ _ _ -> Just topicId
         _ -> Nothing
   in
-  case Geometry.pointerTarget pos filterTopicId model of
+  case Geometry.findTopicAt pos excludeTopicId model of
     Just target ->
       case model.mouse.hover of
         Just oldTarget ->

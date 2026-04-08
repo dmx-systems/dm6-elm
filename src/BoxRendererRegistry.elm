@@ -18,7 +18,7 @@ import Html exposing (text)
 -- key = renderer name
 registry : Dict String {view : BoxView}
 registry =
-  Dict.fromList
+  Dict.fromList -- Note: custom types can't be used as Dict keys, so we use String
     [ ("TopicMap", {view = TopicMap.View.view})
     , ("List", {view = TopicList.TopicList.view})
     ]

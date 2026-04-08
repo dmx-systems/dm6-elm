@@ -1,4 +1,4 @@
-module TopicMap.Geometry exposing (pointerTarget)
+module TopicMap.Geometry exposing (findTopicAt)
 
 import Box
 import Config as C
@@ -11,56 +11,57 @@ import Utils as U
 
 
 
-{- Searches the target for a pointer position.
-Returns the target (topic/box Id) and its context (BoxPath), or Nothing -}
-pointerTarget : Point -> Maybe Id -> Model -> Maybe (Id, BoxPath)
-pointerTarget pos filterTopicId model =
+{-| Finds the topic/box at a given screen position.
+Returns the found topic/box (Id) and its context (BoxPath), or Nothing.
+If `excludeTopicId` is given that topic/box will be excluded from search.
+-}
+findTopicAt : Point -> Maybe Id -> Model -> Maybe (Id, BoxPath)
+findTopicAt pos excludeTopicId model =
   let
     initPos =
       Point
         (pos.x - C.whiteBoxPadding)
         (pos.y - C.whiteBoxPadding - C.appHeaderHeight)
   in
-  searchInItem initPos model.boxId [] filterTopicId model
+  testItemGeometry initPos model.boxId [] excludeTopicId model
 
 
-{- Searches the target for a pointer position, starting at the given item (topic/box Id)
-and context (BoxPath). -}
-searchInItem : Point -> Id -> BoxPath -> Maybe Id -> Model -> Maybe (Id, BoxPath)
-searchInItem pos itemId boxPath filterTopicId model =
+testItemGeometry : Point -> Id -> BoxPath -> Maybe Id -> Model -> Maybe (Id, BoxPath)
+testItemGeometry pos itemId boxPath excludeTopicId model =
   let
     maybeThisItem : Bool -> Maybe (Id, BoxPath)
     maybeThisItem found = if found then Just (itemId, boxPath) else Nothing
   in
-  case TM.byId itemId model of
+  case TM.byIdOrNothing itemId model of
     Just map ->
       let
         items = TM.visibleTopics map
-        relPos = boxRelPos pos map boxPath model
-        searchBox = searchInItems relPos items (itemId :: boxPath) filterTopicId
+        relPos = mapRelPos pos map boxPath model
+        testItems = testAllItems relPos items (itemId :: boxPath) excludeTopicId
       in
-      -- Note: for a fullscreen box boxPath is empty
-      case Box.isFullscreen itemId model of
-        True -> searchBox model
-        False ->
-          let
-            parentBoxId = Box.firstId boxPath
-            isHeaderHovered = isTopicHeaderHovered pos map.id parentBoxId
-            isRectHovered = isBoxRectHovered pos map parentBoxId
-          in
-          case Box.displayMode itemId parentBoxId model of
-            Just (BoxD BlackBox) ->
-              isHeaderHovered model |> maybeThisItem
-            Just (BoxD WhiteBox) ->
-              case searchBox model of
-                Just target -> Just target -- found nested (not this) item
-                Nothing ->
-                  isHeaderHovered model ||
-                  isRectHovered model |> maybeThisItem
-            _ -> U.logError "searchInItem" "Unexpected box display mode" Nothing
+      -- test this map's items either if the map is displayed fullscreen, or it is whiteboxed
+      if Box.isFullscreen itemId model then
+        testItems model
+      else
+        let
+          parentBoxId = Box.firstId boxPath -- Note: for a fullscreen box boxPath is empty
+          isHeaderHovered = isTopicHeaderHovered pos map.id parentBoxId
+          isRectHovered = isBoxRectHovered pos map parentBoxId
+        in
+        case Box.displayMode itemId parentBoxId model of
+          Just (BoxD BlackBox) ->
+            isHeaderHovered model |> maybeThisItem
+          Just (BoxD WhiteBox) ->
+            case testItems model of
+              Just target -> Just target -- found nested (not this) item
+              Nothing ->
+                isHeaderHovered model ||
+                isRectHovered model |> maybeThisItem
+          _ -> U.logError "testItemGeometry" "Unexpected box display mode" Nothing
     Nothing ->
+      -- hover test depends on topic's display mode
       let
-        parentBoxId = Box.firstId boxPath
+        parentBoxId = Box.firstId boxPath -- Note: a topic is never displayed fullscreen
         isHeaderHovered = isTopicHeaderHovered pos itemId parentBoxId
         isDetailHovered = isTopicDetailHovered pos itemId parentBoxId
       in
@@ -70,31 +71,33 @@ searchInItem pos itemId boxPath filterTopicId model =
         Just (TopicD Detail) ->
           isHeaderHovered model ||
           isDetailHovered model |> maybeThisItem
-        _ -> U.logError "searchInItem" "Unexpected topic display mode" Nothing
+        _ -> U.logError "testItemGeometry" "Unexpected topic display mode" Nothing
 
 
-searchInItems : Point -> List MapItem -> BoxPath -> Maybe Id -> Model -> Maybe (Id, BoxPath)
-searchInItems pos items boxPath filterTopicId model =
+testAllItems : Point -> List MapItem -> BoxPath -> Maybe Id -> Model -> Maybe (Id, BoxPath)
+testAllItems pos items boxPath excludeTopicId model =
   case items of
     [] -> Nothing
     item :: tailItems ->
       let
-        searchItem = searchInItem pos item.id boxPath filterTopicId -- recursion
-        searchTailItems = searchInItems pos tailItems boxPath filterTopicId -- recursion
+        testItem = testItemGeometry pos item.id boxPath excludeTopicId -- recursion
+        testTailItems = testAllItems pos tailItems boxPath excludeTopicId -- recursion
       in
-      case (searchItem model, filterTopicId) of
+      -- return item if successfully tested AND not excluded by filter
+      case (testItem model, excludeTopicId) of
         (Just ((targetId, _) as target), Just topicId) ->
           case targetId /= topicId of
             True -> Just target
-            False -> searchTailItems model
+            False -> testTailItems model
         (Just target, Nothing) -> Just target
-        (Nothing, _) -> searchTailItems model
+        (Nothing, _) -> testTailItems model
 
 
--- For a fullscreen box boxPath is empty
-boxRelPos : Point -> TopicMap -> BoxPath -> Model -> Point
-boxRelPos pos map boxPath model =
-  case Box.isFullscreen map.id model of
+{-| Transforms the given client position to a map-relative position according to the given map.
+-}
+mapRelPos : Point -> TopicMap -> BoxPath -> Model -> Point
+mapRelPos pos map boxPath model =
+  case Box.isFullscreen map.id model of -- For a fullscreen box boxPath is empty
     True -> pos
     False ->
       case TM.topicPos map.id (Box.firstId boxPath) model of
@@ -105,7 +108,7 @@ boxRelPos pos map boxPath model =
         Nothing -> pos
 
 
--- TODO: factor out common Box.Size code
+-- TODO: factor out common TopicMap.Size code
 
 isTopicHeaderHovered : Point -> Id -> BoxId -> Model -> Bool
 isTopicHeaderHovered pos topicId boxId model =

@@ -129,7 +129,7 @@ gAttr boxId boxRect model =
 -- For the fullscreen box boxPath is empty
 boxInfo : BoxRenderer -> BoxId -> BoxPath -> Model -> BoxInfo
 boxInfo renderBox boxId boxPath model =
-  case TM.byIdOrLog boxId model of
+  case TM.byId boxId model of
     Just map ->
       ( viewItems renderBox map boxPath model
       , map.rect
@@ -539,7 +539,7 @@ viewItemCount topicId props model =
       case props.displayMode of
         TopicD _ -> 0
         BoxD _ ->
-          case TM.byIdOrLog topicId model of
+          case TM.byId topicId model of
             Just map -> map.items |> Dict.values |> List.filter TM.isVisible |> List.length
             Nothing -> 0
   in
@@ -629,7 +629,7 @@ accumulatePos posAcc boxId parentBoxId boxIds model =
 
 accumulateRect : Point -> BoxId -> Model -> Point
 accumulateRect posAcc boxId model =
-  case TM.byIdOrLog boxId model of
+  case TM.byId boxId model of
     Just map ->
       Point
         (posAcc.x - map.rect.x1)
