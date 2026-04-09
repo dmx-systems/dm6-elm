@@ -30,15 +30,15 @@ Note: the actual box renderers get access to the dispatching box renderer as an 
 their "view" function instead of importing a module. This avoids circular dependencies in
 conjunction with recursively nested renderers.
 -}
-type alias NestedBoxRenderer =
-  BoxRenderer -> BoxRenderer
+type alias NestingBoxRenderer =
+  BoxId -> BoxPath -> BoxRenderer -> Model -> Html Msg
 
 
 -- "findTopicAt"
 
-type alias TopicGeometry =
+type alias BoxGeometry =
   Point -> Maybe Id -> Model -> Maybe (Id, BoxPath)
 
 
-type alias NestedTopicGeometry =
-  TopicGeometry -> TopicGeometry
+type alias NestingBoxGeometry =
+  Point -> Maybe Id -> BoxGeometry -> Model -> Maybe (Id, BoxPath)

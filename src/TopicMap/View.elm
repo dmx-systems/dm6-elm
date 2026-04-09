@@ -53,10 +53,11 @@ type alias LineRenderer =
 
 
 -- For the fullscreen box boxPath is empty
-view : BoxRenderer -> BoxId -> BoxPath -> Model -> Html Msg
-view renderBox boxId boxPath model =
+view : BoxId -> BoxPath -> BoxRenderer -> Model -> Html Msg
+view boxId boxPath renderChildBox model =
   let
-    ((topics, assocs), boxRect, (svgSize, boxStyle)) = boxInfo renderBox boxId boxPath model
+    ((topics, assocs), boxRect, (svgSize, boxStyle)) =
+      boxInfo boxId boxPath renderChildBox model
   in
   div
     boxStyle
@@ -127,11 +128,11 @@ gAttr boxId boxRect model =
 
 
 -- For the fullscreen box boxPath is empty
-boxInfo : BoxRenderer -> BoxId -> BoxPath -> Model -> BoxInfo
-boxInfo renderBox boxId boxPath model =
+boxInfo : BoxId -> BoxPath -> BoxRenderer -> Model -> BoxInfo
+boxInfo boxId boxPath renderChildBox model =
   case TM.byId boxId model of
     Just map ->
-      ( viewItems renderBox map boxPath model
+      ( viewItems map boxPath renderChildBox model
       , map.rect
       , ( { w = (map.rect.x2 - map.rect.x1) |> fromInt
           , h = (map.rect.y2 - map.rect.y1) |> fromInt
@@ -166,15 +167,15 @@ nestedBoxStyle topicId rect boxPath model =
 
 
 -- For the fullscreen box boxPath is empty
-viewItems : BoxRenderer -> TopicMap -> BoxPath -> Model -> (List (Html Msg), List (Svg Msg))
-viewItems renderBox map boxPath model =
+viewItems : TopicMap -> BoxPath -> BoxRenderer -> Model -> (List (Html Msg), List (Svg Msg))
+viewItems map boxPath renderChildBox model =
   let
     newPath = map.id :: boxPath
     topics =
       VM.topicsToRender map model |> List.map
         (\{id, props} ->
           case (Item.topicById id model, props) of
-            (Just topic, TopicP tProps) -> viewTopic renderBox topic tProps newPath model
+            (Just topic, TopicP tProps) -> viewTopic topic tProps newPath renderChildBox model
             _ -> U.logError "viewItems" ("problem with topic " ++ fromInt id) (text "")
         )
     assocs =
@@ -233,17 +234,17 @@ viewLimboAssoc boxId model =
 
 -- Topic Rendering
 
-viewTopic : BoxRenderer -> TopicInfo -> TopicProps -> BoxPath -> Model -> Html Msg
-viewTopic renderBox topic props boxPath model =
+viewTopic : TopicInfo -> TopicProps -> BoxPath -> BoxRenderer -> Model -> Html Msg
+viewTopic topic props boxPath renderChildBox model =
   let
     boxId = Box.firstId boxPath
     render =
       case props.displayMode of
-        TopicD LabelOnly -> labelTopic
-        TopicD Detail -> detailTopic
-        BoxD BlackBox -> blackBoxTopic
-        BoxD WhiteBox -> whiteBoxTopic renderBox
-    (style, children) = render topic props boxPath model
+        TopicD LabelOnly -> labelTopic topic props boxPath
+        TopicD Detail -> detailTopic topic props boxPath
+        BoxD BlackBox -> blackBoxTopic topic props boxPath
+        BoxD WhiteBox -> whiteBoxTopic topic props boxPath renderChildBox
+    (style, children) = render model
   in
   div
     ( topicAttr topic.id boxPath
@@ -520,15 +521,15 @@ selectionStyle topicId boxPath model =
     False -> []
 
 
-whiteBoxTopic : BoxRenderer -> TopicInfo -> TopicProps -> BoxPath -> Model -> TopicRendering
-whiteBoxTopic renderBox topic props boxPath model =
+whiteBoxTopic : TopicInfo -> TopicProps -> BoxPath -> BoxRenderer -> Model -> TopicRendering
+whiteBoxTopic topic props boxPath renderChildBox model =
   let
     (style, children) = labelTopic topic props boxPath model
   in
   ( style
   , children
     ++ viewItemCount topic.id props model
-    ++ [ renderBox topic.id boxPath model ]
+    ++ [ renderChildBox topic.id boxPath model ]
   )
 
 

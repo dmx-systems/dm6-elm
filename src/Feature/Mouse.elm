@@ -2,7 +2,7 @@ module Feature.Mouse exposing (topicDownHandler, assocClickHandler, dragHandler,
   isDragInProgress, isHovered, clearHover, update)
 
 import Box
-import BoxRenderer exposing (TopicGeometry)
+import BoxRenderer exposing (BoxGeometry)
 import Config as C
 import Feature.MouseDef as MouseDef exposing (DragState(..), DragMode(..))
 import Item
@@ -55,7 +55,7 @@ dragHandler =
 -- UPDATE
 
 
-update : MouseDef.Msg -> TopicGeometry -> UndoModel -> (UndoModel, Cmd Msg)
+update : MouseDef.Msg -> BoxGeometry -> UndoModel -> (UndoModel, Cmd Msg)
 update msg findTopicAt ({present} as undoModel) =
   case msg of
     -- Topic
@@ -120,7 +120,7 @@ timeArrived time ({present} as undoModel) =
         (undoModel, Cmd.none)
 
 
-mouseMove : Point -> TopicGeometry -> Model -> (Model, Cmd Msg)
+mouseMove : Point -> BoxGeometry -> Model -> (Model, Cmd Msg)
 mouseMove pos findTopicAt model =
   let
     newModel = enterLeave pos findTopicAt model
@@ -229,7 +229,7 @@ point =
 
 {- Emulates enter/leave events by the means of geometry. Based on the given pointer
 coordinate decides whether to call the "enter" and/or "leave" handlers. -}
-enterLeave : Point -> TopicGeometry -> Model -> Model
+enterLeave : Point -> BoxGeometry -> Model -> Model
 enterLeave pos findTopicAt model =
   let
     excludeTopicId =

@@ -1,7 +1,7 @@
 module TopicMap.Geometry exposing (findTopicAt)
 
 import Box
-import BoxRenderer exposing (TopicGeometry)
+import BoxRenderer exposing (BoxGeometry)
 import Config as C
 import Item
 import Model exposing (Model)
@@ -16,8 +16,8 @@ import Utils as U
 Returns the found topic/box (Id) and its context (BoxPath), or Nothing.
 If `excludeTopicId` is given that topic/box will be excluded from search.
 -}
-findTopicAt : TopicGeometry -> Point -> Maybe Id -> Model -> Maybe (Id, BoxPath)
-findTopicAt geometry pos excludeTopicId model =
+findTopicAt : Point -> Maybe Id -> BoxGeometry -> Model -> Maybe (Id, BoxPath)
+findTopicAt pos excludeTopicId geometry model =
   -- TODO: use geometry for nested boxes
   let
     initPos =

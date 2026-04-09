@@ -20,8 +20,8 @@ import Html exposing (Html, text)
 
 
 type alias Renderer =
-  { view : NestedBoxRenderer
-  , findTopicAt : NestedTopicGeometry
+  { view : NestingBoxRenderer
+  , findTopicAt : NestingBoxGeometry
   }
 
 
@@ -58,13 +58,13 @@ returns HTML.
 view : BoxId -> BoxPath -> Model -> Html Msg
 view boxId boxPath model =
   dispatch boxId model (text "Renderer ?")
-    (\renderer -> renderer.view view boxId boxPath model)
+    (\renderer -> renderer.view boxId boxPath view model)
 
 
 findTopicAt : Point -> Maybe Id -> Model -> Maybe (Id, BoxPath)
 findTopicAt pos excludeTopicId model =
   dispatch model.boxId model Nothing
-    (\renderer -> renderer.findTopicAt findTopicAt pos excludeTopicId model)
+    (\renderer -> renderer.findTopicAt pos excludeTopicId findTopicAt model)
 
 
 dispatch : BoxId -> Model -> r -> (Renderer -> r) -> r
