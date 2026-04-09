@@ -61,10 +61,10 @@ view boxId boxPath model =
     (\renderer -> renderer.view boxId boxPath view model)
 
 
-findTopicAt : Point -> Maybe Id -> Model -> Maybe (Id, BoxPath)
-findTopicAt pos excludeTopicId model =
-  dispatch model.boxId model Nothing
-    (\renderer -> renderer.findTopicAt pos excludeTopicId findTopicAt model)
+findTopicAt : BoxId -> BoxPath -> Point -> Maybe Id -> Model -> Maybe (Id, BoxPath)
+findTopicAt boxId boxPath pos excludeTopicId model =
+  dispatch boxId model Nothing
+    (\renderer -> renderer.findTopicAt boxId boxPath pos excludeTopicId findTopicAt model)
 
 
 dispatch : BoxId -> Model -> r -> (Renderer -> r) -> r

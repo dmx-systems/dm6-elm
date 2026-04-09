@@ -232,12 +232,16 @@ coordinate decides whether to call the "enter" and/or "leave" handlers. -}
 enterLeave : Point -> BoxGeometry -> Model -> Model
 enterLeave pos findTopicAt model =
   let
+    initPos =
+      Point
+        (pos.x - C.whiteBoxPadding)
+        (pos.y - C.whiteBoxPadding - C.appHeaderHeight)
     excludeTopicId =
       case model.mouse.dragState of
         Drag DragTopic topicId _ _ _ _ -> Just topicId
         _ -> Nothing
   in
-  case findTopicAt pos excludeTopicId model of
+  case findTopicAt model.boxId [] initPos excludeTopicId model of
     Just target ->
       case model.mouse.hover of
         Just oldTarget ->

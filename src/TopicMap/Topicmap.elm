@@ -1,7 +1,7 @@
-module TopicMap.TopicMap exposing (fullscreen, byId, byIdOrNothing, updateRect, updateScrollPos,
-  visibleTopics, topicPos, setTopicPos, updateTopicPos, topicProps, initItemProps,
-  initLimboTopicProps, initTopicPos, assocGeometry, create, addItem, showItem, removeItem,
-  revelationBoxId, revelationBoxPath, landingTarget, isTopic, isAssoc, isVisible)
+module TopicMap.TopicMap exposing (fullscreen, byId, updateRect, updateScrollPos, visibleTopics,
+  topicPos, setTopicPos, updateTopicPos, topicProps, initItemProps, initLimboTopicProps,
+  initTopicPos, assocGeometry, create, addItem, showItem, removeItem, revelationBoxId,
+  revelationBoxPath, landingTarget, isTopic, isAssoc, isVisible)
 
 import Config as C
 import Feature.SearchDef exposing (SearchResult(..))
@@ -30,6 +30,7 @@ byId mapId model =
     Nothing -> U.boxNotFound "byId" mapId Nothing
 
 
+-- Not publically used
 byIdOrNothing : BoxId -> Model -> Maybe TopicMap
 byIdOrNothing mapId model =
   model.topicMap

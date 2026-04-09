@@ -23,8 +23,8 @@ type alias BoxRenderer =
   BoxId -> BoxPath -> Model -> Html Msg
 
 
-{-| A box renderer transformation that enables the dispatching box renderer to inject iteself
-into the actual box renderer (e.g. TopicMap, List).
+{-| A box renderer transformation that enables the dispatching box renderer to inject itself
+into the actual box renderer (e.g. TopicMap, List). ### FIXDOC
 The actual renderers "view" functions are of this type.
 Note: the actual box renderers get access to the dispatching box renderer as an argument of
 their "view" function instead of importing a module. This avoids circular dependencies in
@@ -37,8 +37,8 @@ type alias NestingBoxRenderer =
 -- "findTopicAt"
 
 type alias BoxGeometry =
-  Point -> Maybe Id -> Model -> Maybe (Id, BoxPath)
+  BoxId -> BoxPath -> Point -> Maybe Id -> Model -> Maybe (Id, BoxPath)
 
 
 type alias NestingBoxGeometry =
-  Point -> Maybe Id -> BoxGeometry -> Model -> Maybe (Id, BoxPath)
+  BoxId -> BoxPath -> Point -> Maybe Id -> BoxGeometry -> Model -> Maybe (Id, BoxPath)

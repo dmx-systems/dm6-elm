@@ -1,6 +1,6 @@
 module ModelBase exposing (Id, Item, Items, ItemInfo(..), AssocIds, TopicInfo, Icon, TextSize,
   Size, SizeField(..), Point, Rectangle, AssocInfo, AssocType(..), ItemSet, ItemSets, SetItem,
-  Box, Boxes, BoxId, BoxPath, rootBoxId, ItemProps, DisplayMode(..), TopicDisplay(..),
+  Box, Boxes, BoxId, BoxPath, Target, rootBoxId, ItemProps, DisplayMode(..), TopicDisplay(..),
   BoxDisplay(..), ImageId, Attrs, PointerType, encodeItem, encodeItemSet, encodeBox,
   encodeDisplayMode, itemDecoder, itemSetDecoder, boxDecoder, toDictDecoder)
 
@@ -102,6 +102,7 @@ type alias PointerType = String
 
 type alias BoxId = Id
 type alias BoxPath = List BoxId
+type alias Target = (Id, BoxPath)
 
 
 type alias Boxes = Dict BoxId Box

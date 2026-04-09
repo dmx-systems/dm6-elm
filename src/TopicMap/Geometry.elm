@@ -12,37 +12,29 @@ import Utils as U
 
 
 
+type alias MapItems =
+    List MapItem
+
+
 {-| Finds the topic/box at a given screen position.
 Returns the found topic/box (Id) and its context (BoxPath), or Nothing.
 If `excludeTopicId` is given that topic/box will be excluded from search.
 -}
-findTopicAt : Point -> Maybe Id -> BoxGeometry -> Model -> Maybe (Id, BoxPath)
-findTopicAt pos excludeTopicId geometry model =
-  -- TODO: use geometry for nested boxes
-  let
-    initPos =
-      Point
-        (pos.x - C.whiteBoxPadding)
-        (pos.y - C.whiteBoxPadding - C.appHeaderHeight)
-  in
-  testItemGeometry initPos model.boxId [] excludeTopicId model
-
-
-testItemGeometry : Point -> Id -> BoxPath -> Maybe Id -> Model -> Maybe (Id, BoxPath)
-testItemGeometry pos itemId boxPath excludeTopicId model =
+findTopicAt : BoxId -> BoxPath -> Point -> Maybe Id -> BoxGeometry -> Model -> Maybe Target
+findTopicAt boxId boxPath pos excludeTopicId findTopicAt_ model =
   let
     maybeThisItem : Bool -> Maybe (Id, BoxPath)
-    maybeThisItem found = if found then Just (itemId, boxPath) else Nothing
+    maybeThisItem found = if found then Just (boxId, boxPath) else Nothing
   in
-  case TM.byIdOrNothing itemId model of
+  case TM.byId boxId model of
     Just map ->
       let
         items = TM.visibleTopics map
         relPos = mapRelPos pos map boxPath model
-        testItems = testAllItems relPos items (itemId :: boxPath) excludeTopicId
+        testItems = testAllItems relPos items (boxId :: boxPath) excludeTopicId findTopicAt_
       in
       -- test this map's items either if the map is displayed fullscreen, or it is whiteboxed
-      if Box.isFullscreen itemId model then
+      if Box.isFullscreen boxId model then
         testItems model
       else
         let
@@ -50,7 +42,7 @@ testItemGeometry pos itemId boxPath excludeTopicId model =
           isHeaderHovered = isTopicHeaderHovered pos map.id parentBoxId
           isRectHovered = isBoxRectHovered pos map parentBoxId
         in
-        case Box.displayMode itemId parentBoxId model of
+        case Box.displayMode boxId parentBoxId model of
           Just (BoxD BlackBox) ->
             isHeaderHovered model |> maybeThisItem
           Just (BoxD WhiteBox) ->
@@ -59,31 +51,23 @@ testItemGeometry pos itemId boxPath excludeTopicId model =
               Nothing ->
                 isHeaderHovered model ||
                 isRectHovered model |> maybeThisItem
-          _ -> U.logError "testItemGeometry" "Unexpected box display mode" Nothing
-    Nothing ->
-      -- hover test depends on topic's display mode
-      let
-        parentBoxId = Box.firstId boxPath -- Note: a topic is never displayed fullscreen
-        isHeaderHovered = isTopicHeaderHovered pos itemId parentBoxId
-        isDetailHovered = isTopicDetailHovered pos itemId parentBoxId
-      in
-      case Box.displayMode itemId parentBoxId model of
-        Just (TopicD LabelOnly) ->
-          isHeaderHovered model |> maybeThisItem
-        Just (TopicD Detail) ->
-          isHeaderHovered model ||
-          isDetailHovered model |> maybeThisItem
-        _ -> U.logError "testItemGeometry" "Unexpected topic display mode" Nothing
+          _ -> U.logError "TopicMap.Geometry.findTopicAt" "Unexpected box display mode" Nothing
+    Nothing -> Nothing
 
 
-testAllItems : Point -> List MapItem -> BoxPath -> Maybe Id -> Model -> Maybe (Id, BoxPath)
-testAllItems pos items boxPath excludeTopicId model =
+testAllItems : Point -> MapItems -> BoxPath -> Maybe Id -> BoxGeometry -> Model -> Maybe Target
+testAllItems pos items boxPath excludeTopicId findTopicAt_ model =
   case items of
     [] -> Nothing
     item :: tailItems ->
       let
-        testItem = testItemGeometry pos item.id boxPath excludeTopicId -- recursion
-        testTailItems = testAllItems pos tailItems boxPath excludeTopicId -- recursion
+        testItem =
+          if Item.isBox item.id model then
+            findTopicAt_ item.id boxPath pos excludeTopicId
+          else
+            testMapItem item.id boxPath pos
+        -- recursion
+        testTailItems = testAllItems pos tailItems boxPath excludeTopicId findTopicAt_
       in
       -- return item if successfully tested AND not excluded by filter
       case (testItem model, excludeTopicId) of
@@ -95,7 +79,27 @@ testAllItems pos items boxPath excludeTopicId model =
         (Nothing, _) -> testTailItems model
 
 
-{-| Transforms the given client position to a map-relative position according to the given map.
+testMapItem : Id -> BoxPath -> Point -> Model -> Maybe Target
+testMapItem itemId boxPath pos model =
+  let
+    maybeThisItem : Bool -> Maybe (Id, BoxPath)
+    maybeThisItem found = if found then Just (itemId, boxPath) else Nothing
+    --
+    parentBoxId = Box.firstId boxPath -- Note: a topic is never displayed fullscreen
+    isHeaderHovered = isTopicHeaderHovered pos itemId parentBoxId
+    isDetailHovered = isTopicDetailHovered pos itemId parentBoxId
+  in
+  -- hover test depends on topic's display mode
+  case Box.displayMode itemId parentBoxId model of
+    Just (TopicD LabelOnly) ->
+      isHeaderHovered model |> maybeThisItem
+    Just (TopicD Detail) ->
+      isHeaderHovered model ||
+      isDetailHovered model |> maybeThisItem
+    _ -> U.logError "TopicMap.Geometry.testMapItem" "Unexpected topic display mode" Nothing
+
+
+{-| Transforms the given screen position to a map-relative position according to the given map.
 -}
 mapRelPos : Point -> TopicMap -> BoxPath -> Model -> Point
 mapRelPos pos map boxPath model =
