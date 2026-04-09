@@ -62,7 +62,9 @@ type alias AssocProps =
 
 encode : Model -> E.Value
 encode model =
-  model |> Dict.values |> E.list encodeTopicMap
+  model
+    |> Dict.values
+    |> E.list encodeTopicMap
 
 
 encodeTopicMap : TopicMap -> E.Value

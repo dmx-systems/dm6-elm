@@ -18,7 +18,6 @@ import Storage as S
 import TopicMap.Size as Size
 import TopicMap.TopicMap as TM
 import TopicMap.TopicMapDef exposing (ItemProps(..), AssocProps)
---import TopicMap.View as View
 import Undo exposing (UndoModel)
 import Utils as U
 

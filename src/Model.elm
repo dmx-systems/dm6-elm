@@ -2,6 +2,11 @@ module Model exposing (..)
 
 import BoxRendererDef
 import Config as C
+import ModelBase exposing (..)
+-- box renderers
+import TopicList.TopicListDef as TopicListDef
+import TopicMap.TopicMapDef as TopicMapDef
+  -- feature modules
 import Feature.IconDef as IconDef
 import Feature.MouseDef as MouseDef
 import Feature.NavDef as NavDef
@@ -9,8 +14,6 @@ import Feature.SearchDef as SearchDef
 import Feature.SelDef as SelDef
 import Feature.TextDef as TextDef
 import Feature.ToolDef as ToolDef
-import ModelBase exposing (..)
-import TopicMap.TopicMapDef as TopicMapDef
 
 import Dict exposing (Dict)
 import Json.Decode as D
@@ -27,8 +30,9 @@ type alias Model =
   , boxId : BoxId -- the box rendered fullscreen
   , nextId : Id
   , imageCache : Dict ImageId String -- Int -> blob: URL
-  -- renderer modules
+  -- box renderers
   , topicMap : TopicMapDef.Model
+  , topicList : TopicListDef.Model
   -- feature modules
   , tool : ToolDef.Model
   , text : TextDef.Model
@@ -52,6 +56,7 @@ init =
   , imageCache = Dict.empty -- TODO: move to Text module, but should survive a map switch
   -- renderer modules
   , topicMap = TopicMapDef.init
+  , topicList = TopicListDef.init
   -- feature modules
   , tool = ToolDef.init
   , text = TextDef.init
@@ -68,7 +73,7 @@ type Msg
   | MoveTopicToBox Id BoxId Point Id BoxPath Point -- start point, random point (for target)
   | TopicDragged
   | ItemClicked Id BoxPath
-  | Cancel (Maybe (Id, BoxPath)) -- target
+  | Cancel (Maybe Target)
   -- feature modules
   | Tool ToolDef.Msg
   | Text TextDef.Msg
@@ -94,8 +99,9 @@ encode model =
     , ("boxes", model.boxes |> Dict.values |> E.list encodeBox)
     , ("boxId", E.int model.boxId)
     , ("nextId", E.int model.nextId)
-    -- renderer modules
+    -- box renderers
     , ("topicMap", TopicMapDef.encode model.topicMap)
+    , ("topicList", TopicListDef.encode model.topicList)
     -- feature modules
     , ("tool", ToolDef.encode model.tool)
     ]
@@ -110,8 +116,9 @@ decoder =
     |> required "boxId" D.int
     |> required "nextId" D.int
     |> hardcoded Dict.empty -- imageCache
-    -- renderer modules
+    -- box renderers
     |> required "topicMap" TopicMapDef.decoder
+    |> required "topicList" TopicListDef.decoder
     -- feature modules
     |> required "tool" ToolDef.decoder
     |> hardcoded TextDef.init
