@@ -26,7 +26,7 @@ findTopicAt boxId boxPath pos excludeTopicId findTopicAt_ model =
     Just map ->
       let
         items = TM.visibleTopics map
-        relPos = rectOffset pos map
+        relPos = mapOffset pos map
       in
       case testChildren relPos items (boxId :: boxPath) excludeTopicId findTopicAt_ model of
         Just target -> Just target
@@ -37,7 +37,7 @@ findTopicAt boxId boxPath pos excludeTopicId findTopicAt_ model =
             let
               parentBoxId = Box.firstId boxPath
             in
-            if isBoxRectHovered pos map parentBoxId model then
+            if isBoxRectHit pos map parentBoxId model then
               Just (boxId, boxPath)
             else
               Nothing
@@ -50,29 +50,28 @@ testChildren pos items boxPath excludeTopicId findTopicAt_ model =
     [] -> Nothing
     item :: tailItems ->
       let
+        maybeItem : Bool -> Maybe (Id, BoxPath)
+        maybeItem found = if found then Just (item.id, boxPath) else Nothing
+        --
         boxId = Box.firstId boxPath
-        isHeaderHovered = isTopicHeaderHovered pos item.id boxId
+        isHeaderHit = isTopicHeaderHit pos item.id boxId
         relPos = relPos_ pos item.id boxPath
         maybeTarget =
           if Item.isBox item.id model then
             case Box.displayMode item.id boxId model of
               Just (BoxD BlackBox) ->
-                if isHeaderHovered model then Just (item.id, boxPath) else Nothing
+                isHeaderHit model |> maybeItem
               Just (BoxD WhiteBox) ->
                 case findTopicAt_ item.id boxPath (relPos model) excludeTopicId model of
                   Just target -> Just target
                   Nothing ->
-                    if isHeaderHovered model then
-                      Just (item.id, boxPath)
-                    else
-                      Nothing
+                    isHeaderHit model |> maybeItem
               _ -> U.logError "TopicMap.Geometry.testChildren" "Unexpected box display mode"
                 Nothing
           else
-            if isTopicHit item.id boxPath pos model then Just (item.id, boxPath) else Nothing
+            isTopicHit item.id boxPath pos model |> maybeItem
         -- recursion
-        testTailItems =
-          testChildren pos tailItems boxPath excludeTopicId findTopicAt_
+        testTailItems = testChildren pos tailItems boxPath excludeTopicId findTopicAt_
       in
       -- return item if successfully tested AND not excluded by filter
       case (maybeTarget, excludeTopicId) of
@@ -88,25 +87,25 @@ isTopicHit : Id -> BoxPath -> Point -> Model -> Bool
 isTopicHit itemId boxPath pos model =
   let
     parentBoxId = Box.firstId boxPath -- Note: a topic is never displayed fullscreen
-    isHeaderHovered = isTopicHeaderHovered pos itemId parentBoxId
-    isDetailHovered = isTopicDetailHovered pos itemId parentBoxId
+    isHeaderHit = isTopicHeaderHit pos itemId parentBoxId
+    isDetailHit = isTopicDetailHit pos itemId parentBoxId
   in
-  -- hover test depends on topic's display mode
+  -- test depends on topic's display mode
   case Box.displayMode itemId parentBoxId model of
     Just (TopicD LabelOnly) ->
-      isHeaderHovered model
+      isHeaderHit model
     Just (TopicD Detail) ->
-      isHeaderHovered model || isDetailHovered model
+      isHeaderHit model || isDetailHit model
     _ -> U.logError "TopicMap.Geometry.isTopicHit" "Unexpected topic display mode" False
 
 
 {-| Transforms the given screen position to a map-relative position according to the given map.
 -}
-rectOffset : Point -> TopicMap -> Point
-rectOffset pos map =
+mapOffset : Point -> TopicMap -> Point
+mapOffset pos map =
   Point
-    (pos.x + map.rect.x1)
-    (pos.y + map.rect.y1)
+    (pos.x + map.rect.x1 + map.scroll.x)
+    (pos.y + map.rect.y1 + map.scroll.y)
 
 
 relPos_ : Point -> BoxId -> BoxPath -> Model -> Point
@@ -121,8 +120,8 @@ relPos_ pos boxId boxPath model =
 
 -- TODO: factor out common TopicMap.Size code
 
-isTopicHeaderHovered : Point -> Id -> BoxId -> Model -> Bool
-isTopicHeaderHovered pos topicId boxId model =
+isTopicHeaderHit : Point -> Id -> BoxId -> Model -> Bool
+isTopicHeaderHit pos topicId boxId model =
   case TM.topicPos topicId boxId model of
     Just topicPos ->
       pos.x > topicPos.x - C.topicW2 - C.topicHeight && -- left edge includes caret area
@@ -132,8 +131,8 @@ isTopicHeaderHovered pos topicId boxId model =
     Nothing -> False
 
 
-isTopicDetailHovered : Point -> Id -> BoxId -> Model -> Bool
-isTopicDetailHovered pos topicId boxId model =
+isTopicDetailHit : Point -> Id -> BoxId -> Model -> Bool
+isTopicDetailHit pos topicId boxId model =
   case (TM.topicPos topicId boxId model, Item.topicSize topicId .view model) of
     (Just topicPos, Just size) ->
       pos.x > topicPos.x - C.topicW2 + C.topicHeight && -- topicHeight = icon box width
@@ -143,8 +142,8 @@ isTopicDetailHovered pos topicId boxId model =
     _ -> False
 
 
-isBoxRectHovered : Point -> TopicMap -> BoxId -> Model -> Bool
-isBoxRectHovered pos map parentBoxId model =
+isBoxRectHit : Point -> TopicMap -> BoxId -> Model -> Bool
+isBoxRectHit pos map parentBoxId model =
   case TM.topicPos map.id parentBoxId model of
     Just boxPos ->
       pos.x > 0 &&
