@@ -70,6 +70,7 @@ topicLabel topic =
 
 
 {-| Logs an error if topic does not exist, or ID refers not a topic (but an association). -}
+-- TODO: rename to textSize/topicTextSize?
 topicSize : Id -> (TextSize -> Size) -> Model -> Maybe Size
 topicSize topicId get model =
   case topicById topicId model of

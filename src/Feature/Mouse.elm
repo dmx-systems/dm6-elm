@@ -234,8 +234,8 @@ enterLeave pos findTopicAt model =
   let
     initPos =
       Point
-        (pos.x - C.whiteBoxPadding)
-        (pos.y - C.whiteBoxPadding - C.appHeaderHeight)
+        (pos.x)
+        (pos.y - C.appHeaderHeight)
     excludeTopicId =
       case model.mouse.dragState of
         Drag DragTopic topicId _ _ _ _ -> Just topicId
