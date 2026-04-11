@@ -3,6 +3,7 @@ port module Main exposing (..)
 import Box
 import Config as C
 import Extension as Ext
+import ExtensionDef exposing (AutoSize)
 import Feature.Icon as Icon
 import Feature.MouseDef as MouseDef
 import Feature.Mouse as Mouse
@@ -14,8 +15,8 @@ import Feature.Tool as Tool
 import Item
 import Model exposing (Model, Msg(..))
 import ModelBase exposing (..)
+import Size
 import Storage as S
-import TopicMap.Size as Size
 import TopicMap.TopicMap as TM
 import TopicMap.TopicMapDef exposing (ItemProps(..), AssocProps)
 import Undo exposing (UndoModel)
@@ -273,17 +274,17 @@ update msg ({present} as undoModel) =
     CreateAssoc player1 player2 boxId -> createAssoc player1 player2 boxId present |> S.store
       |> Undo.push undoModel
     MoveTopicToBox topicId boxId origPos targetId targetPath pos -> moveTopicToBox topicId boxId
-      origPos targetId targetPath pos present |> S.store |> Undo.push undoModel
+      origPos targetId targetPath pos Ext.autoSize present |> S.store |> Undo.push undoModel
     TopicDragged -> present |> S.store |> Undo.swap undoModel
     ItemClicked itemId boxPath -> select itemId boxPath present |> Undo.swap undoModel
-    Cancel maybeTarget -> cancelUI maybeTarget present |> Undo.swap undoModel
+    Cancel maybeTarget -> cancelUI maybeTarget Ext.autoSize present |> Undo.swap undoModel
     -- feature modules
-    Tool toolMsg -> Tool.update toolMsg undoModel
-    Text textMsg -> Text.update textMsg undoModel
-    Mouse mouseMsg -> Mouse.update mouseMsg Ext.hitTest undoModel
-    Search searchMsg -> Search.update searchMsg undoModel
+    Tool toolMsg -> Tool.update toolMsg Ext.autoSize undoModel
+    Text textMsg -> Text.update textMsg Ext.autoSize undoModel
+    Mouse mouseMsg -> Mouse.update mouseMsg Ext.hitTest Ext.autoSize undoModel
+    Search searchMsg -> Search.update searchMsg Ext.autoSize undoModel
     Icon iconMenuMsg -> Icon.update iconMenuMsg undoModel
-    Nav navMsg -> Nav.update navMsg undoModel
+    Nav navMsg -> Nav.update navMsg Ext.autoSize undoModel
     --
     Scrolled pos -> updateScrollPos pos present |> S.store |> Undo.swap undoModel
     UrlResolved (imageId, url) -> cacheImageUrl imageId url present |> Undo.swap undoModel
@@ -309,8 +310,8 @@ createAssocAndAddToBox assocType player1 player2 boxId model =
     |> TM.addItem assocId props boxId -- TODO: don't operate on "topicMap" directly
 
 
-moveTopicToBox : Id -> BoxId -> Point -> BoxId -> BoxPath -> Point -> Model -> Model
-moveTopicToBox topicId boxId origPos targetBoxId targetPath pos model =
+moveTopicToBox : Id -> BoxId -> Point -> BoxId -> BoxPath -> Point -> AutoSize -> Model -> Model
+moveTopicToBox topicId boxId origPos targetBoxId targetPath pos autoSize model =
   case (TM.topicProps topicId boxId model, Box.displayMode topicId boxId model) of
     (Just topicProps, Just displayMode) ->
       model
@@ -319,7 +320,7 @@ moveTopicToBox topicId boxId origPos targetBoxId targetPath pos model =
         |> TM.setTopicPos topicId boxId origPos
         |> TM.addItem topicId (TopicP { topicProps | pos = pos }) targetBoxId
         |> Sel.select targetBoxId targetPath
-        |> Size.auto
+        |> Size.auto autoSize
     _ -> model
 
 
@@ -330,17 +331,17 @@ select itemId boxPath model =
   )
 
 
-cancelUI : Maybe Target -> Model -> (Model, Cmd Msg)
-cancelUI maybeTarget model =
+cancelUI : Maybe Target -> AutoSize -> Model -> (Model, Cmd Msg)
+cancelUI maybeTarget autoSize model =
   model
     |> Icon.closePicker
     |> Search.closeMenu
     |> Tool.closeMenu
-    |> cancelUIWith maybeTarget
+    |> cancelUIWith maybeTarget autoSize
 
 
-cancelUIWith : Maybe Target -> Model -> (Model, Cmd Msg)
-cancelUIWith maybeTarget model =
+cancelUIWith : Maybe Target -> AutoSize -> Model -> (Model, Cmd Msg)
+cancelUIWith maybeTarget autoSize model =
   let
     isTargeted =
       case maybeTarget of
@@ -355,7 +356,7 @@ cancelUIWith maybeTarget model =
     model
       |> Sel.clear
       |> Mouse.clearHover
-      |> Text.leaveEdit
+      |> Text.leaveEdit autoSize
 
 
 updateScrollPos : Point -> Model -> Model

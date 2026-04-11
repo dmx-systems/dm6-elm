@@ -1,10 +1,11 @@
 port module Feature.Nav exposing (boxIdFromHash, pushUrl, update, sub)
 
+import ExtensionDef exposing (AutoSize)
 import Feature.NavDef as NavDef
 import Model exposing (Model, Msg(..))
 import ModelBase exposing (..)
+import Size
 import Storage as S
-import TopicMap.Size as Size
 import TopicMap.TopicMap as TM
 import Undo exposing (UndoModel)
 import Utils as U
@@ -36,17 +37,17 @@ sub =
 -- UPDATE
 
 
-update : NavDef.Msg -> UndoModel -> (UndoModel, Cmd Msg)
-update msg ({present} as undoModel) =
+update : NavDef.Msg -> AutoSize -> UndoModel -> (UndoModel, Cmd Msg)
+update msg autoSize ({present} as undoModel) =
   case msg of
-    NavDef.HashChanged hash -> hashChanged hash undoModel
+    NavDef.HashChanged hash -> hashChanged hash autoSize undoModel
 
 
-hashChanged : String -> UndoModel -> (UndoModel, Cmd Msg)
-hashChanged hash ({present} as undoModel) =
+hashChanged : String -> AutoSize -> UndoModel -> (UndoModel, Cmd Msg)
+hashChanged hash autoSize ({present} as undoModel) =
   case boxIdFromHash hash of
     Just boxId ->
-      setFullscreenBox boxId present |> S.storeWith |> Undo.reset
+      setFullscreenBox boxId autoSize present |> S.storeWith |> Undo.reset
     Nothing ->
       let
         _ = U.info "hashChanged" <| "No hash -> redirect to " ++ fromInt present.boxId
@@ -54,12 +55,12 @@ hashChanged hash ({present} as undoModel) =
       (undoModel, pushUrl present.boxId)
 
 
-setFullscreenBox : BoxId -> Model -> (Model, Cmd Msg)
-setFullscreenBox boxId model =
+setFullscreenBox : BoxId -> AutoSize -> Model -> (Model, Cmd Msg)
+setFullscreenBox boxId autoSize model =
   let
     newModel = { model | boxId = boxId }
   in
-  ( newModel |> Size.auto
+  ( newModel |> Size.auto autoSize
   , Cmd.batch
       [ setViewport newModel
       , U.command <| Cancel Nothing

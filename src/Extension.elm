@@ -1,15 +1,16 @@
-module Extension exposing (view, hitTest)
+module Extension exposing (view, hitTest, autoSize)
 
 import Box
 import BoxRendererDef exposing (toName)
-import ExtensionDef exposing (NestingBoxRenderer, NestingHitTest)
+import ExtensionDef exposing (NestingBoxRenderer, NestingHitTest, NestingAutoSize)
 import Model exposing (Model, Msg)
-import ModelBase exposing (Id, BoxId, BoxPath, Target, Point)
+import ModelBase exposing (Id, BoxId, BoxPath, Target, Point, Rectangle)
 -- box renderers
-import TopicList.TopicList
 import TopicList.Geometry
-import TopicMap.View
+import TopicList.TopicList
 import TopicMap.Geometry
+import TopicMap.Size
+import TopicMap.View
 
 import Dict exposing (Dict)
 import Html exposing (Html, text)
@@ -22,6 +23,7 @@ import Html exposing (Html, text)
 type alias Renderer =
   { view : NestingBoxRenderer
   , hitTest : NestingHitTest
+  , autoSize : NestingAutoSize
   }
 
 
@@ -35,11 +37,13 @@ registry =
     [ ("TopicMap",
         { view = TopicMap.View.view
         , hitTest = TopicMap.Geometry.hitTest
+        , autoSize = TopicMap.Size.autoSize
         }
       )
     , ("List",
         { view = TopicList.TopicList.view
         , hitTest = TopicList.Geometry.hitTest
+        , autoSize = TopicList.Geometry.autoSize
         }
       )
     ]
@@ -65,6 +69,12 @@ hitTest : BoxId -> BoxPath -> Point -> Maybe Id -> Model -> Maybe Target
 hitTest boxId boxPath pos excludeTopicId model =
   dispatch boxId model Nothing
     (\renderer -> renderer.hitTest boxId boxPath pos excludeTopicId hitTest model)
+
+
+autoSize : BoxPath -> Model -> (Rectangle, Model)
+autoSize boxPath model =
+  dispatch (Box.firstId boxPath) model (Rectangle 0 0 0 0, model)
+    (\renderer -> renderer.autoSize boxPath autoSize model)
 
 
 dispatch : BoxId -> Model -> r -> (Renderer -> r) -> r

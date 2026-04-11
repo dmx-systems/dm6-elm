@@ -1,12 +1,14 @@
-module TopicList.Geometry exposing (hitTest)
+module TopicList.Geometry exposing (hitTest, autoSize)
 
 import Box
-import ExtensionDef exposing (HitTest)
+import ExtensionDef exposing (HitTest, AutoSize)
 import Model exposing (Model)
-import ModelBase exposing (Id, BoxId, BoxPath, Target, Point)
+import ModelBase exposing (Id, BoxId, BoxPath, Target, Point, Rectangle)
 import Utils as U
 
 
+
+-- Hit Test
 
 hitTest : BoxId -> BoxPath -> Point -> Maybe Id -> HitTest -> Model -> Maybe Target
 hitTest boxId boxPath pos excludeTopicId geometry model =
@@ -28,3 +30,10 @@ isListHovered pos =
   pos.x < 240 &&
   pos.y > 0 &&
   pos.y < 100
+
+
+-- Auto-Size
+
+autoSize : BoxPath -> AutoSize -> Model -> (Rectangle, Model)
+autoSize boxPath autoSize_ model =
+  (Rectangle 0 0 240 100, model)

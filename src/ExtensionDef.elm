@@ -1,7 +1,7 @@
 module ExtensionDef exposing (..)
 
 import Model exposing (Model, Msg)
-import ModelBase exposing (Id, BoxId, BoxPath, Target, Point)
+import ModelBase exposing (Id, BoxId, BoxPath, Target, Point, Rectangle)
 
 import Html exposing (Html)
 
@@ -42,3 +42,13 @@ type alias HitTest =
 
 type alias NestingHitTest =
   BoxId -> BoxPath -> Point -> Maybe Id -> HitTest -> Model -> Maybe Target
+
+
+-- "autoSize"
+
+type alias AutoSize =
+  BoxPath -> Model -> (Rectangle, Model)
+
+
+type alias NestingAutoSize =
+  BoxPath -> AutoSize -> Model -> (Rectangle, Model)

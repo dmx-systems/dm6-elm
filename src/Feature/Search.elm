@@ -3,6 +3,7 @@ module Feature.Search exposing (viewInput, viewSearchResult, viewTraversalResult
 
 import Box
 import Config as C
+import ExtensionDef exposing (AutoSize)
 import Feature.Icon as Icon
 import Feature.Nav as Nav
 import Feature.SearchDef as SearchDef exposing (SearchResult(..))
@@ -10,8 +11,8 @@ import Feature.Sel as Sel
 import Item
 import Model exposing (Model, Msg(..))
 import ModelBase exposing (..)
+import Size
 import Storage as S
-import TopicMap.Size as Size
 import TopicMap.TopicMap as TM
 import TopicMap.TopicMapDef exposing (ItemProps(..))
 import Undo exposing (UndoModel)
@@ -258,24 +259,25 @@ isRelTopicHover relTopic model =
 -- UPDATE
 
 
-update : SearchDef.Msg -> UndoModel -> (UndoModel, Cmd Msg)
-update msg ({present} as undoModel) =
+update : SearchDef.Msg -> AutoSize -> UndoModel -> (UndoModel, Cmd Msg)
+update msg autoSize ({present} as undoModel) =
   case msg of
     -- Search
     SearchDef.Input term -> (setSearchTerm term present, Cmd.none) |> Undo.swap undoModel
     SearchDef.InputFocused -> (onInputFocused present, Cmd.none) |> Undo.swap undoModel
-    SearchDef.TopicHovered topicId -> (onTopicHovered topicId present, Cmd.none)
+    SearchDef.TopicHovered topicId -> (onTopicHovered topicId autoSize present, Cmd.none)
       |> Undo.swap undoModel
-    SearchDef.TopicUnhovered _ -> (onTopicUnhovered present, Cmd.none) |> Undo.swap undoModel
-    SearchDef.TopicClicked topicId -> revealTopic topicId present |> S.store
+    SearchDef.TopicUnhovered _ -> (onTopicUnhovered autoSize present, Cmd.none)
+      |> Undo.swap undoModel
+    SearchDef.TopicClicked topicId -> revealTopic topicId autoSize present |> S.store
       |> Undo.push undoModel
     -- Traverse
-    SearchDef.RelTopicHovered relTopicId -> (onRelTopicHovered relTopicId present, Cmd.none)
+    SearchDef.RelTopicHovered relTopicId ->
+      (onRelTopicHovered relTopicId autoSize present, Cmd.none) |> Undo.swap undoModel
+    SearchDef.RelTopicUnhovered _ -> (onRelTopicUnhovered autoSize present, Cmd.none)
       |> Undo.swap undoModel
-    SearchDef.RelTopicUnhovered _ -> (onRelTopicUnhovered present, Cmd.none)
-      |> Undo.swap undoModel
-    SearchDef.RelTopicClicked relTopicId -> revealRelTopic relTopicId present |> S.store
-      |> Undo.push undoModel
+    SearchDef.RelTopicClicked relTopicId -> revealRelTopic relTopicId autoSize present
+      |> S.store |> Undo.push undoModel
     -- Fullscreen (Search & Traverse)
     SearchDef.Fullscreen boxId -> (undoModel, Nav.pushUrl boxId)
 
@@ -292,68 +294,68 @@ onInputFocused =
   searchTopics
 
 
-onTopicHovered : Id -> Model -> Model
-onTopicHovered topicId model =
+onTopicHovered : Id -> AutoSize -> Model -> Model
+onTopicHovered topicId autoSize model =
   case model.search.result of
     Topics topicIds _ ->
       -- update hover state
       model
         |> setResult (Topics topicIds <| Just topicId)
-        |> Size.auto
+        |> Size.auto autoSize
     _ ->
       U.logError "onTopicHovered" "search.result is not Topics" model
 
 
-onRelTopicHovered : (Id, Id) -> Model -> Model
-onRelTopicHovered relTopicId model =
+onRelTopicHovered : (Id, Id) -> AutoSize -> Model -> Model
+onRelTopicHovered relTopicId autoSize model =
   case model.search.result of
     RelTopics relTopicIds _ ->
       -- update hover state
       model
         |> setResult (RelTopics relTopicIds <| Just relTopicId)
-        |> Size.auto
+        |> Size.auto autoSize
     _ ->
       U.logError "onRelTopicHovered" "search.result is not RelTopics" model
 
 
-onTopicUnhovered : Model -> Model
-onTopicUnhovered model =
+onTopicUnhovered : AutoSize -> Model -> Model
+onTopicUnhovered autoSize model =
   case model.search.result of
     Topics topicIds _ ->
       -- update hover state
       model
         |> setResult (Topics topicIds Nothing)
-        |> Size.auto
+        |> Size.auto autoSize
     _ ->
       U.logError "onTopicUnhovered" "search.result is not Topics" model
 
 
-onRelTopicUnhovered : Model -> Model
-onRelTopicUnhovered model =
+onRelTopicUnhovered : AutoSize -> Model -> Model
+onRelTopicUnhovered autoSize model =
   case model.search.result of
     RelTopics relTopicIds _ ->
       -- update hover state
       model
         |> setResult (RelTopics relTopicIds Nothing)
-        |> Size.auto
+        |> Size.auto autoSize
     _ ->
       U.logError "onRelTopicUnhovered" "search.result is not RelTopics" model
 
 
-revealTopic : Id -> Model -> Model
-revealTopic topicId model =
+revealTopic : Id -> AutoSize -> Model -> Model
+revealTopic topicId autoSize model =
   case TM.revelationBoxPath model of
     Just (boxId :: _ as boxPath) ->
       model
         |> revealItem topicId boxId
         |> closeMenu
         |> Sel.select topicId boxPath
-        |> Size.auto
+        |> Size.auto autoSize
     _ -> model
 
 
-revealRelTopic : (Id, Id) -> Model -> Model
-revealRelTopic (topicId, assocId) model =
+revealRelTopic : (Id, Id) -> AutoSize -> Model -> Model
+revealRelTopic (topicId, assocId) autoSize model =
   case TM.revelationBoxPath model of
     Just (boxId :: _ as boxPath) ->
       model
@@ -361,7 +363,7 @@ revealRelTopic (topicId, assocId) model =
         |> revealItem assocId boxId
         |> closeMenu
         |> Sel.select topicId boxPath
-        |> Size.auto
+        |> Size.auto autoSize
     _ -> model
 
 

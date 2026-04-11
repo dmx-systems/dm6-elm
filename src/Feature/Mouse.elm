@@ -3,12 +3,12 @@ module Feature.Mouse exposing (topicDownHandler, assocClickHandler, dragHandler,
 
 import Box
 import Config as C
-import ExtensionDef exposing (HitTest)
+import ExtensionDef exposing (HitTest, AutoSize)
 import Feature.MouseDef as MouseDef exposing (DragState(..), DragMode(..))
 import Item
 import Model exposing (Model, Msg(..))
 import ModelBase exposing (..)
-import TopicMap.Size as Size
+import Size
 import TopicMap.TopicMap as TM
 import Undo exposing (UndoModel)
 import Utils as U
@@ -55,14 +55,14 @@ dragHandler =
 -- UPDATE
 
 
-update : MouseDef.Msg -> HitTest -> UndoModel -> (UndoModel, Cmd Msg)
-update msg hitTest ({present} as undoModel) =
+update : MouseDef.Msg -> HitTest -> AutoSize -> UndoModel -> (UndoModel, Cmd Msg)
+update msg hitTest autoSize ({present} as undoModel) =
   case msg of
     -- Topic
     MouseDef.Down -> (undoModel, mouseDown)
     MouseDef.DownOnTopic id boxPath (pos, pointerType) ->
       mouseDownOnTopic id boxPath pos pointerType present |> Undo.swap undoModel
-    MouseDef.Move (pos, _) -> mouseMove pos hitTest present |> Undo.swap undoModel
+    MouseDef.Move (pos, _) -> mouseMove pos hitTest autoSize present |> Undo.swap undoModel
     MouseDef.Up -> mouseUp present |> Undo.swap undoModel
     MouseDef.Time time -> timeArrived time undoModel
     -- Association
@@ -120,8 +120,8 @@ timeArrived time ({present} as undoModel) =
         (undoModel, Cmd.none)
 
 
-mouseMove : Point -> HitTest -> Model -> (Model, Cmd Msg)
-mouseMove pos hitTest model =
+mouseMove : Point -> HitTest -> AutoSize -> Model -> (Model, Cmd Msg)
+mouseMove pos hitTest autoSize model =
   let
     newModel = enterLeave pos hitTest model
   in
@@ -131,13 +131,13 @@ mouseMove pos hitTest model =
       , Task.perform (Mouse << MouseDef.Time) Time.now
       )
     Drag _ _ _ _ _ _ ->
-      ( performDrag pos newModel, Cmd.none )
+      ( performDrag pos autoSize newModel, Cmd.none )
     _ ->
       ( newModel, Cmd.none )
 
 
-performDrag : Point -> Model -> Model
-performDrag pos model =
+performDrag : Point -> AutoSize -> Model -> Model
+performDrag pos autoSize model =
   case model.mouse.dragState of
     Drag dragMode id boxPath origPos lastPos target ->
       let
@@ -155,7 +155,7 @@ performDrag pos model =
       in
       -- update lastPos
       setDragState (Drag dragMode id boxPath origPos pos target) newModel
-        |> Size.auto
+        |> Size.auto autoSize
     _ -> U.logError "performDrag"
       ("Received \"Move\" when dragState is " ++ U.toString model.mouse.dragState) model
 
