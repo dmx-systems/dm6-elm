@@ -1,15 +1,15 @@
-module BoxRendererRegistry exposing (view, findTopicAt)
+module Extension exposing (view, hitTest)
 
 import Box
-import BoxRenderer exposing (..)
 import BoxRendererDef exposing (toName)
+import ExtensionDef exposing (NestingBoxRenderer, NestingHitTest)
 import Model exposing (Model, Msg)
-import ModelBase exposing (Id, BoxId, BoxPath, Point)
--- installed box renderers
-import TopicMap.View
-import TopicMap.Geometry
+import ModelBase exposing (Id, BoxId, BoxPath, Target, Point)
+-- box renderers
 import TopicList.TopicList
 import TopicList.Geometry
+import TopicMap.View
+import TopicMap.Geometry
 
 import Dict exposing (Dict)
 import Html exposing (Html, text)
@@ -21,7 +21,7 @@ import Html exposing (Html, text)
 
 type alias Renderer =
   { view : NestingBoxRenderer
-  , findTopicAt : NestingBoxGeometry
+  , hitTest : NestingHitTest
   }
 
 
@@ -34,12 +34,12 @@ registry =
   Dict.fromList -- Note: custom types can't be used as Dict keys, so we use String
     [ ("TopicMap",
         { view = TopicMap.View.view
-        , findTopicAt = TopicMap.Geometry.findTopicAt
+        , hitTest = TopicMap.Geometry.hitTest
         }
       )
     , ("List",
         { view = TopicList.TopicList.view
-        , findTopicAt = TopicList.Geometry.findTopicAt
+        , hitTest = TopicList.Geometry.hitTest
         }
       )
     ]
@@ -61,10 +61,10 @@ view boxId boxPath model =
     (\renderer -> renderer.view boxId boxPath view model)
 
 
-findTopicAt : BoxId -> BoxPath -> Point -> Maybe Id -> Model -> Maybe (Id, BoxPath)
-findTopicAt boxId boxPath pos excludeTopicId model =
+hitTest : BoxId -> BoxPath -> Point -> Maybe Id -> Model -> Maybe Target
+hitTest boxId boxPath pos excludeTopicId model =
   dispatch boxId model Nothing
-    (\renderer -> renderer.findTopicAt boxId boxPath pos excludeTopicId findTopicAt model)
+    (\renderer -> renderer.hitTest boxId boxPath pos excludeTopicId hitTest model)
 
 
 dispatch : BoxId -> Model -> r -> (Renderer -> r) -> r

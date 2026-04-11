@@ -2,8 +2,8 @@ module Feature.Mouse exposing (topicDownHandler, assocClickHandler, dragHandler,
   isDragInProgress, isHovered, clearHover, update)
 
 import Box
-import BoxRenderer exposing (BoxGeometry)
 import Config as C
+import ExtensionDef exposing (HitTest)
 import Feature.MouseDef as MouseDef exposing (DragState(..), DragMode(..))
 import Item
 import Model exposing (Model, Msg(..))
@@ -55,14 +55,14 @@ dragHandler =
 -- UPDATE
 
 
-update : MouseDef.Msg -> BoxGeometry -> UndoModel -> (UndoModel, Cmd Msg)
-update msg findTopicAt ({present} as undoModel) =
+update : MouseDef.Msg -> HitTest -> UndoModel -> (UndoModel, Cmd Msg)
+update msg hitTest ({present} as undoModel) =
   case msg of
     -- Topic
     MouseDef.Down -> (undoModel, mouseDown)
     MouseDef.DownOnTopic id boxPath (pos, pointerType) ->
       mouseDownOnTopic id boxPath pos pointerType present |> Undo.swap undoModel
-    MouseDef.Move (pos, _) -> mouseMove pos findTopicAt present |> Undo.swap undoModel
+    MouseDef.Move (pos, _) -> mouseMove pos hitTest present |> Undo.swap undoModel
     MouseDef.Up -> mouseUp present |> Undo.swap undoModel
     MouseDef.Time time -> timeArrived time undoModel
     -- Association
@@ -120,10 +120,10 @@ timeArrived time ({present} as undoModel) =
         (undoModel, Cmd.none)
 
 
-mouseMove : Point -> BoxGeometry -> Model -> (Model, Cmd Msg)
-mouseMove pos findTopicAt model =
+mouseMove : Point -> HitTest -> Model -> (Model, Cmd Msg)
+mouseMove pos hitTest model =
   let
-    newModel = enterLeave pos findTopicAt model
+    newModel = enterLeave pos hitTest model
   in
   case newModel.mouse.dragState of
     DragEngaged time id boxPath pos_ ->
@@ -229,8 +229,8 @@ point =
 
 {- Emulates enter/leave events by the means of geometry. Based on the given pointer
 coordinate decides whether to call the "enter" and/or "leave" handlers. -}
-enterLeave : Point -> BoxGeometry -> Model -> Model
-enterLeave pos findTopicAt model =
+enterLeave : Point -> HitTest -> Model -> Model
+enterLeave pos hitTest model =
   let
     initPos =
       Point
@@ -241,7 +241,7 @@ enterLeave pos findTopicAt model =
         Drag DragTopic topicId _ _ _ _ -> Just topicId
         _ -> Nothing
   in
-  case findTopicAt model.boxId [] initPos excludeTopicId model of
+  case hitTest model.boxId [] initPos excludeTopicId model of
     Just target ->
       case model.mouse.hover of
         Just oldTarget ->
@@ -258,7 +258,7 @@ enterLeave pos findTopicAt model =
         Nothing -> model
 
 
-enter : (Id, BoxPath) -> Model -> Model
+enter : Target -> Model -> Model
 enter (targetId, targetPath) model =
   let
     newModel =
@@ -285,7 +285,7 @@ enter (targetId, targetPath) model =
   newModel |> setHover (Just (targetId, targetPath))
 
 
-leave : (Id, BoxPath) -> Model -> Model
+leave : Target -> Model -> Model
 leave (targetId, targetPath) model =
   let
     newModel =
@@ -304,7 +304,7 @@ setDragState dragState ({mouse} as model) =
   { model | mouse = { mouse | dragState = dragState }}
 
 
-setHover : Maybe (Id, BoxPath) -> Model -> Model
+setHover : Maybe Target -> Model -> Model
 setHover hover ({mouse} as model) =
   { model | mouse = { mouse | hover = hover }}
 

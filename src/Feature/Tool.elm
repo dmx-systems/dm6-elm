@@ -250,7 +250,7 @@ viewTopicToolbar pos topicId boxPath model =
           rendererSelect =
             case Box.rendererOf topicId model of
               Just renderer ->
-                [ viewSelect renderer (Tool << ToolDef.SelectRenderer) ]
+                [ viewRendererSelect renderer (Tool << ToolDef.SelectRenderer) ]
               Nothing -> []
         in
         [ viewButton "Fullscreen" "maximize-2" (ToolDef.Fullscreen topicId) False target
@@ -268,8 +268,8 @@ viewTopicToolbar pos topicId boxPath model =
     )
 
 
-viewSelect : Renderer -> (Renderer -> Msg) -> Html Msg
-viewSelect renderer tagger =
+viewRendererSelect : Renderer -> (Renderer -> Msg) -> Html Msg
+viewRendererSelect renderer tagger =
   select
     ( [ value (BoxRendererDef.toName renderer)
       , on "input" (D.map tagger (BoxRendererDef.decoder targetValue))
@@ -277,11 +277,11 @@ viewSelect renderer tagger =
       ]
       ++ selectStyle
     )
-    viewOptions
+    viewRendererOptions
 
 
-viewOptions : List (Html Msg)
-viewOptions =
+viewRendererOptions : List (Html Msg)
+viewRendererOptions =
   BoxRendererDef.all
     |> Dict.values
     |> List.map
@@ -388,18 +388,18 @@ caretStyle =
 
 -- Icon Buttons
 
-viewButton : String -> String -> ToolDef.Msg -> Bool -> (Id, BoxPath) -> Html Msg
+viewButton : String -> String -> ToolDef.Msg -> Bool -> Target -> Html Msg
 viewButton label icon msg isDisabled target =
   viewIconButton label icon C.toolbarIconSize msg isDisabled (Just target) []
 
 
-viewMapButton : String -> String -> ToolDef.Msg -> Bool -> Maybe (Id, BoxPath) -> Html Msg
+viewMapButton : String -> String -> ToolDef.Msg -> Bool -> Maybe Target -> Html Msg
 viewMapButton label icon msg isDisabled maybeTarget =
   viewIconButton label icon C.mapToolbarIconSize msg isDisabled maybeTarget []
 
 
-viewIconButton : String -> String -> Int -> ToolDef.Msg -> Bool -> Maybe (Id, BoxPath)
-                                                                  -> Attrs Msg -> Html Msg
+viewIconButton : String -> String -> Int -> ToolDef.Msg -> Bool -> Maybe Target -> Attrs Msg
+                                                                                     -> Html Msg
 viewIconButton label icon iconSize msg isDisabled maybeTarget extraStyle =
   button
     ( [ class "tool"

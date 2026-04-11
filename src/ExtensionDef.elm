@@ -1,7 +1,7 @@
-module BoxRenderer exposing (..)
+module ExtensionDef exposing (..)
 
 import Model exposing (Model, Msg)
-import ModelBase exposing (Id, BoxId, BoxPath, Point)
+import ModelBase exposing (Id, BoxId, BoxPath, Target, Point)
 
 import Html exposing (Html)
 
@@ -34,11 +34,11 @@ type alias NestingBoxRenderer =
   BoxId -> BoxPath -> BoxRenderer -> Model -> Html Msg
 
 
--- "findTopicAt"
+-- "hitTest"
 
-type alias BoxGeometry =
-  BoxId -> BoxPath -> Point -> Maybe Id -> Model -> Maybe (Id, BoxPath)
+type alias HitTest =
+  BoxId -> BoxPath -> Point -> Maybe Id -> Model -> Maybe Target
 
 
-type alias NestingBoxGeometry =
-  BoxId -> BoxPath -> Point -> Maybe Id -> BoxGeometry -> Model -> Maybe (Id, BoxPath)
+type alias NestingHitTest =
+  BoxId -> BoxPath -> Point -> Maybe Id -> HitTest -> Model -> Maybe Target

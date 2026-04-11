@@ -41,7 +41,7 @@ isSelectedPath itemId boxPath model =
     |> List.member (itemId, boxPath)
 
 
-single : Model -> Maybe (Id, BoxPath)
+single : Model -> Maybe Target
 single model =
   case model.selection.items of
     [ selItem ] -> Just selItem

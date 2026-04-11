@@ -329,7 +329,7 @@ revelationBoxPath model =
 
 
 {- The landing box as a selection target. For a fullscreen box Nothing is returned. -}
-landingTarget : Model -> Maybe (BoxId, BoxPath)
+landingTarget : Model -> Maybe Target
 landingTarget model =
   case Sel.landingBoxPath model of
     [] -> Nothing

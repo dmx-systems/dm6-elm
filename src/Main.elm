@@ -1,8 +1,8 @@
 port module Main exposing (..)
 
 import Box
-import BoxRendererRegistry
 import Config as C
+import Extension as Ext
 import Feature.Icon as Icon
 import Feature.MouseDef as MouseDef
 import Feature.Mouse as Mouse
@@ -120,7 +120,7 @@ view ({present} as undoModel) =
             ( [ id "main" ]
               ++ mainStyle
             )
-            ( [ BoxRendererRegistry.view present.boxId [] present ] -- boxPath = []
+            ( [ Ext.view present.boxId [] present ] -- boxPath = []
               ++ Tool.viewMapTools undoModel
             )
         ]
@@ -280,7 +280,7 @@ update msg ({present} as undoModel) =
     -- feature modules
     Tool toolMsg -> Tool.update toolMsg undoModel
     Text textMsg -> Text.update textMsg undoModel
-    Mouse mouseMsg -> Mouse.update mouseMsg BoxRendererRegistry.findTopicAt undoModel
+    Mouse mouseMsg -> Mouse.update mouseMsg Ext.hitTest undoModel
     Search searchMsg -> Search.update searchMsg undoModel
     Icon iconMenuMsg -> Icon.update iconMenuMsg undoModel
     Nav navMsg -> Nav.update navMsg undoModel
@@ -330,7 +330,7 @@ select itemId boxPath model =
   )
 
 
-cancelUI : Maybe (Id, BoxPath) -> Model -> (Model, Cmd Msg)
+cancelUI : Maybe Target -> Model -> (Model, Cmd Msg)
 cancelUI maybeTarget model =
   model
     |> Icon.closePicker
@@ -339,7 +339,7 @@ cancelUI maybeTarget model =
     |> cancelUIWith maybeTarget
 
 
-cancelUIWith : Maybe (Id, BoxPath) -> Model -> (Model, Cmd Msg)
+cancelUIWith : Maybe Target -> Model -> (Model, Cmd Msg)
 cancelUIWith maybeTarget model =
   let
     isTargeted =

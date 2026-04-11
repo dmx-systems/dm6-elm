@@ -1,7 +1,8 @@
 module BoxRendererDef exposing (Renderer(..), all, encode, decoder, toName)
 
--- import ModelBase exposing (BoxId) -- TODO: creates circular dependency
--- import Utils as U -- TODO: creates circular dependency
+-- ### TODO: drop this module
+-- The only module that knows about the installed extensions is supposed to be Extension.elm
+-- Use function injection
 
 import Dict exposing (Dict)
 import Json.Decode as D
@@ -28,6 +29,7 @@ type alias RendererInfo =
 -- VALUES
 
 
+-- ### TODO: move to Extension module, inject it where needed
 -- key = renderer name
 all : Dict String RendererInfo
 all =

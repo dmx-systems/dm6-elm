@@ -1,4 +1,4 @@
-module Model exposing (..)
+module Model exposing (Model, Msg(..), init, encode, decoder)
 
 import BoxRendererDef
 import Config as C
@@ -6,7 +6,7 @@ import ModelBase exposing (..)
 -- box renderers
 import TopicList.TopicListDef as TopicListDef
 import TopicMap.TopicMapDef as TopicMapDef
-  -- feature modules
+-- feature modules
 import Feature.IconDef as IconDef
 import Feature.MouseDef as MouseDef
 import Feature.NavDef as NavDef
@@ -29,7 +29,7 @@ type alias Model =
   , boxes : Boxes
   , boxId : BoxId -- the box rendered fullscreen
   , nextId : Id
-  , imageCache : Dict ImageId String -- Int -> blob: URL
+  , imageCache : Dict ImageId String -- Int -> blob: URL ### TODO: move to Text module
   -- box renderers
   , topicMap : TopicMapDef.Model
   , topicList : TopicListDef.Model

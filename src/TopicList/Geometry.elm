@@ -1,17 +1,17 @@
-module TopicList.Geometry exposing (findTopicAt)
+module TopicList.Geometry exposing (hitTest)
 
 import Box
-import BoxRenderer exposing (BoxGeometry)
+import ExtensionDef exposing (HitTest)
 import Model exposing (Model)
 import ModelBase exposing (Id, BoxId, BoxPath, Target, Point)
 import Utils as U
 
 
 
-findTopicAt : BoxId -> BoxPath -> Point -> Maybe Id -> BoxGeometry -> Model -> Maybe Target
-findTopicAt boxId boxPath pos excludeTopicId geometry model =
+hitTest : BoxId -> BoxPath -> Point -> Maybe Id -> HitTest -> Model -> Maybe Target
+hitTest boxId boxPath pos excludeTopicId geometry model =
   let
-    maybeThisItem : Bool -> Maybe (Id, BoxPath)
+    maybeThisItem : Bool -> Maybe Target
     maybeThisItem found = if found then Just (boxId, boxPath) else Nothing
   in
   -- test this map's items either if the map is displayed fullscreen, or it is whiteboxed

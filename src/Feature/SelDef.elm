@@ -1,6 +1,6 @@
 module Feature.SelDef exposing (..)
 
-import ModelBase exposing (Id, BoxPath)
+import ModelBase exposing (Target)
 
 
 
@@ -13,4 +13,4 @@ init =
   { items = [] }
 
 
-type alias Selection = List (Id, BoxPath) -- TODO: make it a Set?
+type alias Selection = List Target -- TODO: make it a Set?

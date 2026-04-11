@@ -1,8 +1,8 @@
-module TopicMap.Geometry exposing (findTopicAt)
+module TopicMap.Geometry exposing (hitTest)
 
 import Box
-import BoxRenderer exposing (BoxGeometry)
 import Config as C
+import ExtensionDef exposing (HitTest)
 import Item
 import Model exposing (Model)
 import ModelBase exposing (..)
@@ -20,15 +20,15 @@ type alias MapItems =
 Returns the found topic/box (Id) and its context (BoxPath), or Nothing.
 If `excludeTopicId` is given that topic/box will be excluded from search.
 -}
-findTopicAt : BoxId -> BoxPath -> Point -> Maybe Id -> BoxGeometry -> Model -> Maybe Target
-findTopicAt boxId boxPath pos excludeTopicId findTopicAt_ model =
+hitTest : BoxId -> BoxPath -> Point -> Maybe Id -> HitTest -> Model -> Maybe Target
+hitTest boxId boxPath pos excludeTopicId hitTest_ model =
   case TM.byId boxId model of
     Just map ->
       let
         items = TM.visibleTopics map
         relPos = mapOffset pos map
       in
-      case testChildren relPos items (boxId :: boxPath) excludeTopicId findTopicAt_ model of
+      case testChildren relPos items (boxId :: boxPath) excludeTopicId hitTest_ model of
         Just target -> Just target
         Nothing ->
           if Box.isFullscreen boxId model then
@@ -44,13 +44,13 @@ findTopicAt boxId boxPath pos excludeTopicId findTopicAt_ model =
     Nothing -> Nothing
 
 
-testChildren : Point -> MapItems -> BoxPath -> Maybe Id -> BoxGeometry -> Model -> Maybe Target
-testChildren pos items boxPath excludeTopicId findTopicAt_ model =
+testChildren : Point -> MapItems -> BoxPath -> Maybe Id -> HitTest -> Model -> Maybe Target
+testChildren pos items boxPath excludeTopicId hitTest_ model =
   case items of
     [] -> Nothing
     item :: tailItems ->
       let
-        maybeItem : Bool -> Maybe (Id, BoxPath)
+        maybeItem : Bool -> Maybe Target
         maybeItem found = if found then Just (item.id, boxPath) else Nothing
         --
         boxId = Box.firstId boxPath
@@ -62,7 +62,7 @@ testChildren pos items boxPath excludeTopicId findTopicAt_ model =
               Just (BoxD BlackBox) ->
                 isHeaderHit model |> maybeItem
               Just (BoxD WhiteBox) ->
-                case findTopicAt_ item.id boxPath (relPos model) excludeTopicId model of
+                case hitTest_ item.id boxPath (relPos model) excludeTopicId model of
                   Just target -> Just target
                   Nothing ->
                     isHeaderHit model |> maybeItem
@@ -71,7 +71,7 @@ testChildren pos items boxPath excludeTopicId findTopicAt_ model =
           else
             isTopicHit item.id boxPath pos model |> maybeItem
         -- recursion
-        testTailItems = testChildren pos tailItems boxPath excludeTopicId findTopicAt_
+        testTailItems = testChildren pos tailItems boxPath excludeTopicId hitTest_
       in
       -- return item if successfully tested AND not excluded by filter
       case (maybeTarget, excludeTopicId) of

@@ -1,8 +1,8 @@
 module TopicMap.View exposing (view)
 
 import Box
-import BoxRenderer exposing (BoxRenderer)
 import Config as C
+import ExtensionDef exposing (BoxRenderer)
 import Feature.Icon as Icon
 import Feature.MouseDef exposing (DragState(..), DragMode(..))
 import Feature.Mouse as Mouse
@@ -507,7 +507,7 @@ topicBorderStyle id boxPath model =
   ]
 
 
-isTarget : Id -> BoxPath -> Maybe (Id, BoxPath) -> Bool
+isTarget : Id -> BoxPath -> Maybe Target -> Bool
 isTarget topicId boxPath target_ =
   case target_ of
     Just target -> target == (topicId, boxPath)

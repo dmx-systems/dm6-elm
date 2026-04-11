@@ -24,10 +24,10 @@ auto model =
     |> Tuple.second
 
 
-{-| Calculates the box's "rect" (recursively) and modifies the model accordingly.
+{-| Calculates the TopicMap's "rect" (recursively) and modifies the model accordingly.
 Returns the modified model along with, for convenience, the calculated rect.
-Based on the rect's change the box topic position adjustment within the parent box (if any) is
-calculated as well.
+Based on the rect's change the TopicMap's topic position adjustment within the parent
+TopicMap (if any) is calculated as well.
 -}
 calcBoxRect : BoxPath -> Model -> (Rectangle, Model)
 calcBoxRect boxPath model =
