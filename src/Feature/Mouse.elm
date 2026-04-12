@@ -3,7 +3,7 @@ module Feature.Mouse exposing (topicDownHandler, assocClickHandler, dragHandler,
 
 import Box
 import Config as C
-import ExtensionDef exposing (HitTest, AutoSize)
+import ExtensionDef exposing (Env)
 import Feature.MouseDef as MouseDef exposing (DragState(..), DragMode(..))
 import Item
 import Model exposing (Model, Msg(..))
@@ -55,15 +55,15 @@ dragHandler =
 -- UPDATE
 
 
-update : MouseDef.Msg -> HitTest -> AutoSize -> UndoModel -> (UndoModel, Cmd Msg)
-update msg hitTest autoSize ({present} as undoModel) =
+update : MouseDef.Msg -> Env -> (UndoModel, Cmd Msg)
+update msg ({model, undoModel} as env) =
   case msg of
     -- Topic
     MouseDef.Down -> (undoModel, mouseDown)
     MouseDef.DownOnTopic id boxPath (pos, pointerType) ->
-      mouseDownOnTopic id boxPath pos pointerType present |> Undo.swap undoModel
-    MouseDef.Move (pos, _) -> mouseMove pos hitTest autoSize present |> Undo.swap undoModel
-    MouseDef.Up -> mouseUp present |> Undo.swap undoModel
+      mouseDownOnTopic id boxPath pos pointerType model |> Undo.swap undoModel
+    MouseDef.Move (pos, _) -> mouseMove pos env |> Undo.swap undoModel
+    MouseDef.Up -> mouseUp model |> Undo.swap undoModel
     MouseDef.Time time -> timeArrived time undoModel
     -- Association
     MouseDef.AssocClicked id boxPath -> (undoModel, U.command <| ItemClicked id boxPath)
@@ -120,24 +120,25 @@ timeArrived time ({present} as undoModel) =
         (undoModel, Cmd.none)
 
 
-mouseMove : Point -> HitTest -> AutoSize -> Model -> (Model, Cmd Msg)
-mouseMove pos hitTest autoSize model =
+mouseMove : Point -> Env -> (Model, Cmd Msg)
+mouseMove pos env =
   let
-    newModel = enterLeave pos hitTest model
+    newEnv = { env | model = enterLeave pos env}
+    model = newEnv.model
   in
-  case newModel.mouse.dragState of
+  case model.mouse.dragState of
     DragEngaged time id boxPath pos_ ->
-      ( setDragState (WaitForEndTime time id boxPath pos_) newModel
+      ( setDragState (WaitForEndTime time id boxPath pos_) model
       , Task.perform (Mouse << MouseDef.Time) Time.now
       )
     Drag _ _ _ _ _ _ ->
-      ( performDrag pos autoSize newModel, Cmd.none )
+      ( performDrag pos newEnv, Cmd.none )
     _ ->
-      ( newModel, Cmd.none )
+      ( model, Cmd.none )
 
 
-performDrag : Point -> AutoSize -> Model -> Model
-performDrag pos autoSize model =
+performDrag : Point -> Env -> Model
+performDrag pos {model, ext} =
   case model.mouse.dragState of
     Drag dragMode id boxPath origPos lastPos target ->
       let
@@ -155,7 +156,7 @@ performDrag pos autoSize model =
       in
       -- update lastPos
       setDragState (Drag dragMode id boxPath origPos pos target) newModel
-        |> Size.auto autoSize
+        |> Size.auto ext.autoSize
     _ -> U.logError "performDrag"
       ("Received \"Move\" when dragState is " ++ U.toString model.mouse.dragState) model
 
@@ -229,8 +230,8 @@ point =
 
 {- Emulates enter/leave events by the means of geometry. Based on the given pointer
 coordinate decides whether to call the "enter" and/or "leave" handlers. -}
-enterLeave : Point -> HitTest -> Model -> Model
-enterLeave pos hitTest model =
+enterLeave : Point -> Env -> Model
+enterLeave pos {model, ext} =
   let
     initPos =
       Point
@@ -241,7 +242,7 @@ enterLeave pos hitTest model =
         Drag DragTopic topicId _ _ _ _ -> Just topicId
         _ -> Nothing
   in
-  case hitTest model.boxId [] initPos excludeTopicId model of
+  case ext.hitTest model.boxId [] initPos excludeTopicId model of
     Just target ->
       case model.mouse.hover of
         Just oldTarget ->

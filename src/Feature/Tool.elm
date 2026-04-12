@@ -3,7 +3,7 @@ module Feature.Tool exposing (viewGlobalTools, viewMapTools, viewToolbar, viewTo
 
 import Box
 import Config as C
-import ExtensionDef exposing (AutoSize)
+import ExtensionDef exposing (Env)
 import Feature.Icon as Icon
 import Feature.Mouse as Mouse
 import Feature.Nav as Nav
@@ -423,35 +423,35 @@ iconButtonStyle =
 -- UPDATE
 
 
-update : ToolDef.Msg -> AutoSize -> UndoModel -> (UndoModel, Cmd Msg)
-update msg autoSize ({present} as undoModel) =
+update : ToolDef.Msg -> Env -> (UndoModel, Cmd Msg)
+update msg ({model, undoModel} as env) =
   case msg of
     -- Global Tools
     ToolDef.Home -> (undoModel, Nav.pushUrl rootBoxId)
-    ToolDef.Menu -> (openMenu present, Cmd.none) |> Undo.swap undoModel
-    ToolDef.Set lineStyle -> setLineStyle lineStyle present |> S.store |> Undo.push undoModel
-    ToolDef.Import -> (present, S.importJSON ()) |> Undo.swap undoModel
-    ToolDef.Export -> (present, S.exportJSON ()) |> Undo.swap undoModel
+    ToolDef.Menu -> (openMenu model, Cmd.none) |> Undo.swap undoModel
+    ToolDef.Set lineStyle -> setLineStyle lineStyle model |> S.store |> Undo.push undoModel
+    ToolDef.Import -> (model, S.importJSON ()) |> Undo.swap undoModel
+    ToolDef.Export -> (model, S.exportJSON ()) |> Undo.swap undoModel
     -- Map Tools
-    ToolDef.CreateTopic -> createTopic autoSize present |> S.storeWith |> Undo.push undoModel
-    ToolDef.CreateBox -> createBox autoSize present |> S.storeWith |> Undo.push undoModel
+    ToolDef.CreateTopic -> createTopic env |> S.storeWith |> Undo.push undoModel
+    ToolDef.CreateBox -> createBox env |> S.storeWith |> Undo.push undoModel
     ToolDef.Undo -> undoModel |> Undo.undo |> store
     ToolDef.Redo -> undoModel |> Undo.redo |> store
     -- Item Tools
-    ToolDef.Edit -> edit autoSize present |> S.storeWith |> Undo.push undoModel
-    ToolDef.Icon -> (Icon.openPicker present, Cmd.none) |> Undo.swap undoModel
-    ToolDef.Traverse -> (Search.traverse present, Cmd.none) |> Undo.swap undoModel
-    ToolDef.Delete -> delete autoSize present |> S.store |> Undo.push undoModel
-    ToolDef.Remove -> remove autoSize present |> S.store |> Undo.push undoModel
+    ToolDef.Edit -> edit env |> S.storeWith |> Undo.push undoModel
+    ToolDef.Icon -> (Icon.openPicker model, Cmd.none) |> Undo.swap undoModel
+    ToolDef.Traverse -> (Search.traverse model, Cmd.none) |> Undo.swap undoModel
+    ToolDef.Delete -> delete env |> S.store |> Undo.push undoModel
+    ToolDef.Remove -> remove env |> S.store |> Undo.push undoModel
     ToolDef.Fullscreen boxId -> (undoModel, Nav.pushUrl boxId)
-    ToolDef.RendererSelected renderer -> setRenderer renderer autoSize present |> S.store
+    ToolDef.RendererSelected renderer -> setRenderer renderer env |> S.store
       |> Undo.swap undoModel
-    ToolDef.ToggleDisplay topicId boxId -> toggleDisplay topicId boxId autoSize present
-      |> S.store |> Undo.swap undoModel
+    ToolDef.ToggleDisplay topicId boxId -> toggleDisplay topicId boxId env |> S.store
+      |> Undo.swap undoModel
     -- Text Tools
-    ToolDef.Image topicId -> Text.openImageFilePicker topicId present |> S.storeWith
+    ToolDef.Image topicId -> Text.openImageFilePicker topicId model |> S.storeWith
       |> Undo.swap undoModel
-    ToolDef.LeaveEdit -> Text.leaveEdit autoSize present |> Undo.swap undoModel
+    ToolDef.LeaveEdit -> Text.leaveEdit env |> Undo.swap undoModel
 
 
 -- Global Tools
@@ -478,26 +478,28 @@ setLineStyle lineStyle ({tool} as model) =
 
 -- Map Tools
 
-createTopic : AutoSize -> Model -> (Model, Cmd Msg)
-createTopic autoSize model =
+createTopic : Env -> (Model, Cmd Msg)
+createTopic ({model} as env) =
   let
     (newModel, topicId) = Item.createTopic "" C.initTopicIcon model
+    newEnv = { env | model = newModel }
   in
-  landTopic topicId (TopicD LabelOnly) autoSize newModel
+  landTopic topicId (TopicD LabelOnly) newEnv
 
 
-createBox : AutoSize -> Model -> (Model, Cmd Msg)
-createBox autoSize model =
+createBox : Env -> (Model, Cmd Msg)
+createBox ({model} as env) =
   let
     (newModel, boxId) = Box.create "" C.initBoxIcon model
   in
   newModel
     |> TM.create boxId
-    |> landTopic boxId (BoxD BlackBox) autoSize
+    |> (\model_ -> { env | model = model_ })
+    |> landTopic boxId (BoxD BlackBox)
 
 
-landTopic : Id -> DisplayMode -> AutoSize -> Model -> (Model, Cmd Msg)
-landTopic topicId displayMode autoSize model =
+landTopic : Id -> DisplayMode -> Env -> (Model, Cmd Msg)
+landTopic topicId displayMode ({model} as env) =
   let
     boxPath = Sel.landingBoxPath model
     boxId = Box.firstId boxPath
@@ -509,7 +511,8 @@ landTopic topicId displayMode autoSize model =
     |> Box.addItem (ItemProps topicId displayMode) boxId
     |> TM.addItem topicId props boxId
     |> Sel.select topicId boxPath
-    |> Text.enterEdit topicId boxPath autoSize
+    |> (\model_ -> { env | model = model_ })
+    |> Text.enterEdit topicId boxPath
 
 
 store : UndoModel -> (UndoModel, Cmd Msg)
@@ -519,44 +522,44 @@ store undoModel =
 
 -- Item Tools
 
-edit : AutoSize -> Model -> (Model, Cmd Msg)
-edit autoSize model =
+edit : Env -> (Model, Cmd Msg)
+edit ({model} as env) =
   case Sel.single model of
-    Just (topicId, boxPath) -> Text.enterEdit topicId boxPath autoSize model
+    Just (topicId, boxPath) -> Text.enterEdit topicId boxPath env
     Nothing -> U.logError "edit" "called when there is no single selection" (model, Cmd.none)
 
 
-delete : AutoSize -> Model -> Model
-delete autoSize model =
+delete : Env -> Model
+delete {model, ext} =
   model.selection.items
     |> List.map Tuple.first
     |> List.foldr Box.deleteItem model
     |> Sel.clear
-    |> Size.auto autoSize
+    |> Size.auto ext.autoSize
 
 
-remove : AutoSize -> Model -> Model
-remove autoSize model =
+remove : Env -> Model
+remove {model, ext} =
   model.selection.items
     |> List.foldr
       (\(itemId, boxPath) modelAcc -> TM.removeItem itemId (Box.firstId boxPath) modelAcc)
       model
     |> Sel.clear
-    |> Size.auto autoSize
+    |> Size.auto ext.autoSize
 
 
-setRenderer : Renderer -> AutoSize -> Model -> Model
-setRenderer renderer autoSize model =
+setRenderer : Renderer -> Env -> Model
+setRenderer renderer {model, ext} =
   case Sel.single model of
     Just (topicId, _) ->
       model
         |> Box.setRenderer topicId renderer
-        |> Size.auto autoSize
+        |> Size.auto ext.autoSize
     Nothing -> U.logError "setRenderer" "called when there is no single selection" model
 
 
-toggleDisplay : Id -> BoxId -> AutoSize -> Model -> Model
-toggleDisplay topicId boxId autoSize model =
+toggleDisplay : Id -> BoxId -> Env -> Model
+toggleDisplay topicId boxId {model, ext} =
   let
     (newModel, newDisplayMode) =
       case Box.displayMode topicId boxId model of
@@ -570,5 +573,5 @@ toggleDisplay topicId boxId autoSize model =
     (newModel_, Just displayMode) ->
       newModel_
         |> Box.setDisplayMode topicId boxId displayMode
-        |> Size.auto autoSize
+        |> Size.auto ext.autoSize
     _ -> model

@@ -3,7 +3,7 @@ port module Feature.Text exposing (viewInput, viewTextarea, enterEdit, leaveEdit
 
 import Box
 import Config as C
-import ExtensionDef exposing (AutoSize)
+import ExtensionDef exposing (Env)
 import Feature.TextDef as TextDef exposing (EditState(..))
 import Item
 import Model exposing (Model, Msg(..))
@@ -81,38 +81,38 @@ viewTextarea topic boxPath style =
 -- UPDATE
 
 
-update : TextDef.Msg -> AutoSize -> UndoModel -> (UndoModel, Cmd Msg)
-update msg autoSize ({present} as undoModel) =
+update : TextDef.Msg -> Env -> (UndoModel, Cmd Msg)
+update msg ({model, undoModel, ext} as env) =
   case msg of
-    TextDef.OnTextInput text -> onTextInput text present |> S.store
+    TextDef.OnTextInput text -> onTextInput text model |> S.store
       |> Undo.swap undoModel
-    TextDef.OnTextareaInput text -> onTextareaInput text present |> S.storeWith
+    TextDef.OnTextareaInput text -> onTextareaInput text model |> S.storeWith
       |> Undo.swap undoModel
     TextDef.GotTextSize topicId sizeField size ->
-      present
+      model
         |> Item.setTopicSize topicId sizeField size
-        |> Size.auto autoSize
+        |> Size.auto ext.autoSize
         |> S.store
         |> Undo.swap undoModel
-    TextDef.LeaveEdit -> leaveEdit autoSize present |> Undo.swap undoModel
-    TextDef.ImageFilePicked (topicId, imageId) -> insertImage topicId imageId present
+    TextDef.LeaveEdit -> leaveEdit env |> Undo.swap undoModel
+    TextDef.ImageFilePicked (topicId, imageId) -> insertImage topicId imageId model
       |> Undo.swap undoModel
 
 
-enterEdit : Id -> BoxPath -> AutoSize -> Model -> (Model, Cmd Msg)
-enterEdit topicId boxPath autoSize model =
+enterEdit : Id -> BoxPath -> Env -> (Model, Cmd Msg)
+enterEdit topicId boxPath {model, ext} =
   let
     newModel =
       model
         |> setEditState (Edit topicId boxPath)
         |> switchTopicDisplay topicId (Box.firstId boxPath)
-        |> Size.auto autoSize
+        |> Size.auto ext.autoSize
   in
   (newModel, focus newModel)
 
 
-leaveEdit : AutoSize -> Model -> (Model, Cmd Msg)
-leaveEdit autoSize model =
+leaveEdit : Env -> (Model, Cmd Msg)
+leaveEdit {model, ext} =
   case model.text.edit of
     Edit topicId boxPath ->
       let
@@ -120,7 +120,7 @@ leaveEdit autoSize model =
       in
       ( model
           |> setEditState NoEdit
-          |> Size.auto autoSize
+          |> Size.auto ext.autoSize
       , measureElement elemId topicId View
       )
     NoEdit -> (model, Cmd.none)

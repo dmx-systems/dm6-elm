@@ -1,7 +1,7 @@
-module Extension exposing (view, hitTest, autoSize)
+module Extension exposing (ext)
 
 import Box
-import ExtensionDef exposing (NestingBoxRenderer, NestingHitTest, NestingAutoSize)
+import ExtensionDef exposing (..)
 import Model exposing (Model, Msg)
 import ModelBase exposing (..)
 -- box renderers
@@ -30,6 +30,15 @@ type alias Extension =
 
 
 -- VALUES
+
+
+ext : ExtManager
+ext =
+  { view = view
+  , hitTest = hitTest
+  , autoSize = autoSize
+  , all = all
+  }
 
 
 -- key = renderer name

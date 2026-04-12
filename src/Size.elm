@@ -5,6 +5,7 @@ import Model exposing (Model)
 
 
 
+-- TODO: pass Env instead AutoSize -> Model?
 auto : AutoSize -> Model -> Model
 auto autoSize model =
   model

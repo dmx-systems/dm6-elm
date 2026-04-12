@@ -3,7 +3,7 @@ port module Main exposing (..)
 import Box
 import Config as C
 import Extension as Ext
-import ExtensionDef exposing (AutoSize)
+import ExtensionDef exposing (ExtManager, Env)
 import Feature.Icon as Icon
 import Feature.MouseDef as MouseDef
 import Feature.Mouse as Mouse
@@ -38,6 +38,15 @@ import String exposing (fromInt, fromFloat)
 port onScroll : (Point -> msg) -> Sub msg
 
 port onResolveUrl : ((ImageId, String) -> msg) -> Sub msg
+
+
+
+-- VALUES
+
+
+ext : ExtManager
+ext =
+  Ext.ext
 
 
 
@@ -121,7 +130,7 @@ view ({present} as undoModel) =
             ( [ id "main" ]
               ++ mainStyle
             )
-            ( [ Ext.view present.boxId [] present ] -- boxPath = []
+            ( [ ext.view present.boxId [] present ] -- boxPath = []
               ++ Tool.viewMapTools undoModel
             )
         ]
@@ -264,6 +273,11 @@ measureStyle =
 update : Msg -> UndoModel -> (UndoModel, Cmd Msg)
 update msg ({present} as undoModel) =
   let
+    env =
+      { model = present
+      , undoModel = undoModel
+      , ext = ext
+      }
     _ =
       case msg of
         Mouse (MouseDef.Move _) -> msg
@@ -274,17 +288,17 @@ update msg ({present} as undoModel) =
     CreateAssoc player1 player2 boxId -> createAssoc player1 player2 boxId present |> S.store
       |> Undo.push undoModel
     MoveTopicToBox topicId boxId origPos targetId targetPath pos -> moveTopicToBox topicId boxId
-      origPos targetId targetPath pos Ext.autoSize present |> S.store |> Undo.push undoModel
+      origPos targetId targetPath pos present |> S.store |> Undo.push undoModel
     TopicDragged -> present |> S.store |> Undo.swap undoModel
     ItemClicked itemId boxPath -> select itemId boxPath present |> Undo.swap undoModel
-    Cancel maybeTarget -> cancelUI maybeTarget Ext.autoSize present |> Undo.swap undoModel
+    Cancel maybeTarget -> cancelUI maybeTarget env |> Undo.swap undoModel
     -- feature modules
-    Tool toolMsg -> Tool.update toolMsg Ext.autoSize undoModel
-    Text textMsg -> Text.update textMsg Ext.autoSize undoModel
-    Mouse mouseMsg -> Mouse.update mouseMsg Ext.hitTest Ext.autoSize undoModel
-    Search searchMsg -> Search.update searchMsg Ext.autoSize undoModel
+    Tool toolMsg -> Tool.update toolMsg env
+    Text textMsg -> Text.update textMsg env
+    Mouse mouseMsg -> Mouse.update mouseMsg env
+    Search searchMsg -> Search.update searchMsg env
     Icon iconMenuMsg -> Icon.update iconMenuMsg undoModel
-    Nav navMsg -> Nav.update navMsg Ext.autoSize undoModel
+    Nav navMsg -> Nav.update navMsg env
     --
     Scrolled pos -> updateScrollPos pos present |> S.store |> Undo.swap undoModel
     UrlResolved (imageId, url) -> cacheImageUrl imageId url present |> Undo.swap undoModel
@@ -310,8 +324,8 @@ createAssocAndAddToBox assocType player1 player2 boxId model =
     |> TM.addItem assocId props boxId -- TODO: don't operate on "topicMap" directly
 
 
-moveTopicToBox : Id -> BoxId -> Point -> BoxId -> BoxPath -> Point -> AutoSize -> Model -> Model
-moveTopicToBox topicId boxId origPos targetBoxId targetPath pos autoSize model =
+moveTopicToBox : Id -> BoxId -> Point -> BoxId -> BoxPath -> Point -> Model -> Model
+moveTopicToBox topicId boxId origPos targetBoxId targetPath pos model =
   case (TM.topicProps topicId boxId model, Box.displayMode topicId boxId model) of
     (Just topicProps, Just displayMode) ->
       model
@@ -320,7 +334,7 @@ moveTopicToBox topicId boxId origPos targetBoxId targetPath pos autoSize model =
         |> TM.setTopicPos topicId boxId origPos
         |> TM.addItem topicId (TopicP { topicProps | pos = pos }) targetBoxId
         |> Sel.select targetBoxId targetPath
-        |> Size.auto autoSize
+        |> Size.auto ext.autoSize
     _ -> model
 
 
@@ -331,17 +345,18 @@ select itemId boxPath model =
   )
 
 
-cancelUI : Maybe Target -> AutoSize -> Model -> (Model, Cmd Msg)
-cancelUI maybeTarget autoSize model =
+cancelUI : Maybe Target -> Env -> (Model, Cmd Msg)
+cancelUI maybeTarget ({model} as env) =
   model
     |> Icon.closePicker
     |> Search.closeMenu
     |> Tool.closeMenu
-    |> cancelUIWith maybeTarget autoSize
+    |> (\model_ -> { env | model = model_ })
+    |> cancelUIWith maybeTarget
 
 
-cancelUIWith : Maybe Target -> AutoSize -> Model -> (Model, Cmd Msg)
-cancelUIWith maybeTarget autoSize model =
+cancelUIWith : Maybe Target -> Env -> (Model, Cmd Msg)
+cancelUIWith maybeTarget ({model} as env) =
   let
     isTargeted =
       case maybeTarget of
@@ -356,7 +371,8 @@ cancelUIWith maybeTarget autoSize model =
     model
       |> Sel.clear
       |> Mouse.clearHover
-      |> Text.leaveEdit autoSize
+      |> (\model_ -> { env | model = model_ })
+      |> Text.leaveEdit
 
 
 updateScrollPos : Point -> Model -> Model

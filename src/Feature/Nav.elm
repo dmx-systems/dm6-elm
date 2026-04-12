@@ -1,6 +1,6 @@
 port module Feature.Nav exposing (boxIdFromHash, pushUrl, update, sub)
 
-import ExtensionDef exposing (AutoSize)
+import ExtensionDef exposing (Env)
 import Feature.NavDef as NavDef
 import Model exposing (Model, Msg(..))
 import ModelBase exposing (..)
@@ -37,30 +37,30 @@ sub =
 -- UPDATE
 
 
-update : NavDef.Msg -> AutoSize -> UndoModel -> (UndoModel, Cmd Msg)
-update msg autoSize ({present} as undoModel) =
+update : NavDef.Msg -> Env -> (UndoModel, Cmd Msg)
+update msg env =
   case msg of
-    NavDef.HashChanged hash -> hashChanged hash autoSize undoModel
+    NavDef.HashChanged hash -> hashChanged hash env
 
 
-hashChanged : String -> AutoSize -> UndoModel -> (UndoModel, Cmd Msg)
-hashChanged hash autoSize ({present} as undoModel) =
+hashChanged : String -> Env -> (UndoModel, Cmd Msg)
+hashChanged hash ({model, undoModel} as env) =
   case boxIdFromHash hash of
     Just boxId ->
-      setFullscreenBox boxId autoSize present |> S.storeWith |> Undo.reset
+      setFullscreenBox boxId env |> S.storeWith |> Undo.reset
     Nothing ->
       let
-        _ = U.info "hashChanged" <| "No hash -> redirect to " ++ fromInt present.boxId
+        _ = U.info "hashChanged" <| "No hash -> redirect to " ++ fromInt model.boxId
       in
-      (undoModel, pushUrl present.boxId)
+      (undoModel, pushUrl model.boxId)
 
 
-setFullscreenBox : BoxId -> AutoSize -> Model -> (Model, Cmd Msg)
-setFullscreenBox boxId autoSize model =
+setFullscreenBox : BoxId -> Env -> (Model, Cmd Msg)
+setFullscreenBox boxId {model, ext} =
   let
     newModel = { model | boxId = boxId }
   in
-  ( newModel |> Size.auto autoSize
+  ( newModel |> Size.auto ext.autoSize
   , Cmd.batch
       [ setViewport newModel
       , U.command <| Cancel Nothing

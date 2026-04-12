@@ -2,12 +2,28 @@ module ExtensionDef exposing (..)
 
 import Model exposing (Model, Msg)
 import ModelBase exposing (Id, BoxId, BoxPath, Target, Point, Rectangle, Extensions)
+import Undo exposing (UndoModel)
 
 import Html exposing (Html)
 
 
 
 -- TYPES
+
+
+type alias Env =
+  { model : Model
+  , undoModel : UndoModel
+  , ext : ExtManager
+  }
+
+
+type alias ExtManager =
+  { view : BoxRenderer
+  , hitTest : HitTest
+  , autoSize : AutoSize
+  , all : Extensions
+  }
 
 
 -- "view"
