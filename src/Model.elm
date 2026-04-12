@@ -1,6 +1,5 @@
 module Model exposing (Model, Msg(..), init, encode, decoder)
 
-import BoxRendererDef
 import Config as C
 import ModelBase exposing (..)
 -- box renderers
@@ -50,7 +49,7 @@ init =
   in
   { items = Dict.singleton 0 <| Item 0 (Topic rootTopic) Set.empty
   , itemSets = Dict.singleton 1 <| ItemSet 1 []
-  , boxes = Dict.singleton rootBoxId <| Box rootBoxId 1 Dict.empty BoxRendererDef.TopicMap
+  , boxes = Dict.singleton rootBoxId <| Box rootBoxId 1 Dict.empty "TopicMap"
   , boxId = rootBoxId
   , nextId = 2
   , imageCache = Dict.empty -- TODO: move to Text module, but should survive a map switch

@@ -5,7 +5,7 @@ import Config as C
 import ExtensionDef exposing (BoxRenderer)
 import Item
 import Model exposing (Model, Msg)
-import ModelBase exposing (BoxId, BoxPath, Attrs)
+import ModelBase exposing (..)
 
 import Html exposing (Html, ul, li, text)
 import Html.Attributes exposing (style)
@@ -17,8 +17,8 @@ import String exposing (fromInt)
 
 
 -- For the fullscreen box boxPath is empty
-view : BoxId -> BoxPath -> BoxRenderer -> Model -> Html Msg
-view boxId boxPath renderChildBox model =
+view : BoxId -> BoxPath -> BoxRenderer -> Extensions -> Model -> Html Msg
+view boxId boxPath renderBox allExt model =
   ul
     (boxStyle boxId model)
     (viewBox boxId model)

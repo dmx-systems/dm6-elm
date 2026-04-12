@@ -1,7 +1,7 @@
 module ExtensionDef exposing (..)
 
 import Model exposing (Model, Msg)
-import ModelBase exposing (Id, BoxId, BoxPath, Target, Point, Rectangle)
+import ModelBase exposing (Id, BoxId, BoxPath, Target, Point, Rectangle, Extensions)
 
 import Html exposing (Html)
 
@@ -15,7 +15,7 @@ import Html exposing (Html)
 {-| A box renderer basically takes a boxId and returns HTML.
 
 Note: copy in TopicMap.View.elm to avoid a cyclic dependency.
-Can *not* be defined in ModelBase as it needs Model.
+Can *not* be defined in ModelBase as it needs Model. ### FIXDOC
 Can also not be defined in BoxRendererDef as Model imports BoxRendererDef.
 -> Move it to Model?
 -}
@@ -31,7 +31,7 @@ their "view" function instead of importing a module. This avoids circular depend
 conjunction with recursively nested renderers.
 -}
 type alias NestingBoxRenderer =
-  BoxId -> BoxPath -> BoxRenderer -> Model -> Html Msg
+  BoxId -> BoxPath -> BoxRenderer -> Extensions -> Model -> Html Msg
 
 
 -- "hitTest"

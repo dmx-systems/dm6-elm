@@ -1,10 +1,9 @@
 module Extension exposing (view, hitTest, autoSize)
 
 import Box
-import BoxRendererDef exposing (toName)
 import ExtensionDef exposing (NestingBoxRenderer, NestingHitTest, NestingAutoSize)
 import Model exposing (Model, Msg)
-import ModelBase exposing (Id, BoxId, BoxPath, Target, Point, Rectangle)
+import ModelBase exposing (..)
 -- box renderers
 import TopicList.Geometry
 import TopicList.TopicList
@@ -20,33 +19,48 @@ import Html exposing (Html, text)
 -- TYPES
 
 
-type alias Renderer =
-  { view : NestingBoxRenderer
+type alias Extension =
+  { name : ExtName
+  , label : ExtLabel
+  , view : NestingBoxRenderer
   , hitTest : NestingHitTest
   , autoSize : NestingAutoSize
   }
+
 
 
 -- VALUES
 
 
 -- key = renderer name
-registry : Dict String Renderer
+registry : Dict String Extension
 registry =
   Dict.fromList -- Note: custom types can't be used as Dict keys, so we use String
     [ ("TopicMap",
-        { view = TopicMap.View.view
+        { name = "TopicMap"
+        , label = "Topic Map"
+        , view = TopicMap.View.view
         , hitTest = TopicMap.Geometry.hitTest
         , autoSize = TopicMap.Size.autoSize
         }
       )
     , ("List",
-        { view = TopicList.TopicList.view
+        { name = "List"
+        , label = "List"
+        , view = TopicList.TopicList.view
         , hitTest = TopicList.Geometry.hitTest
         , autoSize = TopicList.Geometry.autoSize
         }
       )
     ]
+
+
+all : Extensions
+all =
+  registry
+    |> Dict.values
+    |> List.map
+      (\{name, label} -> (name, label))
 
 
 
@@ -62,7 +76,7 @@ returns HTML.
 view : BoxId -> BoxPath -> Model -> Html Msg
 view boxId boxPath model =
   dispatch boxId model (text "Renderer ?")
-    (\renderer -> renderer.view boxId boxPath view model)
+    (\renderer -> renderer.view boxId boxPath view all model)
 
 
 hitTest : BoxId -> BoxPath -> Point -> Maybe Id -> Model -> Maybe Target
@@ -77,9 +91,9 @@ autoSize boxPath model =
     (\renderer -> renderer.autoSize boxPath autoSize model)
 
 
-dispatch : BoxId -> Model -> r -> (Renderer -> r) -> r
+dispatch : BoxId -> Model -> result -> (Extension -> result) -> result
 dispatch boxId model errVal func =
   Box.rendererOf boxId model
-    |> Maybe.andThen (\r -> registry |> Dict.get (toName r))
+    |> Maybe.andThen (\renderer -> registry |> Dict.get renderer)
     |> Maybe.map func
     |> Maybe.withDefault errVal

@@ -1,10 +1,9 @@
 module ModelBase exposing (Id, Item, Items, ItemInfo(..), AssocIds, TopicInfo, Icon, TextSize,
   Size, SizeField(..), Point, Rectangle, AssocInfo, AssocType(..), ItemSet, ItemSets, SetItem,
   Box, Boxes, BoxId, BoxPath, Target, rootBoxId, ItemProps, DisplayMode(..), TopicDisplay(..),
-  BoxDisplay(..), ImageId, Attrs, PointerType, encodeItem, encodeItemSet, encodeBox,
-  encodeDisplayMode, itemDecoder, itemSetDecoder, boxDecoder, toDictDecoder)
-
-import BoxRendererDef exposing (Renderer)
+  BoxDisplay(..), ImageId, Attrs, PointerType, Extensions, ExtName, ExtLabel, Renderer,
+  encodeItem, encodeItemSet, encodeBox, encodeDisplayMode, itemDecoder, itemSetDecoder,
+  boxDecoder, toDictDecoder)
 
 import Dict exposing (Dict)
 import Html exposing (Attribute)
@@ -163,6 +162,15 @@ type BoxDisplay
   | WhiteBox
 
 
+-- Extensions
+
+type alias ExtName = String
+type alias ExtLabel = String
+type alias Extensions = List (ExtName, ExtLabel)
+
+type alias Renderer = String
+
+
 
 -- JSON
 
@@ -242,7 +250,7 @@ encodeBox box =
     [ ("id", E.int box.id)
     , ("itemSetId", E.int box.itemSetId)
     , ("itemProps", E.list encodeItemProps <| Dict.values box.itemProps)
-    , ("renderer", BoxRendererDef.encode box.renderer)
+    , ("renderer", E.string box.renderer)
     ]
 
 
@@ -340,7 +348,7 @@ boxDecoder =
     (D.field "id" D.int)
     (D.field "itemSetId" D.int)
     (D.field "itemProps" (boxItemDecoder |> toDictDecoder))
-    (D.field "renderer" (D.string |> BoxRendererDef.decoder))
+    (D.field "renderer" D.string)
 
 
 boxItemDecoder : D.Decoder ItemProps

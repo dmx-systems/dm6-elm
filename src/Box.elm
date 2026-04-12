@@ -2,7 +2,6 @@ module Box exposing (hasItem, hasDeepItem, topics, create, addItem, displayMode,
   updateDisplayMode, rendererOf, setRenderer, deleteItem, mapTitle, isFullscreen, elemId,
   firstId, fromPath)
 
-import BoxRendererDef exposing (Renderer)
 import Item
 import Model exposing (Model)
 import ModelBase exposing (..)
@@ -82,7 +81,7 @@ create text icon model =
   let
     (newModel, topicId) = Item.createTopic text icon model
     setId = newModel.nextId
-    box = Box topicId setId Dict.empty BoxRendererDef.TopicMap
+    box = Box topicId setId Dict.empty "TopicMap"
     set = ItemSet setId []
   in
   ( newModel

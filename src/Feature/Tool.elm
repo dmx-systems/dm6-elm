@@ -2,7 +2,6 @@ module Feature.Tool exposing (viewGlobalTools, viewMapTools, viewToolbar, viewTo
   closeMenu, update)
 
 import Box
-import BoxRendererDef exposing (Renderer)
 import Config as C
 import ExtensionDef exposing (AutoSize)
 import Feature.Icon as Icon
@@ -22,7 +21,6 @@ import TopicMap.TopicMapDef exposing (ItemProps(..), TopicProps)
 import Undo exposing (UndoModel)
 import Utils as U
 
-import Dict
 import Html exposing (Html, div, span, text, button, input, label, select, option)
 import Html.Attributes exposing (class, style, title, name, value, type_, disabled, checked)
 import Html.Events exposing (onClick, on, targetValue)
@@ -194,8 +192,8 @@ mapToolsStyle =
 -- Item Tools
 
 -- Topic/Assoc toolbar, rendered by Map.view as box children
-viewToolbar : BoxPath -> Model -> List (Html Msg)
-viewToolbar boxPath model =
+viewToolbar : BoxPath -> Extensions -> Model -> List (Html Msg)
+viewToolbar boxPath allExt model =
   let
     boxId = Box.firstId boxPath
   in
@@ -214,7 +212,7 @@ viewToolbar boxPath model =
                         (topicPos.y - rect.y1 - C.topicH2 - 29) -- TODO: 29 ≈ toolbar height
                     in
                     case (Text.isEdit itemId boxPath model, Item.isBox itemId model) of
-                      (False, _) -> [ viewTopicToolbar pos itemId boxPath model ]
+                      (False, _) -> [ viewTopicToolbar pos itemId boxPath allExt model ]
                       (True, False) -> [ viewTextToolbar pos itemId boxPath ]
                       _ -> []
                   Nothing -> []
@@ -234,8 +232,8 @@ viewToolbar boxPath model =
     Nothing -> []
 
 
-viewTopicToolbar : Point -> Id -> BoxPath -> Model -> Html Msg
-viewTopicToolbar pos topicId boxPath model =
+viewTopicToolbar : Point -> Id -> BoxPath -> Extensions -> Model -> Html Msg
+viewTopicToolbar pos topicId boxPath allExt model =
   let
     target = (topicId, boxPath)
     topicTools =
@@ -251,7 +249,7 @@ viewTopicToolbar pos topicId boxPath model =
           rendererSelect =
             case Box.rendererOf topicId model of
               Just renderer ->
-                [ viewRendererSelect renderer (Tool << ToolDef.RendererSelected) ]
+                [ viewRendererSelect renderer (Tool << ToolDef.RendererSelected) allExt ]
               Nothing -> []
         in
         [ viewButton "Fullscreen" "maximize-2" (ToolDef.Fullscreen topicId) False target
@@ -269,24 +267,23 @@ viewTopicToolbar pos topicId boxPath model =
     )
 
 
-viewRendererSelect : Renderer -> (Renderer -> Msg) -> Html Msg
-viewRendererSelect renderer tagger =
+viewRendererSelect : Renderer -> (Renderer -> Msg) -> Extensions -> Html Msg
+viewRendererSelect renderer toMsg allExt =
   select
-    ( [ value (BoxRendererDef.toName renderer)
-      , on "input" (D.map tagger (BoxRendererDef.decoder targetValue))
+    ( [ value renderer
+      , on "input" (D.map toMsg targetValue)
       , U.onMouseDownStop NoOp
       ]
       ++ selectStyle
     )
-    viewRendererOptions
+    ( viewRendererOptions allExt )
 
 
-viewRendererOptions : List (Html Msg)
-viewRendererOptions =
-  BoxRendererDef.all
-    |> Dict.values
+viewRendererOptions : Extensions -> List (Html Msg)
+viewRendererOptions allExt =
+  allExt
     |> List.map
-      (\{name, label} ->
+      (\(name, label) ->
         option
           [ value name ]
           [ text label ]
