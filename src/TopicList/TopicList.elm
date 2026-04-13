@@ -2,7 +2,7 @@ module TopicList.TopicList exposing (..)
 
 import Box
 import Config as C
-import ExtensionDef exposing (BoxRenderer)
+import ExtensionDef exposing (ExtManager)
 import Item
 import Model exposing (Model, Msg)
 import ModelBase exposing (..)
@@ -17,8 +17,8 @@ import String exposing (fromInt)
 
 
 -- For the fullscreen box boxPath is empty
-view : BoxId -> BoxPath -> BoxRenderer -> Extensions -> Model -> Html Msg
-view boxId boxPath renderBox allExt model =
+view : BoxId -> BoxPath -> ExtManager -> Model -> Html Msg
+view boxId boxPath ext model =
   ul
     (boxStyle boxId model)
     (viewBox boxId model)

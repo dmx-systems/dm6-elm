@@ -1,7 +1,7 @@
 module TopicList.Geometry exposing (hitTest, autoSize)
 
 import Box
-import ExtensionDef exposing (HitTest, AutoSize)
+import ExtensionDef exposing (ExtManager)
 import Model exposing (Model)
 import ModelBase exposing (Id, BoxId, BoxPath, Target, Point, Rectangle)
 import Utils as U
@@ -10,8 +10,9 @@ import Utils as U
 
 -- Hit Test
 
-hitTest : BoxId -> BoxPath -> Point -> Maybe Id -> HitTest -> Model -> Maybe Target
-hitTest boxId boxPath pos excludeTopicId geometry model =
+hitTest : BoxId -> BoxPath -> Point -> Maybe Id -> ExtManager -> Model -> Maybe Target
+hitTest boxId boxPath pos excludeTopicId ext model =
+  -- TODO
   let
     maybeThisItem : Bool -> Maybe Target
     maybeThisItem found = if found then Just (boxId, boxPath) else Nothing
@@ -34,6 +35,7 @@ isListHovered pos =
 
 -- Auto-Size
 
-autoSize : BoxPath -> AutoSize -> Model -> (Rectangle, Model)
-autoSize boxPath autoSize_ model =
+autoSize : BoxPath -> ExtManager -> Model -> (Rectangle, Model)
+autoSize boxPath ext model =
+  -- TODO
   (Rectangle 0 0 240 100, model)

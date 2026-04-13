@@ -2,8 +2,8 @@ port module Main exposing (..)
 
 import Box
 import Config as C
-import Extension as Ext
-import ExtensionDef exposing (ExtManager, Env)
+import ExtManager
+import ExtensionDef exposing (Env)
 import Feature.Icon as Icon
 import Feature.MouseDef as MouseDef
 import Feature.Mouse as Mouse
@@ -38,15 +38,6 @@ import String exposing (fromInt, fromFloat)
 port onScroll : (Point -> msg) -> Sub msg
 
 port onResolveUrl : ((ImageId, String) -> msg) -> Sub msg
-
-
-
--- VALUES
-
-
-ext : ExtManager
-ext =
-  Ext.ext
 
 
 
@@ -130,7 +121,7 @@ view ({present} as undoModel) =
             ( [ id "main" ]
               ++ mainStyle
             )
-            ( [ ext.view present.boxId [] present ] -- boxPath = []
+            ( [ ExtManager.ext.view present.boxId [] present ] -- boxPath = []
               ++ Tool.viewMapTools undoModel
             )
         ]
@@ -276,7 +267,7 @@ update msg ({present} as undoModel) =
     env =
       { model = present
       , undoModel = undoModel
-      , ext = ext
+      , ext = ExtManager.ext
       }
     _ =
       case msg of
@@ -334,7 +325,7 @@ moveTopicToBox topicId boxId origPos targetBoxId targetPath pos model =
         |> TM.setTopicPos topicId boxId origPos
         |> TM.addItem topicId (TopicP { topicProps | pos = pos }) targetBoxId
         |> Sel.select targetBoxId targetPath
-        |> Size.auto ext.autoSize
+        |> Size.auto ExtManager.ext.autoSize
     _ -> model
 
 

@@ -2,7 +2,7 @@ module TopicMap.Size exposing (autoSize)
 
 import Box
 import Config as C
-import ExtensionDef exposing (AutoSize)
+import ExtensionDef exposing (ExtManager)
 import Feature.MouseDef exposing (DragState(..), DragMode(..))
 import Feature.TextDef exposing (EditState(..))
 import Item
@@ -23,8 +23,8 @@ Returns the modified model along with, for convenience, the calculated rect.
 Based on the rect's change the TopicMap's topic position adjustment within the parent
 TopicMap (if any) is calculated as well.
 -}
-autoSize : BoxPath -> AutoSize -> Model -> (Rectangle, Model)
-autoSize boxPath autoSize_ model =
+autoSize : BoxPath -> ExtManager -> Model -> (Rectangle, Model)
+autoSize boxPath ext model =
   let
     boxId = Box.firstId boxPath
   in
@@ -38,7 +38,7 @@ autoSize boxPath autoSize_ model =
           else
             topics |> List.foldr
               (\mapItem (rectAcc, modelAcc) ->
-                accumulateItem mapItem boxPath rectAcc autoSize_ modelAcc
+                accumulateItem mapItem boxPath rectAcc ext modelAcc
               )
               (Rectangle 0 0 0 0, model)
         newRect = addBoxPadding rect
@@ -49,16 +49,16 @@ autoSize boxPath autoSize_ model =
     Nothing -> (Rectangle 0 0 0 0, model)
 
 
-accumulateItem : MapItem -> BoxPath -> Rectangle -> AutoSize -> Model -> (Rectangle, Model)
-accumulateItem mapItem boxPath rectAcc autoSize_ model =
+accumulateItem : MapItem -> BoxPath -> Rectangle -> ExtManager -> Model -> (Rectangle, Model)
+accumulateItem mapItem boxPath rectAcc ext model =
   let
-    (rect, model_) = calcItemRect mapItem boxPath autoSize_ model
+    (rect, model_) = calcItemRect mapItem boxPath ext model
   in
   (accumulateRect rectAcc rect, model_)
 
 
-calcItemRect : MapItem -> BoxPath -> AutoSize -> Model -> (Rectangle, Model)
-calcItemRect mapItem boxPath autoSize_ model =
+calcItemRect : MapItem -> BoxPath -> ExtManager -> Model -> (Rectangle, Model)
+calcItemRect mapItem boxPath ext model =
   case mapItem.props of
     TopicP {pos, displayMode} ->
       case displayMode of
@@ -67,7 +67,7 @@ calcItemRect mapItem boxPath autoSize_ model =
         BoxD BlackBox -> (topicExtent pos, model)
         BoxD WhiteBox ->
           let
-            (rect_, model_) = autoSize_ (mapItem.id :: boxPath) model -- recursion
+            (rect_, model_) = ext.autoSize (mapItem.id :: boxPath) model -- recursion
           in
           (boxExtent pos rect_, model_)
     AssocP _ -> (Rectangle 0 0 0 0, model) -- never called

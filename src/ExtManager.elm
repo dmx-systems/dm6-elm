@@ -1,7 +1,7 @@
-module Extension exposing (ext)
+module ExtManager exposing (ext)
 
 import Box
-import ExtensionDef exposing (..)
+import ExtensionDef exposing (ExtManager)
 import Model exposing (Model, Msg)
 import ModelBase exposing (..)
 -- box renderers
@@ -26,6 +26,25 @@ type alias Extension =
   , hitTest : NestingHitTest
   , autoSize : NestingAutoSize
   }
+
+
+{-| A box renderer transformation that enables the dispatching box renderer to inject itself
+into the actual box renderer (e.g. TopicMap, List). ### FIXDOC
+The actual renderers "view" functions are of this type.
+Note: the actual box renderers get access to the dispatching box renderer as an argument of
+their "view" function instead of importing a module. This avoids circular dependencies in
+conjunction with recursively nested renderers.
+-}
+type alias NestingBoxRenderer =
+  BoxId -> BoxPath -> ExtManager -> Model -> Html Msg
+
+
+type alias NestingHitTest =
+  BoxId -> BoxPath -> Point -> Maybe Id -> ExtManager -> Model -> Maybe Target
+
+
+type alias NestingAutoSize =
+  BoxPath -> ExtManager -> Model -> (Rectangle, Model)
 
 
 
@@ -85,19 +104,19 @@ returns HTML.
 view : BoxId -> BoxPath -> Model -> Html Msg
 view boxId boxPath model =
   dispatch boxId model (text "Renderer ?")
-    (\renderer -> renderer.view boxId boxPath view all model)
+    (\renderer -> renderer.view boxId boxPath ext model)
 
 
 hitTest : BoxId -> BoxPath -> Point -> Maybe Id -> Model -> Maybe Target
 hitTest boxId boxPath pos excludeTopicId model =
   dispatch boxId model Nothing
-    (\renderer -> renderer.hitTest boxId boxPath pos excludeTopicId hitTest model)
+    (\renderer -> renderer.hitTest boxId boxPath pos excludeTopicId ext model)
 
 
 autoSize : BoxPath -> Model -> (Rectangle, Model)
 autoSize boxPath model =
   dispatch (Box.firstId boxPath) model (Rectangle 0 0 0 0, model)
-    (\renderer -> renderer.autoSize boxPath autoSize model)
+    (\renderer -> renderer.autoSize boxPath ext model)
 
 
 dispatch : BoxId -> Model -> result -> (Extension -> result) -> result

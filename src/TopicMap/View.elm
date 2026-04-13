@@ -2,7 +2,7 @@ module TopicMap.View exposing (view)
 
 import Box
 import Config as C
-import ExtensionDef exposing (BoxRenderer)
+import ExtensionDef exposing (ExtManager)
 import Feature.Icon as Icon
 import Feature.MouseDef exposing (DragState(..), DragMode(..))
 import Feature.Mouse as Mouse
@@ -53,11 +53,11 @@ type alias LineRenderer =
 
 
 -- For the fullscreen box boxPath is empty
-view : BoxId -> BoxPath -> BoxRenderer -> Extensions -> Model -> Html Msg
-view boxId boxPath renderBox allExt model =
+view : BoxId -> BoxPath -> ExtManager -> Model -> Html Msg
+view boxId boxPath ext model =
   let
     ((topics, assocs), boxRect, (svgSize, boxStyle)) =
-      boxInfo boxId boxPath renderBox model
+      boxInfo boxId boxPath ext model
   in
   div
     boxStyle
@@ -77,7 +77,7 @@ view boxId boxPath renderBox allExt model =
               )
           ]
       ]
-      ++ Tool.viewToolbar (boxId :: boxPath) allExt model
+      ++ Tool.viewToolbar (boxId :: boxPath) ext model
     )
 
 
@@ -128,11 +128,11 @@ gAttr boxId boxRect model =
 
 
 -- For the fullscreen box boxPath is empty
-boxInfo : BoxId -> BoxPath -> BoxRenderer -> Model -> BoxInfo
-boxInfo boxId boxPath renderBox model =
+boxInfo : BoxId -> BoxPath -> ExtManager -> Model -> BoxInfo
+boxInfo boxId boxPath ext model =
   case TM.byId boxId model of
     Just map ->
-      ( viewItems map boxPath renderBox model
+      ( viewItems map boxPath ext model
       , map.rect
       , ( { w = (map.rect.x2 - map.rect.x1) |> fromInt
           , h = (map.rect.y2 - map.rect.y1) |> fromInt
@@ -167,15 +167,15 @@ nestedBoxStyle topicId rect boxPath model =
 
 
 -- For the fullscreen box boxPath is empty
-viewItems : TopicMap -> BoxPath -> BoxRenderer -> Model -> (List (Html Msg), List (Svg Msg))
-viewItems map boxPath renderBox model =
+viewItems : TopicMap -> BoxPath -> ExtManager -> Model -> (List (Html Msg), List (Svg Msg))
+viewItems map boxPath ext model =
   let
     newPath = map.id :: boxPath
     topics =
       VM.topicsToRender map model |> List.map
         (\{id, props} ->
           case (Item.topicById id model, props) of
-            (Just topic, TopicP tProps) -> viewTopic topic tProps newPath renderBox model
+            (Just topic, TopicP tProps) -> viewTopic topic tProps newPath ext model
             _ -> U.logError "viewItems" ("problem with topic " ++ fromInt id) (text "")
         )
     assocs =
@@ -234,8 +234,8 @@ viewLimboAssoc boxId model =
 
 -- Topic Rendering
 
-viewTopic : TopicInfo -> TopicProps -> BoxPath -> BoxRenderer -> Model -> Html Msg
-viewTopic topic props boxPath renderBox model =
+viewTopic : TopicInfo -> TopicProps -> BoxPath -> ExtManager -> Model -> Html Msg
+viewTopic topic props boxPath ext model =
   let
     boxId = Box.firstId boxPath
     render =
@@ -243,7 +243,7 @@ viewTopic topic props boxPath renderBox model =
         TopicD LabelOnly -> labelTopic topic props boxPath
         TopicD Detail -> detailTopic topic props boxPath
         BoxD BlackBox -> blackBoxTopic topic props boxPath
-        BoxD WhiteBox -> whiteBoxTopic topic props boxPath renderBox
+        BoxD WhiteBox -> whiteBoxTopic topic props boxPath ext
     (style, children) = render model
   in
   div
@@ -521,15 +521,15 @@ selectionStyle topicId boxPath model =
     False -> []
 
 
-whiteBoxTopic : TopicInfo -> TopicProps -> BoxPath -> BoxRenderer -> Model -> TopicRendering
-whiteBoxTopic topic props boxPath renderBox model =
+whiteBoxTopic : TopicInfo -> TopicProps -> BoxPath -> ExtManager -> Model -> TopicRendering
+whiteBoxTopic topic props boxPath ext model =
   let
     (style, children) = labelTopic topic props boxPath model
   in
   ( style
   , children
     ++ viewItemCount topic.id props model
-    ++ [ renderBox topic.id boxPath model ]
+    ++ [ ext.view topic.id boxPath model ]
   )
 
 
