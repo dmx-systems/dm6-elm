@@ -1,4 +1,4 @@
-module ExtensionDef exposing (ExtManager, Env, AutoSize)
+module Env exposing (Env, ExtManager, autoSize, withModel)
 -- TODO: don't expose AutoSize?
 
 import Model exposing (Model, Msg)
@@ -12,18 +12,18 @@ import Html exposing (Html)
 -- TYPES
 
 
+type alias Env =
+  { model : Model
+  , undoModel : UndoModel
+  , ext : ExtManager
+  }
+
+
 type alias ExtManager =
   { view : BoxRenderer
   , hitTest : HitTest
   , autoSize : AutoSize
   , all : Extensions
-  }
-
-
-type alias Env =
-  { model : Model
-  , undoModel : UndoModel
-  , ext : ExtManager
   }
 
 
@@ -39,3 +39,19 @@ type alias HitTest =
 
 type alias AutoSize =
   BoxPath -> Model -> (Rectangle, Model)
+
+
+
+-- HELPER
+
+
+autoSize : Env -> Model -> Model
+autoSize {ext} model =
+  model
+    |> ext.autoSize [ model.boxId ]
+    |> Tuple.second
+
+
+withModel : Env -> Model -> Env
+withModel env model =
+  { env | model = model }

@@ -2,7 +2,7 @@ module TopicList.TopicList exposing (..)
 
 import Box
 import Config as C
-import ExtensionDef exposing (ExtManager)
+import Env exposing (ExtManager)
 import Item
 import Model exposing (Model, Msg)
 import ModelBase exposing (..)

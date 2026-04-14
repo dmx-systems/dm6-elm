@@ -1,7 +1,7 @@
 module TopicList.Geometry exposing (hitTest, autoSize)
 
 import Box
-import ExtensionDef exposing (ExtManager)
+import Env exposing (ExtManager)
 import Model exposing (Model)
 import ModelBase exposing (Id, BoxId, BoxPath, Target, Point, Rectangle)
 import Utils as U

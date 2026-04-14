@@ -2,7 +2,7 @@ module TopicMap.Size exposing (autoSize)
 
 import Box
 import Config as C
-import ExtensionDef exposing (ExtManager)
+import Env exposing (ExtManager)
 import Feature.MouseDef exposing (DragState(..), DragMode(..))
 import Feature.TextDef exposing (EditState(..))
 import Item

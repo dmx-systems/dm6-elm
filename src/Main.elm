@@ -2,8 +2,8 @@ port module Main exposing (..)
 
 import Box
 import Config as C
+import Env exposing (Env)
 import ExtManager
-import ExtensionDef exposing (Env)
 import Feature.Icon as Icon
 import Feature.MouseDef as MouseDef
 import Feature.Mouse as Mouse
@@ -15,7 +15,6 @@ import Feature.Tool as Tool
 import Item
 import Model exposing (Model, Msg(..))
 import ModelBase exposing (..)
-import Size
 import Storage as S
 import TopicMap.TopicMap as TM
 import TopicMap.TopicMapDef exposing (ItemProps(..), AssocProps)
@@ -279,7 +278,7 @@ update msg ({present} as undoModel) =
     CreateAssoc player1 player2 boxId -> createAssoc player1 player2 boxId present |> S.store
       |> Undo.push undoModel
     MoveTopicToBox topicId boxId origPos targetId targetPath pos -> moveTopicToBox topicId boxId
-      origPos targetId targetPath pos present |> S.store |> Undo.push undoModel
+      origPos targetId targetPath pos env |> S.store |> Undo.push undoModel
     TopicDragged -> present |> S.store |> Undo.swap undoModel
     ItemClicked itemId boxPath -> select itemId boxPath present |> Undo.swap undoModel
     Cancel maybeTarget -> cancelUI maybeTarget env |> Undo.swap undoModel
@@ -315,8 +314,8 @@ createAssocAndAddToBox assocType player1 player2 boxId model =
     |> TM.addItem assocId props boxId -- TODO: don't operate on "topicMap" directly
 
 
-moveTopicToBox : Id -> BoxId -> Point -> BoxId -> BoxPath -> Point -> Model -> Model
-moveTopicToBox topicId boxId origPos targetBoxId targetPath pos model =
+moveTopicToBox : Id -> BoxId -> Point -> BoxId -> BoxPath -> Point -> Env -> Model
+moveTopicToBox topicId boxId origPos targetBoxId targetPath pos ({model} as env) =
   case (TM.topicProps topicId boxId model, Box.displayMode topicId boxId model) of
     (Just topicProps, Just displayMode) ->
       model
@@ -325,7 +324,7 @@ moveTopicToBox topicId boxId origPos targetBoxId targetPath pos model =
         |> TM.setTopicPos topicId boxId origPos
         |> TM.addItem topicId (TopicP { topicProps | pos = pos }) targetBoxId
         |> Sel.select targetBoxId targetPath
-        |> Size.auto ExtManager.ext.autoSize
+        |> Env.autoSize env
     _ -> model
 
 
@@ -342,7 +341,7 @@ cancelUI maybeTarget ({model} as env) =
     |> Icon.closePicker
     |> Search.closeMenu
     |> Tool.closeMenu
-    |> (\model_ -> { env | model = model_ })
+    |> Env.withModel env
     |> cancelUIWith maybeTarget
 
 
@@ -362,7 +361,7 @@ cancelUIWith maybeTarget ({model} as env) =
     model
       |> Sel.clear
       |> Mouse.clearHover
-      |> (\model_ -> { env | model = model_ })
+      |> Env.withModel env
       |> Text.leaveEdit
 
 

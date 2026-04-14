@@ -3,7 +3,7 @@ module Feature.Search exposing (viewInput, viewSearchResult, viewTraversalResult
 
 import Box
 import Config as C
-import ExtensionDef exposing (Env)
+import Env exposing (Env)
 import Feature.Icon as Icon
 import Feature.Nav as Nav
 import Feature.SearchDef as SearchDef exposing (SearchResult(..))
@@ -11,7 +11,6 @@ import Feature.Sel as Sel
 import Item
 import Model exposing (Model, Msg(..))
 import ModelBase exposing (..)
-import Size
 import Storage as S
 import TopicMap.TopicMap as TM
 import TopicMap.TopicMapDef exposing (ItemProps(..))
@@ -292,67 +291,67 @@ onInputFocused =
 
 
 onTopicHovered : Id -> Env -> Model
-onTopicHovered topicId {model, ext} =
+onTopicHovered topicId ({model} as env) =
   case model.search.result of
     Topics topicIds _ ->
       -- update hover state
       model
         |> setResult (Topics topicIds <| Just topicId)
-        |> Size.auto ext.autoSize
+        |> Env.autoSize env
     _ ->
       U.logError "onTopicHovered" "search.result is not Topics" model
 
 
 onRelTopicHovered : (Id, Id) -> Env -> Model
-onRelTopicHovered relTopicId {model, ext} =
+onRelTopicHovered relTopicId ({model} as env) =
   case model.search.result of
     RelTopics relTopicIds _ ->
       -- update hover state
       model
         |> setResult (RelTopics relTopicIds <| Just relTopicId)
-        |> Size.auto ext.autoSize
+        |> Env.autoSize env
     _ ->
       U.logError "onRelTopicHovered" "search.result is not RelTopics" model
 
 
 onTopicUnhovered : Env -> Model
-onTopicUnhovered {model, ext} =
+onTopicUnhovered ({model} as env) =
   case model.search.result of
     Topics topicIds _ ->
       -- update hover state
       model
         |> setResult (Topics topicIds Nothing)
-        |> Size.auto ext.autoSize
+        |> Env.autoSize env
     _ ->
       U.logError "onTopicUnhovered" "search.result is not Topics" model
 
 
 onRelTopicUnhovered : Env -> Model
-onRelTopicUnhovered {model, ext} =
+onRelTopicUnhovered ({model} as env) =
   case model.search.result of
     RelTopics relTopicIds _ ->
       -- update hover state
       model
         |> setResult (RelTopics relTopicIds Nothing)
-        |> Size.auto ext.autoSize
+        |> Env.autoSize env
     _ ->
       U.logError "onRelTopicUnhovered" "search.result is not RelTopics" model
 
 
 revealTopic : Id -> Env -> Model
-revealTopic topicId {model, ext} =
+revealTopic topicId ({model} as env) =
   case TM.revelationBoxPath model of
     Just (boxId :: _ as boxPath) ->
       model
         |> revealItem topicId boxId
         |> closeMenu
         |> Sel.select topicId boxPath
-        |> Size.auto ext.autoSize
+        |> Env.autoSize env
     _ -> model
 
 
 revealRelTopic : (Id, Id) -> Env -> Model
-revealRelTopic (topicId, assocId) {model, ext} =
+revealRelTopic (topicId, assocId) ({model} as env) =
   case TM.revelationBoxPath model of
     Just (boxId :: _ as boxPath) ->
       model
@@ -360,7 +359,7 @@ revealRelTopic (topicId, assocId) {model, ext} =
         |> revealItem assocId boxId
         |> closeMenu
         |> Sel.select topicId boxPath
-        |> Size.auto ext.autoSize
+        |> Env.autoSize env
     _ -> model
 
 

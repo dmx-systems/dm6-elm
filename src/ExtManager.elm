@@ -1,7 +1,7 @@
 module ExtManager exposing (ext)
 
 import Box
-import ExtensionDef exposing (ExtManager)
+import Env exposing (ExtManager)
 import Model exposing (Model, Msg)
 import ModelBase exposing (..)
 -- box renderers

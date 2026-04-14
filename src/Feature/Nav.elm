@@ -1,10 +1,9 @@
 port module Feature.Nav exposing (boxIdFromHash, pushUrl, update, sub)
 
-import ExtensionDef exposing (Env)
+import Env exposing (Env)
 import Feature.NavDef as NavDef
 import Model exposing (Model, Msg(..))
 import ModelBase exposing (..)
-import Size
 import Storage as S
 import TopicMap.TopicMap as TM
 import Undo exposing (UndoModel)
@@ -56,11 +55,12 @@ hashChanged hash ({model, undoModel} as env) =
 
 
 setFullscreenBox : BoxId -> Env -> (Model, Cmd Msg)
-setFullscreenBox boxId {model, ext} =
+setFullscreenBox boxId ({model} as env) =
   let
     newModel = { model | boxId = boxId }
   in
-  ( newModel |> Size.auto ext.autoSize
+  ( newModel
+      |> Env.autoSize env
   , Cmd.batch
       [ setViewport newModel
       , U.command <| Cancel Nothing

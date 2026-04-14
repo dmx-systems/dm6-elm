@@ -2,7 +2,7 @@ module TopicMap.View exposing (view)
 
 import Box
 import Config as C
-import ExtensionDef exposing (ExtManager)
+import Env exposing (ExtManager)
 import Feature.Icon as Icon
 import Feature.MouseDef exposing (DragState(..), DragMode(..))
 import Feature.Mouse as Mouse

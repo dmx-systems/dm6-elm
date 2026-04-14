@@ -3,12 +3,11 @@ port module Feature.Text exposing (viewInput, viewTextarea, enterEdit, leaveEdit
 
 import Box
 import Config as C
-import ExtensionDef exposing (Env)
+import Env exposing (Env)
 import Feature.TextDef as TextDef exposing (EditState(..))
 import Item
 import Model exposing (Model, Msg(..))
 import ModelBase exposing (..)
-import Size
 import Storage as S
 import Task
 import Undo exposing (UndoModel)
@@ -91,7 +90,7 @@ update msg ({model, undoModel, ext} as env) =
     TextDef.GotTextSize topicId sizeField size ->
       model
         |> Item.setTopicSize topicId sizeField size
-        |> Size.auto ext.autoSize
+        |> Env.autoSize env
         |> S.store
         |> Undo.swap undoModel
     TextDef.LeaveEdit -> leaveEdit env |> Undo.swap undoModel
@@ -100,19 +99,19 @@ update msg ({model, undoModel, ext} as env) =
 
 
 enterEdit : Id -> BoxPath -> Env -> (Model, Cmd Msg)
-enterEdit topicId boxPath {model, ext} =
+enterEdit topicId boxPath ({model} as env) =
   let
     newModel =
       model
         |> setEditState (Edit topicId boxPath)
         |> switchTopicDisplay topicId (Box.firstId boxPath)
-        |> Size.auto ext.autoSize
+        |> Env.autoSize env
   in
   (newModel, focus newModel)
 
 
 leaveEdit : Env -> (Model, Cmd Msg)
-leaveEdit {model, ext} =
+leaveEdit ({model} as env) =
   case model.text.edit of
     Edit topicId boxPath ->
       let
@@ -120,7 +119,7 @@ leaveEdit {model, ext} =
       in
       ( model
           |> setEditState NoEdit
-          |> Size.auto ext.autoSize
+          |> Env.autoSize env
       , measureElement elemId topicId View
       )
     NoEdit -> (model, Cmd.none)

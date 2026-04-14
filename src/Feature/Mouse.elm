@@ -3,12 +3,11 @@ module Feature.Mouse exposing (topicDownHandler, assocClickHandler, dragHandler,
 
 import Box
 import Config as C
-import ExtensionDef exposing (Env)
+import Env exposing (Env)
 import Feature.MouseDef as MouseDef exposing (DragState(..), DragMode(..))
 import Item
 import Model exposing (Model, Msg(..))
 import ModelBase exposing (..)
-import Size
 import TopicMap.TopicMap as TM
 import Undo exposing (UndoModel)
 import Utils as U
@@ -123,8 +122,8 @@ timeArrived time ({present} as undoModel) =
 mouseMove : Point -> Env -> (Model, Cmd Msg)
 mouseMove pos env =
   let
-    newEnv = { env | model = enterLeave pos env}
-    model = newEnv.model
+    model = enterLeave pos env
+    newEnv = Env.withModel env model
   in
   case model.mouse.dragState of
     DragEngaged time id boxPath pos_ ->
@@ -138,7 +137,7 @@ mouseMove pos env =
 
 
 performDrag : Point -> Env -> Model
-performDrag pos {model, ext} =
+performDrag pos ({model} as env) =
   case model.mouse.dragState of
     Drag dragMode id boxPath origPos lastPos target ->
       let
@@ -156,7 +155,7 @@ performDrag pos {model, ext} =
       in
       -- update lastPos
       setDragState (Drag dragMode id boxPath origPos pos target) newModel
-        |> Size.auto ext.autoSize
+        |> Env.autoSize env
     _ -> U.logError "performDrag"
       ("Received \"Move\" when dragState is " ++ U.toString model.mouse.dragState) model
 

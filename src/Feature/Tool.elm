@@ -3,7 +3,7 @@ module Feature.Tool exposing (viewGlobalTools, viewMapTools, viewToolbar, viewTo
 
 import Box
 import Config as C
-import ExtensionDef exposing (Env, ExtManager)
+import Env exposing (Env, ExtManager)
 import Feature.Icon as Icon
 import Feature.Mouse as Mouse
 import Feature.Nav as Nav
@@ -14,7 +14,6 @@ import Feature.ToolDef as ToolDef exposing (LineStyle(..))
 import Item
 import Model exposing (Model, Msg(..))
 import ModelBase exposing (..)
-import Size
 import Storage as S
 import TopicMap.TopicMap as TM
 import TopicMap.TopicMapDef exposing (ItemProps(..), TopicProps)
@@ -482,7 +481,7 @@ createTopic : Env -> (Model, Cmd Msg)
 createTopic ({model} as env) =
   let
     (newModel, topicId) = Item.createTopic "" C.initTopicIcon model
-    newEnv = { env | model = newModel }
+    newEnv = Env.withModel env newModel
   in
   landTopic topicId (TopicD LabelOnly) newEnv
 
@@ -494,7 +493,7 @@ createBox ({model} as env) =
   in
   newModel
     |> TM.create boxId
-    |> (\model_ -> { env | model = model_ })
+    |> Env.withModel env
     |> landTopic boxId (BoxD BlackBox)
 
 
@@ -511,7 +510,7 @@ landTopic topicId displayMode ({model} as env) =
     |> Box.addItem (ItemProps topicId displayMode) boxId
     |> TM.addItem topicId props boxId
     |> Sel.select topicId boxPath
-    |> (\model_ -> { env | model = model_ })
+    |> Env.withModel env
     |> Text.enterEdit topicId boxPath
 
 
@@ -530,36 +529,36 @@ edit ({model} as env) =
 
 
 delete : Env -> Model
-delete {model, ext} =
+delete ({model} as env) =
   model.selection.items
     |> List.map Tuple.first
     |> List.foldr Box.deleteItem model
     |> Sel.clear
-    |> Size.auto ext.autoSize
+    |> Env.autoSize env
 
 
 remove : Env -> Model
-remove {model, ext} =
+remove ({model} as env) =
   model.selection.items
     |> List.foldr
       (\(itemId, boxPath) modelAcc -> TM.removeItem itemId (Box.firstId boxPath) modelAcc)
       model
     |> Sel.clear
-    |> Size.auto ext.autoSize
+    |> Env.autoSize env
 
 
 setRenderer : Renderer -> Env -> Model
-setRenderer renderer {model, ext} =
+setRenderer renderer ({model} as env) =
   case Sel.single model of
     Just (topicId, _) ->
       model
         |> Box.setRenderer topicId renderer
-        |> Size.auto ext.autoSize
+        |> Env.autoSize env
     Nothing -> U.logError "setRenderer" "called when there is no single selection" model
 
 
 toggleDisplay : Id -> BoxId -> Env -> Model
-toggleDisplay topicId boxId {model, ext} =
+toggleDisplay topicId boxId ({model} as env) =
   let
     (newModel, newDisplayMode) =
       case Box.displayMode topicId boxId model of
@@ -573,5 +572,5 @@ toggleDisplay topicId boxId {model, ext} =
     (newModel_, Just displayMode) ->
       newModel_
         |> Box.setDisplayMode topicId boxId displayMode
-        |> Size.auto ext.autoSize
+        |> Env.autoSize env
     _ -> model
