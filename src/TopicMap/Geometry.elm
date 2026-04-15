@@ -54,22 +54,18 @@ testChildren pos items boxPath excludeTopicId ext model =
         maybeItem found = if found then Just (item.id, boxPath) else Nothing
         --
         boxId = Box.firstId boxPath
-        isHeaderHit = isTopicHeaderHit pos item.id boxId
+        isHeaderHit = isTopicHeaderHit pos item.id boxId >> maybeItem
         relPos = relPos_ pos item.id boxPath
         maybeTarget =
-          if Item.isBox item.id model then
-            case Box.displayMode item.id boxId model of
-              Just (BoxD BlackBox) ->
-                isHeaderHit model |> maybeItem
-              Just (BoxD WhiteBox) ->
-                case ext.hitTest item.id boxPath (relPos model) excludeTopicId model of
-                  Just target -> Just target
-                  Nothing ->
-                    isHeaderHit model |> maybeItem
-              _ -> U.logError "TopicMap.Geometry.testChildren" "Unexpected box display mode"
-                Nothing
-          else
-            isTopicHit item.id boxPath pos model |> maybeItem
+          case (Item.isBox item.id model, Box.expansionOf item.id boxId model) of
+            (True, Just Collapsed) -> isHeaderHit model
+            (True, Just Expanded) ->
+              case ext.hitTest item.id boxPath (relPos model) excludeTopicId model of
+                Just target -> Just target
+                Nothing -> isHeaderHit model
+            (False, Just _) -> isTopicHit item.id boxPath pos model |> maybeItem
+            (_, Nothing) -> U.fail "TopicMap.Geometry.testChildren"
+              { id = item.id, boxId = boxId} Nothing
         -- recursion
         testTailItems = testChildren pos tailItems boxPath excludeTopicId ext
       in
@@ -86,17 +82,15 @@ testChildren pos items boxPath excludeTopicId ext model =
 isTopicHit : Id -> BoxPath -> Point -> Model -> Bool
 isTopicHit itemId boxPath pos model =
   let
-    parentBoxId = Box.firstId boxPath -- Note: a topic is never displayed fullscreen
-    isHeaderHit = isTopicHeaderHit pos itemId parentBoxId
-    isDetailHit = isTopicDetailHit pos itemId parentBoxId
+    boxId = Box.firstId boxPath -- Note: a topic is never displayed fullscreen
+    isHeaderHit = isTopicHeaderHit pos itemId boxId
+    isDetailHit = isTopicDetailHit pos itemId boxId
   in
-  -- test depends on topic's display mode
-  case Box.displayMode itemId parentBoxId model of
-    Just (TopicD LabelOnly) ->
-      isHeaderHit model
-    Just (TopicD Detail) ->
-      isHeaderHit model || isDetailHit model
-    _ -> U.logError "TopicMap.Geometry.isTopicHit" "Unexpected topic display mode" False
+  -- test depends on topic's expansion
+  case Box.expansionOf itemId boxId model of
+    Just Collapsed -> isHeaderHit model
+    Just Expanded -> isHeaderHit model || isDetailHit model
+    Nothing -> U.fail "TopicMap.Geometry.isTopicHit" { itemId = itemId, boxId = boxId} False
 
 
 {-| Transforms the given screen position to a map-relative position according to the given map.

@@ -60,12 +60,12 @@ accumulateItem mapItem boxPath rectAcc ext model =
 calcItemRect : MapItem -> BoxPath -> ExtManager -> Model -> (Rectangle, Model)
 calcItemRect mapItem boxPath ext model =
   case mapItem.props of
-    TopicP {pos, displayMode} ->
-      case displayMode of
-        TopicD LabelOnly -> (topicExtent pos, model)
-        TopicD Detail -> (detailTopicExtent mapItem.id boxPath pos model, model)
-        BoxD BlackBox -> (topicExtent pos, model)
-        BoxD WhiteBox ->
+    TopicP {pos, expansion} ->
+      case (Item.isBox mapItem.id model, expansion) of
+        (False, Collapsed) -> (topicExtent pos, model)
+        (False, Expanded) -> (detailTopicExtent mapItem.id boxPath pos model, model)
+        (True, Collapsed) -> (topicExtent pos, model)
+        (True, Expanded) ->
           let
             (rect_, model_) = ext.autoSize (mapItem.id :: boxPath) model -- recursion
           in

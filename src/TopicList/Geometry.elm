@@ -26,7 +26,7 @@ hitTest boxId boxPath pos excludeTopicId ext model =
 
 isListHovered : Point -> Bool
 isListHovered pos =
-  -- TODO: item pos, item size, display mode, topic header
+  -- TODO: item pos, item size, expansion, topic header
   pos.x > 0 &&
   pos.x < 240 &&
   pos.y > 0 &&

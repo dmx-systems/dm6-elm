@@ -1,9 +1,8 @@
 module ModelBase exposing (Id, Item, Items, ItemInfo(..), AssocIds, TopicInfo, Icon, TextSize,
   Size, SizeField(..), Point, Rectangle, AssocInfo, AssocType(..), ItemSet, ItemSets, SetItem,
-  Box, Boxes, BoxId, BoxPath, Target, rootBoxId, ItemProps, DisplayMode(..), TopicDisplay(..),
-  BoxDisplay(..), ImageId, Attrs, PointerType, Extensions, ExtName, ExtLabel, Renderer,
-  encodeItem, encodeItemSet, encodeBox, encodeDisplayMode, itemDecoder, itemSetDecoder,
-  boxDecoder, toDictDecoder)
+  Box, Boxes, BoxId, BoxPath, Target, rootBoxId, ItemProps, Expansion(..), ImageId, Attrs,
+  PointerType, Extensions, ExtName, ExtLabel, Renderer, encodeItem, encodeItemSet, encodeBox,
+  encodeExpansion, itemDecoder, itemSetDecoder, boxDecoder, expansionDecoder, toDictDecoder)
 
 import Dict exposing (Dict)
 import Html exposing (Attribute)
@@ -118,7 +117,7 @@ type alias Box =
 -- TODO: differentiate topic/assoc?
 type alias ItemProps =
   { id : Id
-  , displayMode : DisplayMode -- serialized as "display", TODO: rename to "display"?
+  , expansion : Expansion
   }
 
 
@@ -144,22 +143,11 @@ type alias SetItem =
   }
 
 
--- Display Mode
+-- View Props
 
--- TODO: unify TopicDisplay/BoxDisplay -> Expanded/Minimized
-type DisplayMode
-  = TopicD TopicDisplay
-  | BoxD BoxDisplay
-
-
-type TopicDisplay
-  = LabelOnly
-  | Detail
-
-
-type BoxDisplay
-  = BlackBox
-  | WhiteBox
+type Expansion
+  = Collapsed
+  | Expanded
 
 
 -- Extensions
@@ -258,18 +246,16 @@ encodeItemProps : ItemProps -> E.Value
 encodeItemProps itemProps =
   E.object
     [ ("id", E.int itemProps.id)
-    , ("display", encodeDisplayMode itemProps.displayMode)
+    , ("expansion", encodeExpansion itemProps.expansion)
     ]
 
 
-encodeDisplayMode : DisplayMode -> E.Value
-encodeDisplayMode displayMode =
+encodeExpansion : Expansion -> E.Value
+encodeExpansion expansion =
   E.string <|
-    case displayMode of
-      TopicD LabelOnly -> "LabelOnly"
-      TopicD Detail -> "Detail"
-      BoxD BlackBox -> "BlackBox"
-      BoxD WhiteBox -> "WhiteBox"
+    case expansion of
+      Collapsed -> "Collapsed"
+      Expanded -> "Expanded"
 
 
 -- Decode
@@ -355,18 +341,15 @@ boxItemDecoder : D.Decoder ItemProps
 boxItemDecoder =
   D.map2 ItemProps
     (D.field "id" D.int)
-    (D.field "display" D.string |> D.andThen displayModeDecoder)
+    (D.field "expansion" D.string |> D.andThen expansionDecoder)
 
 
--- TODO: remove from TopicMapDef
-displayModeDecoder : String -> D.Decoder DisplayMode
-displayModeDecoder str =
+expansionDecoder : String -> D.Decoder Expansion
+expansionDecoder str =
   case str of
-    "LabelOnly" -> D.succeed (TopicD LabelOnly)
-    "Detail" -> D.succeed (TopicD Detail)
-    "BlackBox" -> D.succeed (BoxD BlackBox)
-    "WhiteBox" -> D.succeed (BoxD WhiteBox)
-    _ -> D.fail ("\"" ++ str ++ "\" is an invalid DisplayMode")
+    "Collapsed" -> D.succeed Collapsed
+    "Expanded" -> D.succeed Expanded
+    _ -> D.fail ("\"" ++ str ++ "\" is an invalid Expansion")
 
 
 toDictDecoder : D.Decoder (IdRecord r) -> D.Decoder (Dict Id (IdRecord r))

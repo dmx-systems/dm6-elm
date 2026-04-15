@@ -3,6 +3,7 @@ module Feature.Sel exposing (select, clear, isSelected, isSelectedPath, single,
 
 import Box
 import Feature.SelDef exposing (Selection)
+import Item
 import Model exposing (Model)
 import ModelBase exposing (..)
 import Utils as U
@@ -64,8 +65,8 @@ landingBoxPath model =
       let
         boxId = Box.firstId boxPath
       in
-      case Box.displayMode id boxId model of
-        Just (BoxD WhiteBox) -> id :: boxPath
-        Just _ -> [ model.boxId ]
-        _ -> U.fail "Sel.landingBoxPath" { id = id, boxId = boxId} [ model.boxId ]
+      case (Item.isBox id model, Box.expansionOf id boxId model) of
+        (True, Just Expanded) -> id :: boxPath
+        (_, Just _) -> [ model.boxId ]
+        (_, Nothing) -> U.fail "Sel.landingBoxPath" { id = id, boxId = boxId} [ model.boxId ]
     Nothing -> [ model.boxId ]

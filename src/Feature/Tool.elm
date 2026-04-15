@@ -357,15 +357,13 @@ viewCaret : Id -> BoxId -> Model -> Html Msg
 viewCaret topicId boxId model =
   let
     icon =
-      case Box.displayMode topicId boxId model of
-        Just (TopicD LabelOnly) -> "chevron-right"
-        Just (TopicD Detail) -> "chevron-down"
-        Just (BoxD BlackBox) -> "chevron-right"
-        Just (BoxD WhiteBox) -> "chevron-down"
+      case Box.expansionOf topicId boxId model of
+        Just Collapsed -> "chevron-right"
+        Just Expanded -> "chevron-down"
         Nothing -> "??"
   in
   button
-    ( [ onClick <| Tool <| ToolDef.ToggleDisplay topicId boxId
+    ( [ onClick <| Tool <| ToolDef.ToggleExpansion topicId boxId
       , U.onMouseDownStop NoOp -- prevent cancel UI
       ]
       ++ caretStyle
@@ -445,7 +443,7 @@ update msg ({model, undoModel} as env) =
     ToolDef.Fullscreen boxId -> (undoModel, Nav.pushUrl boxId)
     ToolDef.RendererSelected renderer -> setRenderer renderer env |> S.store
       |> Undo.swap undoModel
-    ToolDef.ToggleDisplay topicId boxId -> toggleDisplay topicId boxId env |> S.store
+    ToolDef.ToggleExpansion topicId boxId -> toggleExpansion topicId boxId env |> S.store
       |> Undo.swap undoModel
     -- Text Tools
     ToolDef.Image topicId -> Text.openImageFilePicker topicId model |> S.storeWith
@@ -483,7 +481,7 @@ createTopic ({model} as env) =
     (newModel, topicId) = Item.createTopic "" C.initTopicIcon model
     newEnv = Env.withModel env newModel
   in
-  landTopic topicId (TopicD LabelOnly) newEnv
+  landTopic topicId Collapsed newEnv
 
 
 createBox : Env -> (Model, Cmd Msg)
@@ -494,20 +492,20 @@ createBox ({model} as env) =
   newModel
     |> TM.create boxId
     |> Env.withModel env
-    |> landTopic boxId (BoxD BlackBox)
+    |> landTopic boxId Collapsed
 
 
-landTopic : Id -> DisplayMode -> Env -> (Model, Cmd Msg)
-landTopic topicId displayMode ({model} as env) =
+landTopic : Id -> Expansion -> Env -> (Model, Cmd Msg)
+landTopic topicId expansion ({model} as env) =
   let
     boxPath = Sel.landingBoxPath model
     boxId = Box.firstId boxPath
     props = TopicP <| TopicProps
       ( TM.initTopicPos boxId model )
-      displayMode
+      expansion
   in
   model
-    |> Box.addItem (ItemProps topicId displayMode) boxId
+    |> Box.addItem (ItemProps topicId expansion) boxId
     |> TM.addItem topicId props boxId
     |> Sel.select topicId boxPath
     |> Env.withModel env
@@ -557,20 +555,13 @@ setRenderer renderer ({model} as env) =
     Nothing -> U.logError "setRenderer" "called when there is no single selection" model
 
 
-toggleDisplay : Id -> BoxId -> Env -> Model
-toggleDisplay topicId boxId ({model} as env) =
-  let
-    (newModel, newDisplayMode) =
-      case Box.displayMode topicId boxId model of
-        Just (TopicD LabelOnly) -> (model, Just <| TopicD Detail)
-        Just (TopicD Detail) -> (model, Just <| TopicD LabelOnly)
-        Just (BoxD BlackBox) -> (model, Just <| BoxD WhiteBox)
-        Just (BoxD WhiteBox) -> (model, Just <| BoxD BlackBox)
-        Nothing -> (model, Nothing)
-  in
-  case (newModel, newDisplayMode) of
-    (newModel_, Just displayMode) ->
-      newModel_
-        |> Box.setDisplayMode topicId boxId displayMode
-        |> Env.autoSize env
-    _ -> model
+toggleExpansion : Id -> BoxId -> Env -> Model
+toggleExpansion topicId boxId ({model} as env) =
+  model
+    |> Box.updateExpansion topicId boxId  
+        (\expansion ->
+          case expansion of
+            Collapsed -> Expanded
+            Expanded -> Collapsed
+        )
+    |> Env.autoSize env

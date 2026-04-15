@@ -1,5 +1,5 @@
-module Box exposing (hasItem, hasDeepItem, topics, create, addItem, displayMode, setDisplayMode,
-  updateDisplayMode, rendererOf, setRenderer, deleteItem, mapTitle, isFullscreen, elemId,
+module Box exposing (hasItem, hasDeepItem, topics, create, addItem, expansionOf, setExpansion,
+  updateExpansion, rendererOf, setRenderer, deleteItem, mapTitle, isFullscreen, elemId,
   firstId, fromPath)
 
 import Item
@@ -144,24 +144,24 @@ addToItemProps props boxId ({boxes} as model) =
   }
 
 
--- Display Mode
+-- View Props
 
-displayMode : Id -> BoxId -> Model -> Maybe DisplayMode
-displayMode topicId boxId model =
+expansionOf : Id -> BoxId -> Model -> Maybe Expansion
+expansionOf topicId boxId model =
   case byId boxId model |> Maybe.andThen (\box -> itemPropsOf topicId box model) of
-    Just props -> Just props.displayMode
-    Nothing -> U.fail "Box.displayMode" {topicId = topicId, boxId = boxId} Nothing
+    Just props -> Just props.expansion
+    Nothing -> U.fail "Box.expansionOf" {topicId = topicId, boxId = boxId} Nothing
 
 
 {-| Logs an error if box does not exist, or if topic is not in box -}
-setDisplayMode : Id -> BoxId -> DisplayMode -> Model -> Model
-setDisplayMode topicId boxId display model =
+setExpansion : Id -> BoxId -> Expansion -> Model -> Model
+setExpansion topicId boxId expansion model =
   model
-    |> updateDisplayMode topicId boxId (\_ -> display)
+    |> updateExpansion topicId boxId (\_ -> expansion)
 
 
-updateDisplayMode : Id -> BoxId -> (DisplayMode -> DisplayMode) -> Model -> Model
-updateDisplayMode topicId boxId transform model =
+updateExpansion : Id -> BoxId -> (Expansion -> Expansion) -> Model -> Model
+updateExpansion topicId boxId transform model =
   { model | boxes = model.boxes |> Dict.update boxId
     (\maybeBox ->
       case maybeBox of
@@ -170,7 +170,7 @@ updateDisplayMode topicId boxId transform model =
             (\maybeItem ->
               case maybeItem of
                 Just item -> Just
-                  { item | displayMode = transform item.displayMode }
+                  { item | expansion = transform item.expansion }
                 Nothing -> Nothing
             )
           }

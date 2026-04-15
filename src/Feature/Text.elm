@@ -128,11 +128,12 @@ leaveEdit ({model} as env) =
 switchTopicDisplay : Id -> BoxId -> Model -> Model
 switchTopicDisplay topicId boxId model =
   model
-    |> Box.updateDisplayMode topicId boxId
-      (\displayMode ->
-        case displayMode of
-          TopicD _ -> TopicD Detail
-          _ -> displayMode
+    |> Box.updateExpansion topicId boxId
+      (\expansion ->
+        if Item.isBox topicId model then
+          expansion
+        else
+          Expanded
       )
 
 

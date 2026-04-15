@@ -239,11 +239,11 @@ viewTopic topic props boxPath ext model =
   let
     boxId = Box.firstId boxPath
     render =
-      case props.displayMode of
-        TopicD LabelOnly -> labelTopic topic props boxPath
-        TopicD Detail -> detailTopic topic props boxPath
-        BoxD BlackBox -> blackBoxTopic topic props boxPath
-        BoxD WhiteBox -> whiteBoxTopic topic props boxPath ext
+      case (Item.isBox topic.id model, props.expansion) of
+        (False, Collapsed) -> labelTopic topic props boxPath
+        (False, Expanded) -> detailTopic topic props boxPath
+        (True, Collapsed) -> blackBoxTopic topic props boxPath
+        (True, Expanded) -> whiteBoxTopic topic props boxPath ext
     (style, children) = render model
   in
   div
@@ -321,7 +321,7 @@ viewLabelTopic topic props boxPath model =
             [ text <| Item.topicLabel topic ]
   in
   [ div
-    (iconBoxStyle props)
+    (iconBoxStyle topic.id props model)
     [ Icon.viewTopicIcon topic.id C.topicIconSize topicIconStyle model ]
   , textElem
   ]
@@ -346,7 +346,7 @@ detailTopic topic props boxPath model =
   in
   ( detailTopicStyle props
   , [ div
-      ( iconBoxStyle props
+      ( iconBoxStyle topic.id props model
         ++ detailTopicIconBoxStyle
         ++ selectionStyle topic.id boxPath model
       )
@@ -402,13 +402,14 @@ textEditorStyle topicId model =
   ]
 
 
-iconBoxStyle : TopicProps -> Attrs Msg
-iconBoxStyle props =
+iconBoxStyle : Id -> TopicProps -> Model -> Attrs Msg
+iconBoxStyle topicId props model =
   let
     r1 = fromInt C.topicRadius ++ "px"
-    r4 = case props.displayMode of
-      BoxD WhiteBox -> "0"
-      _ -> r1
+    r4 =
+      case (Item.isBox topicId model, props.expansion) of
+        (True, Expanded) -> "0"
+        _ -> r1
   in
   [ style "flex" "none"
   , style "width" <| fromInt C.topicSize.h ++ "px"
@@ -461,9 +462,10 @@ topicFlexboxStyle : TopicInfo -> TopicProps -> BoxPath -> Model -> Attrs Msg
 topicFlexboxStyle topic props boxPath model =
   let
     r12 = fromInt C.topicRadius ++ "px"
-    r34 = case props.displayMode of
-      BoxD WhiteBox -> "0"
-      _ -> r12
+    r34 =
+      case (Item.isBox topic.id model, props.expansion) of
+        (True, Expanded) -> "0"
+        _ -> r12
   in
   [ style "display" "flex"
   , style "align-items" "center"
@@ -537,12 +539,16 @@ viewItemCount : Id -> TopicProps -> Model -> List (Html Msg)
 viewItemCount topicId props model =
   let
     itemCount =
-      case props.displayMode of
-        TopicD _ -> 0
-        BoxD _ ->
-          case TM.byId topicId model of
-            Just map -> map.items |> Dict.values |> List.filter TM.isVisible |> List.length
-            Nothing -> 0
+      if Item.isBox topicId model then
+        case TM.byId topicId model of
+          Just map ->
+            map.items
+              |> Dict.values
+              |> List.filter TM.isVisible
+              |> List.length
+          Nothing -> 0
+      else
+        0
   in
   [ div
       itemCountStyle

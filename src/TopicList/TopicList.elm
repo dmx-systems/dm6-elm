@@ -1,4 +1,4 @@
-module TopicList.TopicList exposing (..)
+module TopicList.TopicList exposing (view)
 
 import Box
 import Config as C

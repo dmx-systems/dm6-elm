@@ -45,7 +45,7 @@ type Msg
   | Remove
   | Fullscreen BoxId -- box only
   | RendererSelected Renderer -- box only
-  | ToggleDisplay Id BoxId
+  | ToggleExpansion Id BoxId
   -- Text Tools
   | Image Id
   | LeaveEdit

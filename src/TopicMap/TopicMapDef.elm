@@ -46,7 +46,7 @@ type ItemProps
 
 type alias TopicProps =
   { pos : Point
-  , displayMode : DisplayMode -- transient render state? ### TODO: drop?
+  , expansion : Expansion -- transient render state? ### TODO: drop?
   }
 
 
@@ -101,7 +101,7 @@ encodeMapItem item =
                 , ("y", E.int topicProps.pos.y)
                 ]
               )
-            , ("display", encodeDisplayMode topicProps.displayMode)
+            , ("expansion", encodeExpansion topicProps.expansion)
             ]
           )
         AssocP assosProps ->
@@ -154,7 +154,7 @@ mapItemDecoder =
           (D.field "x" D.int)
           (D.field "y" D.int)
         )
-        (D.field "display" D.string |> D.andThen displayModeDecoder)
+        (D.field "expansion" D.string |> D.andThen expansionDecoder)
       , D.field "assocProps" <| D.succeed (AssocP AssocProps)
       ]
     )
@@ -166,13 +166,3 @@ visibilityDecoder str =
     "Visible" -> D.succeed Visible
     "Removed" -> D.succeed Removed
     _ -> D.fail <| "\"" ++ str ++ "\" is an invalid Visibility"
-
-
-displayModeDecoder : String -> D.Decoder DisplayMode
-displayModeDecoder str =
-  case str of
-    "LabelOnly" -> D.succeed (TopicD LabelOnly)
-    "Detail" -> D.succeed (TopicD Detail)
-    "BlackBox" -> D.succeed (BoxD BlackBox)
-    "WhiteBox" -> D.succeed (BoxD WhiteBox)
-    _ -> D.fail <| "\"" ++ str ++ "\" is an invalid DisplayMode"

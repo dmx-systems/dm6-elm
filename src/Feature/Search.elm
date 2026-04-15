@@ -376,16 +376,16 @@ revealItem itemId boxId model =
       props = TM.initItemProps itemId boxId model
     in
     model
-      |> Box.addItem (ItemProps itemId (displayModeFrom props)) boxId
+      |> Box.addItem (ItemProps itemId (expansionFrom props)) boxId
       |> TM.addItem itemId props boxId
 
 
 -- ### TODO: model Box ItemProps for topic/assoc
-displayModeFrom : ItemProps -> DisplayMode
-displayModeFrom props =
+expansionFrom : ItemProps -> Expansion
+expansionFrom props =
   case props of
-    TopicP {displayMode} -> displayMode
-    AssocP _ -> TopicD LabelOnly  -- ### FIXME
+    TopicP {expansion} -> expansion
+    AssocP _ -> Collapsed
 
 
 -- "searchTopics" instead "search" avoids shadowing

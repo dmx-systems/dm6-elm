@@ -24,7 +24,7 @@ topicsToRender map model =
         { mapItem
         | props =
           case mapItem.props of
-            TopicP props -> TopicP <| effectiveDisplayMode mapItem.id props map.id model
+            TopicP props -> TopicP <| effectiveExpansion mapItem.id props map.id model
             AssocP _ -> U.logError "topicsToRender" "Found assoc in a topic list" mapItem.props
         }
       )
@@ -52,17 +52,15 @@ shouldItemRender boxId model item =
   TM.isVisible item || isLimboItem item boxId model
 
 
-effectiveDisplayMode : Id -> TopicProps -> BoxId -> Model -> TopicProps
-effectiveDisplayMode topicId props boxId model =
-  case Box.displayMode topicId boxId model of
-    Just displayMode ->
-      { props | displayMode =
+effectiveExpansion : Id -> TopicProps -> BoxId -> Model -> TopicProps
+effectiveExpansion topicId props boxId model =
+  case Box.expansionOf topicId boxId model of
+    Just expansion ->
+      { props | expansion =
         if isLimboTopic topicId boxId model then
-          case Item.isBox topicId model of
-            True -> BoxD WhiteBox
-            False -> TopicD Detail
+          Expanded
         else
-          displayMode
+          expansion
       }
     Nothing -> props
 

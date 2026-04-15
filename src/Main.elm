@@ -78,20 +78,20 @@ initModel flags =
   case flags |> D.decodeValue (D.null True) of
     Ok True ->
       let
-        _ = U.info "init" "localStorage: empty"
+        _ = U.info "Main.initModel" "localStorage: empty"
       in
       Model.init
     _ ->
       case flags |> D.decodeValue Model.decoder of
         Ok model ->
           let
-            _ = U.info "init" ("localStorage: " ++ bytes ++ " bytes")
+            _ = U.info "Main.initModel" ("localStorage: " ++ bytes ++ " bytes")
             bytes = model |> U.toString |> String.length |> fromInt
           in
           model
         Err e ->
           let
-            _ = U.logError "init" "localStorage" e
+            _ = U.logError "Main.initModel" "localStorage" e
           in
           Model.init
 
@@ -271,7 +271,7 @@ update msg ({present} as undoModel) =
     _ =
       case msg of
         Mouse (MouseDef.Move _) -> msg
-        _ -> U.info "update" msg
+        _ -> U.info "Main.update" msg
   in
   case msg of
     -- gestures detected by Mouse module
@@ -306,20 +306,20 @@ createAssocAndAddToBox : AssocType -> Id -> Id -> BoxId -> Model -> Model
 createAssocAndAddToBox assocType player1 player2 boxId model =
   let
     (newModel, assocId) = Item.createAssoc assocType player1 player2 model
-    displayMode = TopicD LabelOnly -- ### TODO: generalize topic/assoc display mode
+    expansion = Collapsed
     props = AssocP AssocProps
   in
   newModel
-    |> Box.addItem (ItemProps assocId displayMode) boxId
+    |> Box.addItem (ItemProps assocId expansion) boxId
     |> TM.addItem assocId props boxId -- TODO: don't operate on "topicMap" directly
 
 
 moveTopicToBox : Id -> BoxId -> Point -> BoxId -> BoxPath -> Point -> Env -> Model
 moveTopicToBox topicId boxId origPos targetBoxId targetPath pos ({model} as env) =
-  case (TM.topicProps topicId boxId model, Box.displayMode topicId boxId model) of
-    (Just topicProps, Just displayMode) ->
+  case (TM.topicProps topicId boxId model, Box.expansionOf topicId boxId model) of
+    (Just topicProps, Just expansion) ->
       model
-        |> Box.addItem (ItemProps topicId displayMode) targetBoxId
+        |> Box.addItem (ItemProps topicId expansion) targetBoxId
         |> TM.removeItem topicId boxId
         |> TM.setTopicPos topicId boxId origPos
         |> TM.addItem topicId (TopicP { topicProps | pos = pos }) targetBoxId

@@ -136,21 +136,16 @@ initItemProps itemId mapId model =
 initTopicProps : Id -> BoxId -> Model -> TopicProps
 initTopicProps topicId mapId model =
   TopicProps
-    ( initTopicPos mapId model )
-    ( case Item.isBox topicId model of
-        True -> BoxD BlackBox
-        False -> TopicD LabelOnly
-    )
+    (initTopicPos mapId model)
+    Collapsed
 
 
 initLimboTopicProps : Id -> BoxId -> Model -> TopicProps
 initLimboTopicProps topicId mapId model =
   TopicProps
-    ( initTopicPos mapId model )
-    ( case Item.isBox topicId model of
-        True -> BoxD WhiteBox
-        False -> TopicD Detail
-    )
+    (initTopicPos mapId model)
+    Expanded
+
 
 {-| Logs an error if box does not exist. -}
 initTopicPos : BoxId -> Model -> Point
