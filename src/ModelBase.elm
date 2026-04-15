@@ -1,8 +1,8 @@
-module ModelBase exposing (Id, Item, Items, ItemInfo(..), AssocIds, TopicInfo, Icon, TextSize,
-  Size, SizeField(..), Point, Rectangle, AssocInfo, AssocType(..), ItemSet, ItemSets, SetItem,
-  Box, Boxes, BoxId, BoxPath, Target, rootBoxId, ItemProps, Expansion(..), ImageId, Attrs,
-  PointerType, Extensions, ExtName, ExtLabel, Renderer, encodeItem, encodeItemSet, encodeBox,
-  encodeExpansion, itemDecoder, itemSetDecoder, boxDecoder, expansionDecoder, toDictDecoder)
+module ModelBase exposing (Id, Item, ItemInfo(..), AssocIds, TopicInfo, Icon, TextSize, Size,
+  SizeField(..), Point, Rectangle, AssocInfo, AssocType(..), ItemSet, SetItem, Box, BoxId,
+  BoxPath, Target, rootBoxId, BoxItem, Expansion(..), ImageId, Attrs, PointerType, Extensions,
+  ExtName, ExtLabel, Renderer, encodeItem, encodeItemSet, encodeBox, encodeExpansion,
+  itemDecoder, itemSetDecoder, boxDecoder, expansionDecoder, toDictDecoder)
 
 import Dict exposing (Dict)
 import Html exposing (Attribute)
@@ -20,9 +20,6 @@ type alias IdRecord r =
 
 
 -- Item
-
-type alias Items = Dict Id Item
-
 
 type alias Item =
   { id : Id
@@ -103,21 +100,11 @@ type alias BoxPath = List BoxId
 type alias Target = (Id, BoxPath)
 
 
-type alias Boxes = Dict BoxId Box
-
-
 type alias Box =
   { id : BoxId
   , itemSetId : Id
-  , itemProps : Dict Id ItemProps
+  , items : Dict Id BoxItem
   , renderer : Renderer
-  }
-
-
--- TODO: differentiate topic/assoc?
-type alias ItemProps =
-  { id : Id
-  , expansion : Expansion
   }
 
 
@@ -125,10 +112,19 @@ rootBoxId : BoxId
 rootBoxId = 0
 
 
+-- TODO: differentiate topic/assoc?
+type alias BoxItem =
+  { id : Id
+  , expansion : Expansion
+  }
+
+
+type Expansion
+  = Collapsed
+  | Expanded
+
+
 -- Item Set
-
-type alias ItemSets = Dict Id ItemSet
-
 
 type alias ItemSet =
   { id : Id -- set ID
@@ -138,16 +134,10 @@ type alias ItemSet =
 
 type alias SetItem =
   { id : Id -- item ID
+  -- TODO: move "boxAssocId" to BoxItem. It's per-box (in contrast to "dateAdded")
   , boxAssocId : Id -- the Hierarchy association which connects the item with the box
   -- TODO: add "dateAdded"
   }
-
-
--- View Props
-
-type Expansion
-  = Collapsed
-  | Expanded
 
 
 -- Extensions
@@ -237,16 +227,16 @@ encodeBox box =
   E.object
     [ ("id", E.int box.id)
     , ("itemSetId", E.int box.itemSetId)
-    , ("itemProps", E.list encodeItemProps <| Dict.values box.itemProps)
+    , ("items", E.list encodeBoxItem <| Dict.values box.items)
     , ("renderer", E.string box.renderer)
     ]
 
 
-encodeItemProps : ItemProps -> E.Value
-encodeItemProps itemProps =
+encodeBoxItem : BoxItem -> E.Value
+encodeBoxItem item =
   E.object
-    [ ("id", E.int itemProps.id)
-    , ("expansion", encodeExpansion itemProps.expansion)
+    [ ("id", E.int item.id)
+    , ("expansion", encodeExpansion item.expansion)
     ]
 
 
@@ -333,13 +323,13 @@ boxDecoder =
   D.map4 Box
     (D.field "id" D.int)
     (D.field "itemSetId" D.int)
-    (D.field "itemProps" (boxItemDecoder |> toDictDecoder))
+    (D.field "items" (boxItemDecoder |> toDictDecoder))
     (D.field "renderer" D.string)
 
 
-boxItemDecoder : D.Decoder ItemProps
+boxItemDecoder : D.Decoder BoxItem
 boxItemDecoder =
-  D.map2 ItemProps
+  D.map2 BoxItem
     (D.field "id" D.int)
     (D.field "expansion" D.string |> D.andThen expansionDecoder)
 

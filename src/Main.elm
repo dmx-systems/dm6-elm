@@ -310,7 +310,7 @@ createAssocAndAddToBox assocType player1 player2 boxId model =
     props = AssocP AssocProps
   in
   newModel
-    |> Box.addItem (ItemProps assocId expansion) boxId
+    |> Box.addItem (BoxItem assocId expansion) boxId
     |> TM.addItem assocId props boxId -- TODO: don't operate on "topicMap" directly
 
 
@@ -319,7 +319,7 @@ moveTopicToBox topicId boxId origPos targetBoxId targetPath pos ({model} as env)
   case (TM.topicProps topicId boxId model, Box.expansionOf topicId boxId model) of
     (Just topicProps, Just expansion) ->
       model
-        |> Box.addItem (ItemProps topicId expansion) targetBoxId
+        |> Box.addItem (BoxItem topicId expansion) targetBoxId
         |> TM.removeItem topicId boxId
         |> TM.setTopicPos topicId boxId origPos
         |> TM.addItem topicId (TopicP { topicProps | pos = pos }) targetBoxId

@@ -21,11 +21,11 @@ byId boxId model =
     Nothing -> U.boxNotFound "Box.byId" boxId Nothing
 
 
-itemPropsOf : Id -> Box -> Model -> Maybe ItemProps
-itemPropsOf itemId box model =
-  case box.itemProps |> Dict.get itemId of
-    Just props -> Just props
-    Nothing -> U.logError "Box.itemPropsOf" "missing dict entry in box.itemProps" Nothing
+itemById : Id -> Box -> Model -> Maybe BoxItem
+itemById itemId box model =
+  case box.items |> Dict.get itemId of
+    Just item -> Just item
+    Nothing -> U.logError "Box.itemById" "missing dict entry in box.items" Nothing
 
 
 itemSetOf : BoxId -> Model -> Maybe ItemSet
@@ -104,17 +104,17 @@ createItemSet set ({itemSets} as model) =
 
 -- Add item to box
 
-addItem : ItemProps -> BoxId -> Model -> Model
-addItem props boxId model =
+addItem : BoxItem -> BoxId -> Model -> Model
+addItem item boxId model =
   case byId boxId model of
     Just box ->
       let
-        (newModel, boxAssocId) = Item.createAssoc Hierarchy boxId props.id model
-        setItem = SetItem props.id boxAssocId
+        (newModel, boxAssocId) = Item.createAssoc Hierarchy boxId item.id model
+        setItem = SetItem item.id boxAssocId
       in
       newModel
         |> addToItemSet setItem box.itemSetId
-        |> addToItemProps props boxId
+        |> addToBoxItems item boxId
     Nothing -> model
 
 
@@ -131,14 +131,14 @@ addToItemSet setItem itemSetId ({itemSets} as model) =
   }
 
 
-addToItemProps : ItemProps -> BoxId -> Model -> Model
-addToItemProps props boxId ({boxes} as model) =
+addToBoxItems : BoxItem -> BoxId -> Model -> Model
+addToBoxItems item boxId ({boxes} as model) =
   { model | boxes =
     boxes
       |> Dict.update boxId
         (\maybeBox ->
           case maybeBox of
-            Just box -> Just { box | itemProps = box.itemProps |> Dict.insert props.id props }
+            Just box -> Just { box | items = box.items |> Dict.insert item.id item }
             Nothing -> Nothing
         )
   }
@@ -148,8 +148,8 @@ addToItemProps props boxId ({boxes} as model) =
 
 expansionOf : Id -> BoxId -> Model -> Maybe Expansion
 expansionOf topicId boxId model =
-  case byId boxId model |> Maybe.andThen (\box -> itemPropsOf topicId box model) of
-    Just props -> Just props.expansion
+  case byId boxId model |> Maybe.andThen (\box -> itemById topicId box model) of
+    Just item -> Just item.expansion
     Nothing -> U.fail "Box.expansionOf" {topicId = topicId, boxId = boxId} Nothing
 
 
@@ -166,7 +166,7 @@ updateExpansion topicId boxId transform model =
     (\maybeBox ->
       case maybeBox of
         Just box -> Just
-          { box | itemProps = box.itemProps |> Dict.update topicId
+          { box | items = box.items |> Dict.update topicId
             (\maybeItem ->
               case maybeItem of
                 Just item -> Just

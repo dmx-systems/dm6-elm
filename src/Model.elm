@@ -23,9 +23,9 @@ import Set
 
 
 type alias Model =
-  { items : Items
-  , itemSets: ItemSets
-  , boxes : Boxes
+  { items : Dict Id Item
+  , itemSets: Dict Id ItemSet
+  , boxes : Dict BoxId Box
   , boxId : BoxId -- the box rendered fullscreen
   , nextId : Id
   , imageCache : Dict ImageId String -- Int -> blob: URL ### TODO: move to Text module

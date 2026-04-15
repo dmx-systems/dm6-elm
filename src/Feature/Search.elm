@@ -376,11 +376,11 @@ revealItem itemId boxId model =
       props = TM.initItemProps itemId boxId model
     in
     model
-      |> Box.addItem (ItemProps itemId (expansionFrom props)) boxId
+      |> Box.addItem (BoxItem itemId (expansionFrom props)) boxId
       |> TM.addItem itemId props boxId
 
 
--- ### TODO: model Box ItemProps for topic/assoc
+-- ### TODO: model BoxItem for topic/assoc
 expansionFrom : ItemProps -> Expansion
 expansionFrom props =
   case props of

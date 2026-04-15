@@ -46,7 +46,7 @@ type ItemProps
 
 type alias TopicProps =
   { pos : Point
-  , expansion : Expansion -- transient render state? ### TODO: drop?
+  , expansion : Expansion -- transient, for "limbo" rendering
   }
 
 
@@ -101,7 +101,7 @@ encodeMapItem item =
                 , ("y", E.int topicProps.pos.y)
                 ]
               )
-            , ("expansion", encodeExpansion topicProps.expansion)
+            , ("expansion", encodeExpansion topicProps.expansion) -- TODO: drop, transient?
             ]
           )
         AssocP assosProps ->
@@ -154,7 +154,7 @@ mapItemDecoder =
           (D.field "x" D.int)
           (D.field "y" D.int)
         )
-        (D.field "expansion" D.string |> D.andThen expansionDecoder)
+        (D.field "expansion" D.string |> D.andThen expansionDecoder) -- TODO: hardcode value
       , D.field "assocProps" <| D.succeed (AssocP AssocProps)
       ]
     )

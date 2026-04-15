@@ -505,7 +505,7 @@ landTopic topicId expansion ({model} as env) =
       expansion
   in
   model
-    |> Box.addItem (ItemProps topicId expansion) boxId
+    |> Box.addItem (BoxItem topicId expansion) boxId
     |> TM.addItem topicId props boxId
     |> Sel.select topicId boxPath
     |> Env.withModel env
