@@ -1,6 +1,6 @@
-module Item exposing (topicById, topicOrNothing, assocById, byId, topicLabel, topicSize,
-  setTopicSize, updateTopic, createTopic, createAssoc, relatedItems, otherPlayerId, assocIds,
-  update, hasPlayer, isBox, nextId)
+module Item exposing (topicById, topicOrNothing, assocById, assocOrNothing, byId, topicLabel,
+  topicSize, setTopicSize, updateTopic, createTopic, createAssoc, relatedItems, otherPlayerId,
+  assocIds, update, hasPlayer, isBox, nextId)
 
 import Config as C
 import Model exposing (Model)
@@ -50,6 +50,19 @@ assocById assocId model =
         Topic _ -> U.assocMismatch "Item.assocById" assocId Nothing
         Assoc assoc -> Just assoc
     Nothing -> U.fail "Item.assocById" assocId Nothing
+
+
+{-| Returns an association by ID, or Nothing if the ID refers not an association (but a topic).
+Logs an error if no such item exists.
+-}
+assocOrNothing : Id -> Model -> Maybe AssocInfo
+assocOrNothing assocId model =
+  case byId assocId model of
+    Just {info} ->
+      case info of
+        Assoc assoc -> Just assoc
+        Topic _ -> Nothing
+    Nothing -> U.fail "Item.assocOrNothing" assocId Nothing
 
 
 {-| Returns an item by ID.

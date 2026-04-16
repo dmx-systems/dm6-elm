@@ -1,16 +1,16 @@
 module TopicMap.TopicMap exposing (fullscreen, byId, updateRect, updateScrollPos, visibleTopics,
-  topicPos, setTopicPos, updateTopicPos, topicProps, initItemProps, initLimboTopicProps,
-  initTopicPos, assocGeometry, create, addItem, showItem, removeItem, revelationBoxId,
-  revelationBoxPath, landingTarget, isTopic, isAssoc, isVisible)
+  visibleAssocs, topicPos, setTopicPos, updateTopicPos, topicProps, topicPropsOrNothing,
+  initItemProps, initLimboTopicProps, initTopicPos, assocGeometry, create, addItem,
+  revelationBoxId, revelationBoxPath, landingTarget, isTopic, isAssoc)
 
+import Box
 import Config as C
 import Feature.SearchDef exposing (SearchResult(..))
 import Feature.Sel as Sel
 import Item
 import Model exposing (Model)
 import ModelBase exposing (..)
-import TopicMap.TopicMapDef exposing (TopicMap, MapItems, MapItem, Visibility(..),
-  ItemProps(..), TopicProps)
+import TopicMap.TopicMapDef exposing (TopicMap, MapItems, MapItem, ItemProps(..), TopicProps)
 import Utils as U
 
 import Dict
@@ -27,7 +27,7 @@ byId : BoxId -> Model -> Maybe TopicMap
 byId mapId model =
   case byIdOrNothing mapId model of
     Just map -> Just map
-    Nothing -> U.boxNotFound "byId" mapId Nothing
+    Nothing -> U.boxNotFound "TopicMap.byId" mapId Nothing
 
 
 -- Not publically used
@@ -67,9 +67,33 @@ updateScrollPos mapId transform model =
     )
 
 
-visibleTopics : TopicMap -> List MapItem
-visibleTopics map =
-  map.items |> Dict.values |> List.filter isTopic |> List.filter isVisible
+-- TODO: unify these 2
+visibleTopics : TopicMap -> Model -> List MapItem
+visibleTopics map model =
+  case Box.topics map.id model of
+    Just topics ->
+      topics |> List.foldr
+        (\topic itemsAcc ->
+          case itemById_ topic.id map of
+            Just item -> item :: itemsAcc
+            Nothing -> itemsAcc
+        )
+        []
+    Nothing -> []
+
+
+visibleAssocs : TopicMap -> Model -> List MapItem
+visibleAssocs map model =
+  case Box.assocs map.id model of
+    Just assocs ->
+      assocs |> List.foldr
+        (\assoc itemsAcc ->
+          case itemById_ assoc.id map of
+            Just item -> item :: itemsAcc
+            Nothing -> itemsAcc
+        )
+        []
+    Nothing -> []
 
 
 {-| Logs an error if TopicMap does not exist, or topic is not in TopicMap, or ID refers not a
@@ -79,7 +103,7 @@ topicPos : Id -> BoxId -> Model -> Maybe Point
 topicPos topicId mapId model =
   case topicProps topicId mapId model of
     Just { pos } -> Just pos
-    Nothing -> U.fail "topicPos" {topicId = topicId, mapId = mapId} Nothing
+    Nothing -> U.fail "TopicMap.topicPos" {topicId = topicId, mapId = mapId} Nothing
 
 
 {-| Logs an error if TopicMap does not exist, or if topic is not in TopicMap -}
@@ -102,12 +126,22 @@ topic (but an association).
 -}
 topicProps : Id -> BoxId -> Model -> Maybe TopicProps
 topicProps topicId mapId model =
-  case itemByIdOrLog_ topicId mapId model of
+  case itemById topicId mapId model of
     Just mapItem ->
       case mapItem.props of
         TopicP props -> Just props
-        AssocP _ -> U.topicMismatch "topicProps" topicId Nothing
-    Nothing -> U.fail "topicProps" {topicId = topicId, mapId = mapId} Nothing
+        AssocP _ -> U.topicMismatch "TopicMap.topicProps" topicId Nothing
+    Nothing -> U.fail "TopicMap.topicProps" {topicId = topicId, mapId = mapId} Nothing
+
+
+topicPropsOrNothing : Id -> TopicMap -> Maybe TopicProps
+topicPropsOrNothing topicId map =
+  case map.items |> Dict.get topicId of
+    Just mapItem ->
+      case mapItem.props of
+        TopicP props -> Just props
+        AssocP _ -> U.topicMismatch "TopicMap.topicPropsOrNothing" topicId Nothing
+    Nothing -> Nothing
 
 
 assocGeometry : AssocInfo -> BoxId -> Model -> Maybe (Point, Point)
@@ -118,7 +152,7 @@ assocGeometry assoc mapId model =
   in
   case Maybe.map2 (\p1 p2 -> (p1, p2)) pos1 pos2 of
     Just geometry -> Just geometry
-    Nothing -> U.fail "assocGeometry" { assoc = assoc, mapId = mapId } Nothing
+    Nothing -> U.fail "TopicMap.assocGeometry" { assoc = assoc, mapId = mapId } Nothing
 
 
 {-| Initial props for a revealed item -}
@@ -159,96 +193,28 @@ initTopicPos mapId model =
 
 
 {-| Logs an error if box does not exist, or item is not in box. -}
-itemByIdOrLog_ : Id -> BoxId -> Model -> Maybe MapItem
-itemByIdOrLog_ itemId mapId model =
-  byId mapId model |> Maybe.andThen
-    (\map ->
-      case map.items |> Dict.get itemId of
-        Just mapItem -> Just mapItem
-        Nothing -> U.itemNotInBox "itemByIdOrLog_" itemId map.id Nothing
-    )
+itemById : Id -> BoxId -> Model -> Maybe MapItem
+itemById itemId mapId model =
+  byId mapId model
+    |> Maybe.andThen (itemById_ itemId)
 
 
-{-| Adds an item to a box and creates a connecting association.
-Presumption: the item is not yet contained in the box. Otherwise the existing box-item would be
-overridden and another association still be created. This is not what you want.
-It's a generic operation: works for both, topics and associations.
--}
+itemById_ : Id -> TopicMap -> Maybe MapItem
+itemById_ itemId map =
+  case map.items |> Dict.get itemId of
+    Just mapItem -> Just mapItem
+    Nothing -> U.itemNotInBox "TopicMap.itemById_" itemId map.id Nothing
+
+
 addItem : Id -> ItemProps -> BoxId -> Model -> Model
 addItem itemId props mapId model =
   let
-    mapItem = MapItem itemId Visible props
-    _ = U.info "addItem" { itemId = itemId, props = props, mapId = mapId}
+    mapItem = MapItem itemId props
+    _ = U.info "TopicMap.addItem" { itemId = itemId, props = props, mapId = mapId}
   in
   model
     |> update mapId
       (\map -> { map | items = map.items |> Dict.insert itemId mapItem })
-
-
-{-| Sets the item's "visibility" field to Visible.
-Presumption: the item *is* contained in the box.
-No-op if the item is *not* contained in the box, or its "visibility" field is Visible already.
-Logs an error if box does not exist.
-It's a generic operation: works for both, topics and associations.
--}
-showItem : Id -> BoxId -> Model -> Model
-showItem itemId mapId model =
-  model |> update mapId
-    (\map ->
-      { map | items = map.items |> Dict.update itemId
-        (\maybeItem ->
-          case maybeItem of
-            Just mapItem -> Just
-              { mapItem | visibility =
-                case mapItem.visibility of
-                  Visible -> mapItem.visibility
-                  Removed -> Visible
-              }
-            Nothing -> Nothing
-        )
-      }
-    )
-
-
-{-| Removes an item from a box, along its associations in that box context.
-No-op if the item is *not* contained in the box.
-Logs an error if box does not exist.
-It's a generic operation: works for both, topics and associations.
-Note: while this functions supports associations as players in associations,
-at the moment DM6 Elm makes no use of it.
--}
-removeItem : Id -> BoxId -> Model -> Model
-removeItem itemId mapId model =
-  model
-    |> update mapId
-        (\map ->
-          { map | items = removeItem_ itemId map.items model }
-        )
-
-
-{-| Removes an item from a box, along its associations in that box context.
-No-op if the item is *not* contained in the box.
-Convenience API to operate on given MapItems directly
--}
-removeItem_ : Id -> MapItems -> Model -> MapItems
-removeItem_ itemId items model =
-  assocsOfPlayer_ itemId items model |> List.foldr
-    (\assocId itemsAcc -> removeItem_ assocId itemsAcc model) -- recursion
-    (removeItem__ itemId items)
-
-
-{-| Removes an item (sets its visibility to Removed) from a set of MapItems.
-No-op if the item is *not* contained in the set of MapItems.
-Low-level API that does NOT remove the item's associations.
--}
-removeItem__ : Id -> MapItems -> MapItems
-removeItem__ itemId items =
-  items |> Dict.update itemId
-    (\maybeItem ->
-      case maybeItem of
-        Just item -> Just { item | visibility = Removed }
-        Nothing -> Nothing
-    )
 
 
 {-| Canonical TopicMap transformation.
@@ -261,7 +227,7 @@ update mapId transform ({topicMap} as model) =
       (\maybeMap ->
         case maybeMap of
           Just map -> Just (transform map)
-          Nothing -> U.boxNotFound "update" mapId Nothing
+          Nothing -> U.boxNotFound "TopicMap.update" mapId Nothing
       )
   }
 
@@ -295,8 +261,8 @@ updateTopicProps_ topicId mapId transform model =
               case item.props of
                 TopicP props -> Just
                   { item | props = TopicP (transform props) }
-                AssocP _ -> U.topicMismatch "updateTopicProps_" topicId Nothing
-            Nothing -> U.itemNotFound "updateTopicProps_" topicId Nothing
+                AssocP _ -> U.topicMismatch "TopicMap.updateTopicProps_" topicId Nothing
+            Nothing -> U.itemNotFound "TopicMap.updateTopicProps_" topicId Nothing
         )
       }
     )
@@ -332,16 +298,6 @@ landingTarget model =
     boxId :: boxPath -> Just (boxId, boxPath)
 
 
-{-| Logs an error if box does not exist.
-TODO: not used
--}
-isEmpty : BoxId -> Model -> Bool
-isEmpty boxId model =
-  case byId boxId model of
-    Just map -> map.items |> Dict.values |> List.any isVisible |> not
-    Nothing -> False
-
-
 {-| useful as a filter predicate -}
 isTopic : MapItem -> Bool
 isTopic item =
@@ -354,11 +310,3 @@ isTopic item =
 isAssoc : MapItem -> Bool
 isAssoc =
   not << isTopic
-
-
-{-| useful as a filter predicate -}
-isVisible : MapItem -> Bool
-isVisible item =
-  case item.visibility of
-    Visible -> True
-    Removed -> False

@@ -1,5 +1,5 @@
-module TopicMap.TopicMapDef exposing (Model, TopicMap, MapItems, MapItem, Visibility(..),
-  ItemProps(..), TopicProps, AssocProps, init, encode, decoder)
+module TopicMap.TopicMapDef exposing (Model, TopicMap, MapItems, MapItem, ItemProps(..),
+  TopicProps, AssocProps, init, encode, decoder)
 
 import ModelBase exposing (..)
 import Dict exposing (Dict)
@@ -29,14 +29,8 @@ type alias MapItems = Dict Id MapItem
 
 type alias MapItem =
   { id : Id
-  , visibility : Visibility
   , props : ItemProps
   }
-
-
-type Visibility
-  = Visible
-  | Removed
 
 
 type ItemProps
@@ -91,7 +85,6 @@ encodeMapItem : MapItem -> E.Value
 encodeMapItem item =
   E.object
     [ ("id", E.int item.id)
-    , ("visibility", encodeVisibility item.visibility)
     , case item.props of
         TopicP topicProps ->
           ( "topicProps"
@@ -109,14 +102,6 @@ encodeMapItem item =
           , E.object []
           )
     ]
-
-
-encodeVisibility : Visibility -> E.Value
-encodeVisibility visibility =
-  E.string <|
-    case visibility of
-      Visible -> "Visible"
-      Removed -> "Removed"
 
 
 -- Decode
@@ -145,9 +130,8 @@ topicMapDecoder =
 
 mapItemDecoder : D.Decoder MapItem
 mapItemDecoder =
-  D.map3 MapItem
+  D.map2 MapItem
     (D.field "id" D.int)
-    (D.field "visibility" D.string |> D.andThen visibilityDecoder)
     (D.oneOf
       [ D.field "topicProps" <| D.map TopicP <| D.map2 TopicProps
         (D.field "pos" <| D.map2 Point
@@ -158,11 +142,3 @@ mapItemDecoder =
       , D.field "assocProps" <| D.succeed (AssocP AssocProps)
       ]
     )
-
-
-visibilityDecoder : String -> D.Decoder Visibility
-visibilityDecoder str =
-  case str of
-    "Visible" -> D.succeed Visible
-    "Removed" -> D.succeed Removed
-    _ -> D.fail <| "\"" ++ str ++ "\" is an invalid Visibility"

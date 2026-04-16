@@ -539,7 +539,7 @@ remove : Env -> Model
 remove ({model} as env) =
   model.selection.items
     |> List.foldr
-      (\(itemId, boxPath) modelAcc -> TM.removeItem itemId (Box.firstId boxPath) modelAcc)
+      (\(itemId, boxPath) modelAcc -> Box.removeItem itemId (Box.firstId boxPath) modelAcc)
       model
     |> Sel.clear
     |> Env.autoSize env

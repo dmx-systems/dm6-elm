@@ -320,7 +320,7 @@ moveTopicToBox topicId boxId origPos targetBoxId targetPath pos ({model} as env)
     (Just topicProps, Just expansion) ->
       model
         |> Box.addItem (BoxItem topicId expansion) targetBoxId
-        |> TM.removeItem topicId boxId
+        |> Box.removeItem topicId boxId
         |> TM.setTopicPos topicId boxId origPos
         |> TM.addItem topicId (TopicP { topicProps | pos = pos }) targetBoxId
         |> Sel.select targetBoxId targetPath

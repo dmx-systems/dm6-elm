@@ -1,6 +1,6 @@
-module Box exposing (hasItem, hasDeepItem, topics, create, addItem, expansionOf, setExpansion,
-  updateExpansion, rendererOf, setRenderer, deleteItem, mapTitle, isFullscreen, elemId,
-  firstId, fromPath)
+module Box exposing (hasItem, hasDeepItem, topics, assocs, create, addItem, removeItem,
+  expansionOf, setExpansion, updateExpansion, rendererOf, setRenderer, deleteItem, mapTitle,
+  isFullscreen, elemId, firstId, fromPath)
 
 import Item
 import Model exposing (Model)
@@ -35,13 +35,16 @@ itemSetOf boxId model =
     Nothing -> U.fail "Box.itemSetOf" {boxId = boxId} Nothing
 
 
-{-| Logs an error if box does not exist.
+{-| Returns True if an item is *visible* in a box. An item is regarded visible if it is
+contained in the ItemSet assigned to that box. ### TODO: rename to "isItemVisible"?
+Logs an error if box does not exist.
 -}
 hasItem : BoxId -> Id -> Model -> Bool
 hasItem boxId itemId model =
   case itemSetOf boxId model of
-    Just itemSet -> itemSet.items |> List.any
-      (\setItem -> setItem.id == itemId)
+    Just itemSet ->
+      itemSet.items
+        |> List.any (\setItem -> setItem.id == itemId)
     Nothing -> False
 
 
@@ -59,6 +62,7 @@ hasDeepItem boxId itemId model =
       False
 
 
+-- TODO: unify these 2
 topics : BoxId -> Model -> Maybe (List TopicInfo)
 topics boxId model =
   case itemSetOf boxId model of
@@ -68,6 +72,21 @@ topics boxId model =
           case Item.topicOrNothing setItem.id model of
             Just topic -> topic :: topicsAcc
             Nothing -> topicsAcc
+        )
+        []
+      )
+    Nothing -> Nothing
+
+
+assocs : BoxId -> Model -> Maybe (List AssocInfo)
+assocs boxId model =
+  case itemSetOf boxId model of
+    Just itemSet -> Just
+      (itemSet.items |> List.foldr
+        (\setItem assocsAcc ->
+          case Item.assocOrNothing setItem.id model of
+            Just assoc -> assoc :: assocsAcc
+            Nothing -> assocsAcc
         )
         []
       )
@@ -104,6 +123,11 @@ createItemSet set ({itemSets} as model) =
 
 -- Add item to box
 
+{-| Adds an item to a box and creates a connecting association.
+Presumption: the item is not yet contained in the box. Otherwise the existing box-item would be
+overridden and another association still be created. This is not what you want.
+It's a generic operation: works for both, topics and associations.
+-}
 addItem : BoxItem -> BoxId -> Model -> Model
 addItem item boxId model =
   case byId boxId model of
@@ -144,7 +168,29 @@ addToBoxItems item boxId ({boxes} as model) =
   }
 
 
--- View Props
+{-| Removes an item from a box's underlying ItemSet.
+Note: the BoxItem itself is *not* removed.
+### TODO: remove item's associations as well
+-}
+removeItem : Id -> BoxId -> Model -> Model
+removeItem itemId boxId model =
+  case byId boxId model of
+    Just box ->
+      { model | itemSets = model.itemSets
+          |> Dict.update box.itemSetId
+            (\maybeItemSet ->
+              case maybeItemSet of
+                Just itemSet -> Just
+                  { itemSet | items = itemSet.items
+                      |> List.filter (\setItem -> setItem.id /= itemId)
+                  }
+                Nothing -> Nothing
+            )
+      }
+    Nothing -> model
+
+
+-- Expansion
 
 expansionOf : Id -> BoxId -> Model -> Maybe Expansion
 expansionOf topicId boxId model =

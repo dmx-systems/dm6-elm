@@ -442,7 +442,7 @@ blackBoxTopic topic props boxPath model =
   , [ div
       (topicFlexboxStyle topic props boxPath model)
       (viewLabelTopic topic props boxPath model
-        ++ viewItemCount topic.id props model
+        ++ viewItemCount topic.id model
       )
     , div
       (ghostTopicStyle topic boxPath model)
@@ -530,25 +530,18 @@ whiteBoxTopic topic props boxPath ext model =
   in
   ( style
   , children
-    ++ viewItemCount topic.id props model
+    ++ viewItemCount topic.id model
     ++ [ ext.view topic.id boxPath model ]
   )
 
 
-viewItemCount : Id -> TopicProps -> Model -> List (Html Msg)
-viewItemCount topicId props model =
+viewItemCount : BoxId -> Model -> List (Html Msg)
+viewItemCount boxId model =
   let
     itemCount =
-      if Item.isBox topicId model then
-        case TM.byId topicId model of
-          Just map ->
-            map.items
-              |> Dict.values
-              |> List.filter TM.isVisible
-              |> List.length
-          Nothing -> 0
-      else
-        0
+      case Box.topics boxId model of
+        Just topics -> topics |> List.length
+        Nothing -> 0
   in
   [ div
       itemCountStyle

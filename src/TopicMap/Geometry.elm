@@ -25,7 +25,7 @@ hitTest boxId boxPath pos excludeTopicId ext model =
   case TM.byId boxId model of
     Just map ->
       let
-        items = TM.visibleTopics map
+        items = TM.visibleTopics map model
         relPos = mapOffset pos map
       in
       case testChildren relPos items (boxId :: boxPath) excludeTopicId ext model of

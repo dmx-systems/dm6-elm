@@ -299,7 +299,7 @@ onTopicHovered topicId ({model} as env) =
         |> setResult (Topics topicIds <| Just topicId)
         |> Env.autoSize env
     _ ->
-      U.logError "onTopicHovered" "search.result is not Topics" model
+      U.logError "Search.onTopicHovered" "search.result is not Topics" model
 
 
 onRelTopicHovered : (Id, Id) -> Env -> Model
@@ -311,7 +311,7 @@ onRelTopicHovered relTopicId ({model} as env) =
         |> setResult (RelTopics relTopicIds <| Just relTopicId)
         |> Env.autoSize env
     _ ->
-      U.logError "onRelTopicHovered" "search.result is not RelTopics" model
+      U.logError "Search.onRelTopicHovered" "search.result is not RelTopics" model
 
 
 onTopicUnhovered : Env -> Model
@@ -323,7 +323,7 @@ onTopicUnhovered ({model} as env) =
         |> setResult (Topics topicIds Nothing)
         |> Env.autoSize env
     _ ->
-      U.logError "onTopicUnhovered" "search.result is not Topics" model
+      U.logError "Search.onTopicUnhovered" "search.result is not Topics" model
 
 
 onRelTopicUnhovered : Env -> Model
@@ -335,7 +335,7 @@ onRelTopicUnhovered ({model} as env) =
         |> setResult (RelTopics relTopicIds Nothing)
         |> Env.autoSize env
     _ ->
-      U.logError "onRelTopicUnhovered" "search.result is not RelTopics" model
+      U.logError "Search.onRelTopicUnhovered" "search.result is not RelTopics" model
 
 
 revealTopic : Id -> Env -> Model
@@ -367,12 +367,14 @@ revealItem : Id -> BoxId -> Model -> Model
 revealItem itemId boxId model =
   if Box.hasItem boxId itemId model then
     let
-      _ = U.info "revealItem" <| fromInt itemId ++ " is in " ++ fromInt boxId
+      _ = U.info "Search.revealItem" <| fromInt itemId ++ " is in " ++ fromInt boxId
+        ++ " already"
     in
-    TM.showItem itemId boxId model
+    model
   else
+    -- ### FIXME: restore expansion and pos
     let
-      _ = U.info "revealItem" <| fromInt itemId ++ " not in " ++ fromInt boxId
+      _ = U.info "Search.revealItem" <| fromInt itemId ++ " not in " ++ fromInt boxId
       props = TM.initItemProps itemId boxId model
     in
     model

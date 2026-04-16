@@ -7,8 +7,7 @@ import Feature.SearchDef exposing (SearchResult(..))
 import Model exposing (Model)
 import ModelBase exposing (..)
 import TopicMap.TopicMap as TM
-import TopicMap.TopicMapDef exposing (TopicMap, MapItem, Visibility(..), ItemProps(..),
-  TopicProps)
+import TopicMap.TopicMapDef exposing (TopicMap, MapItem, ItemProps(..), TopicProps)
 import Utils as U
 
 import Dict
@@ -19,7 +18,7 @@ import Dict
 topicsToRender : TopicMap -> Model -> List MapItem
 topicsToRender map model =
   let
-    topics = itemsToRender map TM.isTopic model |> List.map
+    topics = TM.visibleTopics map model |> List.map
       (\mapItem ->
         { mapItem
         | props =
@@ -28,28 +27,15 @@ topicsToRender map model =
             AssocP _ -> U.logError "topicsToRender" "Found assoc in a topic list" mapItem.props
         }
       )
-    limboTopic = limboMapItem map.id model
+    limboTopic = limboMapItem map model
   in
   topics ++ limboTopic
 
 
 {- Projects box data and search state ("limbo") into a TopicMap render model -}
 assocsToRender : TopicMap -> Model -> List MapItem
-assocsToRender map model =
-  itemsToRender map TM.isAssoc model
-
-
-itemsToRender : TopicMap -> (MapItem -> Bool) -> Model -> List MapItem
-itemsToRender map filter model =
-  map.items
-    |> Dict.values
-    |> List.filter filter
-    |> List.filter (shouldItemRender map.id model)
-
-
-shouldItemRender : BoxId -> Model -> MapItem -> Bool
-shouldItemRender boxId model item =
-  TM.isVisible item || isLimboItem item boxId model
+assocsToRender =
+   TM.visibleAssocs
 
 
 effectiveExpansion : Id -> TopicProps -> BoxId -> Model -> TopicProps
@@ -65,21 +51,25 @@ effectiveExpansion topicId props boxId model =
     Nothing -> props
 
 
-limboMapItem : BoxId -> Model -> List MapItem
-limboMapItem mapId model =
+limboMapItem : TopicMap -> Model -> List MapItem
+limboMapItem map model =
   case limboState model of
     Just (topicId, _, limboBoxId) ->
-      if limboBoxId == mapId && (not <| Box.hasItem mapId topicId model) then
+      if limboBoxId == map.id && (not <| Box.hasItem map.id topicId model) then
         let
-          _ = U.info "viewLimboTopic" (topicId, "not in map", mapId)
-          props = TopicP <| TM.initLimboTopicProps topicId mapId model
+          _ = U.info "limboMapItem" (topicId, "not in map", map.id)
+          props =
+            case TM.topicPropsOrNothing topicId map of
+              Just {pos} -> TopicP <| TopicProps pos Expanded
+              Nothing -> TopicP <| TM.initLimboTopicProps topicId map.id model
         in
-        [ MapItem topicId Removed props ] -- TODO: explain Removed
+        [ MapItem topicId props ]
       else
         []
     Nothing -> []
 
 
+-- Not used
 isLimboItem : MapItem -> BoxId -> Model -> Bool
 isLimboItem item boxId model =
   let
