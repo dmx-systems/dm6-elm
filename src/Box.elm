@@ -133,8 +133,8 @@ addItem item boxId model =
   case byId boxId model of
     Just box ->
       let
-        (newModel, boxAssocId) = Item.createAssoc Hierarchy boxId item.id model
-        setItem = SetItem item.id boxAssocId
+        (newModel, _) = Item.createAssoc Hierarchy boxId item.id model
+        setItem = SetItem item.id
       in
       newModel
         |> addToItemSet setItem box.itemSetId

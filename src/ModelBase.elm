@@ -134,8 +134,6 @@ type alias ItemSet =
 
 type alias SetItem =
   { id : Id -- item ID
-  -- TODO: move "boxAssocId" to BoxItem. It's per-box (in contrast to "dateAdded")
-  , boxAssocId : Id -- the Hierarchy association which connects the item with the box
   -- TODO: add "dateAdded"
   }
 
@@ -218,7 +216,6 @@ encodeSetItem : SetItem -> E.Value
 encodeSetItem setItem =
   E.object
     [ ("id", E.int setItem.id)
-    , ("boxAssocId", E.int setItem.boxAssocId)
     ]
 
 
@@ -311,9 +308,8 @@ itemSetDecoder =
   D.map2 ItemSet
     (D.field "id" D.int)
     (D.field "items" <| D.list
-      (D.map2 SetItem
+      (D.map SetItem
         (D.field "id" D.int)
-        (D.field "boxAssocId" D.int)
       )
     )
 

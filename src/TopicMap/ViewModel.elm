@@ -24,7 +24,8 @@ topicsToRender map model =
         | props =
           case mapItem.props of
             TopicP props -> TopicP <| effectiveExpansion mapItem.id props map.id model
-            AssocP _ -> U.logError "topicsToRender" "Found assoc in a topic list" mapItem.props
+            AssocP _ -> U.logError "TopicMap.ViewModel.topicsToRender"
+              "Found assoc in a topic list" mapItem.props
         }
       )
     limboTopic = limboMapItem map model
@@ -57,7 +58,7 @@ limboMapItem map model =
     Just (topicId, _, limboBoxId) ->
       if limboBoxId == map.id && (not <| Box.hasItem map.id topicId model) then
         let
-          _ = U.info "limboMapItem" (topicId, "not in map", map.id)
+          _ = U.info "TopicMap.ViewModel.limboMapItem" (topicId, "not in map", map.id)
           props =
             case TM.topicPropsOrNothing topicId map of
               Just {pos} -> TopicP <| TopicProps pos Expanded
