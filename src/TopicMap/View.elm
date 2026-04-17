@@ -18,7 +18,6 @@ import TopicMap.TopicMapDef exposing (TopicMap, ItemProps(..), TopicProps)
 import TopicMap.ViewModel as VM
 import Utils as U
 
-import Dict
 import Html exposing (Html, div, text)
 import Html.Attributes exposing (id, style)
 import String exposing (fromInt, fromFloat)

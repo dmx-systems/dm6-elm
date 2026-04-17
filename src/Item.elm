@@ -8,7 +8,6 @@ import ModelBase exposing (..)
 import Utils as U
 
 import Dict
-import Set
 import String exposing (fromInt)
 
 
@@ -125,7 +124,7 @@ createTopic text icon model =
   let
     id = model.nextId
     topic = TopicInfo id icon text <| TextSize C.topicDetailSize C.topicDetailSize
-    item = Item id (Topic topic) Set.empty
+    item = Item id (Topic topic) []
   in
   ( model
       |> createTopic_ item
@@ -144,7 +143,7 @@ createAssoc assocType player1 player2 model =
   let
     id = model.nextId
     assoc = AssocInfo id assocType player1 player2
-    item = Item id (Assoc assoc) Set.empty
+    item = Item id (Assoc assoc) []
   in
   ( { model | items = model.items |> Dict.insert id item }
       |> insertAssocId_ id player1
@@ -156,7 +155,7 @@ createAssoc assocType player1 player2 model =
 
 relatedItems : Id -> Model -> List (Id, Id)
 relatedItems itemId model =
-  assocIds itemId model |> Set.foldr
+  assocIds itemId model |> List.foldr
     (\assocId relItemsAcc ->
       (otherPlayerId assocId itemId model, assocId) :: relItemsAcc
     )
@@ -184,7 +183,7 @@ assocIds : Id -> Model -> AssocIds
 assocIds itemId model =
   case byId itemId model of
     Just item -> item.assocIds
-    Nothing -> Set.empty -- error is already logged
+    Nothing -> [] -- error is already logged
 
 
 {-| Inserts an association ID into the item's set of association IDs.
@@ -196,7 +195,7 @@ insertAssocId_ : Id -> Id -> Model -> Model
 insertAssocId_ assocId itemId model =
   model |> update itemId
     (\item ->
-      {item | assocIds = item.assocIds |> Set.insert assocId}
+      {item | assocIds = assocId :: item.assocIds}
     )
 
 

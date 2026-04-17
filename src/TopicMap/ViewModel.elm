@@ -10,8 +10,6 @@ import TopicMap.TopicMap as TM
 import TopicMap.TopicMapDef exposing (TopicMap, MapItem, ItemProps(..), TopicProps)
 import Utils as U
 
-import Dict
-
 
 
 {- Projects box data and search state ("limbo") into a TopicMap render model -}

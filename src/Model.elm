@@ -18,7 +18,6 @@ import Dict exposing (Dict)
 import Json.Decode as D
 import Json.Decode.Pipeline exposing (required, hardcoded)
 import Json.Encode as E
-import Set
 
 
 
@@ -47,7 +46,7 @@ init =
   let
     rootTopic = TopicInfo 0 Nothing C.rootBoxName <| TextSize (Size 0 0) (Size 0 0)
   in
-  { items = Dict.singleton 0 <| Item 0 (Topic rootTopic) Set.empty
+  { items = Dict.singleton 0 <| Item 0 (Topic rootTopic) []
   , itemSets = Dict.singleton 1 <| ItemSet 1 []
   , boxes = Dict.singleton rootBoxId <| Box rootBoxId 1 Dict.empty "TopicMap"
   , boxId = rootBoxId

@@ -1,7 +1,7 @@
 module TopicMap.TopicMap exposing (fullscreen, byId, updateRect, updateScrollPos, visibleTopics,
   visibleAssocs, topicPos, setTopicPos, updateTopicPos, topicProps, topicPropsOrNothing,
   initItemProps, initLimboTopicProps, initTopicPos, assocGeometry, create, addItem,
-  revelationBoxId, revelationBoxPath, landingTarget, isTopic, isAssoc)
+  revelationBoxId, revelationBoxPath, landingTarget)
 
 import Box
 import Config as C
@@ -232,18 +232,6 @@ update mapId transform ({topicMap} as model) =
   }
 
 
-{-| Returns a player's associations (their Ids) in the given box context (MapItems).
-Low-level API to operate on given MapItems directly.
--}
-assocsOfPlayer_ : Id -> MapItems -> Model -> List Id
-assocsOfPlayer_ playerId items model =
-  items
-    |> Dict.values
-    |> List.filter isAssoc
-    |> List.map .id
-    |> List.filter (Item.hasPlayer playerId model)
-
-
 --
 
 {-| Canonical TopicProps transformation.
@@ -296,17 +284,3 @@ landingTarget model =
     [] -> Nothing
     [ boxId ] -> Nothing -- The fullscreen box is never selected
     boxId :: boxPath -> Just (boxId, boxPath)
-
-
-{-| useful as a filter predicate -}
-isTopic : MapItem -> Bool
-isTopic item =
-  case item.props of
-    TopicP _ -> True
-    AssocP _ -> False
-
-
-{-| useful as a filter predicate -}
-isAssoc : MapItem -> Bool
-isAssoc =
-  not << isTopic

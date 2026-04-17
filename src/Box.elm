@@ -8,7 +8,6 @@ import ModelBase exposing (..)
 import Utils as U
 
 import Dict
-import Set
 import String exposing (fromInt)
 
 
@@ -123,10 +122,8 @@ createItemSet set ({itemSets} as model) =
 
 -- Add item to box
 
-{-| Adds an item to a box and creates a connecting association.
-Presumption: the item is not yet contained in the box. Otherwise the existing box-item would be
-overridden and another association still be created. This is not what you want.
-It's a generic operation: works for both, topics and associations.
+{-| Adds an item to a box and creates a connecting association. This is an idempotent operation.
+This is a generic operation: works for both, topics and associations.
 -}
 addItem : BoxItem -> BoxId -> Model -> Model
 addItem item boxId model =
@@ -175,26 +172,64 @@ addToBoxItems item boxId ({boxes} as model) =
   }
 
 
-{-| Removes an item from a box's underlying ItemSet.
-Note: the BoxItem itself is *not* removed.
-### TODO: remove item's associations as well
--}
+-- Remove item from box
+
 removeItem : Id -> BoxId -> Model -> Model
 removeItem itemId boxId model =
+  let
+    itemIds =
+      itemId :: Item.assocIds itemId model
+  in
+  case hierarchyAssoc itemId boxId model of
+    Just assocId ->
+      model
+        |> removeItems itemIds boxId
+        |> deleteItem assocId
+    Nothing -> model
+
+
+{-| Removes an item from a box's underlying ItemSet.
+It's a no-op if the item is not in the box.
+Note: the BoxItem itself is *not* removed.
+-}
+removeItems : List Id -> BoxId -> Model -> Model
+removeItems itemIds boxId model =
   case byId boxId model of
     Just box ->
       { model | itemSets = model.itemSets
-          |> Dict.update box.itemSetId
-            (\maybeItemSet ->
-              case maybeItemSet of
-                Just itemSet -> Just
-                  { itemSet | items = itemSet.items
-                      |> List.filter (\setItem -> setItem.id /= itemId)
-                  }
-                Nothing -> Nothing
-            )
+        |> Dict.update box.itemSetId
+          (\maybeItemSet ->
+            case maybeItemSet of
+              Just itemSet -> Just
+                { itemSet | items = itemSet.items
+                  |> List.filter (\setItem -> not <| List.member setItem.id itemIds)
+                }
+              Nothing -> Nothing
+          )
       }
     Nothing -> model
+
+
+hierarchyAssoc : Id -> BoxId -> Model -> Maybe Id
+hierarchyAssoc itemId boxId model =
+  findHierarchy itemId boxId (Item.assocIds itemId model) model
+
+
+findHierarchy : Id -> BoxId -> AssocIds -> Model -> Maybe Id
+findHierarchy itemId boxId assocIds model =
+  case assocIds of
+    [] ->
+      U.logError "Box.hierarchyAssoc"
+        ("Hierarchy of " ++ fromInt itemId ++ " in " ++ fromInt boxId ++ " not found")
+        Nothing
+    assocId :: ids ->
+      case Item.assocById assocId model of
+        Just {id, assocType, player1, player2} ->
+          if assocType == Hierarchy && player1 == boxId && player2 == itemId then
+            Just id
+          else
+            findHierarchy itemId boxId ids model -- recursion
+        Nothing -> Nothing
 
 
 -- Expansion
@@ -263,7 +298,7 @@ at the moment DM6 Elm makes no use of it.
 deleteItem : Id -> Model -> Model
 deleteItem itemId model =
   Item.assocIds itemId model
-    |> Set.foldr deleteItem model -- recursion
+    |> List.foldr deleteItem model -- recursion
     |> removeAssocFromPlayers itemId
     |> deleteItem_ itemId
 
@@ -293,7 +328,7 @@ removeAssocFromPlayer : Id -> Id -> Model -> Model
 removeAssocFromPlayer assocId itemId model =
   model |> Item.update itemId
     (\item ->
-      {item | assocIds = item.assocIds |> Set.remove assocId}
+      {item | assocIds = item.assocIds |> List.filter ((/=) assocId)}
     )
 
 

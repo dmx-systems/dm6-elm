@@ -8,7 +8,6 @@ import Dict exposing (Dict)
 import Html exposing (Attribute)
 import Json.Decode as D
 import Json.Encode as E
-import Set exposing (Set)
 
 
 
@@ -86,7 +85,7 @@ type alias Rectangle =
 
 
 type alias Id = Int
-type alias AssocIds = Set Id
+type alias AssocIds = List Id
 type alias Icon = String -- name of feather icon, https://feathericons.com
 type alias ImageId = Int
 type alias Attrs msg = List (Attribute msg)
@@ -164,7 +163,7 @@ encodeItem item =
           , ("icon", E.string <| Maybe.withDefault "" topic.icon)
           , ("text", E.string topic.text)
           , ("size", encodeTextSize topic.size)
-          , ("assocIds", E.set E.int item.assocIds)
+          , ("assocIds", E.list E.int item.assocIds)
           ]
         )
       Assoc assoc ->
@@ -174,7 +173,7 @@ encodeItem item =
           , ("type", encodeAssocType assoc.assocType)
           , ("player1", E.int assoc.player1)
           , ("player2", E.int assoc.player2)
-          , ("assocIds", E.set E.int item.assocIds)
+          , ("assocIds", E.list E.int item.assocIds)
           ]
         )
     ]
@@ -292,7 +291,6 @@ textSizeDecoder =
 assocIdsDecoder : D.Decoder AssocIds
 assocIdsDecoder =
   D.field "assocIds" (D.list D.int)
-    |> D.andThen (Set.fromList >> D.succeed)
 
 
 assocTypeDecoder : String -> D.Decoder AssocType
