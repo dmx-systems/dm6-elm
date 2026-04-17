@@ -39,8 +39,8 @@ itemSetOf boxId model =
 contained in the ItemSet assigned to that box. ### TODO: rename to "isItemVisible"?
 Logs an error if box does not exist.
 -}
-hasItem : BoxId -> Id -> Model -> Bool
-hasItem boxId itemId model =
+hasItem : Id -> BoxId -> Model -> Bool
+hasItem itemId boxId model =
   case itemSetOf boxId model of
     Just itemSet ->
       itemSet.items
@@ -130,27 +130,34 @@ It's a generic operation: works for both, topics and associations.
 -}
 addItem : BoxItem -> BoxId -> Model -> Model
 addItem item boxId model =
-  case byId boxId model of
-    Just box ->
-      let
-        (newModel, _) = Item.createAssoc Hierarchy boxId item.id model
-        setItem = SetItem item.id
-      in
-      newModel
-        |> addToItemSet setItem box.itemSetId
-        |> addToBoxItems item boxId
-    Nothing -> model
+  model
+    |> addToItemSet item.id boxId
+    |> addToBoxItems item boxId
 
 
-addToItemSet : SetItem -> Id -> Model -> Model
-addToItemSet setItem itemSetId ({itemSets} as model) =
+addToItemSet : Id -> BoxId -> Model -> Model
+addToItemSet itemId boxId model =
+  if hasItem itemId boxId model then
+    model
+  else
+    case byId boxId model of
+      Just box ->
+        model
+          |> Item.createAssoc Hierarchy boxId itemId
+          |> Tuple.first
+          |> addToItemSet_ (SetItem itemId) box.itemSetId
+      Nothing -> model
+
+
+addToItemSet_ : SetItem -> Id -> Model -> Model
+addToItemSet_ setItem itemSetId ({itemSets} as model) =
   { model | itemSets =
     itemSets
       |> Dict.update itemSetId
         (\maybeItemSet ->
           case maybeItemSet of
             Just itemSet -> Just { itemSet | items = setItem :: itemSet.items }
-            Nothing -> U.itemSetNotFound "Box.addToItemSet" itemSetId Nothing
+            Nothing -> U.itemSetNotFound "Box.addToItemSet_" itemSetId Nothing
         )
   }
 

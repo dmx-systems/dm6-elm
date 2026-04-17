@@ -365,7 +365,7 @@ revealRelTopic (topicId, assocId) ({model} as env) =
 
 revealItem : Id -> BoxId -> Model -> Model
 revealItem itemId boxId model =
-  if Box.hasItem boxId itemId model then
+  if Box.hasItem itemId boxId model then
     let
       _ = U.info "Search.revealItem" <| fromInt itemId ++ " is in " ++ fromInt boxId
         ++ " already"

@@ -56,7 +56,7 @@ limboMapItem : TopicMap -> Model -> List MapItem
 limboMapItem map model =
   case limboState model of
     Just (topicId, _, limboBoxId) ->
-      if limboBoxId == map.id && (not <| Box.hasItem map.id topicId model) then
+      if limboBoxId == map.id && (not <| Box.hasItem topicId map.id model) then
         let
           _ = U.info "TopicMap.ViewModel.limboMapItem" (topicId, "not in map", map.id)
           props =
