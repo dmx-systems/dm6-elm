@@ -306,26 +306,24 @@ createAssocAndAddToBox : AssocType -> Id -> Id -> BoxId -> Model -> Model
 createAssocAndAddToBox assocType player1 player2 boxId model =
   let
     (newModel, assocId) = Item.createAssoc assocType player1 player2 model
-    expansion = Collapsed
-    props = AssocP AssocProps
   in
   newModel
-    |> Box.addItem (BoxItem assocId expansion) boxId
-    |> TM.addItem assocId props boxId -- TODO: don't operate on "topicMap" directly
+    |> Box.addItem (BoxItem assocId Collapsed) boxId
+    |> TM.addItem assocId boxId -- TODO: don't operate on "topicMap" directly
 
 
 moveTopicToBox : Id -> BoxId -> Point -> BoxId -> BoxPath -> Point -> Env -> Model
 moveTopicToBox topicId boxId origPos targetBoxId targetPath pos ({model} as env) =
-  case (TM.topicProps topicId boxId model, Box.expansionOf topicId boxId model) of
-    (Just topicProps, Just expansion) ->
+  case Box.expansionOf topicId boxId model of
+    Just expansion ->
       model
         |> Box.addItem (BoxItem topicId expansion) targetBoxId
         |> Box.removeItem topicId boxId
         |> TM.setTopicPos topicId boxId origPos
-        |> TM.addItem topicId (TopicP { topicProps | pos = pos }) targetBoxId
+        |> TM.addItem topicId targetBoxId -- ### TODO: use "pos"
         |> Sel.select targetBoxId targetPath
         |> Env.autoSize env
-    _ -> model
+    Nothing -> model
 
 
 select : Id -> BoxPath -> Model -> (Model, Cmd Msg)

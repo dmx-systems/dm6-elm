@@ -1,5 +1,5 @@
-module Box exposing (hasItem, hasDeepItem, topics, assocs, create, addItem, removeItem,
-  expansionOf, setExpansion, updateExpansion, rendererOf, setRenderer, deleteItem, mapTitle,
+module Box exposing (topics, assocs, create, addItem, removeItem, deleteItem, expansionOf,
+  setExpansion, updateExpansion, rendererOf, setRenderer, hasItem, hasDeepItem, mapTitle,
   isFullscreen, elemId, firstId, fromPath)
 
 import Item
@@ -10,55 +10,6 @@ import Utils as U
 import Dict
 import String exposing (fromInt)
 
-
-
-{-| Logs an error if box does not exist. -}
-byId : BoxId -> Model -> Maybe Box
-byId boxId model =
-  case model.boxes |> Dict.get boxId of
-    Just box -> Just box
-    Nothing -> U.boxNotFound "Box.byId" boxId Nothing
-
-
-itemById : Id -> Box -> Model -> Maybe BoxItem
-itemById itemId box model =
-  case box.items |> Dict.get itemId of
-    Just item -> Just item
-    Nothing -> U.logError "Box.itemById" "missing dict entry in box.items" Nothing
-
-
-itemSetOf : BoxId -> Model -> Maybe ItemSet
-itemSetOf boxId model =
-  case byId boxId model of
-    Just box -> model.itemSets |> Dict.get box.itemSetId
-    Nothing -> U.fail "Box.itemSetOf" {boxId = boxId} Nothing
-
-
-{-| Returns True if an item is *visible* in a box. An item is regarded visible if it is
-contained in the ItemSet assigned to that box. ### TODO: rename to "isItemVisible"?
-Logs an error if box does not exist.
--}
-hasItem : Id -> BoxId -> Model -> Bool
-hasItem itemId boxId model =
-  case itemSetOf boxId model of
-    Just itemSet ->
-      itemSet.items
-        |> List.any (\setItem -> setItem.id == itemId)
-    Nothing -> False
-
-
-hasDeepItem : BoxId -> Id -> Model -> Bool
-hasDeepItem boxId itemId model =
-  if itemId == boxId then
-    True
-  else
-    if Item.isBox boxId model then
-      case itemSetOf boxId model of
-        Just itemSet -> itemSet.items |> List.any
-          (\setItem -> hasDeepItem setItem.id itemId model) -- recursion
-        Nothing -> False
-    else
-      False
 
 
 -- TODO: unify these 2
@@ -161,15 +112,18 @@ addToItemSet_ setItem itemSetId ({itemSets} as model) =
 
 addToBoxItems : BoxItem -> BoxId -> Model -> Model
 addToBoxItems item boxId ({boxes} as model) =
-  { model | boxes =
-    boxes
-      |> Dict.update boxId
-        (\maybeBox ->
-          case maybeBox of
-            Just box -> Just { box | items = box.items |> Dict.insert item.id item }
-            Nothing -> Nothing
-        )
-  }
+  if hasBoxItem item.id boxId model then
+    model
+  else
+    { model | boxes =
+      boxes
+        |> Dict.update boxId
+          (\maybeBox ->
+            case maybeBox of
+              Just box -> Just { box | items = box.items |> Dict.insert item.id item }
+              Nothing -> Nothing
+          )
+    }
 
 
 -- Remove item from box
@@ -230,61 +184,6 @@ findHierarchy itemId boxId assocIds model =
           else
             findHierarchy itemId boxId ids model -- recursion
         Nothing -> Nothing
-
-
--- Expansion
-
-expansionOf : Id -> BoxId -> Model -> Maybe Expansion
-expansionOf topicId boxId model =
-  case byId boxId model |> Maybe.andThen (\box -> itemById topicId box model) of
-    Just item -> Just item.expansion
-    Nothing -> U.fail "Box.expansionOf" {topicId = topicId, boxId = boxId} Nothing
-
-
-{-| Logs an error if box does not exist, or if topic is not in box -}
-setExpansion : Id -> BoxId -> Expansion -> Model -> Model
-setExpansion topicId boxId expansion model =
-  model
-    |> updateExpansion topicId boxId (\_ -> expansion)
-
-
-updateExpansion : Id -> BoxId -> (Expansion -> Expansion) -> Model -> Model
-updateExpansion topicId boxId transform model =
-  { model | boxes = model.boxes |> Dict.update boxId
-    (\maybeBox ->
-      case maybeBox of
-        Just box -> Just
-          { box | items = box.items |> Dict.update topicId
-            (\maybeItem ->
-              case maybeItem of
-                Just item -> Just
-                  { item | expansion = transform item.expansion }
-                Nothing -> Nothing
-            )
-          }
-        Nothing -> Nothing
-    )
-  }
-
-
--- Renderer
-
-rendererOf : BoxId -> Model -> Maybe Renderer
-rendererOf boxId model =
-  case byId boxId model of
-    Just box -> Just box.renderer
-    Nothing -> U.fail "Box.renderer" {boxId = boxId} Nothing
-
-
-setRenderer : BoxId -> Renderer -> Model -> Model
-setRenderer boxId renderer model =
-  { model | boxes = model.boxes |> Dict.update boxId
-    (\maybeBox ->
-      case maybeBox of
-        Just box -> Just { box | renderer = renderer }
-        Nothing -> Nothing
-    )
-  }
 
 
 -- Delete item
@@ -355,7 +254,119 @@ deleteItem_ itemId ({topicMap} as model) =
   }
 
 
+-- Expansion
+
+expansionOf : Id -> BoxId -> Model -> Maybe Expansion
+expansionOf topicId boxId model =
+  case byId boxId model |> Maybe.andThen (\box -> itemById topicId box model) of
+    Just item -> Just item.expansion
+    Nothing -> U.fail "Box.expansionOf" {topicId = topicId, boxId = boxId} Nothing
+
+
+-- Not used
+{-| Logs an error if box does not exist, or if topic is not in box -}
+setExpansion : Id -> BoxId -> Expansion -> Model -> Model
+setExpansion topicId boxId expansion model =
+  model
+    |> updateExpansion topicId boxId (\_ -> expansion)
+
+
+updateExpansion : Id -> BoxId -> (Expansion -> Expansion) -> Model -> Model
+updateExpansion topicId boxId transform model =
+  { model | boxes = model.boxes |> Dict.update boxId
+    (\maybeBox ->
+      case maybeBox of
+        Just box -> Just
+          { box | items = box.items |> Dict.update topicId
+            (\maybeItem ->
+              case maybeItem of
+                Just item -> Just
+                  { item | expansion = transform item.expansion }
+                Nothing -> Nothing
+            )
+          }
+        Nothing -> Nothing
+    )
+  }
+
+
+-- Renderer
+
+rendererOf : BoxId -> Model -> Maybe Renderer
+rendererOf boxId model =
+  case byId boxId model of
+    Just box -> Just box.renderer
+    Nothing -> U.fail "Box.renderer" {boxId = boxId} Nothing
+
+
+setRenderer : BoxId -> Renderer -> Model -> Model
+setRenderer boxId renderer model =
+  { model | boxes = model.boxes |> Dict.update boxId
+    (\maybeBox ->
+      case maybeBox of
+        Just box -> Just { box | renderer = renderer }
+        Nothing -> Nothing
+    )
+  }
+
+
 --
+
+{-| Logs an error if box does not exist. -}
+byId : BoxId -> Model -> Maybe Box
+byId boxId model =
+  case model.boxes |> Dict.get boxId of
+    Just box -> Just box
+    Nothing -> U.boxNotFound "Box.byId" boxId Nothing
+
+
+itemById : Id -> Box -> Model -> Maybe BoxItem
+itemById itemId box model =
+  case box.items |> Dict.get itemId of
+    Just item -> Just item
+    Nothing -> U.logError "Box.itemById" "missing dict entry in box.items" Nothing
+
+
+itemSetOf : BoxId -> Model -> Maybe ItemSet
+itemSetOf boxId model =
+  case byId boxId model of
+    Just box -> model.itemSets |> Dict.get box.itemSetId
+    Nothing -> U.fail "Box.itemSetOf" {boxId = boxId} Nothing
+
+
+{-| Returns True if an item is *visible* in a box. An item is regarded visible if it is
+contained in the ItemSet assigned to that box. ### TODO: rename to "isItemVisible"?
+Logs an error if box does not exist.
+-}
+hasItem : Id -> BoxId -> Model -> Bool
+hasItem itemId boxId model =
+  case itemSetOf boxId model of
+    Just itemSet ->
+      itemSet.items
+        |> List.any (\setItem -> setItem.id == itemId)
+    Nothing -> False
+
+
+hasDeepItem : BoxId -> Id -> Model -> Bool
+hasDeepItem boxId itemId model =
+  if itemId == boxId then
+    True
+  else
+    if Item.isBox boxId model then
+      case itemSetOf boxId model of
+        Just itemSet -> itemSet.items |> List.any
+          (\setItem -> hasDeepItem setItem.id itemId model) -- recursion
+        Nothing -> False
+    else
+      False
+
+
+hasBoxItem : Id -> BoxId -> Model -> Bool
+hasBoxItem itemId boxId model =
+  case byId boxId model of
+    Just box -> box.items |> Dict.member itemId
+    Nothing -> U.fail "Box.hasBoxItem" {itemId = itemId, boxId = boxId} False
+
 
 {-| Title of fullscreen box.
 TODO: rename

@@ -1,4 +1,4 @@
-module TopicMap.TopicMapDef exposing (Model, TopicMap, MapItems, MapItem, ItemProps(..),
+module TopicMap.TopicMapDef exposing (Model, TopicMap, MapItem, ItemProps(..),
   TopicProps, AssocProps, init, encode, decoder)
 
 import ModelBase exposing (..)
@@ -8,7 +8,8 @@ import Json.Encode as E
 
 
 
-type alias Model = Dict BoxId TopicMap
+type alias Model =
+  Dict BoxId TopicMap
 
 
 init : Model
@@ -20,11 +21,8 @@ type alias TopicMap =
   { id : BoxId
   , rect : Rectangle
   , scroll : Point
-  , items : MapItems
+  , items : Dict Id MapItem
   }
-
-
-type alias MapItems = Dict Id MapItem
 
 
 type alias MapItem =

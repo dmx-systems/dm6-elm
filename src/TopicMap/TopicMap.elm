@@ -1,7 +1,7 @@
 module TopicMap.TopicMap exposing (fullscreen, byId, updateRect, updateScrollPos, visibleTopics,
-  visibleAssocs, topicPos, setTopicPos, updateTopicPos, topicProps, topicPropsOrNothing,
-  initItemProps, initLimboTopicProps, initTopicPos, assocGeometry, create, addItem,
-  revelationBoxId, revelationBoxPath, landingTarget)
+  visibleAssocs, topicPos, setTopicPos, updateTopicPos, topicPropsOrNothing,
+  initLimboTopicProps, initTopicPos, assocGeometry, create, addItem, revelationBoxId,
+  revelationBoxPath, landingTarget)
 
 import Box
 import Config as C
@@ -10,7 +10,7 @@ import Feature.Sel as Sel
 import Item
 import Model exposing (Model)
 import ModelBase exposing (..)
-import TopicMap.TopicMapDef exposing (TopicMap, MapItems, MapItem, ItemProps(..), TopicProps)
+import TopicMap.TopicMapDef exposing (TopicMap, MapItem, ItemProps(..), TopicProps)
 import Utils as U
 
 import Dict
@@ -155,6 +155,20 @@ assocGeometry assoc mapId model =
     Nothing -> U.fail "TopicMap.assocGeometry" { assoc = assoc, mapId = mapId } Nothing
 
 
+addItem : Id -> BoxId -> Model -> Model
+addItem itemId mapId model =
+  if hasItem itemId mapId model then
+    model
+  else
+    let
+      mapItem = MapItem itemId <| initItemProps itemId mapId model
+      _ = U.info "TopicMap.addItem" {itemId = itemId, mapId = mapId}
+    in
+    model
+      |> update mapId
+        (\map -> { map | items = map.items |> Dict.insert itemId mapItem })
+
+
 {-| Initial props for a revealed item -}
 initItemProps : Id -> BoxId -> Model -> ItemProps
 initItemProps itemId mapId model =
@@ -206,15 +220,11 @@ itemById_ itemId map =
     Nothing -> U.itemNotInBox "TopicMap.itemById_" itemId map.id Nothing
 
 
-addItem : Id -> ItemProps -> BoxId -> Model -> Model
-addItem itemId props mapId model =
-  let
-    mapItem = MapItem itemId props
-    _ = U.info "TopicMap.addItem" { itemId = itemId, props = props, mapId = mapId}
-  in
-  model
-    |> update mapId
-      (\map -> { map | items = map.items |> Dict.insert itemId mapItem })
+hasItem : Id -> BoxId -> Model -> Bool
+hasItem itemId mapId model =
+  case byId mapId model of
+    Just map -> map.items |> Dict.member itemId
+    Nothing -> U.fail "TopicMap.hasItem" {itemId = itemId, mapId = mapId} False
 
 
 {-| Canonical TopicMap transformation.

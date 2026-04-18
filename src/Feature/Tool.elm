@@ -481,7 +481,7 @@ createTopic ({model} as env) =
     (newModel, topicId) = Item.createTopic "" C.initTopicIcon model
     newEnv = Env.withModel env newModel
   in
-  landTopic topicId Collapsed newEnv
+  landTopic topicId newEnv
 
 
 createBox : Env -> (Model, Cmd Msg)
@@ -492,21 +492,18 @@ createBox ({model} as env) =
   newModel
     |> TM.create boxId
     |> Env.withModel env
-    |> landTopic boxId Collapsed
+    |> landTopic boxId
 
 
-landTopic : Id -> Expansion -> Env -> (Model, Cmd Msg)
-landTopic topicId expansion ({model} as env) =
+landTopic : Id -> Env -> (Model, Cmd Msg)
+landTopic topicId ({model} as env) =
   let
     boxPath = Sel.landingBoxPath model
     boxId = Box.firstId boxPath
-    props = TopicP <| TopicProps
-      ( TM.initTopicPos boxId model )
-      expansion
   in
   model
-    |> Box.addItem (BoxItem topicId expansion) boxId
-    |> TM.addItem topicId props boxId
+    |> Box.addItem (BoxItem topicId Collapsed) boxId
+    |> TM.addItem topicId boxId
     |> Sel.select topicId boxPath
     |> Env.withModel env
     |> Text.enterEdit topicId boxPath

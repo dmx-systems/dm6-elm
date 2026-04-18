@@ -365,29 +365,9 @@ revealRelTopic (topicId, assocId) ({model} as env) =
 
 revealItem : Id -> BoxId -> Model -> Model
 revealItem itemId boxId model =
-  if Box.hasItem itemId boxId model then
-    let
-      _ = U.info "Search.revealItem" <| fromInt itemId ++ " is in " ++ fromInt boxId
-        ++ " already"
-    in
-    model
-  else
-    -- ### FIXME: restore expansion and pos
-    let
-      _ = U.info "Search.revealItem" <| fromInt itemId ++ " not in " ++ fromInt boxId
-      props = TM.initItemProps itemId boxId model
-    in
-    model
-      |> Box.addItem (BoxItem itemId (expansionFrom props)) boxId
-      |> TM.addItem itemId props boxId
-
-
--- ### TODO: model BoxItem for topic/assoc
-expansionFrom : ItemProps -> Expansion
-expansionFrom props =
-  case props of
-    TopicP {expansion} -> expansion
-    AssocP _ -> Collapsed
+  model
+    |> Box.addItem (BoxItem itemId Collapsed) boxId
+    |> TM.addItem itemId boxId
 
 
 -- "searchTopics" instead "search" avoids shadowing
