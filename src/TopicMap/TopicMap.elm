@@ -1,6 +1,6 @@
-module TopicMap.TopicMap exposing (update, fullscreen, byId, updateRect, updateScrollPos,
-  visibleTopics, visibleAssocs, topicPos, setTopicPos, updateTopicPos, topicPropsOrNothing,
-  initLimboTopicProps, initTopicPos, assocGeometry, create, addItem, revelationBoxId,
+module TopicMap.TopicMap exposing (update, create, visibleTopics, visibleAssocs, topicPos,
+  setTopicPos, updateTopicPos, topicPropsOrNothing, assocGeometry, addItem, initLimboTopicProps,
+  initTopicPos, hasItem, fullscreen, byId, updateRect, updateScrollPos, revelationBoxId,
   revelationBoxPath, landingTarget)
 
 import Box
@@ -33,26 +33,6 @@ update msg ({model, undoModel} as env) =
 
 
 --
-
-fullscreen : Model -> Maybe TopicMap
-fullscreen model =
-  byId model.boxId model
-
-
-{-| Logs an error if TopicMap does not exist. -}
-byId : BoxId -> Model -> Maybe TopicMap
-byId mapId model =
-  case byIdOrNothing mapId model of
-    Just map -> Just map
-    Nothing -> U.boxNotFound "TopicMap.byId" mapId Nothing
-
-
--- Not publically used
-byIdOrNothing : BoxId -> Model -> Maybe TopicMap
-byIdOrNothing mapId model =
-  model.topicMap
-    |> Dict.get mapId
-
 
 create : BoxId -> Model -> Model
 create mapId model =
@@ -261,6 +241,22 @@ hasItem itemId mapId model =
   case byId mapId model of
     Just map -> map.items |> Dict.member itemId
     Nothing -> U.fail "TopicMap.hasItem" {itemId = itemId, mapId = mapId} False
+
+
+{-| Logs an error if TopicMap does not exist.
+### FIXME: support other renderers
+-}
+fullscreen : Model -> Maybe TopicMap
+fullscreen model =
+  byId model.boxId model
+
+
+{-| Logs an error if TopicMap does not exist. -}
+byId : BoxId -> Model -> Maybe TopicMap
+byId mapId model =
+  case model.topicMap |> Dict.get mapId of
+    Just map -> Just map
+    Nothing -> U.boxNotFound "TopicMap.byId" mapId Nothing
 
 
 --

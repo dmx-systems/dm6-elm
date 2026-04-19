@@ -209,8 +209,8 @@ viewLimboAssoc boxId model =
           in
           case Item.assocById assocId model of
             Just assoc ->
-              if Box.hasItem topicId boxId model then
-                -- only if related topic is in box we can call high-level viewAssoc()
+              -- only if player topic has geometry already we can call high-level viewAssoc()
+              if TM.hasItem topicId boxId model then
                 viewAssoc assoc [boxId] [] model -- simple box path is sufficient for geometry,
                                                  -- limbo assoc is never selected
               else
