@@ -7,7 +7,8 @@ import Json.Encode as E
 
 
 
-type alias Model = Dict BoxId TopicList
+type alias Model =
+  Dict BoxId TopicList
 
 
 init : Model

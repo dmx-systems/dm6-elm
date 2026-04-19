@@ -13,34 +13,32 @@ import String exposing (fromInt)
 
 
 -- TODO: unify these 2
-topics : BoxId -> Model -> Maybe (List TopicInfo)
+topics : BoxId -> Model -> List TopicInfo
 topics boxId model =
   case itemSetOf boxId model of
-    Just itemSet -> Just
-      (itemSet.items |> List.foldr
+    Just itemSet ->
+      itemSet.items |> List.foldr
         (\setItem topicsAcc ->
           case Item.topicOrNothing setItem.id model of
             Just topic -> topic :: topicsAcc
             Nothing -> topicsAcc
         )
         []
-      )
-    Nothing -> Nothing
+    Nothing -> []
 
 
-assocs : BoxId -> Model -> Maybe (List AssocInfo)
+assocs : BoxId -> Model -> List AssocInfo
 assocs boxId model =
   case itemSetOf boxId model of
-    Just itemSet -> Just
-      (itemSet.items |> List.foldr
+    Just itemSet ->
+      itemSet.items |> List.foldr
         (\setItem assocsAcc ->
           case Item.assocOrNothing setItem.id model of
             Just assoc -> assoc :: assocsAcc
             Nothing -> assocsAcc
         )
         []
-      )
-    Nothing -> Nothing
+    Nothing -> []
 
 
 -- Create box

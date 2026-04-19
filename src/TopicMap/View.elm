@@ -209,7 +209,7 @@ viewLimboAssoc boxId model =
           in
           case Item.assocById assocId model of
             Just assoc ->
-              -- only if player topic has geometry already we can call high-level viewAssoc()
+              -- only if player topic has geometry in this map already we can call viewAssoc()
               if TM.hasItem topicId boxId model then
                 viewAssoc assoc [boxId] [] model -- simple box path is sufficient for geometry,
                                                  -- limbo assoc is never selected
@@ -538,9 +538,8 @@ viewItemCount : BoxId -> Model -> List (Html Msg)
 viewItemCount boxId model =
   let
     itemCount =
-      case Box.topics boxId model of
-        Just topics -> topics |> List.length
-        Nothing -> 0
+      Box.topics boxId model
+        |> List.length
   in
   [ div
       itemCountStyle

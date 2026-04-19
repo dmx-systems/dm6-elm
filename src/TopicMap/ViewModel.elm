@@ -16,7 +16,7 @@ import Utils as U
 topicsToRender : TopicMap -> Model -> List MapItem
 topicsToRender map model =
   let
-    topics = TM.visibleTopics map model |> List.map
+    topics = TM.topics map model |> List.map
       (\mapItem ->
         { mapItem
         | props =
@@ -34,7 +34,7 @@ topicsToRender map model =
 {- Projects box data and search state ("limbo") into a TopicMap render model -}
 assocsToRender : TopicMap -> Model -> List MapItem
 assocsToRender =
-   TM.visibleAssocs
+   TM.assocs
 
 
 effectiveExpansion : Id -> TopicProps -> BoxId -> Model -> TopicProps

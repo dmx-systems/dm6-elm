@@ -1,5 +1,5 @@
-module TopicMap.TopicMap exposing (update, create, visibleTopics, visibleAssocs, topicPos,
-  setTopicPos, updateTopicPos, topicPropsOrNothing, assocGeometry, addItem, initLimboTopicProps,
+module TopicMap.TopicMap exposing (update, create, topics, assocs, topicPos, setTopicPos,
+  updateTopicPos, topicPropsOrNothing, assocGeometry, addItem, initLimboTopicProps,
   initTopicPos, hasItem, fullscreen, byId, updateRect, updateScrollPos, revelationBoxId,
   revelationBoxPath, landingTarget)
 
@@ -49,32 +49,26 @@ create_ map ({topicMap} as model) =
 
 
 -- TODO: unify these 2
-visibleTopics : TopicMap -> Model -> List MapItem
-visibleTopics map model =
-  case Box.topics map.id model of
-    Just topics ->
-      topics |> List.foldr
-        (\topic itemsAcc ->
-          case itemById_ topic.id map of
-            Just item -> item :: itemsAcc
-            Nothing -> itemsAcc
-        )
-        []
-    Nothing -> []
+topics : TopicMap -> Model -> List MapItem
+topics map model =
+  Box.topics map.id model |> List.foldr
+    (\topic itemsAcc ->
+      case itemById_ topic.id map of
+        Just item -> item :: itemsAcc
+        Nothing -> itemsAcc
+    )
+    []
 
 
-visibleAssocs : TopicMap -> Model -> List MapItem
-visibleAssocs map model =
-  case Box.assocs map.id model of
-    Just assocs ->
-      assocs |> List.foldr
-        (\assoc itemsAcc ->
-          case itemById_ assoc.id map of
-            Just item -> item :: itemsAcc
-            Nothing -> itemsAcc
-        )
-        []
-    Nothing -> []
+assocs : TopicMap -> Model -> List MapItem
+assocs map model =
+  Box.assocs map.id model |> List.foldr
+    (\assoc itemsAcc ->
+      case itemById_ assoc.id map of
+        Just item -> item :: itemsAcc
+        Nothing -> itemsAcc
+    )
+    []
 
 
 {-| Logs an error if TopicMap does not exist, or topic is not in TopicMap, or ID refers not a
