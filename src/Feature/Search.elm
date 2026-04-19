@@ -367,7 +367,8 @@ revealItem : Id -> BoxId -> Model -> Model
 revealItem itemId boxId model =
   model
     |> Box.addItem (BoxItem itemId Collapsed) boxId
-    |> TM.addItem itemId boxId
+    |> TM.addItem itemId boxId Default
+    |> Tuple.first -- Note: Cmd is ignored, OK for the moment ;-)
 
 
 -- "searchTopics" instead "search" avoids shadowing

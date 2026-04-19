@@ -503,7 +503,8 @@ landTopic topicId ({model} as env) =
   in
   model
     |> Box.addItem (BoxItem topicId Collapsed) boxId
-    |> TM.addItem topicId boxId
+    |> TM.addItem topicId boxId Default
+    |> Tuple.first -- Note: Cmd is ignored, OK for the moment ;-)
     |> Sel.select topicId boxPath
     |> Env.withModel env
     |> Text.enterEdit topicId boxPath

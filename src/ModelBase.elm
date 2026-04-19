@@ -1,8 +1,8 @@
 module ModelBase exposing (Id, Item, ItemInfo(..), AssocIds, TopicInfo, Icon, TextSize, Size,
   SizeField(..), Point, Rectangle, AssocInfo, AssocType(..), ItemSet, SetItem, Box, BoxId,
   BoxPath, Target, rootBoxId, BoxItem, Expansion(..), ImageId, Attrs, PointerType, Extensions,
-  ExtName, ExtLabel, Renderer, encodeItem, encodeItemSet, encodeBox, encodeExpansion,
-  itemDecoder, itemSetDecoder, boxDecoder, expansionDecoder, toDictDecoder)
+  ExtName, ExtLabel, Renderer, PosHint(..), encodeItem, encodeItemSet, encodeBox,
+  encodeExpansion, itemDecoder, itemSetDecoder, boxDecoder, expansionDecoder, toDictDecoder)
 
 import Dict exposing (Dict)
 import Html exposing (Attribute)
@@ -143,7 +143,13 @@ type alias ExtName = String
 type alias ExtLabel = String
 type alias Extensions = List (ExtName, ExtLabel)
 
+
 type alias Renderer = String
+
+
+type PosHint
+  = Default
+  | Random
 
 
 

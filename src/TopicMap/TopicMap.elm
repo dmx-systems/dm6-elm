@@ -1,21 +1,38 @@
-module TopicMap.TopicMap exposing (fullscreen, byId, updateRect, updateScrollPos, visibleTopics,
-  visibleAssocs, topicPos, setTopicPos, updateTopicPos, topicPropsOrNothing,
+module TopicMap.TopicMap exposing (update, fullscreen, byId, updateRect, updateScrollPos,
+  visibleTopics, visibleAssocs, topicPos, setTopicPos, updateTopicPos, topicPropsOrNothing,
   initLimboTopicProps, initTopicPos, assocGeometry, create, addItem, revelationBoxId,
   revelationBoxPath, landingTarget)
 
 import Box
 import Config as C
+import Env exposing (Env)
 import Feature.SearchDef exposing (SearchResult(..))
 import Feature.Sel as Sel
 import Item
-import Model exposing (Model)
+import Model exposing (Model, Msg)
 import ModelBase exposing (..)
-import TopicMap.TopicMapDef exposing (TopicMap, MapItem, ItemProps(..), TopicProps)
+import Storage as S
+import TopicMap.TopicMapDef as TopicMapDef exposing (TopicMap, MapItem, ItemProps(..),
+  TopicProps)
+import Undo exposing (UndoModel)
 import Utils as U
 
 import Dict
+import Random
 
 
+
+-- UPDATE
+
+
+update : TopicMapDef.Msg -> Env -> (UndoModel, Cmd Msg)
+update msg ({model, undoModel} as env) =
+  case msg of
+    TopicMapDef.AddTopic topicId mapId pos -> addTopic topicId mapId pos model
+      |> S.store |> Undo.push undoModel
+
+
+--
 
 fullscreen : Model -> Maybe TopicMap
 fullscreen model =
@@ -49,22 +66,6 @@ create mapId model =
 create_ : TopicMap -> Model -> Model
 create_ map ({topicMap} as model) =
   { model | topicMap = topicMap |> Dict.insert map.id map }
-
-
-updateRect : BoxId -> (Rectangle -> Rectangle) -> Model -> Model
-updateRect mapId transform model =
-  model |> update mapId
-    (\map ->
-      { map | rect = transform map.rect }
-    )
-
-
-updateScrollPos : BoxId -> (Point -> Point) -> Model -> Model
-updateScrollPos mapId transform model =
-  model |> update mapId
-    (\map ->
-      { map | scroll = transform map.scroll }
-    )
 
 
 -- TODO: unify these 2
@@ -109,7 +110,7 @@ topicPos topicId mapId model =
 {-| Logs an error if TopicMap does not exist, or if topic is not in TopicMap -}
 setTopicPos : Id -> BoxId -> Point -> Model -> Model
 setTopicPos topicId mapId pos model =
-  model |> updateTopicProps_ topicId mapId
+  model |> updateTopicProps topicId mapId
     (\props -> { props | pos = pos })
 
 
@@ -117,7 +118,7 @@ setTopicPos topicId mapId pos model =
 updateTopicPos : Id -> BoxId -> (Point -> Point) -> Model -> Model
 updateTopicPos topicId mapId transform model =
   model
-    |> updateTopicProps_ topicId mapId
+    |> updateTopicProps topicId mapId
       (\props -> { props | pos = transform props.pos })
 
 
@@ -155,18 +156,53 @@ assocGeometry assoc mapId model =
     Nothing -> U.fail "TopicMap.assocGeometry" { assoc = assoc, mapId = mapId } Nothing
 
 
-addItem : Id -> BoxId -> Model -> Model
-addItem itemId mapId model =
+addItem : Id -> BoxId -> PosHint -> Model -> (Model, Cmd Msg)
+addItem itemId mapId posHint model =
   if hasItem itemId mapId model then
-    model
+    (model, Cmd.none)
   else
-    let
-      mapItem = MapItem itemId <| initItemProps itemId mapId model
-      _ = U.info "TopicMap.addItem" {itemId = itemId, mapId = mapId}
-    in
-    model
-      |> update mapId
-        (\map -> { map | items = map.items |> Dict.insert itemId mapItem })
+    if posHint == Random then
+      let
+        toMsg = Model.TopicMap << TopicMapDef.AddTopic itemId mapId
+      in
+      (model, Random.generate toMsg pointGen)
+    else
+      let
+        mapItem = MapItem itemId <| initItemProps itemId mapId model
+        _ = U.info "TopicMap.addItem" {itemId = itemId, mapId = mapId}
+      in
+      ( model |> updateTopicMap mapId
+          (\map ->
+            { map | items = map.items |> Dict.insert itemId mapItem }
+          )
+      , Cmd.none
+      )
+
+
+addTopic : Id -> BoxId -> Point -> Model -> Model
+addTopic topicId mapId pos model =
+  let
+    mapItem = MapItem topicId <| TopicP <| TopicProps pos Collapsed
+  in
+  model
+    |> updateTopicMap mapId
+      (\map ->
+        { map | items = map.items |> Dict.insert topicId mapItem }
+      )
+
+
+pointGen : Random.Generator Point
+pointGen =
+  let
+    cx = C.topicW2 + C.whiteBoxPadding
+    cy = C.topicH2 + C.whiteBoxPadding
+    rw = C.whiteBoxRange.w
+    rh = C.whiteBoxRange.h
+  in
+  Random.map2
+    (\x y -> Point (cx + x) (cy + y))
+    (Random.int 0 rw)
+    (Random.int 0 rh)
 
 
 {-| Initial props for a revealed item -}
@@ -227,30 +263,31 @@ hasItem itemId mapId model =
     Nothing -> U.fail "TopicMap.hasItem" {itemId = itemId, mapId = mapId} False
 
 
-{-| Canonical TopicMap transformation.
-Logs an error if TopicMap does not exist.
--}
-update : BoxId -> (TopicMap -> TopicMap) -> Model -> Model
-update mapId transform ({topicMap} as model) =
-  { model | topicMap =
-    topicMap |> Dict.update mapId
-      (\maybeMap ->
-        case maybeMap of
-          Just map -> Just (transform map)
-          Nothing -> U.boxNotFound "TopicMap.update" mapId Nothing
-      )
-  }
-
-
 --
+
+updateRect : BoxId -> (Rectangle -> Rectangle) -> Model -> Model
+updateRect mapId transform model =
+  model |> updateTopicMap mapId
+    (\map ->
+      { map | rect = transform map.rect }
+    )
+
+
+updateScrollPos : BoxId -> (Point -> Point) -> Model -> Model
+updateScrollPos mapId transform model =
+  model |> updateTopicMap mapId
+    (\map ->
+      { map | scroll = transform map.scroll }
+    )
+
 
 {-| Canonical TopicProps transformation.
 Logs an error if box does not exist, or topic is not in box, or ID refers not a topic (but
 an association).
 -}
-updateTopicProps_ : Id -> BoxId -> (TopicProps -> TopicProps) -> Model -> Model
-updateTopicProps_ topicId mapId transform model =
-  model |> update mapId
+updateTopicProps : Id -> BoxId -> (TopicProps -> TopicProps) -> Model -> Model
+updateTopicProps topicId mapId transform model =
+  model |> updateTopicMap mapId
     (\map ->
       { map | items = map.items |> Dict.update topicId
         (\item_ ->
@@ -259,12 +296,29 @@ updateTopicProps_ topicId mapId transform model =
               case item.props of
                 TopicP props -> Just
                   { item | props = TopicP (transform props) }
-                AssocP _ -> U.topicMismatch "TopicMap.updateTopicProps_" topicId Nothing
-            Nothing -> U.itemNotFound "TopicMap.updateTopicProps_" topicId Nothing
+                AssocP _ -> U.topicMismatch "TopicMap.updateTopicProps" topicId Nothing
+            Nothing -> U.itemNotFound "TopicMap.updateTopicProps" topicId Nothing
         )
       }
     )
 
+
+{-| Canonical TopicMap transformation.
+Logs an error if TopicMap does not exist.
+-}
+updateTopicMap : BoxId -> (TopicMap -> TopicMap) -> Model -> Model
+updateTopicMap mapId transform ({topicMap} as model) =
+  { model | topicMap =
+    topicMap |> Dict.update mapId
+      (\maybeMap ->
+        case maybeMap of
+          Just map -> Just (transform map)
+          Nothing -> U.boxNotFound "TopicMap.updateTopicMap" mapId Nothing
+      )
+  }
+
+
+--
 
 {- The box where to reveal search/traversal results -}
 revelationBoxId : Model -> Maybe BoxId

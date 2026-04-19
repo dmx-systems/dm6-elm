@@ -14,7 +14,6 @@ import Utils as U
 
 import Html.Events exposing (on, onClick, stopPropagationOn)
 import Json.Decode as D
-import Random
 import String exposing (fromInt)
 import Task
 import Time exposing (Posix, posixToMillis)
@@ -176,10 +175,9 @@ mouseUp model =
             -- We distinguish a topic-moved-to-box from a topic-dragged-inside-box by comparing
             -- the dragged topic's parent box.
             shouldMoveToBox = boxId /= targetId
-            msg = MoveTopicToBox id boxId origPos targetId targetPath
           in
           case shouldMoveToBox of
-            True -> Random.generate msg point
+            True -> U.command <| MoveTopicToBox id boxId origPos targetId targetPath
             False -> U.command TopicDragged -- store topic pos
         Drag DragTopic _ _ _ _ _ ->
           let
@@ -211,20 +209,6 @@ mouseUp model =
           Cmd.none
   in
   (setDragState NoDrag model, cmd)
-
-
-point : Random.Generator Point
-point =
-  let
-    cx = C.topicW2 + C.whiteBoxPadding
-    cy = C.topicH2 + C.whiteBoxPadding
-    rw = C.whiteBoxRange.w
-    rh = C.whiteBoxRange.h
-  in
-  Random.map2
-    (\x y -> Point (cx + x) (cy + y))
-    (Random.int 0 rw)
-    (Random.int 0 rh)
 
 
 {- Emulates enter/leave events by the means of geometry. Based on the given pointer

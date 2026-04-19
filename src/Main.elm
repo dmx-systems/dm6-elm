@@ -277,11 +277,13 @@ update msg ({present} as undoModel) =
     -- gestures detected by Mouse module
     CreateAssoc player1 player2 boxId -> createAssoc player1 player2 boxId present |> S.store
       |> Undo.push undoModel
-    MoveTopicToBox topicId boxId origPos targetId targetPath pos -> moveTopicToBox topicId boxId
-      origPos targetId targetPath pos env |> S.store |> Undo.push undoModel
+    MoveTopicToBox topicId boxId origPos targetId targetPath -> moveTopicToBox topicId boxId
+      origPos targetId targetPath env |> S.storeWith |> Undo.push undoModel
     TopicDragged -> present |> S.store |> Undo.swap undoModel
     ItemClicked itemId boxPath -> select itemId boxPath present |> Undo.swap undoModel
     Cancel maybeTarget -> cancelUI maybeTarget env |> Undo.swap undoModel
+    -- renderer modules
+    TopicMap topicMapMsg -> TM.update topicMapMsg env
     -- feature modules
     Tool toolMsg -> Tool.update toolMsg env
     Text textMsg -> Text.update textMsg env
@@ -309,21 +311,26 @@ createAssocAndAddToBox assocType player1 player2 boxId model =
   in
   newModel
     |> Box.addItem (BoxItem assocId Collapsed) boxId
-    |> TM.addItem assocId boxId -- TODO: don't operate on "topicMap" directly
+    |> TM.addItem assocId boxId Default -- TODO: don't operate on "topicMap" directly
+    |> Tuple.first -- Note: Cmd is ignored, OK for the moment ;-)
 
 
-moveTopicToBox : Id -> BoxId -> Point -> BoxId -> BoxPath -> Point -> Env -> Model
-moveTopicToBox topicId boxId origPos targetBoxId targetPath pos ({model} as env) =
+moveTopicToBox : Id -> BoxId -> Point -> BoxId -> BoxPath -> Env -> (Model, Cmd Msg)
+moveTopicToBox topicId boxId origPos targetBoxId targetPath ({model} as env) =
   case Box.expansionOf topicId boxId model of
     Just expansion ->
       model
         |> Box.addItem (BoxItem topicId expansion) targetBoxId
         |> Box.removeItem topicId boxId
         |> TM.setTopicPos topicId boxId origPos
-        |> TM.addItem topicId targetBoxId -- ### TODO: use "pos"
-        |> Sel.select targetBoxId targetPath
-        |> Env.autoSize env
-    Nothing -> model
+        |> TM.addItem topicId targetBoxId Random
+        |> \(model_, cmd) ->
+          ( model_
+              |> Sel.select targetBoxId targetPath
+              |> Env.autoSize env
+          , cmd
+          )
+    Nothing -> (model, Cmd.none)
 
 
 select : Id -> BoxPath -> Model -> (Model, Cmd Msg)

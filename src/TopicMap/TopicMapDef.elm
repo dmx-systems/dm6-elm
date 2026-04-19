@@ -1,5 +1,5 @@
 module TopicMap.TopicMapDef exposing (Model, TopicMap, MapItem, ItemProps(..),
-  TopicProps, AssocProps, init, encode, decoder)
+  TopicProps, AssocProps, Msg(..), init, encode, decoder)
 
 import ModelBase exposing (..)
 import Dict exposing (Dict)
@@ -44,6 +44,10 @@ type alias TopicProps =
 
 type alias AssocProps =
   {}
+
+
+type Msg
+  = AddTopic Id BoxId Point -- random pos
 
 
 
