@@ -1,6 +1,6 @@
 module Item exposing (topicById, topicOrNothing, assocById, assocOrNothing, byId, topicLabel,
   topicSize, setTopicSize, updateTopic, createTopic, createAssoc, relatedItems, otherPlayerId,
-  assocIds, update, hasPlayer, isBox, nextId)
+  assocIds, update, isBox, nextId)
 
 import Config as C
 import Model exposing (Model)
@@ -213,6 +213,7 @@ update itemId transform model =
   }
 
 
+-- Not used
 hasPlayer : Id -> Model -> Id -> Bool
 hasPlayer playerId model assocId =
   case assocById assocId model of

@@ -1,7 +1,6 @@
 module TopicMap.ViewModel exposing (topicsToRender, assocsToRender, isLimboTopic,
   isLimboAssoc, limboState)
 
-import Item
 import Box
 import Feature.SearchDef exposing (SearchResult(..))
 import Model exposing (Model)
@@ -66,18 +65,6 @@ limboMapItem map model =
       else
         []
     Nothing -> []
-
-
--- Not used
-isLimboItem : MapItem -> BoxId -> Model -> Bool
-isLimboItem item boxId model =
-  let
-    isLimbo =
-      case item.props of
-        TopicP _ -> isLimboTopic
-        AssocP _ -> isLimboAssoc
-  in
-  isLimbo item.id boxId model
 
 
 isLimboTopic : Id -> BoxId -> Model -> Bool

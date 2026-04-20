@@ -16,7 +16,6 @@ import Model exposing (Model, Msg(..))
 import ModelBase exposing (..)
 import Storage as S
 import TopicMap.TopicMap as TM
-import TopicMap.TopicMapDef exposing (ItemProps(..), TopicProps)
 import Undo exposing (UndoModel)
 import Utils as U
 

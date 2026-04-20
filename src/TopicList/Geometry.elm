@@ -11,8 +11,6 @@ import TopicList.TopicList as TL
 import TopicList.TopicListDef exposing (TopicList)
 import Utils as U
 
-import String exposing (fromInt)
-
 
 
 -- Hit Test

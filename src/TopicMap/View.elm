@@ -17,6 +17,7 @@ import TopicMap.TopicMap as TM
 import TopicMap.TopicMapDef exposing (TopicMap, ItemProps(..), TopicProps)
 import TopicMap.ViewModel as VM
 import Utils as U
+import ViewBase as VB
 
 import Html exposing (Html, div, text)
 import Html.Attributes exposing (id, style)
@@ -131,38 +132,21 @@ boxInfo : BoxId -> BoxPath -> ExtManager -> Model -> BoxInfo
 boxInfo boxId boxPath ext model =
   case TM.byId boxId model of
     Just map ->
+      let
+        width = map.rect.x2 - map.rect.x1
+        height = map.rect.y2 - map.rect.y1
+      in
       ( viewItems map boxPath ext model
       , map.rect
-      , ( { w = (map.rect.x2 - map.rect.x1) |> fromInt
-          , h = (map.rect.y2 - map.rect.y1) |> fromInt
+      , ( { w = fromInt width
+          , h = fromInt height
           }
-        , if Box.isFullscreen boxId model then
-            []
-          else
-            nestedBoxStyle boxId map.rect boxPath model
+        , VB.boxStyle boxId (Size width height) boxPath model
         )
       )
     Nothing ->
       U.fail "boxInfo" {boxId = boxId, boxPath = boxPath}
         ( ([], []), Rectangle 0 0 0 0, ( {w = "0", h = "0"}, [] ))
-
-
-nestedBoxStyle : Id -> Rectangle -> BoxPath -> Model -> Attrs Msg
-nestedBoxStyle topicId rect boxPath model =
-  let
-    width = rect.x2 - rect.x1
-    height = rect.y2 - rect.y1
-    r = fromInt C.whiteBoxRadius ++ "px"
-  in
-  [ style "position" "absolute"
-  , style "left" <| fromInt -C.topicBorderWidth ++ "px"
-  , style "top" <| fromInt (C.topicSize.h - 2 * C.topicBorderWidth) ++ "px"
-  , style "width" <| fromInt width ++ "px"
-  , style "height" <| fromInt height ++ "px"
-  , style "border-radius" <| "0 " ++ r ++ " " ++ r ++ " " ++ r
-  ]
-  ++ topicBorderStyle topicId boxPath model
-  ++ selectionStyle topicId boxPath model
 
 
 -- For the fullscreen box boxPath is empty
@@ -281,7 +265,7 @@ labelTopic : TopicInfo -> TopicProps -> BoxPath -> Model -> TopicRendering
 labelTopic topic props boxPath model =
   ( topicPosStyle props
       ++ topicFlexboxStyle topic props boxPath model
-      ++ selectionStyle topic.id boxPath model
+      ++ VB.selectionStyle topic.id boxPath model
   , viewLabelTopic topic props boxPath model
   )
 
@@ -347,7 +331,7 @@ detailTopic topic props boxPath model =
   , [ div
       ( iconBoxStyle topic.id props model
         ++ detailTopicIconBoxStyle
-        ++ selectionStyle topic.id boxPath model
+        ++ VB.selectionStyle topic.id boxPath model
       )
       [ Icon.viewTopicIcon topic.id C.topicIconSize topicIconStyle model ]
     , textElem
@@ -374,8 +358,8 @@ detailTextStyle topicId boxPath model =
   , style "padding" <| fromInt C.topicDetailPadding ++ "px"
   , style "border-radius" <| "0 " ++ r ++ " " ++ r ++ " " ++ r
   ]
-  ++ topicBorderStyle topicId boxPath model
-  ++ selectionStyle topicId boxPath model
+  ++ VB.topicBorderStyle topicId boxPath model
+  ++ VB.selectionStyle topicId boxPath model
 
 
 textViewStyle : Attrs Msg
@@ -473,7 +457,7 @@ topicFlexboxStyle topic props boxPath model =
   , style "height" <| fromInt C.topicSize.h ++ "px"
   , style "border-radius" <| r12 ++ " " ++ r12 ++ " " ++ r34 ++ " " ++ r34
   ]
-  ++ topicBorderStyle topic.id boxPath model
+  ++ VB.topicBorderStyle topic.id boxPath model
 
 
 ghostTopicStyle : TopicInfo -> BoxPath -> Model -> Attrs Msg
@@ -486,40 +470,8 @@ ghostTopicStyle topic boxPath model =
   , style "border-radius" <| fromInt C.topicRadius ++ "px"
   , style "z-index" "-1" -- behind topic
   ]
-  ++ topicBorderStyle topic.id boxPath model
-  ++ selectionStyle topic.id boxPath model
-
-
-topicBorderStyle : Id -> BoxPath -> Model -> Attrs Msg
-topicBorderStyle id boxPath model =
-  let
-    isTarget_ = isTarget id boxPath
-    targeted = case model.mouse.dragState of
-      -- can't move a topic to a box where it is already, can happen if mouse moves very quick
-      -- can't create assoc when both topics are in different box
-      Drag DragTopic _ (boxId_ :: _) _ _ target -> isTarget_ target && boxId_ /= id
-      Drag DraftAssoc _ boxPath_ _ _ target -> isTarget_ target && boxPath_ == boxPath
-      _ -> False
-  in
-  [ style "border-width" <| fromInt C.topicBorderWidth ++ "px"
-  , style "border-style" <| if targeted then "dashed" else "solid"
-  , style "box-sizing" "border-box"
-  , style "background-color" "white"
-  ]
-
-
-isTarget : Id -> BoxPath -> Maybe Target -> Bool
-isTarget topicId boxPath target_ =
-  case target_ of
-    Just target -> target == (topicId, boxPath)
-    Nothing -> False
-
-
-selectionStyle : Id -> BoxPath -> Model -> Attrs Msg
-selectionStyle topicId boxPath model =
-  case Sel.isSelectedPath topicId boxPath model of
-    True -> [ style "box-shadow" C.topicBoxShadow ]
-    False -> []
+  ++ VB.topicBorderStyle topic.id boxPath model
+  ++ VB.selectionStyle topic.id boxPath model
 
 
 whiteBoxTopic : TopicInfo -> TopicProps -> BoxPath -> ExtManager -> Model -> TopicRendering

@@ -7,6 +7,7 @@ import Env exposing (ExtManager)
 import Item
 import Model exposing (Model, Msg)
 import ModelBase exposing (..)
+import ViewBase as VB
 
 import Html exposing (Html, div, ul, li, text)
 import Html.Attributes exposing (style)
@@ -21,7 +22,7 @@ import String exposing (fromInt, fromFloat)
 view : BoxId -> BoxPath -> ExtManager -> Model -> Html Msg
 view boxId boxPath ext model =
   div
-    ( listStyle boxId model )
+    ( listStyle boxId boxPath model )
     [ viewList boxId model ]
 
 
@@ -44,25 +45,13 @@ viewList boxId model =
     )
 
 
-listStyle : BoxId -> Model -> Attrs Msg
-listStyle boxId model =
+listStyle : BoxId -> BoxPath -> Model -> Attrs Msg
+listStyle boxId boxPath model =
   let
     size = listSize boxId model
-    r = fromInt C.whiteBoxRadius ++ "px"
   in
-  if Box.isFullscreen boxId model then
-    []
-  else
-    [ style "position" "absolute"
-    , style "left" <| fromInt -C.topicBorderWidth ++ "px"
-    , style "top" <| fromInt (C.topicHeight - 2 * C.topicBorderWidth) ++ "px"
-    , style "width" <| fromInt size.w ++ "px"
-    , style "height" <| fromInt size.h ++ "px"
-    , style "border-radius" <| "0 " ++ r ++ " " ++ r ++ " " ++ r
-    , style "background-color" "white"
-    ]
+  VB.boxStyle boxId size boxPath model
     ++ listFontStyle
-    ++ listBorderStyle
 
 
 listFontStyle : Attrs Msg
@@ -70,14 +59,6 @@ listFontStyle =
   [ style "font-family" C.mainFont
   , style "font-size" <| fromInt C.contentFontSize ++ "px"
   , style "line-height" <| fromFloat C.topicLineHeight
-  ]
-
-
-listBorderStyle : Attrs Msg
-listBorderStyle =
-  [ style "border-width" <| fromInt C.topicBorderWidth ++ "px"
-  , style "border-style" "solid"
-  , style "box-sizing" "border-box"
   ]
 
 

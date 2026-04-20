@@ -1,6 +1,6 @@
 module Box exposing (topics, assocs, create, addItem, removeItem, deleteItem, expansionOf,
-  setExpansion, updateExpansion, rendererOf, setRenderer, hasItem, hasDeepItem, mapTitle,
-  isFullscreen, elemId, firstId, fromPath)
+  updateExpansion, rendererOf, setRenderer, hasItem, hasDeepItem, mapTitle, isFullscreen,
+  elemId, firstId, fromPath)
 
 import Item
 import Model exposing (Model)
