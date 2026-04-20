@@ -316,20 +316,31 @@ createAssocAndAddToBox assocType player1 player2 boxId model =
 
 moveTopicToBox : Id -> BoxId -> Point -> BoxId -> BoxPath -> Model -> (Model, Cmd Msg)
 moveTopicToBox topicId boxId origPos targetBoxId targetPath model =
-  case Box.expansionOf topicId boxId model of
-    Just expansion ->
-      model
-        |> Box.addItem (BoxItem topicId expansion) targetBoxId
-        |> Box.removeItem topicId boxId
-        |> Sel.select targetBoxId targetPath
-        |> TM.setTopicPos topicId boxId origPos
-        |> TM.addItem topicId targetBoxId Random
-    Nothing -> (model, Cmd.none)
+  let
+    expansion = Box.expansionOf topicId boxId model
+  in
+  createBoxOnDemand targetBoxId model
+    |> Box.addItem (BoxItem topicId expansion) targetBoxId
+    |> Box.removeItem topicId boxId
+    |> Sel.select targetBoxId targetPath
+    |> TM.setTopicPos topicId boxId origPos
+    |> TM.addItem topicId targetBoxId Random
+
+
+createBoxOnDemand : Id -> Model -> Model
+createBoxOnDemand topicId model =
+  if Item.isBox topicId model then
+    model
+  else
+    model
+      |> Box.turnTopicIntoBox topicId
+      |> TM.create topicId
 
 
 select : Id -> BoxPath -> Model -> (Model, Cmd Msg)
 select itemId boxPath model =
-  ( model |> Sel.select itemId boxPath
+  ( model
+      |> Sel.select itemId boxPath
   , Cmd.none
   )
 

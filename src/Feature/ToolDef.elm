@@ -34,7 +34,6 @@ type Msg
   | Export
   -- Map Tools
   | CreateTopic
-  | CreateBox
   | Undo
   | Redo
   -- Item Tools

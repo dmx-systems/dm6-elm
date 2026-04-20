@@ -249,20 +249,19 @@ enter (targetId, targetPath) model =
       case model.mouse.dragState of
         Drag dragMode id boxPath origPos lastPos _ ->
           let
-            isBox = Item.isBox targetId model
             isCyclic = Box.hasDeepItem id targetId model
             target =
-              -- the hovered item (targetId) is a drop target if it is
-              -- 1. a box AND
-              -- 2. not contained in item/box being dragged (id), this would create a cycle OR
-              -- 3. draft assoc is in progress
-              if isBox && not isCyclic || dragMode == DraftAssoc then
+              -- the hovered item (targetId) is accepted as a drop target if it is
+              -- 1. not contained in item/box being dragged (id), this would create a cycle OR
+              -- 2. draft assoc is in progress
+              if not isCyclic || dragMode == DraftAssoc then
                 Just (targetId, targetPath)
               else
                 Nothing
           in
           -- update target
-          model |> setDragState (Drag dragMode id boxPath origPos lastPos target)
+          model
+            |> setDragState (Drag dragMode id boxPath origPos lastPos target)
         _ -> model
   in
   -- update hover
@@ -276,7 +275,8 @@ leave (targetId, targetPath) model =
       case model.mouse.dragState of
         Drag dragMode id boxPath origPos lastPos _ ->
           -- reset target
-          model |> setDragState (Drag dragMode id boxPath origPos lastPos Nothing)
+          model
+            |> setDragState (Drag dragMode id boxPath origPos lastPos Nothing)
         _ -> model
   in
   -- reset hover

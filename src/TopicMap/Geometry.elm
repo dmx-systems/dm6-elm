@@ -58,14 +58,12 @@ testChildren pos items boxPath excludeTopicId ext model =
         relPos = relPos_ pos item.id boxPath
         maybeTarget =
           case (Item.isBox item.id model, Box.expansionOf item.id boxId model) of
-            (True, Just Collapsed) -> isHeaderHit model
-            (True, Just Expanded) ->
+            (True, Collapsed) -> isHeaderHit model
+            (True, Expanded) ->
               case ext.hitTest item.id boxPath (relPos model) excludeTopicId model of
                 Just target -> Just target
                 Nothing -> isHeaderHit model
-            (False, Just _) -> isTopicHit item.id boxPath pos model |> maybeItem
-            (_, Nothing) -> U.fail "TopicMap.Geometry.testChildren"
-              { id = item.id, boxId = boxId} Nothing
+            (False, _) -> isTopicHit item.id boxPath pos model |> maybeItem
         -- recursion
         testTailItems = testChildren pos tailItems boxPath excludeTopicId ext
       in
@@ -88,9 +86,8 @@ isTopicHit itemId boxPath pos model =
   in
   -- test depends on topic's expansion
   case Box.expansionOf itemId boxId model of
-    Just Collapsed -> isHeaderHit model
-    Just Expanded -> isHeaderHit model || isDetailHit model
-    Nothing -> U.fail "TopicMap.Geometry.isTopicHit" { itemId = itemId, boxId = boxId} False
+    Collapsed -> isHeaderHit model
+    Expanded -> isHeaderHit model || isDetailHit model
 
 
 {-| Transforms the given screen position to a map-relative position according to the given map.

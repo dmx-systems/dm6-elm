@@ -41,7 +41,7 @@ initTopicPos = Point 104 72
 initTopicText = "New Topic"
 initTopicIcon = Just "disc"
 initBoxText = "New Box"
-initBoxIcon = Just "archive"
+initBoxIcon = Just "archive" -- Not used
 
 topicWidth = 156
 topicHeight = 28 -- also width/height of square icon box

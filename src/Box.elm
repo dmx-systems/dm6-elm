@@ -1,6 +1,6 @@
-module Box exposing (topics, assocs, create, addItem, removeItem, deleteItem, expansionOf,
-  updateExpansion, rendererOf, setRenderer, hasItem, hasDeepItem, mapTitle, isFullscreen,
-  elemId, firstId, fromPath)
+module Box exposing (topics, assocs, turnTopicIntoBox, addItem, removeItem, deleteItem,
+  expansionOf, updateExpansion, rendererOf, setRenderer, hasItem, hasDeepItem, mapTitle,
+  isFullscreen, elemId, firstId, fromPath)
 
 import Item
 import Model exposing (Model)
@@ -43,24 +43,21 @@ assocs boxId model =
 
 -- Create box
 
-create : String -> Maybe Icon -> Model -> (Model, BoxId)
-create text icon model =
+turnTopicIntoBox : Id -> Model -> Model
+turnTopicIntoBox topicId model =
   let
-    (newModel, topicId) = Item.createTopic text icon model
-    setId = newModel.nextId
-    box = Box topicId setId Dict.empty "TopicMap"
+    setId = model.nextId
     set = ItemSet setId []
+    box = Box topicId setId Dict.empty "TopicMap"
   in
-  ( newModel
-      |> create_ box
-      |> createItemSet set
-      |> Item.nextId
-  , topicId
-  )
+  model
+    |> create box
+    |> createItemSet set
+    |> Item.nextId
 
 
-create_ : Box -> Model -> Model
-create_ box ({boxes} as model) =
+create : Box -> Model -> Model
+create box ({boxes} as model) =
   { model | boxes = boxes |> Dict.insert box.id box }
 
 
@@ -254,11 +251,11 @@ deleteItem_ itemId ({topicMap} as model) =
 
 -- Expansion
 
-expansionOf : Id -> BoxId -> Model -> Maybe Expansion
+expansionOf : Id -> BoxId -> Model -> Expansion
 expansionOf topicId boxId model =
   case byId boxId model |> Maybe.andThen (\box -> itemById topicId box model) of
-    Just item -> Just item.expansion
-    Nothing -> U.fail "Box.expansionOf" {topicId = topicId, boxId = boxId} Nothing
+    Just {expansion} -> expansion
+    Nothing -> U.fail "Box.expansionOf" {topicId = topicId, boxId = boxId} Collapsed
 
 
 -- Not used

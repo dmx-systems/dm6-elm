@@ -169,7 +169,6 @@ viewMapTools undoModel =
       -- The create-buttons must not clear the selection but still close menus.
       -- So we set the box where created things land as the target.
       [ viewMapButton "New Topic" "plus-circle" ToolDef.CreateTopic False target
-      , viewMapButton "New Box" "plus-square" ToolDef.CreateBox False target
       , hGap 14
       , viewMapButton "Undo" "rotate-ccw" ToolDef.Undo (not <| Undo.hasPast undoModel) Nothing
       , viewMapButton "Redo" "rotate-cw" ToolDef.Redo (not <| Undo.hasFuture undoModel) Nothing
@@ -357,9 +356,8 @@ viewCaret topicId boxId model =
   let
     icon =
       case Box.expansionOf topicId boxId model of
-        Just Collapsed -> "chevron-right"
-        Just Expanded -> "chevron-down"
-        Nothing -> "??"
+        Collapsed -> "chevron-right"
+        Expanded -> "chevron-down"
   in
   button
     ( [ onClick <| Tool <| ToolDef.ToggleExpansion topicId boxId
@@ -430,7 +428,6 @@ update msg ({model, undoModel} as env) =
     ToolDef.Export -> (model, S.exportJSON ()) |> Undo.swap undoModel
     -- Map Tools
     ToolDef.CreateTopic -> createTopic env |> S.storeWith |> Undo.push undoModel
-    ToolDef.CreateBox -> createBox env |> S.storeWith |> Undo.push undoModel
     ToolDef.Undo -> undoModel |> Undo.undo |> store
     ToolDef.Redo -> undoModel |> Undo.redo |> store
     -- Item Tools
@@ -481,17 +478,6 @@ createTopic ({model} as env) =
     newEnv = Env.withModel env newModel
   in
   landTopic topicId newEnv
-
-
-createBox : Env -> (Model, Cmd Msg)
-createBox ({model} as env) =
-  let
-    (newModel, boxId) = Box.create "" C.initBoxIcon model
-  in
-  newModel
-    |> TM.create boxId
-    |> Env.withModel env
-    |> landTopic boxId
 
 
 landTopic : Id -> Env -> (Model, Cmd Msg)

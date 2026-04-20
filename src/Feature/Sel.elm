@@ -64,9 +64,10 @@ landingBoxPath model =
     Just (id, boxPath) ->
       let
         boxId = Box.firstId boxPath
+        isExpanded = Box.expansionOf id boxId model == Expanded
       in
-      case (Item.isBox id model, Box.expansionOf id boxId model) of
-        (True, Just Expanded) -> id :: boxPath
-        (_, Just _) -> [ model.boxId ]
-        (_, Nothing) -> U.fail "Sel.landingBoxPath" { id = id, boxId = boxId} [ model.boxId ]
+      if Item.isBox id model && isExpanded then
+        id :: boxPath
+      else
+        [ model.boxId ]
     Nothing -> [ model.boxId ]

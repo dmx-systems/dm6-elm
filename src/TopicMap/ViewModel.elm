@@ -38,15 +38,12 @@ assocsToRender =
 
 effectiveExpansion : Id -> TopicProps -> BoxId -> Model -> TopicProps
 effectiveExpansion topicId props boxId model =
-  case Box.expansionOf topicId boxId model of
-    Just expansion ->
-      { props | expansion =
-        if isLimboTopic topicId boxId model then
-          Expanded
-        else
-          expansion
-      }
-    Nothing -> props
+  { props | expansion =
+    if isLimboTopic topicId boxId model then
+      Expanded
+    else
+      Box.expansionOf topicId boxId model
+  }
 
 
 limboMapItem : TopicMap -> Model -> List MapItem
