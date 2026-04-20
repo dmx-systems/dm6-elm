@@ -1,4 +1,4 @@
-module TopicList.TopicListDef exposing (Model, init, encode, decoder)
+module TopicList.TopicListDef exposing (Model, TopicList, init, encode, decoder)
 
 import ModelBase exposing (..)
 import Dict exposing (Dict)

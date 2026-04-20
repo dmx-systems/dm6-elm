@@ -1,7 +1,8 @@
-module TopicList.TopicList exposing (view)
+module TopicList.TopicList exposing (view, listSize)
 
 import Box
 import Config as C
+import Dict
 import Env exposing (ExtManager)
 import Item
 import Model exposing (Model, Msg)
@@ -46,8 +47,7 @@ viewList boxId model =
 listStyle : BoxId -> Model -> Attrs Msg
 listStyle boxId model =
   let
-    width = 240 -- TODO
-    height = 100 -- TODO
+    size = listSize boxId model
     r = fromInt C.whiteBoxRadius ++ "px"
   in
   if Box.isFullscreen boxId model then
@@ -56,8 +56,8 @@ listStyle boxId model =
     [ style "position" "absolute"
     , style "left" <| fromInt -C.topicBorderWidth ++ "px"
     , style "top" <| fromInt (C.topicHeight - 2 * C.topicBorderWidth) ++ "px"
-    , style "width" <| fromInt width ++ "px"
-    , style "height" <| fromInt height ++ "px"
+    , style "width" <| fromInt size.w ++ "px"
+    , style "height" <| fromInt size.h ++ "px"
     , style "border-radius" <| "0 " ++ r ++ " " ++ r ++ " " ++ r
     , style "background-color" "white"
     ]
@@ -79,3 +79,14 @@ listBorderStyle =
   , style "border-style" "solid"
   , style "box-sizing" "border-box"
   ]
+
+
+
+-- MODEL
+
+
+listSize : BoxId -> Model -> Size
+listSize boxId model =
+  case model.topicList |> Dict.get boxId of
+    Just {size} -> size
+    Nothing -> Size 0 0

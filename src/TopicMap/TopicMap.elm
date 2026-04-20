@@ -26,9 +26,9 @@ import Random
 
 
 update : TopicMapDef.Msg -> Env -> (UndoModel, Cmd Msg)
-update msg ({model, undoModel} as env) =
+update msg ({undoModel} as env) =
   case msg of
-    TopicMapDef.AddTopic topicId mapId pos -> addTopic topicId mapId pos model
+    TopicMapDef.AddTopic topicId mapId pos -> addTopic topicId mapId pos env
       |> S.store |> Undo.push undoModel
 
 
@@ -153,16 +153,18 @@ addItem itemId mapId posHint model =
       )
 
 
-addTopic : Id -> BoxId -> Point -> Model -> Model
-addTopic topicId mapId pos model =
-  let
-    mapItem = MapItem topicId <| TopicP <| TopicProps pos Collapsed
-  in
+addTopic : Id -> BoxId -> Point -> Env -> Model
+addTopic topicId mapId pos ({model} as env) =
   model
-    |> updateTopicMap mapId
-      (\map ->
-        { map | items = map.items |> Dict.insert topicId mapItem }
-      )
+    |> updateTopicMap mapId (addTopic_ topicId pos)
+    |> Env.autoSize env
+
+
+addTopic_ : Id -> Point -> TopicMap -> TopicMap
+addTopic_ topicId pos map =
+  { map | items = map.items |> Dict.insert topicId
+      (MapItem topicId <| TopicP <| TopicProps pos Collapsed)
+  }
 
 
 pointGen : Random.Generator Point

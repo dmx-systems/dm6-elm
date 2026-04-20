@@ -278,7 +278,7 @@ update msg ({present} as undoModel) =
     CreateAssoc player1 player2 boxId -> createAssoc player1 player2 boxId present |> S.store
       |> Undo.push undoModel
     MoveTopicToBox topicId boxId origPos targetId targetPath -> moveTopicToBox topicId boxId
-      origPos targetId targetPath env |> S.storeWith |> Undo.push undoModel
+      origPos targetId targetPath present |> S.storeWith |> Undo.push undoModel
     TopicDragged -> present |> S.store |> Undo.swap undoModel
     ItemClicked itemId boxPath -> select itemId boxPath present |> Undo.swap undoModel
     Cancel maybeTarget -> cancelUI maybeTarget env |> Undo.swap undoModel
@@ -315,21 +315,16 @@ createAssocAndAddToBox assocType player1 player2 boxId model =
     |> Tuple.first -- Note: Cmd is ignored, OK for the moment ;-)
 
 
-moveTopicToBox : Id -> BoxId -> Point -> BoxId -> BoxPath -> Env -> (Model, Cmd Msg)
-moveTopicToBox topicId boxId origPos targetBoxId targetPath ({model} as env) =
+moveTopicToBox : Id -> BoxId -> Point -> BoxId -> BoxPath -> Model -> (Model, Cmd Msg)
+moveTopicToBox topicId boxId origPos targetBoxId targetPath model =
   case Box.expansionOf topicId boxId model of
     Just expansion ->
       model
         |> Box.addItem (BoxItem topicId expansion) targetBoxId
         |> Box.removeItem topicId boxId
+        |> Sel.select targetBoxId targetPath
         |> TM.setTopicPos topicId boxId origPos
         |> TM.addItem topicId targetBoxId Random
-        |> \(model_, cmd) ->
-          ( model_
-              |> Sel.select targetBoxId targetPath
-              |> Env.autoSize env
-          , cmd
-          )
     Nothing -> (model, Cmd.none)
 
 
