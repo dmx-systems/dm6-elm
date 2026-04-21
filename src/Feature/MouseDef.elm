@@ -39,5 +39,3 @@ type Msg
   | Move (Point, PointerType)
   | Up
   | Time Time.Posix
-  -- Association
-  | AssocClicked Id BoxPath

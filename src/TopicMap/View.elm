@@ -167,7 +167,7 @@ viewItems map boxPath ext model =
           case Item.assocById id model of
             Just assoc ->
               let
-                clickHandler = Mouse.assocClickHandler id newPath
+                clickHandler = Mouse.itemClickHandler id newPath
               in
               svgAcc ++ viewAssoc assoc newPath clickHandler model
             _ -> U.logError "viewItems" ("problem with assoc " ++ fromInt id) svgAcc

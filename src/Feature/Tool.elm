@@ -97,7 +97,7 @@ menuStyle =
 viewRadioButton : String -> ToolDef.Msg -> Bool -> Html Msg
 viewRadioButton label_ msg isChecked  =
   label
-    [ U.onMouseDownStop NoOp ]
+    [ U.onPointerDownStop NoOp ]
     [ input
       ( [ type_ "radio"
         , name "line-style"
@@ -115,7 +115,7 @@ viewTextButton : String -> ToolDef.Msg -> Html Msg
 viewTextButton label msg =
   button
     ( [ onClick <| Tool msg
-      , U.onMouseDownStop NoOp
+      , U.onPointerDownStop NoOp
       ]
       ++ textButtonStyle
     )
@@ -269,7 +269,7 @@ viewRendererSelect renderer toMsg ext =
   select
     ( [ value renderer
       , on "input" (D.map toMsg targetValue)
-      , U.onMouseDownStop NoOp
+      , U.onPointerDownStop NoOp
       ]
       ++ selectStyle
     )
@@ -361,7 +361,7 @@ viewCaret topicId boxId model =
   in
   button
     ( [ onClick <| Tool <| ToolDef.ToggleExpansion topicId boxId
-      , U.onMouseDownStop NoOp -- prevent cancel UI
+      , U.onPointerDownStop NoOp -- prevent cancel UI
       ]
       ++ caretStyle
     )
@@ -398,7 +398,7 @@ viewIconButton label icon iconSize msg isDisabled maybeTarget extraStyle =
       , title label
       , onClick <| Tool msg
       , disabled isDisabled
-      , U.onMouseDownStop <| Cancel maybeTarget
+      , U.onPointerDownStop <| Cancel maybeTarget
       ]
       ++ iconButtonStyle
       ++ extraStyle

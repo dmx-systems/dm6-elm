@@ -4,6 +4,7 @@ import Box
 import Config as C
 import Dict
 import Env exposing (ExtManager)
+import Feature.Mouse as Mouse
 import Feature.Text as Text
 import Item
 import Model exposing (Model, Msg)
@@ -37,7 +38,11 @@ viewList boxPath model =
     ( Box.topics boxId model
         |> List.map
           (\topic ->
-            li []
+            li
+              ( Mouse.itemClickHandler topic.id boxPath
+                ++
+                VB.selectionStyle topic.id boxPath model
+              )
               ( [ viewTopic topic boxPath model ]
                 ++
                 if Item.isBox topic.id model then
@@ -52,9 +57,19 @@ viewList boxPath model =
 viewTopic : TopicInfo -> BoxPath -> Model -> Html Msg
 viewTopic topic boxPath model =
   if Text.isEdit topic.id boxPath model then
-    Text.viewInput topic boxPath []
+    Text.viewInput topic boxPath inputStyle
   else
     text <| Item.topicLabel topic
+
+
+inputStyle : Attrs Msg
+inputStyle =
+  [ style "font-family" C.mainFont -- Default for <input> is "-apple-system" (on Mac)
+  , style "font-size" <| fromInt C.contentFontSize ++ "px"
+  , style "width" "100%"
+  , style "position" "relative"
+  , style "left" "-4px"
+  ]
 
 
 listStyle : BoxId -> BoxPath -> Model -> Attrs Msg

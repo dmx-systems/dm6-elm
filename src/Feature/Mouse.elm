@@ -1,4 +1,4 @@
-module Feature.Mouse exposing (topicDownHandler, assocClickHandler, dragHandler,
+module Feature.Mouse exposing (topicDownHandler, itemClickHandler, dragHandler,
   isDragInProgress, isHovered, clearHover, update)
 
 import Box
@@ -12,7 +12,7 @@ import TopicMap.TopicMap as TM
 import Undo exposing (UndoModel)
 import Utils as U
 
-import Html.Events exposing (on, onClick, stopPropagationOn)
+import Html.Events exposing (on)
 import Json.Decode as D
 import String exposing (fromInt)
 import Task
@@ -25,27 +25,23 @@ import Time exposing (Posix, posixToMillis)
 
 topicDownHandler : Id -> BoxPath -> Attrs Msg
 topicDownHandler topicId boxPath =
-  [ stopPropagationOn "pointerdown"
-      ( U.pointDecoder |> D.andThen
-          (\pos -> D.succeed
-            ( Mouse <| MouseDef.DownOnTopic topicId boxPath pos
-            , True -- stopPropagation
-            )
-          )
+  [ U.stopPropagationWith "pointerdown"
+      ( U.pointDecoder |> D.map
+          (Mouse << MouseDef.DownOnTopic topicId boxPath)
       )
   ]
 
 
-assocClickHandler : Id -> BoxPath -> Attrs Msg
-assocClickHandler assocId boxPath =
-  [ onClick <| Mouse <| MouseDef.AssocClicked assocId boxPath ]
+itemClickHandler : Id -> BoxPath -> Attrs Msg
+itemClickHandler itemId boxPath =
+  [ U.onClickStop <| ItemClicked itemId boxPath ]
 
 
 dragHandler : Attrs Msg
 dragHandler =
   [ on "pointerdown" <| D.succeed <| Mouse MouseDef.Down
-  , on "pointermove" <| D.map Mouse <| D.map MouseDef.Move U.pointDecoder
-  , on "pointerup" <| D.map Mouse <| D.succeed MouseDef.Up
+  , on "pointermove" <| D.map (Mouse << MouseDef.Move) U.pointDecoder
+  , on "pointerup" <| D.succeed <| Mouse MouseDef.Up
   ]
 
 
@@ -56,15 +52,13 @@ dragHandler =
 update : MouseDef.Msg -> Env -> (UndoModel, Cmd Msg)
 update msg ({model, undoModel} as env) =
   case msg of
-    -- Topic
     MouseDef.Down -> (undoModel, mouseDown)
+    -- Topic
     MouseDef.DownOnTopic id boxPath (pos, pointerType) ->
       mouseDownOnTopic id boxPath pos pointerType model |> Undo.swap undoModel
     MouseDef.Move (pos, _) -> mouseMove pos env |> Undo.swap undoModel
     MouseDef.Up -> mouseUp model |> Undo.swap undoModel
     MouseDef.Time time -> timeArrived time undoModel
-    -- Association
-    MouseDef.AssocClicked id boxPath -> (undoModel, U.command <| ItemClicked id boxPath)
 
 
 mouseDown : Cmd Msg

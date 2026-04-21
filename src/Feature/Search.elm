@@ -39,7 +39,7 @@ viewInput model =
       ( [ value model.search.term
         , onInput (Search << SearchDef.Input)
         , onFocus (Search SearchDef.InputFocused)
-        , U.onMouseDownStop <| Cancel target -- Don't clear selection
+        , U.onPointerDownStop <| Cancel target -- Don't clear selection
         ]
         ++ searchInputStyle
       )
@@ -80,7 +80,7 @@ viewTraversalResult model =
 viewSearchtMenu : List Id -> Model -> Html Msg
 viewSearchtMenu topicIds model =
   div
-    ( [ U.onMouseDownStop NoOp ] -- Prevent search menu closing
+    ( [ U.onPointerDownStop NoOp ] -- Prevent search menu closing
       ++ searchResultStyle
       ++ menuStyle
     )
@@ -111,7 +111,7 @@ viewSearchtMenu topicIds model =
 viewTraversalMenu : List (Id, Id) -> Model -> Html Msg
 viewTraversalMenu relTopicIds model =
   div
-    ( [ U.onMouseDownStop NoOp ] -- Prevent traversal menu closing
+    ( [ U.onPointerDownStop NoOp ] -- Prevent traversal menu closing
       ++ traversalResultStyle
       ++ menuStyle
     )
@@ -215,8 +215,8 @@ viewFullscreenButton id model =
           , title "Fullscreen"
           , disabled isDisabled
           , U.onClickStop <| Search <| SearchDef.Fullscreen id -- don't trigger menu item
-          , U.onMouseOverStop NoOp -- don't highlight menu item along with button
-          , U.onMouseOutStop NoOp -- don't highlight menu item along with button
+          , U.onPointerOverStop NoOp -- don't highlight menu item along with button
+          , U.onPointerOutStop NoOp -- don't highlight menu item along with button
           ]
           ++ fullscreenButtonStyle
         )

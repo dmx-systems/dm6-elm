@@ -46,24 +46,32 @@ onClickStop msg =
   stopPropagation "click" msg
 
 
-onMouseDownStop : msg -> Attribute msg
-onMouseDownStop msg =
+onPointerDownStop : msg -> Attribute msg
+onPointerDownStop msg =
   stopPropagation "pointerdown" msg
 
 
-onMouseOverStop : msg -> Attribute msg
-onMouseOverStop msg =
+onPointerOverStop : msg -> Attribute msg
+onPointerOverStop msg =
   stopPropagation "pointerover" msg
 
 
-onMouseOutStop : msg -> Attribute msg
-onMouseOutStop msg =
+onPointerOutStop : msg -> Attribute msg
+onPointerOutStop msg =
   stopPropagation "pointerout" msg
 
 
 stopPropagation : String -> msg -> Attribute msg
 stopPropagation eventName msg =
   stopPropagationOn eventName <| D.succeed (msg, True) -- stopPropagation=True
+
+
+stopPropagationWith : String -> D.Decoder msg -> Attribute msg
+stopPropagationWith eventName decoder =
+  stopPropagationOn eventName
+    ( decoder
+        |> D.map (\msg -> (msg, True)) -- stopPropagation=True
+    )
 
 
 

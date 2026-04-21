@@ -54,7 +54,7 @@ viewInput topic boxPath style =
       , placeholder C.initTopicText
       , onInput (Text << TextDef.OnTextInput)
       , U.onEnterOrEsc (Text TextDef.LeaveEdit)
-      , U.onMouseDownStop NoOp -- Prevent drag initiation
+      , U.onPointerDownStop NoOp -- Prevent drag initiation
       ]
       ++ style
     )
@@ -69,7 +69,7 @@ viewTextarea topic boxPath style =
       , placeholder C.initTopicText
       , onInput (Text << TextDef.OnTextareaInput)
       , U.onEsc (Text TextDef.LeaveEdit)
-      , U.onMouseDownStop NoOp -- Prevent drag initiation
+      , U.onPointerDownStop NoOp -- Prevent drag initiation
       ]
       ++ style
     )
