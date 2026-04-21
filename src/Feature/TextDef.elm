@@ -1,4 +1,4 @@
-module Feature.TextDef exposing (..)
+module Feature.TextDef exposing (Model, Msg(..), EditState(..), init)
 
 import ModelBase exposing (Id, ImageId, BoxPath, Size, SizeField)
 

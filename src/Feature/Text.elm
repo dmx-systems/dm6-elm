@@ -51,7 +51,7 @@ viewInput topic boxPath style =
   input
     ( [ id <| Box.elemId "input" topic.id boxPath
       , value topic.text
-      , placeholder C.initBoxText
+      , placeholder C.initTopicText
       , onInput (Text << TextDef.OnTextInput)
       , U.onEnterOrEsc (Text TextDef.LeaveEdit)
       , U.onMouseDownStop NoOp -- Prevent drag initiation

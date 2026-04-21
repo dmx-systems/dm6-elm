@@ -270,6 +270,24 @@ labelTopic topic props boxPath model =
   )
 
 
+viewLabelTopic : TopicInfo -> TopicProps -> BoxPath -> Model -> List (Html Msg)
+viewLabelTopic topic props boxPath model =
+  let
+    textElem =
+      if Text.isEdit topic.id boxPath model then
+        Text.viewInput topic boxPath inputStyle
+      else
+        div
+          labelTopicStyle
+          [ text <| Item.topicLabel topic ]
+  in
+  [ div
+    (iconBoxStyle topic.id props model)
+    [ Icon.viewTopicIcon topic.id C.topicIconSize topicIconStyle model ]
+  , textElem
+  ]
+
+
 inputStyle : Attrs Msg
 inputStyle =
   [ style "font-family" C.mainFont -- Default for <input> is "-apple-system" (on Mac)
@@ -281,32 +299,13 @@ inputStyle =
   ]
 
 
-topicLabelStyle : Attrs Msg
-topicLabelStyle =
+labelTopicStyle : Attrs Msg
+labelTopicStyle =
   [ style "font-size" <| fromInt C.contentFontSize ++ "px"
   , style "font-weight" C.topicLabelWeight
   , style "overflow" "hidden"
   , style "text-overflow" "ellipsis"
   , style "white-space" "nowrap"
-  ]
-
-
-viewLabelTopic : TopicInfo -> TopicProps -> BoxPath -> Model -> List (Html Msg)
-viewLabelTopic topic props boxPath model =
-  let
-    textElem =
-      case Text.isEdit topic.id boxPath model of
-        True ->
-          Text.viewInput topic boxPath inputStyle
-        False ->
-          div
-            topicLabelStyle
-            [ text <| Item.topicLabel topic ]
-  in
-  [ div
-    (iconBoxStyle topic.id props model)
-    [ Icon.viewTopicIcon topic.id C.topicIconSize topicIconStyle model ]
-  , textElem
   ]
 
 

@@ -394,4 +394,6 @@ firstId boxPath =
 
 fromPath : BoxPath -> String
 fromPath boxPath =
-  boxPath |> List.map fromInt |> String.join ","
+  boxPath
+    |> List.map fromInt
+    |> String.join ","

@@ -9,7 +9,7 @@ import ModelBase exposing (Point, Size, Rectangle)
 
 rootBoxName = "DM6 Elm"
 version = "0.5-SNAPSHOT"
-date = "Apr 20, 2026"
+date = "Apr 21, 2026"
 
 appHeaderHeight = 36
 
@@ -39,9 +39,7 @@ caretIconSize = 20
 
 initTopicPos = Point 104 72
 initTopicText = "New Topic"
-initTopicIcon = Just "disc"
-initBoxText = "New Box"
-initBoxIcon = Just "archive" -- Not used
+initTopicIcon = Just "circle"
 
 topicWidth = 156
 topicHeight = 28 -- also width/height of square icon box

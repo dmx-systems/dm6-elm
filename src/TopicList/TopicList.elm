@@ -4,6 +4,7 @@ import Box
 import Config as C
 import Dict
 import Env exposing (ExtManager)
+import Feature.Text as Text
 import Item
 import Model exposing (Model, Msg)
 import ModelBase exposing (..)
@@ -23,26 +24,37 @@ view : BoxId -> BoxPath -> ExtManager -> Model -> Html Msg
 view boxId boxPath ext model =
   div
     ( listStyle boxId boxPath model )
-    [ viewList boxId model ]
+    [ viewList (boxId :: boxPath) model ]
 
 
-viewList : BoxId -> Model -> Html Msg
-viewList boxId model =
+viewList : BoxPath -> Model -> Html Msg
+viewList boxPath model =
+  let
+    boxId = Box.firstId boxPath
+  in
   ul
     []
     ( Box.topics boxId model
         |> List.map
           (\topic ->
             li []
-              ( [ text <| Item.topicLabel topic ]
+              ( [ viewTopic topic boxPath model ]
                 ++
                 if Item.isBox topic.id model then
-                  [ viewList topic.id model ]
+                  [ viewList (topic.id :: boxPath) model ]
                 else
                   []
               )
           )
     )
+
+
+viewTopic : TopicInfo -> BoxPath -> Model -> Html Msg
+viewTopic topic boxPath model =
+  if Text.isEdit topic.id boxPath model then
+    Text.viewInput topic boxPath []
+  else
+    text <| Item.topicLabel topic
 
 
 listStyle : BoxId -> BoxPath -> Model -> Attrs Msg
