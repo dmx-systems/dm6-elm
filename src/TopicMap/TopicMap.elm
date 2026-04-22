@@ -165,12 +165,9 @@ pointGen =
 {-| Initial props for a revealed item -}
 initItemProps : Id -> BoxId -> Model -> ItemProps
 initItemProps itemId mapId model =
-  case Item.byId itemId model of
-    Just item ->
-      case item.info of
-        Topic _ -> TopicP <| initTopicProps itemId mapId model
-        Assoc _ -> AssocP {}
-    Nothing -> AssocP {} -- error is already logged
+  case (Item.byId itemId model).info of
+    Topic _ -> TopicP <| initTopicProps itemId mapId model
+    Assoc _ -> AssocP {}
 
 
 {-| Initial props for a revealed topic -}
@@ -221,9 +218,9 @@ hasItem itemId mapId model =
 {-| Logs an error if TopicMap does not exist.
 ### FIXME: support other renderers
 -}
-fullscreen : Model -> Maybe TopicMap
+fullscreen : Model -> TopicMap
 fullscreen model =
-  Just <| byId model.boxId model -- TODO: remove Maybe
+  byId model.boxId model
 
 
 byId : BoxId -> Model -> TopicMap

@@ -153,20 +153,21 @@ viewItems map boxPath ext model =
     topics =
       VM.topicsToRender map model |> List.map
         (\{id, props} ->
-          case (Item.topicById id model, props) of
-            (Just topic, TopicP tProps) -> viewTopic topic tProps newPath ext model
-            _ -> U.logError "viewItems" ("problem with topic " ++ fromInt id) (text "")
+          let
+            topic = Item.topicById id model
+          in
+          case props of
+            TopicP tProps -> viewTopic topic tProps newPath ext model
+            AssocP _ -> U.todo "There are AssocProps in VM.topicsToRender" (text "")
         )
     assocs =
       VM.assocsToRender map model |> List.foldr
         (\{id} svgAcc ->
-          case Item.assocById id model of
-            Just assoc ->
-              let
-                clickHandler = Mouse.itemClickHandler id newPath
-              in
-              svgAcc ++ viewAssoc assoc newPath clickHandler model
-            _ -> U.logError "viewItems" ("problem with assoc " ++ fromInt id) svgAcc
+          let
+            assoc = Item.assocById id model
+            clickHandler = Mouse.itemClickHandler id newPath
+          in
+          svgAcc ++ viewAssoc assoc newPath clickHandler model
         )
         []
   in
@@ -186,24 +187,22 @@ viewLimboAssoc boxId model =
         else
           let
             _ = U.info "viewLimboAssoc" (assocId, "not in map", boxId)
+            assoc = Item.assocById assocId model
           in
-          case Item.assocById assocId model of
-            Just assoc ->
-              -- only if player topic has geometry in this map already we can call viewAssoc()
-              if TM.hasItem topicId boxId model then
-                viewAssoc assoc [boxId] [] model -- simple box path is sufficient for geometry,
-                                                 -- limbo assoc is never selected
-              else
-                -- otherwise we call low-level lineRenderer() with topic default position
-                let
-                  sourceTopicId = Item.otherPlayerId assocId topicId model
-                  pos = TM.topicPos sourceTopicId boxId model
-                in
-                (lineRenderer model)
-                  pos (TM.initTopicPos boxId model) (Just assoc)
-                  [boxId] [] model -- simple box path is sufficient for geometry,
-                                   -- limbo assoc is never selected
-            Nothing -> []
+          -- only if player topic has geometry in this map already we can call viewAssoc()
+          if TM.hasItem topicId boxId model then
+            viewAssoc assoc [boxId] [] model -- simple box path is sufficient for geometry,
+                                             -- limbo assoc is never selected
+          else
+            -- otherwise we call low-level lineRenderer() with topic default position
+            let
+              sourceTopicId = Item.otherPlayerId assocId topicId model
+              pos = TM.topicPos sourceTopicId boxId model
+            in
+            (lineRenderer model)
+              pos (TM.initTopicPos boxId model) (Just assoc)
+              [boxId] [] model -- simple box path is sufficient for geometry,
+                               -- limbo assoc is never selected
       else
         []
     _ -> []
@@ -515,16 +514,17 @@ viewAssocDraft : BoxId -> Model -> List (Svg Msg)
 viewAssocDraft mapId model =
   case model.mouse.dragState of
     Drag DraftAssoc _ boxPath origPos pos _ ->
-      case (Box.firstId boxPath == mapId, TM.fullscreen model) of
-        (True, Just map) ->
-          let
-            pagePos = Point
-              (pos.x + map.scroll.x)
-              (pos.y + map.scroll.y - C.appHeaderHeight)
-          in
-          (lineRenderer model) origPos (relPos pagePos boxPath model) Nothing [mapId] [] model
-          -- simple box path is sufficient for geometry, draft assoc is never selected
-        _ -> []
+      if Box.firstId boxPath == mapId then
+        let
+          map = TM.fullscreen model
+          pagePos = Point
+            (pos.x + map.scroll.x)
+            (pos.y + map.scroll.y - C.appHeaderHeight)
+        in
+        (lineRenderer model) origPos (relPos pagePos boxPath model) Nothing [mapId] [] model
+        -- simple box path is sufficient for geometry, draft assoc is never selected
+      else
+        []
     _ -> []
 
 

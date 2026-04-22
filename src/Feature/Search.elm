@@ -89,21 +89,19 @@ viewSearchtMenu topicIds model =
         let
           isDisabled = isItemDisabled id model
           isHover = isTopicHover id model
+          topic = Item.topicById id model
         in
-        case Item.topicById id model of
-          Just topic ->
-            div
-              ( [ onClick <| Search <| SearchDef.TopicClicked id
-                , on "pointerover" <| D.succeed <| Search <| SearchDef.TopicHovered id
-                , on "pointerout" <| D.succeed <| Search <| SearchDef.TopicUnhovered id
-                ]
-                ++ menuItemStyle isDisabled isHover
-              )
-              [ viewTopicIcon topic model
-              , viewItemText topic
-              , viewFullscreenButton id model
-              ]
-          Nothing -> text "??"
+        div
+          ( [ onClick <| Search <| SearchDef.TopicClicked id
+            , on "pointerover" <| D.succeed <| Search <| SearchDef.TopicHovered id
+            , on "pointerout" <| D.succeed <| Search <| SearchDef.TopicUnhovered id
+            ]
+            ++ menuItemStyle isDisabled isHover
+          )
+          [ viewTopicIcon topic model
+          , viewItemText topic
+          , viewFullscreenButton id model
+          ]
       )
     )
 
@@ -120,21 +118,19 @@ viewTraversalMenu relTopicIds model =
         let
           isDisabled = isItemDisabled id model
           isHover = isRelTopicHover relTopic model
+          topic = Item.topicById id model
         in
-        case Item.topicById id model of
-          Just topic ->
-            div
-              ( [ onClick <| Search <| SearchDef.RelTopicClicked relTopic
-                , on "pointerover" <| D.succeed <| Search <| SearchDef.RelTopicHovered relTopic
-                , on "pointerout" <| D.succeed <| Search <| SearchDef.RelTopicUnhovered relTopic
-                ]
-                ++ menuItemStyle isDisabled isHover
-              )
-              [ viewTopicIcon topic model
-              , viewItemText topic -- TODO: render assoc info
-              , viewFullscreenButton id model
-              ]
-          Nothing -> text "??"
+        div
+          ( [ onClick <| Search <| SearchDef.RelTopicClicked relTopic
+            , on "pointerover" <| D.succeed <| Search <| SearchDef.RelTopicHovered relTopic
+            , on "pointerout" <| D.succeed <| Search <| SearchDef.RelTopicUnhovered relTopic
+            ]
+            ++ menuItemStyle isDisabled isHover
+          )
+          [ viewTopicIcon topic model
+          , viewItemText topic -- TODO: render assoc info
+          , viewFullscreenButton id model
+          ]
       )
     )
 

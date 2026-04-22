@@ -164,21 +164,22 @@ hierarchyAssoc itemId boxId model =
   findHierarchy itemId boxId (Item.assocIds itemId model) model
 
 
+-- TODO: remove Maybe
 findHierarchy : Id -> BoxId -> AssocIds -> Model -> Maybe Id
 findHierarchy itemId boxId assocIds model =
   case assocIds of
-    [] ->
-      U.logError "Box.hierarchyAssoc"
-        ("Hierarchy of " ++ fromInt itemId ++ " in " ++ fromInt boxId ++ " not found")
-        Nothing
     assocId :: ids ->
-      case Item.assocById assocId model of
-        Just {id, assocType, player1, player2} ->
-          if assocType == Hierarchy && player1 == boxId && player2 == itemId then
-            Just id
-          else
-            findHierarchy itemId boxId ids model -- recursion
-        Nothing -> Nothing
+      let
+        {id, assocType, player1, player2} = Item.assocById assocId model
+      in
+      if assocType == Hierarchy && player1 == boxId && player2 == itemId then
+        Just id
+      else
+        findHierarchy itemId boxId ids model -- recursion
+    [] ->
+      U.todo
+        ("Missing Hierarchy of Item " ++ fromInt itemId ++ " in Box " ++ fromInt boxId)
+        Nothing
 
 
 -- Delete item
@@ -199,19 +200,16 @@ deleteItem itemId model =
 
 {-| Removes the association ID from both player's set of association IDs.
 No-op if the given ID refers not to an association (but a topic).
-Logs an error no item for the given ID exists.
+Crashes if no such item exists.
 -}
 removeAssocFromPlayers : Id -> Model -> Model
 removeAssocFromPlayers assocId model =
-  case Item.byId assocId model of
-    Just {info} ->
-      case info of
-        Assoc assoc -> -- Note: assocId and assoc.id are the same
-          model
-            |> removeAssocFromPlayer assoc.id assoc.player1
-            |> removeAssocFromPlayer assoc.id assoc.player2
-        Topic _ -> model
-    Nothing -> model -- error is already logged
+  case (Item.byId assocId model).info of
+    Assoc assoc -> -- Note: assocId and assoc.id are the same
+      model
+        |> removeAssocFromPlayer assoc.id assoc.player1
+        |> removeAssocFromPlayer assoc.id assoc.player2
+    Topic _ -> model
 
 
 {-| Removes an association ID from the item's set of association IDs.
@@ -368,9 +366,8 @@ TODO: rename
 -}
 mapTitle : Model -> String
 mapTitle model =
-  case Item.topicById model.boxId model of
-    Just topic -> Item.topicLabel topic
-    Nothing -> U.fail "mapTitle" model.boxId "??"
+  Item.topicById model.boxId model
+    |> Item.topicLabel
 
 
 isFullscreen : BoxId -> Model -> Bool

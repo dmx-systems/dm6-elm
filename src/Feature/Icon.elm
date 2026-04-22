@@ -68,13 +68,10 @@ iconButtonStyle =
 
 viewTopicIcon : Id -> Int -> Attrs Msg -> Model -> Html Msg
 viewTopicIcon topicId size style_ model =
-  case Item.topicById topicId model of
-    Just topic ->
-      case topic.icon of
-        Just iconName ->
-          view iconName size style_
-        Nothing -> text ""
-    Nothing -> text "?"
+  case (Item.topicById topicId model).icon of
+    Just iconName ->
+      view iconName size style_
+    Nothing -> text ""
 
 
 view : String -> Int -> Attrs Msg -> Html Msg

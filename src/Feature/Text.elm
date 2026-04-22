@@ -239,16 +239,14 @@ openImageFilePicker topicId model =
 
 insertImage : Id -> ImageId -> Model -> (Model, Cmd Msg)
 insertImage topicId imageId model =
-  case Item.topicById topicId model of
-    Just { text } ->
-      let
-        image = "![image](app://image/" ++ fromInt imageId ++ ")"
-        newText = text ++ image
-      in
-      model
-        |> setTopicText topicId newText
-        |> measureText topicId newText
-    Nothing -> (model, Cmd.none)
+  let
+    topic = Item.topicById topicId model
+    image = "![image](app://image/" ++ fromInt imageId ++ ")"
+    newText = topic.text ++ image
+  in
+  model
+    |> setTopicText topicId newText
+    |> measureText topicId newText
 
 
 resolveImageUrls : Model -> List Block -> List Block

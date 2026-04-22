@@ -198,23 +198,20 @@ viewToolbar boxPath ext model =
   case Sel.single model of
     Just (itemId, selBoxPath) ->
       if selBoxPath == boxPath then
-        case Item.byId itemId model of
-          Just {info} ->
-            case info of
-              Topic topic ->
-                let
-                  pos = toolbar.topic topic
-                in
-                case (Text.isEdit itemId boxPath model, Item.isBox itemId model) of
-                  (False, _) -> [ viewTopicToolbar pos itemId boxPath ext model ]
-                  (True, False) -> [ viewTextToolbar pos itemId boxPath ]
-                  _ -> []
-              Assoc assoc ->
-                let
-                  pos = toolbar.assoc assoc
-                in
-                [ viewAssocToolbar pos itemId boxPath ]
-          _ -> []
+        case (Item.byId itemId model).info of
+          Topic topic ->
+            let
+              pos = toolbar.topic topic
+            in
+            case (Text.isEdit itemId boxPath model, Item.isBox itemId model) of
+              (False, _) -> [ viewTopicToolbar pos itemId boxPath ext model ]
+              (True, False) -> [ viewTextToolbar pos itemId boxPath ]
+              _ -> []
+          Assoc assoc ->
+            let
+              pos = toolbar.assoc assoc
+            in
+            [ viewAssocToolbar pos itemId boxPath ]
       else
         []
     Nothing -> []

@@ -70,16 +70,16 @@ setFullscreenBox boxId ({model} as env) =
 
 setViewport : Model -> Cmd Msg
 setViewport model =
-  case TM.fullscreen model of
-    Just map ->
-      Dom.setViewportOf "main" (toFloat map.scroll.x) (toFloat map.scroll.y)
-      |> Task.attempt
-        (\result ->
-          case result of
-            Ok () -> NoOp
-            Err e -> U.logError "setViewport" (U.toString e) NoOp
-        )
-    Nothing -> U.fail "setViewport" model.boxId Cmd.none
+  let
+    map = TM.fullscreen model
+  in
+  Dom.setViewportOf "main" (toFloat map.scroll.x) (toFloat map.scroll.y)
+    |> Task.attempt
+      (\result ->
+        case result of
+          Ok () -> NoOp
+          Err e -> U.logError "setViewport" (U.toString e) NoOp
+      )
 
 
 {- Pushes a new box-URL. This results in rendering the given box fullscreen.

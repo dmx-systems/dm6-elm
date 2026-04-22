@@ -13,65 +13,59 @@ import String exposing (fromInt)
 
 
 {-| Returns a topic by ID.
-Logs an error if no such topic exists, or ID refers not a topic (but an association).
+Crashes if no such item exists, or ID refers not a topic (but an association).
 -}
-topicById : Id -> Model -> Maybe TopicInfo
+topicById : Id -> Model -> TopicInfo
 topicById topicId model =
-  case byId topicId model of
-    Just {info} ->
-      case info of
-        Topic topic -> Just topic
-        Assoc _ -> U.topicMismatch "Item.topicById" topicId Nothing
-    Nothing -> U.fail "Item.topicById" topicId Nothing
+  case (byId topicId model).info of
+    Topic topic -> topic
+    Assoc _ -> U.todo
+      ("Item " ++ fromInt topicId ++ " is an association when a topic is expected")
+      (TopicInfo -1 Nothing "" (TextSize {w = 0, h = 0} {w = 0, h = 0}))
 
 
 {-| Returns a topic by ID, or Nothing if the ID refers not a topic (but an association).
-Logs an error if no such item exists.
+Crashes if no such item exists.
 -}
 topicOrNothing : Id -> Model -> Maybe TopicInfo
 topicOrNothing topicId model =
-  case byId topicId model of
-    Just {info} ->
-      case info of
-        Topic topic -> Just topic
-        Assoc _ -> Nothing
-    Nothing -> U.fail "Item.topicOrNothing" topicId Nothing
+  case (byId topicId model).info of
+    Topic topic -> Just topic
+    Assoc _ -> Nothing
 
 
 {-| Returns an association by ID.
-Logs an error if no such association exists, or ID refers not an association (but a topic).
+Crashes if no such item exists, or ID refers not an association (but a topic).
 -}
-assocById : Id -> Model -> Maybe AssocInfo
+assocById : Id -> Model -> AssocInfo
 assocById assocId model =
-  case byId assocId model of
-    Just {info} ->
-      case info of
-        Topic _ -> U.assocMismatch "Item.assocById" assocId Nothing
-        Assoc assoc -> Just assoc
-    Nothing -> U.fail "Item.assocById" assocId Nothing
+  case (byId assocId model).info of
+    Assoc assoc -> assoc
+    Topic _ -> U.todo
+      ("Item " ++ fromInt assocId ++ " is a topic when an association is expected")
+      (AssocInfo -1 Crosslink -1 -1)
 
 
 {-| Returns an association by ID, or Nothing if the ID refers not an association (but a topic).
-Logs an error if no such item exists.
+Crashes if no such item exists.
 -}
 assocOrNothing : Id -> Model -> Maybe AssocInfo
 assocOrNothing assocId model =
-  case byId assocId model of
-    Just {info} ->
-      case info of
-        Assoc assoc -> Just assoc
-        Topic _ -> Nothing
-    Nothing -> U.fail "Item.assocOrNothing" assocId Nothing
+  case (byId assocId model).info of
+    Assoc assoc -> Just assoc
+    Topic _ -> Nothing
 
 
 {-| Returns an item by ID.
-Logs an error if no such item exists.
+Crashes if no such item exists.
 -}
-byId : Id -> Model -> Maybe Item
+byId : Id -> Model -> Item
 byId itemId model =
   case model.items |> Dict.get itemId of
-    Just item -> Just item
-    Nothing -> U.itemNotFound "Item.byId" itemId Nothing
+    Just item -> item
+    Nothing -> U.todo
+      ("Missing Item " ++ fromInt itemId ++ " in Model.items")
+      (Item -1 (Topic (TopicInfo -1 Nothing "" (TextSize {w = 0, h = 0} {w = 0, h = 0}))) [])
 
 
 topicLabel : TopicInfo -> String
@@ -83,11 +77,10 @@ topicLabel topic =
 
 {-| Logs an error if topic does not exist, or ID refers not a topic (but an association). -}
 -- TODO: rename to textSize/topicTextSize?
+-- TODO: remove Maybe
 topicSize : Id -> (TextSize -> Size) -> Model -> Maybe Size
 topicSize topicId get model =
-  case topicById topicId model of
-    Just { size } -> Just <| get size
-    Nothing -> U.fail "Item.topicSize" {topicId = topicId} Nothing
+  Just <| get (topicById topicId model).size
 
 
 {-| Logs an error if box does not exist, or topic is not in box -}
@@ -164,16 +157,15 @@ relatedItems itemId model =
 
 otherPlayerId : Id -> Id -> Model -> Id
 otherPlayerId assocId playerId model =
-  case assocById assocId model of
-    Just {player1, player2} ->
-      if playerId == player1 then
-        player2
-      else if playerId == player2 then
-        player1
-      else
-        U.logError "Item.otherPlayerId"
-          (fromInt playerId ++ " is not a player in assoc " ++ fromInt assocId) -1
-    Nothing -> -1 -- error is already logged
+  let
+    {player1, player2} = assocById assocId model
+  in
+  if playerId == player1 then
+    player2
+  else if playerId == player2 then
+    player1
+  else
+    U.todo (fromInt playerId ++ " is not a player in assoc " ++ fromInt assocId) -1
 
 
 {-| Returns the item's set of association IDs.
@@ -181,9 +173,7 @@ Logs an error if item does not exist.
 -}
 assocIds : Id -> Model -> AssocIds
 assocIds itemId model =
-  case byId itemId model of
-    Just item -> item.assocIds
-    Nothing -> [] -- error is already logged
+  (byId itemId model).assocIds
 
 
 {-| Inserts an association ID into the item's set of association IDs.
@@ -211,14 +201,6 @@ update itemId transform model =
         Nothing -> U.itemNotFound "Item.update" itemId Nothing
     )
   }
-
-
--- Not used
-hasPlayer : Id -> Model -> Id -> Bool
-hasPlayer playerId model assocId =
-  case assocById assocId model of
-    Just assoc -> assoc.player1 == playerId || assoc.player2 == playerId
-    Nothing -> False
 
 
 {-| useful as a filter predicate -}
