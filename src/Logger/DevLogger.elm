@@ -7,9 +7,16 @@ import Debug
 --- DEV LOGGER
 
 
-log : String -> a -> a
-log = Debug.log
-
-
 toString : a -> String
-toString = Debug.toString
+toString =
+  Debug.toString
+
+
+log : String -> a -> a
+log =
+  Debug.log
+
+
+todo : String -> a -> a
+todo str _ =
+  Debug.todo str

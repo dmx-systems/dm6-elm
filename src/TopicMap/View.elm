@@ -130,23 +130,21 @@ gAttr boxId boxRect model =
 -- For the fullscreen box boxPath is empty
 boxInfo : BoxId -> BoxPath -> ExtManager -> Model -> BoxInfo
 boxInfo boxId boxPath ext model =
-  case TM.byId boxId model of
-    Just map ->
-      let
-        width = map.rect.x2 - map.rect.x1
-        height = map.rect.y2 - map.rect.y1
-      in
-      ( viewItems map boxPath ext model
-      , map.rect
-      , ( { w = fromInt width
-          , h = fromInt height
-          }
-        , VB.boxStyle boxId (Size width height) boxPath model
-        )
-      )
-    Nothing ->
-      U.fail "boxInfo" {boxId = boxId, boxPath = boxPath}
-        ( ([], []), Rectangle 0 0 0 0, ( {w = "0", h = "0"}, [] ))
+  let
+    map = TM.byId boxId model
+  in
+  let
+    width = map.rect.x2 - map.rect.x1
+    height = map.rect.y2 - map.rect.y1
+  in
+  ( viewItems map boxPath ext model
+  , map.rect
+  , ( { w = fromInt width
+      , h = fromInt height
+      }
+    , VB.boxStyle boxId (Size width height) boxPath model
+    )
+  )
 
 
 -- For the fullscreen box boxPath is empty
@@ -578,12 +576,12 @@ accumulatePos posAcc boxId parentBoxId boxIds model =
 
 accumulateRect : Point -> BoxId -> Model -> Point
 accumulateRect posAcc boxId model =
-  case TM.byId boxId model of
-    Just map ->
-      Point
-        (posAcc.x - map.rect.x1)
-        (posAcc.y - map.rect.y1)
-    Nothing -> Point 0 0 -- error is already logged
+  let
+    rect = (TM.byId boxId model).rect
+  in
+  Point
+    (posAcc.x - rect.x1)
+    (posAcc.y - rect.y1)
 
 
 lineRenderer : Model -> LineRenderer

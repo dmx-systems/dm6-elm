@@ -27,26 +27,22 @@ autoSize : BoxPath -> ExtManager -> Model -> (Rectangle, Model)
 autoSize boxPath ext model =
   let
     boxId = Box.firstId boxPath
+    map = TM.byId boxId model
+    topics = VM.topicsToRender map model
+    (rect, model_) =
+      if topics |> List.isEmpty then
+        (C.whiteBoxEmpty, model)
+      else
+        topics |> List.foldr
+          (\mapItem (rectAcc, modelAcc) ->
+            accumulateItem mapItem boxPath rectAcc ext modelAcc
+          )
+          (Rectangle 0 0 0 0, model)
+    newRect = addBoxPadding rect
   in
-  case TM.byId boxId model of
-    Just map ->
-      let
-        topics = VM.topicsToRender map model
-        (rect, model_) =
-          if topics |> List.isEmpty then
-            (C.whiteBoxEmpty, model)
-          else
-            topics |> List.foldr
-              (\mapItem (rectAcc, modelAcc) ->
-                accumulateItem mapItem boxPath rectAcc ext modelAcc
-              )
-              (Rectangle 0 0 0 0, model)
-        newRect = addBoxPadding rect
-      in
-      ( newRect
-      , updateBoxGeometry boxPath newRect map.rect model_
-      )
-    Nothing -> (Rectangle 0 0 0 0, model)
+  ( newRect
+  , updateBoxGeometry boxPath newRect map.rect model_
+  )
 
 
 accumulateItem : MapItem -> BoxPath -> Rectangle -> ExtManager -> Model -> (Rectangle, Model)

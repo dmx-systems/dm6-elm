@@ -25,6 +25,7 @@ type alias Extension =
   , view : NestingBoxRenderer
   , hitTest : NestingHitTest
   , autoSize : NestingAutoSize
+  , toolbar : NestingToolbar
   }
 
 
@@ -47,6 +48,11 @@ type alias NestingAutoSize =
   BoxPath -> ExtManager -> Model -> (Rectangle, Model)
 
 
+-- TODO: wording, note: ExtManager is not passed
+type alias NestingToolbar =
+  BoxId -> Model -> ToolbarPos
+
+
 
 -- VALUES
 
@@ -56,6 +62,7 @@ ext =
   { view = view
   , hitTest = hitTest
   , autoSize = autoSize
+  , toolbar = toolbar
   , all = all
   }
 
@@ -70,6 +77,7 @@ registry =
         , view = TopicMap.View.view
         , hitTest = TopicMap.Geometry.hitTest
         , autoSize = TopicMap.Size.autoSize
+        , toolbar = TopicMap.Geometry.toolbarPos
         }
       )
     , ("List",
@@ -78,6 +86,7 @@ registry =
         , view = TopicList.TopicList.view
         , hitTest = TopicList.Geometry.hitTest
         , autoSize = TopicList.Geometry.autoSize
+        , toolbar = TopicList.Geometry.toolbarPos
         }
       )
     ]
@@ -117,6 +126,12 @@ autoSize : BoxPath -> Model -> (Rectangle, Model)
 autoSize boxPath model =
   dispatch (Box.firstId boxPath) model (Rectangle 0 0 0 0, model)
     (\renderer -> renderer.autoSize boxPath ext model)
+
+
+toolbar : BoxId -> Model -> ToolbarPos
+toolbar boxId model =
+  dispatch boxId model (ToolbarPos (\_ -> Point 0 0) (\_ -> Point 0 0))
+    (\renderer -> renderer.toolbar boxId model)
 
 
 dispatch : BoxId -> Model -> result -> (Extension -> result) -> result

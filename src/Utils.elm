@@ -101,6 +101,13 @@ command msg =
 -- DEBUG
 
 
+todo : String -> a -> a
+todo str val =
+  Logger.todo str val
+
+
+-- TODO: drop remainder
+
 itemNotInBox : String -> Id -> Id -> a -> a
 itemNotInBox funcName itemId boxId val =
   logError funcName ("item " ++ fromInt itemId ++ " not in box " ++ fromInt boxId) val

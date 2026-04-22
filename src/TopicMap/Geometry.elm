@@ -1,4 +1,4 @@
-module TopicMap.Geometry exposing (hitTest)
+module TopicMap.Geometry exposing (hitTest, toolbarPos)
 
 import Box
 import Config as C
@@ -12,6 +12,9 @@ import Utils as U
 
 
 
+-- HIT TEST
+
+
 type alias MapItems =
   List MapItem
 
@@ -22,26 +25,24 @@ If `excludeTopicId` is given that topic/box will be excluded from search.
 -}
 hitTest : BoxId -> BoxPath -> Point -> Maybe Id -> ExtManager -> Model -> Maybe Target
 hitTest boxId boxPath pos excludeTopicId ext model =
-  case TM.byId boxId model of
-    Just map ->
-      let
-        items = TM.topics map model
-        relPos = mapOffset pos map
-      in
-      case testChildren relPos items (boxId :: boxPath) excludeTopicId ext model of
-        Just target -> Just target
-        Nothing ->
-          if Box.isFullscreen boxId model then
-            Nothing
-          else
-            let
-              parentBoxId = Box.firstId boxPath
-            in
-            if isBoxRectHit pos map parentBoxId model then
-              Just (boxId, boxPath)
-            else
-              Nothing
-    Nothing -> Nothing
+  let
+    map = TM.byId boxId model
+    items = TM.topics map model
+    relPos = mapOffset pos map
+  in
+  case testChildren relPos items (boxId :: boxPath) excludeTopicId ext model of
+    Just target -> Just target
+    Nothing ->
+      if Box.isFullscreen boxId model then
+        Nothing
+      else
+        let
+          parentBoxId = Box.firstId boxPath
+        in
+        if isBoxRectHit pos map parentBoxId model then
+          Just (boxId, boxPath)
+        else
+          Nothing
 
 
 testChildren : Point -> MapItems -> BoxPath -> Maybe Id -> ExtManager -> Model -> Maybe Target
@@ -142,3 +143,31 @@ isBoxRectHit pos map parentBoxId model =
       pos.y > 0 &&
       pos.y < map.rect.y2 - map.rect.y1
     Nothing -> False
+
+
+
+-- TOOLBAR
+
+
+toolbarPos : BoxId -> Model -> ToolbarPos
+toolbarPos mapId model =
+  let
+    rect = (TM.byId mapId model).rect
+  in
+  ToolbarPos
+    (\topic ->
+      case TM.topicPos topic.id mapId model of
+        Just topicPos ->
+          Point
+            (topicPos.x - rect.x1 - C.topicW2)
+            (topicPos.y - rect.y1 - C.topicH2 - 29) -- TODO: 29 ≈ toolbar height
+        Nothing -> Point 0 0
+    )
+    (\assoc ->
+      case TM.assocGeometry assoc mapId model of
+        Just (p1, p2) ->
+          Point
+            ((p1.x + p2.x) // 2 - rect.x1 - 32) -- TODO: 32 ≈ toolbar width / 2
+            ((p1.y + p2.y) // 2 - rect.y1 - 13) -- TODO: 13 ≈ toolbar height / 2
+        Nothing -> Point 0 0
+    )

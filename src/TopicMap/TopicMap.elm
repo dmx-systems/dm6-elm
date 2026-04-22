@@ -18,6 +18,7 @@ import Undo exposing (UndoModel)
 import Utils as U
 
 import Dict
+import String exposing (fromInt)
 import Random
 
 
@@ -53,9 +54,7 @@ topics : TopicMap -> Model -> List MapItem
 topics map model =
   Box.topics map.id model |> List.foldr
     (\topic itemsAcc ->
-      case itemById_ topic.id map of
-        Just item -> item :: itemsAcc
-        Nothing -> itemsAcc
+      itemById_ topic.id map :: itemsAcc
     )
     []
 
@@ -64,9 +63,7 @@ assocs : TopicMap -> Model -> List MapItem
 assocs map model =
   Box.assocs map.id model |> List.foldr
     (\assoc itemsAcc ->
-      case itemById_ assoc.id map of
-        Just item -> item :: itemsAcc
-        Nothing -> itemsAcc
+      itemById_ assoc.id map :: itemsAcc
     )
     []
 
@@ -96,17 +93,12 @@ updateTopicPos topicId mapId transform model =
       (\props -> { props | pos = transform props.pos })
 
 
-{-| Logs an error if TopicMap does not exist, or topic is not in TopicMap, or ID refers not a
-topic (but an association).
--}
+{-| Logs an error if ID refers not a topic (but an association). -}
 topicProps : Id -> BoxId -> Model -> Maybe TopicProps
 topicProps topicId mapId model =
-  case itemById topicId mapId model of
-    Just mapItem ->
-      case mapItem.props of
-        TopicP props -> Just props
-        AssocP _ -> U.topicMismatch "TopicMap.topicProps" topicId Nothing
-    Nothing -> U.fail "TopicMap.topicProps" {topicId = topicId, mapId = mapId} Nothing
+  case (itemById topicId mapId model).props of
+    TopicP props -> Just props
+    AssocP _ -> U.topicMismatch "TopicMap.topicProps" topicId Nothing
 
 
 topicPropsOrNothing : Id -> TopicMap -> Maybe TopicProps
@@ -207,36 +199,34 @@ initLimboTopicProps topicId mapId model =
     Expanded
 
 
-{-| Logs an error if box does not exist. -}
 initTopicPos : BoxId -> Model -> Point
 initTopicPos mapId model =
-  case byId mapId model of
-    Just map ->
-      Point
-        (C.initTopicPos.x + map.rect.x1 + map.scroll.x)
-        (C.initTopicPos.y + map.rect.y1 + map.scroll.y)
-    Nothing -> Point 0 0 -- error is already logged
+  let
+    map = byId mapId model
+  in
+  Point
+    (C.initTopicPos.x + map.rect.x1 + map.scroll.x)
+    (C.initTopicPos.y + map.rect.y1 + map.scroll.y)
 
 
 {-| Logs an error if box does not exist, or item is not in box. -}
-itemById : Id -> BoxId -> Model -> Maybe MapItem
+itemById : Id -> BoxId -> Model -> MapItem
 itemById itemId mapId model =
-  byId mapId model
-    |> Maybe.andThen (itemById_ itemId)
+  byId mapId model |> itemById_ itemId
 
 
-itemById_ : Id -> TopicMap -> Maybe MapItem
+itemById_ : Id -> TopicMap -> MapItem
 itemById_ itemId map =
   case map.items |> Dict.get itemId of
-    Just mapItem -> Just mapItem
-    Nothing -> U.itemNotInBox "TopicMap.itemById_" itemId map.id Nothing
+    Just mapItem -> mapItem
+    Nothing -> U.todo
+      ("Missing MapItem " ++ fromInt itemId ++ " in TopicMap " ++ fromInt map.id)
+      (MapItem -1 (TopicP (TopicProps (Point 0 0) Collapsed)))
 
 
 hasItem : Id -> BoxId -> Model -> Bool
 hasItem itemId mapId model =
-  case byId mapId model of
-    Just map -> map.items |> Dict.member itemId
-    Nothing -> U.fail "TopicMap.hasItem" {itemId = itemId, mapId = mapId} False
+  (byId mapId model).items |> Dict.member itemId
 
 
 {-| Logs an error if TopicMap does not exist.
@@ -244,15 +234,16 @@ hasItem itemId mapId model =
 -}
 fullscreen : Model -> Maybe TopicMap
 fullscreen model =
-  byId model.boxId model
+  Just <| byId model.boxId model -- TODO: remove Maybe
 
 
-{-| Logs an error if TopicMap does not exist. -}
-byId : BoxId -> Model -> Maybe TopicMap
+byId : BoxId -> Model -> TopicMap
 byId mapId model =
   case model.topicMap |> Dict.get mapId of
-    Just map -> Just map
-    Nothing -> U.boxNotFound "TopicMap.byId" mapId Nothing
+    Just map -> map
+    Nothing -> U.todo
+      ("Missing TopicMap " ++ fromInt mapId ++ " in Model.topicMap")
+      (TopicMap -1 (Rectangle 0 0 0 0) (Point 0 0) Dict.empty)
 
 
 --

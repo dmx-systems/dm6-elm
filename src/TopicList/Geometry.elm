@@ -1,4 +1,4 @@
-module TopicList.Geometry exposing (hitTest, autoSize)
+module TopicList.Geometry exposing (hitTest, autoSize, toolbarPos)
 
 import Box
 import Config as C
@@ -6,14 +6,15 @@ import Dict
 import Env exposing (ExtManager)
 import Item
 import Model exposing (Model)
-import ModelBase exposing (Id, BoxId, BoxPath, Target, Point, Rectangle, Size)
+import ModelBase exposing (Id, BoxId, BoxPath, Target, Point, Rectangle, Size, ToolbarPos)
 import TopicList.TopicList as TL
 import TopicList.TopicListDef exposing (TopicList)
 import Utils as U
 
 
 
--- Hit Test
+-- HIT TEST
+
 
 hitTest : BoxId -> BoxPath -> Point -> Maybe Id -> ExtManager -> Model -> Maybe Target
 hitTest boxId boxPath pos excludeTopicId ext model =
@@ -39,7 +40,9 @@ isListHovered boxId pos model =
   pos.y < size.h
 
 
--- Auto-Size
+
+-- AUTO-SIZE
+
 
 autoSize : BoxPath -> ExtManager -> Model -> (Rectangle, Model)
 autoSize boxPath ext model =
@@ -69,3 +72,13 @@ topicCount boxId model =
 setSize : BoxId -> Size -> Model -> Model
 setSize boxId size ({topicList} as model) =
   { model | topicList = topicList |> Dict.insert boxId (TopicList boxId size) }
+
+
+
+-- TOOLBAR
+
+
+toolbarPos : BoxId -> Model -> ToolbarPos
+toolbarPos mapId model =
+  -- U.todo "TopicList.Geometry.toolbarPos not yet implemented"
+    (ToolbarPos (\_ -> Point 0 0) (\_ -> Point 0 0))
