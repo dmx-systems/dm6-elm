@@ -36,10 +36,7 @@ hitTest boxId boxPath pos excludeTopicId ext model =
       if Box.isFullscreen boxId model then
         Nothing
       else
-        let
-          parentBoxId = Box.firstId boxPath
-        in
-        if isBoxRectHit pos map parentBoxId model then
+        if isBoxRectHit pos map.rect then
           Just (boxId, boxPath)
         else
           Nothing
@@ -102,31 +99,34 @@ mapOffset pos map =
 
 relPos_ : Point -> BoxId -> BoxPath -> Model -> Point
 relPos_ pos boxId boxPath model =
-  case TM.topicPos boxId (Box.firstId boxPath) model of
-    Just boxPos ->
-      Point
-        (pos.x - boxPos.x + C.topicW2)
-        (pos.y - boxPos.y - C.topicH2)
-    Nothing -> pos
+  let
+    boxPos = TM.topicPos boxId (Box.firstId boxPath) model
+  in
+  Point
+    (pos.x - boxPos.x + C.topicW2)
+    (pos.y - boxPos.y - C.topicH2)
 
 
 -- TODO: factor out common TopicMap.Size code
 
 isTopicHeaderHit : Point -> Id -> BoxId -> Model -> Bool
 isTopicHeaderHit pos topicId boxId model =
-  case TM.topicPos topicId boxId model of
-    Just topicPos ->
-      pos.x > topicPos.x - C.topicW2 - C.topicHeight && -- left edge includes caret area
-      pos.x < topicPos.x + C.topicW2 &&
-      pos.y > topicPos.y - C.topicH2 &&
-      pos.y < topicPos.y + C.topicH2
-    Nothing -> False
+  let
+    topicPos = TM.topicPos topicId boxId model
+  in
+  pos.x > topicPos.x - C.topicW2 - C.topicHeight && -- left edge includes caret area
+  pos.x < topicPos.x + C.topicW2 &&
+  pos.y > topicPos.y - C.topicH2 &&
+  pos.y < topicPos.y + C.topicH2
 
 
 isTopicDetailHit : Point -> Id -> BoxId -> Model -> Bool
 isTopicDetailHit pos topicId boxId model =
-  case (TM.topicPos topicId boxId model, Item.topicSize topicId .view model) of
-    (Just topicPos, Just size) ->
+  let
+    topicPos = TM.topicPos topicId boxId model
+  in
+  case Item.topicSize topicId .view model of
+    Just size ->
       pos.x > topicPos.x - C.topicW2 + C.topicHeight && -- topicHeight = icon box width
       pos.x < topicPos.x - C.topicW2 + C.topicHeight + size.w &&
       pos.y > topicPos.y - C.topicH2 &&
@@ -134,15 +134,12 @@ isTopicDetailHit pos topicId boxId model =
     _ -> False
 
 
-isBoxRectHit : Point -> TopicMap -> BoxId -> Model -> Bool
-isBoxRectHit pos map parentBoxId model =
-  case TM.topicPos map.id parentBoxId model of
-    Just boxPos ->
-      pos.x > 0 &&
-      pos.x < map.rect.x2 - map.rect.x1 &&
-      pos.y > 0 &&
-      pos.y < map.rect.y2 - map.rect.y1
-    Nothing -> False
+isBoxRectHit : Point -> Rectangle -> Bool
+isBoxRectHit pos rect =
+  pos.x > 0 &&
+  pos.x < rect.x2 - rect.x1 &&
+  pos.y > 0 &&
+  pos.y < rect.y2 - rect.y1
 
 
 
@@ -156,18 +153,18 @@ toolbarPos mapId model =
   in
   ToolbarPos
     (\topic ->
-      case TM.topicPos topic.id mapId model of
-        Just topicPos ->
-          Point
-            (topicPos.x - rect.x1 - C.topicW2)
-            (topicPos.y - rect.y1 - C.topicH2 - 29) -- TODO: 29 ≈ toolbar height
-        Nothing -> Point 0 0
+      let
+        topicPos = TM.topicPos topic.id mapId model
+      in
+      Point
+        (topicPos.x - rect.x1 - C.topicW2)
+        (topicPos.y - rect.y1 - C.topicH2 - 29) -- TODO: 29 ≈ toolbar height
     )
     (\assoc ->
-      case TM.assocGeometry assoc mapId model of
-        Just (p1, p2) ->
-          Point
-            ((p1.x + p2.x) // 2 - rect.x1 - 32) -- TODO: 32 ≈ toolbar width / 2
-            ((p1.y + p2.y) // 2 - rect.y1 - 13) -- TODO: 13 ≈ toolbar height / 2
-        Nothing -> Point 0 0
+      let
+        (p1, p2) = TM.assocGeometry assoc mapId model
+      in
+      Point
+        ((p1.x + p2.x) // 2 - rect.x1 - 32) -- TODO: 32 ≈ toolbar width / 2
+        ((p1.y + p2.y) // 2 - rect.y1 - 13) -- TODO: 13 ≈ toolbar height / 2
     )

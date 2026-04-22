@@ -27,7 +27,7 @@ view boxId boxPath ext model =
   div
     ( listStyle boxId boxPath model )
     ( [ viewList (boxId :: boxPath) model ]
-      ++ Tool.viewToolbar (boxId :: boxPath) ext model -- TODO
+      ++ Tool.viewToolbar (boxId :: boxPath) ext model
     )
 
 

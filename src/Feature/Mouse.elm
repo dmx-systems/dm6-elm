@@ -5,7 +5,6 @@ import Box
 import Config as C
 import Env exposing (Env)
 import Feature.MouseDef as MouseDef exposing (DragState(..), DragMode(..))
-import Item
 import Model exposing (Model, Msg(..))
 import ModelBase exposing (..)
 import TopicMap.TopicMap as TM
@@ -100,11 +99,8 @@ timeArrived time ({present} as undoModel) =
           case delay > C.assocDelayMillis of
             True -> (DraftAssoc, Undo.swap)
             False -> (DragTopic, Undo.push)
-        maybeOrigPos = TM.topicPos id (Box.firstId boxPath) present
-        dragState =
-          case maybeOrigPos of
-            Just origPos -> Drag dragMode id boxPath origPos pos Nothing
-            Nothing -> NoDrag -- error is already logged
+        origPos = TM.topicPos id (Box.firstId boxPath) present
+        dragState = Drag dragMode id boxPath origPos pos Nothing
       in
       (setDragState dragState present, Cmd.none) |> undo undoModel
     _ ->

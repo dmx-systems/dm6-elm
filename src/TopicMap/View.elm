@@ -132,8 +132,6 @@ boxInfo : BoxId -> BoxPath -> ExtManager -> Model -> BoxInfo
 boxInfo boxId boxPath ext model =
   let
     map = TM.byId boxId model
-  in
-  let
     width = map.rect.x2 - map.rect.x1
     height = map.rect.y2 - map.rect.y1
   in
@@ -199,14 +197,12 @@ viewLimboAssoc boxId model =
                 -- otherwise we call low-level lineRenderer() with topic default position
                 let
                   sourceTopicId = Item.otherPlayerId assocId topicId model
+                  pos = TM.topicPos sourceTopicId boxId model
                 in
-                case TM.topicPos sourceTopicId boxId model of
-                  Just pos ->
-                    (lineRenderer model)
-                      pos (TM.initTopicPos boxId model) (Just assoc)
-                      [boxId] [] model -- simple box path is sufficient for geometry,
-                                       -- limbo assoc is never selected
-                  Nothing -> []
+                (lineRenderer model)
+                  pos (TM.initTopicPos boxId model) (Just assoc)
+                  [boxId] [] model -- simple box path is sufficient for geometry,
+                                   -- limbo assoc is never selected
             Nothing -> []
       else
         []
@@ -510,11 +506,9 @@ viewAssoc : AssocInfo -> BoxPath -> Attrs Msg -> Model -> List (Svg Msg)
 viewAssoc assoc boxPath clickHandler model =
   let
     boxId = Box.firstId boxPath
-    geom = TM.assocGeometry assoc boxId model
+    (pos1, pos2) = TM.assocGeometry assoc boxId model
   in
-  case geom of
-    Just (pos1, pos2) -> (lineRenderer model) pos1 pos2 (Just assoc) boxPath clickHandler model
-    Nothing -> []
+  (lineRenderer model) pos1 pos2 (Just assoc) boxPath clickHandler model
 
 
 viewAssocDraft : BoxId -> Model -> List (Svg Msg)
@@ -561,17 +555,15 @@ accumulatePos : Point -> BoxId -> BoxId -> BoxPath -> Model -> Point
 accumulatePos posAcc boxId parentBoxId boxIds model =
   let
     {x, y} = accumulateRect posAcc boxId model
+    boxPos = TM.topicPos boxId parentBoxId model
   in
-  case TM.topicPos boxId parentBoxId model of
-    Just boxPos ->
-      absPos -- recursion
-        (parentBoxId :: boxIds)
-        (Point
-          (x + boxPos.x - C.topicW2)
-          (y + boxPos.y + C.topicH2)
-        )
-        model
-    Nothing -> Point 0 0 -- error is already logged
+  absPos -- recursion
+    (parentBoxId :: boxIds)
+    (Point
+      (x + boxPos.x - C.topicW2)
+      (y + boxPos.y + C.topicH2)
+    )
+    model
 
 
 accumulateRect : Point -> BoxId -> Model -> Point

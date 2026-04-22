@@ -52,40 +52,30 @@ create_ map ({topicMap} as model) =
 -- TODO: unify these 2
 topics : TopicMap -> Model -> List MapItem
 topics map model =
-  Box.topics map.id model |> List.foldr
-    (\topic itemsAcc ->
-      itemById_ topic.id map :: itemsAcc
-    )
-    []
+  Box.topics map.id model
+    |> List.map
+      (\topic -> itemById_ topic.id map)
 
 
 assocs : TopicMap -> Model -> List MapItem
 assocs map model =
-  Box.assocs map.id model |> List.foldr
-    (\assoc itemsAcc ->
-      itemById_ assoc.id map :: itemsAcc
-    )
-    []
+  Box.assocs map.id model
+    |> List.map
+      (\assoc -> itemById_ assoc.id map)
 
 
-{-| Logs an error if TopicMap does not exist, or topic is not in TopicMap, or ID refers not a
-topic (but an association).
--}
-topicPos : Id -> BoxId -> Model -> Maybe Point
+topicPos : Id -> BoxId -> Model -> Point
 topicPos topicId mapId model =
-  case topicProps topicId mapId model of
-    Just { pos } -> Just pos
-    Nothing -> U.fail "TopicMap.topicPos" {topicId = topicId, mapId = mapId} Nothing
+  (topicProps topicId mapId model).pos
 
 
-{-| Logs an error if TopicMap does not exist, or if topic is not in TopicMap -}
 setTopicPos : Id -> BoxId -> Point -> Model -> Model
 setTopicPos topicId mapId pos model =
-  model |> updateTopicProps topicId mapId
-    (\props -> { props | pos = pos })
+  model
+    |> updateTopicProps topicId mapId
+      (\props -> { props | pos = pos })
 
 
-{-| Logs an error if TopicMap does not exist, or if topic is not in TopicMap -}
 updateTopicPos : Id -> BoxId -> (Point -> Point) -> Model -> Model
 updateTopicPos topicId mapId transform model =
   model
@@ -93,12 +83,15 @@ updateTopicPos topicId mapId transform model =
       (\props -> { props | pos = transform props.pos })
 
 
-{-| Logs an error if ID refers not a topic (but an association). -}
-topicProps : Id -> BoxId -> Model -> Maybe TopicProps
+{-| Crashes if ID refers not a topic (but an association). -}
+topicProps : Id -> BoxId -> Model -> TopicProps
 topicProps topicId mapId model =
   case (itemById topicId mapId model).props of
-    TopicP props -> Just props
-    AssocP _ -> U.topicMismatch "TopicMap.topicProps" topicId Nothing
+    TopicP props -> props
+    AssocP _ -> U.todo
+      ("MapItem " ++ fromInt topicId ++ " of TopicMap " ++ fromInt mapId ++
+        " is an association when a topic is expected")
+      (TopicProps (Point 0 0) Collapsed)
 
 
 topicPropsOrNothing : Id -> TopicMap -> Maybe TopicProps
@@ -111,15 +104,11 @@ topicPropsOrNothing topicId map =
     Nothing -> Nothing
 
 
-assocGeometry : AssocInfo -> BoxId -> Model -> Maybe (Point, Point)
+assocGeometry : AssocInfo -> BoxId -> Model -> (Point, Point)
 assocGeometry assoc mapId model =
-  let
-    pos1 = topicPos assoc.player1 mapId model
-    pos2 = topicPos assoc.player2 mapId model
-  in
-  case Maybe.map2 (\p1 p2 -> (p1, p2)) pos1 pos2 of
-    Just geometry -> Just geometry
-    Nothing -> U.fail "TopicMap.assocGeometry" { assoc = assoc, mapId = mapId } Nothing
+  ( topicPos assoc.player1 mapId model
+  , topicPos assoc.player2 mapId model
+  )
 
 
 addItem : Id -> BoxId -> PosHint -> Model -> (Model, Cmd Msg)
@@ -209,10 +198,10 @@ initTopicPos mapId model =
     (C.initTopicPos.y + map.rect.y1 + map.scroll.y)
 
 
-{-| Logs an error if box does not exist, or item is not in box. -}
 itemById : Id -> BoxId -> Model -> MapItem
 itemById itemId mapId model =
-  byId mapId model |> itemById_ itemId
+  byId mapId model
+    |> itemById_ itemId
 
 
 itemById_ : Id -> TopicMap -> MapItem
