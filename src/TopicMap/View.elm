@@ -182,7 +182,7 @@ viewLimboAssoc boxId model =
   case VM.limboState model of
     Just (topicId, Just assocId, limboBoxId) ->
       if boxId == limboBoxId then
-        if Box.hasItem assocId boxId model then
+        if Box.hasItem (fromAssocId assocId) boxId model then
           let
             _ = U.info "viewLimboAssoc" (assocId, "is in map", boxId)
           in

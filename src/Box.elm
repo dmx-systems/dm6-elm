@@ -18,7 +18,7 @@ topics boxId model =
     Just itemSet ->
       itemSet.items |> List.foldr
         (\setItem topicsAcc ->
-          case Item.topicOrNothing setItem.id model of
+          case Item.topicOrNothing (toId setItem.id) model of
             Just topic -> topic :: topicsAcc
             Nothing -> topicsAcc
         )
@@ -32,7 +32,7 @@ assocs boxId model =
     Just itemSet ->
       itemSet.items |> List.foldr
         (\setItem assocsAcc ->
-          case Item.assocOrNothing setItem.id model of
+          case Item.assocOrNothing (toId setItem.id) model of
             Just assoc -> assoc :: assocsAcc
             Nothing -> assocsAcc
         )
@@ -73,17 +73,17 @@ This is a generic operation: works for both, topics and associations.
 addTopic : BoxTopic -> BoxId -> Model -> Model
 addTopic topic boxId model =
   model
-    |> addToItemSet topic.id boxId
+    |> addToItemSet (fromTopicId topic.id) boxId
     |> addToBoxTopics topic boxId
 
 
 addAssoc : Id -> BoxId -> Model -> Model
 addAssoc assocId boxId model =
   model
-    |> addToItemSet assocId boxId
+    |> addToItemSet (fromAssocId assocId) boxId
 
 
-addToItemSet : Id -> BoxId -> Model -> Model
+addToItemSet : ItemId -> BoxId -> Model -> Model
 addToItemSet itemId boxId model =
   if hasItem itemId boxId model then
     model
@@ -91,7 +91,7 @@ addToItemSet itemId boxId model =
     case byId boxId model of
       Just box ->
         model
-          |> Item.createAssoc Hierarchy boxId itemId -- TODO: create Hierarchy only for topics?
+          |> Item.createAssoc Hierarchy boxId (toId itemId) -- TODO: don't create for assocs
           |> Tuple.first
           |> addToItemSet_ (SetItem itemId) box.itemSetId
       Nothing -> model
@@ -156,7 +156,7 @@ removeItems itemIds boxId model =
             case maybeItemSet of
               Just itemSet -> Just
                 { itemSet | items = itemSet.items
-                  |> List.filter (\setItem -> not <| List.member setItem.id itemIds)
+                  |> List.filter (\setItem -> not <| List.member (toId setItem.id) itemIds)
                 }
               Nothing -> Nothing
           )
@@ -242,7 +242,7 @@ deleteItem_ itemId ({topicMap} as model) =
   , itemSets = model.itemSets |> Dict.map -- delete item from all itemSets
       (\_ itemSet ->
         { itemSet | items = itemSet.items |> List.filter
-          (\setItem -> setItem.id /= itemId)
+          (\setItem -> (toId setItem.id) /= itemId)
         }
       )
   -- TODO: if item is box delete from "boxes" state as well
@@ -334,11 +334,10 @@ itemSetOf boxId model =
     Nothing -> U.fail "Box.itemSetOf" {boxId = boxId} Nothing
 
 
-{-| Returns True if an item is *visible* in a box. An item is regarded visible if it is
-contained in the ItemSet assigned to that box. ### TODO: rename to "isItemVisible"?
-Logs an error if box does not exist.
+{-| Returns True if an item is contained in the ItemSet assigned to that box.
+Logs an error if the box or its ItemSet does not exist.
 -}
-hasItem : Id -> BoxId -> Model -> Bool
+hasItem : ItemId -> BoxId -> Model -> Bool
 hasItem itemId boxId model =
   case itemSetOf boxId model of
     Just itemSet ->
@@ -355,7 +354,7 @@ hasDeepItem boxId itemId model =
     if Item.isBox boxId model then
       case itemSetOf boxId model of
         Just itemSet -> itemSet.items |> List.any
-          (\setItem -> hasDeepItem setItem.id itemId model) -- recursion
+          (\setItem -> hasDeepItem (toId setItem.id) itemId model) -- recursion
         Nothing -> False
     else
       False

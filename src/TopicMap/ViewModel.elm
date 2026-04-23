@@ -33,7 +33,7 @@ topicsToRender map model =
 {- Projects box data and search state ("limbo") into a TopicMap render model -}
 assocsToRender : TopicMap -> Model -> List MapItem
 assocsToRender =
-   TM.assocs
+  TM.assocs
 
 
 effectiveExpansion : Id -> TopicProps -> BoxId -> Model -> TopicProps
@@ -50,7 +50,7 @@ limboMapItem : TopicMap -> Model -> List MapItem
 limboMapItem map model =
   case limboState model of
     Just (topicId, _, limboBoxId) ->
-      if limboBoxId == map.id && (not <| Box.hasItem topicId map.id model) then
+      if limboBoxId == map.id && (not <| Box.hasItem (fromTopicId topicId) map.id model) then
         let
           _ = U.info "TopicMap.ViewModel.limboMapItem" (topicId, "not in map", map.id)
           props =

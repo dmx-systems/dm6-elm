@@ -1,7 +1,8 @@
-module ModelBase exposing (Id, Item, ItemInfo(..), AssocIds, TopicInfo, Icon, TextSize, Size,
-  SizeField(..), Point, Rectangle, AssocInfo, AssocType(..), ItemSet, SetItem, Box, BoxId,
-  BoxPath, Target, rootBoxId, BoxTopic, Expansion(..), ImageId, Attrs, PointerType, Extensions,
-  ExtName, ExtLabel, Renderer, PosHint(..), ToolbarPos, encodeItem, encodeItemSet, encodeBox,
+module ModelBase exposing (Id, Item, ItemInfo(..), TopicId(..), AssocId(..), ItemId(..),
+  fromTopicId, fromAssocId, toId, AssocIds, TopicInfo, Icon, TextSize, Size, SizeField(..),
+  Point, Rectangle, AssocInfo, AssocType(..), ItemSet, SetItem, Box, BoxId, BoxPath, Target,
+  rootBoxId, BoxTopic, Expansion(..), ImageId, Attrs, PointerType, Extensions, ExtName,
+  ExtLabel, Renderer, PosHint(..), ToolbarPos, encodeItem, encodeItemSet, encodeBox,
   encodeExpansion, itemDecoder, itemSetDecoder, boxDecoder, expansionDecoder, toDictDecoder)
 
 import Dict exposing (Dict)
@@ -24,6 +25,7 @@ type alias Item =
   { id : Id
   , info : ItemInfo
   , assocIds : AssocIds -- The associations the item is involved in (as a "player")
+                        -- TODO: move to TopicInfo?
   }
 
 
@@ -85,6 +87,38 @@ type alias Rectangle =
 
 
 type alias Id = Int
+
+
+type TopicId
+  = TopicId Id
+
+
+type AssocId
+  = AssocId Id
+
+
+type ItemId
+  = T TopicId
+  | A AssocId
+
+
+fromTopicId : Id -> ItemId
+fromTopicId topicId =
+  T <| TopicId topicId
+
+
+fromAssocId : Id -> ItemId
+fromAssocId assocId =
+  A <| AssocId assocId
+
+
+toId : ItemId -> Id
+toId itemId =
+  case itemId of
+    T (TopicId id) -> id
+    A (AssocId id) -> id
+
+
 type alias AssocIds = List Id
 type alias Icon = String -- name of feather icon, https://feathericons.com
 type alias ImageId = Int
@@ -129,13 +163,13 @@ type Expansion
 -- Item Set
 
 type alias ItemSet =
-  { id : Id -- set ID
+  { id : Id -- item set ID
   , items : List SetItem
   }
 
 
 type alias SetItem =
-  { id : Id -- item ID
+  { id : ItemId -- item ID
   -- TODO: add "dateAdded"
   }
 
@@ -229,7 +263,9 @@ encodeItemSet itemSet =
 encodeSetItem : SetItem -> E.Value
 encodeSetItem setItem =
   E.object
-    [ ("id", E.int setItem.id)
+    [ case setItem.id of
+        T (TopicId id) -> ("topicId", E.int id)
+        A (AssocId id) -> ("assocId", E.int id)
     ]
 
 
@@ -321,8 +357,10 @@ itemSetDecoder =
   D.map2 ItemSet
     (D.field "id" D.int)
     (D.field "items" <| D.list
-      (D.map SetItem
-        (D.field "id" D.int)
+      ( D.oneOf
+        [ (D.field "topicId" D.int) |> D.map (SetItem << T << TopicId)
+        , (D.field "assocId" D.int) |> D.map (SetItem << A << AssocId)
+        ]
       )
     )
 
