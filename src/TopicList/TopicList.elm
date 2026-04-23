@@ -6,6 +6,7 @@ import Dict
 import Env exposing (ExtManager)
 import Feature.Mouse as Mouse
 import Feature.Text as Text
+import Feature.Tool as Tool
 import Item
 import Model exposing (Model, Msg)
 import ModelBase exposing (..)
@@ -25,7 +26,9 @@ view : BoxId -> BoxPath -> ExtManager -> Model -> Html Msg
 view boxId boxPath ext model =
   div
     ( listStyle boxId boxPath model )
-    [ viewList (boxId :: boxPath) model ]
+    ( [ viewList (boxId :: boxPath) model ]
+      ++ Tool.viewToolbar (boxId :: boxPath) ext model -- TODO
+    )
 
 
 viewList : BoxPath -> Model -> Html Msg
@@ -95,6 +98,6 @@ listFontStyle =
 
 listSize : BoxId -> Model -> Size
 listSize boxId model =
-  case model.topicList |> Dict.get boxId of
+  case model.topicList |> Dict.get boxId of -- TODO: log error
     Just {size} -> size
     Nothing -> Size 0 0

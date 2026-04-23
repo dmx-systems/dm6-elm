@@ -1,7 +1,7 @@
 module ModelBase exposing (Id, Item, ItemInfo(..), AssocIds, TopicInfo, Icon, TextSize, Size,
   SizeField(..), Point, Rectangle, AssocInfo, AssocType(..), ItemSet, SetItem, Box, BoxId,
   BoxPath, Target, rootBoxId, BoxItem, Expansion(..), ImageId, Attrs, PointerType, Extensions,
-  ExtName, ExtLabel, Renderer, PosHint(..), encodeItem, encodeItemSet, encodeBox,
+  ExtName, ExtLabel, Renderer, PosHint(..), ToolbarPos, encodeItem, encodeItemSet, encodeBox,
   encodeExpansion, itemDecoder, itemSetDecoder, boxDecoder, expansionDecoder, toDictDecoder)
 
 import Dict exposing (Dict)
@@ -150,6 +150,12 @@ type alias Renderer = String
 type PosHint
   = Default
   | Random
+
+
+type alias ToolbarPos =
+  { topic : TopicInfo -> Point
+  , assoc : AssocInfo -> Point
+  }
 
 
 

@@ -1,4 +1,4 @@
-module TopicMap.Geometry exposing (hitTest)
+module TopicMap.Geometry exposing (hitTest, toolbarPos)
 
 import Box
 import Config as C
@@ -10,6 +10,9 @@ import TopicMap.TopicMap as TM
 import TopicMap.TopicMapDef exposing (TopicMap, MapItem)
 import Utils as U
 
+
+
+-- HIT TEST
 
 
 type alias MapItems =
@@ -142,3 +145,32 @@ isBoxRectHit pos map parentBoxId model =
       pos.y > 0 &&
       pos.y < map.rect.y2 - map.rect.y1
     Nothing -> False
+
+
+
+-- TOOLBAR
+
+
+toolbarPos : BoxId -> Model -> ToolbarPos
+toolbarPos mapId model =
+  case TM.byId mapId model of
+    Just {rect} ->
+      ToolbarPos
+        (\topic ->
+          case TM.topicPos topic.id mapId model of
+            Just topicPos ->
+              Point
+                (topicPos.x - rect.x1 - C.topicW2)
+                (topicPos.y - rect.y1 - C.topicH2 - 29) -- TODO: 29 ≈ toolbar height
+            Nothing -> Point 0 0
+        )
+        (\assoc ->
+          case TM.assocGeometry assoc mapId model of
+            Just (p1, p2) ->
+              Point
+                ((p1.x + p2.x) // 2 - rect.x1 - 32) -- TODO: 32 ≈ toolbar width / 2
+                ((p1.y + p2.y) // 2 - rect.y1 - 13) -- TODO: 13 ≈ toolbar height / 2
+            Nothing -> Point 0 0
+        )
+    Nothing ->
+      (ToolbarPos (\_ -> Point 0 0) (\_ -> Point 0 0))

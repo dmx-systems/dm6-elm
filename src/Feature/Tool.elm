@@ -193,6 +193,7 @@ viewToolbar : BoxPath -> ExtManager -> Model -> List (Html Msg)
 viewToolbar boxPath ext model =
   let
     boxId = Box.firstId boxPath
+    toolbar = ext.toolbar boxId model
   in
   case Sel.single model of
     Just (itemId, selBoxPath) ->
@@ -201,28 +202,18 @@ viewToolbar boxPath ext model =
           (Just {info}, Just {rect}) ->
             case info of
               Topic topic ->
-                case TM.topicPos itemId boxId model of
-                  Just topicPos ->
-                    let
-                      pos = Point
-                        (topicPos.x - rect.x1 - C.topicW2)
-                        (topicPos.y - rect.y1 - C.topicH2 - 29) -- TODO: 29 ≈ toolbar height
-                    in
-                    case (Text.isEdit itemId boxPath model, Item.isBox itemId model) of
-                      (False, _) -> [ viewTopicToolbar pos itemId boxPath ext model ]
-                      (True, False) -> [ viewTextToolbar pos itemId boxPath ]
-                      _ -> []
-                  Nothing -> []
+                let
+                  pos = toolbar.topic topic
+                in
+                case (Text.isEdit itemId boxPath model, Item.isBox itemId model) of
+                  (False, _) -> [ viewTopicToolbar pos itemId boxPath ext model ]
+                  (True, False) -> [ viewTextToolbar pos itemId boxPath ]
+                  _ -> []
               Assoc assoc ->
-                case TM.assocGeometry assoc boxId model of
-                  Just (p1, p2) ->
-                    let
-                      pos = Point
-                        ((p1.x + p2.x) // 2 - rect.x1 - 32) -- TODO: 32 ≈ toolbar width / 2
-                        ((p1.y + p2.y) // 2 - rect.y1 - 13) -- TODO: 13 ≈ toolbar height / 2
-                    in
-                    [ viewAssocToolbar pos itemId boxPath ]
-                  Nothing -> []
+                let
+                  pos = toolbar.assoc assoc
+                in
+                [ viewAssocToolbar pos itemId boxPath ]
           _ -> []
       else
         []
