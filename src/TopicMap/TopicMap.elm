@@ -48,7 +48,6 @@ create_ map ({topicMap} as model) =
   { model | topicMap = topicMap |> Dict.insert map.id map }
 
 
--- TODO: unify these 2
 topics : TopicMap -> Model -> List MapItem
 topics map model =
   Box.topics map.id model |> List.foldr

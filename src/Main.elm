@@ -309,7 +309,7 @@ createAssocAndAddToBox assocType player1 player2 boxId model =
     (newModel, assocId) = Item.createAssoc assocType player1 player2 model
   in
   newModel
-    |> Box.addItem (BoxItem assocId Collapsed) boxId
+    |> Box.addAssoc assocId boxId
     |> TM.addItem assocId boxId Default -- TODO: don't operate on "topicMap" directly
     |> Tuple.first -- Note: Cmd is ignored, OK for the moment ;-)
 
@@ -320,7 +320,7 @@ moveTopicToBox topicId boxId origPos targetBoxId targetPath model =
     expansion = Box.expansionOf topicId boxId model
   in
   createBoxOnDemand targetBoxId model
-    |> Box.addItem (BoxItem topicId expansion) targetBoxId
+    |> Box.addTopic (BoxTopic topicId expansion) targetBoxId
     |> Box.removeItem topicId boxId
     |> Sel.select targetBoxId targetPath
     |> TM.setTopicPos topicId boxId origPos

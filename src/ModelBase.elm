@@ -1,6 +1,6 @@
 module ModelBase exposing (Id, Item, ItemInfo(..), AssocIds, TopicInfo, Icon, TextSize, Size,
   SizeField(..), Point, Rectangle, AssocInfo, AssocType(..), ItemSet, SetItem, Box, BoxId,
-  BoxPath, Target, rootBoxId, BoxItem, Expansion(..), ImageId, Attrs, PointerType, Extensions,
+  BoxPath, Target, rootBoxId, BoxTopic, Expansion(..), ImageId, Attrs, PointerType, Extensions,
   ExtName, ExtLabel, Renderer, PosHint(..), ToolbarPos, encodeItem, encodeItemSet, encodeBox,
   encodeExpansion, itemDecoder, itemSetDecoder, boxDecoder, expansionDecoder, toDictDecoder)
 
@@ -102,7 +102,8 @@ type alias Target = (Id, BoxPath)
 type alias Box =
   { id : BoxId
   , itemSetId : Id
-  , items : Dict Id BoxItem
+  , topics : Dict Id BoxTopic
+  -- Note: no "assocs" here as assocs have no renderer-independent view properties at the moment
   , renderer : Renderer
   }
 
@@ -111,8 +112,10 @@ rootBoxId : BoxId
 rootBoxId = 0
 
 
--- TODO: differentiate topic/assoc?
-type alias BoxItem =
+{-| Attaches renderer-independent view properties to a SetItem.
+At the moment this is just the Expansion state.
+-}
+type alias BoxTopic =
   { id : Id
   , expansion : Expansion
   }
@@ -235,16 +238,16 @@ encodeBox box =
   E.object
     [ ("id", E.int box.id)
     , ("itemSetId", E.int box.itemSetId)
-    , ("items", E.list encodeBoxItem <| Dict.values box.items)
+    , ("topics", E.list encodeBoxTopic <| Dict.values box.topics)
     , ("renderer", E.string box.renderer)
     ]
 
 
-encodeBoxItem : BoxItem -> E.Value
-encodeBoxItem item =
+encodeBoxTopic : BoxTopic -> E.Value
+encodeBoxTopic topic =
   E.object
-    [ ("id", E.int item.id)
-    , ("expansion", encodeExpansion item.expansion)
+    [ ("id", E.int topic.id)
+    , ("expansion", encodeExpansion topic.expansion)
     ]
 
 
@@ -329,13 +332,13 @@ boxDecoder =
   D.map4 Box
     (D.field "id" D.int)
     (D.field "itemSetId" D.int)
-    (D.field "items" (boxItemDecoder |> toDictDecoder))
+    (D.field "topics" (boxTopicDecoder |> toDictDecoder))
     (D.field "renderer" D.string)
 
 
-boxItemDecoder : D.Decoder BoxItem
-boxItemDecoder =
-  D.map2 BoxItem
+boxTopicDecoder : D.Decoder BoxTopic
+boxTopicDecoder =
+  D.map2 BoxTopic
     (D.field "id" D.int)
     (D.field "expansion" D.string |> D.andThen expansionDecoder)
 

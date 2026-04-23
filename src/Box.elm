@@ -1,6 +1,6 @@
-module Box exposing (topics, assocs, turnTopicIntoBox, addItem, removeItem, deleteItem,
-  expansionOf, updateExpansion, rendererOf, setRenderer, hasItem, hasDeepItem, mapTitle,
-  isFullscreen, elemId, firstId, fromPath)
+module Box exposing (topics, assocs, turnTopicIntoBox, addTopic, addAssoc, removeItem,
+  deleteItem, expansionOf, updateExpansion, rendererOf, setRenderer, hasItem, hasDeepItem,
+  mapTitle, isFullscreen, elemId, firstId, fromPath)
 
 import Item
 import Model exposing (Model)
@@ -12,7 +12,6 @@ import String exposing (fromInt)
 
 
 
--- TODO: unify these 2
 topics : BoxId -> Model -> List TopicInfo
 topics boxId model =
   case itemSetOf boxId model of
@@ -71,11 +70,17 @@ createItemSet set ({itemSets} as model) =
 {-| Adds an item to a box and creates a connecting association. This is an idempotent operation.
 This is a generic operation: works for both, topics and associations.
 -}
-addItem : BoxItem -> BoxId -> Model -> Model
-addItem item boxId model =
+addTopic : BoxTopic -> BoxId -> Model -> Model
+addTopic topic boxId model =
   model
-    |> addToItemSet item.id boxId
-    |> addToBoxItems item boxId
+    |> addToItemSet topic.id boxId
+    |> addToBoxTopics topic boxId
+
+
+addAssoc : Id -> BoxId -> Model -> Model
+addAssoc assocId boxId model =
+  model
+    |> addToItemSet assocId boxId
 
 
 addToItemSet : Id -> BoxId -> Model -> Model
@@ -86,7 +91,7 @@ addToItemSet itemId boxId model =
     case byId boxId model of
       Just box ->
         model
-          |> Item.createAssoc Hierarchy boxId itemId
+          |> Item.createAssoc Hierarchy boxId itemId -- TODO: create Hierarchy only for topics?
           |> Tuple.first
           |> addToItemSet_ (SetItem itemId) box.itemSetId
       Nothing -> model
@@ -105,9 +110,9 @@ addToItemSet_ setItem itemSetId ({itemSets} as model) =
   }
 
 
-addToBoxItems : BoxItem -> BoxId -> Model -> Model
-addToBoxItems item boxId ({boxes} as model) =
-  if hasBoxItem item.id boxId model then
+addToBoxTopics : BoxTopic -> BoxId -> Model -> Model
+addToBoxTopics topic boxId ({boxes} as model) =
+  if hasBoxTopic topic.id boxId model then
     model
   else
     { model | boxes =
@@ -115,7 +120,7 @@ addToBoxItems item boxId ({boxes} as model) =
         |> Dict.update boxId
           (\maybeBox ->
             case maybeBox of
-              Just box -> Just { box | items = box.items |> Dict.insert item.id item }
+              Just box -> Just { box | topics = box.topics |> Dict.insert topic.id topic }
               Nothing -> Nothing
           )
     }
@@ -253,7 +258,7 @@ deleteItem_ itemId ({topicMap} as model) =
 
 expansionOf : Id -> BoxId -> Model -> Expansion
 expansionOf topicId boxId model =
-  case byId boxId model |> Maybe.andThen (\box -> itemById topicId box model) of
+  case byId boxId model |> Maybe.andThen (\box -> topicById topicId box model) of
     Just {expansion} -> expansion
     Nothing -> U.fail "Box.expansionOf" {topicId = topicId, boxId = boxId} Collapsed
 
@@ -272,11 +277,11 @@ updateExpansion topicId boxId transform model =
     (\maybeBox ->
       case maybeBox of
         Just box -> Just
-          { box | items = box.items |> Dict.update topicId
-            (\maybeItem ->
-              case maybeItem of
-                Just item -> Just
-                  { item | expansion = transform item.expansion }
+          { box | topics = box.topics |> Dict.update topicId
+            (\maybeTopic ->
+              case maybeTopic of
+                Just topic -> Just
+                  { topic | expansion = transform topic.expansion }
                 Nothing -> Nothing
             )
           }
@@ -315,11 +320,11 @@ byId boxId model =
     Nothing -> U.boxNotFound "Box.byId" boxId Nothing
 
 
-itemById : Id -> Box -> Model -> Maybe BoxItem
-itemById itemId box model =
-  case box.items |> Dict.get itemId of
-    Just item -> Just item
-    Nothing -> U.logError "Box.itemById" "missing dict entry in box.items" Nothing
+topicById : Id -> Box -> Model -> Maybe BoxTopic
+topicById topicId box model =
+  case box.topics |> Dict.get topicId of
+    Just topic -> Just topic
+    Nothing -> U.logError "Box.topicById" "missing dict entry in box.topics" Nothing
 
 
 itemSetOf : BoxId -> Model -> Maybe ItemSet
@@ -356,11 +361,11 @@ hasDeepItem boxId itemId model =
       False
 
 
-hasBoxItem : Id -> BoxId -> Model -> Bool
-hasBoxItem itemId boxId model =
+hasBoxTopic : Id -> BoxId -> Model -> Bool
+hasBoxTopic topicId boxId model =
   case byId boxId model of
-    Just box -> box.items |> Dict.member itemId
-    Nothing -> U.fail "Box.hasBoxItem" {itemId = itemId, boxId = boxId} False
+    Just box -> box.topics |> Dict.member topicId
+    Nothing -> U.fail "Box.hasBoxTopic" {topicId = topicId, boxId = boxId} False
 
 
 {-| Title of fullscreen box.

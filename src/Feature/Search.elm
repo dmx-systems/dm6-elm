@@ -342,7 +342,7 @@ revealTopic topicId ({model} as env) =
   case TM.revelationBoxPath model of
     Just (boxId :: _ as boxPath) ->
       model
-        |> revealItem topicId boxId
+        |> revealTopic_ topicId boxId
         |> closeMenu
         |> Sel.select topicId boxPath
         |> Env.autoSize env
@@ -354,19 +354,27 @@ revealRelTopic (topicId, assocId) ({model} as env) =
   case TM.revelationBoxPath model of
     Just (boxId :: _ as boxPath) ->
       model
-        |> revealItem topicId boxId
-        |> revealItem assocId boxId
+        |> revealTopic_ topicId boxId
+        |> revealAssoc_ assocId boxId
         |> closeMenu
         |> Sel.select topicId boxPath
         |> Env.autoSize env
     _ -> model
 
 
-revealItem : Id -> BoxId -> Model -> Model
-revealItem itemId boxId model =
+revealTopic_ : Id -> BoxId -> Model -> Model
+revealTopic_ topicId boxId model =
   model
-    |> Box.addItem (BoxItem itemId Collapsed) boxId
-    |> TM.addItem itemId boxId Default
+    |> Box.addTopic (BoxTopic topicId Collapsed) boxId
+    |> TM.addItem topicId boxId Default
+    |> Tuple.first -- Note: Cmd is ignored, OK for the moment ;-)
+
+
+revealAssoc_ : Id -> BoxId -> Model -> Model
+revealAssoc_ assocId boxId model =
+  model
+    |> Box.addAssoc assocId boxId
+    |> TM.addItem assocId boxId Default
     |> Tuple.first -- Note: Cmd is ignored, OK for the moment ;-)
 
 

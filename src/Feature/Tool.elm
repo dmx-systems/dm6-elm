@@ -478,7 +478,7 @@ landTopic topicId ({model} as env) =
     boxId = Box.firstId boxPath
   in
   model
-    |> Box.addItem (BoxItem topicId Collapsed) boxId
+    |> Box.addTopic (BoxTopic topicId Collapsed) boxId
     |> TM.addItem topicId boxId Default
     |> Tuple.first -- Note: Cmd is ignored, OK for the moment ;-)
     |> Sel.select topicId boxPath
