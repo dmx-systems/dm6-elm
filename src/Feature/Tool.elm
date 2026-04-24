@@ -1,5 +1,5 @@
 module Feature.Tool exposing (viewGlobalTools, viewMapTools, viewToolbar, viewTopicTools,
-  closeMenu, update)
+  closeMenu, update, createBoxOnDemand)
 
 import Box
 import Config as C
@@ -230,19 +230,14 @@ viewTopicToolbar pos topicId boxPath ext model =
       , viewButton "Traverse" "share-2" ToolDef.Traverse False target
       , viewButton "Delete" "trash" ToolDef.Delete False target
       , viewButton "Remove" "x" ToolDef.Remove False target
+      , viewButton "Fullscreen" "maximize-2" (ToolDef.Fullscreen topicId) False target
       ]
     boxTools =
       if Item.isBox topicId model then
-        let
-          rendererSelect =
-            case Box.rendererOf topicId model of
-              Just renderer ->
-                [ viewRendererSelect renderer (Tool << ToolDef.RendererSelected) ext ]
-              Nothing -> []
-        in
-        [ viewButton "Fullscreen" "maximize-2" (ToolDef.Fullscreen topicId) False target
-        ]
-        ++ rendererSelect
+        case Box.rendererOf topicId model of
+          Just renderer ->
+            [ viewRendererSelect renderer (Tool << ToolDef.RendererSelected) ext ]
+          Nothing -> []
       else
         []
   in
@@ -427,7 +422,7 @@ update msg ({model, undoModel} as env) =
     ToolDef.Traverse -> (Search.traverse model, Cmd.none) |> Undo.swap undoModel
     ToolDef.Delete -> delete env |> S.store |> Undo.push undoModel
     ToolDef.Remove -> remove env |> S.store |> Undo.push undoModel
-    ToolDef.Fullscreen boxId -> (undoModel, Nav.pushUrl boxId)
+    ToolDef.Fullscreen topicId -> fullscreen topicId model |> S.storeWith |> Undo.push undoModel
     ToolDef.RendererSelected renderer -> setRenderer renderer env |> S.store
       |> Undo.swap undoModel
     ToolDef.ToggleExpansion topicId boxId -> toggleExpansion topicId boxId env |> S.store
@@ -519,6 +514,13 @@ remove ({model} as env) =
     |> Env.autoSize env
 
 
+fullscreen : Id -> Model -> (Model, Cmd Msg)
+fullscreen topicId model =
+  ( model |> createBoxOnDemand topicId
+  , Nav.pushUrl topicId
+  )
+
+
 setRenderer : Renderer -> Env -> Model
 setRenderer renderer ({model} as env) =
   case Sel.single model of
@@ -539,3 +541,15 @@ toggleExpansion topicId boxId ({model} as env) =
             Expanded -> Collapsed
         )
     |> Env.autoSize env
+
+
+--
+
+createBoxOnDemand : Id -> Model -> Model
+createBoxOnDemand topicId model =
+  if Item.isBox topicId model then
+    model
+  else
+    model
+      |> Box.turnTopicIntoBox topicId
+      |> TM.create topicId

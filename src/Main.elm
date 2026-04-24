@@ -317,22 +317,12 @@ moveTopicToBox topicId boxId origPos targetBoxId targetPath model =
   let
     expansion = Box.expansionOf topicId boxId model
   in
-  createBoxOnDemand targetBoxId model
+  Tool.createBoxOnDemand targetBoxId model
     |> Box.addTopic (BoxTopic topicId expansion) targetBoxId
     |> Box.removeItem topicId boxId
     |> Sel.select targetBoxId targetPath
     |> TM.setTopicPos topicId boxId origPos
     |> TM.addTopic topicId targetBoxId Random
-
-
-createBoxOnDemand : Id -> Model -> Model
-createBoxOnDemand topicId model =
-  if Item.isBox topicId model then
-    model
-  else
-    model
-      |> Box.turnTopicIntoBox topicId
-      |> TM.create topicId
 
 
 select : Id -> BoxPath -> Model -> (Model, Cmd Msg)
