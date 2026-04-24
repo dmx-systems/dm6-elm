@@ -310,8 +310,6 @@ createAssocAndAddToBox assocType player1 player2 boxId model =
   in
   newModel
     |> Box.addAssoc assocId boxId
-    |> TM.addItem assocId boxId Default -- TODO: don't operate on "topicMap" directly
-    |> Tuple.first -- Note: Cmd is ignored, OK for the moment ;-)
 
 
 moveTopicToBox : Id -> BoxId -> Point -> BoxId -> BoxPath -> Model -> (Model, Cmd Msg)
@@ -324,7 +322,7 @@ moveTopicToBox topicId boxId origPos targetBoxId targetPath model =
     |> Box.removeItem topicId boxId
     |> Sel.select targetBoxId targetPath
     |> TM.setTopicPos topicId boxId origPos
-    |> TM.addItem topicId targetBoxId Random
+    |> TM.addTopic topicId targetBoxId Random
 
 
 createBoxOnDemand : Id -> Model -> Model

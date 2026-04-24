@@ -3,7 +3,7 @@ module ModelBase exposing (Id, Item, ItemInfo(..), TopicId(..), AssocId(..), Ite
   Point, Rectangle, AssocInfo, AssocType(..), ItemSet, SetItem, Box, BoxId, BoxPath, Target,
   rootBoxId, BoxTopic, Expansion(..), ImageId, Attrs, PointerType, Extensions, ExtName,
   ExtLabel, Renderer, PosHint(..), ToolbarPos, encodeItem, encodeItemSet, encodeBox,
-  encodeExpansion, itemDecoder, itemSetDecoder, boxDecoder, expansionDecoder, toDictDecoder)
+  itemDecoder, itemSetDecoder, boxDecoder, toDictDecoder)
 
 import Dict exposing (Dict)
 import Html exposing (Attribute)

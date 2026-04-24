@@ -187,14 +187,6 @@ update itemId transform model =
   }
 
 
--- Not used
-hasPlayer : Id -> Model -> Id -> Bool
-hasPlayer playerId model assocId =
-  case assocById assocId model of
-    Just assoc -> assoc.player1 == playerId || assoc.player2 == playerId
-    Nothing -> False
-
-
 {-| useful as a filter predicate -}
 isTopic : Item -> Bool
 isTopic item =

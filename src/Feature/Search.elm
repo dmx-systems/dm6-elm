@@ -366,7 +366,7 @@ revealTopic_ : Id -> BoxId -> Model -> Model
 revealTopic_ topicId boxId model =
   model
     |> Box.addTopic (BoxTopic topicId Collapsed) boxId
-    |> TM.addItem topicId boxId Default
+    |> TM.addTopic topicId boxId Default -- TODO: dispatch by ExtManager instead
     |> Tuple.first -- Note: Cmd is ignored, OK for the moment ;-)
 
 
@@ -374,8 +374,6 @@ revealAssoc_ : Id -> BoxId -> Model -> Model
 revealAssoc_ assocId boxId model =
   model
     |> Box.addAssoc assocId boxId
-    |> TM.addItem assocId boxId Default
-    |> Tuple.first -- Note: Cmd is ignored, OK for the moment ;-)
 
 
 -- "searchTopics" instead "search" avoids shadowing

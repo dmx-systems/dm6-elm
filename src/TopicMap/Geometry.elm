@@ -7,7 +7,7 @@ import Item
 import Model exposing (Model)
 import ModelBase exposing (..)
 import TopicMap.TopicMap as TM
-import TopicMap.TopicMapDef exposing (TopicMap, MapItem)
+import TopicMap.TopicMapDef exposing (TopicMap, MapTopic)
 import Utils as U
 
 
@@ -15,8 +15,8 @@ import Utils as U
 -- HIT TEST
 
 
-type alias MapItems =
-  List MapItem
+type alias MapTopics =
+  List MapTopic
 
 
 {-| Finds the topic/box at a given screen position.
@@ -47,7 +47,7 @@ hitTest boxId boxPath pos excludeTopicId ext model =
     Nothing -> Nothing
 
 
-testChildren : Point -> MapItems -> BoxPath -> Maybe Id -> ExtManager -> Model -> Maybe Target
+testChildren : Point -> MapTopics -> BoxPath -> Maybe Id -> ExtManager -> Model -> Maybe Target
 testChildren pos items boxPath excludeTopicId ext model =
   case items of
     [] -> Nothing

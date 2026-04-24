@@ -1,5 +1,4 @@
-module TopicMap.TopicMapDef exposing (Model, TopicMap, MapItem, ItemProps(..),
-  TopicProps, AssocProps, Msg(..), init, encode, decoder)
+module TopicMap.TopicMapDef exposing (Model, TopicMap, MapTopic, Msg(..), init, encode, decoder)
 
 import ModelBase exposing (..)
 import Dict exposing (Dict)
@@ -21,29 +20,16 @@ type alias TopicMap =
   { id : BoxId
   , rect : Rectangle
   , scroll : Point
-  , items : Dict Id MapItem
+  , topics : Dict Id MapTopic
   }
 
 
-type alias MapItem =
+type alias MapTopic =
   { id : Id
-  , props : ItemProps
+  , pos : Point
+  , expansion : Expansion -- "effective expansion", computed/transient,
+                          -- used for both limbo-rendering and auto-sizing
   }
-
-
-type ItemProps
-  = TopicP TopicProps
-  | AssocP AssocProps
-
-
-type alias TopicProps =
-  { pos : Point
-  , expansion : Expansion -- transient, for "limbo" rendering
-  }
-
-
-type alias AssocProps =
-  {}
 
 
 type Msg
@@ -79,30 +65,22 @@ encodeTopicMap map =
         , ("y", E.int map.scroll.y)
         ]
       )
-    , ("items", map.items |> Dict.values |> E.list encodeMapItem)
+    , ("topics", map.topics
+        |> Dict.values
+        |> E.list encodeMapTopic)
     ]
 
 
-encodeMapItem : MapItem -> E.Value
-encodeMapItem item =
+encodeMapTopic : MapTopic -> E.Value
+encodeMapTopic topic =
   E.object
-    [ ("id", E.int item.id)
-    , case item.props of
-        TopicP topicProps ->
-          ( "topicProps"
-          , E.object
-            [ ("pos", E.object
-                [ ("x", E.int topicProps.pos.x)
-                , ("y", E.int topicProps.pos.y)
-                ]
-              )
-            , ("expansion", encodeExpansion topicProps.expansion) -- TODO: drop, transient?
-            ]
-          )
-        AssocP assosProps ->
-          ( "assocProps"
-          , E.object []
-          )
+    [ ("id", E.int topic.id)
+    , ("pos", E.object
+        [ ("x", E.int topic.pos.x)
+        , ("y", E.int topic.pos.y)
+        ]
+      )
+    -- Note: "effective expansion" is computed/transient, source of truth is in Box/BoxTopic
     ]
 
 
@@ -127,20 +105,16 @@ topicMapDecoder =
       (D.field "x" D.int)
       (D.field "y" D.int)
     )
-    (D.field "items" (mapItemDecoder |> toDictDecoder))
+    (D.field "topics" (mapTopicDecoder |> toDictDecoder))
 
 
-mapItemDecoder : D.Decoder MapItem
-mapItemDecoder =
-  D.map2 MapItem
+mapTopicDecoder : D.Decoder MapTopic
+mapTopicDecoder =
+  D.map3 MapTopic
     (D.field "id" D.int)
-    (D.oneOf
-      [ D.field "topicProps" <| D.map TopicP <| D.map2 TopicProps
-        (D.field "pos" <| D.map2 Point
-          (D.field "x" D.int)
-          (D.field "y" D.int)
-        )
-        (D.field "expansion" D.string |> D.andThen expansionDecoder) -- TODO: hardcode value
-      , D.field "assocProps" <| D.succeed (AssocP AssocProps)
-      ]
+    (D.field "pos" <| D.map2
+      Point
+        (D.field "x" D.int)
+        (D.field "y" D.int)
     )
+    (D.succeed Collapsed) -- "effective expansion" is computed/transient, just dummy value here

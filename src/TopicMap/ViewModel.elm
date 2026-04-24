@@ -1,64 +1,49 @@
-module TopicMap.ViewModel exposing (topicsToRender, assocsToRender, isLimboTopic,
-  isLimboAssoc, limboState)
+module TopicMap.ViewModel exposing (topicsToRender, isLimboTopic, isLimboAssoc, limboState)
 
 import Box
 import Feature.SearchDef exposing (SearchResult(..))
 import Model exposing (Model)
 import ModelBase exposing (..)
 import TopicMap.TopicMap as TM
-import TopicMap.TopicMapDef exposing (TopicMap, MapItem, ItemProps(..), TopicProps)
+import TopicMap.TopicMapDef exposing (TopicMap, MapTopic)
 import Utils as U
 
 
 
 {- Projects box data and search state ("limbo") into a TopicMap render model -}
-topicsToRender : TopicMap -> Model -> List MapItem
+topicsToRender : TopicMap -> Model -> List MapTopic
 topicsToRender map model =
   let
     topics = TM.topics map model |> List.map
-      (\mapItem ->
-        { mapItem
-        | props =
-          case mapItem.props of
-            TopicP props -> TopicP <| effectiveExpansion mapItem.id props map.id model
-            AssocP _ -> U.logError "TopicMap.ViewModel.topicsToRender"
-              "Found assoc in a topic list" mapItem.props
-        }
-      )
-    limboTopic = limboMapItem map model
+      (\topic -> effectiveExpansion topic map.id model)
+    limboTopic = limboMapTopic map model
   in
   topics ++ limboTopic
 
 
-{- Projects box data and search state ("limbo") into a TopicMap render model -}
-assocsToRender : TopicMap -> Model -> List MapItem
-assocsToRender =
-  TM.assocs
-
-
-effectiveExpansion : Id -> TopicProps -> BoxId -> Model -> TopicProps
-effectiveExpansion topicId props boxId model =
-  { props | expansion =
-    if isLimboTopic topicId boxId model then
+effectiveExpansion : MapTopic -> BoxId -> Model -> MapTopic
+effectiveExpansion topic boxId model =
+  { topic | expansion =
+    if isLimboTopic topic.id boxId model then
       Expanded
     else
-      Box.expansionOf topicId boxId model
+      Box.expansionOf topic.id boxId model
   }
 
 
-limboMapItem : TopicMap -> Model -> List MapItem
-limboMapItem map model =
+limboMapTopic : TopicMap -> Model -> List MapTopic
+limboMapTopic map model =
   case limboState model of
     Just (topicId, _, limboBoxId) ->
       if limboBoxId == map.id && (not <| Box.hasItem (fromTopicId topicId) map.id model) then
         let
-          _ = U.info "TopicMap.ViewModel.limboMapItem" (topicId, "not in map", map.id)
-          props =
-            case TM.topicPropsOrNothing topicId map of
-              Just {pos} -> TopicP <| TopicProps pos Expanded
-              Nothing -> TopicP <| TM.initLimboTopicProps topicId map.id model
+          _ = U.info "TopicMap.ViewModel.limboMapTopic" (topicId, "not in map", map.id)
+          mapTopic =
+            case TM.mapTopicOrNothing topicId map of
+              Just {pos} -> MapTopic topicId pos Expanded
+              Nothing -> TM.initLimboMapTopic topicId map.id model
         in
-        [ MapItem topicId props ]
+        [ mapTopic ]
       else
         []
     Nothing -> []

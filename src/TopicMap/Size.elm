@@ -9,7 +9,7 @@ import Item
 import Model exposing (Model)
 import ModelBase exposing (..)
 import TopicMap.TopicMap as TM
-import TopicMap.TopicMapDef exposing (MapItem, ItemProps(..))
+import TopicMap.TopicMapDef exposing (MapTopic)
 import TopicMap.ViewModel as VM
 import Utils as U
 
@@ -49,7 +49,7 @@ autoSize boxPath ext model =
     Nothing -> (Rectangle 0 0 0 0, model)
 
 
-accumulateItem : MapItem -> BoxPath -> Rectangle -> ExtManager -> Model -> (Rectangle, Model)
+accumulateItem : MapTopic -> BoxPath -> Rectangle -> ExtManager -> Model -> (Rectangle, Model)
 accumulateItem mapItem boxPath rectAcc ext model =
   let
     (rect, model_) = calcItemRect mapItem boxPath ext model
@@ -57,20 +57,17 @@ accumulateItem mapItem boxPath rectAcc ext model =
   (accumulateRect rectAcc rect, model_)
 
 
-calcItemRect : MapItem -> BoxPath -> ExtManager -> Model -> (Rectangle, Model)
-calcItemRect mapItem boxPath ext model =
-  case mapItem.props of
-    TopicP {pos, expansion} ->
-      case (Item.isBox mapItem.id model, expansion) of
-        (False, Collapsed) -> (topicExtent pos, model)
-        (False, Expanded) -> (detailTopicExtent mapItem.id boxPath pos model, model)
-        (True, Collapsed) -> (topicExtent pos, model)
-        (True, Expanded) ->
-          let
-            (rect_, model_) = ext.autoSize (mapItem.id :: boxPath) model -- recursion
-          in
-          (boxExtent pos rect_, model_)
-    AssocP _ -> (Rectangle 0 0 0 0, model) -- never called
+calcItemRect : MapTopic -> BoxPath -> ExtManager -> Model -> (Rectangle, Model)
+calcItemRect ({pos, expansion} as topic) boxPath ext model =
+  case (Item.isBox topic.id model, expansion) of
+    (False, Collapsed) -> (topicExtent pos, model)
+    (False, Expanded) -> (detailTopicExtent topic.id boxPath pos model, model)
+    (True, Collapsed) -> (topicExtent pos, model)
+    (True, Expanded) ->
+      let
+        (rect_, model_) = ext.autoSize (topic.id :: boxPath) model -- recursion
+      in
+      (boxExtent pos rect_, model_)
 
 
 topicExtent : Point -> Rectangle

@@ -257,10 +257,10 @@ deleteItem_ itemId ({topicMap} as model) =
         }
       )
   -- TODO: if item is box delete from "boxes" state as well
-  -- TODO: don't operate on "topicMap" directly
+  -- TODO: don't operate on "topicMap" directly, dispatch into ExtManager instead
   , topicMap = topicMap |> Dict.map -- delete item from all boxes
       (\_ map ->
-        { map | items = map.items |> Dict.remove itemId }
+        { map | topics = map.topics |> Dict.remove itemId }
       )
   }
 
