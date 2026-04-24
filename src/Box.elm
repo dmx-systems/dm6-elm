@@ -102,23 +102,32 @@ addToItemSet itemId boxId model =
     case byId boxId model of
       Just box ->
         model
-          |> Item.createAssoc Hierarchy boxId (toId itemId) -- TODO: don't create for assocs
-          |> Tuple.first
           |> addToItemSet_ (SetItem itemId) box.itemSetId
+          |> createHierarchy itemId boxId
       Nothing -> model
 
 
 addToItemSet_ : SetItem -> Id -> Model -> Model
 addToItemSet_ setItem itemSetId ({itemSets} as model) =
-  { model | itemSets =
-    itemSets
-      |> Dict.update itemSetId
-        (\maybeItemSet ->
-          case maybeItemSet of
-            Just itemSet -> Just { itemSet | items = setItem :: itemSet.items }
-            Nothing -> U.itemSetNotFound "Box.addToItemSet_" itemSetId Nothing
-        )
+  { model | itemSets = itemSets |> Dict.update itemSetId
+    (\maybeItemSet ->
+      case maybeItemSet of
+        Just itemSet -> Just { itemSet | items = setItem :: itemSet.items }
+        Nothing -> U.itemSetNotFound "Box.addToItemSet_" itemSetId Nothing
+    )
   }
+
+
+createHierarchy : ItemId -> BoxId -> Model -> Model
+createHierarchy itemId boxId model =
+  -- Only topics get connected to box by Hierarchy association.
+  -- We don't connect associations to associations.
+  case itemId of
+    T (TopicId id) ->
+      model
+        |> Item.createAssoc Hierarchy boxId id
+        |> Tuple.first
+    A _ -> model
 
 
 addToBoxTopics : BoxTopic -> BoxId -> Model -> Model
@@ -126,14 +135,12 @@ addToBoxTopics topic boxId ({boxes} as model) =
   if hasBoxTopic topic.id boxId model then
     model
   else
-    { model | boxes =
-      boxes
-        |> Dict.update boxId
-          (\maybeBox ->
-            case maybeBox of
-              Just box -> Just { box | topics = box.topics |> Dict.insert topic.id topic }
-              Nothing -> Nothing
-          )
+    { model | boxes = boxes |> Dict.update boxId
+      (\maybeBox ->
+        case maybeBox of
+          Just box -> Just { box | topics = box.topics |> Dict.insert topic.id topic }
+          Nothing -> Nothing
+      )
     }
 
 
@@ -257,7 +264,7 @@ deleteItem_ itemId ({topicMap} as model) =
         }
       )
   -- TODO: if item is box delete from "boxes" state as well
-  -- TODO: don't operate on "topicMap" directly, dispatch into ExtManager instead
+  -- TODO: don't operate on "topicMap" directly, let ExtManager dispatch instead
   , topicMap = topicMap |> Dict.map -- delete item from all boxes
       (\_ map ->
         { map | topics = map.topics |> Dict.remove itemId }
@@ -323,28 +330,6 @@ setRenderer boxId renderer model =
 
 --
 
-{-| Logs an error if box does not exist. -}
-byId : BoxId -> Model -> Maybe Box
-byId boxId model =
-  case model.boxes |> Dict.get boxId of
-    Just box -> Just box
-    Nothing -> U.boxNotFound "Box.byId" boxId Nothing
-
-
-topicById : Id -> Box -> Model -> Maybe BoxTopic
-topicById topicId box model =
-  case box.topics |> Dict.get topicId of
-    Just topic -> Just topic
-    Nothing -> U.logError "Box.topicById" "missing dict entry in box.topics" Nothing
-
-
-itemSetOf : BoxId -> Model -> Maybe ItemSet
-itemSetOf boxId model =
-  case byId boxId model of
-    Just box -> model.itemSets |> Dict.get box.itemSetId
-    Nothing -> U.fail "Box.itemSetOf" {boxId = boxId} Nothing
-
-
 {-| Checks if an item is contained in a box's underlying ItemSet.
 Logs an error if the box or its ItemSet is absent.
 -}
@@ -371,11 +356,33 @@ hasDeepItem boxId itemId model =
       False
 
 
+itemSetOf : BoxId -> Model -> Maybe ItemSet
+itemSetOf boxId model =
+  case byId boxId model of
+    Just box -> model.itemSets |> Dict.get box.itemSetId
+    Nothing -> U.fail "Box.itemSetOf" {boxId = boxId} Nothing
+
+
 hasBoxTopic : Id -> BoxId -> Model -> Bool
 hasBoxTopic topicId boxId model =
   case byId boxId model of
     Just box -> box.topics |> Dict.member topicId
     Nothing -> U.fail "Box.hasBoxTopic" {topicId = topicId, boxId = boxId} False
+
+
+{-| Logs an error if box does not exist. -}
+byId : BoxId -> Model -> Maybe Box
+byId boxId model =
+  case model.boxes |> Dict.get boxId of
+    Just box -> Just box
+    Nothing -> U.boxNotFound "Box.byId" boxId Nothing
+
+
+topicById : Id -> Box -> Model -> Maybe BoxTopic
+topicById topicId box model =
+  case box.topics |> Dict.get topicId of
+    Just topic -> Just topic
+    Nothing -> U.logError "Box.topicById" "missing dict entry in box.topics" Nothing
 
 
 {-| Title of fullscreen box.

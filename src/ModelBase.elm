@@ -51,8 +51,8 @@ type alias AssocInfo =
 
 
 type AssocType
-  = Hierarchy
-  | Crosslink
+  = Association
+  | Hierarchy
 
 
 type alias TextSize =
@@ -248,8 +248,8 @@ encodeAssocType : AssocType -> E.Value
 encodeAssocType assocType =
   E.string <|
     case assocType of
+      Association -> "Association"
       Hierarchy -> "Hierarchy"
-      Crosslink -> "Crosslink"
 
 
 encodeItemSet : ItemSet -> E.Value
@@ -347,8 +347,8 @@ assocIdsDecoder =
 assocTypeDecoder : String -> D.Decoder AssocType
 assocTypeDecoder str =
   case str of
+    "Association" -> D.succeed Association
     "Hierarchy" -> D.succeed Hierarchy
-    "Crosslink" -> D.succeed Crosslink
     _ -> D.fail <| "\"" ++ str ++ "\" is an invalid AssocType"
 
 

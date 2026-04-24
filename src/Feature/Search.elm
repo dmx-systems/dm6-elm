@@ -366,7 +366,7 @@ revealTopic_ : Id -> BoxId -> Model -> Model
 revealTopic_ topicId boxId model =
   model
     |> Box.addTopic (BoxTopic topicId Collapsed) boxId
-    |> TM.addTopic topicId boxId Default -- TODO: dispatch by ExtManager instead
+    |> TM.addTopic topicId boxId Default -- TODO: let ExtManager dispatch instead
     |> Tuple.first -- Note: Cmd is ignored, OK for the moment ;-)
 
 

@@ -28,10 +28,10 @@ hitTest boxId boxPath pos excludeTopicId ext model =
   case TM.byId boxId model of
     Just map ->
       let
-        items = TM.topics map model
+        topics = TM.topics map model
         relPos = mapOffset pos map
       in
-      case testChildren relPos items (boxId :: boxPath) excludeTopicId ext model of
+      case testChildren relPos topics (boxId :: boxPath) excludeTopicId ext model of
         Just target -> Just target
         Nothing ->
           if Box.isFullscreen boxId model then
@@ -48,8 +48,8 @@ hitTest boxId boxPath pos excludeTopicId ext model =
 
 
 testChildren : Point -> MapTopics -> BoxPath -> Maybe Id -> ExtManager -> Model -> Maybe Target
-testChildren pos items boxPath excludeTopicId ext model =
-  case items of
+testChildren pos topics boxPath excludeTopicId ext model =
+  case topics of
     [] -> Nothing
     item :: tailItems ->
       let

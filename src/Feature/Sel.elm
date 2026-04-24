@@ -13,7 +13,7 @@ import Utils as U
 select : Id -> BoxPath -> Model -> Model
 select itemId boxPath model =
   let
-    _ = U.info "Sel.select" (itemId, boxPath)
+    _ = U.info "Feature.Sel.select" (itemId, boxPath)
   in
   model
     |> setItems [ (itemId, boxPath) ]

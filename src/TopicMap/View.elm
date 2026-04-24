@@ -727,6 +727,6 @@ lineDasharray assoc =
   case assoc of
     Just {assocType} ->
       case assocType of
-        Crosslink -> "5 0" -- solid
+        Association -> "5 0" -- solid
         Hierarchy -> "5" -- dotted
     Nothing -> "5 0" -- solid

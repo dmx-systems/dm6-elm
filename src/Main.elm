@@ -299,7 +299,7 @@ update msg ({present} as undoModel) =
 -- Presumption: both players exist in same box
 createAssoc : Id -> Id -> BoxId -> Model -> Model
 createAssoc player1 player2 boxId model =
-  createAssocAndAddToBox Crosslink player1 player2 boxId model
+  createAssocAndAddToBox Association player1 player2 boxId model
 
 
 -- Presumption: both players exist in same box
