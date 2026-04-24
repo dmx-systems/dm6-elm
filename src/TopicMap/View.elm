@@ -489,7 +489,7 @@ viewItemCount : BoxId -> Model -> List (Html Msg)
 viewItemCount boxId model =
   let
     itemCount =
-      Box.topics boxId model
+      Box.topicIds boxId model
         |> List.length
   in
   [ div

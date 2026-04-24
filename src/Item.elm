@@ -1,4 +1,4 @@
-module Item exposing (topicById, topicOrNothing, assocById, assocOrNothing, byId, topicLabel,
+module Item exposing (topicById, assocById, byId, topicLabel,
   topicSize, setTopicSize, updateTopic, createTopic, createAssoc, relatedItems, otherPlayerId,
   assocIds, update, isBox, nextId)
 
@@ -12,8 +12,8 @@ import String exposing (fromInt)
 
 
 
-{-| Returns a topic by ID.
-Logs an error if no such topic exists, or ID refers not a topic (but an association).
+{-| Looks up a TopicInfo in Model.items.
+Logs an error if item is absent, or Id refers not a topic (but an association).
 -}
 topicById : Id -> Model -> Maybe TopicInfo
 topicById topicId model =
@@ -25,21 +25,8 @@ topicById topicId model =
     Nothing -> U.fail "Item.topicById" topicId Nothing
 
 
-{-| Returns a topic by ID, or Nothing if the ID refers not a topic (but an association).
-Logs an error if no such item exists.
--}
-topicOrNothing : Id -> Model -> Maybe TopicInfo
-topicOrNothing topicId model =
-  case byId topicId model of
-    Just {info} ->
-      case info of
-        Topic topic -> Just topic
-        Assoc _ -> Nothing
-    Nothing -> U.fail "Item.topicOrNothing" topicId Nothing
-
-
-{-| Returns an association by ID.
-Logs an error if no such association exists, or ID refers not an association (but a topic).
+{-| Looks up an AssocInfo in Model.items.
+Logs an error if item is absent, or Id refers not an association (but a topic).
 -}
 assocById : Id -> Model -> Maybe AssocInfo
 assocById assocId model =
@@ -51,21 +38,8 @@ assocById assocId model =
     Nothing -> U.fail "Item.assocById" assocId Nothing
 
 
-{-| Returns an association by ID, or Nothing if the ID refers not an association (but a topic).
-Logs an error if no such item exists.
--}
-assocOrNothing : Id -> Model -> Maybe AssocInfo
-assocOrNothing assocId model =
-  case byId assocId model of
-    Just {info} ->
-      case info of
-        Assoc assoc -> Just assoc
-        Topic _ -> Nothing
-    Nothing -> U.fail "Item.assocOrNothing" assocId Nothing
-
-
-{-| Returns an item by ID.
-Logs an error if no such item exists.
+{-| Looks up an Item in Model.items.
+Logs an error if item is absent.
 -}
 byId : Id -> Model -> Maybe Item
 byId itemId model =

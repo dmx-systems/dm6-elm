@@ -6,7 +6,7 @@ import Dict
 import Env exposing (ExtManager)
 import Item
 import Model exposing (Model)
-import ModelBase exposing (Id, BoxId, BoxPath, Target, Point, Rectangle, Size, ToolbarPos)
+import ModelBase exposing (..)
 import TopicList.TopicList as TL
 import TopicList.TopicListDef exposing (TopicList)
 import Utils as U
@@ -59,10 +59,10 @@ autoSize boxPath ext model =
 
 topicCount : BoxId -> Model -> Int
 topicCount boxId model =
-  Box.topics boxId model |> List.foldr
-    (\topic acc ->
-      if Item.isBox topic.id model then
-        acc + 1 + topicCount topic.id model
+  Box.topicIds boxId model |> List.foldr
+    (\(TopicId id) acc ->
+      if Item.isBox id model then
+        acc + 1 + topicCount id model
       else
         acc + 1
     )

@@ -50,9 +50,9 @@ create_ map ({topicMap} as model) =
 
 topics : TopicMap -> Model -> List MapItem
 topics map model =
-  Box.topics map.id model |> List.foldr
-    (\topic itemsAcc ->
-      case itemById_ topic.id map of
+  Box.topicIds map.id model |> List.foldr
+    (\(TopicId id) itemsAcc ->
+      case itemById_ id map of
         Just item -> item :: itemsAcc
         Nothing -> itemsAcc
     )
@@ -61,9 +61,9 @@ topics map model =
 
 assocs : TopicMap -> Model -> List MapItem
 assocs map model =
-  Box.assocs map.id model |> List.foldr
-    (\assoc itemsAcc ->
-      case itemById_ assoc.id map of
+  Box.assocIds map.id model |> List.foldr
+    (\(AssocId id) itemsAcc ->
+      case itemById_ id map of
         Just item -> item :: itemsAcc
         Nothing -> itemsAcc
     )
@@ -217,13 +217,19 @@ initTopicPos mapId model =
     Nothing -> Point 0 0 -- error is already logged
 
 
-{-| Logs an error if box does not exist, or item is not in box. -}
+{-| Looks up a MapItem in a TopicMap.
+The TopicMap is looked up in Model.
+Logs an error if TopicMap is absent, or does not have the item.
+-}
 itemById : Id -> BoxId -> Model -> Maybe MapItem
 itemById itemId mapId model =
   byId mapId model
     |> Maybe.andThen (itemById_ itemId)
 
 
+{-| Looks up a MapItem in a TopicMap.
+Logs an error if the topic map is absent, or does not have the item.
+-}
 itemById_ : Id -> TopicMap -> Maybe MapItem
 itemById_ itemId map =
   case map.items |> Dict.get itemId of

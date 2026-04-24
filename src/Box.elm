@@ -1,6 +1,6 @@
-module Box exposing (topics, assocs, turnTopicIntoBox, addTopic, addAssoc, removeItem,
-  deleteItem, expansionOf, updateExpansion, rendererOf, setRenderer, hasItem, hasDeepItem,
-  mapTitle, isFullscreen, elemId, firstId, fromPath)
+module Box exposing (topics, topicIds, assocIds, turnTopicIntoBox, addTopic, addAssoc,
+  removeItem, deleteItem, expansionOf, updateExpansion, rendererOf, setRenderer, hasItem,
+  hasDeepItem, mapTitle, isFullscreen, elemId, firstId, fromPath)
 
 import Item
 import Model exposing (Model)
@@ -14,27 +14,38 @@ import String exposing (fromInt)
 
 topics : BoxId -> Model -> List TopicInfo
 topics boxId model =
+  topicIds boxId model |> List.foldr
+    (\(TopicId id) acc ->
+      case Item.topicById id model of
+        Just topic -> topic :: acc
+        Nothing -> acc
+    )
+    []
+
+
+topicIds : BoxId -> Model -> List TopicId
+topicIds boxId model =
   case itemSetOf boxId model of
     Just itemSet ->
       itemSet.items |> List.foldr
-        (\setItem topicsAcc ->
-          case Item.topicOrNothing (toId setItem.id) model of
-            Just topic -> topic :: topicsAcc
-            Nothing -> topicsAcc
+        (\setItem acc ->
+          case setItem.id of
+            T id -> id :: acc
+            A _ -> acc
         )
         []
     Nothing -> []
 
 
-assocs : BoxId -> Model -> List AssocInfo
-assocs boxId model =
+assocIds : BoxId -> Model -> List AssocId
+assocIds boxId model =
   case itemSetOf boxId model of
     Just itemSet ->
       itemSet.items |> List.foldr
-        (\setItem assocsAcc ->
-          case Item.assocOrNothing (toId setItem.id) model of
-            Just assoc -> assoc :: assocsAcc
-            Nothing -> assocsAcc
+        (\setItem acc ->
+          case setItem.id of
+            A id -> id :: acc
+            T _ -> acc
         )
         []
     Nothing -> []
@@ -170,8 +181,8 @@ hierarchyAssoc itemId boxId model =
 
 
 findHierarchy : Id -> BoxId -> AssocIds -> Model -> Maybe Id
-findHierarchy itemId boxId assocIds model =
-  case assocIds of
+findHierarchy itemId boxId assocIds_ model =
+  case assocIds_ of
     [] ->
       U.logError "Box.hierarchyAssoc"
         ("Hierarchy of " ++ fromInt itemId ++ " in " ++ fromInt boxId ++ " not found")
@@ -334,8 +345,8 @@ itemSetOf boxId model =
     Nothing -> U.fail "Box.itemSetOf" {boxId = boxId} Nothing
 
 
-{-| Returns True if an item is contained in the ItemSet assigned to that box.
-Logs an error if the box or its ItemSet does not exist.
+{-| Checks if an item is contained in a box's underlying ItemSet.
+Logs an error if the box or its ItemSet is absent.
 -}
 hasItem : ItemId -> BoxId -> Model -> Bool
 hasItem itemId boxId model =
