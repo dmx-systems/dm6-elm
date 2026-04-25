@@ -2,6 +2,7 @@ module ExtManager exposing (ext)
 
 import Box
 import Env exposing (ExtManager)
+import Extension
 import Model exposing (Model, Msg)
 import ModelBase exposing (..)
 -- box renderers
@@ -20,8 +21,7 @@ import Html exposing (Html, text)
 
 
 type alias Extension =
-  { name : ExtName
-  , label : ExtLabel
+  { label : ExtLabel
   , view : NestingBoxRenderer
   , hitTest : NestingHitTest
   , autoSize : NestingAutoSize
@@ -67,22 +67,21 @@ ext =
   }
 
 
--- key = renderer name
+-- key = renderer name (String)
+-- Note: custom types can't be used as Dict keys
 registry : Dict String Extension
 registry =
-  Dict.fromList -- Note: custom types can't be used as Dict keys, so we use String
+  Dict.fromList
     [ ("TopicMap",
-        { name = "TopicMap"
-        , label = "Topic Map"
+        { label = "Topic Map"
         , view = TopicMap.View.view
         , hitTest = TopicMap.Geometry.hitTest
         , autoSize = TopicMap.Size.autoSize
         , toolbar = TopicMap.Geometry.toolbarPos
         }
       )
-    , ("List",
-        { name = "List"
-        , label = "List"
+    , ("TopicList",
+        { label = "List"
         , view = TopicList.TopicList.view
         , hitTest = TopicList.Geometry.hitTest
         , autoSize = TopicList.Geometry.autoSize
@@ -95,9 +94,9 @@ registry =
 all : Extensions
 all =
   registry
-    |> Dict.values
+    |> Dict.toList
     |> List.map
-      (\{name, label} -> (name, label))
+      (\(name, {label}) -> (name, label))
 
 
 
@@ -137,6 +136,6 @@ toolbar boxId model =
 dispatch : BoxId -> Model -> result -> (Extension -> result) -> result
 dispatch boxId model errVal func =
   Box.rendererOf boxId model
-    |> Maybe.andThen (\renderer -> registry |> Dict.get renderer)
+    |> Maybe.andThen (\renderer -> registry |> Dict.get (Extension.toString renderer))
     |> Maybe.map func
     |> Maybe.withDefault errVal

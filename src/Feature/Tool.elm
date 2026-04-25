@@ -4,6 +4,7 @@ module Feature.Tool exposing (viewGlobalTools, viewMapTools, viewToolbar, viewTo
 import Box
 import Config as C
 import Env exposing (Env, ExtManager)
+import Extension exposing (Renderer)
 import Feature.Icon as Icon
 import Feature.Mouse as Mouse
 import Feature.Nav as Nav
@@ -253,8 +254,8 @@ viewTopicToolbar pos topicId boxPath ext model =
 viewRendererSelect : Renderer -> (Renderer -> Msg) -> ExtManager -> Html Msg
 viewRendererSelect renderer toMsg ext =
   select
-    ( [ value renderer
-      , on "input" (D.map toMsg targetValue)
+    ( [ value <| Extension.toString renderer
+      , on "input" (targetValue |> Extension.rendererDecoder |> D.map toMsg)
       , U.onPointerDownStop NoOp
       ]
       ++ selectStyle

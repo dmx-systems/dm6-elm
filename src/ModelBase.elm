@@ -1,9 +1,11 @@
 module ModelBase exposing (Id, Item, ItemInfo(..), TopicId(..), AssocId(..), ItemId(..),
   fromTopicId, fromAssocId, toId, AssocIds, TopicInfo, Icon, TextSize, Size, SizeField(..),
   Point, Rectangle, AssocInfo, AssocType(..), ItemSet, SetItem, Box, BoxId, BoxPath, Target,
-  rootBoxId, BoxTopic, Expansion(..), ImageId, Attrs, PointerType, Extensions, ExtName,
-  ExtLabel, Renderer, PosHint(..), ToolbarPos, encodeItem, encodeItemSet, encodeBox,
-  itemDecoder, itemSetDecoder, boxDecoder, toDictDecoder)
+  rootBoxId, BoxTopic, Expansion(..), ImageId, Attrs, PointerType, Extensions, ExtLabel,
+  PosHint(..), ToolbarPos, encodeItem, encodeItemSet, encodeBox, itemDecoder, itemSetDecoder,
+  boxDecoder, toDictDecoder)
+
+import Extension exposing (Renderer, encodeRenderer)
 
 import Dict exposing (Dict)
 import Html exposing (Attribute)
@@ -181,9 +183,6 @@ type alias ExtLabel = String
 type alias Extensions = List (ExtName, ExtLabel)
 
 
-type alias Renderer = String
-
-
 type PosHint
   = Default
   | Random
@@ -275,7 +274,7 @@ encodeBox box =
     [ ("id", E.int box.id)
     , ("itemSetId", E.int box.itemSetId)
     , ("topics", E.list encodeBoxTopic <| Dict.values box.topics)
-    , ("renderer", E.string box.renderer)
+    , ("renderer", encodeRenderer box.renderer)
     ]
 
 
@@ -305,7 +304,7 @@ itemDecoder =
         (D.field "id" D.int)
         (D.map Topic <| D.map4 TopicInfo
           (D.field "id" D.int)
-          (D.field "icon" D.string |> D.andThen maybeString)
+          (D.field "icon" D.string |> D.map maybeString)
           (D.field "text" D.string)
           textSizeDecoder
         )
@@ -371,7 +370,7 @@ boxDecoder =
     (D.field "id" D.int)
     (D.field "itemSetId" D.int)
     (D.field "topics" (boxTopicDecoder |> toDictDecoder))
-    (D.field "renderer" D.string)
+    (D.field "renderer" (D.string |> Extension.rendererDecoder))
 
 
 boxTopicDecoder : D.Decoder BoxTopic
@@ -399,9 +398,8 @@ toDict =
   List.map (\item -> (item.id, item)) >> Dict.fromList
 
 
-maybeString : String -> D.Decoder (Maybe String)
+maybeString : String -> Maybe String
 maybeString str =
-  D.succeed <|
-    case str of
-      "" -> Nothing
-      _ -> Just str
+  case str of
+    "" -> Nothing
+    _ -> Just str

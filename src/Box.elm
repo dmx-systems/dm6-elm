@@ -2,6 +2,7 @@ module Box exposing (topics, topicIds, assocIds, turnTopicIntoBox, addTopic, add
   removeItem, deleteItem, expansionOf, updateExpansion, rendererOf, setRenderer, hasItem,
   hasDeepItem, mapTitle, isFullscreen, elemId, firstId, fromPath)
 
+import Extension exposing (Renderer)
 import Item
 import Model exposing (Model)
 import ModelBase exposing (..)
@@ -58,7 +59,7 @@ turnTopicIntoBox topicId model =
   let
     setId = model.nextId
     set = ItemSet setId []
-    box = Box topicId setId Dict.empty "TopicMap"
+    box = Box topicId setId Dict.empty Extension.defaultRenderer
   in
   model
     |> create box
@@ -314,12 +315,12 @@ rendererOf : BoxId -> Model -> Maybe Renderer
 rendererOf boxId model =
   case byId boxId model of
     Just box -> Just box.renderer
-    Nothing -> U.fail "Box.renderer" {boxId = boxId} Nothing
+    Nothing -> U.fail "Box.rendererOf" {boxId = boxId} Nothing
 
 
 setRenderer : BoxId -> Renderer -> Model -> Model
-setRenderer boxId renderer model =
-  { model | boxes = model.boxes |> Dict.update boxId
+setRenderer boxId renderer ({boxes} as model) =
+  { model | boxes = boxes |> Dict.update boxId
     (\maybeBox ->
       case maybeBox of
         Just box -> Just { box | renderer = renderer }

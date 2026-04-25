@@ -1,6 +1,7 @@
 module Feature.ToolDef exposing (..)
 
-import ModelBase exposing (Id, BoxId, Renderer)
+import Extension exposing (Renderer)
+import ModelBase exposing (Id, BoxId)
 
 import Json.Decode as D
 import Json.Encode as E
