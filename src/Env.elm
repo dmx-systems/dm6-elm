@@ -1,4 +1,4 @@
-module Env exposing (Env, ExtManager, autoSize, withModel)
+module Env exposing (ExtManager, Env, Env2, autoSize, withModel)
 -- TODO: don't expose AutoSize?
 
 import Model exposing (Model, Msg)
@@ -12,13 +12,6 @@ import Html exposing (Html)
 -- TYPES
 
 
-type alias Env =
-  { model : Model
-  , undoModel : UndoModel
-  , ext : ExtManager
-  }
-
-
 type alias ExtManager =
   { view : BoxRenderer
   , hitTest : HitTest
@@ -28,7 +21,22 @@ type alias ExtManager =
   }
 
 
---
+{-| The environment the application passes to the modules -}
+type alias Env =
+  { model : Model
+  , undoModel : UndoModel
+  , ext : ExtManager
+  }
+
+
+{-| The environment the dispatcher passes to the extensions -}
+type alias Env2 =
+  { model : Model
+  , ext : ExtManager
+  }
+
+
+-- Extension capabilities
 
 type alias BoxRenderer =
   BoxId -> BoxPath -> Model -> Html Msg

@@ -282,14 +282,6 @@ expansionOf topicId boxId model =
     Nothing -> U.fail "Box.expansionOf" {topicId = topicId, boxId = boxId} Collapsed
 
 
--- Not used
-{-| Logs an error if box does not exist, or if topic is not in box -}
-setExpansion : Id -> BoxId -> Expansion -> Model -> Model
-setExpansion topicId boxId expansion model =
-  model
-    |> updateExpansion topicId boxId (\_ -> expansion)
-
-
 updateExpansion : Id -> BoxId -> (Expansion -> Expansion) -> Model -> Model
 updateExpansion topicId boxId transform model =
   { model | boxes = model.boxes |> Dict.update boxId

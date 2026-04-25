@@ -2,7 +2,7 @@ module TopicMap.View exposing (view)
 
 import Box
 import Config as C
-import Env exposing (ExtManager)
+import Env exposing (ExtManager, Env2)
 import Feature.Icon as Icon
 import Feature.MouseDef exposing (DragState(..), DragMode(..))
 import Feature.Mouse as Mouse
@@ -53,11 +53,11 @@ type alias LineRenderer =
 
 
 -- For the fullscreen box boxPath is empty
-view : BoxId -> BoxPath -> ExtManager -> Model -> Html Msg
-view boxId boxPath ext model =
+view : BoxId -> BoxPath -> Env2 -> Html Msg
+view boxId boxPath ({model} as env) =
   let
     ((topics, assocs), boxRect, (svgSize, boxStyle)) =
-      boxInfo boxId boxPath ext model
+      boxInfo boxId boxPath env
   in
   div
     boxStyle
@@ -77,7 +77,7 @@ view boxId boxPath ext model =
               )
           ]
       ]
-      ++ Tool.viewToolbar (boxId :: boxPath) ext model
+      ++ Tool.viewToolbar (boxId :: boxPath) env
     )
 
 
@@ -128,15 +128,15 @@ gAttr boxId boxRect model =
 
 
 -- For the fullscreen box boxPath is empty
-boxInfo : BoxId -> BoxPath -> ExtManager -> Model -> BoxInfo
-boxInfo boxId boxPath ext model =
+boxInfo : BoxId -> BoxPath -> Env2 -> BoxInfo
+boxInfo boxId boxPath ({model} as env) =
   case TM.byId boxId model of
     Just map ->
       let
         width = map.rect.x2 - map.rect.x1
         height = map.rect.y2 - map.rect.y1
       in
-      ( viewItems map boxPath ext model
+      ( viewItems map boxPath env
       , map.rect
       , ( { w = fromInt width
           , h = fromInt height
@@ -150,15 +150,15 @@ boxInfo boxId boxPath ext model =
 
 
 -- For the fullscreen box boxPath is empty
-viewItems : TopicMap -> BoxPath -> ExtManager -> Model -> (List (Html Msg), List (Svg Msg))
-viewItems map boxPath ext model =
+viewItems : TopicMap -> BoxPath -> Env2 -> (List (Html Msg), List (Svg Msg))
+viewItems map boxPath ({model} as env) =
   let
     newPath = map.id :: boxPath
     topics =
       VM.topicsToRender map model |> List.map
         (\({id} as mapTopic) ->
           case Item.topicById id model of
-            Just topic -> viewTopic topic mapTopic newPath ext model
+            Just topic -> viewTopic topic mapTopic newPath env
             _ -> U.logError "viewItems" ("problem with topic " ++ fromInt id) (text "")
         )
     assocs =
@@ -217,8 +217,8 @@ viewLimboAssoc boxId model =
 
 -- Topic Rendering
 
-viewTopic : TopicInfo -> MapTopic -> BoxPath -> ExtManager -> Model -> Html Msg
-viewTopic topic mapTopic boxPath ext model =
+viewTopic : TopicInfo -> MapTopic -> BoxPath -> Env2 -> Html Msg
+viewTopic topic mapTopic boxPath ({model, ext}) =
   let
     boxId = Box.firstId boxPath
     render =

@@ -3,7 +3,7 @@ module TopicList.Geometry exposing (hitTest, autoSize, toolbarPos)
 import Box
 import Config as C
 import Dict
-import Env exposing (ExtManager)
+import Env exposing (ExtManager, Env2)
 import Item
 import Model exposing (Model)
 import ModelBase exposing (..)
@@ -16,8 +16,8 @@ import Utils as U
 -- HIT TEST
 
 
-hitTest : BoxId -> BoxPath -> Point -> Maybe Id -> ExtManager -> Model -> Maybe Target
-hitTest boxId boxPath pos excludeTopicId ext model =
+hitTest : BoxId -> BoxPath -> Point -> Maybe Id -> Env2 -> Maybe Target
+hitTest boxId boxPath pos excludeTopicId {model} =
   -- TODO
   let
     maybeThisItem : Bool -> Maybe Target
@@ -44,8 +44,8 @@ isListHovered boxId pos model =
 -- AUTO-SIZE
 
 
-autoSize : BoxPath -> ExtManager -> Model -> (Rectangle, Model)
-autoSize boxPath ext model =
+autoSize : BoxPath -> Env2 -> (Rectangle, Model)
+autoSize boxPath {model} =
   let
     boxId = Box.firstId boxPath
     count = topicCount boxId model

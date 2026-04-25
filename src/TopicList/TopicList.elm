@@ -3,7 +3,7 @@ module TopicList.TopicList exposing (view, listSize)
 import Box
 import Config as C
 import Dict
-import Env exposing (ExtManager)
+import Env exposing (ExtManager, Env2)
 import Feature.Mouse as Mouse
 import Feature.Text as Text
 import Feature.Tool as Tool
@@ -22,12 +22,12 @@ import String exposing (fromInt, fromFloat)
 
 
 -- For the fullscreen box boxPath is empty
-view : BoxId -> BoxPath -> ExtManager -> Model -> Html Msg
-view boxId boxPath ext model =
+view : BoxId -> BoxPath -> Env2 -> Html Msg
+view boxId boxPath ({model} as env) =
   div
     ( listStyle boxId boxPath model )
     ( [ viewList (boxId :: boxPath) model ]
-      ++ Tool.viewToolbar (boxId :: boxPath) ext model -- TODO
+      ++ Tool.viewToolbar (boxId :: boxPath) env -- TODO
     )
 
 

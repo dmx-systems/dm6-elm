@@ -3,7 +3,7 @@ module Feature.Tool exposing (viewGlobalTools, viewMapTools, viewToolbar, viewTo
 
 import Box
 import Config as C
-import Env exposing (Env, ExtManager)
+import Env exposing (ExtManager, Env, Env2)
 import Extension exposing (Renderer)
 import Feature.Icon as Icon
 import Feature.Mouse as Mouse
@@ -190,8 +190,8 @@ mapToolsStyle =
 -- Item Tools
 
 -- Topic/Assoc toolbar, rendered by Map.view as box children
-viewToolbar : BoxPath -> ExtManager -> Model -> List (Html Msg)
-viewToolbar boxPath ext model =
+viewToolbar : BoxPath -> Env2 -> List (Html Msg)
+viewToolbar boxPath ({model, ext} as env) =
   let
     boxId = Box.firstId boxPath
     toolbar = ext.toolbar boxId model
@@ -207,7 +207,7 @@ viewToolbar boxPath ext model =
                   pos = toolbar.topic topic
                 in
                 case (Text.isEdit itemId boxPath model, Item.isBox itemId model) of
-                  (False, _) -> [ viewTopicToolbar pos itemId boxPath ext model ]
+                  (False, _) -> [ viewTopicToolbar pos itemId boxPath env ]
                   (True, False) -> [ viewTextToolbar pos itemId boxPath ]
                   _ -> []
               Assoc assoc ->
@@ -221,8 +221,8 @@ viewToolbar boxPath ext model =
     Nothing -> []
 
 
-viewTopicToolbar : Point -> Id -> BoxPath -> ExtManager -> Model -> Html Msg
-viewTopicToolbar pos topicId boxPath ext model =
+viewTopicToolbar : Point -> Id -> BoxPath -> Env2 -> Html Msg
+viewTopicToolbar pos topicId boxPath ({model, ext}) =
   let
     target = (topicId, boxPath)
     topicTools =

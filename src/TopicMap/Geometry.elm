@@ -2,7 +2,7 @@ module TopicMap.Geometry exposing (hitTest, toolbarPos)
 
 import Box
 import Config as C
-import Env exposing (ExtManager)
+import Env exposing (ExtManager, Env2)
 import Item
 import Model exposing (Model)
 import ModelBase exposing (..)
@@ -23,15 +23,15 @@ type alias MapTopics =
 Returns the found topic/box (Id) and its context (BoxPath), or Nothing.
 If `excludeTopicId` is given that topic/box will be excluded from search.
 -}
-hitTest : BoxId -> BoxPath -> Point -> Maybe Id -> ExtManager -> Model -> Maybe Target
-hitTest boxId boxPath pos excludeTopicId ext model =
+hitTest : BoxId -> BoxPath -> Point -> Maybe Id -> Env2 -> Maybe Target
+hitTest boxId boxPath pos excludeTopicId ({model} as env) =
   case TM.byId boxId model of
     Just map ->
       let
         topics = TM.topics map model
         relPos = mapOffset pos map
       in
-      case testChildren relPos topics (boxId :: boxPath) excludeTopicId ext model of
+      case testChildren relPos topics (boxId :: boxPath) excludeTopicId env of
         Just target -> Just target
         Nothing ->
           if Box.isFullscreen boxId model then
@@ -47,8 +47,8 @@ hitTest boxId boxPath pos excludeTopicId ext model =
     Nothing -> Nothing
 
 
-testChildren : Point -> MapTopics -> BoxPath -> Maybe Id -> ExtManager -> Model -> Maybe Target
-testChildren pos topics boxPath excludeTopicId ext model =
+testChildren : Point -> MapTopics -> BoxPath -> Maybe Id -> Env2 -> Maybe Target
+testChildren pos topics boxPath excludeTopicId ({model, ext} as env) =
   case topics of
     [] -> Nothing
     item :: tailItems ->
@@ -68,16 +68,16 @@ testChildren pos topics boxPath excludeTopicId ext model =
                 Nothing -> isHeaderHit model
             (False, _) -> isTopicHit item.id boxPath pos model |> maybeItem
         -- recursion
-        testTailItems = testChildren pos tailItems boxPath excludeTopicId ext
+        testTailItems = testChildren pos tailItems boxPath excludeTopicId
       in
       -- return item if successfully tested AND not excluded by filter
       case (maybeTarget, excludeTopicId) of
         (Just ((targetId, _) as target), Just topicId) ->
           case targetId /= topicId of
             True -> Just target
-            False -> testTailItems model
+            False -> testTailItems env
         (Just target, Nothing) -> Just target
-        (Nothing, _) -> testTailItems model
+        (Nothing, _) -> testTailItems env
 
 
 isTopicHit : Id -> BoxPath -> Point -> Model -> Bool

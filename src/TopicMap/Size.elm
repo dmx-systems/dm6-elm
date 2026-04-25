@@ -2,7 +2,7 @@ module TopicMap.Size exposing (autoSize)
 
 import Box
 import Config as C
-import Env exposing (ExtManager)
+import Env exposing (ExtManager, Env2)
 import Feature.MouseDef exposing (DragState(..), DragMode(..))
 import Feature.TextDef exposing (EditState(..))
 import Item
@@ -23,8 +23,8 @@ Returns the modified model along with, for convenience, the calculated rect.
 Based on the rect's change the TopicMap's topic position adjustment within the parent
 TopicMap (if any) is calculated as well.
 -}
-autoSize : BoxPath -> ExtManager -> Model -> (Rectangle, Model)
-autoSize boxPath ext model =
+autoSize : BoxPath -> Env2 -> (Rectangle, Model)
+autoSize boxPath ({model, ext}) =
   let
     boxId = Box.firstId boxPath
   in
