@@ -45,7 +45,7 @@ type alias TopicRendering =
 
 
 type alias LineRenderer =
-  Point -> Point -> Maybe AssocInfo -> BoxPath -> Attrs Msg -> Model -> List (Svg Msg)
+  Point -> Point -> Maybe Assoc -> BoxPath -> Attrs Msg -> Model -> List (Svg Msg)
 
 
 
@@ -217,7 +217,7 @@ viewLimboAssoc boxId model =
 
 -- Topic Rendering
 
-viewTopic : TopicInfo -> MapTopic -> BoxPath -> Env2 -> Html Msg
+viewTopic : Topic -> MapTopic -> BoxPath -> Env2 -> Html Msg
 viewTopic topic mapTopic boxPath ({model, ext}) =
   let
     boxId = Box.firstId boxPath
@@ -261,7 +261,7 @@ topicStyle id boxId model =
   ]
 
 
-labelTopic : TopicInfo -> MapTopic -> BoxPath -> Model -> TopicRendering
+labelTopic : Topic -> MapTopic -> BoxPath -> Model -> TopicRendering
 labelTopic topic mapTopic boxPath model =
   ( topicPosStyle mapTopic
       ++ topicFlexboxStyle mapTopic boxPath model
@@ -270,7 +270,7 @@ labelTopic topic mapTopic boxPath model =
   )
 
 
-viewLabelTopic : TopicInfo -> MapTopic -> BoxPath -> Model -> List (Html Msg)
+viewLabelTopic : Topic -> MapTopic -> BoxPath -> Model -> List (Html Msg)
 viewLabelTopic topic mapTopic boxPath model =
   let
     textElem =
@@ -309,7 +309,7 @@ labelTopicStyle =
   ]
 
 
-detailTopic : TopicInfo -> MapTopic -> BoxPath -> Model -> TopicRendering
+detailTopic : Topic -> MapTopic -> BoxPath -> Model -> TopicRendering
 detailTopic topic mapTopic boxPath model =
   let
     textElem =
@@ -418,7 +418,7 @@ topicIconStyle =
   ]
 
 
-blackBoxTopic : TopicInfo -> MapTopic -> BoxPath -> Model -> TopicRendering
+blackBoxTopic : Topic -> MapTopic -> BoxPath -> Model -> TopicRendering
 blackBoxTopic topic mapTopic boxPath model =
   ( topicPosStyle mapTopic
   , [ div
@@ -459,7 +459,7 @@ topicFlexboxStyle mapTopic boxPath model =
   ++ VB.topicBorderStyle mapTopic.id boxPath model
 
 
-ghostTopicStyle : TopicInfo -> BoxPath -> Model -> Attrs Msg
+ghostTopicStyle : Topic -> BoxPath -> Model -> Attrs Msg
 ghostTopicStyle topic boxPath model =
   [ style "position" "absolute"
   , style "left" <| fromInt C.blackBoxOffset ++ "px"
@@ -473,7 +473,7 @@ ghostTopicStyle topic boxPath model =
   ++ VB.selectionStyle topic.id boxPath model
 
 
-whiteBoxTopic : TopicInfo -> MapTopic -> BoxPath -> ExtManager -> Model -> TopicRendering
+whiteBoxTopic : Topic -> MapTopic -> BoxPath -> ExtManager -> Model -> TopicRendering
 whiteBoxTopic topic mapTopic boxPath ext model =
   let
     (style, children) = labelTopic topic mapTopic boxPath model
@@ -508,7 +508,7 @@ itemCountStyle =
 
 -- Association Rendering
 
-viewAssoc : AssocInfo -> BoxPath -> Attrs Msg -> Model -> List (Svg Msg)
+viewAssoc : Assoc -> BoxPath -> Attrs Msg -> Model -> List (Svg Msg)
 viewAssoc assoc boxPath clickHandler model =
   let
     boxId = Box.firstId boxPath
@@ -660,7 +660,7 @@ corneredLine pos1 pos2 maybeAssoc boxPath clickHandler model =
 
 
 type alias LineWithHitArea =
-  SvgElement -> Attrs Msg -> Attrs Msg -> Maybe AssocInfo -> BoxPath -> Model -> List (Svg Msg)
+  SvgElement -> Attrs Msg -> Attrs Msg -> Maybe Assoc -> BoxPath -> Model -> List (Svg Msg)
 
 
 type alias SvgElement = Attrs Msg -> List (Svg Msg) -> Svg Msg
@@ -686,7 +686,7 @@ viewLineWithHitArea svgElement geometry clickHandler maybeAssoc boxPath model =
   ]
 
 
-lineStyle : Maybe AssocInfo -> BoxId -> Model -> Attrs Msg
+lineStyle : Maybe Assoc -> BoxId -> Model -> Attrs Msg
 lineStyle assoc boxId model =
   let
     color =
@@ -712,7 +712,7 @@ lineHitAreaStyle =
   ]
 
 
-lineSelectionStyle : Maybe AssocInfo -> BoxPath -> Model -> Attrs Msg
+lineSelectionStyle : Maybe Assoc -> BoxPath -> Model -> Attrs Msg
 lineSelectionStyle maybeAssoc boxPath model =
   case maybeAssoc of
     Just {id} ->
@@ -722,7 +722,7 @@ lineSelectionStyle maybeAssoc boxPath model =
     Nothing -> []
 
 
-lineDasharray : Maybe AssocInfo -> String
+lineDasharray : Maybe Assoc -> String
 lineDasharray assoc =
   case assoc of
     Just {assocType} ->

@@ -199,23 +199,23 @@ viewToolbar boxPath ({model, ext} as env) =
   case Sel.single model of
     Just (itemId, selBoxPath) ->
       if selBoxPath == boxPath then
-        case (Item.byId itemId model, TM.byId boxId model) of
-          (Just {info}, Just {rect}) ->
-            case info of
-              Topic topic ->
-                let
-                  pos = toolbar.topic topic
-                in
-                case (Text.isEdit itemId boxPath model, Item.isBox itemId model) of
-                  (False, _) -> [ viewTopicToolbar pos itemId boxPath env ]
-                  (True, False) -> [ viewTextToolbar pos itemId boxPath ]
-                  _ -> []
-              Assoc assoc ->
-                let
-                  pos = toolbar.assoc assoc
-                in
-                [ viewAssocToolbar pos itemId boxPath ]
-          _ -> []
+        -- TODO: use typed IDs in selection model
+        case (Item.topicByIdOrNothing itemId model, Item.assocByIdOrNothing itemId model) of
+          (Just topic, Nothing) ->
+            let
+              pos = toolbar.topic topic
+            in
+            case (Text.isEdit itemId boxPath model, Item.isBox itemId model) of
+              (False, _) -> [ viewTopicToolbar pos itemId boxPath env ]
+              (True, False) -> [ viewTextToolbar pos itemId boxPath ]
+              _ -> []
+          (Nothing, Just assoc) ->
+            let
+              pos = toolbar.assoc assoc
+            in
+            [ viewAssocToolbar pos itemId boxPath ]
+          _ -> U.logError "Feature.Tool.viewToolbar"
+            ("Problem with ID " ++ fromInt itemId ++ " in selection") []
       else
         []
     Nothing -> []
@@ -493,14 +493,15 @@ edit : Env -> (Model, Cmd Msg)
 edit ({model} as env) =
   case Sel.single model of
     Just (topicId, boxPath) -> Text.enterEdit topicId boxPath env
-    Nothing -> U.logError "edit" "called when there is no single selection" (model, Cmd.none)
+    Nothing -> U.logError "Feature.Tool.edit" "called when there is no single selection"
+      (model, Cmd.none)
 
 
 delete : Env -> Model
 delete ({model} as env) =
   model.selection.items
     |> List.map Tuple.first
-    |> List.foldr Box.deleteItem model
+    |> List.foldr delete_ model
     |> Sel.clear
     |> Env.autoSize env
 
@@ -509,10 +510,36 @@ remove : Env -> Model
 remove ({model} as env) =
   model.selection.items
     |> List.foldr
-      (\(itemId, boxPath) modelAcc -> Box.removeItem itemId (Box.firstId boxPath) modelAcc)
+      (\(itemId, boxPath) modelAcc ->
+        remove_ itemId (Box.firstId boxPath) model
+      )
       model
     |> Sel.clear
     |> Env.autoSize env
+
+
+-- TODO: use typed IDs in selection model
+delete_ : Id -> Model -> Model
+delete_ itemId model =
+  case (Item.isTopic itemId model, Item.isAssoc itemId model) of
+    (True, False) ->
+      Box.deleteTopic itemId model
+    (False, True) ->
+      Box.deleteAssoc itemId model
+    _ -> U.logError "Feature.Tool.delete_"
+      ("Problem with ID " ++ fromInt itemId ++ " in selection") model
+
+
+-- TODO: use typed IDs in selection model
+remove_ : Id -> BoxId -> Model -> Model
+remove_ itemId boxId model =
+  case (Item.isTopic itemId model, Item.isAssoc itemId model) of
+    (True, False) ->
+      Box.removeTopic itemId boxId model
+    (False, True) ->
+      Box.removeAssoc itemId boxId model
+    _ -> U.logError "Feature.Tool.remove"
+      ("Problem with ID " ++ fromInt itemId ++ " in selection") model
 
 
 fullscreen : Id -> Model -> (Model, Cmd Msg)
@@ -529,7 +556,8 @@ setRenderer renderer ({model} as env) =
       model
         |> Box.setRenderer topicId renderer
         |> Env.autoSize env
-    Nothing -> U.logError "setRenderer" "called when there is no single selection" model
+    Nothing -> U.logError "Feature.Tool.setRenderer" "called when there is no single selection"
+      model
 
 
 toggleExpansion : Id -> BoxId -> Env -> Model

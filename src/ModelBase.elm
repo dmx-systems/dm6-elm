@@ -1,9 +1,9 @@
-module ModelBase exposing (Id, Item, ItemInfo(..), TopicId(..), AssocId(..), ItemId(..),
-  fromTopicId, fromAssocId, toId, AssocIds, TopicInfo, Icon, TextSize, Size, SizeField(..),
-  Point, Rectangle, AssocInfo, AssocType(..), ItemSet, SetItem, Box, BoxId, BoxPath, Target,
-  rootBoxId, BoxTopic, Expansion(..), ImageId, Attrs, PointerType, Extensions, ExtLabel,
-  PosHint(..), ToolbarPos, encodeItem, encodeItemSet, encodeBox, itemDecoder, itemSetDecoder,
-  boxDecoder, toDictDecoder)
+module ModelBase exposing (Id, TopicId(..), AssocId(..), ItemId(..), AssocIds, Topic, Icon,
+  TextSize, Size, SizeField(..), Point, Rectangle, Assoc, AssocType(..), ItemSet, SetItem, Box,
+  BoxId, BoxPath, Target, BoxTopic, Expansion(..), ImageId, Attrs, PointerType, Extensions,
+  ExtLabel, PosHint(..), ToolbarPos, fromTopicId, fromAssocId, toId, rootBoxId, encodeTopic,
+  encodeAssoc, encodeItemSet, encodeBox, topicDecoder, assocDecoder, itemSetDecoder, boxDecoder,
+  toDictDecoder)
 
 import Extension exposing (Renderer, encodeRenderer)
 
@@ -23,32 +23,20 @@ type alias IdRecord r =
 
 -- Item
 
-type alias Item =
-  { id : Id
-  , info : ItemInfo
-  , assocIds : AssocIds -- The associations the item is involved in (as a "player")
-                        -- TODO: move to TopicInfo?
-  }
-
-
-type ItemInfo
-  = Topic TopicInfo
-  | Assoc AssocInfo
-
-
-type alias TopicInfo =
+type alias Topic =
   { id : Id
   , icon : Maybe Icon
   , text : String
   , size : TextSize
+  , assocIds : AssocIds -- The associations the item is involved in (as a "player")
   }
 
 
-type alias AssocInfo =
+type alias Assoc =
   { id : Id
   , assocType : AssocType -- serialized as "type", field can't be named "type", a reserved word
-  , player1 : Id
-  , player2 : Id
+  , topicId1 : Id
+  , topicId2 : Id
   }
 
 
@@ -189,8 +177,8 @@ type PosHint
 
 
 type alias ToolbarPos =
-  { topic : TopicInfo -> Point
-  , assoc : AssocInfo -> Point
+  { topic : Topic -> Point
+  , assoc : Assoc -> Point
   }
 
 
@@ -200,30 +188,24 @@ type alias ToolbarPos =
 
 -- Encode
 
-encodeItem : Item -> E.Value
-encodeItem item =
+encodeTopic : Topic -> E.Value
+encodeTopic topic =
   E.object
-    [ case item.info of
-      Topic topic ->
-        ( "topic"
-        , E.object
-          [ ("id", E.int topic.id)
-          , ("icon", E.string <| Maybe.withDefault "" topic.icon)
-          , ("text", E.string topic.text)
-          , ("size", encodeTextSize topic.size)
-          , ("assocIds", E.list E.int item.assocIds)
-          ]
-        )
-      Assoc assoc ->
-        ( "assoc"
-        , E.object
-          [ ("id", E.int assoc.id)
-          , ("type", encodeAssocType assoc.assocType)
-          , ("player1", E.int assoc.player1)
-          , ("player2", E.int assoc.player2)
-          , ("assocIds", E.list E.int item.assocIds)
-          ]
-        )
+    [ ("id", E.int topic.id)
+    , ("icon", E.string <| Maybe.withDefault "" topic.icon)
+    , ("text", E.string topic.text)
+    , ("size", encodeTextSize topic.size)
+    , ("assocIds", E.list E.int topic.assocIds)
+    ]
+
+
+encodeAssoc : Assoc -> E.Value
+encodeAssoc assoc =
+  E.object
+    [ ("id", E.int assoc.id)
+    , ("type", encodeAssocType assoc.assocType)
+    , ("topicId1", E.int assoc.topicId1)
+    , ("topicId2", E.int assoc.topicId2)
     ]
 
 
@@ -296,32 +278,24 @@ encodeExpansion expansion =
 
 -- Decode
 
-itemDecoder : D.Decoder Item
-itemDecoder =
-  D.oneOf
-    [ D.field "topic"
-      (D.map3 Item
-        (D.field "id" D.int)
-        (D.map Topic <| D.map4 TopicInfo
-          (D.field "id" D.int)
-          (D.field "icon" D.string |> D.map maybeString)
-          (D.field "text" D.string)
-          textSizeDecoder
-        )
-        assocIdsDecoder
-      )
-    , D.field "assoc"
-      (D.map3 Item
-        (D.field "id" D.int)
-        (D.map Assoc <| D.map4 AssocInfo
-          (D.field "id" D.int)
-          (D.field "type" D.string |> D.andThen assocTypeDecoder)
-          (D.field "player1" D.int)
-          (D.field "player2" D.int)
-        )
-        assocIdsDecoder
-      )
-    ]
+topicDecoder : D.Decoder Topic
+topicDecoder =
+  D.map5 Topic
+    (D.field "id" D.int)
+    (D.field "icon" D.string |> D.map maybeString)
+    (D.field "text" D.string)
+    textSizeDecoder
+    assocIdsDecoder
+
+
+assocDecoder : D.Decoder Assoc
+assocDecoder =
+  (D.map4 Assoc
+    (D.field "id" D.int)
+    (D.field "type" D.string |> D.andThen assocTypeDecoder)
+    (D.field "topicId1" D.int)
+    (D.field "topicId2" D.int)
+  )
 
 
 textSizeDecoder : D.Decoder TextSize

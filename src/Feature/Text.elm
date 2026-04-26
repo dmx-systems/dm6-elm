@@ -46,7 +46,7 @@ sub =
 -- VIEW
 
 
-viewInput : TopicInfo -> BoxPath -> Attrs Msg -> Html Msg
+viewInput : Topic -> BoxPath -> Attrs Msg -> Html Msg
 viewInput topic boxPath style =
   input
     ( [ id <| Box.elemId "input" topic.id boxPath
@@ -61,7 +61,7 @@ viewInput topic boxPath style =
     []
 
 
-viewTextarea : TopicInfo -> BoxPath -> Attrs Msg -> Html Msg
+viewTextarea : Topic -> BoxPath -> Attrs Msg -> Html Msg
 viewTextarea topic boxPath style =
   textarea
     ( [ id <| Box.elemId "input" topic.id boxPath

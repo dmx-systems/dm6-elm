@@ -101,29 +101,19 @@ command msg =
 -- DEBUG
 
 
-itemNotInBox : String -> Id -> Id -> a -> a
-itemNotInBox funcName itemId boxId val =
-  logError funcName ("item " ++ fromInt itemId ++ " not in box " ++ fromInt boxId) val
+topicNotFound : String -> Id -> a -> a
+topicNotFound funcName id val =
+  notFound funcName "Topic" id val
 
 
-topicMismatch : String -> Id -> a -> a
-topicMismatch funcName id val =
-  logError funcName (fromInt id ++ " is not a Topic but an Assoc") val
-
-
-assocMismatch : String -> Id -> a -> a
-assocMismatch funcName id val =
-  logError funcName (fromInt id ++ " is not an Assoc but a Topic") val
+assocNotFound : String -> Id -> a -> a
+assocNotFound funcName id val =
+  notFound funcName "Assoc" id val
 
 
 boxNotFound : String -> Id -> a -> a
 boxNotFound funcName id val =
   notFound funcName "Box" id val
-
-
-itemNotFound : String -> Id -> a -> a
-itemNotFound funcName id val =
-  notFound funcName "Item" id val
 
 
 itemSetNotFound : String -> Id -> a -> a
@@ -134,6 +124,11 @@ itemSetNotFound funcName id val =
 notFound : String -> String -> Id -> a -> a
 notFound funcName item id val =
   logError funcName (item ++ " " ++ fromInt id ++ " not found") val
+
+
+itemNotInBox : String -> Id -> Id -> a -> a
+itemNotInBox funcName itemId boxId val =
+  logError funcName ("item " ++ fromInt itemId ++ " not in box " ++ fromInt boxId) val
 
 
 --

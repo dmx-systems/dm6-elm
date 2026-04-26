@@ -1,6 +1,6 @@
 module Box exposing (topics, topicIds, assocIds, turnTopicIntoBox, addTopic, addAssoc,
-  removeItem, deleteItem, expansionOf, updateExpansion, rendererOf, setRenderer, hasItem,
-  hasDeepItem, mapTitle, isFullscreen, elemId, firstId, fromPath)
+  removeTopic, removeAssoc, deleteTopic, deleteAssoc, expansionOf, updateExpansion, rendererOf,
+  setRenderer, hasItem, hasDeepItem, mapTitle, isFullscreen, elemId, firstId, fromPath)
 
 import Extension exposing (Renderer)
 import Item
@@ -13,7 +13,7 @@ import String exposing (fromInt)
 
 
 
-topics : BoxId -> Model -> List TopicInfo
+topics : BoxId -> Model -> List Topic
 topics boxId model =
   topicIds boxId model |> List.foldr
     (\(TopicId id) acc ->
@@ -147,18 +147,20 @@ addToBoxTopics topic boxId ({boxes} as model) =
 
 -- Remove item from box
 
-removeItem : Id -> BoxId -> Model -> Model
-removeItem itemId boxId model =
-  let
-    itemIds =
-      itemId :: Item.assocIds itemId model
-  in
-  case hierarchyAssoc itemId boxId model of
-    Just assocId ->
+removeTopic : Id -> BoxId -> Model -> Model
+removeTopic topicId boxId model =
+  case (Item.topicById topicId model, hierarchyAssoc topicId boxId model) of
+    (Just topic, Just assocId) ->
       model
-        |> removeItems itemIds boxId
-        |> deleteItem assocId
-    Nothing -> model
+        |> removeItems (topicId :: topic.assocIds) boxId
+        |> deleteAssoc assocId
+    _ -> U.fail "Box.removeTopic" {topicId = topicId, boxId = boxId} model
+
+
+removeAssoc : Id -> BoxId -> Model -> Model
+removeAssoc assocId boxId model =
+  model
+    |> removeItems [ assocId ] boxId
 
 
 {-| Removes an item from a box's underlying ItemSet.
@@ -184,24 +186,27 @@ removeItems itemIds boxId model =
 
 
 hierarchyAssoc : Id -> BoxId -> Model -> Maybe Id
-hierarchyAssoc itemId boxId model =
-  findHierarchy itemId boxId (Item.assocIds itemId model) model
+hierarchyAssoc topicId boxId model =
+  case Item.topicById topicId model of
+    Just topic ->
+      findHierarchy topicId boxId topic.assocIds model
+    Nothing -> U.fail "Box.hierarchyAssoc" {topicId = topicId, boxId = boxId} Nothing
 
 
 findHierarchy : Id -> BoxId -> AssocIds -> Model -> Maybe Id
-findHierarchy itemId boxId assocIds_ model =
+findHierarchy topicId boxId assocIds_ model =
   case assocIds_ of
     [] ->
-      U.logError "Box.hierarchyAssoc"
-        ("Hierarchy of " ++ fromInt itemId ++ " in " ++ fromInt boxId ++ " not found")
+      U.logError "Box.findHierarchy"
+        ("Missing Hierarchy of Topic " ++ fromInt topicId ++ " in Box " ++ fromInt boxId)
         Nothing
     assocId :: ids ->
       case Item.assocById assocId model of
-        Just {id, assocType, player1, player2} ->
-          if assocType == Hierarchy && player1 == boxId && player2 == itemId then
+        Just {id, assocType, topicId1, topicId2} ->
+          if assocType == Hierarchy && topicId1 == boxId && topicId2 == topicId then
             Just id
           else
-            findHierarchy itemId boxId ids model -- recursion
+            findHierarchy topicId boxId ids model -- recursion
         Nothing -> Nothing
 
 
@@ -211,64 +216,89 @@ findHierarchy itemId boxId assocIds_ model =
 Logs an error if no such item exists.
 It's a generic operation: works for both, topics and associations.
 Note: while this functions supports associations as players in associations,
-at the moment DM6 Elm makes no use of it.
+at the moment DM6 Elm makes no use of it. ### FIXDOC
 -}
-deleteItem : Id -> Model -> Model
-deleteItem itemId model =
-  Item.assocIds itemId model
-    |> List.foldr deleteItem model -- recursion
-    |> removeAssocFromPlayers itemId
-    |> deleteItem_ itemId
+deleteTopic : Id -> Model -> Model
+deleteTopic topicId model =
+  case Item.topicById topicId model of
+    Just topic ->
+      ( topic.assocIds |> List.foldr
+          deleteAssoc
+          model
+      )
+      |> deleteTopic_ topicId
+    Nothing -> U.fail "Box.deleteTopic" {topicId = topicId} model
+
+
+deleteAssoc : Id -> Model -> Model
+deleteAssoc assocId model =
+  model
+    |> removeAssocFromTopics assocId
+    |> deleteAssoc_ assocId
 
 
 {-| Removes the association ID from both player's set of association IDs.
 No-op if the given ID refers not to an association (but a topic).
-Logs an error no item for the given ID exists.
+Logs an error no item for the given ID exists. ### FIXDOC
 -}
-removeAssocFromPlayers : Id -> Model -> Model
-removeAssocFromPlayers assocId model =
-  case Item.byId assocId model of
-    Just {info} ->
-      case info of
-        Assoc assoc -> -- Note: assocId and assoc.id are the same
-          model
-            |> removeAssocFromPlayer assoc.id assoc.player1
-            |> removeAssocFromPlayer assoc.id assoc.player2
-        Topic _ -> model
-    Nothing -> model -- error is already logged
+removeAssocFromTopics : Id -> Model -> Model
+removeAssocFromTopics assocId model =
+  case Item.assocById assocId model of
+    Just assoc ->
+      model
+        |> removeAssocFromTopic assoc.id assoc.topicId1
+        |> removeAssocFromTopic assoc.id assoc.topicId2
+    Nothing -> U.fail "Box.removeAssocFromTopics" {assocId = assocId} model
 
 
 {-| Removes an association ID from the item's set of association IDs.
 No-op if the given association ID is not in the set.
 Logs an error if item does not exist.
 -}
-removeAssocFromPlayer : Id -> Id -> Model -> Model
-removeAssocFromPlayer assocId itemId model =
-  model |> Item.update itemId
-    (\item ->
-      {item | assocIds = item.assocIds |> List.filter ((/=) assocId)}
+removeAssocFromTopic : Id -> Id -> Model -> Model
+removeAssocFromTopic assocId topicId model =
+  model |> Item.updateTopic topicId
+    (\topic ->
+      {topic | assocIds = topic.assocIds |> List.filter ((/=) assocId)}
     )
 
 
 {-| Deletes an item, and removes it from all boxes.
 No-op if there is no such item.
-Low-level function that does NOT delete the item's associations.
+Low-level function that does NOT delete the item's associations. ### FIXDOC
 -}
-deleteItem_ : Id -> Model -> Model
-deleteItem_ itemId ({topicMap} as model) =
+deleteTopic_ : Id -> Model -> Model
+deleteTopic_ topicId ({itemSets, topicMap} as model) =
   { model
-  | items = model.items |> Dict.remove itemId -- delete item
-  , itemSets = model.itemSets |> Dict.map -- delete item from all itemSets
-      (\_ itemSet ->
-        { itemSet | items = itemSet.items |> List.filter
-          (\setItem -> (toId setItem.id) /= itemId)
+  | topics = model.topics |> Dict.remove topicId -- delete topic
+  , itemSets = itemSets |> Dict.map -- delete topic from all itemSets
+      (\_ ({items} as itemSet) ->
+        { itemSet | items = items |> List.filter
+          (\setItem -> (toId setItem.id) /= topicId)
         }
       )
   -- TODO: if item is box delete from "boxes" state as well
   -- TODO: don't operate on "topicMap" directly, let ExtManager dispatch instead
   , topicMap = topicMap |> Dict.map -- delete item from all boxes
       (\_ map ->
-        { map | topics = map.topics |> Dict.remove itemId }
+        { map | topics = map.topics |> Dict.remove topicId }
+      )
+  }
+
+
+{-| Deletes an item, and removes it from all boxes.
+No-op if there is no such item.
+Low-level function that does NOT delete the item's associations. ### FIXDOC
+-}
+deleteAssoc_ : Id -> Model -> Model
+deleteAssoc_ assocId ({assocs, itemSets} as model) =
+  { model
+  | assocs = assocs |> Dict.remove assocId -- delete assoc
+  , itemSets = itemSets |> Dict.map -- delete assoc from all itemSets
+      (\_ ({items} as itemSet) ->
+        { itemSet | items = items |> List.filter
+          (\setItem -> (toId setItem.id) /= assocId)
+        }
       )
   }
 
@@ -375,7 +405,9 @@ topicById : Id -> Box -> Model -> Maybe BoxTopic
 topicById topicId box model =
   case box.topics |> Dict.get topicId of
     Just topic -> Just topic
-    Nothing -> U.logError "Box.topicById" "missing dict entry in box.topics" Nothing
+    Nothing -> U.logError "Box.topicById"
+      ("Missing BoxTopic " ++ fromInt topicId ++ " in Box " ++ fromInt box.id)
+      Nothing
 
 
 {-| Title of fullscreen box.

@@ -187,12 +187,12 @@ menuItemStyle isDisabled isHover =
   ]
 
 
-viewTopicIcon : TopicInfo -> Model -> Html Msg
+viewTopicIcon : Topic -> Model -> Html Msg
 viewTopicIcon topic model =
   Icon.viewTopicIcon topic.id C.topicIconSize [ style "flex" "none" ] model
 
 
-viewItemText : TopicInfo -> Html Msg
+viewItemText : Topic -> Html Msg
 viewItemText topic =
   div
     [ style "flex" "auto"
@@ -380,14 +380,12 @@ revealAssoc_ assocId boxId model =
 searchTopics : Model -> Model
 searchTopics model =
   let
-    topicIds = model.items |> Dict.foldr
-      (\id item topicIdsAcc ->
-        case item.info of
-          Topic {text} ->
-            case isMatch text model.search.term of
-              True -> id :: topicIdsAcc
-              False -> topicIdsAcc
-          Assoc _ -> topicIdsAcc
+    topicIds = model.topics |> Dict.foldr
+      (\id {text} idAcc ->
+        if isMatch text model.search.term then
+          id :: idAcc
+        else
+          idAcc
       )
       []
   in
@@ -400,7 +398,7 @@ traverse model =
     relTopicIds =
       case Sel.single model of
         Just (itemId, _) ->
-          Item.relatedItems itemId model
+          Item.relatedTopics itemId model
         Nothing -> [] -- TODO: log error
   in
   model |> setResult (RelTopics relTopicIds Nothing)

@@ -57,7 +57,7 @@ viewList boxPath model =
     )
 
 
-viewTopic : TopicInfo -> BoxPath -> Model -> Html Msg
+viewTopic : Topic -> BoxPath -> Model -> Html Msg
 viewTopic topic boxPath model =
   if Text.isEdit topic.id boxPath model then
     Text.viewInput topic boxPath inputStyle

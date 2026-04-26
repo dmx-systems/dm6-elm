@@ -57,7 +57,8 @@ setItems items ({selection} as model) =
 --
 
 {- The box where created things and search results land, entire box path, never empty.
-Can be the fullsreen box or a nested box. -}
+Can be the fullscreen box or a nested box.
+-}
 landingBoxPath : Model -> BoxPath
 landingBoxPath model =
   case single model of

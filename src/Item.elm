@@ -1,6 +1,6 @@
-module Item exposing (topicById, assocById, byId, topicLabel,
-  topicSize, setTopicSize, updateTopic, createTopic, createAssoc, relatedItems, otherPlayerId,
-  assocIds, update, isBox, nextId)
+module Item exposing (topicById, assocById, topicLabel, topicSize, setTopicSize, updateTopic,
+  createTopic, createAssoc, relatedTopics, otherPlayerId, isTopic, isAssoc, isBox, nextId,
+  topicByIdOrNothing, assocByIdOrNothing)
 
 import Config as C
 import Model exposing (Model)
@@ -12,43 +12,43 @@ import String exposing (fromInt)
 
 
 
-{-| Looks up a TopicInfo in Model.items.
-Logs an error if item is absent, or Id refers not a topic (but an association).
+{-| Looks up a Topic in Model.topics.
+Logs an error if Topic is missing.
 -}
-topicById : Id -> Model -> Maybe TopicInfo
+topicById : Id -> Model -> Maybe Topic
 topicById topicId model =
-  case byId topicId model of
-    Just {info} ->
-      case info of
-        Topic topic -> Just topic
-        Assoc _ -> U.topicMismatch "Item.topicById" topicId Nothing
-    Nothing -> U.fail "Item.topicById" topicId Nothing
+  case model.topics |> Dict.get topicId of
+    Just topic -> Just topic
+    Nothing -> U.topicNotFound "Item.topicById" topicId Nothing
 
 
-{-| Looks up an AssocInfo in Model.items.
-Logs an error if item is absent, or Id refers not an association (but a topic).
+{-| Looks up an Assoc in Model.assocs.
+Logs an error if Assoc is missing.
 -}
-assocById : Id -> Model -> Maybe AssocInfo
+assocById : Id -> Model -> Maybe Assoc
 assocById assocId model =
-  case byId assocId model of
-    Just {info} ->
-      case info of
-        Topic _ -> U.assocMismatch "Item.assocById" assocId Nothing
-        Assoc assoc -> Just assoc
-    Nothing -> U.fail "Item.assocById" assocId Nothing
+  case model.assocs |> Dict.get assocId of
+    Just assoc -> Just assoc
+    Nothing -> U.assocNotFound "Item.assocById" assocId Nothing
 
 
-{-| Looks up an Item in Model.items.
-Logs an error if item is absent.
--}
-byId : Id -> Model -> Maybe Item
-byId itemId model =
-  case model.items |> Dict.get itemId of
-    Just item -> Just item
-    Nothing -> U.itemNotFound "Item.byId" itemId Nothing
+-- ### TODO: drop
+topicByIdOrNothing : Id -> Model -> Maybe Topic
+topicByIdOrNothing topicId model =
+  case model.topics |> Dict.get topicId of
+    Just topic -> Just topic
+    Nothing -> Nothing
 
 
-topicLabel : TopicInfo -> String
+-- ### TODO: drop
+assocByIdOrNothing : Id -> Model -> Maybe Assoc
+assocByIdOrNothing assocId model =
+  case model.assocs |> Dict.get assocId of
+    Just assoc -> Just assoc
+    Nothing -> Nothing
+
+
+topicLabel : Topic -> String
 topicLabel topic =
   case topic.text |> String.lines |> List.head of
     Just line -> line
@@ -82,82 +82,63 @@ setTopicSize topicId sizeField size model =
       )
 
 
-updateTopic : Id -> (TopicInfo -> TopicInfo) -> Model -> Model
-updateTopic topicId transform model =
-  model
-  |> update topicId
-    (\item ->
-      case item.info of
-        Topic topic -> { item | info = Topic <| transform topic }
-        Assoc _  -> U.topicMismatch "Item.updateTopic" topicId item
-    )
-
-
 createTopic : String -> Maybe Icon -> Model -> (Model, Id)
 createTopic text icon model =
   let
     id = model.nextId
-    topic = TopicInfo id icon text <| TextSize C.topicDetailSize C.topicDetailSize
-    item = Item id (Topic topic) []
+    topic = Topic id icon text (TextSize C.topicDetailSize C.topicDetailSize) []
   in
   ( model
-      |> createTopic_ item
+      |> createTopic_ topic
       |> nextId
   , id
   )
 
 
-createTopic_ : Item -> Model -> Model
-createTopic_ item ({items} as model) =
-  { model | items = items |> Dict.insert item.id item }
+createTopic_ : Topic -> Model -> Model
+createTopic_ topic ({topics} as model) =
+  { model | topics = topics |> Dict.insert topic.id topic }
 
 
 createAssoc : AssocType -> Id -> Id -> Model -> (Model, Id)
-createAssoc assocType player1 player2 model =
+createAssoc assocType topicId1 topicId2 ({assocs} as model) =
   let
     id = model.nextId
-    assoc = AssocInfo id assocType player1 player2
-    item = Item id (Assoc assoc) []
+    assoc = Assoc id assocType topicId1 topicId2
   in
-  ( { model | items = model.items |> Dict.insert id item }
-      |> insertAssocId_ id player1
-      |> insertAssocId_ id player2
+  ( { model | assocs = assocs |> Dict.insert id assoc }
+      |> insertAssocId_ id topicId1
+      |> insertAssocId_ id topicId2
       |> nextId
   , id
   )
 
 
-relatedItems : Id -> Model -> List (Id, Id)
-relatedItems itemId model =
-  assocIds itemId model |> List.foldr
-    (\assocId relItemsAcc ->
-      (otherPlayerId assocId itemId model, assocId) :: relItemsAcc
-    )
-    []
+-- Result is (topic ID, assoc ID)
+relatedTopics : Id -> Model -> List (Id, Id)
+relatedTopics topicId model =
+  case topicById topicId model of
+    Just topic ->
+      topic.assocIds |> List.foldr
+        (\assocId acc ->
+          (otherPlayerId assocId topicId model, assocId) :: acc
+        )
+        []
+    Nothing -> U.fail "Item.relatedTopics" {topicId = topicId} []
 
 
 otherPlayerId : Id -> Id -> Model -> Id
 otherPlayerId assocId playerId model =
   case assocById assocId model of
-    Just {player1, player2} ->
-      if playerId == player1 then
-        player2
-      else if playerId == player2 then
-        player1
+    Just {topicId1, topicId2} ->
+      if playerId == topicId1 then
+        topicId2
+      else if playerId == topicId2 then
+        topicId1
       else
         U.logError "Item.otherPlayerId"
           (fromInt playerId ++ " is not a player in assoc " ++ fromInt assocId) -1
     Nothing -> -1 -- error is already logged
-
-
-{-| Returns the item's set of association IDs.
-Logs an error if item does not exist.
--}
-assocIds : Id -> Model -> AssocIds
-assocIds itemId model =
-  case byId itemId model of
-    Just item -> item.assocIds
-    Nothing -> [] -- error is already logged
 
 
 {-| Inserts an association ID into the item's set of association IDs.
@@ -166,39 +147,37 @@ Logs an error if item does not exist.
 Low-level API for maintaining the association ID set.
 -}
 insertAssocId_ : Id -> Id -> Model -> Model
-insertAssocId_ assocId itemId model =
-  model |> update itemId
-    (\item ->
-      {item | assocIds = assocId :: item.assocIds}
+insertAssocId_ assocId topicId model =
+  model |> updateTopic topicId
+    (\({assocIds} as topic) ->
+      {topic | assocIds = assocId :: assocIds}
     )
 
 
-{-| Canonical item transformation.
+{-| Canonical Topic transformation.
 Logs an error if item does not exist.
 -}
-update : Id -> (Item -> Item) -> Model -> Model
-update itemId transform model =
-  { model | items = model.items |> Dict.update itemId
-    (\maybeItem ->
-      case maybeItem of
-        Just item -> Just <| transform item
-        Nothing -> U.itemNotFound "Item.update" itemId Nothing
+updateTopic : Id -> (Topic -> Topic) -> Model -> Model
+updateTopic topicId transform ({topics} as model) =
+  { model | topics = topics |> Dict.update topicId
+    (\maybeTopic ->
+      case maybeTopic of
+        Just topic -> Just <| transform topic
+        Nothing -> U.topicNotFound "Item.update" topicId Nothing
     )
   }
 
 
-{-| useful as a filter predicate -}
-isTopic : Item -> Bool
-isTopic item =
-  case item.info of
-    Topic _ -> True
-    Assoc _ -> False
+-- TODO: drop
+isTopic : Id -> Model -> Bool
+isTopic id model =
+  model.topics |> Dict.member id
 
 
-{-| useful as a filter predicate -}
-isAssoc : Item -> Bool
-isAssoc item =
-  not (isTopic item)
+-- TODO: drop
+isAssoc : Id -> Model -> Bool
+isAssoc id model =
+  model.assocs |> Dict.member id
 
 
 isBox : Id -> Model -> Bool

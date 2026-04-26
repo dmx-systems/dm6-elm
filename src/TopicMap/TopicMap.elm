@@ -95,17 +95,17 @@ updateMapTopic topicId mapId transform model =
         (\maybeTopic ->
           case maybeTopic of
             Just topic -> Just (transform topic)
-            Nothing -> U.itemNotFound "TopicMap.updateMapTopic" topicId Nothing
+            Nothing -> U.topicNotFound "TopicMap.updateMapTopic" topicId Nothing
         )
       }
     )
 
 
-assocGeometry : AssocInfo -> BoxId -> Model -> Maybe (Point, Point)
+assocGeometry : Assoc -> BoxId -> Model -> Maybe (Point, Point)
 assocGeometry assoc mapId model =
   let
-    pos1 = topicPos assoc.player1 mapId model
-    pos2 = topicPos assoc.player2 mapId model
+    pos1 = topicPos assoc.topicId1 mapId model
+    pos2 = topicPos assoc.topicId2 mapId model
   in
   case Maybe.map2 (\p1 p2 -> (p1, p2)) pos1 pos2 of
     Just geometry -> Just geometry

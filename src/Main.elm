@@ -274,8 +274,8 @@ update msg ({present} as undoModel) =
   in
   case msg of
     -- gestures detected by Mouse module
-    CreateAssoc player1 player2 boxId -> createAssoc player1 player2 boxId present |> S.store
-      |> Undo.push undoModel
+    CreateAssoc topicId1 topicId2 boxId -> createAssoc topicId1 topicId2 boxId present
+      |> S.store |> Undo.push undoModel
     MoveTopicToBox topicId boxId origPos targetId targetPath -> moveTopicToBox topicId boxId
       origPos targetId targetPath present |> S.storeWith |> Undo.push undoModel
     TopicDragged -> present |> S.store |> Undo.swap undoModel
@@ -298,15 +298,15 @@ update msg ({present} as undoModel) =
 
 -- Presumption: both players exist in same box
 createAssoc : Id -> Id -> BoxId -> Model -> Model
-createAssoc player1 player2 boxId model =
-  createAssocAndAddToBox Association player1 player2 boxId model
+createAssoc topicId1 topicId2 boxId model =
+  createAssocAndAddToBox Association topicId1 topicId2 boxId model
 
 
 -- Presumption: both players exist in same box
 createAssocAndAddToBox : AssocType -> Id -> Id -> BoxId -> Model -> Model
-createAssocAndAddToBox assocType player1 player2 boxId model =
+createAssocAndAddToBox assocType topicId1 topicId2 boxId model =
   let
-    (newModel, assocId) = Item.createAssoc assocType player1 player2 model
+    (newModel, assocId) = Item.createAssoc assocType topicId1 topicId2 model
   in
   newModel
     |> Box.addAssoc assocId boxId
@@ -319,7 +319,7 @@ moveTopicToBox topicId boxId origPos targetBoxId targetPath model =
   in
   Tool.createBoxOnDemand targetBoxId model
     |> Box.addTopic (BoxTopic topicId expansion) targetBoxId
-    |> Box.removeItem topicId boxId
+    |> Box.removeTopic topicId boxId
     |> Sel.select targetBoxId targetPath
     |> TM.setTopicPos topicId boxId origPos
     |> TM.addTopic topicId targetBoxId Random
