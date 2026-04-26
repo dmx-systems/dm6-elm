@@ -3,9 +3,9 @@ module TopicMap.Geometry exposing (hitTest, toolbarPos)
 import Box
 import Config as C
 import Env exposing (ExtManager, Env2)
-import Item
 import Model exposing (Model)
 import ModelBase exposing (..)
+import Topic
 import TopicMap.TopicMap as TM
 import TopicMap.TopicMapDef exposing (TopicMap, MapTopic)
 import Utils as U
@@ -60,7 +60,7 @@ testChildren pos topics boxPath excludeTopicId ({model, ext} as env) =
         isHeaderHit = isTopicHeaderHit pos item.id boxId >> maybeItem
         relPos = relPos_ pos item.id boxPath
         maybeTarget =
-          case (Item.isBox item.id model, Box.expansionOf item.id boxId model) of
+          case (Topic.isBox item.id model, Box.expansionOf item.id boxId model) of
             (True, Collapsed) -> isHeaderHit model
             (True, Expanded) ->
               case ext.hitTest item.id boxPath (relPos model) excludeTopicId model of
@@ -127,7 +127,7 @@ isTopicHeaderHit pos topicId boxId model =
 
 isTopicDetailHit : Point -> Id -> BoxId -> Model -> Bool
 isTopicDetailHit pos topicId boxId model =
-  case (TM.topicPos topicId boxId model, Item.topicSize topicId .view model) of
+  case (TM.topicPos topicId boxId model, Topic.size topicId .view model) of
     (Just topicPos, Just size) ->
       pos.x > topicPos.x - C.topicW2 + C.topicHeight && -- topicHeight = icon box width
       pos.x < topicPos.x - C.topicW2 + C.topicHeight + size.w &&

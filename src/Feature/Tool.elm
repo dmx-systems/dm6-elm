@@ -1,6 +1,7 @@
 module Feature.Tool exposing (viewGlobalTools, viewMapTools, viewToolbar, viewTopicTools,
   closeMenu, update, createBoxOnDemand)
 
+import Assoc
 import Box
 import Config as C
 import Env exposing (ExtManager, Env, Env2)
@@ -12,10 +13,10 @@ import Feature.Search as Search
 import Feature.Sel as Sel
 import Feature.Text as Text
 import Feature.ToolDef as ToolDef exposing (LineStyle(..))
-import Item
 import Model exposing (Model, Msg(..))
 import ModelBase exposing (..)
 import Storage as S
+import Topic
 import TopicMap.TopicMap as TM
 import Undo exposing (UndoModel)
 import Utils as U
@@ -200,12 +201,12 @@ viewToolbar boxPath ({model, ext} as env) =
     Just (itemId, selBoxPath) ->
       if selBoxPath == boxPath then
         -- TODO: use typed IDs in selection model
-        case (Item.topicByIdOrNothing itemId model, Item.assocByIdOrNothing itemId model) of
+        case (Topic.fromIdIfExists itemId model, Assoc.fromIdIfExists itemId model) of
           (Just topic, Nothing) ->
             let
               pos = toolbar.topic topic
             in
-            case (Text.isEdit itemId boxPath model, Item.isBox itemId model) of
+            case (Text.isEdit itemId boxPath model, Topic.isBox itemId model) of
               (False, _) -> [ viewTopicToolbar pos itemId boxPath env ]
               (True, False) -> [ viewTextToolbar pos itemId boxPath ]
               _ -> []
@@ -234,7 +235,7 @@ viewTopicToolbar pos topicId boxPath ({model, ext}) =
       , viewButton "Fullscreen" "maximize-2" (ToolDef.Fullscreen topicId) False target
       ]
     boxTools =
-      if Item.isBox topicId model then
+      if Topic.isBox topicId model then
         case Box.rendererOf topicId model of
           Just renderer ->
             [ viewRendererSelect renderer (Tool << ToolDef.RendererSelected) ext ]
@@ -461,7 +462,7 @@ setLineStyle lineStyle ({tool} as model) =
 createTopic : Env -> (Model, Cmd Msg)
 createTopic ({model} as env) =
   let
-    (newModel, topicId) = Item.createTopic "" C.initTopicIcon model
+    (newModel, topicId) = Topic.create "" C.initTopicIcon model
     newEnv = Env.withModel env newModel
   in
   landTopic topicId newEnv
@@ -521,7 +522,7 @@ remove ({model} as env) =
 -- TODO: use typed IDs in selection model
 delete_ : Id -> Model -> Model
 delete_ itemId model =
-  case (Item.isTopic itemId model, Item.isAssoc itemId model) of
+  case (Model.isTopic itemId model, Model.isAssoc itemId model) of
     (True, False) ->
       Box.deleteTopic itemId model
     (False, True) ->
@@ -533,7 +534,7 @@ delete_ itemId model =
 -- TODO: use typed IDs in selection model
 remove_ : Id -> BoxId -> Model -> Model
 remove_ itemId boxId model =
-  case (Item.isTopic itemId model, Item.isAssoc itemId model) of
+  case (Model.isTopic itemId model, Model.isAssoc itemId model) of
     (True, False) ->
       Box.removeTopic itemId boxId model
     (False, True) ->
@@ -576,7 +577,7 @@ toggleExpansion topicId boxId ({model} as env) =
 
 createBoxOnDemand : Id -> Model -> Model
 createBoxOnDemand topicId model =
-  if Item.isBox topicId model then
+  if Topic.isBox topicId model then
     model
   else
     model

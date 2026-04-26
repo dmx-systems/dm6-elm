@@ -4,9 +4,9 @@ import Box
 import Config as C
 import Dict
 import Env exposing (ExtManager, Env2)
-import Item
 import Model exposing (Model)
 import ModelBase exposing (..)
+import Topic
 import TopicList.TopicList as TL
 import TopicList.TopicListDef exposing (TopicList)
 import Utils as U
@@ -61,7 +61,7 @@ topicCount : BoxId -> Model -> Int
 topicCount boxId model =
   Box.topicIds boxId model |> List.foldr
     (\(TopicId id) acc ->
-      if Item.isBox id model then
+      if Topic.isBox id model then
         acc + 1 + topicCount id model
       else
         acc + 1

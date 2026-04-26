@@ -7,9 +7,9 @@ import Env exposing (ExtManager, Env2)
 import Feature.Mouse as Mouse
 import Feature.Text as Text
 import Feature.Tool as Tool
-import Item
 import Model exposing (Model, Msg)
 import ModelBase exposing (..)
+import Topic
 import ViewBase as VB
 
 import Html exposing (Html, div, ul, li, text)
@@ -48,7 +48,7 @@ viewList boxPath model =
               )
               ( [ viewTopic topic boxPath model ]
                 ++
-                if Item.isBox topic.id model then
+                if Topic.isBox topic.id model then
                   [ viewList (topic.id :: boxPath) model ]
                 else
                   []
@@ -62,7 +62,7 @@ viewTopic topic boxPath model =
   if Text.isEdit topic.id boxPath model then
     Text.viewInput topic boxPath inputStyle
   else
-    text <| Item.topicLabel topic
+    text <| Topic.label topic
 
 
 inputStyle : Attrs Msg

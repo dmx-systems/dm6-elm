@@ -28,7 +28,7 @@ type alias Topic =
   , icon : Maybe Icon
   , text : String
   , size : TextSize
-  , assocIds : AssocIds -- The associations the item is involved in (as a "player")
+  , assocIds : AssocIds -- The associations connecting this topic
   }
 
 

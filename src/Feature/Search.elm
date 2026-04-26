@@ -1,6 +1,7 @@
 module Feature.Search exposing (viewInput, viewSearchResult, viewTraversalResult, traverse,
   closeMenu, update)
 
+import Assoc
 import Box
 import Config as C
 import Env exposing (Env)
@@ -8,10 +9,10 @@ import Feature.Icon as Icon
 import Feature.Nav as Nav
 import Feature.SearchDef as SearchDef exposing (SearchResult(..))
 import Feature.Sel as Sel
-import Item
 import Model exposing (Model, Msg(..))
 import ModelBase exposing (..)
 import Storage as S
+import Topic
 import TopicMap.TopicMap as TM
 import Undo exposing (UndoModel)
 import Utils as U
@@ -90,7 +91,7 @@ viewSearchtMenu topicIds model =
           isDisabled = isItemDisabled id model
           isHover = isTopicHover id model
         in
-        case Item.topicById id model of
+        case Topic.fromId id model of
           Just topic ->
             div
               ( [ onClick <| Search <| SearchDef.TopicClicked id
@@ -121,7 +122,7 @@ viewTraversalMenu relTopicIds model =
           isDisabled = isItemDisabled id model
           isHover = isRelTopicHover relTopic model
         in
-        case Item.topicById id model of
+        case Topic.fromId id model of
           Just topic ->
             div
               ( [ onClick <| Search <| SearchDef.RelTopicClicked relTopic
@@ -200,7 +201,7 @@ viewItemText topic =
     , style "text-overflow" "ellipsis"
     , style "white-space" "nowrap"
     ]
-    [ text <| Item.topicLabel topic ]
+    [ text <| Topic.label topic ]
 
 
 viewFullscreenButton : Id -> Model -> Html Msg
@@ -208,7 +209,7 @@ viewFullscreenButton id model =
   let
     isDisabled = model.boxId == id
   in
-  case Item.isBox id model of
+  case Topic.isBox id model of
     True ->
       button
         ( [ class "tool"
@@ -398,7 +399,7 @@ traverse model =
     relTopicIds =
       case Sel.single model of
         Just (itemId, _) ->
-          Item.relatedTopics itemId model
+          Assoc.relatedTopics itemId model
         Nothing -> [] -- TODO: log error
   in
   model |> setResult (RelTopics relTopicIds Nothing)

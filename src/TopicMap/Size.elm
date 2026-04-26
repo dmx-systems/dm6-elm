@@ -5,9 +5,9 @@ import Config as C
 import Env exposing (ExtManager, Env2)
 import Feature.MouseDef exposing (DragState(..), DragMode(..))
 import Feature.TextDef exposing (EditState(..))
-import Item
 import Model exposing (Model)
 import ModelBase exposing (..)
+import Topic
 import TopicMap.TopicMap as TM
 import TopicMap.TopicMapDef exposing (MapTopic)
 import TopicMap.ViewModel as VM
@@ -59,7 +59,7 @@ accumulateItem mapItem boxPath rectAcc ext model =
 
 calcItemRect : MapTopic -> BoxPath -> ExtManager -> Model -> (Rectangle, Model)
 calcItemRect ({pos, expansion} as topic) boxPath ext model =
-  case (Item.isBox topic.id model, expansion) of
+  case (Topic.isBox topic.id model, expansion) of
     (False, Collapsed) -> (topicExtent pos, model)
     (False, Expanded) -> (detailTopicExtent topic.id boxPath pos model, model)
     (True, Collapsed) -> (topicExtent pos, model)
@@ -85,7 +85,7 @@ detailTopicExtent topicId boxPath pos model =
     isEdit = model.text.edit == Edit topicId boxPath -- TODO: use Text (cyclic atm)
     get = if isEdit then .editor else .view
     maybeSize =
-      case Item.topicSize topicId get model of
+      case Topic.size topicId get model of
         Just size ->
           if isEdit then
             Just { size | w = C.topicDetailMaxWidth }

@@ -5,11 +5,11 @@ import Box
 import Config as C
 import Env exposing (Env)
 import Feature.TextDef as TextDef exposing (EditState(..))
-import Item
 import Model exposing (Model, Msg(..))
 import ModelBase exposing (..)
 import Storage as S
 import Task
+import Topic
 import Undo exposing (UndoModel)
 import Utils as U
 
@@ -89,7 +89,7 @@ update msg ({model, undoModel, ext} as env) =
       |> Undo.swap undoModel
     TextDef.GotTextSize topicId sizeField size ->
       model
-        |> Item.setTopicSize topicId sizeField size
+        |> Topic.setSize topicId sizeField size
         |> Env.autoSize env
         |> S.store
         |> Undo.swap undoModel
@@ -130,7 +130,7 @@ switchTopicDisplay topicId boxId model =
   model
     |> Box.updateExpansion topicId boxId
       (\expansion ->
-        if Item.isBox topicId model then
+        if Topic.isBox topicId model then
           expansion
         else
           Expanded
@@ -199,7 +199,7 @@ isEdit topicId boxPath model =
 
 setTopicText : Id -> String -> Model -> Model
 setTopicText topicId text model =
-  model |> Item.updateTopic topicId
+  model |> Topic.update topicId
     (\topic -> { topic | text = text })
 
 
@@ -232,14 +232,14 @@ openImageFilePicker topicId model =
   let
     imageId = model.nextId
   in
-  ( model |> Item.nextId
+  ( model |> Model.nextId
   , imageFilePicker (topicId, imageId)
   )
 
 
 insertImage : Id -> ImageId -> Model -> (Model, Cmd Msg)
 insertImage topicId imageId model =
-  case Item.topicById topicId model of
+  case Topic.fromId topicId model of
     Just { text } ->
       let
         image = "![image](app://image/" ++ fromInt imageId ++ ")"

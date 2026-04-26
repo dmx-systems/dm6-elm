@@ -1,5 +1,6 @@
 module TopicMap.View exposing (view)
 
+import Assoc
 import Box
 import Config as C
 import Env exposing (ExtManager, Env2)
@@ -10,9 +11,9 @@ import Feature.Sel as Sel
 import Feature.Text as Text
 import Feature.ToolDef exposing (LineStyle(..))
 import Feature.Tool as Tool
-import Item
 import Model exposing (Model, Msg)
 import ModelBase exposing (..)
+import Topic
 import TopicMap.TopicMap as TM
 import TopicMap.TopicMapDef exposing (TopicMap, MapTopic)
 import TopicMap.ViewModel as VM
@@ -145,7 +146,7 @@ boxInfo boxId boxPath ({model} as env) =
         )
       )
     Nothing ->
-      U.fail "boxInfo" {boxId = boxId, boxPath = boxPath}
+      U.fail "TopicMap.View.boxInfo" {boxId = boxId, boxPath = boxPath}
         ( ([], []), Rectangle 0 0 0 0, ( {w = "0", h = "0"}, [] ))
 
 
@@ -157,20 +158,22 @@ viewItems map boxPath ({model} as env) =
     topics =
       VM.topicsToRender map model |> List.map
         (\({id} as mapTopic) ->
-          case Item.topicById id model of
+          case Topic.fromId id model of
             Just topic -> viewTopic topic mapTopic newPath env
-            _ -> U.logError "viewItems" ("problem with topic " ++ fromInt id) (text "")
+            _ -> U.logError "TopicMap.View.viewItems" ("problem with topic " ++ fromInt id)
+              (text "")
         )
     assocs =
       Box.assocIds map.id model |> List.foldr
         (\(AssocId id) svgAcc ->
-          case Item.assocById id model of
+          case Assoc.fromId id model of
             Just assoc ->
               let
                 clickHandler = Mouse.itemClickHandler id newPath
               in
               svgAcc ++ viewAssoc assoc newPath clickHandler model
-            _ -> U.logError "viewItems" ("problem with assoc " ++ fromInt id) svgAcc
+            _ -> U.logError "TopicMap.View.viewItems" ("problem with assoc " ++ fromInt id)
+              svgAcc
         )
         []
   in
@@ -184,31 +187,34 @@ viewLimboAssoc boxId model =
       if boxId == limboBoxId then
         if Box.hasItem (fromAssocId assocId) boxId model then
           let
-            _ = U.info "viewLimboAssoc" (assocId, "is in map", boxId)
+            _ = U.info "TopicMap.View.viewLimboAssoc" (assocId, "is in map", boxId)
           in
           [] -- rendered already (viewItems())
         else
           let
-            _ = U.info "viewLimboAssoc" (assocId, "not in map", boxId)
+            _ = U.info "TopicMap.View.viewLimboAssoc" (assocId, "not in map", boxId)
           in
-          case Item.assocById assocId model of
+          case Assoc.fromId assocId model of
             Just assoc ->
-              -- only if player topic has geometry in this map already we can call viewAssoc()
+              -- only if connected topic has geometry in this map already we can call
+              -- viewAssoc()
               if TM.hasMapTopic topicId boxId model then
                 viewAssoc assoc [boxId] [] model -- simple box path is sufficient for geometry,
                                                  -- limbo assoc is never selected
               else
                 -- otherwise we call low-level lineRenderer() with topic default position
-                let
-                  sourceTopicId = Item.otherPlayerId assocId topicId model
-                in
-                case TM.topicPos sourceTopicId boxId model of
-                  Just pos ->
-                    (lineRenderer model)
-                      pos (TM.initTopicPos boxId model) (Just assoc)
-                      [boxId] [] model -- simple box path is sufficient for geometry,
-                                       -- limbo assoc is never selected
-                  Nothing -> []
+                Assoc.otherTopicId assocId topicId model
+                  |> Maybe.andThen
+                    (\sourceTopicId -> TM.topicPos sourceTopicId boxId model)
+                  |> Maybe.andThen
+                    (\pos -> Just
+                      ( (lineRenderer model)
+                          pos (TM.initTopicPos boxId model) (Just assoc)
+                          [boxId] [] model -- simple box path is sufficient for geometry,
+                                           -- limbo assoc is never selected
+                      )
+                    )
+                  |> Maybe.withDefault []
             Nothing -> []
       else
         []
@@ -222,7 +228,7 @@ viewTopic topic mapTopic boxPath ({model, ext}) =
   let
     boxId = Box.firstId boxPath
     render =
-      case (Item.isBox topic.id model, mapTopic.expansion) of
+      case (Topic.isBox topic.id model, mapTopic.expansion) of
         (False, Collapsed) -> labelTopic topic mapTopic boxPath
         (False, Expanded) -> detailTopic topic mapTopic boxPath
         (True, Collapsed) -> blackBoxTopic topic mapTopic boxPath
@@ -279,7 +285,7 @@ viewLabelTopic topic mapTopic boxPath model =
       else
         div
           labelTopicStyle
-          [ text <| Item.topicLabel topic ]
+          [ text <| Topic.label topic ]
   in
   [ div
     (iconBoxStyle mapTopic model)
@@ -371,7 +377,7 @@ textViewStyle =
 textEditorStyle : Id -> Model -> Attrs Msg
 textEditorStyle topicId model =
   let
-    height = case Item.topicSize topicId .editor model of
+    height = case Topic.size topicId .editor model of
       Just size -> size.h
       Nothing -> 0
   in
@@ -389,7 +395,7 @@ iconBoxStyle mapTopic model =
   let
     r1 = fromInt C.topicRadius ++ "px"
     r4 =
-      case (Item.isBox mapTopic.id model, mapTopic.expansion) of
+      case (Topic.isBox mapTopic.id model, mapTopic.expansion) of
         (True, Expanded) -> "0"
         _ -> r1
   in
@@ -445,7 +451,7 @@ topicFlexboxStyle mapTopic boxPath model =
   let
     r12 = fromInt C.topicRadius ++ "px"
     r34 =
-      case (Item.isBox mapTopic.id model, mapTopic.expansion) of
+      case (Topic.isBox mapTopic.id model, mapTopic.expansion) of
         (True, Expanded) -> "0"
         _ -> r12
   in
@@ -556,7 +562,7 @@ absPos boxPath posAcc model =
   case boxPath of
     [ boxId ] -> accumulateRect posAcc boxId model
     boxId :: parentBoxId :: boxIds -> accumulatePos posAcc boxId parentBoxId boxIds model
-    [] -> U.logError "absPos" "boxPath is empty!" (Point 0 0)
+    [] -> U.logError "TopicMap.View.absPos" "boxPath is empty!" (Point 0 0)
 
 
 accumulatePos : Point -> BoxId -> BoxId -> BoxPath -> Model -> Point

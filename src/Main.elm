@@ -1,5 +1,6 @@
 port module Main exposing (..)
 
+import Assoc
 import Box
 import Config as C
 import Env exposing (Env)
@@ -12,10 +13,10 @@ import Feature.Search as Search
 import Feature.Sel as Sel
 import Feature.Text as Text
 import Feature.Tool as Tool
-import Item
 import Model exposing (Model, Msg(..))
 import ModelBase exposing (..)
 import Storage as S
+import Topic
 import TopicMap.TopicMap as TM
 import Undo exposing (UndoModel)
 import Utils as U
@@ -296,17 +297,17 @@ update msg ({present} as undoModel) =
     NoOp -> (undoModel, Cmd.none)
 
 
--- Presumption: both players exist in same box
+-- Presumption: both topics exist in same box
 createAssoc : Id -> Id -> BoxId -> Model -> Model
 createAssoc topicId1 topicId2 boxId model =
   createAssocAndAddToBox Association topicId1 topicId2 boxId model
 
 
--- Presumption: both players exist in same box
+-- Presumption: both topics exist in same box
 createAssocAndAddToBox : AssocType -> Id -> Id -> BoxId -> Model -> Model
 createAssocAndAddToBox assocType topicId1 topicId2 boxId model =
   let
-    (newModel, assocId) = Item.createAssoc assocType topicId1 topicId2 model
+    (newModel, assocId) = Assoc.create assocType topicId1 topicId2 model
   in
   newModel
     |> Box.addAssoc assocId boxId

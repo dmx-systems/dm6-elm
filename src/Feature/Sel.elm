@@ -3,9 +3,9 @@ module Feature.Sel exposing (select, clear, isSelected, isSelectedPath, single,
 
 import Box
 import Feature.SelDef exposing (Selection)
-import Item
 import Model exposing (Model)
 import ModelBase exposing (..)
+import Topic
 import Utils as U
 
 
@@ -67,7 +67,7 @@ landingBoxPath model =
         boxId = Box.firstId boxPath
         isExpanded = Box.expansionOf id boxId model == Expanded
       in
-      if Item.isBox id model && isExpanded then
+      if Topic.isBox id model && isExpanded then
         id :: boxPath
       else
         [ model.boxId ]

@@ -2,10 +2,10 @@ module Feature.Icon exposing (view, viewTopicIcon, viewPicker, openPicker, close
 
 import Feature.IconDef as IconDef
 import Feature.Sel as Sel
-import Item
 import Model exposing (Model, Msg(..))
 import ModelBase exposing (..)
 import Storage as S
+import Topic
 import Undo exposing (UndoModel)
 import Utils as U
 
@@ -68,7 +68,7 @@ iconButtonStyle =
 
 viewTopicIcon : Id -> Int -> Attrs Msg -> Model -> Html Msg
 viewTopicIcon topicId size style_ model =
-  case Item.topicById topicId model of
+  case Topic.fromId topicId model of
     Just topic ->
       case topic.icon of
         Just iconName ->
@@ -113,7 +113,7 @@ closePicker ({icon} as model) =
 setIcon : Maybe Icon -> Model -> Model
 setIcon iconName model =
   case Sel.single model of
-    Just (id, _) -> Item.updateTopic id
+    Just (id, _) -> Topic.update id
       (\topic -> { topic | icon = iconName })
       model
     Nothing -> model

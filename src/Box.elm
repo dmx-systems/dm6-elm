@@ -2,10 +2,11 @@ module Box exposing (topics, topicIds, assocIds, turnTopicIntoBox, addTopic, add
   removeTopic, removeAssoc, deleteTopic, deleteAssoc, expansionOf, updateExpansion, rendererOf,
   setRenderer, hasItem, hasDeepItem, mapTitle, isFullscreen, elemId, firstId, fromPath)
 
+import Assoc
 import Extension exposing (Renderer)
-import Item
 import Model exposing (Model)
 import ModelBase exposing (..)
+import Topic
 import Utils as U
 
 import Dict
@@ -17,7 +18,7 @@ topics : BoxId -> Model -> List Topic
 topics boxId model =
   topicIds boxId model |> List.foldr
     (\(TopicId id) acc ->
-      case Item.topicById id model of
+      case Topic.fromId id model of
         Just topic -> topic :: acc
         Nothing -> acc
     )
@@ -64,7 +65,7 @@ turnTopicIntoBox topicId model =
   model
     |> create box
     |> createItemSet set
-    |> Item.nextId
+    |> Model.nextId
 
 
 create : Box -> Model -> Model
@@ -126,7 +127,7 @@ createHierarchy itemId boxId model =
   case itemId of
     T (TopicId id) ->
       model
-        |> Item.createAssoc Hierarchy boxId id
+        |> Assoc.create Hierarchy boxId id
         |> Tuple.first
     A _ -> model
 
@@ -149,7 +150,7 @@ addToBoxTopics topic boxId ({boxes} as model) =
 
 removeTopic : Id -> BoxId -> Model -> Model
 removeTopic topicId boxId model =
-  case (Item.topicById topicId model, hierarchyAssoc topicId boxId model) of
+  case (Topic.fromId topicId model, hierarchyAssoc topicId boxId model) of
     (Just topic, Just assocId) ->
       model
         |> removeItems (topicId :: topic.assocIds) boxId
@@ -187,7 +188,7 @@ removeItems itemIds boxId model =
 
 hierarchyAssoc : Id -> BoxId -> Model -> Maybe Id
 hierarchyAssoc topicId boxId model =
-  case Item.topicById topicId model of
+  case Topic.fromId topicId model of
     Just topic ->
       findHierarchy topicId boxId topic.assocIds model
     Nothing -> U.fail "Box.hierarchyAssoc" {topicId = topicId, boxId = boxId} Nothing
@@ -201,7 +202,7 @@ findHierarchy topicId boxId assocIds_ model =
         ("Missing Hierarchy of Topic " ++ fromInt topicId ++ " in Box " ++ fromInt boxId)
         Nothing
     assocId :: ids ->
-      case Item.assocById assocId model of
+      case Assoc.fromId assocId model of
         Just {id, assocType, topicId1, topicId2} ->
           if assocType == Hierarchy && topicId1 == boxId && topicId2 == topicId then
             Just id
@@ -214,13 +215,11 @@ findHierarchy topicId boxId assocIds_ model =
 
 {-| Deletes an item, along its associations, and removes them from all boxes.
 Logs an error if no such item exists.
-It's a generic operation: works for both, topics and associations.
-Note: while this functions supports associations as players in associations,
-at the moment DM6 Elm makes no use of it. ### FIXDOC
+It's a generic operation: works for both, topics and associations. ### FIXDOC
 -}
 deleteTopic : Id -> Model -> Model
 deleteTopic topicId model =
-  case Item.topicById topicId model of
+  case Topic.fromId topicId model of
     Just topic ->
       ( topic.assocIds |> List.foldr
           deleteAssoc
@@ -237,13 +236,13 @@ deleteAssoc assocId model =
     |> deleteAssoc_ assocId
 
 
-{-| Removes the association ID from both player's set of association IDs.
+{-| Removes the association ID from both connected topics.
 No-op if the given ID refers not to an association (but a topic).
 Logs an error no item for the given ID exists. ### FIXDOC
 -}
 removeAssocFromTopics : Id -> Model -> Model
 removeAssocFromTopics assocId model =
-  case Item.assocById assocId model of
+  case Assoc.fromId assocId model of
     Just assoc ->
       model
         |> removeAssocFromTopic assoc.id assoc.topicId1
@@ -257,7 +256,7 @@ Logs an error if item does not exist.
 -}
 removeAssocFromTopic : Id -> Id -> Model -> Model
 removeAssocFromTopic assocId topicId model =
-  model |> Item.updateTopic topicId
+  model |> Topic.update topicId
     (\topic ->
       {topic | assocIds = topic.assocIds |> List.filter ((/=) assocId)}
     )
@@ -370,7 +369,7 @@ hasDeepItem boxId itemId model =
   if itemId == boxId then
     True
   else
-    if Item.isBox boxId model then
+    if Topic.isBox boxId model then
       case itemSetOf boxId model of
         Just itemSet -> itemSet.items |> List.any
           (\setItem -> hasDeepItem (toId setItem.id) itemId model) -- recursion
@@ -415,8 +414,8 @@ TODO: rename
 -}
 mapTitle : Model -> String
 mapTitle model =
-  case Item.topicById model.boxId model of
-    Just topic -> Item.topicLabel topic
+  case Topic.fromId model.boxId model of
+    Just topic -> Topic.label topic
     Nothing -> U.fail "mapTitle" model.boxId "??"
 
 

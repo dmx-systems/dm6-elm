@@ -1,4 +1,4 @@
-module Model exposing (Model, Msg(..), init, encode, decoder)
+module Model exposing (Model, Msg(..), init, encode, decoder, isTopic, isAssoc, nextId)
 
 import Config as C
 import Extension
@@ -131,3 +131,24 @@ decoder =
     |> hardcoded SearchDef.init
     |> hardcoded IconDef.init
     |> hardcoded SelDef.init
+
+
+
+-- API
+
+
+-- TODO: drop
+isTopic : Id -> Model -> Bool
+isTopic id model =
+  model.topics |> Dict.member id
+
+
+-- TODO: drop
+isAssoc : Id -> Model -> Bool
+isAssoc id model =
+  model.assocs |> Dict.member id
+
+
+nextId : Model -> Model
+nextId model =
+  { model | nextId = model.nextId + 1 }
