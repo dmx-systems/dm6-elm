@@ -3,7 +3,7 @@ module TopicList.TopicList exposing (view, listSize)
 import Box
 import Config as C
 import Dict
-import Env exposing (ExtManager, Env2)
+import Env exposing (Env2)
 import Feature.Mouse as Mouse
 import Feature.Text as Text
 import Feature.Tool as Tool

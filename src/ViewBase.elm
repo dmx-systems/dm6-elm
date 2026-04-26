@@ -63,6 +63,6 @@ isTarget topicId boxPath maybeTarget =
 
 selectionStyle : Id -> BoxPath -> Model -> Attrs Msg
 selectionStyle topicId boxPath model =
-  case Sel.isSelectedPath topicId boxPath model of
+  case Sel.isSelected topicId boxPath model of
     True -> [ style "box-shadow" C.topicBoxShadow ]
     False -> []

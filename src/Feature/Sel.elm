@@ -1,5 +1,4 @@
-module Feature.Sel exposing (select, clear, isSelected, isSelectedPath, single,
-  landingBoxPath)
+module Feature.Sel exposing (select, clear, isSelected, single, landingBoxPath)
 
 import Box
 import Feature.SelDef exposing (Selection)
@@ -25,19 +24,8 @@ clear model =
     |> setItems []
 
 
--- TODO: drop this in favor of isSelectedPath (and rename the latter then)?
-isSelected : Id -> BoxId -> Model -> Bool
-isSelected itemId boxId model =
-  model.selection.items |> List.any
-    (\(id, boxPath) ->
-      case boxPath of
-        boxId_ :: _ -> itemId == id && boxId == boxId_
-        [] -> False
-    )
-
-
-isSelectedPath : Id -> BoxPath -> Model -> Bool
-isSelectedPath itemId boxPath model =
+isSelected : Id -> BoxPath -> Model -> Bool
+isSelected itemId boxPath model =
   model.selection.items
     |> List.member (itemId, boxPath)
 

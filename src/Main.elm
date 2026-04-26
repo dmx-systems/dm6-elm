@@ -16,7 +16,6 @@ import Feature.Tool as Tool
 import Model exposing (Model, Msg(..))
 import ModelBase exposing (..)
 import Storage as S
-import Topic
 import TopicMap.TopicMap as TM
 import Undo exposing (UndoModel)
 import Utils as U
@@ -349,8 +348,8 @@ cancelUIWith maybeTarget ({model} as env) =
   let
     isTargeted =
       case maybeTarget of
-        Just (itemId, boxId :: _) ->
-          Sel.isSelected itemId boxId model ||
+        Just (itemId, boxId :: _ as boxPath) ->
+          Sel.isSelected itemId boxPath model ||
           Mouse.isHovered itemId boxId model
         _ -> False
   in

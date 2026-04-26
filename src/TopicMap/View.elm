@@ -226,7 +226,6 @@ viewLimboAssoc boxId model =
 viewTopic : Topic -> MapTopic -> BoxPath -> Env2 -> Html Msg
 viewTopic topic mapTopic boxPath ({model, ext}) =
   let
-    boxId = Box.firstId boxPath
     render =
       case (Topic.isBox topic.id model, mapTopic.expansion) of
         (False, Collapsed) -> labelTopic topic mapTopic boxPath
@@ -238,7 +237,7 @@ viewTopic topic mapTopic boxPath ({model, ext}) =
   div
     ( topicAttr topic.id boxPath
       ++ Mouse.topicDownHandler topic.id boxPath
-      ++ topicStyle topic.id boxId model
+      ++ topicStyle topic.id boxPath model
       ++ style
     )
     ( children
@@ -251,14 +250,15 @@ topicAttr topicId boxPath =
   [ id <| Box.elemId "topic" topicId boxPath ]
 
 
-topicStyle : Id -> BoxId -> Model -> Attrs Msg
-topicStyle id boxId model =
+topicStyle : Id -> BoxPath -> Model -> Attrs Msg
+topicStyle id boxPath model =
   let
+    boxId = Box.firstId boxPath
     isLimbo = VM.isLimboTopic id boxId model
     isDragging = case model.mouse.dragState of
-      Drag DragTopic id_ _ _ _ _ -> id_ == id
+      Drag DragTopic id_ boxPath_ _ _ _ -> id_ == id && boxPath_ == boxPath
       _ -> False
-    isSelected = Sel.isSelected id boxId model
+    isSelected = Sel.isSelected id boxPath model
   in
   [ style "position" "absolute"
   , style "filter" <| if isLimbo then C.topicLimboFilter else "none"
@@ -722,7 +722,7 @@ lineSelectionStyle : Maybe Assoc -> BoxPath -> Model -> Attrs Msg
 lineSelectionStyle maybeAssoc boxPath model =
   case maybeAssoc of
     Just {id} ->
-      case Sel.isSelectedPath id boxPath model of
+      case Sel.isSelected id boxPath model of
         True -> [ filter "url(#shadow)" ]
         False -> []
     Nothing -> []

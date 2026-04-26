@@ -2,7 +2,7 @@ module TopicMap.Geometry exposing (hitTest, toolbarPos)
 
 import Box
 import Config as C
-import Env exposing (ExtManager, Env2)
+import Env exposing (Env2)
 import Model exposing (Model)
 import ModelBase exposing (..)
 import Topic

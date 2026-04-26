@@ -3,7 +3,7 @@ module TopicList.Geometry exposing (hitTest, autoSize, toolbarPos)
 import Box
 import Config as C
 import Dict
-import Env exposing (ExtManager, Env2)
+import Env exposing (Env2)
 import Model exposing (Model)
 import ModelBase exposing (..)
 import Topic
