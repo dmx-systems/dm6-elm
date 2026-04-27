@@ -200,23 +200,26 @@ viewToolbar boxPath ({model, ext} as env) =
   case Sel.single model of
     Just (itemId, selBoxPath) ->
       if selBoxPath == boxPath then
-        -- TODO: use typed IDs in selection model
-        case (Topic.fromIdIfExists itemId model, Assoc.fromIdIfExists itemId model) of
-          (Just topic, Nothing) ->
-            let
-              pos = toolbar.topic topic
-            in
-            case (Text.isEdit itemId boxPath model, Topic.isBox itemId model) of
-              (False, _) -> [ viewTopicToolbar pos itemId boxPath env ]
-              (True, False) -> [ viewTextToolbar pos itemId boxPath ]
-              _ -> []
-          (Nothing, Just assoc) ->
-            let
-              pos = toolbar.assoc assoc
-            in
-            [ viewAssocToolbar pos itemId boxPath ]
-          _ -> U.logError "Feature.Tool.viewToolbar"
-            ("Problem with ID " ++ fromInt itemId ++ " in selection") []
+        case itemId of
+          T (TopicId id) ->
+            case Topic.fromId id model of
+              Just topic ->
+                let
+                  pos = toolbar.topic topic
+                in
+                case (Text.isEdit id boxPath model, Topic.isBox id model) of
+                  (False, _) -> [ viewTopicToolbar pos id boxPath env ]
+                  (True, False) -> [ viewTextToolbar pos id boxPath ]
+                  _ -> []
+              Nothing -> []
+          A (AssocId id) ->
+            case Assoc.fromId id model of
+              Just assoc ->
+                let
+                  pos = toolbar.assoc assoc
+                in
+                [ viewAssocToolbar pos id boxPath ]
+              Nothing -> []
       else
         []
     Nothing -> []
@@ -225,7 +228,7 @@ viewToolbar boxPath ({model, ext} as env) =
 viewTopicToolbar : Point -> Id -> BoxPath -> Env2 -> Html Msg
 viewTopicToolbar pos topicId boxPath ({model, ext}) =
   let
-    target = (topicId, boxPath)
+    target = (fromTopicId topicId, boxPath)
     topicTools =
       [ viewButton "Edit" "edit-3" ToolDef.Edit False target
       , viewButton "Select Icon" "smile" ToolDef.Icon False target
@@ -288,7 +291,7 @@ selectStyle =
 viewTextToolbar : Point -> Id -> BoxPath -> Html Msg
 viewTextToolbar pos topicId boxPath =
   let
-    target = (topicId, boxPath)
+    target = (fromTopicId topicId, boxPath)
   in
   div
     ( toolbarStyle pos )
@@ -300,7 +303,7 @@ viewTextToolbar pos topicId boxPath =
 viewAssocToolbar : Point -> Id -> BoxPath -> Html Msg
 viewAssocToolbar pos assocId boxPath =
   let
-    target = (assocId, boxPath)
+    target = (fromAssocId assocId, boxPath)
   in
   div
     ( toolbarStyle pos )
@@ -343,7 +346,7 @@ viewCaret : Id -> BoxId -> Model -> Html Msg
 viewCaret topicId boxId model =
   let
     icon =
-      case Box.expansionOf topicId boxId model of
+      case Box.expansionOf (TopicId topicId) boxId model of
         Collapsed -> "chevron-right"
         Expanded -> "chevron-down"
   in
@@ -478,7 +481,7 @@ landTopic topicId ({model} as env) =
     |> Box.addTopic (BoxTopic topicId Collapsed) boxId
     |> TM.addTopic topicId boxId Default
     |> Tuple.first -- Note: Cmd is ignored, OK for the moment ;-)
-    |> Sel.select topicId boxPath
+    |> Sel.select (fromTopicId topicId) boxPath
     |> Env.withModel env
     |> Text.enterEdit topicId boxPath
 
@@ -493,8 +496,8 @@ store undoModel =
 edit : Env -> (Model, Cmd Msg)
 edit ({model} as env) =
   case Sel.single model of
-    Just (topicId, boxPath) -> Text.enterEdit topicId boxPath env
-    Nothing -> U.logError "Feature.Tool.edit" "called when there is no single selection"
+    Just (T (TopicId id), boxPath) -> Text.enterEdit id boxPath env
+    _ -> U.logError "Feature.Tool.edit" "called when there is no single topic selection"
       (model, Cmd.none)
 
 
@@ -507,40 +510,29 @@ delete ({model} as env) =
     |> Env.autoSize env
 
 
+delete_ : ItemId -> Model -> Model
+delete_ itemId model =
+  case itemId of
+    T (TopicId id) -> Box.deleteTopic id model
+    A (AssocId id) -> Box.deleteAssoc id model
+
+
 remove : Env -> Model
 remove ({model} as env) =
   model.selection.items
-    |> List.foldr
-      (\(itemId, boxPath) modelAcc ->
-        remove_ itemId (Box.firstId boxPath) model
-      )
-      model
+    |> List.foldr remove_ model
     |> Sel.clear
     |> Env.autoSize env
 
 
--- TODO: use typed IDs in selection model
-delete_ : Id -> Model -> Model
-delete_ itemId model =
-  case (Model.isTopic itemId model, Model.isAssoc itemId model) of
-    (True, False) ->
-      Box.deleteTopic itemId model
-    (False, True) ->
-      Box.deleteAssoc itemId model
-    _ -> U.logError "Feature.Tool.delete_"
-      ("Problem with ID " ++ fromInt itemId ++ " in selection") model
-
-
--- TODO: use typed IDs in selection model
-remove_ : Id -> BoxId -> Model -> Model
-remove_ itemId boxId model =
-  case (Model.isTopic itemId model, Model.isAssoc itemId model) of
-    (True, False) ->
-      Box.removeTopic itemId boxId model
-    (False, True) ->
-      Box.removeAssoc itemId boxId model
-    _ -> U.logError "Feature.Tool.remove"
-      ("Problem with ID " ++ fromInt itemId ++ " in selection") model
+remove_ : (ItemId, BoxPath) -> Model -> Model
+remove_ (itemId, boxPath) model =
+  let
+    boxId = (Box.firstId boxPath)
+  in
+  case itemId of
+    T (TopicId id) -> Box.removeTopic id boxId model
+    A (AssocId id) -> Box.removeAssoc id boxId model
 
 
 fullscreen : Id -> Model -> (Model, Cmd Msg)
@@ -553,11 +545,11 @@ fullscreen topicId model =
 setRenderer : Renderer -> Env -> Model
 setRenderer renderer ({model} as env) =
   case Sel.single model of
-    Just (topicId, _) ->
+    Just (T (TopicId id), _) ->
       model
-        |> Box.setRenderer topicId renderer
+        |> Box.setRenderer id renderer
         |> Env.autoSize env
-    Nothing -> U.logError "Feature.Tool.setRenderer" "called when there is no single selection"
+    _ -> U.logError "Feature.Tool.setRenderer" "called when there is no single topic selection"
       model
 
 

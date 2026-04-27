@@ -169,7 +169,7 @@ viewItems map boxPath ({model} as env) =
           case Assoc.fromId id model of
             Just assoc ->
               let
-                clickHandler = Mouse.itemClickHandler id newPath
+                clickHandler = Mouse.itemClickHandler (fromAssocId id) newPath
               in
               svgAcc ++ viewAssoc assoc newPath clickHandler model
             _ -> U.logError "TopicMap.View.viewItems" ("problem with assoc " ++ fromInt id)
@@ -258,7 +258,7 @@ topicStyle id boxPath model =
     isDragging = case model.mouse.dragState of
       Drag DragTopic id_ boxPath_ _ _ _ -> id_ == id && boxPath_ == boxPath
       _ -> False
-    isSelected = Sel.isSelected id boxPath model
+    isSelected = Sel.isSelected (fromTopicId id) boxPath model
   in
   [ style "position" "absolute"
   , style "filter" <| if isLimbo then C.topicLimboFilter else "none"
@@ -722,7 +722,7 @@ lineSelectionStyle : Maybe Assoc -> BoxPath -> Model -> Attrs Msg
 lineSelectionStyle maybeAssoc boxPath model =
   case maybeAssoc of
     Just {id} ->
-      case Sel.isSelected id boxPath model of
+      case Sel.isSelected (fromAssocId id) boxPath model of
         True -> [ filter "url(#shadow)" ]
         False -> []
     Nothing -> []

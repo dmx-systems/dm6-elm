@@ -120,7 +120,7 @@ type alias PointerType = String
 
 type alias BoxId = Id
 type alias BoxPath = List BoxId
-type alias Target = (Id, BoxPath)
+type alias Target = (ItemId, BoxPath)
 
 
 type alias Box =

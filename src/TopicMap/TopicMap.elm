@@ -303,4 +303,4 @@ landingTarget model =
   case Sel.landingBoxPath model of
     [] -> Nothing
     [ boxId ] -> Nothing -- The fullscreen box is never selected
-    boxId :: boxPath -> Just (boxId, boxPath)
+    boxId :: boxPath -> Just (fromTopicId boxId, boxPath)

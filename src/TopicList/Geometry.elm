@@ -21,7 +21,7 @@ hitTest boxId boxPath pos excludeTopicId {model} =
   -- TODO
   let
     maybeThisItem : Bool -> Maybe Target
-    maybeThisItem found = if found then Just (boxId, boxPath) else Nothing
+    maybeThisItem found = if found then Just (fromTopicId boxId, boxPath) else Nothing
   in
   if Box.isFullscreen boxId model then
     Nothing

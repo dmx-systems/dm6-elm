@@ -113,7 +113,7 @@ closePicker ({icon} as model) =
 setIcon : Maybe Icon -> Model -> Model
 setIcon iconName model =
   case Sel.single model of
-    Just (id, _) -> Topic.update id
+    Just (T (TopicId id), _) -> Topic.update id
       (\topic -> { topic | icon = iconName })
       model
-    Nothing -> model
+    _ -> model

@@ -31,7 +31,7 @@ topicDownHandler topicId boxPath =
   ]
 
 
-itemClickHandler : Id -> BoxPath -> Attrs Msg
+itemClickHandler : ItemId -> BoxPath -> Attrs Msg
 itemClickHandler itemId boxPath =
   [ U.onClickStop <| ItemClicked itemId boxPath ]
 
@@ -71,7 +71,7 @@ mouseDownOnTopic topicId boxPath pos pointerType model =
       |> emulateHover topicId boxPath pointerType
       |> setDragState (WaitForStartTime topicId boxPath pos)
   , Cmd.batch
-      [ U.command <| Cancel <| Just (topicId, boxPath)
+      [ U.command <| Cancel <| Just (fromTopicId topicId, boxPath)
       , Task.perform (Mouse << MouseDef.Time) Time.now
       ]
   )
@@ -80,7 +80,7 @@ mouseDownOnTopic topicId boxPath pos pointerType model =
 emulateHover : Id -> BoxPath -> PointerType -> Model -> Model
 emulateHover topicId boxPath pointerType model =
   case pointerType == "touch" of
-    True -> model |> setHover (Just (topicId, boxPath))
+    True -> model |> setHover (Just (fromTopicId topicId, boxPath))
     False -> model
 
 
@@ -157,7 +157,7 @@ mouseUp model =
   let
     cmd =
       case model.mouse.dragState of
-        Drag DragTopic id boxPath origPos _ (Just (targetId, targetPath)) ->
+        Drag DragTopic id boxPath origPos _ (Just (T (TopicId targetId), targetPath)) ->
           let
             _ = U.info "Feature.Mouse.mouseUp" ("dropped " ++ fromInt id ++ " (box "
               ++ Box.fromPath boxPath ++ ") on " ++ fromInt targetId ++ " (box "
@@ -178,7 +178,7 @@ mouseUp model =
             _ = U.info "Feature.Mouse.mouseUp" "topic drag ended w/o target"
           in
           U.command TopicDragged
-        Drag DraftAssoc id boxPath _ _ (Just (targetId, targetPath)) ->
+        Drag DraftAssoc id boxPath _ _ (Just (T (TopicId targetId), targetPath)) ->
           let
             _ = U.info "Feature.Mouse.mouseUp" ("assoc drawn from " ++ fromInt id ++ " (box "
               ++ Box.fromPath boxPath ++ ") to " ++ fromInt targetId ++ " (box "
@@ -199,7 +199,7 @@ mouseUp model =
           let
             _ = U.info "Feature.Mouse.mouseUp" "item not moved -> ItemClicked"
           in
-          U.command <| ItemClicked id boxPath
+          U.command <| ItemClicked (fromTopicId id) boxPath
         _ ->
           Cmd.none
   in
@@ -239,28 +239,33 @@ enterLeave pos {model, ext} =
 
 enter : Target -> Model -> Model
 enter (targetId, targetPath) model =
-  let
-    newModel =
-      case model.mouse.dragState of
-        Drag dragMode id boxPath origPos lastPos _ ->
-          let
-            isCyclic = Box.hasDeepItem id targetId model
-            target =
-              -- the hovered item (targetId) is accepted as a drop target if it is
-              -- 1. not contained in item/box being dragged (id), this would create a cycle OR
-              -- 2. draft assoc is in progress
-              if not isCyclic || dragMode == DraftAssoc then
-                Just (targetId, targetPath)
-              else
-                Nothing
-          in
-          -- update target
-          model
-            |> setDragState (Drag dragMode id boxPath origPos lastPos target)
-        _ -> model
-  in
-  -- update hover
-  newModel |> setHover (Just (targetId, targetPath))
+  case targetId of
+    T (TopicId topicId) ->
+      let
+        newModel =
+          case model.mouse.dragState of
+            Drag dragMode id boxPath origPos lastPos _ ->
+              let
+                isCyclic = Box.hasDeepItem id topicId model
+                target =
+                  -- the hovered item (targetId) is accepted as a drop target if it is
+                  -- 1. not contained in item/box being dragged (id), this would create a cycle
+                  -- 2. OR draft assoc is in progress
+                  if not isCyclic || dragMode == DraftAssoc then
+                    Just (targetId, targetPath)
+                  else
+                    Nothing
+              in
+              -- update target
+              model
+                |> setDragState (Drag dragMode id boxPath origPos lastPos target)
+            _ -> model
+      in
+      -- update hover
+      newModel
+        |> setHover (Just (targetId, targetPath))
+    A _ ->
+      model
 
 
 leave : Target -> Model -> Model
@@ -275,7 +280,8 @@ leave (targetId, targetPath) model =
         _ -> model
   in
   -- reset hover
-  newModel |> setHover Nothing
+  newModel
+    |> setHover Nothing
 
 
 setDragState : DragState -> Model -> Model
@@ -303,6 +309,6 @@ isDragInProgress model =
 isHovered : Id -> BoxId -> Model -> Bool
 isHovered itemId boxId model =
   case model.mouse.hover of
-    Just (itemId_, boxId_ :: _ ) ->
+    Just (T (TopicId itemId_), boxId_ :: _ ) ->
       itemId == itemId_ && boxId == boxId_ -- TODO: box path?
     _ -> False

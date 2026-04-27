@@ -42,7 +42,7 @@ viewList boxPath model =
         |> List.map
           (\topic ->
             li
-              ( Mouse.itemClickHandler topic.id boxPath
+              ( Mouse.itemClickHandler (fromTopicId topic.id) boxPath
                 ++
                 VB.selectionStyle topic.id boxPath model
               )

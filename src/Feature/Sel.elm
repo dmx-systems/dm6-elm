@@ -9,7 +9,7 @@ import Utils as U
 
 
 
-select : Id -> BoxPath -> Model -> Model
+select : ItemId -> BoxPath -> Model -> Model
 select itemId boxPath model =
   let
     _ = U.info "Feature.Sel.select" (itemId, boxPath)
@@ -24,7 +24,7 @@ clear model =
     |> setItems []
 
 
-isSelected : Id -> BoxPath -> Model -> Bool
+isSelected : ItemId -> BoxPath -> Model -> Bool
 isSelected itemId boxPath model =
   model.selection.items
     |> List.member (itemId, boxPath)
@@ -50,13 +50,13 @@ Can be the fullscreen box or a nested box.
 landingBoxPath : Model -> BoxPath
 landingBoxPath model =
   case single model of
-    Just (id, boxPath) ->
+    Just (T (TopicId id as topicId), boxPath) ->
       let
         boxId = Box.firstId boxPath
-        isExpanded = Box.expansionOf id boxId model == Expanded
+        isExpanded = Box.expansionOf topicId boxId model == Expanded
       in
       if Topic.isBox id model && isExpanded then
         id :: boxPath
       else
         [ model.boxId ]
-    Nothing -> [ model.boxId ]
+    _ -> [ model.boxId ]

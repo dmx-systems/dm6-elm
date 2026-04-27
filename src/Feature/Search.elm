@@ -345,7 +345,7 @@ revealTopic topicId ({model} as env) =
       model
         |> revealTopic_ topicId boxId
         |> closeMenu
-        |> Sel.select topicId boxPath
+        |> Sel.select (fromTopicId topicId) boxPath
         |> Env.autoSize env
     _ -> model
 
@@ -358,7 +358,7 @@ revealRelTopic (topicId, assocId) ({model} as env) =
         |> revealTopic_ topicId boxId
         |> revealAssoc_ assocId boxId
         |> closeMenu
-        |> Sel.select topicId boxPath
+        |> Sel.select (fromTopicId topicId) boxPath
         |> Env.autoSize env
     _ -> model
 
@@ -390,7 +390,8 @@ searchTopics model =
       )
       []
   in
-  model |> setResult (Topics topicIds Nothing)
+  model
+    |> setResult (Topics topicIds Nothing)
 
 
 traverse : Model -> Model
@@ -398,11 +399,12 @@ traverse model =
   let
     relTopicIds =
       case Sel.single model of
-        Just (itemId, _) ->
-          Assoc.relatedTopics itemId model
-        Nothing -> [] -- TODO: log error
+        Just (T (TopicId id), _) ->
+          Assoc.relatedTopics id model
+        _ -> [] -- TODO: log error
   in
-  model |> setResult (RelTopics relTopicIds Nothing)
+  model
+    |> setResult (RelTopics relTopicIds Nothing)
 
 
 isMatch : String -> String -> Bool

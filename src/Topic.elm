@@ -1,4 +1,4 @@
-module Topic exposing (fromId, fromIdIfExists, label, size, setSize, create, update, isBox)
+module Topic exposing (fromId, label, size, setSize, create, update, isBox)
 
 import Config as C
 import Model exposing (Model)
@@ -17,14 +17,6 @@ fromId topicId model =
   case model.topics |> Dict.get topicId of
     Just topic -> Just topic
     Nothing -> U.topicNotFound "Topic.fromId" topicId Nothing
-
-
--- ### TODO: drop
-fromIdIfExists : Id -> Model -> Maybe Topic
-fromIdIfExists topicId model =
-  case model.topics |> Dict.get topicId of
-    Just topic -> Just topic
-    Nothing -> Nothing
 
 
 label : Topic -> String

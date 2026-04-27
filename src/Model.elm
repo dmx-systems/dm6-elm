@@ -1,4 +1,4 @@
-module Model exposing (Model, Msg(..), init, encode, decoder, isTopic, isAssoc, nextId)
+module Model exposing (Model, Msg(..), init, encode, decoder, nextId)
 
 import Config as C
 import Extension
@@ -73,7 +73,7 @@ type Msg
   = CreateAssoc Id Id BoxId
   | MoveTopicToBox Id BoxId Point Id BoxPath
   | TopicDragged
-  | ItemClicked Id BoxPath
+  | ItemClicked ItemId BoxPath
   | Cancel (Maybe Target)
   -- renderer modules
   | TopicMap TopicMapDef.Msg
@@ -135,18 +135,6 @@ decoder =
 
 
 -- API
-
-
--- TODO: drop
-isTopic : Id -> Model -> Bool
-isTopic id model =
-  model.topics |> Dict.member id
-
-
--- TODO: drop
-isAssoc : Id -> Model -> Bool
-isAssoc id model =
-  model.assocs |> Dict.member id
 
 
 nextId : Model -> Model

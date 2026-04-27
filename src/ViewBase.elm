@@ -57,12 +57,12 @@ topicBorderStyle id boxPath model =
 isTarget : Id -> BoxPath -> Maybe Target -> Bool
 isTarget topicId boxPath maybeTarget =
   case maybeTarget of
-    Just target -> target == (topicId, boxPath)
+    Just target -> target == (fromTopicId topicId, boxPath)
     Nothing -> False
 
 
 selectionStyle : Id -> BoxPath -> Model -> Attrs Msg
 selectionStyle topicId boxPath model =
-  case Sel.isSelected topicId boxPath model of
+  case Sel.isSelected (fromTopicId topicId) boxPath model of
     True -> [ style "box-shadow" C.topicBoxShadow ]
     False -> []

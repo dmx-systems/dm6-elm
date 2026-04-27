@@ -27,7 +27,7 @@ effectiveExpansion topic boxId model =
     if isLimboTopic topic.id boxId model then
       Expanded
     else
-      Box.expansionOf topic.id boxId model
+      Box.expansionOf (TopicId topic.id) boxId model
   }
 
 

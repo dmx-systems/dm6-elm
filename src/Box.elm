@@ -304,9 +304,9 @@ deleteAssoc_ assocId ({assocs, itemSets} as model) =
 
 -- Expansion
 
-expansionOf : Id -> BoxId -> Model -> Expansion
+expansionOf : TopicId -> BoxId -> Model -> Expansion
 expansionOf topicId boxId model =
-  case byId boxId model |> Maybe.andThen (\box -> topicById topicId box model) of
+  case byId boxId model |> Maybe.andThen (\box -> topicFrom topicId box model) of
     Just {expansion} -> expansion
     Nothing -> U.fail "Box.expansionOf" {topicId = topicId, boxId = boxId} Collapsed
 
@@ -400,12 +400,12 @@ byId boxId model =
     Nothing -> U.boxNotFound "Box.byId" boxId Nothing
 
 
-topicById : Id -> Box -> Model -> Maybe BoxTopic
-topicById topicId box model =
-  case box.topics |> Dict.get topicId of
+topicFrom : TopicId -> Box -> Model -> Maybe BoxTopic
+topicFrom (TopicId id) box model =
+  case box.topics |> Dict.get id of
     Just topic -> Just topic
-    Nothing -> U.logError "Box.topicById"
-      ("Missing BoxTopic " ++ fromInt topicId ++ " in Box " ++ fromInt box.id)
+    Nothing -> U.logError "Box.topicFrom"
+      ("Missing BoxTopic " ++ fromInt id ++ " in Box " ++ fromInt box.id)
       Nothing
 
 

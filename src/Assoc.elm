@@ -1,4 +1,4 @@
-module Assoc exposing (fromId, fromIdIfExists, create, relatedTopics, otherTopicId)
+module Assoc exposing (fromId, create, relatedTopics, otherTopicId)
 
 import Model exposing (Model)
 import ModelBase exposing (..)
@@ -18,14 +18,6 @@ fromId assocId model =
   case model.assocs |> Dict.get assocId of
     Just assoc -> Just assoc
     Nothing -> U.assocNotFound "Assoc.fromId" assocId Nothing
-
-
--- ### TODO: drop
-fromIdIfExists : Id -> Model -> Maybe Assoc
-fromIdIfExists assocId model =
-  case model.assocs |> Dict.get assocId of
-    Just assoc -> Just assoc
-    Nothing -> Nothing
 
 
 create : AssocType -> Id -> Id -> Model -> (Model, Id)

@@ -315,17 +315,17 @@ createAssocAndAddToBox assocType topicId1 topicId2 boxId model =
 moveTopicToBox : Id -> BoxId -> Point -> BoxId -> BoxPath -> Model -> (Model, Cmd Msg)
 moveTopicToBox topicId boxId origPos targetBoxId targetPath model =
   let
-    expansion = Box.expansionOf topicId boxId model
+    expansion = Box.expansionOf (TopicId topicId) boxId model
   in
   Tool.createBoxOnDemand targetBoxId model
     |> Box.addTopic (BoxTopic topicId expansion) targetBoxId
     |> Box.removeTopic topicId boxId
-    |> Sel.select targetBoxId targetPath
+    |> Sel.select (fromTopicId targetBoxId) targetPath
     |> TM.setTopicPos topicId boxId origPos
     |> TM.addTopic topicId targetBoxId Random
 
 
-select : Id -> BoxPath -> Model -> (Model, Cmd Msg)
+select : ItemId -> BoxPath -> Model -> (Model, Cmd Msg)
 select itemId boxPath model =
   ( model
       |> Sel.select itemId boxPath
@@ -350,7 +350,7 @@ cancelUIWith maybeTarget ({model} as env) =
       case maybeTarget of
         Just (itemId, boxId :: _ as boxPath) ->
           Sel.isSelected itemId boxPath model ||
-          Mouse.isHovered itemId boxId model
+          Mouse.isHovered (toId itemId) boxId model
         _ -> False
   in
   if isTargeted then

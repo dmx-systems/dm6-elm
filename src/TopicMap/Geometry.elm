@@ -41,7 +41,7 @@ hitTest boxId boxPath pos excludeTopicId ({model} as env) =
               parentBoxId = Box.firstId boxPath
             in
             if isBoxRectHit pos map parentBoxId model then
-              Just (boxId, boxPath)
+              Just (fromTopicId boxId, boxPath)
             else
               Nothing
     Nothing -> Nothing
@@ -54,13 +54,13 @@ testChildren pos topics boxPath excludeTopicId ({model, ext} as env) =
     item :: tailItems ->
       let
         maybeItem : Bool -> Maybe Target
-        maybeItem found = if found then Just (item.id, boxPath) else Nothing
+        maybeItem found = if found then Just (fromTopicId item.id, boxPath) else Nothing
         --
         boxId = Box.firstId boxPath
         isHeaderHit = isTopicHeaderHit pos item.id boxId >> maybeItem
         relPos = relPos_ pos item.id boxPath
         maybeTarget =
-          case (Topic.isBox item.id model, Box.expansionOf item.id boxId model) of
+          case (Topic.isBox item.id model, Box.expansionOf (TopicId item.id) boxId model) of
             (True, Collapsed) -> isHeaderHit model
             (True, Expanded) ->
               case ext.hitTest item.id boxPath (relPos model) excludeTopicId model of
@@ -73,7 +73,7 @@ testChildren pos topics boxPath excludeTopicId ({model, ext} as env) =
       -- return item if successfully tested AND not excluded by filter
       case (maybeTarget, excludeTopicId) of
         (Just ((targetId, _) as target), Just topicId) ->
-          case targetId /= topicId of
+          case targetId /= fromTopicId topicId of
             True -> Just target
             False -> testTailItems env
         (Just target, Nothing) -> Just target
@@ -88,7 +88,7 @@ isTopicHit itemId boxPath pos model =
     isDetailHit = isTopicDetailHit pos itemId boxId
   in
   -- test depends on topic's expansion
-  case Box.expansionOf itemId boxId model of
+  case Box.expansionOf (TopicId itemId) boxId model of
     Collapsed -> isHeaderHit model
     Expanded -> isHeaderHit model || isDetailHit model
 
