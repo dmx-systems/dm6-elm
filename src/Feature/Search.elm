@@ -78,7 +78,7 @@ viewTraversalResult model =
     _ -> []
 
 
-viewSearchtMenu : List Id -> Model -> Html Msg
+viewSearchtMenu : List TopicId -> Model -> Html Msg
 viewSearchtMenu topicIds model =
   div
     ( [ U.onPointerDownStop NoOp ] -- Prevent search menu closing
@@ -102,14 +102,14 @@ viewSearchtMenu topicIds model =
               )
               [ viewTopicIcon topic model
               , viewItemText topic
-              , viewFullscreenButton id model
+              , viewFullscreenButton (toTopicId id) model
               ]
           Nothing -> text "??"
       )
     )
 
 
-viewTraversalMenu : List (Id, Id) -> Model -> Html Msg
+viewTraversalMenu : List (TopicId, AssocId) -> Model -> Html Msg
 viewTraversalMenu relTopicIds model =
   div
     ( [ U.onPointerDownStop NoOp ] -- Prevent traversal menu closing
@@ -133,7 +133,7 @@ viewTraversalMenu relTopicIds model =
               )
               [ viewTopicIcon topic model
               , viewItemText topic -- TODO: render assoc info
-              , viewFullscreenButton id model
+              , viewFullscreenButton (toTopicId id) model
               ]
           Nothing -> text "??"
       )
@@ -233,21 +233,21 @@ fullscreenButtonStyle =
   ]
 
 
-isItemDisabled : Id -> Model -> Bool
+isItemDisabled : TopicId -> Model -> Bool
 isItemDisabled topicId model =
   case TM.revelationBoxId model of
-    Just boxId -> Box.hasDeepItem topicId boxId model
+    Just boxId -> Box.hasDeepItem (toTopicId topicId) boxId model
     Nothing -> False
 
 
-isTopicHover : Id -> Model -> Bool
+isTopicHover : TopicId -> Model -> Bool
 isTopicHover topicId model =
   case model.search.result of
     Topics _ (Just topicId_) -> topicId_ == topicId
     _ -> False
 
 
-isRelTopicHover : (Id, Id) -> Model -> Bool
+isRelTopicHover : (TopicId, AssocId) -> Model -> Bool
 isRelTopicHover relTopic model =
   case model.search.result of
     RelTopics _ (Just relTopic_) -> relTopic_ == relTopic
@@ -290,7 +290,7 @@ onInputFocused =
   searchTopics
 
 
-onTopicHovered : Id -> Env -> Model
+onTopicHovered : TopicId -> Env -> Model
 onTopicHovered topicId ({model} as env) =
   case model.search.result of
     Topics topicIds _ ->
@@ -302,7 +302,7 @@ onTopicHovered topicId ({model} as env) =
       U.logError "Search.onTopicHovered" "search.result is not Topics" model
 
 
-onRelTopicHovered : (Id, Id) -> Env -> Model
+onRelTopicHovered : (TopicId, AssocId) -> Env -> Model
 onRelTopicHovered relTopicId ({model} as env) =
   case model.search.result of
     RelTopics relTopicIds _ ->
@@ -338,19 +338,19 @@ onRelTopicUnhovered ({model} as env) =
       U.logError "Search.onRelTopicUnhovered" "search.result is not RelTopics" model
 
 
-revealTopic : Id -> Env -> Model
+revealTopic : TopicId -> Env -> Model
 revealTopic topicId ({model} as env) =
   case TM.revelationBoxPath model of
     Just (boxId :: _ as boxPath) ->
       model
         |> revealTopic_ topicId boxId
         |> closeMenu
-        |> Sel.select (fromTopicId topicId) boxPath
+        |> Sel.select (T topicId) boxPath
         |> Env.autoSize env
     _ -> model
 
 
-revealRelTopic : (Id, Id) -> Env -> Model
+revealRelTopic : (TopicId, AssocId) -> Env -> Model
 revealRelTopic (topicId, assocId) ({model} as env) =
   case TM.revelationBoxPath model of
     Just (boxId :: _ as boxPath) ->
@@ -358,12 +358,12 @@ revealRelTopic (topicId, assocId) ({model} as env) =
         |> revealTopic_ topicId boxId
         |> revealAssoc_ assocId boxId
         |> closeMenu
-        |> Sel.select (fromTopicId topicId) boxPath
+        |> Sel.select (T topicId) boxPath
         |> Env.autoSize env
     _ -> model
 
 
-revealTopic_ : Id -> BoxId -> Model -> Model
+revealTopic_ : TopicId -> BoxId -> Model -> Model
 revealTopic_ topicId boxId model =
   model
     |> Box.addTopic (BoxTopic topicId Collapsed) boxId
@@ -371,7 +371,7 @@ revealTopic_ topicId boxId model =
     |> Tuple.first -- Note: Cmd is ignored, OK for the moment ;-)
 
 
-revealAssoc_ : Id -> BoxId -> Model -> Model
+revealAssoc_ : AssocId -> BoxId -> Model -> Model
 revealAssoc_ assocId boxId model =
   model
     |> Box.addAssoc assocId boxId
@@ -384,7 +384,7 @@ searchTopics model =
     topicIds = model.topics |> Dict.foldr
       (\id {text} idAcc ->
         if isMatch text model.search.term then
-          id :: idAcc
+          (TopicId id) :: idAcc
         else
           idAcc
       )
@@ -399,7 +399,7 @@ traverse model =
   let
     relTopicIds =
       case Sel.single model of
-        Just (T (TopicId id), _) ->
+        Just (T id, _) ->
           Assoc.relatedTopics id model
         _ -> [] -- TODO: log error
   in

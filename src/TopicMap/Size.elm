@@ -59,13 +59,13 @@ accumulateItem mapItem boxPath rectAcc ext model =
 
 calcItemRect : MapTopic -> BoxPath -> ExtManager -> Model -> (Rectangle, Model)
 calcItemRect ({pos, expansion} as topic) boxPath ext model =
-  case (Topic.isBox topic.id model, expansion) of
+  case (Topic.isBox (toTopicId topic.id) model, expansion) of
     (False, Collapsed) -> (topicExtent pos, model)
     (False, Expanded) -> (detailTopicExtent topic.id boxPath pos model, model)
     (True, Collapsed) -> (topicExtent pos, model)
     (True, Expanded) ->
       let
-        (rect_, model_) = ext.autoSize (topic.id :: boxPath) model -- recursion
+        (rect_, model_) = ext.autoSize ((toTopicId topic.id) :: boxPath) model -- recursion
       in
       (boxExtent pos rect_, model_)
 
@@ -79,7 +79,7 @@ topicExtent pos =
     (pos.y + C.topicH2 + 2 * C.topicBorderWidth)
 
 
-detailTopicExtent : Id -> BoxPath -> Point -> Model -> Rectangle
+detailTopicExtent : TopicId -> BoxPath -> Point -> Model -> Rectangle
 detailTopicExtent topicId boxPath pos model =
   let
     isEdit = model.text.edit == Edit topicId boxPath -- TODO: use Text (cyclic atm)
@@ -182,7 +182,7 @@ setBoxRect boxId rect model =
 adjustBoxPos : BoxId -> BoxId -> Rectangle -> Rectangle -> Model -> Model
 adjustBoxPos boxId parentBoxId newRect oldRect model =
   model
-    |> TM.updateTopicPos boxId parentBoxId
+    |> TM.updateTopicPos (TopicId boxId) parentBoxId
       (\oldPos ->
         (Point
           (oldPos.x + newRect.x1 - oldRect.x1)

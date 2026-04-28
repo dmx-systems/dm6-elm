@@ -2,7 +2,7 @@ module Env exposing (ExtManager, Env, Env2, autoSize, withModel)
 -- TODO: don't expose AutoSize?
 
 import Model exposing (Model, Msg)
-import ModelBase exposing (Id, BoxId, BoxPath, Target, Point, Rectangle, Extensions, ToolbarPos)
+import ModelBase exposing (..)
 import Undo exposing (UndoModel)
 
 import Html exposing (Html)
@@ -43,7 +43,7 @@ type alias BoxRenderer =
 
 
 type alias HitTest =
-  BoxId -> BoxPath -> Point -> Maybe Id -> Model -> Maybe Target
+  BoxId -> BoxPath -> Point -> Maybe TopicId -> Model -> Maybe Target
 
 
 type alias AutoSize =

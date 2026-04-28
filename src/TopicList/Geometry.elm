@@ -16,7 +16,7 @@ import Utils as U
 -- HIT TEST
 
 
-hitTest : BoxId -> BoxPath -> Point -> Maybe Id -> Env2 -> Maybe Target
+hitTest : BoxId -> BoxPath -> Point -> Maybe TopicId -> Env2 -> Maybe Target
 hitTest boxId boxPath pos excludeTopicId {model} =
   -- TODO
   let

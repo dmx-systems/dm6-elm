@@ -66,7 +66,7 @@ iconButtonStyle =
   ]
 
 
-viewTopicIcon : Id -> Int -> Attrs Msg -> Model -> Html Msg
+viewTopicIcon : TopicId -> Int -> Attrs Msg -> Model -> Html Msg
 viewTopicIcon topicId size style_ model =
   case Topic.fromId topicId model of
     Just topic ->
@@ -113,7 +113,7 @@ closePicker ({icon} as model) =
 setIcon : Maybe Icon -> Model -> Model
 setIcon iconName model =
   case Sel.single model of
-    Just (T (TopicId id), _) -> Topic.update id
+    Just (T topicId, _) -> Topic.update topicId
       (\topic -> { topic | icon = iconName })
       model
     _ -> model

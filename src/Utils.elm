@@ -1,6 +1,6 @@
 module Utils exposing (..)
 
-import ModelBase exposing (Id, Point, PointerType)
+import ModelBase exposing (..)
 
 import Html exposing (Attribute)
 import Html.Events exposing (on, stopPropagationOn, keyCode)
@@ -101,14 +101,14 @@ command msg =
 -- DEBUG
 
 
-topicNotFound : String -> Id -> a -> a
+topicNotFound : String -> TopicId -> a -> a
 topicNotFound funcName id val =
-  notFound funcName "Topic" id val
+  notFound funcName "Topic" (toTopicId id) val
 
 
-assocNotFound : String -> Id -> a -> a
+assocNotFound : String -> AssocId -> a -> a
 assocNotFound funcName id val =
-  notFound funcName "Assoc" id val
+  notFound funcName "Assoc" (toAssocId id) val
 
 
 boxNotFound : String -> Id -> a -> a

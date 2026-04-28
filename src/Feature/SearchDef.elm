@@ -1,6 +1,6 @@
 module Feature.SearchDef exposing (..)
 
-import ModelBase exposing (Id, BoxId)
+import ModelBase exposing (..)
 
 
 
@@ -18,8 +18,8 @@ init =
 
 
 type SearchResult
-  = Topics (List Id) (Maybe Id) -- hovered topic
-  | RelTopics (List (Id, Id)) (Maybe (Id, Id)) -- hovered related topic (topic ID, assoc ID)
+  = Topics (List TopicId) (Maybe TopicId) -- hovered topic
+  | RelTopics (List (TopicId, AssocId)) (Maybe (TopicId, AssocId)) -- hovered related topic
   | NoSearch
 
 
@@ -27,12 +27,12 @@ type Msg
   -- Search
   = Input String
   | InputFocused
-  | TopicHovered Id
-  | TopicUnhovered Id
-  | TopicClicked Id
+  | TopicHovered TopicId
+  | TopicUnhovered TopicId
+  | TopicClicked TopicId
   -- Traverse
-  | RelTopicHovered (Id, Id)
-  | RelTopicUnhovered (Id, Id)
-  | RelTopicClicked (Id, Id)
+  | RelTopicHovered (TopicId, AssocId)
+  | RelTopicUnhovered (TopicId, AssocId)
+  | RelTopicClicked (TopicId, AssocId)
   -- Fullscreen (Search & Traverse)
   | Fullscreen BoxId

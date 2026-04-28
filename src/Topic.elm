@@ -12,9 +12,9 @@ import Dict
 {-| Looks up a Topic in Model.topics.
 Logs an error if Topic is missing.
 -}
-fromId : Id -> Model -> Maybe Topic
+fromId : TopicId -> Model -> Maybe Topic
 fromId topicId model =
-  case model.topics |> Dict.get topicId of
+  case model.topics |> Dict.get (toTopicId topicId) of
     Just topic -> Just topic
     Nothing -> U.topicNotFound "Topic.fromId" topicId Nothing
 
@@ -29,7 +29,7 @@ label topic =
 
 {-| Logs an error if topic does not exist, or ID refers not a topic (but an association). -}
 -- TODO: rename to textSize/topicTextSize?
-size : Id -> (TextSize -> Size) -> Model -> Maybe Size
+size : TopicId -> (TextSize -> Size) -> Model -> Maybe Size
 size topicId get model =
   case fromId topicId model of
     Just topic -> Just <| get topic.size
@@ -37,7 +37,7 @@ size topicId get model =
 
 
 {-| Logs an error if box does not exist, or topic is not in box -}
-setSize : Id -> SizeField -> Size -> Model -> Model
+setSize : TopicId -> SizeField -> Size -> Model -> Model
 setSize topicId sizeField size_ model =
   model
     |> update topicId
@@ -54,10 +54,10 @@ setSize topicId sizeField size_ model =
       )
 
 
-create : String -> Maybe Icon -> Model -> (Model, Id)
+create : String -> Maybe Icon -> Model -> (Model, TopicId)
 create text icon model =
   let
-    id = model.nextId
+    id = TopicId model.nextId
     topic = Topic id icon text (TextSize C.topicDetailSize C.topicDetailSize) []
   in
   ( model
@@ -69,15 +69,15 @@ create text icon model =
 
 create_ : Topic -> Model -> Model
 create_ topic ({topics} as model) =
-  { model | topics = topics |> Dict.insert topic.id topic }
+  { model | topics = topics |> Dict.insert (toTopicId topic.id) topic }
 
 
 {-| Canonical Topic transformation.
 Logs an error if item does not exist.
 -}
-update : Id -> (Topic -> Topic) -> Model -> Model
+update : TopicId -> (Topic -> Topic) -> Model -> Model
 update topicId transform ({topics} as model) =
-  { model | topics = topics |> Dict.update topicId
+  { model | topics = topics |> Dict.update (toTopicId topicId)
     (\maybeTopic ->
       case maybeTopic of
         Just topic -> Just <| transform topic

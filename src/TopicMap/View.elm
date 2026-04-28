@@ -160,20 +160,20 @@ viewItems map boxPath ({model} as env) =
         (\({id} as mapTopic) ->
           case Topic.fromId id model of
             Just topic -> viewTopic topic mapTopic newPath env
-            _ -> U.logError "TopicMap.View.viewItems" ("problem with topic " ++ fromInt id)
-              (text "")
+            _ -> U.logError "TopicMap.View.viewItems"
+              ("problem with topic " ++ fromInt (toTopicId id)) (text "")
         )
     assocs =
       Box.assocIds map.id model |> List.foldr
-        (\(AssocId id) svgAcc ->
+        (\id svgAcc ->
           case Assoc.fromId id model of
             Just assoc ->
               let
-                clickHandler = Mouse.itemClickHandler (fromAssocId id) newPath
+                clickHandler = Mouse.itemClickHandler (A id) newPath
               in
               svgAcc ++ viewAssoc assoc newPath clickHandler model
-            _ -> U.logError "TopicMap.View.viewItems" ("problem with assoc " ++ fromInt id)
-              svgAcc
+            _ -> U.logError "TopicMap.View.viewItems"
+              ("problem with assoc " ++ fromInt (toAssocId id)) svgAcc
         )
         []
   in
@@ -185,7 +185,7 @@ viewLimboAssoc boxId model =
   case VM.limboState model of
     Just (topicId, Just assocId, limboBoxId) ->
       if boxId == limboBoxId then
-        if Box.hasItem (fromAssocId assocId) boxId model then
+        if Box.hasItem (A assocId) boxId model then
           let
             _ = U.info "TopicMap.View.viewLimboAssoc" (assocId, "is in map", boxId)
           in
@@ -227,7 +227,7 @@ viewTopic : Topic -> MapTopic -> BoxPath -> Env2 -> Html Msg
 viewTopic topic mapTopic boxPath ({model, ext}) =
   let
     render =
-      case (Topic.isBox topic.id model, mapTopic.expansion) of
+      case (Topic.isBox (toTopicId topic.id) model, mapTopic.expansion) of
         (False, Collapsed) -> labelTopic topic mapTopic boxPath
         (False, Expanded) -> detailTopic topic mapTopic boxPath
         (True, Collapsed) -> blackBoxTopic topic mapTopic boxPath
@@ -245,12 +245,12 @@ viewTopic topic mapTopic boxPath ({model, ext}) =
     )
 
 
-topicAttr : Id -> BoxPath -> Attrs Msg
+topicAttr : TopicId -> BoxPath -> Attrs Msg
 topicAttr topicId boxPath =
   [ id <| Box.elemId "topic" topicId boxPath ]
 
 
-topicStyle : Id -> BoxPath -> Model -> Attrs Msg
+topicStyle : TopicId -> BoxPath -> Model -> Attrs Msg
 topicStyle id boxPath model =
   let
     boxId = Box.firstId boxPath
@@ -258,7 +258,7 @@ topicStyle id boxPath model =
     isDragging = case model.mouse.dragState of
       Drag DragTopic id_ boxPath_ _ _ _ -> id_ == id && boxPath_ == boxPath
       _ -> False
-    isSelected = Sel.isSelected (fromTopicId id) boxPath model
+    isSelected = Sel.isSelected (T id) boxPath model
   in
   [ style "position" "absolute"
   , style "filter" <| if isLimbo then C.topicLimboFilter else "none"
@@ -352,7 +352,7 @@ detailTopicStyle {pos} =
   ]
 
 
-detailTextStyle : Id -> BoxPath -> Model -> Attrs Msg
+detailTextStyle : TopicId -> BoxPath -> Model -> Attrs Msg
 detailTextStyle topicId boxPath model =
   let
     r = fromInt C.topicRadius ++ "px"
@@ -374,7 +374,7 @@ textViewStyle =
   ]
 
 
-textEditorStyle : Id -> Model -> Attrs Msg
+textEditorStyle : TopicId -> Model -> Attrs Msg
 textEditorStyle topicId model =
   let
     height = case Topic.size topicId .editor model of
@@ -395,7 +395,7 @@ iconBoxStyle mapTopic model =
   let
     r1 = fromInt C.topicRadius ++ "px"
     r4 =
-      case (Topic.isBox mapTopic.id model, mapTopic.expansion) of
+      case (Topic.isBox (toTopicId mapTopic.id) model, mapTopic.expansion) of
         (True, Expanded) -> "0"
         _ -> r1
   in
@@ -430,7 +430,7 @@ blackBoxTopic topic mapTopic boxPath model =
   , [ div
       (topicFlexboxStyle mapTopic boxPath model)
       (viewLabelTopic topic mapTopic boxPath model
-        ++ viewItemCount topic.id model
+        ++ viewItemCount (toTopicId topic.id) model
       )
     , div
       (ghostTopicStyle topic boxPath model)
@@ -451,7 +451,7 @@ topicFlexboxStyle mapTopic boxPath model =
   let
     r12 = fromInt C.topicRadius ++ "px"
     r34 =
-      case (Topic.isBox mapTopic.id model, mapTopic.expansion) of
+      case (Topic.isBox (toTopicId mapTopic.id) model, mapTopic.expansion) of
         (True, Expanded) -> "0"
         _ -> r12
   in
@@ -486,8 +486,8 @@ whiteBoxTopic topic mapTopic boxPath ext model =
   in
   ( style
   , children
-    ++ viewItemCount topic.id model
-    ++ [ ext.view topic.id boxPath model ]
+    ++ viewItemCount (toTopicId topic.id) model
+    ++ [ ext.view (toTopicId topic.id) boxPath model ]
   )
 
 
@@ -570,7 +570,7 @@ accumulatePos posAcc boxId parentBoxId boxIds model =
   let
     {x, y} = accumulateRect posAcc boxId model
   in
-  case TM.topicPos boxId parentBoxId model of
+  case TM.topicPos (TopicId boxId) parentBoxId model of
     Just boxPos ->
       absPos -- recursion
         (parentBoxId :: boxIds)
@@ -722,7 +722,7 @@ lineSelectionStyle : Maybe Assoc -> BoxPath -> Model -> Attrs Msg
 lineSelectionStyle maybeAssoc boxPath model =
   case maybeAssoc of
     Just {id} ->
-      case Sel.isSelected (fromAssocId id) boxPath model of
+      case Sel.isSelected (A id) boxPath model of
         True -> [ filter "url(#shadow)" ]
         False -> []
     Nothing -> []

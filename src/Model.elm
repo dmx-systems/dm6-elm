@@ -46,7 +46,7 @@ type alias Model =
 init : Model
 init =
   let
-    rootTopic = Topic 0 Nothing C.rootBoxName (TextSize (Size 0 0) (Size 0 0)) []
+    rootTopic = Topic (TopicId 0) Nothing C.rootBoxName (TextSize (Size 0 0) (Size 0 0)) []
   in
   { topics = Dict.singleton 0 rootTopic
   , assocs = Dict.empty
@@ -70,8 +70,8 @@ init =
 
 type Msg
   -- gestures detected by Mouse module
-  = CreateAssoc Id Id BoxId
-  | MoveTopicToBox Id BoxId Point Id BoxPath
+  = CreateAssoc TopicId TopicId BoxId
+  | MoveTopicToBox TopicId BoxId Point Id BoxPath
   | TopicDragged
   | ItemClicked ItemId BoxPath
   | Cancel (Maybe Target)
@@ -114,10 +114,10 @@ encode model =
 decoder : D.Decoder Model
 decoder =
   D.succeed Model
-    |> required "topics" (topicDecoder |> toDictDecoder)
-    |> required "assocs" (assocDecoder |> toDictDecoder)
-    |> required "itemSets" (itemSetDecoder |> toDictDecoder)
-    |> required "boxes" (boxDecoder |> toDictDecoder)
+    |> required "topics" (toDictDecoderWith toTopicId topicDecoder)
+    |> required "assocs" (toDictDecoderWith toAssocId assocDecoder)
+    |> required "itemSets" (toDictDecoder itemSetDecoder)
+    |> required "boxes" (toDictDecoder boxDecoder)
     |> required "boxId" D.int
     |> required "nextId" D.int
     |> hardcoded Dict.empty -- imageCache

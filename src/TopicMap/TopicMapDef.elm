@@ -25,7 +25,7 @@ type alias TopicMap =
 
 
 type alias MapTopic =
-  { id : Id
+  { id : TopicId
   , pos : Point
   , expansion : Expansion -- "effective expansion", computed/transient,
                           -- used for both limbo-rendering and auto-sizing
@@ -33,7 +33,7 @@ type alias MapTopic =
 
 
 type Msg
-  = AddTopic Id BoxId Point -- random pos
+  = AddTopic TopicId BoxId Point -- random pos
 
 
 
@@ -74,7 +74,7 @@ encodeTopicMap map =
 encodeMapTopic : MapTopic -> E.Value
 encodeMapTopic topic =
   E.object
-    [ ("id", E.int topic.id)
+    [ ("id", E.int (toTopicId topic.id))
     , ("pos", E.object
         [ ("x", E.int topic.pos.x)
         , ("y", E.int topic.pos.y)
@@ -105,13 +105,13 @@ topicMapDecoder =
       (D.field "x" D.int)
       (D.field "y" D.int)
     )
-    (D.field "topics" (mapTopicDecoder |> toDictDecoder))
+    (D.field "topics" (toDictDecoderWith toTopicId mapTopicDecoder))
 
 
 mapTopicDecoder : D.Decoder MapTopic
 mapTopicDecoder =
   D.map3 MapTopic
-    (D.field "id" D.int)
+    (D.field "id" topicIdDecoder)
     (D.field "pos" <| D.map2
       Point
         (D.field "x" D.int)

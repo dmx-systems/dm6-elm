@@ -17,6 +17,7 @@ import Utils as U
 
 import Dict
 import Random
+import String exposing (fromInt)
 
 
 
@@ -49,8 +50,8 @@ create_ map ({topicMap} as model) =
 topics : TopicMap -> Model -> List MapTopic
 topics map model =
   Box.topicIds map.id model |> List.foldr
-    (\(TopicId id) itemsAcc ->
-      case mapTopic_ id map of
+    (\topicId itemsAcc ->
+      case mapTopic_ topicId map of
         Just item -> item :: itemsAcc
         Nothing -> itemsAcc
     )
@@ -60,7 +61,7 @@ topics map model =
 {-| Logs an error if TopicMap does not exist, or topic is not in TopicMap, or ID refers not a
 topic (but an association).
 -}
-topicPos : Id -> BoxId -> Model -> Maybe Point
+topicPos : TopicId -> BoxId -> Model -> Maybe Point
 topicPos topicId mapId model =
   case mapTopic topicId mapId model of
     Just { pos } -> Just pos
@@ -68,7 +69,7 @@ topicPos topicId mapId model =
 
 
 {-| Logs an error if TopicMap does not exist, or if topic is not in TopicMap -}
-setTopicPos : Id -> BoxId -> Point -> Model -> Model
+setTopicPos : TopicId -> BoxId -> Point -> Model -> Model
 setTopicPos topicId mapId pos model =
   model
     |> updateTopicPos topicId mapId
@@ -76,7 +77,7 @@ setTopicPos topicId mapId pos model =
 
 
 {-| Logs an error if TopicMap does not exist, or if topic is not in TopicMap -}
-updateTopicPos : Id -> BoxId -> (Point -> Point) -> Model -> Model
+updateTopicPos : TopicId -> BoxId -> (Point -> Point) -> Model -> Model
 updateTopicPos topicId mapId transform model =
   model
     |> updateMapTopic topicId mapId
@@ -87,11 +88,11 @@ updateTopicPos topicId mapId transform model =
 Logs an error if box does not exist, or topic is not in box, or ID refers not a topic (but
 an association).
 -}
-updateMapTopic : Id -> BoxId -> (MapTopic -> MapTopic) -> Model -> Model
+updateMapTopic : TopicId -> BoxId -> (MapTopic -> MapTopic) -> Model -> Model
 updateMapTopic topicId mapId transform model =
   model |> updateTopicMap mapId
     (\map ->
-      { map | topics = map.topics |> Dict.update topicId
+      { map | topics = map.topics |> Dict.update (toTopicId topicId)
         (\maybeTopic ->
           case maybeTopic of
             Just topic -> Just (transform topic)
@@ -112,7 +113,7 @@ assocGeometry assoc mapId model =
     Nothing -> U.fail "TopicMap.assocGeometry" { assoc = assoc, mapId = mapId } Nothing
 
 
-addTopic : Id -> BoxId -> PosHint -> Model -> (Model, Cmd Msg)
+addTopic : TopicId -> BoxId -> PosHint -> Model -> (Model, Cmd Msg)
 addTopic topicId mapId posHint model =
   if hasMapTopic topicId mapId model then
     (model, Cmd.none)
@@ -129,22 +130,22 @@ addTopic topicId mapId posHint model =
       in
       ( model |> updateTopicMap mapId
           (\map ->
-            { map | topics = map.topics |> Dict.insert topicId topic }
+            { map | topics = map.topics |> Dict.insert (toTopicId topicId) topic }
           )
       , Cmd.none
       )
 
 
-addTopic_ : Id -> BoxId -> Point -> Env -> Model
+addTopic_ : TopicId -> BoxId -> Point -> Env -> Model
 addTopic_ topicId mapId pos ({model} as env) =
   model
     |> updateTopicMap mapId (addTopic__ topicId pos)
     |> Env.autoSize env
 
 
-addTopic__ : Id -> Point -> TopicMap -> TopicMap
+addTopic__ : TopicId -> Point -> TopicMap -> TopicMap
 addTopic__ topicId pos map =
-  { map | topics = map.topics |> Dict.insert topicId
+  { map | topics = map.topics |> Dict.insert (toTopicId topicId)
       (MapTopic topicId pos Collapsed)
   }
 
@@ -164,7 +165,7 @@ pointGen =
 
 
 {-| Initial props for a revealed topic -}
-initMapTopic : Id -> BoxId -> Model -> MapTopic
+initMapTopic : TopicId -> BoxId -> Model -> MapTopic
 initMapTopic topicId mapId model =
   MapTopic
     topicId
@@ -172,7 +173,7 @@ initMapTopic topicId mapId model =
     Collapsed
 
 
-initLimboMapTopic : Id -> BoxId -> Model -> MapTopic
+initLimboMapTopic : TopicId -> BoxId -> Model -> MapTopic
 initLimboMapTopic topicId mapId model =
   MapTopic
     topicId
@@ -195,7 +196,7 @@ initTopicPos mapId model =
 The TopicMap in turn is looked up in Model.
 Logs an error if TopicMap is absent, or does not have the item.
 -}
-mapTopic : Id -> BoxId -> Model -> Maybe MapTopic
+mapTopic : TopicId -> BoxId -> Model -> Maybe MapTopic
 mapTopic topicId mapId model =
   byId mapId model
     |> Maybe.andThen (mapTopic_ topicId)
@@ -204,24 +205,25 @@ mapTopic topicId mapId model =
 {-| Looks up a MapTopic in a TopicMap.
 Logs an error if the topic map is absent, or does not have the item.
 -}
-mapTopic_ : Id -> TopicMap -> Maybe MapTopic
+mapTopic_ : TopicId -> TopicMap -> Maybe MapTopic
 mapTopic_ topicId map =
   case mapTopicOrNothing topicId map of
     Just topic -> Just topic
-    Nothing -> U.itemNotInBox "TopicMap.mapTopic_" topicId map.id Nothing
+    Nothing -> U.logError "TopicMap.TopicMap.mapTopic_"
+      ("Missing MapTopic " ++ U.toString topicId ++ " in " ++ fromInt map.id) Nothing
 
 
-mapTopicOrNothing : Id -> TopicMap -> Maybe MapTopic
+mapTopicOrNothing : TopicId -> TopicMap -> Maybe MapTopic
 mapTopicOrNothing topicId map =
-  case map.topics |> Dict.get topicId of
+  case map.topics |> Dict.get (toTopicId topicId) of
     Just topic -> Just topic
     Nothing -> Nothing
 
 
-hasMapTopic : Id -> BoxId -> Model -> Bool
+hasMapTopic : TopicId -> BoxId -> Model -> Bool
 hasMapTopic topicId mapId model =
   case byId mapId model of
-    Just map -> map.topics |> Dict.member topicId
+    Just map -> map.topics |> Dict.member (toTopicId topicId)
     Nothing -> U.fail "TopicMap.hasMapTopic" {topicId = topicId, mapId = mapId} False
 
 

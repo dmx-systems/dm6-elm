@@ -42,14 +42,14 @@ viewList boxPath model =
         |> List.map
           (\topic ->
             li
-              ( Mouse.itemClickHandler (fromTopicId topic.id) boxPath
+              ( Mouse.itemClickHandler (T topic.id) boxPath
                 ++
                 VB.selectionStyle topic.id boxPath model
               )
               ( [ viewTopic topic boxPath model ]
                 ++
-                if Topic.isBox topic.id model then
-                  [ viewList (topic.id :: boxPath) model ]
+                if Topic.isBox (toTopicId topic.id) model then
+                  [ viewList (toTopicId topic.id :: boxPath) model ]
                 else
                   []
               )

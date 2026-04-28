@@ -1,6 +1,6 @@
 module Feature.TextDef exposing (Model, Msg(..), EditState(..), init)
 
-import ModelBase exposing (Id, ImageId, BoxPath, Size, SizeField)
+import ModelBase exposing (..)
 
 
 
@@ -18,7 +18,7 @@ init =
 
 
 type EditState
-  = Edit Id BoxPath
+  = Edit TopicId BoxPath
   | NoEdit
 
 

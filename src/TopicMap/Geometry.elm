@@ -23,7 +23,7 @@ type alias MapTopics =
 Returns the found topic/box (Id) and its context (BoxPath), or Nothing.
 If `excludeTopicId` is given that topic/box will be excluded from search.
 -}
-hitTest : BoxId -> BoxPath -> Point -> Maybe Id -> Env2 -> Maybe Target
+hitTest : BoxId -> BoxPath -> Point -> Maybe TopicId -> Env2 -> Maybe Target
 hitTest boxId boxPath pos excludeTopicId ({model} as env) =
   case TM.byId boxId model of
     Just map ->
@@ -47,23 +47,23 @@ hitTest boxId boxPath pos excludeTopicId ({model} as env) =
     Nothing -> Nothing
 
 
-testChildren : Point -> MapTopics -> BoxPath -> Maybe Id -> Env2 -> Maybe Target
+testChildren : Point -> MapTopics -> BoxPath -> Maybe TopicId -> Env2 -> Maybe Target
 testChildren pos topics boxPath excludeTopicId ({model, ext} as env) =
   case topics of
     [] -> Nothing
     item :: tailItems ->
       let
         maybeItem : Bool -> Maybe Target
-        maybeItem found = if found then Just (fromTopicId item.id, boxPath) else Nothing
+        maybeItem found = if found then Just (T item.id, boxPath) else Nothing
         --
         boxId = Box.firstId boxPath
         isHeaderHit = isTopicHeaderHit pos item.id boxId >> maybeItem
-        relPos = relPos_ pos item.id boxPath
+        relPos = relPos_ pos (toTopicId item.id) boxPath
         maybeTarget =
-          case (Topic.isBox item.id model, Box.expansionOf (TopicId item.id) boxId model) of
+          case (Topic.isBox (toTopicId item.id) model, Box.expansionOf item.id boxId model) of
             (True, Collapsed) -> isHeaderHit model
             (True, Expanded) ->
-              case ext.hitTest item.id boxPath (relPos model) excludeTopicId model of
+              case ext.hitTest (toTopicId item.id) boxPath (relPos model) excludeTopicId model of
                 Just target -> Just target
                 Nothing -> isHeaderHit model
             (False, _) -> isTopicHit item.id boxPath pos model |> maybeItem
@@ -73,14 +73,14 @@ testChildren pos topics boxPath excludeTopicId ({model, ext} as env) =
       -- return item if successfully tested AND not excluded by filter
       case (maybeTarget, excludeTopicId) of
         (Just ((targetId, _) as target), Just topicId) ->
-          case targetId /= fromTopicId topicId of
+          case targetId /= T topicId of
             True -> Just target
             False -> testTailItems env
         (Just target, Nothing) -> Just target
         (Nothing, _) -> testTailItems env
 
 
-isTopicHit : Id -> BoxPath -> Point -> Model -> Bool
+isTopicHit : TopicId -> BoxPath -> Point -> Model -> Bool
 isTopicHit itemId boxPath pos model =
   let
     boxId = Box.firstId boxPath -- Note: a topic is never displayed fullscreen
@@ -88,7 +88,7 @@ isTopicHit itemId boxPath pos model =
     isDetailHit = isTopicDetailHit pos itemId boxId
   in
   -- test depends on topic's expansion
-  case Box.expansionOf (TopicId itemId) boxId model of
+  case Box.expansionOf itemId boxId model of
     Collapsed -> isHeaderHit model
     Expanded -> isHeaderHit model || isDetailHit model
 
@@ -104,7 +104,7 @@ mapOffset pos map =
 
 relPos_ : Point -> BoxId -> BoxPath -> Model -> Point
 relPos_ pos boxId boxPath model =
-  case TM.topicPos boxId (Box.firstId boxPath) model of
+  case TM.topicPos (TopicId boxId) (Box.firstId boxPath) model of
     Just boxPos ->
       Point
         (pos.x - boxPos.x + C.topicW2)
@@ -114,7 +114,7 @@ relPos_ pos boxId boxPath model =
 
 -- TODO: factor out common TopicMap.Size code
 
-isTopicHeaderHit : Point -> Id -> BoxId -> Model -> Bool
+isTopicHeaderHit : Point -> TopicId -> BoxId -> Model -> Bool
 isTopicHeaderHit pos topicId boxId model =
   case TM.topicPos topicId boxId model of
     Just topicPos ->
@@ -125,7 +125,7 @@ isTopicHeaderHit pos topicId boxId model =
     Nothing -> False
 
 
-isTopicDetailHit : Point -> Id -> BoxId -> Model -> Bool
+isTopicDetailHit : Point -> TopicId -> BoxId -> Model -> Bool
 isTopicDetailHit pos topicId boxId model =
   case (TM.topicPos topicId boxId model, Topic.size topicId .view model) of
     (Just topicPos, Just size) ->
@@ -138,7 +138,7 @@ isTopicDetailHit pos topicId boxId model =
 
 isBoxRectHit : Point -> TopicMap -> BoxId -> Model -> Bool
 isBoxRectHit pos map parentBoxId model =
-  case TM.topicPos map.id parentBoxId model of
+  case TM.topicPos (TopicId map.id) parentBoxId model of
     Just boxPos ->
       pos.x > 0 &&
       pos.x < map.rect.x2 - map.rect.x1 &&

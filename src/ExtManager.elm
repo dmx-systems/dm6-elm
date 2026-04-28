@@ -41,7 +41,7 @@ type alias NestingBoxRenderer =
 
 
 type alias NestingHitTest =
-  BoxId -> BoxPath -> Point -> Maybe Id -> Env2 -> Maybe Target
+  BoxId -> BoxPath -> Point -> Maybe TopicId -> Env2 -> Maybe Target
 
 
 type alias NestingAutoSize =
@@ -107,7 +107,7 @@ view boxId boxPath model =
     (\env renderer -> renderer.view boxId boxPath env)
 
 
-hitTest : BoxId -> BoxPath -> Point -> Maybe Id -> Model -> Maybe Target
+hitTest : BoxId -> BoxPath -> Point -> Maybe TopicId -> Model -> Maybe Target
 hitTest boxId boxPath pos excludeTopicId model =
   dispatch boxId model Nothing
     (\env renderer -> renderer.hitTest boxId boxPath pos excludeTopicId env)

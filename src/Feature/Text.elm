@@ -18,6 +18,7 @@ import Dict
 import Html exposing (Html, input, textarea, text)
 import Html.Attributes exposing (id, value, placeholder)
 import Html.Events exposing (onInput)
+import Json.Decode as D
 import Markdown.Block as Block exposing (Block)
 import Markdown.Parser as Parser
 import Markdown.Renderer as Renderer
@@ -89,16 +90,16 @@ update msg ({model, undoModel, ext} as env) =
       |> Undo.swap undoModel
     TextDef.GotTextSize topicId sizeField size ->
       model
-        |> Topic.setSize topicId sizeField size
+        |> Topic.setSize (TopicId topicId) sizeField size
         |> Env.autoSize env
         |> S.store
         |> Undo.swap undoModel
     TextDef.LeaveEdit -> leaveEdit env |> Undo.swap undoModel
-    TextDef.ImageFilePicked (topicId, imageId) -> insertImage topicId imageId model
+    TextDef.ImageFilePicked (topicId, imageId) -> insertImage (TopicId topicId) imageId model
       |> Undo.swap undoModel
 
 
-enterEdit : Id -> BoxPath -> Env -> (Model, Cmd Msg)
+enterEdit : TopicId -> BoxPath -> Env -> (Model, Cmd Msg)
 enterEdit topicId boxPath ({model} as env) =
   let
     newModel =
@@ -125,12 +126,12 @@ leaveEdit ({model} as env) =
     NoEdit -> (model, Cmd.none)
 
 
-switchTopicDisplay : Id -> BoxId -> Model -> Model
+switchTopicDisplay : TopicId -> BoxId -> Model -> Model
 switchTopicDisplay topicId boxId model =
   model
     |> Box.updateExpansion topicId boxId
       (\expansion ->
-        if Topic.isBox topicId model then
+        if Topic.isBox (toTopicId topicId) model then
           expansion
         else
           Expanded
@@ -156,20 +157,20 @@ onTextareaInput text model =
     NoEdit -> U.logError "onTextareaInput" "called when text.edit is NoEdit" (model, Cmd.none)
 
 
-measureText : Id -> String -> Model -> (Model, Cmd Msg)
+measureText : TopicId -> String -> Model -> (Model, Cmd Msg)
 measureText topicId text model =
   ( model |> setMeasureText text
   , measureElement "measure" topicId Editor
   )
 
 
-measureElement : String -> Id -> SizeField -> Cmd Msg
+measureElement : String -> TopicId -> SizeField -> Cmd Msg
 measureElement elemId topicId sizeField =
   Dom.getElement elemId |> Task.attempt
     (\result ->
       case result of
         Ok {element} -> Text
-          (TextDef.GotTextSize topicId sizeField
+          (TextDef.GotTextSize (toTopicId topicId) sizeField
             <| Size (round element.width) (round element.height)
           )
         Err err -> U.logError "measureElement" (U.toString err) NoOp
@@ -192,12 +193,12 @@ focus model =
     )
 
 
-isEdit : Id -> BoxPath -> Model -> Bool
+isEdit : TopicId -> BoxPath -> Model -> Bool
 isEdit topicId boxPath model =
   model.text.edit == Edit topicId boxPath
 
 
-setTopicText : Id -> String -> Model -> Model
+setTopicText : TopicId -> String -> Model -> Model
 setTopicText topicId text model =
   model |> Topic.update topicId
     (\topic -> { topic | text = text })
@@ -227,17 +228,17 @@ markdown source model =
     |> Result.withDefault [ text "Markdown Problem!" ]
 
 
-openImageFilePicker : Id -> Model -> (Model, Cmd Msg)
+openImageFilePicker : TopicId -> Model -> (Model, Cmd Msg)
 openImageFilePicker topicId model =
   let
     imageId = model.nextId
   in
   ( model |> Model.nextId
-  , imageFilePicker (topicId, imageId)
+  , imageFilePicker (toTopicId topicId, imageId)
   )
 
 
-insertImage : Id -> ImageId -> Model -> (Model, Cmd Msg)
+insertImage : TopicId -> ImageId -> Model -> (Model, Cmd Msg)
 insertImage topicId imageId model =
   case Topic.fromId topicId model of
     Just { text } ->

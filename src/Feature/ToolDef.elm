@@ -1,7 +1,7 @@
 module Feature.ToolDef exposing (..)
 
 import Extension exposing (Renderer)
-import ModelBase exposing (Id, BoxId)
+import ModelBase exposing (..)
 
 import Json.Decode as D
 import Json.Encode as E
@@ -43,11 +43,11 @@ type Msg
   | Traverse
   | Delete
   | Remove
-  | Fullscreen BoxId -- box only
+  | Fullscreen BoxId
   | RendererSelected Renderer -- box only
-  | ToggleExpansion Id BoxId
+  | ToggleExpansion TopicId BoxId
   -- Text Tools
-  | Image Id
+  | Image TopicId
   | LeaveEdit
 
 

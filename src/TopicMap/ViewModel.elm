@@ -27,7 +27,7 @@ effectiveExpansion topic boxId model =
     if isLimboTopic topic.id boxId model then
       Expanded
     else
-      Box.expansionOf (TopicId topic.id) boxId model
+      Box.expansionOf topic.id boxId model
   }
 
 
@@ -35,7 +35,7 @@ limboMapTopic : TopicMap -> Model -> List MapTopic
 limboMapTopic map model =
   case limboState model of
     Just (topicId, _, limboBoxId) ->
-      if limboBoxId == map.id && (not <| Box.hasItem (fromTopicId topicId) map.id model) then
+      if limboBoxId == map.id && (not <| Box.hasItem (T topicId) map.id model) then
         let
           _ = U.info "TopicMap.ViewModel.limboMapTopic" (topicId, "not in map", map.id)
           mapTopic =
@@ -49,21 +49,21 @@ limboMapTopic map model =
     Nothing -> []
 
 
-isLimboTopic : Id -> BoxId -> Model -> Bool
+isLimboTopic : TopicId -> BoxId -> Model -> Bool
 isLimboTopic topicId boxId model =
   case limboState model of
     Just (topicId_, _, boxId_) -> topicId == topicId_ && boxId == boxId_
     Nothing -> False
 
 
-isLimboAssoc : Id -> BoxId -> Model -> Bool
+isLimboAssoc : AssocId -> BoxId -> Model -> Bool
 isLimboAssoc assocId boxId model =
   case limboState model of
     Just (_, Just assocId_, boxId_) -> assocId == assocId_ && boxId == boxId_
     _ -> False
 
 
-limboState : Model -> Maybe (Id, Maybe Id, BoxId) -- (topic ID, assoc ID, box ID)
+limboState : Model -> Maybe (TopicId, Maybe AssocId, BoxId)
 limboState model =
   case TM.revelationBoxId model of
     Just boxId ->

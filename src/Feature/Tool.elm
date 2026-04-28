@@ -201,18 +201,18 @@ viewToolbar boxPath ({model, ext} as env) =
     Just (itemId, selBoxPath) ->
       if selBoxPath == boxPath then
         case itemId of
-          T (TopicId id) ->
+          T id ->
             case Topic.fromId id model of
               Just topic ->
                 let
                   pos = toolbar.topic topic
                 in
-                case (Text.isEdit id boxPath model, Topic.isBox id model) of
+                case (Text.isEdit id boxPath model, Topic.isBox (toTopicId id) model) of
                   (False, _) -> [ viewTopicToolbar pos id boxPath env ]
                   (True, False) -> [ viewTextToolbar pos id boxPath ]
                   _ -> []
               Nothing -> []
-          A (AssocId id) ->
+          A id ->
             case Assoc.fromId id model of
               Just assoc ->
                 let
@@ -225,10 +225,10 @@ viewToolbar boxPath ({model, ext} as env) =
     Nothing -> []
 
 
-viewTopicToolbar : Point -> Id -> BoxPath -> Env2 -> Html Msg
-viewTopicToolbar pos topicId boxPath ({model, ext}) =
+viewTopicToolbar : Point -> TopicId -> BoxPath -> Env2 -> Html Msg
+viewTopicToolbar pos ((TopicId topicId) as id) boxPath ({model, ext}) =
   let
-    target = (fromTopicId topicId, boxPath)
+    target = (T id, boxPath)
     topicTools =
       [ viewButton "Edit" "edit-3" ToolDef.Edit False target
       , viewButton "Select Icon" "smile" ToolDef.Icon False target
@@ -288,10 +288,10 @@ selectStyle =
   ]
 
 
-viewTextToolbar : Point -> Id -> BoxPath -> Html Msg
+viewTextToolbar : Point -> TopicId -> BoxPath -> Html Msg
 viewTextToolbar pos topicId boxPath =
   let
-    target = (fromTopicId topicId, boxPath)
+    target = (T topicId, boxPath)
   in
   div
     ( toolbarStyle pos )
@@ -300,10 +300,10 @@ viewTextToolbar pos topicId boxPath =
     ]
 
 
-viewAssocToolbar : Point -> Id -> BoxPath -> Html Msg
+viewAssocToolbar : Point -> AssocId -> BoxPath -> Html Msg
 viewAssocToolbar pos assocId boxPath =
   let
-    target = (fromAssocId assocId, boxPath)
+    target = (A assocId, boxPath)
   in
   div
     ( toolbarStyle pos )
@@ -328,7 +328,7 @@ toolbarStyle pos =
 
 -- Extra topic-specific tools, rendered by Map.view as topic children
 -- TODO: remove this "hook" and render caret as box child
-viewTopicTools : Id -> BoxPath -> Model -> List (Html Msg)
+viewTopicTools : TopicId -> BoxPath -> Model -> List (Html Msg)
 viewTopicTools topicId boxPath model =
   let
     boxId = Box.firstId boxPath
@@ -342,11 +342,11 @@ viewTopicTools topicId boxPath model =
     []
 
 
-viewCaret : Id -> BoxId -> Model -> Html Msg
+viewCaret : TopicId -> BoxId -> Model -> Html Msg
 viewCaret topicId boxId model =
   let
     icon =
-      case Box.expansionOf (TopicId topicId) boxId model of
+      case Box.expansionOf topicId boxId model of
         Collapsed -> "chevron-right"
         Expanded -> "chevron-down"
   in
@@ -471,7 +471,7 @@ createTopic ({model} as env) =
   landTopic topicId newEnv
 
 
-landTopic : Id -> Env -> (Model, Cmd Msg)
+landTopic : TopicId -> Env -> (Model, Cmd Msg)
 landTopic topicId ({model} as env) =
   let
     boxPath = Sel.landingBoxPath model
@@ -481,7 +481,7 @@ landTopic topicId ({model} as env) =
     |> Box.addTopic (BoxTopic topicId Collapsed) boxId
     |> TM.addTopic topicId boxId Default
     |> Tuple.first -- Note: Cmd is ignored, OK for the moment ;-)
-    |> Sel.select (fromTopicId topicId) boxPath
+    |> Sel.select (T topicId) boxPath
     |> Env.withModel env
     |> Text.enterEdit topicId boxPath
 
@@ -496,7 +496,7 @@ store undoModel =
 edit : Env -> (Model, Cmd Msg)
 edit ({model} as env) =
   case Sel.single model of
-    Just (T (TopicId id), boxPath) -> Text.enterEdit id boxPath env
+    Just (T id, boxPath) -> Text.enterEdit id boxPath env
     _ -> U.logError "Feature.Tool.edit" "called when there is no single topic selection"
       (model, Cmd.none)
 
@@ -513,8 +513,8 @@ delete ({model} as env) =
 delete_ : ItemId -> Model -> Model
 delete_ itemId model =
   case itemId of
-    T (TopicId id) -> Box.deleteTopic id model
-    A (AssocId id) -> Box.deleteAssoc id model
+    T id -> Box.deleteTopic id model
+    A id -> Box.deleteAssoc id model
 
 
 remove : Env -> Model
@@ -531,8 +531,8 @@ remove_ (itemId, boxPath) model =
     boxId = (Box.firstId boxPath)
   in
   case itemId of
-    T (TopicId id) -> Box.removeTopic id boxId model
-    A (AssocId id) -> Box.removeAssoc id boxId model
+    T id -> Box.removeTopic id boxId model
+    A id -> Box.removeAssoc id boxId model
 
 
 fullscreen : Id -> Model -> (Model, Cmd Msg)
@@ -553,7 +553,7 @@ setRenderer renderer ({model} as env) =
       model
 
 
-toggleExpansion : Id -> BoxId -> Env -> Model
+toggleExpansion : TopicId -> BoxId -> Env -> Model
 toggleExpansion topicId boxId ({model} as env) =
   model
     |> Box.updateExpansion topicId boxId  

@@ -297,13 +297,13 @@ update msg ({present} as undoModel) =
 
 
 -- Presumption: both topics exist in same box
-createAssoc : Id -> Id -> BoxId -> Model -> Model
+createAssoc : TopicId -> TopicId -> BoxId -> Model -> Model
 createAssoc topicId1 topicId2 boxId model =
   createAssocAndAddToBox Association topicId1 topicId2 boxId model
 
 
 -- Presumption: both topics exist in same box
-createAssocAndAddToBox : AssocType -> Id -> Id -> BoxId -> Model -> Model
+createAssocAndAddToBox : AssocType -> TopicId -> TopicId -> BoxId -> Model -> Model
 createAssocAndAddToBox assocType topicId1 topicId2 boxId model =
   let
     (newModel, assocId) = Assoc.create assocType topicId1 topicId2 model
@@ -312,10 +312,10 @@ createAssocAndAddToBox assocType topicId1 topicId2 boxId model =
     |> Box.addAssoc assocId boxId
 
 
-moveTopicToBox : Id -> BoxId -> Point -> BoxId -> BoxPath -> Model -> (Model, Cmd Msg)
+moveTopicToBox : TopicId -> BoxId -> Point -> BoxId -> BoxPath -> Model -> (Model, Cmd Msg)
 moveTopicToBox topicId boxId origPos targetBoxId targetPath model =
   let
-    expansion = Box.expansionOf (TopicId topicId) boxId model
+    expansion = Box.expansionOf topicId boxId model
   in
   Tool.createBoxOnDemand targetBoxId model
     |> Box.addTopic (BoxTopic topicId expansion) targetBoxId
@@ -348,9 +348,9 @@ cancelUIWith maybeTarget ({model} as env) =
   let
     isTargeted =
       case maybeTarget of
-        Just (itemId, boxId :: _ as boxPath) ->
+        Just (T topicId as itemId, boxId :: _ as boxPath) ->
           Sel.isSelected itemId boxPath model ||
-          Mouse.isHovered (toId itemId) boxId model
+          Mouse.isHovered topicId boxId model
         _ -> False
   in
   if isTargeted then

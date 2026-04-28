@@ -17,7 +17,7 @@ import String exposing (fromInt)
 topics : BoxId -> Model -> List Topic
 topics boxId model =
   topicIds boxId model |> List.foldr
-    (\(TopicId id) acc ->
+    (\id acc ->
       case Topic.fromId id model of
         Just topic -> topic :: acc
         Nothing -> acc
@@ -86,14 +86,14 @@ This is a generic operation: works for both, topics and associations.
 addTopic : BoxTopic -> BoxId -> Model -> Model
 addTopic topic boxId model =
   model
-    |> addToItemSet (fromTopicId topic.id) boxId
+    |> addToItemSet (T topic.id) boxId
     |> addToBoxTopics topic boxId
 
 
-addAssoc : Id -> BoxId -> Model -> Model
+addAssoc : AssocId -> BoxId -> Model -> Model
 addAssoc assocId boxId model =
   model
-    |> addToItemSet (fromAssocId assocId) boxId
+    |> addToItemSet (A assocId) boxId
 
 
 addToItemSet : ItemId -> BoxId -> Model -> Model
@@ -125,10 +125,10 @@ createHierarchy itemId boxId model =
   -- Only topics get connected to box by Hierarchy association.
   -- We don't connect associations to associations.
   case itemId of
-    T (TopicId id) ->
-      model
-        |> Assoc.create Hierarchy boxId id
-        |> Tuple.first
+    T topicId ->
+        model
+          |> Assoc.create Hierarchy (TopicId boxId) topicId
+          |> Tuple.first
     A _ -> model
 
 
@@ -140,7 +140,10 @@ addToBoxTopics topic boxId ({boxes} as model) =
     { model | boxes = boxes |> Dict.update boxId
       (\maybeBox ->
         case maybeBox of
-          Just box -> Just { box | topics = box.topics |> Dict.insert topic.id topic }
+          Just box -> Just
+            { box | topics = box.topics
+                |> Dict.insert (toTopicId topic.id) topic
+            }
           Nothing -> Nothing
       )
     }
@@ -148,28 +151,36 @@ addToBoxTopics topic boxId ({boxes} as model) =
 
 -- Remove item from box
 
-removeTopic : Id -> BoxId -> Model -> Model
+removeTopic : TopicId -> BoxId -> Model -> Model
 removeTopic topicId boxId model =
   case (Topic.fromId topicId model, hierarchyAssoc topicId boxId model) of
     (Just topic, Just assocId) ->
       model
-        |> removeItems (topicId :: topic.assocIds) boxId
+        |> removeItem (T topicId) boxId
+        |> removeAssocs topic boxId
         |> deleteAssoc assocId
     _ -> U.fail "Box.removeTopic" {topicId = topicId, boxId = boxId} model
 
 
-removeAssoc : Id -> BoxId -> Model -> Model
+removeAssocs : Topic -> BoxId -> Model -> Model
+removeAssocs topic boxId model =
+  topic.assocIds |> List.foldr
+    (\assocId modelAcc -> removeAssoc assocId boxId modelAcc)
+    model
+
+
+removeAssoc : AssocId -> BoxId -> Model -> Model
 removeAssoc assocId boxId model =
   model
-    |> removeItems [ assocId ] boxId
+    |> removeItem (A assocId) boxId
 
 
 {-| Removes an item from a box's underlying ItemSet.
 It's a no-op if the item is not in the box.
 Note: the BoxItem itself is *not* removed.
 -}
-removeItems : List Id -> BoxId -> Model -> Model
-removeItems itemIds boxId model =
+removeItem : ItemId -> BoxId -> Model -> Model
+removeItem itemId boxId model =
   case byId boxId model of
     Just box ->
       { model | itemSets = model.itemSets
@@ -178,7 +189,7 @@ removeItems itemIds boxId model =
             case maybeItemSet of
               Just itemSet -> Just
                 { itemSet | items = itemSet.items
-                  |> List.filter (\setItem -> not <| List.member (toId setItem.id) itemIds)
+                  |> List.filter (\setItem -> setItem.id /= itemId)
                 }
               Nothing -> Nothing
           )
@@ -186,7 +197,7 @@ removeItems itemIds boxId model =
     Nothing -> model
 
 
-hierarchyAssoc : Id -> BoxId -> Model -> Maybe Id
+hierarchyAssoc : TopicId -> BoxId -> Model -> Maybe AssocId
 hierarchyAssoc topicId boxId model =
   case Topic.fromId topicId model of
     Just topic ->
@@ -194,17 +205,17 @@ hierarchyAssoc topicId boxId model =
     Nothing -> U.fail "Box.hierarchyAssoc" {topicId = topicId, boxId = boxId} Nothing
 
 
-findHierarchy : Id -> BoxId -> AssocIds -> Model -> Maybe Id
+findHierarchy : TopicId -> BoxId -> AssocIds -> Model -> Maybe AssocId
 findHierarchy topicId boxId assocIds_ model =
   case assocIds_ of
     [] ->
       U.logError "Box.findHierarchy"
-        ("Missing Hierarchy of Topic " ++ fromInt topicId ++ " in Box " ++ fromInt boxId)
+        ("Missing Hierarchy of " ++ U.toString topicId ++ " in Box " ++ fromInt boxId)
         Nothing
     assocId :: ids ->
       case Assoc.fromId assocId model of
         Just {id, assocType, topicId1, topicId2} ->
-          if assocType == Hierarchy && topicId1 == boxId && topicId2 == topicId then
+          if assocType == Hierarchy && topicId1 == TopicId boxId && topicId2 == topicId then
             Just id
           else
             findHierarchy topicId boxId ids model -- recursion
@@ -217,7 +228,7 @@ findHierarchy topicId boxId assocIds_ model =
 Logs an error if no such item exists.
 It's a generic operation: works for both, topics and associations. ### FIXDOC
 -}
-deleteTopic : Id -> Model -> Model
+deleteTopic : TopicId -> Model -> Model
 deleteTopic topicId model =
   case Topic.fromId topicId model of
     Just topic ->
@@ -229,7 +240,7 @@ deleteTopic topicId model =
     Nothing -> U.fail "Box.deleteTopic" {topicId = topicId} model
 
 
-deleteAssoc : Id -> Model -> Model
+deleteAssoc : AssocId -> Model -> Model
 deleteAssoc assocId model =
   model
     |> removeAssocFromTopics assocId
@@ -240,7 +251,7 @@ deleteAssoc assocId model =
 No-op if the given ID refers not to an association (but a topic).
 Logs an error no item for the given ID exists. ### FIXDOC
 -}
-removeAssocFromTopics : Id -> Model -> Model
+removeAssocFromTopics : AssocId -> Model -> Model
 removeAssocFromTopics assocId model =
   case Assoc.fromId assocId model of
     Just assoc ->
@@ -254,7 +265,7 @@ removeAssocFromTopics assocId model =
 No-op if the given association ID is not in the set.
 Logs an error if item does not exist.
 -}
-removeAssocFromTopic : Id -> Id -> Model -> Model
+removeAssocFromTopic : AssocId -> TopicId -> Model -> Model
 removeAssocFromTopic assocId topicId model =
   model |> Topic.update topicId
     (\topic ->
@@ -266,21 +277,21 @@ removeAssocFromTopic assocId topicId model =
 No-op if there is no such item.
 Low-level function that does NOT delete the item's associations. ### FIXDOC
 -}
-deleteTopic_ : Id -> Model -> Model
+deleteTopic_ : TopicId -> Model -> Model
 deleteTopic_ topicId ({itemSets, topicMap} as model) =
   { model
-  | topics = model.topics |> Dict.remove topicId -- delete topic
+  | topics = model.topics |> Dict.remove (toTopicId topicId) -- delete topic
   , itemSets = itemSets |> Dict.map -- delete topic from all itemSets
       (\_ ({items} as itemSet) ->
         { itemSet | items = items |> List.filter
-          (\setItem -> (toId setItem.id) /= topicId)
+          (\setItem -> setItem.id /= T topicId)
         }
       )
   -- TODO: if item is box delete from "boxes" state as well
   -- TODO: don't operate on "topicMap" directly, let ExtManager dispatch instead
   , topicMap = topicMap |> Dict.map -- delete item from all boxes
       (\_ map ->
-        { map | topics = map.topics |> Dict.remove topicId }
+        { map | topics = map.topics |> Dict.remove (toTopicId topicId) }
       )
   }
 
@@ -289,14 +300,14 @@ deleteTopic_ topicId ({itemSets, topicMap} as model) =
 No-op if there is no such item.
 Low-level function that does NOT delete the item's associations. ### FIXDOC
 -}
-deleteAssoc_ : Id -> Model -> Model
+deleteAssoc_ : AssocId -> Model -> Model
 deleteAssoc_ assocId ({assocs, itemSets} as model) =
   { model
-  | assocs = assocs |> Dict.remove assocId -- delete assoc
+  | assocs = assocs |> Dict.remove (toAssocId assocId) -- delete assoc
   , itemSets = itemSets |> Dict.map -- delete assoc from all itemSets
       (\_ ({items} as itemSet) ->
         { itemSet | items = items |> List.filter
-          (\setItem -> (toId setItem.id) /= assocId)
+          (\setItem -> setItem.id /= A assocId)
         }
       )
   }
@@ -311,13 +322,13 @@ expansionOf topicId boxId model =
     Nothing -> U.fail "Box.expansionOf" {topicId = topicId, boxId = boxId} Collapsed
 
 
-updateExpansion : Id -> BoxId -> (Expansion -> Expansion) -> Model -> Model
+updateExpansion : TopicId -> BoxId -> (Expansion -> Expansion) -> Model -> Model
 updateExpansion topicId boxId transform model =
   { model | boxes = model.boxes |> Dict.update boxId
     (\maybeBox ->
       case maybeBox of
         Just box -> Just
-          { box | topics = box.topics |> Dict.update topicId
+          { box | topics = box.topics |> Dict.update (toTopicId topicId)
             (\maybeTopic ->
               case maybeTopic of
                 Just topic -> Just
@@ -385,10 +396,10 @@ itemSetOf boxId model =
     Nothing -> U.fail "Box.itemSetOf" {boxId = boxId} Nothing
 
 
-hasBoxTopic : Id -> BoxId -> Model -> Bool
+hasBoxTopic : TopicId -> BoxId -> Model -> Bool
 hasBoxTopic topicId boxId model =
   case byId boxId model of
-    Just box -> box.topics |> Dict.member topicId
+    Just box -> box.topics |> Dict.member (toTopicId topicId)
     Nothing -> U.fail "Box.hasBoxTopic" {topicId = topicId, boxId = boxId} False
 
 
@@ -414,7 +425,7 @@ TODO: rename
 -}
 mapTitle : Model -> String
 mapTitle model =
-  case Topic.fromId model.boxId model of
+  case Topic.fromId (TopicId model.boxId) model of
     Just topic -> Topic.label topic
     Nothing -> U.fail "mapTitle" model.boxId "??"
 
@@ -424,8 +435,8 @@ isFullscreen boxId model =
   boxId == model.boxId
 
 
-elemId : String -> Id -> BoxPath -> String
-elemId name id boxPath =
+elemId : String -> TopicId -> BoxPath -> String
+elemId name (TopicId id) boxPath =
   name ++ "-" ++ fromInt id ++ "," ++ fromPath boxPath
 
 

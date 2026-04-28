@@ -1,9 +1,9 @@
 module ModelBase exposing (Id, TopicId(..), AssocId(..), ItemId(..), AssocIds, Topic, Icon,
   TextSize, Size, SizeField(..), Point, Rectangle, Assoc, AssocType(..), ItemSet, SetItem, Box,
   BoxId, BoxPath, Target, BoxTopic, Expansion(..), ImageId, Attrs, PointerType, Extensions,
-  ExtLabel, PosHint(..), ToolbarPos, fromTopicId, fromAssocId, toId, rootBoxId, encodeTopic,
-  encodeAssoc, encodeItemSet, encodeBox, topicDecoder, assocDecoder, itemSetDecoder, boxDecoder,
-  toDictDecoder)
+  ExtLabel, PosHint(..), ToolbarPos, fromTopicId, fromAssocId, toId, toTopicId, toAssocId,
+  rootBoxId, encodeTopic, encodeAssoc, encodeItemSet, encodeBox, topicDecoder, assocDecoder,
+  itemSetDecoder, boxDecoder, topicIdDecoder, toDictDecoder, toDictDecoderWith)
 
 import Extension exposing (Renderer, encodeRenderer)
 
@@ -17,14 +17,14 @@ import Json.Encode as E
 -- TYPES
 
 
-type alias IdRecord r =
-  { r | id : Id }
+type alias Entity e i =
+  { e | id : i }
 
 
 -- Item
 
 type alias Topic =
-  { id : Id
+  { id : TopicId
   , icon : Maybe Icon
   , text : String
   , size : TextSize
@@ -33,10 +33,10 @@ type alias Topic =
 
 
 type alias Assoc =
-  { id : Id
+  { id : AssocId
   , assocType : AssocType -- serialized as "type", field can't be named "type", a reserved word
-  , topicId1 : Id
-  , topicId2 : Id
+  , topicId1 : TopicId
+  , topicId2 : TopicId
   }
 
 
@@ -105,11 +105,21 @@ fromAssocId assocId =
 toId : ItemId -> Id
 toId itemId =
   case itemId of
-    T (TopicId id) -> id
-    A (AssocId id) -> id
+    T id -> toTopicId id
+    A id -> toAssocId id
 
 
-type alias AssocIds = List Id
+toTopicId : TopicId -> Id
+toTopicId (TopicId id) =
+  id
+
+
+toAssocId : AssocId -> Id
+toAssocId (AssocId id) =
+  id
+
+
+type alias AssocIds = List AssocId
 type alias Icon = String -- name of feather icon, https://feathericons.com
 type alias ImageId = Int
 type alias Attrs msg = List (Attribute msg)
@@ -140,7 +150,7 @@ rootBoxId = 0
 At the moment this is just the Expansion state.
 -}
 type alias BoxTopic =
-  { id : Id
+  { id : TopicId
   , expansion : Expansion
   }
 
@@ -159,7 +169,7 @@ type alias ItemSet =
 
 
 type alias SetItem =
-  { id : ItemId -- item ID
+  { id : ItemId
   -- TODO: add "dateAdded"
   }
 
@@ -189,23 +199,23 @@ type alias ToolbarPos =
 -- Encode
 
 encodeTopic : Topic -> E.Value
-encodeTopic topic =
+encodeTopic {id, icon, text, size, assocIds} =
   E.object
-    [ ("id", E.int topic.id)
-    , ("icon", E.string <| Maybe.withDefault "" topic.icon)
-    , ("text", E.string topic.text)
-    , ("size", encodeTextSize topic.size)
-    , ("assocIds", E.list E.int topic.assocIds)
+    [ ("id", E.int (toTopicId id))
+    , ("icon", E.string <| Maybe.withDefault "" icon)
+    , ("text", E.string text)
+    , ("size", encodeTextSize size)
+    , ("assocIds", E.list (toAssocId >> E.int) assocIds)
     ]
 
 
 encodeAssoc : Assoc -> E.Value
-encodeAssoc assoc =
+encodeAssoc {id, assocType, topicId1, topicId2} =
   E.object
-    [ ("id", E.int assoc.id)
-    , ("type", encodeAssocType assoc.assocType)
-    , ("topicId1", E.int assoc.topicId1)
-    , ("topicId2", E.int assoc.topicId2)
+    [ ("id", E.int (toAssocId id))
+    , ("type", encodeAssocType assocType)
+    , ("topicId1", E.int (toTopicId topicId1))
+    , ("topicId2", E.int (toTopicId topicId2))
     ]
 
 
@@ -263,7 +273,7 @@ encodeBox box =
 encodeBoxTopic : BoxTopic -> E.Value
 encodeBoxTopic topic =
   E.object
-    [ ("id", E.int topic.id)
+    [ ("id", E.int (toTopicId topic.id))
     , ("expansion", encodeExpansion topic.expansion)
     ]
 
@@ -281,7 +291,7 @@ encodeExpansion expansion =
 topicDecoder : D.Decoder Topic
 topicDecoder =
   D.map5 Topic
-    (D.field "id" D.int)
+    (D.field "id" topicIdDecoder)
     (D.field "icon" D.string |> D.map maybeString)
     (D.field "text" D.string)
     textSizeDecoder
@@ -291,10 +301,10 @@ topicDecoder =
 assocDecoder : D.Decoder Assoc
 assocDecoder =
   (D.map4 Assoc
-    (D.field "id" D.int)
+    (D.field "id" assocIdDecoder)
     (D.field "type" D.string |> D.andThen assocTypeDecoder)
-    (D.field "topicId1" D.int)
-    (D.field "topicId2" D.int)
+    (D.field "topicId1" topicIdDecoder)
+    (D.field "topicId2" topicIdDecoder)
   )
 
 
@@ -314,7 +324,7 @@ textSizeDecoder =
 
 assocIdsDecoder : D.Decoder AssocIds
 assocIdsDecoder =
-  D.field "assocIds" (D.list D.int)
+  D.field "assocIds" (D.list assocIdDecoder)
 
 
 assocTypeDecoder : String -> D.Decoder AssocType
@@ -343,14 +353,14 @@ boxDecoder =
   D.map4 Box
     (D.field "id" D.int)
     (D.field "itemSetId" D.int)
-    (D.field "topics" (boxTopicDecoder |> toDictDecoder))
-    (D.field "renderer" (D.string |> Extension.rendererDecoder))
+    (D.field "topics" (toDictDecoderWith toTopicId boxTopicDecoder))
+    (D.field "renderer" (Extension.rendererDecoder D.string))
 
 
 boxTopicDecoder : D.Decoder BoxTopic
 boxTopicDecoder =
   D.map2 BoxTopic
-    (D.field "id" D.int)
+    (D.field "id" topicIdDecoder)
     (D.field "expansion" D.string |> D.andThen expansionDecoder)
 
 
@@ -362,14 +372,32 @@ expansionDecoder str =
     _ -> D.fail ("\"" ++ str ++ "\" is an invalid Expansion")
 
 
-toDictDecoder : D.Decoder (IdRecord r) -> D.Decoder (Dict Id (IdRecord r))
-toDictDecoder =
-  D.list >> D.map toDict
+toDictDecoder : D.Decoder (Entity e Id) -> D.Decoder (Dict Id (Entity e Id))
+toDictDecoder entityDecoder =
+  toDictDecoderWith identity entityDecoder
 
 
-toDict : List (IdRecord r) -> Dict Id (IdRecord r)
-toDict =
-  List.map (\item -> (item.id, item)) >> Dict.fromList
+{-| A Dict decoder that takes an extra function to unwrap the entity ID so it can be used as a
+Dict key.
+-}
+toDictDecoderWith : (i -> Id) -> D.Decoder (Entity e i) -> D.Decoder (Dict Id (Entity e i))
+toDictDecoderWith unwrapId entityDecoder =
+  D.list entityDecoder |> D.map
+    (\items ->
+      items
+        |> List.map (\item -> (unwrapId item.id, item))
+        |> Dict.fromList
+    )
+
+
+topicIdDecoder : D.Decoder TopicId
+topicIdDecoder =
+  D.int |> D.map TopicId
+
+
+assocIdDecoder : D.Decoder AssocId
+assocIdDecoder =
+  D.int |> D.map AssocId
 
 
 maybeString : String -> Maybe String
