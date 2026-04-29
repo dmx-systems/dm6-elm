@@ -8,7 +8,7 @@ import Json.Encode as E
 
 
 type alias Model =
-  Dict BoxId TopicList
+  Dict Id TopicList
 
 
 init : Model
@@ -38,7 +38,7 @@ encode model =
 encodeTopicList : TopicList -> E.Value
 encodeTopicList list =
   E.object
-    [ ("id", E.int list.id)
+    [ ("id", encodeBoxId list.id)
     , ("size", E.object
         [ ("w", E.int list.size.w)
         , ("h", E.int list.size.h)
@@ -51,13 +51,13 @@ encodeTopicList list =
 
 decoder : D.Decoder Model
 decoder =
-  topicListDecoder |> toDictDecoder
+  toDictDecoderWith toBoxId topicListDecoder
 
 
 topicListDecoder : D.Decoder TopicList
 topicListDecoder =
   D.map2 TopicList
-    (D.field "id" D.int)
+    (D.field "id" boxIdDecoder)
     (D.field "size" <| D.map2 Size
       (D.field "w" D.int)
       (D.field "h" D.int)

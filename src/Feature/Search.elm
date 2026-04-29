@@ -86,23 +86,23 @@ viewSearchtMenu topicIds model =
       ++ menuStyle
     )
     (topicIds |> List.map
-      (\id ->
+      (\topicId ->
         let
-          isDisabled = isItemDisabled id model
-          isHover = isTopicHover id model
+          isDisabled = isItemDisabled topicId model
+          isHover = isTopicHover topicId model
         in
-        case Topic.fromId id model of
+        case Topic.fromId topicId model of
           Just topic ->
             div
-              ( [ onClick <| Search <| SearchDef.TopicClicked id
-                , on "pointerover" <| D.succeed <| Search <| SearchDef.TopicHovered id
-                , on "pointerout" <| D.succeed <| Search <| SearchDef.TopicUnhovered id
+              ( [ onClick <| Search <| SearchDef.TopicClicked topicId
+                , on "pointerover" <| D.succeed <| Search <| SearchDef.TopicHovered topicId
+                , on "pointerout" <| D.succeed <| Search <| SearchDef.TopicUnhovered topicId
                 ]
                 ++ menuItemStyle isDisabled isHover
               )
               [ viewTopicIcon topic model
               , viewItemText topic
-              , viewFullscreenButton (toTopicId id) model
+              , viewFullscreenButton topicId model
               ]
           Nothing -> text "??"
       )
@@ -117,12 +117,12 @@ viewTraversalMenu relTopicIds model =
       ++ menuStyle
     )
     (relTopicIds |> List.map
-      (\((id, assocId) as relTopic) ->
+      (\((topicId, assocId) as relTopic) ->
         let
-          isDisabled = isItemDisabled id model
+          isDisabled = isItemDisabled topicId model
           isHover = isRelTopicHover relTopic model
         in
-        case Topic.fromId id model of
+        case Topic.fromId topicId model of
           Just topic ->
             div
               ( [ onClick <| Search <| SearchDef.RelTopicClicked relTopic
@@ -133,7 +133,7 @@ viewTraversalMenu relTopicIds model =
               )
               [ viewTopicIcon topic model
               , viewItemText topic -- TODO: render assoc info
-              , viewFullscreenButton (toTopicId id) model
+              , viewFullscreenButton topicId model
               ]
           Nothing -> text "??"
       )
@@ -204,25 +204,25 @@ viewItemText topic =
     [ text <| Topic.label topic ]
 
 
-viewFullscreenButton : Id -> Model -> Html Msg
-viewFullscreenButton id model =
+viewFullscreenButton : TopicId -> Model -> Html Msg
+viewFullscreenButton topicId model =
   let
-    isDisabled = model.boxId == id
+    isDisabled = fromBoxId model.boxId == topicId
   in
-  case Topic.isBox id model of
-    True ->
-      button
-        ( [ class "tool"
-          , title "Fullscreen"
-          , disabled isDisabled
-          , U.onClickStop <| Search <| SearchDef.Fullscreen id -- don't trigger menu item
-          , U.onPointerOverStop NoOp -- don't highlight menu item along with button
-          , U.onPointerOutStop NoOp -- don't highlight menu item along with button
-          ]
-          ++ fullscreenButtonStyle
-        )
-        [ Icon.view "maximize-2" 16 [] ]
-    False -> text ""
+  if Topic.isBox topicId model then
+    button
+      ( [ class "tool"
+        , title "Fullscreen"
+        , disabled isDisabled      -- don't trigger menu item ↓
+        , U.onClickStop <| Search <| SearchDef.Fullscreen (BoxId topicId)
+        , U.onPointerOverStop NoOp -- don't highlight menu item along with button
+        , U.onPointerOutStop NoOp -- don't highlight menu item along with button
+        ]
+        ++ fullscreenButtonStyle
+      )
+      [ Icon.view "maximize-2" 16 [] ]
+  else
+    text ""
 
 
 fullscreenButtonStyle : Attrs Msg
@@ -236,7 +236,7 @@ fullscreenButtonStyle =
 isItemDisabled : TopicId -> Model -> Bool
 isItemDisabled topicId model =
   case TM.revelationBoxId model of
-    Just boxId -> Box.hasDeepItem (toTopicId topicId) boxId model
+    Just (BoxId topicId_) -> Box.hadDeepTopic topicId_ topicId model
     Nothing -> False
 
 

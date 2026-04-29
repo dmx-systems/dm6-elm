@@ -44,7 +44,9 @@ create mapId model =
 
 create_ : TopicMap -> Model -> Model
 create_ map ({topicMap} as model) =
-  { model | topicMap = topicMap |> Dict.insert map.id map }
+  { model | topicMap = topicMap
+    |> Dict.insert (toBoxId map.id) map
+  }
 
 
 topics : TopicMap -> Model -> List MapTopic
@@ -210,7 +212,7 @@ mapTopic_ topicId map =
   case mapTopicOrNothing topicId map of
     Just topic -> Just topic
     Nothing -> U.logError "TopicMap.TopicMap.mapTopic_"
-      ("Missing MapTopic " ++ U.toString topicId ++ " in " ++ fromInt map.id) Nothing
+      ("Missing MapTopic " ++ U.toString topicId ++ " in " ++ fromInt (toBoxId map.id)) Nothing
 
 
 mapTopicOrNothing : TopicId -> TopicMap -> Maybe MapTopic
@@ -238,7 +240,7 @@ fullscreen model =
 {-| Logs an error if TopicMap does not exist. -}
 byId : BoxId -> Model -> Maybe TopicMap
 byId mapId model =
-  case model.topicMap |> Dict.get mapId of
+  case model.topicMap |> Dict.get (toBoxId mapId) of
     Just map -> Just map
     Nothing -> U.boxNotFound "TopicMap.byId" mapId Nothing
 
@@ -266,8 +268,8 @@ Logs an error if TopicMap does not exist.
 -}
 updateTopicMap : BoxId -> (TopicMap -> TopicMap) -> Model -> Model
 updateTopicMap mapId transform ({topicMap} as model) =
-  { model | topicMap =
-    topicMap |> Dict.update mapId
+  { model | topicMap = topicMap
+    |> Dict.update (toBoxId mapId)
       (\maybeMap ->
         case maybeMap of
           Just map -> Just (transform map)
@@ -305,4 +307,4 @@ landingTarget model =
   case Sel.landingBoxPath model of
     [] -> Nothing
     [ boxId ] -> Nothing -- The fullscreen box is never selected
-    boxId :: boxPath -> Just (fromTopicId boxId, boxPath)
+    BoxId topicId :: boxPath -> Just (T topicId, boxPath)

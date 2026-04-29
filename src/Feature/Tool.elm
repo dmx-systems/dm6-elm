@@ -207,7 +207,7 @@ viewToolbar boxPath ({model, ext} as env) =
                 let
                   pos = toolbar.topic topic
                 in
-                case (Text.isEdit id boxPath model, Topic.isBox (toTopicId id) model) of
+                case (Text.isEdit id boxPath model, Topic.isBox id model) of
                   (False, _) -> [ viewTopicToolbar pos id boxPath env ]
                   (True, False) -> [ viewTextToolbar pos id boxPath ]
                   _ -> []
@@ -226,9 +226,9 @@ viewToolbar boxPath ({model, ext} as env) =
 
 
 viewTopicToolbar : Point -> TopicId -> BoxPath -> Env2 -> Html Msg
-viewTopicToolbar pos ((TopicId topicId) as id) boxPath ({model, ext}) =
+viewTopicToolbar pos topicId boxPath ({model, ext}) =
   let
-    target = (T id, boxPath)
+    target = (T topicId, boxPath)
     topicTools =
       [ viewButton "Edit" "edit-3" ToolDef.Edit False target
       , viewButton "Select Icon" "smile" ToolDef.Icon False target
@@ -239,7 +239,7 @@ viewTopicToolbar pos ((TopicId topicId) as id) boxPath ({model, ext}) =
       ]
     boxTools =
       if Topic.isBox topicId model then
-        case Box.rendererOf topicId model of
+        case Box.rendererOf (BoxId topicId) model of
           Just renderer ->
             [ viewRendererSelect renderer (Tool << ToolDef.RendererSelected) ext ]
           Nothing -> []
@@ -535,19 +535,20 @@ remove_ (itemId, boxPath) model =
     A id -> Box.removeAssoc id boxId model
 
 
-fullscreen : Id -> Model -> (Model, Cmd Msg)
+fullscreen : TopicId -> Model -> (Model, Cmd Msg)
 fullscreen topicId model =
-  ( model |> createBoxOnDemand topicId
-  , Nav.pushUrl topicId
+  ( model
+      |> createBoxOnDemand topicId
+  , Nav.pushUrl (BoxId topicId)
   )
 
 
 setRenderer : Renderer -> Env -> Model
 setRenderer renderer ({model} as env) =
   case Sel.single model of
-    Just (T (TopicId id), _) ->
+    Just (T topicId, _) ->
       model
-        |> Box.setRenderer id renderer
+        |> Box.setRenderer (BoxId topicId) renderer
         |> Env.autoSize env
     _ -> U.logError "Feature.Tool.setRenderer" "called when there is no single topic selection"
       model
@@ -567,11 +568,11 @@ toggleExpansion topicId boxId ({model} as env) =
 
 --
 
-createBoxOnDemand : Id -> Model -> Model
+createBoxOnDemand : TopicId -> Model -> Model
 createBoxOnDemand topicId model =
   if Topic.isBox topicId model then
     model
   else
     model
       |> Box.turnTopicIntoBox topicId
-      |> TM.create topicId
+      |> TM.create (BoxId topicId)

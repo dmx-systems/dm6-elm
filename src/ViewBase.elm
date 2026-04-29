@@ -20,7 +20,7 @@ boxStyle boxId size boxPath model =
     nestedBoxStyle boxId size boxPath model
 
 
-nestedBoxStyle : Id -> Size -> BoxPath -> Model -> Attrs Msg
+nestedBoxStyle : BoxId -> Size -> BoxPath -> Model -> Attrs Msg
 nestedBoxStyle boxId size boxPath model =
   let
     r = fromInt C.whiteBoxRadius ++ "px"
@@ -32,8 +32,8 @@ nestedBoxStyle boxId size boxPath model =
   , style "height" <| fromInt size.h ++ "px"
   , style "border-radius" <| "0 " ++ r ++ " " ++ r ++ " " ++ r
   ]
-  ++ topicBorderStyle (TopicId boxId) boxPath model
-  ++ selectionStyle (TopicId boxId) boxPath model
+  ++ topicBorderStyle (fromBoxId boxId) boxPath model
+  ++ selectionStyle (fromBoxId boxId) boxPath model
 
 
 topicBorderStyle : TopicId -> BoxPath -> Model -> Attrs Msg
@@ -43,7 +43,7 @@ topicBorderStyle id boxPath model =
     targeted = case model.mouse.dragState of
       -- can't move a topic to a box where it is already, can happen if mouse moves very quick
       -- can't create assoc when both topics are in different box
-      Drag DragTopic _ (boxId_ :: _) _ _ target -> isTarget_ target && boxId_ /= toTopicId id
+      Drag DragTopic _ (boxId_ :: _) _ _ target -> isTarget_ target && fromBoxId boxId_ /= id
       Drag DraftAssoc _ boxPath_ _ _ target -> isTarget_ target && boxPath_ == boxPath
       _ -> False
   in

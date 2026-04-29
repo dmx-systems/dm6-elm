@@ -43,7 +43,7 @@ type Msg
   | Traverse
   | Delete
   | Remove
-  | Fullscreen BoxId
+  | Fullscreen TopicId
   | RendererSelected Renderer -- box only
   | ToggleExpansion TopicId BoxId
   -- Text Tools

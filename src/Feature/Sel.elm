@@ -50,13 +50,13 @@ Can be the fullscreen box or a nested box.
 landingBoxPath : Model -> BoxPath
 landingBoxPath model =
   case single model of
-    Just (T (TopicId id as topicId), boxPath) ->
+    Just (T topicId, boxPath) ->
       let
         boxId = Box.firstId boxPath
         isExpanded = Box.expansionOf topicId boxId model == Expanded
       in
-      if Topic.isBox id model && isExpanded then
-        id :: boxPath
+      if Topic.isBox topicId model && isExpanded then
+        BoxId topicId :: boxPath
       else
         [ model.boxId ]
     _ -> [ model.boxId ]

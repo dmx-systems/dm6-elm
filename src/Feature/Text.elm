@@ -131,7 +131,7 @@ switchTopicDisplay topicId boxId model =
   model
     |> Box.updateExpansion topicId boxId
       (\expansion ->
-        if Topic.isBox (toTopicId topicId) model then
+        if Topic.isBox topicId model then
           expansion
         else
           Expanded

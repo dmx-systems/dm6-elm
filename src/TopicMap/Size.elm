@@ -59,13 +59,13 @@ accumulateItem mapItem boxPath rectAcc ext model =
 
 calcItemRect : MapTopic -> BoxPath -> ExtManager -> Model -> (Rectangle, Model)
 calcItemRect ({pos, expansion} as topic) boxPath ext model =
-  case (Topic.isBox (toTopicId topic.id) model, expansion) of
+  case (Topic.isBox topic.id model, expansion) of
     (False, Collapsed) -> (topicExtent pos, model)
     (False, Expanded) -> (detailTopicExtent topic.id boxPath pos model, model)
     (True, Collapsed) -> (topicExtent pos, model)
     (True, Expanded) ->
       let
-        (rect_, model_) = ext.autoSize ((toTopicId topic.id) :: boxPath) model -- recursion
+        (rect_, model_) = ext.autoSize (BoxId topic.id :: boxPath) model -- recursion
       in
       (boxExtent pos rect_, model_)
 
@@ -180,9 +180,9 @@ setBoxRect boxId rect model =
 
 
 adjustBoxPos : BoxId -> BoxId -> Rectangle -> Rectangle -> Model -> Model
-adjustBoxPos boxId parentBoxId newRect oldRect model =
+adjustBoxPos (BoxId topicId) parentBoxId newRect oldRect model =
   model
-    |> TM.updateTopicPos (TopicId boxId) parentBoxId
+    |> TM.updateTopicPos topicId parentBoxId
       (\oldPos ->
         (Point
           (oldPos.x + newRect.x1 - oldRect.x1)

@@ -26,7 +26,7 @@ type alias Model =
   { topics : Dict Id Topic
   , assocs : Dict Id Assoc
   , itemSets: Dict Id ItemSet
-  , boxes : Dict BoxId Box
+  , boxes : Dict Id Box
   , boxId : BoxId -- the box rendered fullscreen
   , nextId : Id
   , imageCache : Dict ImageId String -- Int -> blob: URL ### TODO: move to Text module
@@ -51,7 +51,9 @@ init =
   { topics = Dict.singleton 0 rootTopic
   , assocs = Dict.empty
   , itemSets = Dict.singleton 1 <| ItemSet 1 []
-  , boxes = Dict.singleton rootBoxId <| Box rootBoxId 1 Dict.empty Extension.defaultRenderer
+  , boxes = Dict.singleton
+      (toBoxId rootBoxId)
+      (Box rootBoxId 1 Dict.empty Extension.defaultRenderer)
   , boxId = rootBoxId
   , nextId = 2
   , imageCache = Dict.empty -- TODO: move to Text module, but should survive a map switch
@@ -71,7 +73,7 @@ init =
 type Msg
   -- gestures detected by Mouse module
   = CreateAssoc TopicId TopicId BoxId
-  | MoveTopicToBox TopicId BoxId Point Id BoxPath
+  | TopicDropped TopicId BoxId Point TopicId BoxPath
   | TopicDragged
   | ItemClicked ItemId BoxPath
   | Cancel (Maybe Target)
@@ -101,7 +103,7 @@ encode model =
     , ("assocs", model.assocs |> Dict.values |> E.list encodeAssoc)
     , ("itemSets", model.itemSets |> Dict.values |> E.list encodeItemSet)
     , ("boxes", model.boxes |> Dict.values |> E.list encodeBox)
-    , ("boxId", E.int model.boxId)
+    , ("boxId", encodeBoxId model.boxId)
     , ("nextId", E.int model.nextId)
     -- box renderers
     , ("topicMap", TopicMapDef.encode model.topicMap)
@@ -117,8 +119,8 @@ decoder =
     |> required "topics" (toDictDecoderWith toTopicId topicDecoder)
     |> required "assocs" (toDictDecoderWith toAssocId assocDecoder)
     |> required "itemSets" (toDictDecoder itemSetDecoder)
-    |> required "boxes" (toDictDecoder boxDecoder)
-    |> required "boxId" D.int
+    |> required "boxes" (toDictDecoderWith toBoxId boxDecoder)
+    |> required "boxId" boxIdDecoder
     |> required "nextId" D.int
     |> hardcoded Dict.empty -- imageCache
     -- box renderers

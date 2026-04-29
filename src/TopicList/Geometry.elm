@@ -17,11 +17,11 @@ import Utils as U
 
 
 hitTest : BoxId -> BoxPath -> Point -> Maybe TopicId -> Env2 -> Maybe Target
-hitTest boxId boxPath pos excludeTopicId {model} =
+hitTest (BoxId topicId as boxId) boxPath pos excludeTopicId {model} =
   -- TODO
   let
     maybeThisItem : Bool -> Maybe Target
-    maybeThisItem found = if found then Just (fromTopicId boxId, boxPath) else Nothing
+    maybeThisItem found = if found then Just (T topicId, boxPath) else Nothing
   in
   if Box.isFullscreen boxId model then
     Nothing
@@ -60,9 +60,9 @@ autoSize boxPath {model} =
 topicCount : BoxId -> Model -> Int
 topicCount boxId model =
   Box.topicIds boxId model |> List.foldr
-    (\(TopicId id) acc ->
-      if Topic.isBox id model then
-        acc + 1 + topicCount id model
+    (\topicId acc ->
+      if Topic.isBox topicId model then
+        acc + 1 + topicCount (BoxId topicId) model -- recursion
       else
         acc + 1
     )
@@ -71,7 +71,9 @@ topicCount boxId model =
 
 setSize : BoxId -> Size -> Model -> Model
 setSize boxId size ({topicList} as model) =
-  { model | topicList = topicList |> Dict.insert boxId (TopicList boxId size) }
+  { model | topicList = topicList
+    |> Dict.insert (toBoxId boxId) (TopicList boxId size)
+  }
 
 
 

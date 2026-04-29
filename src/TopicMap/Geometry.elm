@@ -24,7 +24,7 @@ Returns the found topic/box (Id) and its context (BoxPath), or Nothing.
 If `excludeTopicId` is given that topic/box will be excluded from search.
 -}
 hitTest : BoxId -> BoxPath -> Point -> Maybe TopicId -> Env2 -> Maybe Target
-hitTest boxId boxPath pos excludeTopicId ({model} as env) =
+hitTest (BoxId topicId as boxId) boxPath pos excludeTopicId ({model} as env) =
   case TM.byId boxId model of
     Just map ->
       let
@@ -41,7 +41,7 @@ hitTest boxId boxPath pos excludeTopicId ({model} as env) =
               parentBoxId = Box.firstId boxPath
             in
             if isBoxRectHit pos map parentBoxId model then
-              Just (fromTopicId boxId, boxPath)
+              Just (T topicId, boxPath)
             else
               Nothing
     Nothing -> Nothing
@@ -51,26 +51,26 @@ testChildren : Point -> MapTopics -> BoxPath -> Maybe TopicId -> Env2 -> Maybe T
 testChildren pos topics boxPath excludeTopicId ({model, ext} as env) =
   case topics of
     [] -> Nothing
-    item :: tailItems ->
+    topic :: tailTopics ->
       let
         maybeItem : Bool -> Maybe Target
-        maybeItem found = if found then Just (T item.id, boxPath) else Nothing
+        maybeItem found = if found then Just (T topic.id, boxPath) else Nothing
         --
         boxId = Box.firstId boxPath
-        isHeaderHit = isTopicHeaderHit pos item.id boxId >> maybeItem
-        relPos = relPos_ pos (toTopicId item.id) boxPath
+        isHeaderHit = isTopicHeaderHit pos topic.id boxId >> maybeItem
+        relPos = relPos_ pos topic.id boxPath
         maybeTarget =
-          case (Topic.isBox (toTopicId item.id) model, Box.expansionOf item.id boxId model) of
+          case (Topic.isBox topic.id model, Box.expansionOf topic.id boxId model) of
             (True, Collapsed) -> isHeaderHit model
             (True, Expanded) ->
-              case ext.hitTest (toTopicId item.id) boxPath (relPos model) excludeTopicId model of
+              case ext.hitTest (BoxId topic.id) boxPath (relPos model) excludeTopicId model of
                 Just target -> Just target
                 Nothing -> isHeaderHit model
-            (False, _) -> isTopicHit item.id boxPath pos model |> maybeItem
+            (False, _) -> isTopicHit topic.id boxPath pos model |> maybeItem
         -- recursion
-        testTailItems = testChildren pos tailItems boxPath excludeTopicId
+        testTailItems = testChildren pos tailTopics boxPath excludeTopicId
       in
-      -- return item if successfully tested AND not excluded by filter
+      -- return topic if successfully tested AND not excluded by filter
       case (maybeTarget, excludeTopicId) of
         (Just ((targetId, _) as target), Just topicId) ->
           case targetId /= T topicId of
@@ -102,9 +102,9 @@ mapOffset pos map =
     (pos.y + map.rect.y1 + map.scroll.y)
 
 
-relPos_ : Point -> BoxId -> BoxPath -> Model -> Point
-relPos_ pos boxId boxPath model =
-  case TM.topicPos (TopicId boxId) (Box.firstId boxPath) model of
+relPos_ : Point -> TopicId -> BoxPath -> Model -> Point
+relPos_ pos topicId boxPath model =
+  case TM.topicPos topicId (Box.firstId boxPath) model of
     Just boxPos ->
       Point
         (pos.x - boxPos.x + C.topicW2)
@@ -138,7 +138,7 @@ isTopicDetailHit pos topicId boxId model =
 
 isBoxRectHit : Point -> TopicMap -> BoxId -> Model -> Bool
 isBoxRectHit pos map parentBoxId model =
-  case TM.topicPos (TopicId map.id) parentBoxId model of
+  case TM.topicPos (fromBoxId map.id) parentBoxId model of
     Just boxPos ->
       pos.x > 0 &&
       pos.x < map.rect.x2 - map.rect.x1 &&

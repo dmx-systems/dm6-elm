@@ -1,6 +1,6 @@
 module Box exposing (topics, topicIds, assocIds, turnTopicIntoBox, addTopic, addAssoc,
   removeTopic, removeAssoc, deleteTopic, deleteAssoc, expansionOf, updateExpansion, rendererOf,
-  setRenderer, hasItem, hasDeepItem, mapTitle, isFullscreen, elemId, firstId, fromPath)
+  setRenderer, hasItem, hadDeepTopic, mapTitle, isFullscreen, elemId, firstId, fromPath)
 
 import Assoc
 import Extension exposing (Renderer)
@@ -55,12 +55,12 @@ assocIds boxId model =
 
 -- Create box
 
-turnTopicIntoBox : Id -> Model -> Model
+turnTopicIntoBox : TopicId -> Model -> Model
 turnTopicIntoBox topicId model =
   let
     setId = model.nextId
     set = ItemSet setId []
-    box = Box topicId setId Dict.empty Extension.defaultRenderer
+    box = Box (BoxId topicId) setId Dict.empty Extension.defaultRenderer
   in
   model
     |> create box
@@ -70,7 +70,7 @@ turnTopicIntoBox topicId model =
 
 create : Box -> Model -> Model
 create box ({boxes} as model) =
-  { model | boxes = boxes |> Dict.insert box.id box }
+  { model | boxes = boxes |> Dict.insert (toBoxId box.id) box }
 
 
 createItemSet : ItemSet -> Model -> Model
@@ -127,7 +127,7 @@ createHierarchy itemId boxId model =
   case itemId of
     T topicId ->
         model
-          |> Assoc.create Hierarchy (TopicId boxId) topicId
+          |> Assoc.create Hierarchy (fromBoxId boxId) topicId
           |> Tuple.first
     A _ -> model
 
@@ -137,12 +137,12 @@ addToBoxTopics topic boxId ({boxes} as model) =
   if hasBoxTopic topic.id boxId model then
     model
   else
-    { model | boxes = boxes |> Dict.update boxId
+    { model | boxes = boxes |> Dict.update (toBoxId boxId)
       (\maybeBox ->
         case maybeBox of
           Just box -> Just
             { box | topics = box.topics
-                |> Dict.insert (toTopicId topic.id) topic
+              |> Dict.insert (toTopicId topic.id) topic
             }
           Nothing -> Nothing
       )
@@ -209,13 +209,12 @@ findHierarchy : TopicId -> BoxId -> AssocIds -> Model -> Maybe AssocId
 findHierarchy topicId boxId assocIds_ model =
   case assocIds_ of
     [] ->
-      U.logError "Box.findHierarchy"
-        ("Missing Hierarchy of " ++ U.toString topicId ++ " in Box " ++ fromInt boxId)
-        Nothing
+      U.logError "Box.findHierarchy" ("Missing Hierarchy association between Topic "
+        ++ fromInt (toTopicId topicId) ++ " and Box " ++ fromInt (toBoxId boxId)) Nothing
     assocId :: ids ->
       case Assoc.fromId assocId model of
         Just {id, assocType, topicId1, topicId2} ->
-          if assocType == Hierarchy && topicId1 == TopicId boxId && topicId2 == topicId then
+          if assocType == Hierarchy && topicId1 == fromBoxId boxId && topicId2 == topicId then
             Just id
           else
             findHierarchy topicId boxId ids model -- recursion
@@ -324,7 +323,7 @@ expansionOf topicId boxId model =
 
 updateExpansion : TopicId -> BoxId -> (Expansion -> Expansion) -> Model -> Model
 updateExpansion topicId boxId transform model =
-  { model | boxes = model.boxes |> Dict.update boxId
+  { model | boxes = model.boxes |> Dict.update (toBoxId boxId)
     (\maybeBox ->
       case maybeBox of
         Just box -> Just
@@ -352,7 +351,7 @@ rendererOf boxId model =
 
 setRenderer : BoxId -> Renderer -> Model -> Model
 setRenderer boxId renderer ({boxes} as model) =
-  { model | boxes = boxes |> Dict.update boxId
+  { model | boxes = boxes |> Dict.update (toBoxId boxId)
     (\maybeBox ->
       case maybeBox of
         Just box -> Just { box | renderer = renderer }
@@ -363,8 +362,8 @@ setRenderer boxId renderer ({boxes} as model) =
 
 --
 
-{-| Checks if an item is contained in a box's underlying ItemSet.
-Logs an error if the box or its ItemSet is absent.
+{-| Checks if an item (Topic or Assoc) is contained in a box's underlying ItemSet.
+Logs an error if the box or its ItemSet is missing.
 -}
 hasItem : ItemId -> BoxId -> Model -> Bool
 hasItem itemId boxId model =
@@ -375,24 +374,38 @@ hasItem itemId boxId model =
     Nothing -> False
 
 
-hasDeepItem : BoxId -> Id -> Model -> Bool
-hasDeepItem boxId itemId model =
-  if itemId == boxId then
+{-| Checks if a topic (1st parameter, the *needle*) is contained in a box (2nd parameter, the
+*haystack*), either directly or somewhere deep in its sub-boxes. Used for cycle detection.
+Note that the check is positive if the passed topic is the passed box itself.
+-}
+hadDeepTopic : TopicId -> TopicId -> Model -> Bool
+hadDeepTopic topicId boxId model =
+  if topicId == boxId then
     True
   else
     if Topic.isBox boxId model then
-      case itemSetOf boxId model of
+      case itemSetOf (BoxId boxId) model of
         Just itemSet -> itemSet.items |> List.any
-          (\setItem -> hasDeepItem (toId setItem.id) itemId model) -- recursion
+          (\setItem ->
+            case setItem.id of
+              T id -> hadDeepTopic topicId id model
+              A _ -> False
+          ) -- recursion
         Nothing -> False
     else
       False
 
 
+{-| Logs an error if the box is missing, or its underlying ItemSet is missing.
+-}
 itemSetOf : BoxId -> Model -> Maybe ItemSet
 itemSetOf boxId model =
   case byId boxId model of
-    Just box -> model.itemSets |> Dict.get box.itemSetId
+    Just box ->
+      case Dict.get box.itemSetId model.itemSets of
+        Just itemSet -> Just itemSet
+        Nothing -> U.logError "Box.itemSetOf" ("Missing underlying ItemSet ("
+          ++ fromInt box.itemSetId ++ ") of Box " ++ fromInt (toBoxId boxId)) Nothing
     Nothing -> U.fail "Box.itemSetOf" {boxId = boxId} Nothing
 
 
@@ -403,10 +416,10 @@ hasBoxTopic topicId boxId model =
     Nothing -> U.fail "Box.hasBoxTopic" {topicId = topicId, boxId = boxId} False
 
 
-{-| Logs an error if box does not exist. -}
+{-| Logs an error if the box is missing. -}
 byId : BoxId -> Model -> Maybe Box
 byId boxId model =
-  case model.boxes |> Dict.get boxId of
+  case model.boxes |> Dict.get (toBoxId boxId) of
     Just box -> Just box
     Nothing -> U.boxNotFound "Box.byId" boxId Nothing
 
@@ -416,7 +429,7 @@ topicFrom (TopicId id) box model =
   case box.topics |> Dict.get id of
     Just topic -> Just topic
     Nothing -> U.logError "Box.topicFrom"
-      ("Missing BoxTopic " ++ fromInt id ++ " in Box " ++ fromInt box.id)
+      ("Missing BoxTopic " ++ fromInt id ++ " in Box " ++ fromInt (toBoxId box.id))
       Nothing
 
 
@@ -425,7 +438,7 @@ TODO: rename
 -}
 mapTitle : Model -> String
 mapTitle model =
-  case Topic.fromId (TopicId model.boxId) model of
+  case Topic.fromId (fromBoxId model.boxId) model of
     Just topic -> Topic.label topic
     Nothing -> U.fail "mapTitle" model.boxId "??"
 
@@ -446,11 +459,11 @@ firstId : BoxPath -> BoxId
 firstId boxPath =
   case boxPath of
     boxId :: _ -> boxId
-    [] -> U.logError "firstId" "boxPath is empty!" -1
+    [] -> U.logError "firstId" "boxPath is empty!" (BoxId (TopicId -1)) -- ### FIXME: -1
 
 
 fromPath : BoxPath -> String
 fromPath boxPath =
   boxPath
-    |> List.map fromInt
+    |> List.map (fromInt << toBoxId)
     |> String.join ","

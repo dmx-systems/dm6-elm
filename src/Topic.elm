@@ -86,7 +86,7 @@ update topicId transform ({topics} as model) =
   }
 
 
-isBox : Id -> Model -> Bool
-isBox id model =
+isBox : TopicId -> Model -> Bool
+isBox (TopicId id) model =
   model.boxes
     |> Dict.member id

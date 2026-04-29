@@ -48,8 +48,8 @@ viewList boxPath model =
               )
               ( [ viewTopic topic boxPath model ]
                 ++
-                if Topic.isBox (toTopicId topic.id) model then
-                  [ viewList (toTopicId topic.id :: boxPath) model ]
+                if Topic.isBox topic.id model then
+                  [ viewList (BoxId topic.id :: boxPath) model ]
                 else
                   []
               )
@@ -98,6 +98,6 @@ listFontStyle =
 
 listSize : BoxId -> Model -> Size
 listSize boxId model =
-  case model.topicList |> Dict.get boxId of -- TODO: log error
+  case model.topicList |> Dict.get (toBoxId boxId) of -- TODO: log error
     Just {size} -> size
     Nothing -> Size 0 0

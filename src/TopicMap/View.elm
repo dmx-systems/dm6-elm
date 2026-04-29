@@ -227,7 +227,7 @@ viewTopic : Topic -> MapTopic -> BoxPath -> Env2 -> Html Msg
 viewTopic topic mapTopic boxPath ({model, ext}) =
   let
     render =
-      case (Topic.isBox (toTopicId topic.id) model, mapTopic.expansion) of
+      case (Topic.isBox topic.id model, mapTopic.expansion) of
         (False, Collapsed) -> labelTopic topic mapTopic boxPath
         (False, Expanded) -> detailTopic topic mapTopic boxPath
         (True, Collapsed) -> blackBoxTopic topic mapTopic boxPath
@@ -395,7 +395,7 @@ iconBoxStyle mapTopic model =
   let
     r1 = fromInt C.topicRadius ++ "px"
     r4 =
-      case (Topic.isBox (toTopicId mapTopic.id) model, mapTopic.expansion) of
+      case (Topic.isBox mapTopic.id model, mapTopic.expansion) of
         (True, Expanded) -> "0"
         _ -> r1
   in
@@ -430,7 +430,7 @@ blackBoxTopic topic mapTopic boxPath model =
   , [ div
       (topicFlexboxStyle mapTopic boxPath model)
       (viewLabelTopic topic mapTopic boxPath model
-        ++ viewItemCount (toTopicId topic.id) model
+        ++ viewItemCount (BoxId topic.id) model -- topic has proven to be a box by caller
       )
     , div
       (ghostTopicStyle topic boxPath model)
@@ -451,7 +451,7 @@ topicFlexboxStyle mapTopic boxPath model =
   let
     r12 = fromInt C.topicRadius ++ "px"
     r34 =
-      case (Topic.isBox (toTopicId mapTopic.id) model, mapTopic.expansion) of
+      case (Topic.isBox mapTopic.id model, mapTopic.expansion) of
         (True, Expanded) -> "0"
         _ -> r12
   in
@@ -486,8 +486,8 @@ whiteBoxTopic topic mapTopic boxPath ext model =
   in
   ( style
   , children
-    ++ viewItemCount (toTopicId topic.id) model
-    ++ [ ext.view (toTopicId topic.id) boxPath model ]
+    ++ viewItemCount (BoxId topic.id) model -- topic has proven to be a box by caller
+    ++ [ ext.view (BoxId topic.id) boxPath model ]
   )
 
 
@@ -570,7 +570,7 @@ accumulatePos posAcc boxId parentBoxId boxIds model =
   let
     {x, y} = accumulateRect posAcc boxId model
   in
-  case TM.topicPos (TopicId boxId) parentBoxId model of
+  case TM.topicPos (fromBoxId boxId) parentBoxId model of
     Just boxPos ->
       absPos -- recursion
         (parentBoxId :: boxIds)

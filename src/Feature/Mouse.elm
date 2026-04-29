@@ -157,21 +157,21 @@ mouseUp model =
   let
     cmd =
       case model.mouse.dragState of
-        Drag DragTopic id boxPath origPos _ (Just (T (TopicId targetId), targetPath)) ->
+        Drag DragTopic id boxPath origPos _ (Just (T targetId, targetPath)) ->
           let
             _ = U.info "Feature.Mouse.mouseUp" ("dropped " ++ fromInt (toTopicId id) ++ " (box "
-              ++ Box.fromPath boxPath ++ ") on " ++ fromInt targetId ++ " (box "
+              ++ Box.fromPath boxPath ++ ") on " ++ fromInt (toTopicId targetId) ++ " (box "
               ++ Box.fromPath targetPath ++ ") --> "
               ++ if shouldMoveToBox then "move topic to box" else "abort")
-            boxId = Box.firstId boxPath
+            (BoxId topicId as boxId) = Box.firstId boxPath
             -- When dragging a topic inside a nested box that box will be the target (this is
             -- since target is determined by map geometry, not by enter/leave events anymore).
             -- We distinguish a topic-moved-to-box from a topic-dragged-inside-box by comparing
             -- the dragged topic's parent box.
-            shouldMoveToBox = boxId /= targetId
+            shouldMoveToBox = topicId /= targetId
           in
           case shouldMoveToBox of
-            True -> U.command <| MoveTopicToBox id boxId origPos targetId targetPath
+            True -> U.command <| TopicDropped id boxId origPos targetId targetPath
             False -> U.command TopicDragged -- store topic pos
         Drag DragTopic _ _ _ _ _ ->
           let
@@ -240,13 +240,13 @@ enterLeave pos {model, ext} =
 enter : Target -> Model -> Model
 enter (targetId, targetPath) model =
   case targetId of
-    T (TopicId topicId) ->
+    T topicId ->
       let
         newModel =
           case model.mouse.dragState of
             Drag dragMode id boxPath origPos lastPos _ ->
               let
-                isCyclic = Box.hasDeepItem (toTopicId id) topicId model
+                isCyclic = Box.hadDeepTopic topicId id model
                 target =
                   -- the hovered item (targetId) is accepted as a drop target if it is
                   -- 1. not contained in item/box being dragged (id), this would create a cycle

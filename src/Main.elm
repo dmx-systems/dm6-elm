@@ -276,7 +276,7 @@ update msg ({present} as undoModel) =
     -- gestures detected by Mouse module
     CreateAssoc topicId1 topicId2 boxId -> createAssoc topicId1 topicId2 boxId present
       |> S.store |> Undo.push undoModel
-    MoveTopicToBox topicId boxId origPos targetId targetPath -> moveTopicToBox topicId boxId
+    TopicDropped topicId boxId origPos targetId targetPath -> moveTopicToBox topicId boxId
       origPos targetId targetPath present |> S.storeWith |> Undo.push undoModel
     TopicDragged -> present |> S.store |> Undo.swap undoModel
     ItemClicked itemId boxPath -> select itemId boxPath present |> Undo.swap undoModel
@@ -312,17 +312,19 @@ createAssocAndAddToBox assocType topicId1 topicId2 boxId model =
     |> Box.addAssoc assocId boxId
 
 
-moveTopicToBox : TopicId -> BoxId -> Point -> BoxId -> BoxPath -> Model -> (Model, Cmd Msg)
-moveTopicToBox topicId boxId origPos targetBoxId targetPath model =
+moveTopicToBox : TopicId -> BoxId -> Point -> TopicId -> BoxPath -> Model -> (Model, Cmd Msg)
+moveTopicToBox topicId boxId origPos targetTopicId targetPath model =
   let
+    targetBoxId = BoxId targetTopicId -- after createBoxOnDemand target topic is a box for sure
     expansion = Box.expansionOf topicId boxId model
   in
-  Tool.createBoxOnDemand targetBoxId model
+  model
+    |> Tool.createBoxOnDemand targetTopicId
     |> Box.addTopic (BoxTopic topicId expansion) targetBoxId
     |> Box.removeTopic topicId boxId
-    |> Sel.select (fromTopicId targetBoxId) targetPath
-    |> TM.setTopicPos topicId boxId origPos
-    |> TM.addTopic topicId targetBoxId Random
+    |> Sel.select (T targetTopicId) targetPath
+    |> TM.setTopicPos topicId boxId origPos -- TODO: dispatch via ExtManager
+    |> TM.addTopic topicId targetBoxId Random -- TODO: dispatch via ExtManager
 
 
 select : ItemId -> BoxPath -> Model -> (Model, Cmd Msg)

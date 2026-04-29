@@ -49,7 +49,7 @@ hashChanged hash ({model, undoModel} as env) =
       setFullscreenBox boxId env |> S.storeWith |> Undo.reset
     Nothing ->
       let
-        _ = U.info "hashChanged" <| "No hash -> redirect to " ++ fromInt model.boxId
+        _ = U.info "hashChanged" <| "No hash -> redirect to " ++ fromInt (toBoxId model.boxId)
       in
       (undoModel, pushUrl model.boxId)
 
@@ -87,7 +87,7 @@ Eventually the model.boxId will be updated, as a *result* of the route change.
 -}
 pushUrl : BoxId -> Cmd Msg
 pushUrl boxId =
-  setHash <| "#" ++ fromInt boxId
+  setHash <| "#" ++ fromInt (toBoxId boxId)
 
 
 boxIdFromHash : String -> Maybe BoxId
@@ -97,7 +97,7 @@ boxIdFromHash hash =
     False ->
       case String.startsWith "#" hash of
         True -> case String.dropLeft 1 hash |> String.toInt of
-          Just boxId -> Just boxId
+          Just boxId -> Just (BoxId (TopicId boxId))
           Nothing ->
             U.logError "boxIdFromHash" ("not a number after hash in \"" ++ hash ++ "\"") Nothing
         False -> U.logError "boxIdFromHash" ("\"" ++ hash ++ "\" is not a hash") Nothing

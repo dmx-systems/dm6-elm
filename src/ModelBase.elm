@@ -1,9 +1,10 @@
 module ModelBase exposing (Id, TopicId(..), AssocId(..), ItemId(..), AssocIds, Topic, Icon,
   TextSize, Size, SizeField(..), Point, Rectangle, Assoc, AssocType(..), ItemSet, SetItem, Box,
-  BoxId, BoxPath, Target, BoxTopic, Expansion(..), ImageId, Attrs, PointerType, Extensions,
-  ExtLabel, PosHint(..), ToolbarPos, fromTopicId, fromAssocId, toId, toTopicId, toAssocId,
-  rootBoxId, encodeTopic, encodeAssoc, encodeItemSet, encodeBox, topicDecoder, assocDecoder,
-  itemSetDecoder, boxDecoder, topicIdDecoder, toDictDecoder, toDictDecoderWith)
+  BoxId(..), BoxPath, Target, BoxTopic, Expansion(..), ImageId, Attrs, PointerType, Extensions,
+  ExtLabel, PosHint(..), ToolbarPos, fromTopicId, fromAssocId, fromBoxId, toId, toTopicId,
+  toAssocId, toBoxId, rootBoxId, encodeTopic, encodeAssoc, encodeItemSet, encodeBox,
+  encodeBoxId, topicDecoder, assocDecoder, itemSetDecoder, boxDecoder, topicIdDecoder,
+  boxIdDecoder, toDictDecoder, toDictDecoderWith)
 
 import Extension exposing (Renderer, encodeRenderer)
 
@@ -92,6 +93,10 @@ type ItemId
   | A AssocId
 
 
+type BoxId
+  = BoxId TopicId
+
+
 fromTopicId : Id -> ItemId
 fromTopicId topicId =
   T <| TopicId topicId
@@ -100,6 +105,11 @@ fromTopicId topicId =
 fromAssocId : Id -> ItemId
 fromAssocId assocId =
   A <| AssocId assocId
+
+
+fromBoxId : BoxId -> TopicId
+fromBoxId (BoxId id) =
+  id
 
 
 toId : ItemId -> Id
@@ -119,6 +129,11 @@ toAssocId (AssocId id) =
   id
 
 
+toBoxId : BoxId -> Id
+toBoxId (BoxId (TopicId id)) =
+  id
+
+
 type alias AssocIds = List AssocId
 type alias Icon = String -- name of feather icon, https://feathericons.com
 type alias ImageId = Int
@@ -128,14 +143,15 @@ type alias PointerType = String
 
 -- Box
 
-type alias BoxId = Id
 type alias BoxPath = List BoxId
+
+
 type alias Target = (ItemId, BoxPath)
 
 
 type alias Box =
   { id : BoxId
-  , itemSetId : Id
+  , itemSetId : Id --> ItemSet
   , topics : Dict Id BoxTopic
   -- Note: no "assocs" here as assocs have no renderer-independent view properties at the moment
   , renderer : Renderer
@@ -143,7 +159,8 @@ type alias Box =
 
 
 rootBoxId : BoxId
-rootBoxId = 0
+rootBoxId =
+  BoxId (TopicId 0)
 
 
 {-| Attaches renderer-independent view properties to a SetItem.
@@ -201,7 +218,7 @@ type alias ToolbarPos =
 encodeTopic : Topic -> E.Value
 encodeTopic {id, icon, text, size, assocIds} =
   E.object
-    [ ("id", E.int (toTopicId id))
+    [ ("id", encodeTopicId id)
     , ("icon", E.string <| Maybe.withDefault "" icon)
     , ("text", E.string text)
     , ("size", encodeTextSize size)
@@ -212,10 +229,10 @@ encodeTopic {id, icon, text, size, assocIds} =
 encodeAssoc : Assoc -> E.Value
 encodeAssoc {id, assocType, topicId1, topicId2} =
   E.object
-    [ ("id", E.int (toAssocId id))
+    [ ("id", encodeAssocId id)
     , ("type", encodeAssocType assocType)
-    , ("topicId1", E.int (toTopicId topicId1))
-    , ("topicId2", E.int (toTopicId topicId2))
+    , ("topicId1", encodeTopicId topicId1)
+    , ("topicId2", encodeTopicId topicId2)
     ]
 
 
@@ -263,7 +280,7 @@ encodeSetItem setItem =
 encodeBox : Box -> E.Value
 encodeBox box =
   E.object
-    [ ("id", E.int box.id)
+    [ ("id", encodeBoxId box.id)
     , ("itemSetId", E.int box.itemSetId)
     , ("topics", E.list encodeBoxTopic <| Dict.values box.topics)
     , ("renderer", encodeRenderer box.renderer)
@@ -273,7 +290,7 @@ encodeBox box =
 encodeBoxTopic : BoxTopic -> E.Value
 encodeBoxTopic topic =
   E.object
-    [ ("id", E.int (toTopicId topic.id))
+    [ ("id", encodeTopicId topic.id)
     , ("expansion", encodeExpansion topic.expansion)
     ]
 
@@ -284,6 +301,21 @@ encodeExpansion expansion =
     case expansion of
       Collapsed -> "Collapsed"
       Expanded -> "Expanded"
+
+
+encodeTopicId : TopicId -> E.Value
+encodeTopicId id =
+  E.int (toTopicId id)
+
+
+encodeAssocId : AssocId -> E.Value
+encodeAssocId id =
+  E.int (toAssocId id)
+
+
+encodeBoxId : BoxId -> E.Value
+encodeBoxId id =
+  E.int (toBoxId id)
 
 
 -- Decode
@@ -351,7 +383,7 @@ itemSetDecoder =
 boxDecoder : D.Decoder Box
 boxDecoder =
   D.map4 Box
-    (D.field "id" D.int)
+    (D.field "id" boxIdDecoder)
     (D.field "itemSetId" D.int)
     (D.field "topics" (toDictDecoderWith toTopicId boxTopicDecoder))
     (D.field "renderer" (Extension.rendererDecoder D.string))
@@ -398,6 +430,11 @@ topicIdDecoder =
 assocIdDecoder : D.Decoder AssocId
 assocIdDecoder =
   D.int |> D.map AssocId
+
+
+boxIdDecoder : D.Decoder BoxId
+boxIdDecoder =
+  D.int |> D.map TopicId |> D.map BoxId
 
 
 maybeString : String -> Maybe String

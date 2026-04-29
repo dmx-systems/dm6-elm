@@ -111,9 +111,9 @@ assocNotFound funcName id val =
   notFound funcName "Assoc" (toAssocId id) val
 
 
-boxNotFound : String -> Id -> a -> a
+boxNotFound : String -> BoxId -> a -> a
 boxNotFound funcName id val =
-  notFound funcName "Box" id val
+  notFound funcName "Box" (toBoxId id) val
 
 
 itemSetNotFound : String -> Id -> a -> a
