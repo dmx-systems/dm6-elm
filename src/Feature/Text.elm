@@ -4,7 +4,7 @@ port module Feature.Text exposing (viewInput, viewTextarea, enterEdit, leaveEdit
 import Box
 import Config as C
 import Env exposing (Env)
-import Feature.TextDef as TextDef exposing (EditState(..))
+import Feature.TextDef as TextDef exposing (EditState(..), TopicImage)
 import Model exposing (Model, Msg(..))
 import ModelBase exposing (..)
 import Storage as S
@@ -19,6 +19,7 @@ import Html exposing (Html, input, textarea, text)
 import Html.Attributes exposing (id, value, placeholder)
 import Html.Events exposing (onInput)
 import Json.Decode as D
+import Json.Encode as E
 import Markdown.Block as Block exposing (Block)
 import Markdown.Parser as Parser
 import Markdown.Renderer as Renderer
@@ -29,9 +30,9 @@ import String exposing (fromInt)
 -- PORTS
 
 
-port imageFilePicker : (Id, ImageId) -> Cmd msg
+port imageFilePicker : E.Value -> Cmd msg
 
-port onPickImageFile : ((Id, ImageId) -> msg) -> Sub msg
+port onPickImageFile : (E.Value -> msg) -> Sub msg
 
 
 
@@ -40,7 +41,24 @@ port onPickImageFile : ((Id, ImageId) -> msg) -> Sub msg
 
 sub : Sub Msg
 sub =
-  onPickImageFile (Text << TextDef.ImageFilePicked)
+  onPickImageFile
+    (\value ->
+      case value |> D.decodeValue topicImageDecoder of
+        Ok topicImage ->
+          topicImage |> TextDef.ImageFilePicked |> Text
+        Err e ->
+          let
+            _ = U.logError "Feature.Text.sub" "decoding onPickImageFile" e
+          in
+          NoOp
+    )
+
+
+topicImageDecoder : D.Decoder TopicImage
+topicImageDecoder =
+  D.map2 TopicImage
+    (D.field "topicId" topicIdDecoder)
+    (D.field "imageId" D.int)
 
 
 
@@ -95,7 +113,7 @@ update msg ({model, undoModel, ext} as env) =
         |> S.store
         |> Undo.swap undoModel
     TextDef.LeaveEdit -> leaveEdit env |> Undo.swap undoModel
-    TextDef.ImageFilePicked (topicId, imageId) -> insertImage (TopicId topicId) imageId model
+    TextDef.ImageFilePicked {topicId, imageId} -> insertImage topicId imageId model
       |> Undo.swap undoModel
 
 
@@ -229,12 +247,18 @@ markdown source model =
 
 
 openImageFilePicker : TopicId -> Model -> (Model, Cmd Msg)
-openImageFilePicker topicId model =
+openImageFilePicker (TopicId topicId) model =
   let
     imageId = model.nextId
   in
-  ( model |> Model.nextId
-  , imageFilePicker (toTopicId topicId, imageId)
+  ( model
+      |> Model.nextId
+  , imageFilePicker
+      ( E.object
+          [ ("topicId", E.int topicId)
+          , ("imageId", E.int imageId)
+          ]
+      )
   )
 
 

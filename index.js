@@ -159,12 +159,12 @@ fpInput.addEventListener('change', async () => {
   const blob = await blobFromFile(file)
   const topicId = Number(fpInput.dataset.topicId)
   const imageId = Number(fpInput.dataset.imageId)
-  app.ports.onPickImageFile.send([topicId, imageId])
+  app.ports.onPickImageFile.send({topicId, imageId})
   resolveImage(imageId, blob)
   storeImage(imageId, blob)             // don't need to wait for completion
 })
 document.body.appendChild(fpInput)
-app.ports.imageFilePicker.subscribe(([topicId, imageId]) => {
+app.ports.imageFilePicker.subscribe(({topicId, imageId}) => {
   console.log('$$imageFilePicker', 'topicId', topicId, 'imageId', imageId)
   fpInput.dataset.topicId = topicId     // update value before clicking
   fpInput.dataset.imageId = imageId     // update value before clicking

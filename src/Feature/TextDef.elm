@@ -1,4 +1,4 @@
-module Feature.TextDef exposing (Model, Msg(..), EditState(..), init)
+module Feature.TextDef exposing (Model, Msg(..), EditState(..), TopicImage, init)
 
 import ModelBase exposing (..)
 
@@ -27,4 +27,10 @@ type Msg
   | OnTextareaInput String
   | GotTextSize Id SizeField Size
   | LeaveEdit
-  | ImageFilePicked (Id, ImageId)
+  | ImageFilePicked TopicImage
+
+
+type alias TopicImage =
+  { topicId : TopicId
+  , imageId : Id
+  }

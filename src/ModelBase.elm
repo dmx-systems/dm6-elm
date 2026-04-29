@@ -424,17 +424,17 @@ toDictDecoderWith unwrapId entityDecoder =
 
 topicIdDecoder : D.Decoder TopicId
 topicIdDecoder =
-  D.int |> D.map TopicId
+  D.map TopicId D.int
 
 
 assocIdDecoder : D.Decoder AssocId
 assocIdDecoder =
-  D.int |> D.map AssocId
+  D.map AssocId D.int
 
 
 boxIdDecoder : D.Decoder BoxId
 boxIdDecoder =
-  D.int |> D.map TopicId |> D.map BoxId
+  D.map (BoxId << TopicId) D.int
 
 
 maybeString : String -> Maybe String
