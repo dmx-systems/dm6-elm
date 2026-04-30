@@ -29,7 +29,6 @@ type alias Model =
   , boxes : Dict Id Box
   , boxId : BoxId -- the box rendered fullscreen
   , nextId : Id
-  , imageCache : Dict ImageId String -- Int -> blob: URL ### TODO: move to Text module
   -- box renderers
   , topicMap : TopicMapDef.Model
   , topicList : TopicListDef.Model
@@ -56,7 +55,6 @@ init =
       (Box rootBoxId 1 Dict.empty Extension.defaultRenderer)
   , boxId = rootBoxId
   , nextId = 2
-  , imageCache = Dict.empty -- TODO: move to Text module, but should survive a map switch
   -- renderer modules
   , topicMap = TopicMapDef.init
   , topicList = TopicListDef.init
@@ -88,7 +86,6 @@ type Msg
   | Nav NavDef.Msg
   --
   | Scrolled Point
-  | UrlResolved (ImageId, String)
   | NoOp
 
 
@@ -122,7 +119,6 @@ decoder =
     |> required "boxes" (toDictDecoderWith toBoxId boxDecoder)
     |> required "boxId" boxIdDecoder
     |> required "nextId" D.int
-    |> hardcoded Dict.empty -- imageCache
     -- box renderers
     |> required "topicMap" TopicMapDef.decoder
     |> required "topicList" TopicListDef.decoder

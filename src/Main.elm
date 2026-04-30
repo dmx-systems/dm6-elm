@@ -35,8 +35,6 @@ import String exposing (fromInt, fromFloat)
 
 port onScroll : (Point -> msg) -> Sub msg
 
-port onResolveUrl : ((ImageId, String) -> msg) -> Sub msg
-
 
 
 -- MAIN
@@ -53,7 +51,6 @@ main =
           [ Text.sub
           , Nav.sub
           , onScroll Scrolled
-          , onResolveUrl UrlResolved
           ]
         )
     }
@@ -292,7 +289,6 @@ update msg ({present} as undoModel) =
     Nav navMsg -> Nav.update navMsg env
     --
     Scrolled pos -> updateScrollPos pos present |> S.store |> Undo.swap undoModel
-    UrlResolved (imageId, url) -> cacheImageUrl imageId url present |> Undo.swap undoModel
     NoOp -> (undoModel, Cmd.none)
 
 
@@ -368,10 +364,3 @@ cancelUIWith maybeTarget ({model} as env) =
 updateScrollPos : Point -> Model -> Model
 updateScrollPos pos model =
   TM.updateScrollPos model.boxId (\_ -> pos) model
-
-
-cacheImageUrl : ImageId -> String -> Model -> (Model, Cmd Msg)
-cacheImageUrl imageId url model =
-  ( { model | imageCache = model.imageCache |> Dict.insert imageId url }
-  , Cmd.none
-  )

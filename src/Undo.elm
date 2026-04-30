@@ -19,6 +19,7 @@ type alias UndoModel = UndoList Model
 undo : UndoModel -> UndoModel
 undo undoModel =
   UndoList.undo undoModel
+  -- TODO: reset some transient state, e.g. close search menu
 
 
 redo : UndoModel -> UndoModel

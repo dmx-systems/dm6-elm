@@ -126,11 +126,6 @@ notFound funcName item id val =
   logError funcName (item ++ " " ++ fromInt id ++ " not found") val
 
 
-itemNotInBox : String -> Id -> Id -> a -> a
-itemNotInBox funcName itemId boxId val =
-  logError funcName ("item " ++ fromInt itemId ++ " not in box " ++ fromInt boxId) val
-
-
 --
 
 logError : String -> String -> v -> v

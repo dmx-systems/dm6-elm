@@ -159,7 +159,7 @@ fpInput.addEventListener('change', async () => {
   const blob = await blobFromFile(file)
   const topicId = Number(fpInput.dataset.topicId)
   const imageId = Number(fpInput.dataset.imageId)
-  app.ports.onPickImageFile.send({topicId, imageId})
+  app.ports.onImageFilePicked.send({topicId, imageId})
   resolveImage(imageId, blob)
   storeImage(imageId, blob)             // don't need to wait for completion
 })
@@ -252,7 +252,7 @@ function resolveAllImages() {   // TODO: resolve selectively
 }
 
 function resolveImage(id, blob) {
-  app.ports.onResolveUrl.send(
+  app.ports.onImageUrlResolved.send(
     [id, URL.createObjectURL(blob)]
   )
 }

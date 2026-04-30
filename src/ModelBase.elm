@@ -1,10 +1,9 @@
 module ModelBase exposing (Id, TopicId(..), AssocId(..), ItemId(..), AssocIds, Topic, Icon,
   TextSize, Size, SizeField(..), Point, Rectangle, Assoc, AssocType(..), ItemSet, SetItem, Box,
   BoxId(..), BoxPath, Target, BoxTopic, Expansion(..), ImageId, Attrs, PointerType, Extensions,
-  ExtLabel, PosHint(..), ToolbarPos, fromTopicId, fromAssocId, fromBoxId, toId, toTopicId,
-  toAssocId, toBoxId, rootBoxId, encodeTopic, encodeAssoc, encodeItemSet, encodeBox,
-  encodeBoxId, topicDecoder, assocDecoder, itemSetDecoder, boxDecoder, topicIdDecoder,
-  boxIdDecoder, toDictDecoder, toDictDecoderWith)
+  ExtLabel, PosHint(..), ToolbarPos, toTopicId, toAssocId, toBoxId, fromBoxId, rootBoxId,
+  encodeTopic, encodeAssoc, encodeItemSet, encodeBox, encodeBoxId, topicDecoder, assocDecoder,
+  itemSetDecoder, boxDecoder, topicIdDecoder, boxIdDecoder, toDictDecoder, toDictDecoderWith)
 
 import Extension exposing (Renderer, encodeRenderer)
 
@@ -97,28 +96,6 @@ type BoxId
   = BoxId TopicId
 
 
-fromTopicId : Id -> ItemId
-fromTopicId topicId =
-  T <| TopicId topicId
-
-
-fromAssocId : Id -> ItemId
-fromAssocId assocId =
-  A <| AssocId assocId
-
-
-fromBoxId : BoxId -> TopicId
-fromBoxId (BoxId id) =
-  id
-
-
-toId : ItemId -> Id
-toId itemId =
-  case itemId of
-    T id -> toTopicId id
-    A id -> toAssocId id
-
-
 toTopicId : TopicId -> Id
 toTopicId (TopicId id) =
   id
@@ -131,6 +108,11 @@ toAssocId (AssocId id) =
 
 toBoxId : BoxId -> Id
 toBoxId (BoxId (TopicId id)) =
+  id
+
+
+fromBoxId : BoxId -> TopicId
+fromBoxId (BoxId id) =
   id
 
 

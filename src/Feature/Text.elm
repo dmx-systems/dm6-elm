@@ -30,9 +30,11 @@ import String exposing (fromInt)
 -- PORTS
 
 
-port imageFilePicker : E.Value -> Cmd msg
+port imageFilePicker : E.Value -> Cmd msg -- value is {topicId, imageId} (TopicImage)
 
-port onPickImageFile : (E.Value -> msg) -> Sub msg
+port onImageFilePicked : (E.Value -> msg) -> Sub msg -- value is {topicId, imageId} (TopicImage)
+
+port onImageUrlResolved : ((ImageId, String) -> msg) -> Sub msg
 
 
 
@@ -41,17 +43,22 @@ port onPickImageFile : (E.Value -> msg) -> Sub msg
 
 sub : Sub Msg
 sub =
-  onPickImageFile
-    (\value ->
-      case value |> D.decodeValue topicImageDecoder of
-        Ok topicImage ->
-          topicImage |> TextDef.ImageFilePicked |> Text
-        Err e ->
-          let
-            _ = U.logError "Feature.Text.sub" "decoding onPickImageFile" e
-          in
-          NoOp
-    )
+  Sub.batch
+    [ onImageFilePicked decodeTopicImage
+    , onImageUrlResolved (Text << TextDef.ImageUrlResolved)
+    ]
+
+
+decodeTopicImage : E.Value -> Msg
+decodeTopicImage value =
+  case D.decodeValue topicImageDecoder value of
+    Ok topicImage ->
+      (Text << TextDef.ImageFilePicked) topicImage
+    Err e ->
+      let
+        _ = U.logError "Feature.Text.sub" "decoding onImageFilePicked" e
+      in
+      NoOp
 
 
 topicImageDecoder : D.Decoder TopicImage
@@ -114,6 +121,8 @@ update msg ({model, undoModel, ext} as env) =
         |> Undo.swap undoModel
     TextDef.LeaveEdit -> leaveEdit env |> Undo.swap undoModel
     TextDef.ImageFilePicked {topicId, imageId} -> insertImage topicId imageId model
+      |> Undo.swap undoModel
+    TextDef.ImageUrlResolved (imageId, url) -> (addToImageCache imageId url model, Cmd.none)
       |> Undo.swap undoModel
 
 
@@ -232,6 +241,11 @@ setMeasureText text_ ({text} as model) =
   { model | text = { text | measure = text_ }}
 
 
+addToImageCache : ImageId -> String -> Model -> Model
+addToImageCache imageId url ({text} as model) =
+  { model | text = { text | imageCache = text.imageCache |> Dict.insert imageId url }}
+
+
 
 -- MARKDOWN
 
@@ -295,7 +309,7 @@ resolveImageUrl url title altInlines model =
     newUrl =
       case imageIdFromUrl url of
         Just imageId ->
-          case model.imageCache |> Dict.get imageId of
+          case model.text.imageCache |> Dict.get imageId of
             Just blobUrl -> blobUrl
             Nothing ->
               let
