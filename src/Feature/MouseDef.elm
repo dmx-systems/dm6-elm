@@ -7,7 +7,7 @@ import Time
 
 type alias Model =
   { dragState : DragState
-  , hover : Maybe Target
+  , hover : Maybe Target -- TODO: make it explicitly TopicTarget?
   }
 
 

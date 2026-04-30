@@ -296,7 +296,8 @@ setHover hover ({mouse} as model) =
 
 clearHover : Model -> Model
 clearHover model =
-  model |> setHover Nothing
+  model
+    |> setHover Nothing
 
 
 isDragInProgress : Model -> Bool
@@ -306,9 +307,9 @@ isDragInProgress model =
     _ -> False
 
 
-isHovered : TopicId -> BoxId -> Model -> Bool
-isHovered topicId boxId model =
+isHovered : TopicId -> BoxPath -> Model -> Bool
+isHovered topicId boxPath model =
   case model.mouse.hover of
-    Just (T topicId_, boxId_ :: _ ) ->
-      topicId == topicId_ && boxId == boxId_ -- TODO: box path?
+    Just (T topicId_, boxPath_) ->
+      topicId == topicId_ && boxPath == boxPath_
     _ -> False

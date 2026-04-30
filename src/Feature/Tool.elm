@@ -218,7 +218,7 @@ viewToolbar boxPath ({model, ext} as env) =
                 let
                   pos = toolbar.assoc assoc
                 in
-                [ viewAssocToolbar pos id boxPath ]
+                [ viewAssocToolbar pos assoc boxPath ]
               Nothing -> []
       else
         []
@@ -300,14 +300,14 @@ viewTextToolbar pos topicId boxPath =
     ]
 
 
-viewAssocToolbar : Point -> AssocId -> BoxPath -> Html Msg
-viewAssocToolbar pos assocId boxPath =
+viewAssocToolbar : Point -> Assoc -> BoxPath -> Html Msg
+viewAssocToolbar pos assoc boxPath =
   let
-    target = (A assocId, boxPath)
+    target = (A assoc.id, boxPath)
   in
   div
     ( toolbarStyle pos )
-    [ viewButton "Delete" "trash" ToolDef.Delete False target
+    [ viewButton "Delete" "trash" ToolDef.Delete (assoc.assocType == Hierarchy) target
     , viewButton "Remove" "x" ToolDef.Remove False target
     ]
 
@@ -332,7 +332,7 @@ viewTopicTools : TopicId -> BoxPath -> Model -> List (Html Msg)
 viewTopicTools topicId boxPath model =
   let
     boxId = Box.firstId boxPath
-    isHovered = Mouse.isHovered topicId boxId model -- TODO: use boxPath
+    isHovered = Mouse.isHovered topicId boxPath model
     isDrag = Mouse.isDragInProgress model
     isEdit = Text.isEdit topicId boxPath model
   in

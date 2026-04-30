@@ -346,9 +346,11 @@ cancelUIWith maybeTarget ({model} as env) =
   let
     isTargeted =
       case maybeTarget of
-        Just (T topicId as itemId, boxId :: _ as boxPath) ->
+        Just (T topicId as itemId, boxPath) ->
           Sel.isSelected itemId boxPath model ||
-          Mouse.isHovered topicId boxId model
+          Mouse.isHovered topicId boxPath model
+        Just (A _ as itemId, boxPath) ->
+          Sel.isSelected itemId boxPath model
         _ -> False
   in
   if isTargeted then
