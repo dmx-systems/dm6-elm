@@ -26,20 +26,17 @@ view : BoxId -> BoxPath -> Env2 -> Html Msg
 view boxId boxPath ({model} as env) =
   div
     ( listStyle boxId boxPath model )
-    ( [ viewList (boxId :: boxPath) model ]
-      ++ Tool.viewToolbar (boxId :: boxPath) env -- TODO
-    )
+    ( viewList (boxId :: boxPath) env )
 
 
-viewList : BoxPath -> Model -> Html Msg
-viewList boxPath model =
+viewList : BoxPath -> Env2 -> List (Html Msg)
+viewList boxPath ({model} as env) =
   let
     boxId = Box.firstId boxPath
   in
-  ul
-    []
-    ( Box.topics boxId model
-        |> List.map
+  [ ul
+      []
+      ( Box.topics boxId model |> List.map
           (\topic ->
             li
               ( Mouse.itemClickHandler (T topic.id) boxPath
@@ -49,12 +46,14 @@ viewList boxPath model =
               ( [ viewTopic topic boxPath model ]
                 ++
                 if Topic.isBox topic.id model then
-                  [ viewList (BoxId topic.id :: boxPath) model ]
+                  viewList (BoxId topic.id :: boxPath) env
                 else
                   []
               )
           )
-    )
+      )
+  ]
+  ++ Tool.viewToolbar boxPath env
 
 
 viewTopic : Topic -> BoxPath -> Model -> Html Msg
