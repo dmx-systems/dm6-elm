@@ -35,7 +35,6 @@ type alias Model =
   -- feature modules
   , tool : ToolDef.Model
   , text : TextDef.Model
-  , mouse : MouseDef.Model
   , search : SearchDef.Model
   , icon : IconDef.Model
   , selection : SelDef.Model
@@ -61,7 +60,6 @@ init =
   -- feature modules
   , tool = ToolDef.init
   , text = TextDef.init
-  , mouse = MouseDef.init
   , search = SearchDef.init
   , icon = IconDef.init
   , selection = SelDef.init
@@ -125,7 +123,6 @@ decoder =
     -- feature modules
     |> required "tool" ToolDef.decoder
     |> hardcoded TextDef.init
-    |> hardcoded MouseDef.init
     |> hardcoded SearchDef.init
     |> hardcoded IconDef.init
     |> hardcoded SelDef.init

@@ -5,19 +5,6 @@ import Time
 
 
 
-type alias Model =
-  { dragState : DragState
-  , hover : Maybe Target -- TODO: make it explicitly TopicTarget?
-  }
-
-
-init : Model
-init =
-  { dragState = NoDrag
-  , hover = Nothing
-  }
-
-
 type DragState
   = WaitForStartTime TopicId BoxPath Point -- start point (mouse)
   | DragEngaged Time.Posix TopicId BoxPath Point -- start point (mouse)

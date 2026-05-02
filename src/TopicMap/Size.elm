@@ -143,7 +143,7 @@ updateBoxGeometry boxPath newRect oldRect model =
     boxId :: parentBoxId :: _ ->
       let
         (isDragInProgress, isOnDragPath, isBoxInDragPath) =
-          case model.mouse.dragState of
+          case model.topicMap.dragState of
             Drag DragTopic _ dragPath _ _ _ ->
               (True
               , (dragPath |> List.drop (List.length dragPath - List.length boxPath)) == boxPath

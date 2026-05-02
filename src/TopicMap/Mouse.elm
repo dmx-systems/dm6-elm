@@ -85,7 +85,7 @@ emulateHover topicId boxPath pointerType model =
 
 timeArrived : Posix -> UndoModel -> (UndoModel, Cmd Msg)
 timeArrived time ({present} as undoModel) =
-  case present.mouse.dragState of
+  case present.topicMap.dragState of
     WaitForStartTime id boxPath pos ->
       let
         dragState = DragEngaged time id boxPath pos
@@ -116,7 +116,7 @@ mouseMove pos env =
     model = enterLeave pos env
     newEnv = Env.withModel env model
   in
-  case model.mouse.dragState of
+  case model.topicMap.dragState of
     DragEngaged time id boxPath pos_ ->
       ( setDragState (WaitForEndTime time id boxPath pos_) model
       , Task.perform (Mouse << MouseDef.Time) Time.now
@@ -129,7 +129,7 @@ mouseMove pos env =
 
 performDrag : Point -> Env -> Model
 performDrag pos ({model} as env) =
-  case model.mouse.dragState of
+  case model.topicMap.dragState of
     Drag dragMode id boxPath origPos lastPos target ->
       let
         boxId = Box.firstId boxPath
@@ -148,14 +148,14 @@ performDrag pos ({model} as env) =
       setDragState (Drag dragMode id boxPath origPos pos target) newModel
         |> Env.autoSize env
     _ -> U.logError "TopicMap.Mouse.performDrag"
-      ("Received \"Move\" when dragState is " ++ U.toString model.mouse.dragState) model
+      ("Received \"Move\" when dragState is " ++ U.toString model.topicMap.dragState) model
 
 
 mouseUp : Model -> (Model, Cmd Msg)
 mouseUp model =
   let
     cmd =
-      case model.mouse.dragState of
+      case model.topicMap.dragState of
         Drag DragTopic id boxPath origPos _ (Just (T targetId, targetPath)) ->
           let
             _ = U.info "TopicMap.Mouse.mouseUp" ("dropped " ++ fromInt (toTopicId id)
@@ -215,13 +215,13 @@ enterLeave pos {model, ext} =
         (pos.x)
         (pos.y - C.appHeaderHeight)
     excludeTopicId =
-      case model.mouse.dragState of
+      case model.topicMap.dragState of
         Drag DragTopic topicId _ _ _ _ -> Just topicId
         _ -> Nothing
   in
   case ext.hitTest model.boxId [] initPos excludeTopicId model of
     Just target ->
-      case model.mouse.hover of
+      case model.topicMap.hover of
         Just oldTarget ->
           case target /= oldTarget of
             True ->
@@ -231,7 +231,7 @@ enterLeave pos {model, ext} =
             False -> model
         Nothing -> enter target model
     Nothing ->
-      case model.mouse.hover of
+      case model.topicMap.hover of
         Just oldTarget -> leave oldTarget model
         Nothing -> model
 
@@ -242,7 +242,7 @@ enter (targetId, targetPath) model =
     T topicId ->
       let
         newModel =
-          case model.mouse.dragState of
+          case model.topicMap.dragState of
             Drag dragMode id boxPath origPos lastPos _ ->
               let
                 isCyclic = Box.hadDeepTopic topicId id model
@@ -271,7 +271,7 @@ leave : Target -> Model -> Model
 leave (targetId, targetPath) model =
   let
     newModel =
-      case model.mouse.dragState of
+      case model.topicMap.dragState of
         Drag dragMode id boxPath origPos lastPos _ ->
           -- reset target
           model
@@ -284,13 +284,13 @@ leave (targetId, targetPath) model =
 
 
 setDragState : DragState -> Model -> Model
-setDragState dragState ({mouse} as model) =
-  { model | mouse = { mouse | dragState = dragState }}
+setDragState dragState ({topicMap} as model) =
+  { model | topicMap = { topicMap | dragState = dragState }}
 
 
 setHover : Maybe Target -> Model -> Model
-setHover hover ({mouse} as model) =
-  { model | mouse = { mouse | hover = hover }}
+setHover hover ({topicMap} as model) =
+  { model | topicMap = { topicMap | hover = hover }}
 
 
 clearHover : Model -> Model
@@ -301,14 +301,14 @@ clearHover model =
 
 isDragInProgress : Model -> Bool
 isDragInProgress model =
-  case model.mouse.dragState of
+  case model.topicMap.dragState of
     Drag _ _ _ _ _ _ -> True
     _ -> False
 
 
 isHovered : TopicId -> BoxPath -> Model -> Bool
 isHovered topicId boxPath model =
-  case model.mouse.hover of
+  case model.topicMap.hover of
     Just (T topicId_, boxPath_) ->
       topicId == topicId_ && boxPath == boxPath_
     _ -> False

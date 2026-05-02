@@ -255,7 +255,7 @@ topicStyle id boxPath model =
   let
     boxId = Box.firstId boxPath
     isLimbo = VM.isLimboTopic id boxId model
-    isDragging = case model.mouse.dragState of
+    isDragging = case model.topicMap.dragState of
       Drag DragTopic id_ boxPath_ _ _ _ -> id_ == id && boxPath_ == boxPath
       _ -> False
     isSelected = Sel.isSelected (T id) boxPath model
@@ -527,7 +527,7 @@ viewAssoc assoc boxPath clickHandler model =
 
 viewAssocDraft : BoxId -> Model -> List (Svg Msg)
 viewAssocDraft mapId model =
-  case model.mouse.dragState of
+  case model.topicMap.dragState of
     Drag DraftAssoc _ boxPath origPos pos _ ->
       case (Box.firstId boxPath == mapId, TM.fullscreen model) of
         (True, Just map) ->
