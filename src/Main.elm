@@ -6,8 +6,6 @@ import Config as C
 import Env exposing (Env)
 import ExtManager
 import Feature.Icon as Icon
-import Feature.MouseDef as MouseDef
-import Feature.Mouse as Mouse
 import Feature.Nav as Nav
 import Feature.Search as Search
 import Feature.Sel as Sel
@@ -16,6 +14,8 @@ import Feature.Tool as Tool
 import Model exposing (Model, Msg(..))
 import ModelBase exposing (..)
 import Storage as S
+import TopicMap.Mouse as Mouse
+import TopicMap.MouseDef as MouseDef
 import TopicMap.TopicMap as TM
 import Undo exposing (UndoModel)
 import Utils as U

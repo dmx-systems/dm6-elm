@@ -1,4 +1,4 @@
-module Feature.MouseDef exposing (..)
+module TopicMap.MouseDef exposing (..)
 
 import ModelBase exposing (..)
 import Time

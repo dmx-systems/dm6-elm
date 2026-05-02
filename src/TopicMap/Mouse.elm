@@ -1,12 +1,12 @@
-module Feature.Mouse exposing (topicDownHandler, itemClickHandler, dragHandler,
+module TopicMap.Mouse exposing (topicDownHandler, itemClickHandler, dragHandler,
   isDragInProgress, isHovered, clearHover, update)
 
 import Box
 import Config as C
 import Env exposing (Env)
-import Feature.MouseDef as MouseDef exposing (DragState(..), DragMode(..))
 import Model exposing (Model, Msg(..))
 import ModelBase exposing (..)
+import TopicMap.MouseDef as MouseDef exposing (DragState(..), DragMode(..))
 import TopicMap.TopicMap as TM
 import Undo exposing (UndoModel)
 import Utils as U
@@ -38,7 +38,10 @@ itemClickHandler itemId boxPath =
 
 dragHandler : Attrs Msg
 dragHandler =
+  -- "Cancel UI"
   [ on "pointerdown" <| D.succeed <| Mouse MouseDef.Down
+  -- Topic Dragging. Note: dragging starts within the respective renderers. They attach
+  -- pointerdown handlers to specific topics (using "topicDownHandler" utility above)
   , on "pointermove" <| D.map (Mouse << MouseDef.Move) U.pointDecoder
   , on "pointerup" <| D.succeed <| Mouse MouseDef.Up
   ]
@@ -51,18 +54,14 @@ dragHandler =
 update : MouseDef.Msg -> Env -> (UndoModel, Cmd Msg)
 update msg ({model, undoModel} as env) =
   case msg of
-    MouseDef.Down -> (undoModel, mouseDown)
-    -- Topic
+    -- "Cancel UI"
+    MouseDef.Down -> (undoModel, U.command <| Cancel Nothing)
+    -- Topic Dragging
     MouseDef.DownOnTopic topicId boxPath (pos, pointerType) ->
       mouseDownOnTopic topicId boxPath pos pointerType model |> Undo.swap undoModel
     MouseDef.Move (pos, _) -> mouseMove pos env |> Undo.swap undoModel
     MouseDef.Up -> mouseUp model |> Undo.swap undoModel
     MouseDef.Time time -> timeArrived time undoModel
-
-
-mouseDown : Cmd Msg
-mouseDown =
-  U.command <| Cancel Nothing
 
 
 mouseDownOnTopic : TopicId -> BoxPath -> Point -> PointerType -> Model -> (Model, Cmd Msg)
@@ -107,8 +106,8 @@ timeArrived time ({present} as undoModel) =
       in
       (setDragState dragState present, Cmd.none) |> undo undoModel
     _ ->
-      U.logError "Feature.Mouse.timeArrived" "Received Time when dragState is not WaitFor..Time"
-        (undoModel, Cmd.none)
+      U.logError "TopicMap.Mouse.timeArrived"
+        "Received Time when dragState is not WaitFor..Time" (undoModel, Cmd.none)
 
 
 mouseMove : Point -> Env -> (Model, Cmd Msg)
@@ -148,7 +147,7 @@ performDrag pos ({model} as env) =
       -- update lastPos
       setDragState (Drag dragMode id boxPath origPos pos target) newModel
         |> Env.autoSize env
-    _ -> U.logError "Feature.Mouse.performDrag"
+    _ -> U.logError "TopicMap.Mouse.performDrag"
       ("Received \"Move\" when dragState is " ++ U.toString model.mouse.dragState) model
 
 
@@ -159,9 +158,9 @@ mouseUp model =
       case model.mouse.dragState of
         Drag DragTopic id boxPath origPos _ (Just (T targetId, targetPath)) ->
           let
-            _ = U.info "Feature.Mouse.mouseUp" ("dropped " ++ fromInt (toTopicId id) ++ " (box "
-              ++ Box.fromPath boxPath ++ ") on " ++ fromInt (toTopicId targetId) ++ " (box "
-              ++ Box.fromPath targetPath ++ ") --> "
+            _ = U.info "TopicMap.Mouse.mouseUp" ("dropped " ++ fromInt (toTopicId id)
+              ++ " (box " ++ Box.fromPath boxPath ++ ") on " ++ fromInt (toTopicId targetId)
+              ++ " (box " ++ Box.fromPath targetPath ++ ") --> "
               ++ if shouldMoveToBox then "move topic to box" else "abort")
             (BoxId topicId as boxId) = Box.firstId boxPath
             -- When dragging a topic inside a nested box that box will be the target (this is
@@ -175,12 +174,12 @@ mouseUp model =
             False -> U.command TopicDragged -- store topic pos
         Drag DragTopic _ _ _ _ _ ->
           let
-            _ = U.info "Feature.Mouse.mouseUp" "topic drag ended w/o target"
+            _ = U.info "TopicMap.Mouse.mouseUp" "topic drag ended w/o target"
           in
           U.command TopicDragged
         Drag DraftAssoc id boxPath _ _ (Just (T targetId, targetPath)) ->
           let
-            _ = U.info "Feature.Mouse.mouseUp" ("assoc drawn from " ++ fromInt (toTopicId id)
+            _ = U.info "TopicMap.Mouse.mouseUp" ("assoc drawn from " ++ fromInt (toTopicId id)
               ++ " (box " ++ Box.fromPath boxPath ++ ") to " ++ fromInt (toTopicId targetId)
               ++ " (box " ++ Box.fromPath targetPath ++ ") --> "
               ++ if isSameBox then "create assoc" else "abort")
@@ -192,12 +191,12 @@ mouseUp model =
             False -> Cmd.none
         Drag DraftAssoc _ _ _ _ _ ->
           let
-            _ = U.info "Feature.Mouse.mouseUp" "assoc ended w/o target"
+            _ = U.info "TopicMap.Mouse.mouseUp" "assoc ended w/o target"
           in
           Cmd.none
         DragEngaged _ id boxPath _ ->
           let
-            _ = U.info "Feature.Mouse.mouseUp" "item not moved -> ItemClicked"
+            _ = U.info "TopicMap.Mouse.mouseUp" "item not moved -> ItemClicked"
           in
           U.command <| ItemClicked (T id) boxPath
         _ ->

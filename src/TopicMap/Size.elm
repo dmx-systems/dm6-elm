@@ -3,11 +3,11 @@ module TopicMap.Size exposing (autoSize)
 import Box
 import Config as C
 import Env exposing (ExtManager, Env2)
-import Feature.MouseDef exposing (DragState(..), DragMode(..))
 import Feature.TextDef exposing (EditState(..))
 import Model exposing (Model)
 import ModelBase exposing (..)
 import Topic
+import TopicMap.MouseDef exposing (DragState(..), DragMode(..))
 import TopicMap.TopicMap as TM
 import TopicMap.TopicMapDef exposing (MapTopic)
 import TopicMap.ViewModel as VM

@@ -4,12 +4,12 @@ import Box
 import Config as C
 import Dict
 import Env exposing (Env2)
-import Feature.Mouse as Mouse
 import Feature.Text as Text
 import Feature.Tool as Tool
 import Model exposing (Model, Msg)
 import ModelBase exposing (..)
 import Topic
+import TopicMap.Mouse as Mouse
 import ViewBase as VB
 
 import Html exposing (Html, div, ul, li, text)

@@ -7,7 +7,6 @@ import Config as C
 import Env exposing (ExtManager, Env, Env2)
 import Extension exposing (Renderer)
 import Feature.Icon as Icon
-import Feature.Mouse as Mouse
 import Feature.Nav as Nav
 import Feature.Search as Search
 import Feature.Sel as Sel
@@ -17,6 +16,7 @@ import Model exposing (Model, Msg(..))
 import ModelBase exposing (..)
 import Storage as S
 import Topic
+import TopicMap.Mouse as Mouse
 import TopicMap.TopicMap as TM
 import Undo exposing (UndoModel)
 import Utils as U

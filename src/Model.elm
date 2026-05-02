@@ -5,10 +5,10 @@ import Extension
 import ModelBase exposing (..)
 -- box renderers
 import TopicList.TopicListDef as TopicListDef
+import TopicMap.MouseDef as MouseDef
 import TopicMap.TopicMapDef as TopicMapDef
 -- feature modules
 import Feature.IconDef as IconDef
-import Feature.MouseDef as MouseDef
 import Feature.NavDef as NavDef
 import Feature.SearchDef as SearchDef
 import Feature.SelDef as SelDef

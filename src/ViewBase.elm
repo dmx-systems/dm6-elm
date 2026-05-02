@@ -2,10 +2,10 @@ module ViewBase exposing (boxStyle, topicBorderStyle, selectionStyle)
 
 import Box
 import Config as C
+import Feature.Sel as Sel
 import Model exposing (Model, Msg)
 import ModelBase exposing (..)
-import Feature.MouseDef exposing (DragState(..), DragMode(..))
-import Feature.Sel as Sel
+import TopicMap.MouseDef exposing (DragState(..), DragMode(..))
 
 import Html.Attributes exposing (style)
 import String exposing (fromInt)

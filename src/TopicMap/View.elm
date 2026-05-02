@@ -5,8 +5,6 @@ import Box
 import Config as C
 import Env exposing (ExtManager, Env2)
 import Feature.Icon as Icon
-import Feature.MouseDef exposing (DragState(..), DragMode(..))
-import Feature.Mouse as Mouse
 import Feature.Sel as Sel
 import Feature.Text as Text
 import Feature.ToolDef exposing (LineStyle(..))
@@ -14,6 +12,8 @@ import Feature.Tool as Tool
 import Model exposing (Model, Msg)
 import ModelBase exposing (..)
 import Topic
+import TopicMap.Mouse as Mouse
+import TopicMap.MouseDef exposing (DragState(..), DragMode(..))
 import TopicMap.TopicMap as TM
 import TopicMap.TopicMapDef exposing (TopicMap, MapTopic)
 import TopicMap.ViewModel as VM
