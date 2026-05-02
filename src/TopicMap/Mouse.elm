@@ -1,13 +1,14 @@
 module TopicMap.Mouse exposing (topicDownHandler, itemClickHandler, dragHandler,
-  isDragInProgress, isHovered, clearHover, update)
+  mouseDownOnTopic, mouseMove, mouseUp, timeArrived,
+  isDragInProgress, isHovered, clearHover)
 
 import Box
 import Config as C
 import Env exposing (Env)
 import Model exposing (Model, Msg(..))
 import ModelBase exposing (..)
-import TopicMap.MouseDef as MouseDef exposing (DragState(..), DragMode(..))
 import TopicMap.TopicMap as TM
+import TopicMap.TopicMapDef as TopicMapDef exposing (DragState(..), DragMode(..))
 import Undo exposing (UndoModel)
 import Utils as U
 
@@ -26,7 +27,7 @@ topicDownHandler : TopicId -> BoxPath -> Attrs Msg
 topicDownHandler topicId boxPath =
   [ U.stopPropagationWith "pointerdown"
       ( U.pointDecoder |> D.map
-          (Mouse << MouseDef.DownOnTopic topicId boxPath)
+          (TopicMap << TopicMapDef.DownOnTopic topicId boxPath)
       )
   ]
 
@@ -39,29 +40,16 @@ itemClickHandler itemId boxPath =
 dragHandler : Attrs Msg
 dragHandler =
   -- "Cancel UI"
-  [ on "pointerdown" <| D.succeed <| Mouse MouseDef.Down
+  [ on "pointerdown" <| D.succeed <| TopicMap TopicMapDef.Down
   -- Topic Dragging. Note: dragging starts within the respective renderers. They attach
   -- pointerdown handlers to specific topics (using "topicDownHandler" utility above)
-  , on "pointermove" <| D.map (Mouse << MouseDef.Move) U.pointDecoder
-  , on "pointerup" <| D.succeed <| Mouse MouseDef.Up
+  , on "pointermove" <| D.map (TopicMap << TopicMapDef.Move) U.pointDecoder
+  , on "pointerup" <| D.succeed <| TopicMap TopicMapDef.Up
   ]
 
 
 
 -- UPDATE
-
-
-update : MouseDef.Msg -> Env -> (UndoModel, Cmd Msg)
-update msg ({model, undoModel} as env) =
-  case msg of
-    -- "Cancel UI"
-    MouseDef.Down -> (undoModel, U.command <| Cancel Nothing)
-    -- Topic Dragging
-    MouseDef.DownOnTopic topicId boxPath (pos, pointerType) ->
-      mouseDownOnTopic topicId boxPath pos pointerType model |> Undo.swap undoModel
-    MouseDef.Move (pos, _) -> mouseMove pos env |> Undo.swap undoModel
-    MouseDef.Up -> mouseUp model |> Undo.swap undoModel
-    MouseDef.Time time -> timeArrived time undoModel
 
 
 mouseDownOnTopic : TopicId -> BoxPath -> Point -> PointerType -> Model -> (Model, Cmd Msg)
@@ -71,7 +59,7 @@ mouseDownOnTopic topicId boxPath pos pointerType model =
       |> setDragState (WaitForStartTime topicId boxPath pos)
   , Cmd.batch
       [ U.command <| Cancel <| Just (T topicId, boxPath)
-      , Task.perform (Mouse << MouseDef.Time) Time.now
+      , Task.perform (TopicMap << TopicMapDef.Time) Time.now
       ]
   )
 
@@ -119,7 +107,7 @@ mouseMove pos env =
   case model.topicMap.dragState of
     DragEngaged time id boxPath pos_ ->
       ( setDragState (WaitForEndTime time id boxPath pos_) model
-      , Task.perform (Mouse << MouseDef.Time) Time.now
+      , Task.perform (TopicMap << TopicMapDef.Time) Time.now
       )
     Drag _ _ _ _ _ _ ->
       ( performDrag pos newEnv, Cmd.none )

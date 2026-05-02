@@ -15,13 +15,13 @@ import Model exposing (Model, Msg(..))
 import ModelBase exposing (..)
 import Storage as S
 import TopicMap.Mouse as Mouse
-import TopicMap.MouseDef as MouseDef
+import TopicMap.Controller as TMC
 import TopicMap.TopicMap as TM
+import TopicMap.TopicMapDef as TopicMapDef
 import Undo exposing (UndoModel)
 import Utils as U
 
 import Browser
-import Dict
 import Html exposing (Html, div, text, br, a)
 import Html.Attributes exposing (id, style, href)
 import Json.Decode as D
@@ -266,7 +266,7 @@ update msg ({present} as undoModel) =
       }
     _ =
       case msg of
-        Mouse (MouseDef.Move _) -> msg
+        TopicMap (TopicMapDef.Move _) -> msg
         _ -> U.info "Main.update" msg
   in
   case msg of
@@ -279,11 +279,10 @@ update msg ({present} as undoModel) =
     ItemClicked itemId boxPath -> select itemId boxPath present |> Undo.swap undoModel
     Cancel maybeTarget -> cancelUI maybeTarget env |> Undo.swap undoModel
     -- renderer modules
-    TopicMap topicMapMsg -> TM.update topicMapMsg env
+    TopicMap topicMapMsg -> TMC.update topicMapMsg env
     -- feature modules
     Tool toolMsg -> Tool.update toolMsg env
     Text textMsg -> Text.update textMsg env
-    Mouse mouseMsg -> Mouse.update mouseMsg env
     Search searchMsg -> Search.update searchMsg env
     Icon iconMenuMsg -> Icon.update iconMenuMsg undoModel
     Nav navMsg -> Nav.update navMsg env

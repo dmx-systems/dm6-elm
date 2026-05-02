@@ -13,9 +13,8 @@ import Model exposing (Model, Msg)
 import ModelBase exposing (..)
 import Topic
 import TopicMap.Mouse as Mouse
-import TopicMap.MouseDef exposing (DragState(..), DragMode(..))
 import TopicMap.TopicMap as TM
-import TopicMap.TopicMapDef exposing (TopicMap, MapTopic)
+import TopicMap.TopicMapDef exposing (TopicMap, MapTopic, DragState(..), DragMode(..))
 import TopicMap.ViewModel as VM
 import Utils as U
 import ViewBase as VB

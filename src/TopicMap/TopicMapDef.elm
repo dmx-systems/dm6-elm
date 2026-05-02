@@ -1,11 +1,12 @@
-module TopicMap.TopicMapDef exposing (Model, TopicMap, MapTopic, Msg(..), init, encode, decoder)
+module TopicMap.TopicMapDef exposing (Model, TopicMap, MapTopic, DragState(..), DragMode(..),
+  Msg(..), init, encode, decoder)
 
 import ModelBase exposing (..)
-import TopicMap.MouseDef exposing (DragState(..))
 
 import Dict exposing (Dict)
 import Json.Decode as D
 import Json.Encode as E
+import Time
 
 
 
@@ -44,8 +45,29 @@ type alias MapTopic =
   }
 
 
+type DragState
+  = WaitForStartTime TopicId BoxPath Point -- start point (mouse)
+  | DragEngaged Time.Posix TopicId BoxPath Point -- start point (mouse)
+  | WaitForEndTime Time.Posix TopicId BoxPath Point -- start point (mouse)
+  | Drag DragMode TopicId BoxPath Point Point (Maybe Target) -- orig topic pos
+                                                        -- last point (mouse)
+  | NoDrag
+
+
+type DragMode
+  = DragTopic
+  | DraftAssoc
+
+
 type Msg
-  = GotRandomPos TopicId BoxId Point
+  -- Mouse
+  = Down -- mouse down somewhere
+  | DownOnTopic TopicId BoxPath (Point, PointerType) -- mouse down on topic, drag engaged
+  | Move (Point, PointerType)
+  | Up
+  | Time Time.Posix
+  -- TopicMap
+  | GotRandomPos TopicId BoxId Point
 
 
 

@@ -5,7 +5,6 @@ import Extension
 import ModelBase exposing (..)
 -- box renderers
 import TopicList.TopicListDef as TopicListDef
-import TopicMap.MouseDef as MouseDef
 import TopicMap.TopicMapDef as TopicMapDef
 -- feature modules
 import Feature.IconDef as IconDef
@@ -78,7 +77,6 @@ type Msg
   -- feature modules
   | Tool ToolDef.Msg
   | Text TextDef.Msg
-  | Mouse MouseDef.Msg
   | Search SearchDef.Msg
   | Icon IconDef.Msg
   | Nav NavDef.Msg

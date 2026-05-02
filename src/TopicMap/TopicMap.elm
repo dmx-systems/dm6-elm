@@ -1,6 +1,6 @@
-module TopicMap.TopicMap exposing (update, create, topics, topicPos, setTopicPos,
-  updateTopicPos, mapTopicOrNothing, assocGeometry, addTopic, initLimboMapTopic,
-  initTopicPos, hasMapTopic, fullscreen, byId, updateRect, updateScrollPos, revelationBoxId,
+module TopicMap.TopicMap exposing (create, topics, topicPos, setTopicPos, updateTopicPos,
+  mapTopicOrNothing, assocGeometry, addTopic, addTopic_, initLimboMapTopic, initTopicPos,
+  hasMapTopic, fullscreen, byId, updateRect, updateScrollPos, revelationBoxId,
   revelationBoxPath, landingTarget)
 
 import Box
@@ -10,9 +10,7 @@ import Feature.SearchDef exposing (SearchResult(..))
 import Feature.Sel as Sel
 import Model exposing (Model, Msg)
 import ModelBase exposing (..)
-import Storage as S
 import TopicMap.TopicMapDef as TopicMapDef exposing (TopicMap, MapTopic)
-import Undo exposing (UndoModel)
 import Utils as U
 
 import Dict
@@ -20,18 +18,6 @@ import Random
 import String exposing (fromInt)
 
 
-
--- UPDATE
-
-
-update : TopicMapDef.Msg -> Env -> (UndoModel, Cmd Msg)
-update msg ({undoModel} as env) =
-  case msg of
-    TopicMapDef.GotRandomPos topicId mapId pos -> addTopic_ topicId mapId pos env
-      |> S.store |> Undo.push undoModel
-
-
---
 
 create : BoxId -> Model -> Model
 create mapId model =
