@@ -13,6 +13,7 @@ import Feature.Text as Text
 import Feature.Tool as Tool
 import Model exposing (Model, Msg(..))
 import ModelBase exposing (..)
+import Shared.Events as Events
 import Storage as S
 import TopicMap.Mouse as Mouse
 import TopicMap.Controller as TMC
@@ -101,7 +102,7 @@ view ({present} as undoModel) =
   Browser.Document
     "DM6 Elm"
     [ div
-        ( Mouse.dragHandler
+        ( Events.dragHandler
           ++ appStyle
         )
         [ div

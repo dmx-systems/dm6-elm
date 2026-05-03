@@ -11,13 +11,13 @@ import Feature.ToolDef exposing (LineStyle(..))
 import Feature.Tool as Tool
 import Model exposing (Model, Msg)
 import ModelBase exposing (..)
+import Shared.Events as Events
+import Shared.ViewBase as VB
 import Topic
-import TopicMap.Mouse as Mouse
 import TopicMap.TopicMap as TM
 import TopicMap.TopicMapDef exposing (TopicMap, MapTopic, DragState(..), DragMode(..))
 import TopicMap.ViewModel as VM
 import Utils as U
-import ViewBase as VB
 
 import Html exposing (Html, div, text)
 import Html.Attributes exposing (id, style)
@@ -168,7 +168,7 @@ viewItems map boxPath ({model} as env) =
           case Assoc.fromId id model of
             Just assoc ->
               let
-                clickHandler = Mouse.itemClickHandler (A id) newPath
+                clickHandler = Events.itemClickHandler (A id) newPath
               in
               svgAcc ++ viewAssoc assoc newPath clickHandler model
             _ -> U.logError "TopicMap.View.viewItems"
@@ -235,7 +235,7 @@ viewTopic topic mapTopic boxPath ({model, ext}) =
   in
   div
     ( topicAttr topic.id boxPath
-      ++ Mouse.topicDownHandler topic.id boxPath
+      ++ Events.topicDownHandler topic.id boxPath
       ++ topicStyle topic.id boxPath model
       ++ style
     )

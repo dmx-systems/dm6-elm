@@ -1,4 +1,4 @@
-module ViewBase exposing (boxStyle, topicBorderStyle, selectionStyle)
+module Shared.ViewBase exposing (boxStyle, topicBorderStyle, selectionStyle)
 
 import Box
 import Config as C

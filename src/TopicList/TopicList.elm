@@ -8,9 +8,9 @@ import Feature.Text as Text
 import Feature.Tool as Tool
 import Model exposing (Model, Msg)
 import ModelBase exposing (..)
+import Shared.Events as Events
+import Shared.ViewBase as VB
 import Topic
-import TopicMap.Mouse as Mouse
-import ViewBase as VB
 
 import Html exposing (Html, div, ul, li, text)
 import Html.Attributes exposing (style)
@@ -39,7 +39,7 @@ viewList boxPath ({model} as env) =
       ( Box.topics boxId model |> List.map
           (\topic ->
             li
-              ( Mouse.itemClickHandler (T topic.id) boxPath
+              ( Events.itemClickHandler (T topic.id) boxPath
                 ++
                 VB.selectionStyle topic.id boxPath model
               )

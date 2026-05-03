@@ -7,6 +7,7 @@ import Env exposing (Env)
 import Feature.TextDef as TextDef exposing (EditState(..), TopicImage)
 import Model exposing (Model, Msg(..))
 import ModelBase exposing (..)
+import Shared.Events as Events
 import Storage as S
 import Task
 import Topic
@@ -79,8 +80,8 @@ viewInput topic boxPath style =
       , value topic.text
       , placeholder C.initTopicText
       , onInput (Text << TextDef.OnTextInput)
-      , U.onEnterOrEsc (Text TextDef.LeaveEdit)
-      , U.onPointerDownStop NoOp -- Prevent drag initiation
+      , Events.onEnterOrEsc (Text TextDef.LeaveEdit)
+      , Events.onPointerDownStop NoOp -- Prevent drag initiation
       ]
       ++ style
     )
@@ -94,8 +95,8 @@ viewTextarea topic boxPath style =
       , value topic.text
       , placeholder C.initTopicText
       , onInput (Text << TextDef.OnTextareaInput)
-      , U.onEsc (Text TextDef.LeaveEdit)
-      , U.onPointerDownStop NoOp -- Prevent drag initiation
+      , Events.onEsc (Text TextDef.LeaveEdit)
+      , Events.onPointerDownStop NoOp -- Prevent drag initiation
       ]
       ++ style
     )

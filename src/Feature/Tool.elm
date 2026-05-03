@@ -14,6 +14,7 @@ import Feature.Text as Text
 import Feature.ToolDef as ToolDef exposing (LineStyle(..))
 import Model exposing (Model, Msg(..))
 import ModelBase exposing (..)
+import Shared.Events as Events
 import Storage as S
 import Topic
 import TopicMap.Mouse as Mouse
@@ -99,7 +100,7 @@ menuStyle =
 viewRadioButton : String -> ToolDef.Msg -> Bool -> Html Msg
 viewRadioButton label_ msg isChecked  =
   label
-    [ U.onPointerDownStop NoOp ]
+    [ Events.onPointerDownStop NoOp ]
     [ input
       ( [ type_ "radio"
         , name "line-style"
@@ -117,7 +118,7 @@ viewTextButton : String -> ToolDef.Msg -> Html Msg
 viewTextButton label msg =
   button
     ( [ onClick <| Tool msg
-      , U.onPointerDownStop NoOp
+      , Events.onPointerDownStop NoOp
       ]
       ++ textButtonStyle
     )
@@ -260,7 +261,7 @@ viewRendererSelect renderer toMsg ext =
   select
     ( [ value <| Extension.toString renderer
       , on "input" (targetValue |> Extension.rendererDecoder |> D.map toMsg)
-      , U.onPointerDownStop NoOp
+      , Events.onPointerDownStop NoOp
       ]
       ++ selectStyle
     )
@@ -352,7 +353,7 @@ viewCaret topicId boxId model =
   in
   button
     ( [ onClick <| Tool <| ToolDef.ToggleExpansion topicId boxId
-      , U.onPointerDownStop NoOp -- prevent cancel UI
+      , Events.onPointerDownStop NoOp -- prevent cancel UI
       ]
       ++ caretStyle
     )
@@ -389,7 +390,7 @@ viewIconButton label icon iconSize msg isDisabled maybeTarget extraStyle =
       , title label
       , onClick <| Tool msg
       , disabled isDisabled
-      , U.onPointerDownStop <| Cancel maybeTarget
+      , Events.onPointerDownStop <| Cancel maybeTarget
       ]
       ++ iconButtonStyle
       ++ extraStyle

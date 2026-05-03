@@ -1,5 +1,4 @@
-module TopicMap.Mouse exposing (topicDownHandler, itemClickHandler, dragHandler,
-  mouseDownOnTopic, mouseMove, mouseUp, timeArrived,
+module TopicMap.Mouse exposing (mouseDownOnTopic, mouseMove, mouseUp, timeArrived,
   isDragInProgress, isHovered, clearHover)
 
 import Box
@@ -12,40 +11,9 @@ import TopicMap.TopicMapDef as TopicMapDef exposing (DragState(..), DragMode(..)
 import Undo exposing (UndoModel)
 import Utils as U
 
-import Html.Events exposing (on)
-import Json.Decode as D
 import String exposing (fromInt)
 import Task
 import Time exposing (Posix, posixToMillis)
-
-
-
--- VIEW
-
-
-topicDownHandler : TopicId -> BoxPath -> Attrs Msg
-topicDownHandler topicId boxPath =
-  [ U.stopPropagationWith "pointerdown"
-      ( U.pointDecoder |> D.map
-          (TopicMap << TopicMapDef.DownOnTopic topicId boxPath)
-      )
-  ]
-
-
-itemClickHandler : ItemId -> BoxPath -> Attrs Msg
-itemClickHandler itemId boxPath =
-  [ U.onClickStop <| ItemClicked itemId boxPath ]
-
-
-dragHandler : Attrs Msg
-dragHandler =
-  -- "Cancel UI"
-  [ on "pointerdown" <| D.succeed <| TopicMap TopicMapDef.Down
-  -- Topic Dragging. Note: dragging starts within the respective renderers. They attach
-  -- pointerdown handlers to specific topics (using "topicDownHandler" utility above)
-  , on "pointermove" <| D.map (TopicMap << TopicMapDef.Move) U.pointDecoder
-  , on "pointerup" <| D.succeed <| TopicMap TopicMapDef.Up
-  ]
 
 
 
