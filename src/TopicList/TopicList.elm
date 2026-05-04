@@ -1,4 +1,4 @@
-module TopicList.TopicList exposing (view, listSize)
+module TopicList.TopicList exposing (view, listSize, mouseMove, mouseUp)
 
 import Box
 import Config as C
@@ -89,6 +89,20 @@ listFontStyle =
   , style "font-size" <| fromInt C.contentFontSize ++ "px"
   , style "line-height" <| fromFloat C.topicLineHeight
   ]
+
+
+
+-- EVENTS (Todo)
+
+
+mouseMove : Point -> Env2 -> (Model, Cmd Msg)
+mouseMove pos {model} =
+  (model, Cmd.none)
+
+
+mouseUp : Env2 -> (Model, Cmd Msg)
+mouseUp {model} =
+  (model, Cmd.none)
 
 
 

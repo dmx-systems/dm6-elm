@@ -3,7 +3,9 @@ module TopicMap.Mouse exposing (mouseDownOnTopic, mouseMove, mouseUp, timeArrive
 
 import Box
 import Config as C
-import Env exposing (Env)
+import Env exposing (Env2)
+import Feature.Mouse as Mouse
+import Feature.MouseDef as MouseDef
 import Model exposing (Model, Msg(..))
 import ModelBase exposing (..)
 import TopicMap.TopicMap as TM
@@ -23,6 +25,9 @@ import Time exposing (Posix, posixToMillis)
 mouseDownOnTopic : TopicId -> BoxPath -> Point -> PointerType -> Model -> (Model, Cmd Msg)
 mouseDownOnTopic topicId boxPath pos pointerType model =
   ( model
+      -- update global drag state
+      |> Mouse.setDragState (MouseDef.DragEngaged (Box.firstId boxPath))
+      -- update renderer local drag state
       |> emulateHover topicId boxPath pointerType
       |> setDragState (WaitForStartTime topicId boxPath pos)
   , Cmd.batch
@@ -66,11 +71,11 @@ timeArrived time ({present} as undoModel) =
         "Received Time when dragState is not WaitFor..Time" (undoModel, Cmd.none)
 
 
-mouseMove : Point -> Env -> (Model, Cmd Msg)
+mouseMove : Point -> Env2 -> (Model, Cmd Msg)
 mouseMove pos env =
   let
     model = enterLeave pos env
-    newEnv = Env.withModel env model
+    newEnv = Env.withModel2 env model
   in
   case model.topicMap.dragState of
     DragEngaged time id boxPath pos_ ->
@@ -83,7 +88,7 @@ mouseMove pos env =
       ( model, Cmd.none )
 
 
-performDrag : Point -> Env -> Model
+performDrag : Point -> Env2 -> Model
 performDrag pos ({model} as env) =
   case model.topicMap.dragState of
     Drag dragMode id boxPath origPos lastPos target ->
@@ -102,13 +107,13 @@ performDrag pos ({model} as env) =
       in
       -- update lastPos
       setDragState (Drag dragMode id boxPath origPos pos target) newModel
-        |> Env.autoSize env
+        |> Env.autoSize2 env
     _ -> U.logError "TopicMap.Mouse.performDrag"
       ("Received \"Move\" when dragState is " ++ U.toString model.topicMap.dragState) model
 
 
-mouseUp : Model -> (Model, Cmd Msg)
-mouseUp model =
+mouseUp : Env2 -> (Model, Cmd Msg)
+mouseUp {model} =
   let
     cmd =
       case model.topicMap.dragState of
@@ -163,7 +168,7 @@ mouseUp model =
 
 {- Emulates enter/leave events by the means of geometry. Based on the given pointer
 coordinate decides whether to call the "enter" and/or "leave" handlers. -}
-enterLeave : Point -> Env -> Model
+enterLeave : Point -> Env2 -> Model
 enterLeave pos {model, ext} =
   let
     initPos =

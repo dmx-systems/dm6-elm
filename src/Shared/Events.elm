@@ -1,8 +1,8 @@
 module Shared.Events exposing (..)
 
+import Feature.MouseDef as MouseDef
 import Model exposing (Msg(..))
 import ModelBase exposing (..)
-import TopicMap.TopicMapDef as TopicMapDef -- TODO: drop
 
 import Html exposing (Attribute)
 import Html.Events exposing (on, stopPropagationOn, keyCode)
@@ -10,13 +10,9 @@ import Json.Decode as D
 
 
 
-topicDownHandler : TopicId -> BoxPath -> Attrs Msg
-topicDownHandler topicId boxPath =
-  [ stopPropagationWith "pointerdown"
-      ( pointDecoder |> D.map
-          (TopicMap << TopicMapDef.DownOnTopic topicId boxPath)
-      )
-  ]
+topicDownHandler : ((Point, PointerType) -> Msg) -> Attrs Msg
+topicDownHandler toMsg =
+  [ stopPropagationWith "pointerdown" (D.map toMsg pointDecoder) ]
 
 
 itemClickHandler : ItemId -> BoxPath -> Attrs Msg
@@ -26,12 +22,12 @@ itemClickHandler itemId boxPath =
 
 dragHandler : Attrs Msg
 dragHandler =
-  -- "Cancel UI"
-  [ on "pointerdown" <| D.succeed <| TopicMap TopicMapDef.Down
   -- Topic Dragging. Note: dragging starts within the respective renderers. They attach
   -- pointerdown handlers to specific topics (using "topicDownHandler" utility above)
-  , on "pointermove" <| D.map (TopicMap << TopicMapDef.Move) pointDecoder
-  , on "pointerup" <| D.succeed <| TopicMap TopicMapDef.Up
+  [ on "pointermove" (D.map (Mouse << MouseDef.Move) pointDecoder)
+  , on "pointerup" (D.succeed (Mouse MouseDef.Up))
+  -- "Cancel UI"
+  , on "pointerdown" (D.succeed (Mouse MouseDef.Cancel))
   ]
 
 

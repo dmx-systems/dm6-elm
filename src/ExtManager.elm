@@ -11,6 +11,7 @@ import TopicList.TopicList
 import TopicMap.Geometry
 import TopicMap.Size
 import TopicMap.View
+import TopicMap.Mouse
 
 import Dict exposing (Dict)
 import Html exposing (Html, text)
@@ -26,6 +27,8 @@ type alias Extension =
   , hitTest : NestingHitTest
   , autoSize : NestingAutoSize
   , toolbar : NestingToolbar
+  , mouseMove : NestingMouseMove
+  , mouseUp : NestingMouseUp
   }
 
 
@@ -53,6 +56,16 @@ type alias NestingToolbar =
   BoxId -> Model -> ToolbarPos
 
 
+-- TODO: wording
+type alias NestingMouseMove =
+  Point -> Env2 -> (Model, Cmd Msg)
+
+
+-- TODO: wording
+type alias NestingMouseUp =
+  Env2 -> (Model, Cmd Msg)
+
+
 
 -- VALUES
 
@@ -63,6 +76,8 @@ ext =
   , hitTest = hitTest
   , autoSize = autoSize
   , toolbar = toolbar
+  , mouseMove = mouseMove
+  , mouseUp = mouseUp
   , all = all
   }
 
@@ -78,6 +93,8 @@ registry =
         , hitTest = TopicMap.Geometry.hitTest
         , autoSize = TopicMap.Size.autoSize
         , toolbar = TopicMap.Geometry.toolbarPos
+        , mouseMove = TopicMap.Mouse.mouseMove
+        , mouseUp = TopicMap.Mouse.mouseUp
         }
       )
     , ("TopicList",
@@ -86,6 +103,8 @@ registry =
         , hitTest = TopicList.Geometry.hitTest
         , autoSize = TopicList.Geometry.autoSize
         , toolbar = TopicList.Geometry.toolbarPos
+        , mouseMove = TopicList.TopicList.mouseMove
+        , mouseUp = TopicList.TopicList.mouseUp
         }
       )
     ]
@@ -123,6 +142,18 @@ toolbar : BoxId -> Model -> ToolbarPos
 toolbar boxId model =
   dispatch boxId model (ToolbarPos (\_ -> Point 0 0) (\_ -> Point 0 0))
     (\env renderer -> renderer.toolbar boxId model)
+
+
+mouseMove : BoxId -> Point -> Model -> (Model, Cmd Msg)
+mouseMove boxId pos model =
+  dispatch boxId model (model, Cmd.none)
+    (\env renderer -> renderer.mouseMove pos env)
+
+
+mouseUp : BoxId -> Model -> (Model, Cmd Msg)
+mouseUp boxId model =
+  dispatch boxId model (model, Cmd.none)
+    (\env renderer -> renderer.mouseUp env)
 
 
 dispatch : BoxId -> Model -> result -> (Env2 -> Extension -> result) -> result

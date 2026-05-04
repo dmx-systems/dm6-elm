@@ -61,10 +61,7 @@ type DragMode
 
 type Msg
   -- Mouse
-  = Down -- mouse down somewhere
-  | DownOnTopic TopicId BoxPath (Point, PointerType) -- mouse down on topic, drag engaged
-  | Move (Point, PointerType)
-  | Up
+  = DownOnTopic TopicId BoxPath (Point, PointerType) -- mouse down on topic, drag engaged
   | Time Time.Posix
   -- TopicMap
   | GotRandomPos TopicId BoxId Point

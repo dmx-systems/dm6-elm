@@ -1,4 +1,4 @@
-module Env exposing (ExtManager, Env, Env2, autoSize, withModel)
+module Env exposing (ExtManager, Env, Env2, autoSize, autoSize2, withModel, withModel2)
 -- TODO: don't expose AutoSize?
 
 import Model exposing (Model, Msg)
@@ -17,6 +17,8 @@ type alias ExtManager =
   , hitTest : HitTest
   , autoSize : AutoSize
   , toolbar : Toolbar
+  , mouseMove : MouseMove
+  , mouseUp : MouseUp
   , all : Extensions
   }
 
@@ -54,9 +56,19 @@ type alias Toolbar =
   BoxId -> Model -> ToolbarPos
 
 
+type alias MouseMove =
+  BoxId -> Point -> Model -> (Model, Cmd Msg)
+
+
+type alias MouseUp =
+  BoxId -> Model -> (Model, Cmd Msg)
+
+
 
 -- HELPER
 
+
+-- TODO: consolidate
 
 autoSize : Env -> Model -> Model
 autoSize {ext} model =
@@ -65,6 +77,18 @@ autoSize {ext} model =
     |> Tuple.second
 
 
+autoSize2 : Env2 -> Model -> Model
+autoSize2 {ext} model =
+  model
+    |> ext.autoSize [ model.boxId ]
+    |> Tuple.second
+
+
 withModel : Env -> Model -> Env
 withModel env model =
+  { env | model = model }
+
+
+withModel2 : Env2 -> Model -> Env2
+withModel2 env model =
   { env | model = model }

@@ -8,6 +8,7 @@ import TopicList.TopicListDef as TopicListDef
 import TopicMap.TopicMapDef as TopicMapDef
 -- feature modules
 import Feature.IconDef as IconDef
+import Feature.MouseDef as MouseDef
 import Feature.NavDef as NavDef
 import Feature.SearchDef as SearchDef
 import Feature.SelDef as SelDef
@@ -34,6 +35,7 @@ type alias Model =
   -- feature modules
   , tool : ToolDef.Model
   , text : TextDef.Model
+  , mouse : MouseDef.Model
   , search : SearchDef.Model
   , icon : IconDef.Model
   , selection : SelDef.Model
@@ -59,6 +61,7 @@ init =
   -- feature modules
   , tool = ToolDef.init
   , text = TextDef.init
+  , mouse = MouseDef.init
   , search = SearchDef.init
   , icon = IconDef.init
   , selection = SelDef.init
@@ -77,6 +80,7 @@ type Msg
   -- feature modules
   | Tool ToolDef.Msg
   | Text TextDef.Msg
+  | Mouse MouseDef.Msg
   | Search SearchDef.Msg
   | Icon IconDef.Msg
   | Nav NavDef.Msg
@@ -121,6 +125,7 @@ decoder =
     -- feature modules
     |> required "tool" ToolDef.decoder
     |> hardcoded TextDef.init
+    |> hardcoded MouseDef.init
     |> hardcoded SearchDef.init
     |> hardcoded IconDef.init
     |> hardcoded SelDef.init

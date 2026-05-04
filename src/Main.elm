@@ -6,6 +6,8 @@ import Config as C
 import Env exposing (Env)
 import ExtManager
 import Feature.Icon as Icon
+import Feature.Mouse as Mouse
+import Feature.MouseDef as MouseDef
 import Feature.Nav as Nav
 import Feature.Search as Search
 import Feature.Sel as Sel
@@ -18,7 +20,6 @@ import Storage as S
 import TopicMap.Mouse as Mouse
 import TopicMap.Controller as TMC
 import TopicMap.TopicMap as TM
-import TopicMap.TopicMapDef as TopicMapDef
 import Undo exposing (UndoModel)
 import Utils as U
 
@@ -267,7 +268,7 @@ update msg ({present} as undoModel) =
       }
     _ =
       case msg of
-        TopicMap (TopicMapDef.Move _) -> msg
+        Mouse (MouseDef.Move _) -> msg
         _ -> U.info "Main.update" msg
   in
   case msg of
@@ -284,6 +285,7 @@ update msg ({present} as undoModel) =
     -- feature modules
     Tool toolMsg -> Tool.update toolMsg env
     Text textMsg -> Text.update textMsg env
+    Mouse mouseMsg -> Mouse.update mouseMsg env
     Search searchMsg -> Search.update searchMsg env
     Icon iconMenuMsg -> Icon.update iconMenuMsg undoModel
     Nav navMsg -> Nav.update navMsg env

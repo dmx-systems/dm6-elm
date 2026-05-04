@@ -9,13 +9,13 @@ import Feature.Sel as Sel
 import Feature.Text as Text
 import Feature.ToolDef exposing (LineStyle(..))
 import Feature.Tool as Tool
-import Model exposing (Model, Msg)
+import Model exposing (Model, Msg(..))
 import ModelBase exposing (..)
 import Shared.Events as Events
 import Shared.ViewBase as VB
 import Topic
 import TopicMap.TopicMap as TM
-import TopicMap.TopicMapDef exposing (TopicMap, MapTopic, DragState(..), DragMode(..))
+import TopicMap.TopicMapDef as TopicMapDef exposing (MapTopic, DragState(..), DragMode(..))
 import TopicMap.ViewModel as VM
 import Utils as U
 
@@ -150,7 +150,7 @@ boxInfo boxId boxPath ({model} as env) =
 
 
 -- For the fullscreen box boxPath is empty
-viewItems : TopicMap -> BoxPath -> Env2 -> (List (Html Msg), List (Svg Msg))
+viewItems : TopicMapDef.TopicMap -> BoxPath -> Env2 -> (List (Html Msg), List (Svg Msg))
 viewItems map boxPath ({model} as env) =
   let
     newPath = map.id :: boxPath
@@ -235,7 +235,7 @@ viewTopic topic mapTopic boxPath ({model, ext}) =
   in
   div
     ( topicAttr topic.id boxPath
-      ++ Events.topicDownHandler topic.id boxPath
+      ++ Events.topicDownHandler (TopicMap << TopicMapDef.DownOnTopic topic.id boxPath)
       ++ topicStyle topic.id boxPath model
       ++ style
     )
