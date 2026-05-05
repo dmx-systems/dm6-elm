@@ -103,7 +103,7 @@ view ({present} as undoModel) =
   Browser.Document
     "DM6 Elm"
     [ div
-        ( Events.dragHandler
+        ( Events.globalMouseHandler
           ++ appStyle
         )
         [ div
@@ -268,7 +268,7 @@ update msg ({present} as undoModel) =
       }
     _ =
       case msg of
-        Mouse (MouseDef.Move _) -> msg
+        Mouse (MouseDef.Drag _) -> msg
         _ -> U.info "Main.update" msg
   in
   case msg of

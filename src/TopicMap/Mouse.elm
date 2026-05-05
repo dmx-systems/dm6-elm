@@ -1,11 +1,10 @@
-module TopicMap.Mouse exposing (mouseDownOnTopic, mouseMove, mouseUp, timeArrived,
+module TopicMap.Mouse exposing (dragStart, drag, dragStop, timeArrived,
   isDragInProgress, isHovered, clearHover)
 
 import Box
 import Config as C
 import Env exposing (Env2)
 import Feature.Mouse as Mouse
-import Feature.MouseDef as MouseDef
 import Model exposing (Model, Msg(..))
 import ModelBase exposing (..)
 import TopicMap.TopicMap as TM
@@ -22,16 +21,13 @@ import Time exposing (Posix, posixToMillis)
 -- UPDATE
 
 
-mouseDownOnTopic : TopicId -> BoxPath -> Point -> PointerType -> Model -> (Model, Cmd Msg)
-mouseDownOnTopic topicId boxPath pos pointerType model =
+dragStart : TopicId -> BoxPath -> Point -> PointerType -> Env2 -> (Model, Cmd Msg)
+dragStart topicId boxPath pos pointerType {model} =
   ( model
-      -- update global drag state
-      |> Mouse.setDragState (MouseDef.DragEngaged (Box.firstId boxPath))
-      -- update renderer local drag state
       |> emulateHover topicId boxPath pointerType
       |> setDragState (WaitForStartTime topicId boxPath pos)
   , Cmd.batch
-      [ U.command <| Cancel <| Just (T topicId, boxPath)
+      [ U.command (Cancel (Just (T topicId, boxPath)))
       , Task.perform (TopicMap << TopicMapDef.Time) Time.now
       ]
   )
@@ -71,8 +67,8 @@ timeArrived time ({present} as undoModel) =
         "Received Time when dragState is not WaitFor..Time" (undoModel, Cmd.none)
 
 
-mouseMove : Point -> Env2 -> (Model, Cmd Msg)
-mouseMove pos env =
+drag : Point -> Env2 -> (Model, Cmd Msg)
+drag pos env =
   let
     model = enterLeave pos env
     newEnv = Env.withModel2 env model
@@ -109,17 +105,17 @@ performDrag pos ({model} as env) =
       setDragState (Drag dragMode id boxPath origPos pos target) newModel
         |> Env.autoSize2 env
     _ -> U.logError "TopicMap.Mouse.performDrag"
-      ("Received \"Move\" when dragState is " ++ U.toString model.topicMap.dragState) model
+      ("Received \"Drag\" when dragState is " ++ U.toString model.topicMap.dragState) model
 
 
-mouseUp : Env2 -> (Model, Cmd Msg)
-mouseUp {model} =
+dragStop : Env2 -> (Model, Cmd Msg)
+dragStop {model} =
   let
     cmd =
       case model.topicMap.dragState of
         Drag DragTopic id boxPath origPos _ (Just (T targetId, targetPath)) ->
           let
-            _ = U.info "TopicMap.Mouse.mouseUp" ("dropped " ++ fromInt (toTopicId id)
+            _ = U.info "TopicMap.Mouse.dragStop" ("dropped " ++ fromInt (toTopicId id)
               ++ " (box " ++ Box.fromPath boxPath ++ ") on " ++ fromInt (toTopicId targetId)
               ++ " (box " ++ Box.fromPath targetPath ++ ") --> "
               ++ if shouldMoveToBox then "move topic to box" else "abort")
@@ -135,12 +131,12 @@ mouseUp {model} =
             False -> U.command TopicDragged -- store topic pos
         Drag DragTopic _ _ _ _ _ ->
           let
-            _ = U.info "TopicMap.Mouse.mouseUp" "topic drag ended w/o target"
+            _ = U.info "TopicMap.Mouse.dragStop" "topic drag ended w/o target"
           in
           U.command TopicDragged
         Drag DraftAssoc id boxPath _ _ (Just (T targetId, targetPath)) ->
           let
-            _ = U.info "TopicMap.Mouse.mouseUp" ("assoc drawn from " ++ fromInt (toTopicId id)
+            _ = U.info "TopicMap.Mouse.dragStop" ("assoc drawn from " ++ fromInt (toTopicId id)
               ++ " (box " ++ Box.fromPath boxPath ++ ") to " ++ fromInt (toTopicId targetId)
               ++ " (box " ++ Box.fromPath targetPath ++ ") --> "
               ++ if isSameBox then "create assoc" else "abort")
@@ -152,12 +148,12 @@ mouseUp {model} =
             False -> Cmd.none
         Drag DraftAssoc _ _ _ _ _ ->
           let
-            _ = U.info "TopicMap.Mouse.mouseUp" "assoc ended w/o target"
+            _ = U.info "TopicMap.Mouse.dragStop" "assoc ended w/o target"
           in
           Cmd.none
         DragEngaged _ id boxPath _ ->
           let
-            _ = U.info "TopicMap.Mouse.mouseUp" "item not moved -> ItemClicked"
+            _ = U.info "TopicMap.Mouse.dragStop" "item not moved -> ItemClicked"
           in
           U.command <| ItemClicked (T id) boxPath
         _ ->

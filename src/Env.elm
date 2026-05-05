@@ -1,5 +1,4 @@
-module Env exposing (ExtManager, Env, Env2, autoSize, autoSize2, withModel, withModel2)
--- TODO: don't expose AutoSize?
+module Env exposing (Env, Env2, ExtManager, autoSize, autoSize2, withModel, withModel2)
 
 import Model exposing (Model, Msg)
 import ModelBase exposing (..)
@@ -10,17 +9,6 @@ import Html exposing (Html)
 
 
 -- TYPES
-
-
-type alias ExtManager =
-  { view : BoxRenderer
-  , hitTest : HitTest
-  , autoSize : AutoSize
-  , toolbar : Toolbar
-  , mouseMove : MouseMove
-  , mouseUp : MouseUp
-  , all : Extensions
-  }
 
 
 {-| The environment the application passes to the modules -}
@@ -35,6 +23,18 @@ type alias Env =
 type alias Env2 =
   { model : Model
   , ext : ExtManager
+  }
+
+
+type alias ExtManager =
+  { view : BoxRenderer
+  , hitTest : HitTest
+  , autoSize : AutoSize
+  , toolbar : Toolbar
+  , dragStart : DragStart
+  , drag : Drag
+  , dragStop : DragStop
+  , all : Extensions
   }
 
 
@@ -56,11 +56,15 @@ type alias Toolbar =
   BoxId -> Model -> ToolbarPos
 
 
-type alias MouseMove =
+type alias DragStart =
+  TopicId -> BoxPath -> Point -> PointerType -> Model -> (Model, Cmd Msg)
+
+
+type alias Drag =
   BoxId -> Point -> Model -> (Model, Cmd Msg)
 
 
-type alias MouseUp =
+type alias DragStop =
   BoxId -> Model -> (Model, Cmd Msg)
 
 

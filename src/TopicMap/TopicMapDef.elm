@@ -50,7 +50,7 @@ type DragState
   | DragEngaged Time.Posix TopicId BoxPath Point -- start point (mouse)
   | WaitForEndTime Time.Posix TopicId BoxPath Point -- start point (mouse)
   | Drag DragMode TopicId BoxPath Point Point (Maybe Target) -- orig topic pos
-                                                        -- last point (mouse)
+                                                             -- last point (mouse)
   | NoDrag
 
 
@@ -60,10 +60,7 @@ type DragMode
 
 
 type Msg
-  -- Mouse
-  = DownOnTopic TopicId BoxPath (Point, PointerType) -- mouse down on topic, drag engaged
-  | Time Time.Posix
-  -- TopicMap
+  = Time Time.Posix
   | GotRandomPos TopicId BoxId Point
 
 

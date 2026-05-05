@@ -14,11 +14,14 @@ init =
 
 
 type DragState
-  = DragEngaged BoxId
+  = DragInProgress BoxId
   | NoDrag
 
 
 type Msg
-  = Move (Point, PointerType)
-  | Up
-  | Cancel -- TODO: mouse down somewhere, cancelling, rename "Cancel"?
+  -- Topic dragging
+  = DragStart TopicId BoxPath (Point, PointerType) -- mouse down on topic
+  | Drag (Point, PointerType)
+  | DragStop
+  -- UI cancellation
+  | Cancel -- mouse down somewhere

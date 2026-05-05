@@ -27,8 +27,9 @@ type alias Extension =
   , hitTest : NestingHitTest
   , autoSize : NestingAutoSize
   , toolbar : NestingToolbar
-  , mouseMove : NestingMouseMove
-  , mouseUp : NestingMouseUp
+  , dragStart : NestingDragStart
+  , drag : NestingDrag
+  , dragStop : NestingDragStop
   }
 
 
@@ -57,12 +58,17 @@ type alias NestingToolbar =
 
 
 -- TODO: wording
-type alias NestingMouseMove =
+type alias NestingDragStart =
+  TopicId -> BoxPath -> Point -> PointerType -> Env2 -> (Model, Cmd Msg)
+
+
+-- TODO: wording
+type alias NestingDrag =
   Point -> Env2 -> (Model, Cmd Msg)
 
 
 -- TODO: wording
-type alias NestingMouseUp =
+type alias NestingDragStop =
   Env2 -> (Model, Cmd Msg)
 
 
@@ -76,8 +82,9 @@ ext =
   , hitTest = hitTest
   , autoSize = autoSize
   , toolbar = toolbar
-  , mouseMove = mouseMove
-  , mouseUp = mouseUp
+  , dragStart = dragStart
+  , drag = drag
+  , dragStop = dragStop
   , all = all
   }
 
@@ -93,8 +100,9 @@ registry =
         , hitTest = TopicMap.Geometry.hitTest
         , autoSize = TopicMap.Size.autoSize
         , toolbar = TopicMap.Geometry.toolbarPos
-        , mouseMove = TopicMap.Mouse.mouseMove
-        , mouseUp = TopicMap.Mouse.mouseUp
+        , dragStart = TopicMap.Mouse.dragStart
+        , drag = TopicMap.Mouse.drag
+        , dragStop = TopicMap.Mouse.dragStop
         }
       )
     , ("TopicList",
@@ -103,15 +111,16 @@ registry =
         , hitTest = TopicList.Geometry.hitTest
         , autoSize = TopicList.Geometry.autoSize
         , toolbar = TopicList.Geometry.toolbarPos
-        , mouseMove = TopicList.TopicList.mouseMove
-        , mouseUp = TopicList.TopicList.mouseUp
+        , dragStart = TopicList.TopicList.dragStart
+        , drag = TopicList.TopicList.drag
+        , dragStop = TopicList.TopicList.dragStop
         }
       )
     ]
 
 
 
---
+-- Note: these functions implement the "capability" type signatures defined in Env.elm
 
 
 {-| The dispatching box renderer.
@@ -144,16 +153,22 @@ toolbar boxId model =
     (\env renderer -> renderer.toolbar boxId model)
 
 
-mouseMove : BoxId -> Point -> Model -> (Model, Cmd Msg)
-mouseMove boxId pos model =
-  dispatch boxId model (model, Cmd.none)
-    (\env renderer -> renderer.mouseMove pos env)
+dragStart : TopicId -> BoxPath -> Point -> PointerType -> Model -> (Model, Cmd Msg)
+dragStart topicId boxPath pos pointerType model =
+  dispatch (Box.firstId boxPath) model (model, Cmd.none)
+    (\env renderer -> renderer.dragStart topicId boxPath pos pointerType env)
 
 
-mouseUp : BoxId -> Model -> (Model, Cmd Msg)
-mouseUp boxId model =
+drag : BoxId -> Point -> Model -> (Model, Cmd Msg)
+drag boxId pos model =
   dispatch boxId model (model, Cmd.none)
-    (\env renderer -> renderer.mouseUp env)
+    (\env renderer -> renderer.drag pos env)
+
+
+dragStop : BoxId -> Model -> (Model, Cmd Msg)
+dragStop boxId model =
+  dispatch boxId model (model, Cmd.none)
+    (\env renderer -> renderer.dragStop env)
 
 
 dispatch : BoxId -> Model -> result -> (Env2 -> Extension -> result) -> result

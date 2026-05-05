@@ -1,4 +1,4 @@
-module TopicList.TopicList exposing (view, listSize, mouseMove, mouseUp)
+module TopicList.TopicList exposing (view, listSize, dragStart, drag, dragStop)
 
 import Box
 import Config as C
@@ -95,13 +95,18 @@ listFontStyle =
 -- EVENTS (Todo)
 
 
-mouseMove : Point -> Env2 -> (Model, Cmd Msg)
-mouseMove pos {model} =
+dragStart : TopicId -> BoxPath -> Point -> PointerType -> Env2 -> (Model, Cmd Msg)
+dragStart topicId boxPath pos pointerType {model} =
   (model, Cmd.none)
 
 
-mouseUp : Env2 -> (Model, Cmd Msg)
-mouseUp {model} =
+drag : Point -> Env2 -> (Model, Cmd Msg)
+drag pos {model} =
+  (model, Cmd.none)
+
+
+dragStop : Env2 -> (Model, Cmd Msg)
+dragStop {model} =
   (model, Cmd.none)
 
 

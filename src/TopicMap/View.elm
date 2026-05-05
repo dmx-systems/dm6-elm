@@ -9,7 +9,7 @@ import Feature.Sel as Sel
 import Feature.Text as Text
 import Feature.ToolDef exposing (LineStyle(..))
 import Feature.Tool as Tool
-import Model exposing (Model, Msg(..))
+import Model exposing (Model, Msg)
 import ModelBase exposing (..)
 import Shared.Events as Events
 import Shared.ViewBase as VB
@@ -235,7 +235,7 @@ viewTopic topic mapTopic boxPath ({model, ext}) =
   in
   div
     ( topicAttr topic.id boxPath
-      ++ Events.topicDownHandler (TopicMap << TopicMapDef.DownOnTopic topic.id boxPath)
+      ++ Events.draggable topic.id boxPath
       ++ topicStyle topic.id boxPath model
       ++ style
     )
