@@ -4,10 +4,10 @@ import Feature.IconDef as IconDef
 import Feature.Sel as Sel
 import Model exposing (Model, Msg(..))
 import ModelBase exposing (..)
+import Shared.Events as Events
 import Storage as S
 import Topic
 import Undo exposing (UndoModel)
-import Utils as U
 
 import Dict
 import Html exposing (Html, div, text, button)
@@ -50,7 +50,7 @@ viewIconList =
         ( [ class "tool"
           , title iconName
           , onClick (Just iconName |> IconDef.IconSelected |> Icon)
-          , U.onPointerDownStop NoOp -- Prevent icon picker closing
+          , Events.onPointerDownStop NoOp -- Prevent icon picker closing
           ]
           ++ iconButtonStyle
         )

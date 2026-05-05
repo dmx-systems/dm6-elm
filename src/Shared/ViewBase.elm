@@ -1,11 +1,11 @@
-module ViewBase exposing (boxStyle, topicBorderStyle, selectionStyle)
+module Shared.ViewBase exposing (boxStyle, topicBorderStyle, selectionStyle)
 
 import Box
 import Config as C
+import Feature.Sel as Sel
 import Model exposing (Model, Msg)
 import ModelBase exposing (..)
-import Feature.MouseDef exposing (DragState(..), DragMode(..))
-import Feature.Sel as Sel
+import TopicMap.TopicMapDef exposing (DragState(..), DragMode(..))
 
 import Html.Attributes exposing (style)
 import String exposing (fromInt)
@@ -40,7 +40,7 @@ topicBorderStyle : TopicId -> BoxPath -> Model -> Attrs Msg
 topicBorderStyle id boxPath model =
   let
     isTarget_ = isTarget id boxPath
-    targeted = case model.mouse.dragState of
+    targeted = case model.topicMap.dragState of
       -- can't move a topic to a box where it is already, can happen if mouse moves very quick
       -- can't create assoc when both topics are in different box
       Drag DragTopic _ (boxId_ :: _) _ _ target -> isTarget_ target && fromBoxId boxId_ /= id

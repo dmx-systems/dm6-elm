@@ -3,13 +3,12 @@ module TopicMap.Size exposing (autoSize)
 import Box
 import Config as C
 import Env exposing (ExtManager, Env2)
-import Feature.MouseDef exposing (DragState(..), DragMode(..))
 import Feature.TextDef exposing (EditState(..))
 import Model exposing (Model)
 import ModelBase exposing (..)
 import Topic
 import TopicMap.TopicMap as TM
-import TopicMap.TopicMapDef exposing (MapTopic)
+import TopicMap.TopicMapDef exposing (MapTopic, DragState(..), DragMode(..))
 import TopicMap.ViewModel as VM
 import Utils as U
 
@@ -143,7 +142,7 @@ updateBoxGeometry boxPath newRect oldRect model =
     boxId :: parentBoxId :: _ ->
       let
         (isDragInProgress, isOnDragPath, isBoxInDragPath) =
-          case model.mouse.dragState of
+          case model.topicMap.dragState of
             Drag DragTopic _ dragPath _ _ _ ->
               (True
               , (dragPath |> List.drop (List.length dragPath - List.length boxPath)) == boxPath

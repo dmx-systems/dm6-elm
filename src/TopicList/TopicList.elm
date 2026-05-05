@@ -1,16 +1,16 @@
-module TopicList.TopicList exposing (view, listSize)
+module TopicList.TopicList exposing (view, listSize, dragStart, drag, dragStop)
 
 import Box
 import Config as C
 import Dict
 import Env exposing (Env2)
-import Feature.Mouse as Mouse
 import Feature.Text as Text
 import Feature.Tool as Tool
 import Model exposing (Model, Msg)
 import ModelBase exposing (..)
+import Shared.Events as Events
+import Shared.ViewBase as VB
 import Topic
-import ViewBase as VB
 
 import Html exposing (Html, div, ul, li, text)
 import Html.Attributes exposing (style)
@@ -39,7 +39,7 @@ viewList boxPath ({model} as env) =
       ( Box.topics boxId model |> List.map
           (\topic ->
             li
-              ( Mouse.itemClickHandler (T topic.id) boxPath
+              ( Events.itemClickHandler (T topic.id) boxPath
                 ++
                 VB.selectionStyle topic.id boxPath model
               )
@@ -89,6 +89,25 @@ listFontStyle =
   , style "font-size" <| fromInt C.contentFontSize ++ "px"
   , style "line-height" <| fromFloat C.topicLineHeight
   ]
+
+
+
+-- EVENTS (Todo)
+
+
+dragStart : TopicId -> BoxPath -> Point -> PointerType -> Env2 -> (Model, Cmd Msg)
+dragStart topicId boxPath pos pointerType {model} =
+  (model, Cmd.none)
+
+
+drag : Point -> Env2 -> (Model, Cmd Msg)
+drag pos {model} =
+  (model, Cmd.none)
+
+
+dragStop : Env2 -> (Model, Cmd Msg)
+dragStop {model} =
+  (model, Cmd.none)
 
 
 

@@ -1,5 +1,4 @@
-module Env exposing (ExtManager, Env, Env2, autoSize, withModel)
--- TODO: don't expose AutoSize?
+module Env exposing (Env, Env2, ExtManager, autoSize, autoSize2, withModel, withModel2)
 
 import Model exposing (Model, Msg)
 import ModelBase exposing (..)
@@ -10,15 +9,6 @@ import Html exposing (Html)
 
 
 -- TYPES
-
-
-type alias ExtManager =
-  { view : BoxRenderer
-  , hitTest : HitTest
-  , autoSize : AutoSize
-  , toolbar : Toolbar
-  , all : Extensions
-  }
 
 
 {-| The environment the application passes to the modules -}
@@ -33,6 +23,18 @@ type alias Env =
 type alias Env2 =
   { model : Model
   , ext : ExtManager
+  }
+
+
+type alias ExtManager =
+  { view : BoxRenderer
+  , hitTest : HitTest
+  , autoSize : AutoSize
+  , toolbar : Toolbar
+  , dragStart : DragStart
+  , drag : Drag
+  , dragStop : DragStop
+  , all : Extensions
   }
 
 
@@ -54,9 +56,23 @@ type alias Toolbar =
   BoxId -> Model -> ToolbarPos
 
 
+type alias DragStart =
+  TopicId -> BoxPath -> Point -> PointerType -> Model -> (Model, Cmd Msg)
+
+
+type alias Drag =
+  BoxId -> Point -> Model -> (Model, Cmd Msg)
+
+
+type alias DragStop =
+  BoxId -> Model -> (Model, Cmd Msg)
+
+
 
 -- HELPER
 
+
+-- TODO: consolidate
 
 autoSize : Env -> Model -> Model
 autoSize {ext} model =
@@ -65,6 +81,18 @@ autoSize {ext} model =
     |> Tuple.second
 
 
+autoSize2 : Env2 -> Model -> Model
+autoSize2 {ext} model =
+  model
+    |> ext.autoSize [ model.boxId ]
+    |> Tuple.second
+
+
 withModel : Env -> Model -> Env
 withModel env model =
+  { env | model = model }
+
+
+withModel2 : Env2 -> Model -> Env2
+withModel2 env model =
   { env | model = model }

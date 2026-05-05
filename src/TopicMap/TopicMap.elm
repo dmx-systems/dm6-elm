@@ -1,6 +1,6 @@
-module TopicMap.TopicMap exposing (update, create, topics, topicPos, setTopicPos,
-  updateTopicPos, mapTopicOrNothing, assocGeometry, addTopic, initLimboMapTopic,
-  initTopicPos, hasMapTopic, fullscreen, byId, updateRect, updateScrollPos, revelationBoxId,
+module TopicMap.TopicMap exposing (create, topics, topicPos, setTopicPos, updateTopicPos,
+  mapTopicOrNothing, assocGeometry, addTopic, addTopic_, initLimboMapTopic, initTopicPos,
+  hasMapTopic, fullscreen, byId, updateRect, updateScrollPos, revelationBoxId,
   revelationBoxPath, landingTarget)
 
 import Box
@@ -10,9 +10,7 @@ import Feature.SearchDef exposing (SearchResult(..))
 import Feature.Sel as Sel
 import Model exposing (Model, Msg)
 import ModelBase exposing (..)
-import Storage as S
 import TopicMap.TopicMapDef as TopicMapDef exposing (TopicMap, MapTopic)
-import Undo exposing (UndoModel)
 import Utils as U
 
 import Dict
@@ -20,18 +18,6 @@ import Random
 import String exposing (fromInt)
 
 
-
--- UPDATE
-
-
-update : TopicMapDef.Msg -> Env -> (UndoModel, Cmd Msg)
-update msg ({undoModel} as env) =
-  case msg of
-    TopicMapDef.AddTopic topicId mapId pos -> addTopic_ topicId mapId pos env
-      |> S.store |> Undo.push undoModel
-
-
---
 
 create : BoxId -> Model -> Model
 create mapId model =
@@ -44,8 +30,8 @@ create mapId model =
 
 create_ : TopicMap -> Model -> Model
 create_ map ({topicMap} as model) =
-  { model | topicMap = topicMap
-    |> Dict.insert (toBoxId map.id) map
+  { model | topicMap =
+    { topicMap | topicMaps = topicMap.topicMaps |> Dict.insert (toBoxId map.id) map }
   }
 
 
@@ -122,7 +108,7 @@ addTopic topicId mapId posHint model =
   else
     if posHint == Random then
       let
-        toMsg = Model.TopicMap << TopicMapDef.AddTopic topicId mapId
+        toMsg = Model.TopicMap << TopicMapDef.GotRandomPos topicId mapId
       in
       (model, Random.generate toMsg pointGen)
     else
@@ -240,7 +226,7 @@ fullscreen model =
 {-| Logs an error if TopicMap does not exist. -}
 byId : BoxId -> Model -> Maybe TopicMap
 byId mapId model =
-  case model.topicMap |> Dict.get (toBoxId mapId) of
+  case model.topicMap.topicMaps |> Dict.get (toBoxId mapId) of
     Just map -> Just map
     Nothing -> U.boxNotFound "TopicMap.byId" mapId Nothing
 
@@ -268,13 +254,14 @@ Logs an error if TopicMap does not exist.
 -}
 updateTopicMap : BoxId -> (TopicMap -> TopicMap) -> Model -> Model
 updateTopicMap mapId transform ({topicMap} as model) =
-  { model | topicMap = topicMap
-    |> Dict.update (toBoxId mapId)
+  { model | topicMap =
+    { topicMap | topicMaps = topicMap.topicMaps |> Dict.update (toBoxId mapId)
       (\maybeMap ->
         case maybeMap of
           Just map -> Just (transform map)
           Nothing -> U.boxNotFound "TopicMap.updateTopicMap" mapId Nothing
       )
+    }
   }
 
 

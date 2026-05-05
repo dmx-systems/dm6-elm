@@ -11,6 +11,7 @@ import Feature.SearchDef as SearchDef exposing (SearchResult(..))
 import Feature.Sel as Sel
 import Model exposing (Model, Msg(..))
 import ModelBase exposing (..)
+import Shared.Events as Events
 import Storage as S
 import Topic
 import TopicMap.TopicMap as TM
@@ -40,7 +41,7 @@ viewInput model =
       ( [ value model.search.term
         , onInput (Search << SearchDef.Input)
         , onFocus (Search SearchDef.InputFocused)
-        , U.onPointerDownStop <| Cancel target -- Don't clear selection
+        , Events.onPointerDownStop <| Cancel target -- Don't clear selection
         ]
         ++ searchInputStyle
       )
@@ -81,7 +82,7 @@ viewTraversalResult model =
 viewSearchtMenu : List TopicId -> Model -> Html Msg
 viewSearchtMenu topicIds model =
   div
-    ( [ U.onPointerDownStop NoOp ] -- Prevent search menu closing
+    ( [ Events.onPointerDownStop NoOp ] -- Prevent search menu closing
       ++ searchResultStyle
       ++ menuStyle
     )
@@ -112,7 +113,7 @@ viewSearchtMenu topicIds model =
 viewTraversalMenu : List (TopicId, AssocId) -> Model -> Html Msg
 viewTraversalMenu relTopicIds model =
   div
-    ( [ U.onPointerDownStop NoOp ] -- Prevent traversal menu closing
+    ( [ Events.onPointerDownStop NoOp ] -- Prevent traversal menu closing
       ++ traversalResultStyle
       ++ menuStyle
     )
@@ -214,9 +215,9 @@ viewFullscreenButton topicId model =
       ( [ class "tool"
         , title "Fullscreen"
         , disabled isDisabled      -- don't trigger menu item ↓
-        , U.onClickStop <| Search <| SearchDef.Fullscreen (BoxId topicId)
-        , U.onPointerOverStop NoOp -- don't highlight menu item along with button
-        , U.onPointerOutStop NoOp -- don't highlight menu item along with button
+        , Events.onClickStop <| Search <| SearchDef.Fullscreen (BoxId topicId)
+        , Events.onPointerOverStop NoOp -- don't highlight menu item along with button
+        , Events.onPointerOutStop NoOp -- don't highlight menu item along with button
         ]
         ++ fullscreenButtonStyle
       )

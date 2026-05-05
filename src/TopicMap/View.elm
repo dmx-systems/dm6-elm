@@ -5,20 +5,19 @@ import Box
 import Config as C
 import Env exposing (ExtManager, Env2)
 import Feature.Icon as Icon
-import Feature.MouseDef exposing (DragState(..), DragMode(..))
-import Feature.Mouse as Mouse
 import Feature.Sel as Sel
 import Feature.Text as Text
 import Feature.ToolDef exposing (LineStyle(..))
 import Feature.Tool as Tool
 import Model exposing (Model, Msg)
 import ModelBase exposing (..)
+import Shared.Events as Events
+import Shared.ViewBase as VB
 import Topic
 import TopicMap.TopicMap as TM
-import TopicMap.TopicMapDef exposing (TopicMap, MapTopic)
+import TopicMap.TopicMapDef as TopicMapDef exposing (MapTopic, DragState(..), DragMode(..))
 import TopicMap.ViewModel as VM
 import Utils as U
-import ViewBase as VB
 
 import Html exposing (Html, div, text)
 import Html.Attributes exposing (id, style)
@@ -151,7 +150,7 @@ boxInfo boxId boxPath ({model} as env) =
 
 
 -- For the fullscreen box boxPath is empty
-viewItems : TopicMap -> BoxPath -> Env2 -> (List (Html Msg), List (Svg Msg))
+viewItems : TopicMapDef.TopicMap -> BoxPath -> Env2 -> (List (Html Msg), List (Svg Msg))
 viewItems map boxPath ({model} as env) =
   let
     newPath = map.id :: boxPath
@@ -169,7 +168,7 @@ viewItems map boxPath ({model} as env) =
           case Assoc.fromId id model of
             Just assoc ->
               let
-                clickHandler = Mouse.itemClickHandler (A id) newPath
+                clickHandler = Events.itemClickHandler (A id) newPath
               in
               svgAcc ++ viewAssoc assoc newPath clickHandler model
             _ -> U.logError "TopicMap.View.viewItems"
@@ -236,7 +235,7 @@ viewTopic topic mapTopic boxPath ({model, ext}) =
   in
   div
     ( topicAttr topic.id boxPath
-      ++ Mouse.topicDownHandler topic.id boxPath
+      ++ Events.draggable topic.id boxPath
       ++ topicStyle topic.id boxPath model
       ++ style
     )
@@ -255,7 +254,7 @@ topicStyle id boxPath model =
   let
     boxId = Box.firstId boxPath
     isLimbo = VM.isLimboTopic id boxId model
-    isDragging = case model.mouse.dragState of
+    isDragging = case model.topicMap.dragState of
       Drag DragTopic id_ boxPath_ _ _ _ -> id_ == id && boxPath_ == boxPath
       _ -> False
     isSelected = Sel.isSelected (T id) boxPath model
@@ -527,7 +526,7 @@ viewAssoc assoc boxPath clickHandler model =
 
 viewAssocDraft : BoxId -> Model -> List (Svg Msg)
 viewAssocDraft mapId model =
-  case model.mouse.dragState of
+  case model.topicMap.dragState of
     Drag DraftAssoc _ boxPath origPos pos _ ->
       case (Box.firstId boxPath == mapId, TM.fullscreen model) of
         (True, Just map) ->

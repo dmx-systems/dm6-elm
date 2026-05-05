@@ -1,21 +1,32 @@
-module TopicMap.TopicMapDef exposing (Model, TopicMap, MapTopic, Msg(..), init, encode, decoder)
+module TopicMap.TopicMapDef exposing (Model, TopicMap, MapTopic, DragState(..), DragMode(..),
+  Msg(..), init, encode, decoder)
 
 import ModelBase exposing (..)
+
 import Dict exposing (Dict)
 import Json.Decode as D
 import Json.Encode as E
+import Time
 
 
 
 type alias Model =
-  Dict Id TopicMap
+  { topicMaps : Dict Id TopicMap
+  , dragState : DragState
+  , hover : Maybe Target -- TODO: make it explicitly TopicTarget?
+  }
 
 
 init : Model
 init =
-  Dict.singleton
-    (toBoxId rootBoxId)
-    (TopicMap rootBoxId (Rectangle 0 0 0 0) (Point 0 0) Dict.empty)
+  { topicMaps =
+      Dict.singleton
+        (toBoxId rootBoxId)
+        (TopicMap rootBoxId (Rectangle 0 0 0 0) (Point 0 0) Dict.empty)
+  -- transient
+  , dragState = NoDrag
+  , hover = Nothing
+  }
 
 
 type alias TopicMap =
@@ -34,8 +45,23 @@ type alias MapTopic =
   }
 
 
+type DragState
+  = WaitForStartTime TopicId BoxPath Point -- start point (mouse)
+  | DragEngaged Time.Posix TopicId BoxPath Point -- start point (mouse)
+  | WaitForEndTime Time.Posix TopicId BoxPath Point -- start point (mouse)
+  | Drag DragMode TopicId BoxPath Point Point (Maybe Target) -- orig topic pos
+                                                             -- last point (mouse)
+  | NoDrag
+
+
+type DragMode
+  = DragTopic
+  | DraftAssoc
+
+
 type Msg
-  = AddTopic TopicId BoxId Point -- random pos
+  = Time Time.Posix
+  | GotRandomPos TopicId BoxId Point
 
 
 
@@ -46,9 +72,9 @@ type Msg
 
 encode : Model -> E.Value
 encode model =
-  model
-    |> Dict.values
-    |> E.list encodeTopicMap
+  E.object
+    [ ("topicMaps", E.list encodeTopicMap (model.topicMaps |> Dict.values))
+    ]
 
 
 encodeTopicMap : TopicMap -> E.Value
@@ -90,7 +116,10 @@ encodeMapTopic topic =
 
 decoder : D.Decoder Model
 decoder =
-  toDictDecoderWith toBoxId topicMapDecoder
+  D.map3 Model
+    (D.field "topicMaps" (toDictDecoderWith toBoxId topicMapDecoder))
+    (D.succeed NoDrag)
+    (D.succeed Nothing)
 
 
 topicMapDecoder : D.Decoder TopicMap

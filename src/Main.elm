@@ -6,8 +6,8 @@ import Config as C
 import Env exposing (Env)
 import ExtManager
 import Feature.Icon as Icon
-import Feature.MouseDef as MouseDef
 import Feature.Mouse as Mouse
+import Feature.MouseDef as MouseDef
 import Feature.Nav as Nav
 import Feature.Search as Search
 import Feature.Sel as Sel
@@ -15,13 +15,15 @@ import Feature.Text as Text
 import Feature.Tool as Tool
 import Model exposing (Model, Msg(..))
 import ModelBase exposing (..)
+import Shared.Events as Events
 import Storage as S
+import TopicMap.Mouse as Mouse
+import TopicMap.Controller as TMC
 import TopicMap.TopicMap as TM
 import Undo exposing (UndoModel)
 import Utils as U
 
 import Browser
-import Dict
 import Html exposing (Html, div, text, br, a)
 import Html.Attributes exposing (id, style, href)
 import Json.Decode as D
@@ -101,7 +103,7 @@ view ({present} as undoModel) =
   Browser.Document
     "DM6 Elm"
     [ div
-        ( Mouse.dragHandler
+        ( Events.globalMouseHandler
           ++ appStyle
         )
         [ div
@@ -266,7 +268,7 @@ update msg ({present} as undoModel) =
       }
     _ =
       case msg of
-        Mouse (MouseDef.Move _) -> msg
+        Mouse (MouseDef.Drag _) -> msg
         _ -> U.info "Main.update" msg
   in
   case msg of
@@ -279,7 +281,7 @@ update msg ({present} as undoModel) =
     ItemClicked itemId boxPath -> select itemId boxPath present |> Undo.swap undoModel
     Cancel maybeTarget -> cancelUI maybeTarget env |> Undo.swap undoModel
     -- renderer modules
-    TopicMap topicMapMsg -> TM.update topicMapMsg env
+    TopicMap topicMapMsg -> TMC.update topicMapMsg env
     -- feature modules
     Tool toolMsg -> Tool.update toolMsg env
     Text textMsg -> Text.update textMsg env
