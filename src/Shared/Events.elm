@@ -15,8 +15,8 @@ globalMouseHandler : Attrs Msg
 globalMouseHandler =
   -- Topic Dragging. Note: dragging starts within the respective renderers. They attach
   -- pointerdown handlers to specific topics (using "topicDownHandler" utility above)
-  [ on "pointermove" (D.map (Mouse << MouseDef.Drag) pointDecoder)
-  , on "pointerup" (D.succeed (Mouse MouseDef.DragStop))
+  [ on "pointermove" (D.map (Mouse << MouseDef.Move) pointDecoder)
+  , on "pointerup" (D.succeed (Mouse MouseDef.Up))
   -- "Cancel UI"
   , on "pointerdown" (D.succeed (Mouse MouseDef.Cancel))
   ]

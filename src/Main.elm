@@ -268,7 +268,7 @@ update msg ({present} as undoModel) =
       }
     _ =
       case msg of
-        Mouse (MouseDef.Drag _) -> msg
+        Mouse (MouseDef.Move _) -> msg
         _ -> U.info "Main.update" msg
   in
   case msg of

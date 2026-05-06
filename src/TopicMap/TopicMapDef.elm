@@ -13,7 +13,6 @@ import Time
 type alias Model =
   { topicMaps : Dict Id TopicMap
   , dragState : DragState
-  , hover : Maybe Target -- TODO: make it explicitly TopicTarget?
   }
 
 
@@ -25,7 +24,6 @@ init =
         (TopicMap rootBoxId (Rectangle 0 0 0 0) (Point 0 0) Dict.empty)
   -- transient
   , dragState = NoDrag
-  , hover = Nothing
   }
 
 
@@ -116,10 +114,9 @@ encodeMapTopic topic =
 
 decoder : D.Decoder Model
 decoder =
-  D.map3 Model
+  D.map2 Model
     (D.field "topicMaps" (toDictDecoderWith toBoxId topicMapDecoder))
     (D.succeed NoDrag)
-    (D.succeed Nothing)
 
 
 topicMapDecoder : D.Decoder TopicMap

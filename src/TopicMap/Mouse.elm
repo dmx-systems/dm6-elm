@@ -36,7 +36,7 @@ dragStart topicId boxPath pos pointerType {model} =
 emulateHover : TopicId -> BoxPath -> PointerType -> Model -> Model
 emulateHover topicId boxPath pointerType model =
   case pointerType == "touch" of
-    True -> model |> setHover (Just (T topicId, boxPath))
+    True -> model |> Mouse.setHover (Just (T topicId, boxPath))
     False -> model
 
 
@@ -70,7 +70,7 @@ timeArrived time ({present} as undoModel) =
 drag : Point -> Env2 -> (Model, Cmd Msg)
 drag pos env =
   let
-    model = enterLeave pos env
+    model = updateTarget pos env
     newEnv = Env.withModel2 env model
   in
   case model.topicMap.dragState of
@@ -82,6 +82,37 @@ drag pos env =
       ( performDrag pos newEnv, Cmd.none )
     _ ->
       ( model, Cmd.none )
+
+
+{-| If Drag is in progress updates its "target" based on Mouse "hover" state.
+-}
+updateTarget : Point -> Env2 -> Model
+updateTarget pos {model, ext} =
+  case model.topicMap.dragState of
+    Drag dragMode id boxPath origPos lastPos _ ->
+      let
+        dragState = Drag dragMode id boxPath origPos lastPos
+      in
+      case model.mouse.hover of
+        Just ((T topicId, _) as target) ->
+          let
+            isCyclic = Box.hadDeepTopic topicId id model
+            newTarget =
+              -- the hovered item (targetId) is accepted as a drop target if it is
+              -- 1. not contained in item/box being dragged (id), this would create a cycle
+              -- 2. OR draft assoc is in progress
+              if not isCyclic || dragMode == DraftAssoc then
+                Just target
+              else
+                Nothing
+          in
+          model -- update target
+            |> setDragState (dragState newTarget)
+        Nothing ->
+          model -- reset target
+            |> setDragState (dragState Nothing)
+        _ -> model
+    _ -> model
 
 
 performDrag : Point -> Env2 -> Model
@@ -162,98 +193,15 @@ dragStop {model} =
   (setDragState NoDrag model, cmd)
 
 
-{- Emulates enter/leave events by the means of geometry. Based on the given pointer
-coordinate decides whether to call the "enter" and/or "leave" handlers. -}
-enterLeave : Point -> Env2 -> Model
-enterLeave pos {model, ext} =
-  let
-    initPos =
-      Point
-        (pos.x)
-        (pos.y - C.appHeaderHeight)
-    excludeTopicId =
-      case model.topicMap.dragState of
-        Drag DragTopic topicId _ _ _ _ -> Just topicId
-        _ -> Nothing
-  in
-  case ext.hitTest model.boxId [] initPos excludeTopicId model of
-    Just target ->
-      case model.topicMap.hover of
-        Just oldTarget ->
-          case target /= oldTarget of
-            True ->
-              model
-                |> leave oldTarget
-                |> enter target
-            False -> model
-        Nothing -> enter target model
-    Nothing ->
-      case model.topicMap.hover of
-        Just oldTarget -> leave oldTarget model
-        Nothing -> model
-
-
-enter : Target -> Model -> Model
-enter (targetId, targetPath) model =
-  case targetId of
-    T topicId ->
-      let
-        newModel =
-          case model.topicMap.dragState of
-            Drag dragMode id boxPath origPos lastPos _ ->
-              let
-                isCyclic = Box.hadDeepTopic topicId id model
-                target =
-                  -- the hovered item (targetId) is accepted as a drop target if it is
-                  -- 1. not contained in item/box being dragged (id), this would create a cycle
-                  -- 2. OR draft assoc is in progress
-                  if not isCyclic || dragMode == DraftAssoc then
-                    Just (targetId, targetPath)
-                  else
-                    Nothing
-              in
-              -- update target
-              model
-                |> setDragState (Drag dragMode id boxPath origPos lastPos target)
-            _ -> model
-      in
-      -- update hover
-      newModel
-        |> setHover (Just (targetId, targetPath))
-    A _ ->
-      model
-
-
-leave : Target -> Model -> Model
-leave (targetId, targetPath) model =
-  let
-    newModel =
-      case model.topicMap.dragState of
-        Drag dragMode id boxPath origPos lastPos _ ->
-          -- reset target
-          model
-            |> setDragState (Drag dragMode id boxPath origPos lastPos Nothing)
-        _ -> model
-  in
-  -- reset hover
-  newModel
-    |> setHover Nothing
-
-
 setDragState : DragState -> Model -> Model
 setDragState dragState ({topicMap} as model) =
   { model | topicMap = { topicMap | dragState = dragState }}
 
 
-setHover : Maybe Target -> Model -> Model
-setHover hover ({topicMap} as model) =
-  { model | topicMap = { topicMap | hover = hover }}
-
-
 clearHover : Model -> Model
 clearHover model =
   model
-    |> setHover Nothing
+    |> Mouse.setHover Nothing
 
 
 isDragInProgress : Model -> Bool
@@ -265,7 +213,7 @@ isDragInProgress model =
 
 isHovered : TopicId -> BoxPath -> Model -> Bool
 isHovered topicId boxPath model =
-  case model.topicMap.hover of
+  case model.mouse.hover of
     Just (T topicId_, boxPath_) ->
       topicId == topicId_ && boxPath == boxPath_
     _ -> False

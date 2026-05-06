@@ -5,23 +5,27 @@ import ModelBase exposing (..)
 
 
 type alias Model =
-  { dragState : DragState }
+  { dragState : DragState
+  , hover : Maybe Target -- TODO: make it explicitly TopicTarget?
+  }
 
 
 init : Model
 init =
-  { dragState = NoDrag }
+  { dragState = NoDrag
+  , hover = Nothing
+  }
 
 
 type DragState
-  = DragInProgress BoxId
-  | NoDrag
+  = NoDrag
+  | DragInProgress TopicId BoxId
 
 
 type Msg
   -- Topic dragging
   = DragStart TopicId BoxPath (Point, PointerType) -- mouse down on topic
-  | Drag (Point, PointerType)
-  | DragStop
+  | Move (Point, PointerType)
+  | Up
   -- UI cancellation
   | Cancel -- mouse down somewhere
