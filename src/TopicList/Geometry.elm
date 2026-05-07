@@ -1,5 +1,6 @@
 module TopicList.Geometry exposing (hitTest, autoSize, toolbarPos)
 
+import Array exposing (Array)
 import Box
 import Config as C
 import Dict
@@ -18,15 +19,36 @@ import Utils as U
 
 hitTest : BoxId -> BoxPath -> Point -> Maybe TopicId -> Env2 -> Maybe Target
 hitTest (BoxId topicId as boxId) boxPath pos excludeTopicId {model} =
-  -- TODO
-  let
-    maybeThisItem : Bool -> Maybe Target
-    maybeThisItem found = if found then Just (T topicId, boxPath) else Nothing
-  in
-  if Box.isFullscreen boxId model then
-    Nothing
+  if isListHovered boxId pos model then
+    let
+      t = targets boxId boxPath model
+      i = round (toFloat (pos.y - 30) / (C.topicLineHeight * C.contentFontSize))
+      target = Array.get i t
+      _ = U.info "TopicList.Geometry.hitTest" target
+    in
+    case target of
+      Just _ -> target
+      Nothing -> Just (T topicId, boxPath)
   else
-    isListHovered boxId pos model |> maybeThisItem
+    Nothing
+
+
+targets : BoxId -> BoxPath -> Model -> Array Target
+targets boxId boxPath model =
+  let
+    path = boxId :: boxPath
+  in
+  Box.topicIds boxId model |> List.foldl
+    (\topicId acc ->
+      let
+        t = Array.push (T topicId, path) acc
+      in
+      if Topic.isBox topicId model then
+        Array.append t (targets (BoxId topicId) path model) -- recursion
+      else
+        t
+    )
+    Array.empty
 
 
 isListHovered : BoxId -> Point -> Model -> Bool
@@ -71,8 +93,10 @@ topicCount boxId model =
 
 setSize : BoxId -> Size -> Model -> Model
 setSize boxId size ({topicList} as model) =
-  { model | topicList = topicList
-    |> Dict.insert (toBoxId boxId) (TopicList boxId size)
+  { model | topicList =
+    { topicList | topicLists = topicList.topicLists
+        |> Dict.insert (toBoxId boxId) (TopicList boxId size)
+    }
   }
 
 

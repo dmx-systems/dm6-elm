@@ -1,5 +1,5 @@
 module TopicMap.Mouse exposing (dragStart, drag, dragStop, timeArrived,
-  isDragInProgress, isHovered, clearHover)
+  isDragInProgress, clearHover)
 
 import Box
 import Config as C
@@ -35,9 +35,11 @@ dragStart topicId boxPath pos pointerType {model} =
 
 emulateHover : TopicId -> BoxPath -> PointerType -> Model -> Model
 emulateHover topicId boxPath pointerType model =
-  case pointerType == "touch" of
-    True -> model |> Mouse.setHover (Just (T topicId, boxPath))
-    False -> model
+  if pointerType == "touch" then
+    model
+      |> Mouse.setHover (Just (T topicId, boxPath))
+  else
+    model
 
 
 timeArrived : Posix -> UndoModel -> (UndoModel, Cmd Msg)
@@ -208,12 +210,4 @@ isDragInProgress : Model -> Bool
 isDragInProgress model =
   case model.topicMap.dragState of
     Drag _ _ _ _ _ _ -> True
-    _ -> False
-
-
-isHovered : TopicId -> BoxPath -> Model -> Bool
-isHovered topicId boxPath model =
-  case model.mouse.hover of
-    Just (T topicId_, boxPath_) ->
-      topicId == topicId_ && boxPath == boxPath_
     _ -> False

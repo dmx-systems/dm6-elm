@@ -1,4 +1,4 @@
-module Feature.Mouse exposing (update, setHover)
+module Feature.Mouse exposing (update, setHover, isHovered)
 
 import Box
 import Config as C
@@ -31,13 +31,13 @@ update msg ({model, undoModel, ext} as env) =
         |> Undo.swap undoModel
     (MouseDef.Up, DragInProgress topicId boxId) ->
       model
-        |> setDragState (MouseDef.NoDrag)
+        |> setDragState (NoDrag)
         |> ext.dragStop boxId
         |> Undo.swap undoModel
     (MouseDef.Cancel, _) ->
       (undoModel, U.command <| Cancel Nothing)
     _ ->
-      -- Note: not an error
+      -- TODO: match no-op vs. error cases explicitly
       (undoModel, Cmd.none)
 
 
@@ -63,3 +63,11 @@ setDragState dragState ({mouse} as model) =
 setHover : Maybe Target -> Model -> Model
 setHover hover ({mouse} as model) =
   { model | mouse = { mouse | hover = hover }}
+
+
+isHovered : TopicId -> BoxPath -> Model -> Bool
+isHovered topicId boxPath model =
+  case model.mouse.hover of
+    Just (T topicId_, boxPath_) ->
+      topicId == topicId_ && boxPath == boxPath_
+    _ -> False

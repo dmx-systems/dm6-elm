@@ -4,6 +4,7 @@ import Box
 import Config as C
 import Dict
 import Env exposing (Env2)
+import Feature.Mouse as Mouse
 import Feature.Text as Text
 import Feature.Tool as Tool
 import Model exposing (Model, Msg)
@@ -40,8 +41,8 @@ viewList boxPath ({model} as env) =
           (\topic ->
             li
               ( Events.itemClickHandler (T topic.id) boxPath
-                ++
-                VB.selectionStyle topic.id boxPath model
+                ++ VB.selectionStyle topic.id boxPath model
+                ++ hoverStyle topic.id boxPath model
               )
               ( [ viewTopic topic boxPath model ]
                 ++
@@ -54,6 +55,14 @@ viewList boxPath ({model} as env) =
       )
   ]
   ++ Tool.viewToolbar boxPath env
+
+
+hoverStyle : TopicId -> BoxPath -> Model -> Attrs Msg
+hoverStyle topicId boxPath model =
+  if Mouse.isHovered topicId boxPath model then
+    [ style "background-color" "beige" ] -- for debug
+  else
+    []
 
 
 viewTopic : Topic -> BoxPath -> Model -> Html Msg
@@ -116,6 +125,6 @@ dragStop {model} =
 
 listSize : BoxId -> Model -> Size
 listSize boxId model =
-  case model.topicList |> Dict.get (toBoxId boxId) of -- TODO: log error
+  case model.topicList.topicLists |> Dict.get (toBoxId boxId) of -- TODO: log error
     Just {size} -> size
     Nothing -> Size 0 0

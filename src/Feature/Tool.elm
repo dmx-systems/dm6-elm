@@ -7,6 +7,7 @@ import Config as C
 import Env exposing (ExtManager, Env, Env2)
 import Extension exposing (Renderer)
 import Feature.Icon as Icon
+import Feature.Mouse as Mouse
 import Feature.Nav as Nav
 import Feature.Search as Search
 import Feature.Sel as Sel
@@ -17,7 +18,7 @@ import ModelBase exposing (..)
 import Shared.Events as Events
 import Storage as S
 import Topic
-import TopicMap.Mouse as Mouse
+import TopicMap.Mouse as TMMouse
 import TopicMap.TopicMap as TM
 import Undo exposing (UndoModel)
 import Utils as U
@@ -334,7 +335,7 @@ viewTopicTools topicId boxPath model =
   let
     boxId = Box.firstId boxPath
     isHovered = Mouse.isHovered topicId boxPath model
-    isDrag = Mouse.isDragInProgress model
+    isDrag = TMMouse.isDragInProgress model
     isEdit = Text.isEdit topicId boxPath model
   in
   if isHovered && not isDrag && not isEdit then
