@@ -9,7 +9,7 @@ import Json.Encode as E
 
 type alias Model =
   { topicLists : Dict Id TopicList
-  , dragState : DragState
+  , dragState : DragState -- transient
   }
 
 
@@ -22,6 +22,7 @@ init =
 
 type alias TopicList =
   { id : BoxId
+  , order : List TopicId
   , size : Size
   }
 
@@ -49,6 +50,7 @@ encodeTopicList : TopicList -> E.Value
 encodeTopicList list =
   E.object
     [ ("id", encodeBoxId list.id)
+    , ("order", E.list encodeTopicId list.order)
     , ("size", E.object
         [ ("w", E.int list.size.w)
         , ("h", E.int list.size.h)
@@ -68,8 +70,9 @@ decoder =
 
 topicListDecoder : D.Decoder TopicList
 topicListDecoder =
-  D.map2 TopicList
+  D.map3 TopicList
     (D.field "id" boxIdDecoder)
+    (D.field "order" (D.list topicIdDecoder))
     (D.field "size" <| D.map2 Size
       (D.field "w" D.int)
       (D.field "h" D.int)

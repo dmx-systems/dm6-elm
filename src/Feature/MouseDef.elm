@@ -18,8 +18,8 @@ init =
 
 
 type DragState
-  = NoDrag
-  | DragInProgress TopicId BoxId
+  = DragInProgress TopicId BoxId
+  | NoDrag
 
 
 type Msg

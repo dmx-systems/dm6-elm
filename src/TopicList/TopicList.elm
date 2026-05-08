@@ -1,4 +1,4 @@
-module TopicList.TopicList exposing (view, listSize, dragStart, drag, dragStop)
+module TopicList.TopicList exposing (view, listSize, dragStart, drag, dragStop, init)
 
 import Box
 import Config as C
@@ -12,6 +12,8 @@ import ModelBase exposing (..)
 import Shared.Events as Events
 import Shared.ViewBase as VB
 import Topic
+import TopicList.TopicListDef exposing (TopicList)
+import Utils as U
 
 import Html exposing (Html, div, ul, li, text)
 import Html.Attributes exposing (style)
@@ -47,7 +49,7 @@ viewList boxPath ({model} as env) =
               ( [ viewTopic topic boxPath model ]
                 ++
                 if Topic.isBox topic.id model then
-                  viewList (BoxId topic.id :: boxPath) env
+                  viewList (BoxId topic.id :: boxPath) env -- recursion
                 else
                   []
               )
@@ -101,19 +103,22 @@ listFontStyle =
 
 
 
--- EVENTS (Todo)
+-- EVENTS
 
 
+-- TODO
 dragStart : TopicId -> BoxPath -> Point -> PointerType -> Env2 -> (Model, Cmd Msg)
 dragStart topicId boxPath pos pointerType {model} =
   (model, Cmd.none)
 
 
+-- TODO
 drag : Point -> Env2 -> (Model, Cmd Msg)
 drag pos {model} =
   (model, Cmd.none)
 
 
+-- TODO
 dragStop : Env2 -> (Model, Cmd Msg)
 dragStop {model} =
   (model, Cmd.none)
@@ -123,8 +128,31 @@ dragStop {model} =
 -- MODEL
 
 
+init : BoxId -> Model -> Model
+init boxId ({topicList} as model) =
+  let
+    id = toBoxId boxId
+  in
+  if Dict.member id model.topicList.topicLists then
+    model
+  else
+    { model | topicList =
+      { topicList | topicLists = topicList.topicLists |> Dict.insert id
+          (TopicList boxId [] (Size 0 0)) -- TOOO: "order" list
+      }
+    }
+
+
 listSize : BoxId -> Model -> Size
 listSize boxId model =
-  case model.topicList.topicLists |> Dict.get (toBoxId boxId) of -- TODO: log error
+  case byId boxId model of
     Just {size} -> size
-    Nothing -> Size 0 0
+    Nothing -> U.fail "TopicList.TopicList.listSize" boxId (Size 0 0)
+
+
+{-| Logs an error if the TopicList is missing. -}
+byId : BoxId -> Model -> Maybe TopicList
+byId boxId model =
+  case model.topicList.topicLists |> Dict.get (toBoxId boxId) of
+    Just list -> Just list
+    Nothing -> U.boxNotFound "TopicList.TopicList.byId" boxId Nothing

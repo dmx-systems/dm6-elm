@@ -9,9 +9,10 @@ import ModelBase exposing (..)
 import TopicList.Geometry
 import TopicList.TopicList
 import TopicMap.Geometry
-import TopicMap.Size
-import TopicMap.View
 import TopicMap.Mouse
+import TopicMap.Size
+import TopicMap.TopicMap
+import TopicMap.View
 
 import Dict exposing (Dict)
 import Html exposing (Html, text)
@@ -23,6 +24,7 @@ import Html exposing (Html, text)
 
 type alias Extension =
   { label : ExtLabel
+  , init : ExtInit
   , view : NestingBoxRenderer
   , hitTest : NestingHitTest
   , autoSize : NestingAutoSize
@@ -31,6 +33,10 @@ type alias Extension =
   , drag : NestingDrag
   , dragStop : NestingDragStop
   }
+
+
+type alias ExtInit =
+  BoxId -> Model -> Model
 
 
 {-| A box renderer transformation that enables the dispatching box renderer to inject itself
@@ -78,7 +84,8 @@ type alias NestingDragStop =
 
 ext : ExtManager
 ext =
-  { view = view
+  { init = init
+  , view = view
   , hitTest = hitTest
   , autoSize = autoSize
   , toolbar = toolbar
@@ -96,6 +103,7 @@ registry =
   Dict.fromList
     [ ("TopicMap",
         { label = "Topic Map"
+        , init = TopicMap.TopicMap.init
         , view = TopicMap.View.view
         , hitTest = TopicMap.Geometry.hitTest
         , autoSize = TopicMap.Size.autoSize
@@ -107,6 +115,7 @@ registry =
       )
     , ("TopicList",
         { label = "List"
+        , init = TopicList.TopicList.init
         , view = TopicList.TopicList.view
         , hitTest = TopicList.Geometry.hitTest
         , autoSize = TopicList.Geometry.autoSize
@@ -121,6 +130,12 @@ registry =
 
 
 -- Note: these functions implement the "capability" type signatures defined in Env.elm
+
+
+init : BoxId -> Model -> Model
+init boxId model =
+  dispatch boxId model model
+    (\env renderer -> renderer.init boxId model)
 
 
 {-| The dispatching box renderer.

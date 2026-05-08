@@ -2,8 +2,9 @@ module ModelBase exposing (Id, TopicId(..), AssocId(..), ItemId(..), AssocIds, T
   TextSize, Size, SizeField(..), Point, Rectangle, Assoc, AssocType(..), ItemSet, SetItem, Box,
   BoxId(..), BoxPath, Target, BoxTopic, Expansion(..), ImageId, Attrs, PointerType, Extensions,
   ExtLabel, PosHint(..), ToolbarPos, toTopicId, toAssocId, toBoxId, fromBoxId, rootBoxId,
-  encodeTopic, encodeAssoc, encodeItemSet, encodeBox, encodeBoxId, topicDecoder, assocDecoder,
-  itemSetDecoder, boxDecoder, topicIdDecoder, boxIdDecoder, toDictDecoder, toDictDecoderWith)
+  encodeTopic, encodeAssoc, encodeItemSet, encodeBox, encodeTopicId, encodeBoxId, topicDecoder,
+  assocDecoder, itemSetDecoder, boxDecoder, topicIdDecoder, boxIdDecoder, toDictDecoder,
+  toDictDecoderWith)
 
 import Extension exposing (Renderer, encodeRenderer)
 

@@ -93,9 +93,23 @@ topicCount boxId model =
 
 setSize : BoxId -> Size -> Model -> Model
 setSize boxId size ({topicList} as model) =
+  model
+    |> updateTopicList boxId
+      (\list -> {list | size = size})
+
+
+{-| Canonical TopicList transformation.
+Logs an error if TopicList does not exist.
+-}
+updateTopicList : BoxId -> (TopicList -> TopicList) -> Model -> Model
+updateTopicList boxId transform ({topicList} as model) =
   { model | topicList =
-    { topicList | topicLists = topicList.topicLists
-        |> Dict.insert (toBoxId boxId) (TopicList boxId size)
+    { topicList | topicLists = topicList.topicLists |> Dict.update (toBoxId boxId)
+      (\maybeList ->
+        case maybeList of
+          Just list -> Just (transform list)
+          Nothing -> U.boxNotFound "TopicList.Geometry.updateTopicList" boxId Nothing
+      )
     }
   }
 

@@ -1,4 +1,4 @@
-module TopicMap.TopicMap exposing (create, topics, topicPos, setTopicPos, updateTopicPos,
+module TopicMap.TopicMap exposing (init, create, topics, topicPos, setTopicPos, updateTopicPos,
   mapTopicOrNothing, assocGeometry, addTopic, addTopic_, initLimboMapTopic, initTopicPos,
   hasMapTopic, fullscreen, byId, updateRect, updateScrollPos, revelationBoxId,
   revelationBoxPath, landingTarget)
@@ -17,6 +17,11 @@ import Dict
 import Random
 import String exposing (fromInt)
 
+
+
+init : BoxId -> Model -> Model
+init mapId model =
+  model -- TODO
 
 
 create : BoxId -> Model -> Model
@@ -235,18 +240,20 @@ byId mapId model =
 
 updateRect : BoxId -> (Rectangle -> Rectangle) -> Model -> Model
 updateRect mapId transform model =
-  model |> updateTopicMap mapId
-    (\map ->
-      { map | rect = transform map.rect }
-    )
+  model
+    |> updateTopicMap mapId
+      (\map ->
+        { map | rect = transform map.rect }
+      )
 
 
 updateScrollPos : BoxId -> (Point -> Point) -> Model -> Model
 updateScrollPos mapId transform model =
-  model |> updateTopicMap mapId
-    (\map ->
-      { map | scroll = transform map.scroll }
-    )
+  model
+    |> updateTopicMap mapId
+      (\map ->
+        { map | scroll = transform map.scroll }
+      )
 
 
 {-| Canonical TopicMap transformation.

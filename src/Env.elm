@@ -27,7 +27,8 @@ type alias Env2 =
 
 
 type alias ExtManager =
-  { view : BoxRenderer
+  { init : Init
+  , view : BoxRenderer
   , hitTest : HitTest
   , autoSize : AutoSize
   , toolbar : Toolbar
@@ -39,6 +40,10 @@ type alias ExtManager =
 
 
 -- Extension capabilities
+
+type alias Init =
+  BoxId -> Model -> Model
+
 
 type alias BoxRenderer =
   BoxId -> BoxPath -> Model -> Html Msg

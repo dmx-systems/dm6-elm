@@ -546,11 +546,15 @@ fullscreen topicId model =
 
 
 setRenderer : Renderer -> Env -> Model
-setRenderer renderer ({model} as env) =
+setRenderer renderer ({model, ext} as env) =
   case Sel.single model of
     Just (T topicId, _) ->
+      let
+        boxId = (BoxId topicId)
+      in
       model
-        |> Box.setRenderer (BoxId topicId) renderer
+        |> Box.setRenderer boxId renderer
+        |> ext.init boxId
         |> Env.autoSize env
     _ -> U.logError "Feature.Tool.setRenderer" "called when there is no single topic selection"
       model
