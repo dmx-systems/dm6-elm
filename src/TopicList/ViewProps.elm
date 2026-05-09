@@ -174,14 +174,30 @@ topicOrder topicIds model topicId =
 -- MODEL
 
 
+-- Extension point
 init : BoxId -> Model -> Model
-init boxId ({topicList} as model) =
+init boxId model =
+  model
+    |> createViewProps boxId
+    |> initViewProps boxId
+
+
+createViewProps : BoxId -> Model -> Model
+createViewProps boxId ({topicList} as model) =
   let
     id = toBoxId boxId
   in
   if Dict.member id model.topicList.viewProps then
+    let
+      _ = U.info "TopicList.ViewProps.createViewProps"
+        ("box " ++ fromInt id ++ " has ViewProps already")
+    in
     model
   else
+    let
+      _ = U.info "TopicList.ViewProps.createViewProps"
+        ("creating ViewProps for box " ++ fromInt id)
+    in
     { model | topicList =
       { topicList | viewProps = topicList.viewProps |> Dict.insert id
           (ViewProps boxId [] (Size 0 0)) -- TOOO: "order" list
@@ -189,20 +205,47 @@ init boxId ({topicList} as model) =
     }
 
 
+initViewProps : BoxId -> Model -> Model
+initViewProps boxId ({topicList} as model) =
+  model
+    |> updateOrder boxId
+      (\orderList ->
+        let
+          missing = List.filterMap (missingTopicIds orderList) (Box.topicIds boxId model)
+          _ = U.info "TopicList.ViewProps.initViewProps"
+            ("add missing ViewProps " ++ U.toString missing ++ " to " ++ U.toString orderList)
+        in
+        missing ++ orderList
+      )
+
+
+missingTopicIds : List TopicId -> TopicId -> Maybe TopicId
+missingTopicIds orderList topicId =
+  if List.member topicId orderList then
+    Nothing
+  else
+    Just topicId
+
+
+-- Extension point
 addTopic : TopicId -> BoxId -> PosHint -> Env2 -> (Model, Cmd Msg)
 addTopic topicId boxId posHint {model} =
-  (model, Cmd.none) -- TODO
+  ( model
+      |> updateOrder boxId
+        (\orderList -> topicId :: orderList) -- FIXME: check membership first
+  , Cmd.none
+  )
 
 
--- TODO: not in use
-addTopic_ : TopicId -> BoxId -> Model -> Model
-addTopic_ topicId boxId ({topicList} as model) =
+updateOrder : BoxId -> (List TopicId -> List TopicId) -> Model -> Model
+updateOrder boxId transform ({topicList} as model) =
   { model | topicList =
     { topicList | viewProps = topicList.viewProps |> Dict.update (toBoxId boxId)
         (\maybeViewProps ->
           case maybeViewProps of
-            Just viewProps -> Just { viewProps | order = topicId :: viewProps.order }
-            Nothing -> U.fail "TopicList.ViewProps.addTopic_" {boxId = boxId} Nothing
+            Just viewProps -> Just { viewProps | order = transform viewProps.order }
+            Nothing -> U.logError "TopicList.ViewProps.updateOrder"
+              (U.toString {boxId = boxId}) Nothing
         )
     }
   }

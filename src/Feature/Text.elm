@@ -57,7 +57,7 @@ decodeTopicImage value =
       (Text << TextDef.ImageFilePicked) topicImage
     Err e ->
       let
-        _ = U.logError "Feature.Text.sub" "decoding onImageFilePicked" e
+        _ = U.logError "Feature.Text.decodeTopicImage" "decoding onImageFilePicked" e
       in
       NoOp
 
@@ -172,7 +172,7 @@ onTextInput text model =
     Edit topicId _ ->
       model
         |> setTopicText topicId text
-    NoEdit -> U.logError "onTextInput" "called when text.edit is NoEdit" model
+    NoEdit -> U.logError "Feature.Text.onTextInput" "called when text.edit is NoEdit" model
 
 
 onTextareaInput : String -> Model -> (Model, Cmd Msg)
@@ -182,7 +182,8 @@ onTextareaInput text model =
       model
         |> setTopicText topicId text
         |> measureText topicId text
-    NoEdit -> U.logError "onTextareaInput" "called when text.edit is NoEdit" (model, Cmd.none)
+    NoEdit -> U.logError "Feature.Text.onTextareaInput" "called when text.edit is NoEdit"
+      (model, Cmd.none)
 
 
 measureText : TopicId -> String -> Model -> (Model, Cmd Msg)
@@ -201,7 +202,7 @@ measureElement elemId topicId sizeField =
           (TextDef.GotTextSize (toTopicId topicId) sizeField
             <| Size (round element.width) (round element.height)
           )
-        Err err -> U.logError "measureElement" (U.toString err) NoOp
+        Err err -> U.logError "Feature.Text.measureElement" (U.toString err) NoOp
     )
 
 
@@ -211,13 +212,13 @@ focus model =
     elemId =
       case model.text.edit of
         Edit id boxPath -> Box.elemId "input" id boxPath
-        NoEdit -> U.logError "focus" "called when text.edit is NoEdit" ""
+        NoEdit -> U.logError "Feature.Text.focus" "called when text.edit is NoEdit" ""
   in
   Dom.focus elemId |> Task.attempt
     (\result ->
       case result of
         Ok () -> NoOp
-        Err e -> U.logError "focus" (U.toString e) NoOp
+        Err e -> U.logError "Feature.Text.focus" (U.toString e) NoOp
     )
 
 
@@ -314,12 +315,12 @@ resolveImageUrl url title altInlines model =
             Just blobUrl -> blobUrl
             Nothing ->
               let
-                _ = U.info "resolveImageUrl" ("MISSING", imageId)
+                _ = U.info "Feature.Text.resolveImageUrl" ("MISSING", imageId)
               in
               url
         Nothing ->
           let
-            _ = U.info "resolveImageUrl" ("INVALID", url)
+            _ = U.info "Feature.Text.resolveImageUrl" ("INVALID", url)
           in
           url
   in
