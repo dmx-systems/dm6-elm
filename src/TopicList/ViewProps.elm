@@ -1,4 +1,4 @@
-module TopicList.ViewProps exposing (view, listSize, dragStart, drag, dragStop, init)
+module TopicList.ViewProps exposing (view, listSize, dragStart, drag, dragStop, init, addTopic)
 
 import Box
 import Config as C
@@ -187,6 +187,25 @@ init boxId ({topicList} as model) =
           (ViewProps boxId [] (Size 0 0)) -- TOOO: "order" list
       }
     }
+
+
+addTopic : TopicId -> BoxId -> PosHint -> Env2 -> (Model, Cmd Msg)
+addTopic topicId boxId posHint {model} =
+  (model, Cmd.none) -- TODO
+
+
+-- TODO: not in use
+addTopic_ : TopicId -> BoxId -> Model -> Model
+addTopic_ topicId boxId ({topicList} as model) =
+  { model | topicList =
+    { topicList | viewProps = topicList.viewProps |> Dict.update (toBoxId boxId)
+        (\maybeViewProps ->
+          case maybeViewProps of
+            Just viewProps -> Just { viewProps | order = topicId :: viewProps.order }
+            Nothing -> U.fail "TopicList.ViewProps.addTopic_" {boxId = boxId} Nothing
+        )
+    }
+  }
 
 
 listSize : BoxId -> Model -> Size

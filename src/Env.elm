@@ -35,6 +35,7 @@ type alias ExtManager =
   , dragStart : DragStart
   , drag : Drag
   , dragStop : DragStop
+  , addTopic : AddTopic
   , all : Extensions
   }
 
@@ -71,6 +72,10 @@ type alias Drag =
 
 type alias DragStop =
   BoxId -> Model -> (Model, Cmd Msg)
+
+
+type alias AddTopic =
+  TopicId -> BoxId -> PosHint -> Model -> (Model, Cmd Msg)
 
 
 

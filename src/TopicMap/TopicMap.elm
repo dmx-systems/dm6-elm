@@ -5,7 +5,7 @@ module TopicMap.TopicMap exposing (init, create, topics, topicPos, setTopicPos, 
 
 import Box
 import Config as C
-import Env exposing (Env)
+import Env exposing (Env, Env2)
 import Feature.SearchDef exposing (SearchResult(..))
 import Feature.Sel as Sel
 import Model exposing (Model, Msg)
@@ -106,8 +106,8 @@ assocGeometry assoc mapId model =
     Nothing -> U.fail "TopicMap.assocGeometry" { assoc = assoc, mapId = mapId } Nothing
 
 
-addTopic : TopicId -> BoxId -> PosHint -> Model -> (Model, Cmd Msg)
-addTopic topicId mapId posHint model =
+addTopic : TopicId -> BoxId -> PosHint -> Env2 -> (Model, Cmd Msg)
+addTopic topicId mapId posHint {model} =
   if hasMapTopic topicId mapId model then
     (model, Cmd.none)
   else

@@ -474,14 +474,14 @@ createTopic ({model} as env) =
 
 
 landTopic : TopicId -> Env -> (Model, Cmd Msg)
-landTopic topicId ({model} as env) =
+landTopic topicId ({model, ext} as env) =
   let
     boxPath = Sel.landingBoxPath model
     boxId = Box.firstId boxPath
   in
-  model
+  model -- TODO: pipe env instead model
     |> Box.addTopic (BoxTopic topicId Collapsed) boxId
-    |> TM.addTopic topicId boxId Default
+    |> ext.addTopic topicId boxId Default
     |> Tuple.first -- Note: Cmd is ignored, OK for the moment ;-)
     |> Sel.select (T topicId) boxPath
     |> Env.withModel env

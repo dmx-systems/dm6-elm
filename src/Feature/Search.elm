@@ -343,8 +343,8 @@ revealTopic : TopicId -> Env -> Model
 revealTopic topicId ({model} as env) =
   case TM.revelationBoxPath model of
     Just (boxId :: _ as boxPath) ->
-      model
-        |> revealTopic_ topicId boxId
+      model -- TODO: pipe env instead model
+        |> revealTopic_ topicId boxId env
         |> closeMenu
         |> Sel.select (T topicId) boxPath
         |> Env.autoSize env
@@ -355,8 +355,8 @@ revealRelTopic : (TopicId, AssocId) -> Env -> Model
 revealRelTopic (topicId, assocId) ({model} as env) =
   case TM.revelationBoxPath model of
     Just (boxId :: _ as boxPath) ->
-      model
-        |> revealTopic_ topicId boxId
+      model -- TODO: pipe env instead model
+        |> revealTopic_ topicId boxId env
         |> revealAssoc_ assocId boxId
         |> closeMenu
         |> Sel.select (T topicId) boxPath
@@ -364,11 +364,12 @@ revealRelTopic (topicId, assocId) ({model} as env) =
     _ -> model
 
 
-revealTopic_ : TopicId -> BoxId -> Model -> Model
-revealTopic_ topicId boxId model =
+-- TODO: drop model parameter, use env
+revealTopic_ : TopicId -> BoxId -> Env -> Model -> Model
+revealTopic_ topicId boxId {ext} model =
   model
     |> Box.addTopic (BoxTopic topicId Collapsed) boxId
-    |> TM.addTopic topicId boxId Default -- TODO: let ExtManager dispatch instead
+    |> ext.addTopic topicId boxId Default
     |> Tuple.first -- Note: Cmd is ignored, OK for the moment ;-)
 
 

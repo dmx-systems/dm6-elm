@@ -32,6 +32,7 @@ type alias Extension =
   , dragStart : NestingDragStart
   , drag : NestingDrag
   , dragStop : NestingDragStop
+  , addTopic : AddTopic
   }
 
 
@@ -78,6 +79,10 @@ type alias NestingDragStop =
   Env2 -> (Model, Cmd Msg)
 
 
+type alias AddTopic =
+  TopicId -> BoxId -> PosHint -> Env2 -> (Model, Cmd Msg)
+
+
 
 -- VALUES
 
@@ -92,6 +97,7 @@ ext =
   , dragStart = dragStart
   , drag = drag
   , dragStop = dragStop
+  , addTopic = addTopic
   , all = all
   }
 
@@ -111,6 +117,7 @@ registry =
         , dragStart = TopicMap.Mouse.dragStart
         , drag = TopicMap.Mouse.drag
         , dragStop = TopicMap.Mouse.dragStop
+        , addTopic = TopicMap.TopicMap.addTopic
         }
       )
     , ("TopicList",
@@ -123,6 +130,7 @@ registry =
         , dragStart = TopicList.ViewProps.dragStart
         , drag = TopicList.ViewProps.drag
         , dragStop = TopicList.ViewProps.dragStop
+        , addTopic = TopicList.ViewProps.addTopic
         }
       )
     ]
@@ -184,6 +192,12 @@ dragStop : BoxId -> Model -> (Model, Cmd Msg)
 dragStop boxId model =
   dispatch boxId model (model, Cmd.none)
     (\env renderer -> renderer.dragStop env)
+
+
+addTopic : TopicId -> BoxId -> PosHint -> Model -> (Model, Cmd Msg)
+addTopic topicId boxId posHint model =
+  dispatch boxId model (model, Cmd.none)
+    (\env renderer -> renderer.addTopic topicId boxId posHint env)
 
 
 dispatch : BoxId -> Model -> result -> (Env2 -> Extension -> result) -> result
