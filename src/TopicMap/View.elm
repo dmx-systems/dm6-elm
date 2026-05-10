@@ -14,9 +14,9 @@ import ModelBase exposing (..)
 import Shared.Events as Events
 import Shared.ViewBase as VB
 import Topic
-import TopicMap.TopicMap as TM
-import TopicMap.TopicMapDef as TopicMapDef exposing (MapTopic, DragState(..), DragMode(..))
+import TopicMap.TopicMapDef as TopicMapDef exposing (TopicProps, DragState(..), DragMode(..))
 import TopicMap.ViewModel as VM
+import TopicMap.ViewProps as TM
 import Utils as U
 
 import Html exposing (Html, div, text)
@@ -150,7 +150,7 @@ boxInfo boxId boxPath ({model} as env) =
 
 
 -- For the fullscreen box boxPath is empty
-viewItems : TopicMapDef.TopicMap -> BoxPath -> Env2 -> (List (Html Msg), List (Svg Msg))
+viewItems : TopicMapDef.ViewProps -> BoxPath -> Env2 -> (List (Html Msg), List (Svg Msg))
 viewItems map boxPath ({model} as env) =
   let
     newPath = map.id :: boxPath
@@ -222,7 +222,7 @@ viewLimboAssoc boxId model =
 
 -- Topic Rendering
 
-viewTopic : Topic -> MapTopic -> BoxPath -> Env2 -> Html Msg
+viewTopic : Topic -> TopicProps -> BoxPath -> Env2 -> Html Msg
 viewTopic topic mapTopic boxPath ({model, ext}) =
   let
     render =
@@ -266,7 +266,7 @@ topicStyle id boxPath model =
   ]
 
 
-labelTopic : Topic -> MapTopic -> BoxPath -> Model -> TopicRendering
+labelTopic : Topic -> TopicProps -> BoxPath -> Model -> TopicRendering
 labelTopic topic mapTopic boxPath model =
   ( topicPosStyle mapTopic
       ++ topicFlexboxStyle mapTopic boxPath model
@@ -275,7 +275,7 @@ labelTopic topic mapTopic boxPath model =
   )
 
 
-viewLabelTopic : Topic -> MapTopic -> BoxPath -> Model -> List (Html Msg)
+viewLabelTopic : Topic -> TopicProps -> BoxPath -> Model -> List (Html Msg)
 viewLabelTopic topic mapTopic boxPath model =
   let
     textElem =
@@ -314,7 +314,7 @@ labelTopicStyle =
   ]
 
 
-detailTopic : Topic -> MapTopic -> BoxPath -> Model -> TopicRendering
+detailTopic : Topic -> TopicProps -> BoxPath -> Model -> TopicRendering
 detailTopic topic mapTopic boxPath model =
   let
     textElem =
@@ -343,7 +343,7 @@ detailTopic topic mapTopic boxPath model =
   )
 
 
-detailTopicStyle : MapTopic -> Attrs Msg
+detailTopicStyle : TopicProps -> Attrs Msg
 detailTopicStyle {pos} =
   [ style "display" "flex"
   , style "left" <| fromInt (pos.x - C.topicW2) ++ "px"
@@ -389,7 +389,7 @@ textEditorStyle topicId model =
   ]
 
 
-iconBoxStyle : MapTopic -> Model -> Attrs Msg
+iconBoxStyle : TopicProps -> Model -> Attrs Msg
 iconBoxStyle mapTopic model =
   let
     r1 = fromInt C.topicRadius ++ "px"
@@ -423,7 +423,7 @@ topicIconStyle =
   ]
 
 
-blackBoxTopic : Topic -> MapTopic -> BoxPath -> Model -> TopicRendering
+blackBoxTopic : Topic -> TopicProps -> BoxPath -> Model -> TopicRendering
 blackBoxTopic topic mapTopic boxPath model =
   ( topicPosStyle mapTopic
   , [ div
@@ -438,14 +438,14 @@ blackBoxTopic topic mapTopic boxPath model =
   )
 
 
-topicPosStyle : MapTopic -> Attrs Msg
+topicPosStyle : TopicProps -> Attrs Msg
 topicPosStyle { pos } =
   [ style "left" <| fromInt (pos.x - C.topicW2) ++ "px"
   , style "top" <| fromInt (pos.y - C.topicH2) ++ "px"
   ]
 
 
-topicFlexboxStyle : MapTopic -> BoxPath -> Model -> Attrs Msg
+topicFlexboxStyle : TopicProps -> BoxPath -> Model -> Attrs Msg
 topicFlexboxStyle mapTopic boxPath model =
   let
     r12 = fromInt C.topicRadius ++ "px"
@@ -478,7 +478,7 @@ ghostTopicStyle topic boxPath model =
   ++ VB.selectionStyle topic.id boxPath model
 
 
-whiteBoxTopic : Topic -> MapTopic -> BoxPath -> ExtManager -> Model -> TopicRendering
+whiteBoxTopic : Topic -> TopicProps -> BoxPath -> ExtManager -> Model -> TopicRendering
 whiteBoxTopic topic mapTopic boxPath ext model =
   let
     (style, children) = labelTopic topic mapTopic boxPath model

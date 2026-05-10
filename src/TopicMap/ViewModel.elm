@@ -4,14 +4,14 @@ import Box
 import Feature.SearchDef exposing (SearchResult(..))
 import Model exposing (Model)
 import ModelBase exposing (..)
-import TopicMap.TopicMap as TM
-import TopicMap.TopicMapDef exposing (TopicMap, MapTopic)
+import TopicMap.TopicMapDef exposing (ViewProps, TopicProps)
+import TopicMap.ViewProps as TM
 import Utils as U
 
 
 
 {- Projects box data and search state ("limbo") into a TopicMap render model -}
-topicsToRender : TopicMap -> Model -> List MapTopic
+topicsToRender : ViewProps -> Model -> List TopicProps
 topicsToRender map model =
   let
     topics = TM.topics map model |> List.map
@@ -21,7 +21,7 @@ topicsToRender map model =
   topics ++ limboTopic
 
 
-effectiveExpansion : MapTopic -> BoxId -> Model -> MapTopic
+effectiveExpansion : TopicProps -> BoxId -> Model -> TopicProps
 effectiveExpansion topic boxId model =
   { topic | expansion =
     if isLimboTopic topic.id boxId model then
@@ -31,7 +31,7 @@ effectiveExpansion topic boxId model =
   }
 
 
-limboMapTopic : TopicMap -> Model -> List MapTopic
+limboMapTopic : ViewProps -> Model -> List TopicProps
 limboMapTopic map model =
   case limboState model of
     Just (topicId, _, limboBoxId) ->
@@ -40,7 +40,7 @@ limboMapTopic map model =
           _ = U.info "TopicMap.ViewModel.limboMapTopic" (topicId, "not in map", map.id)
           mapTopic =
             case TM.mapTopicOrNothing topicId map of
-              Just {pos} -> MapTopic topicId pos Expanded
+              Just {pos} -> TopicProps topicId pos Expanded
               Nothing -> TM.initLimboMapTopic topicId map.id model
         in
         [ mapTopic ]

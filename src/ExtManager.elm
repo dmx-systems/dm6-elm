@@ -10,9 +10,8 @@ import TopicList.Geometry
 import TopicList.ViewProps
 import TopicMap.Geometry
 import TopicMap.Mouse
-import TopicMap.Size
-import TopicMap.TopicMap
 import TopicMap.View
+import TopicMap.ViewProps
 
 import Dict exposing (Dict)
 import Html exposing (Html, text)
@@ -109,15 +108,15 @@ registry =
   Dict.fromList
     [ ("TopicMap",
         { label = "Topic Map"
-        , init = TopicMap.TopicMap.init
+        , init = TopicMap.ViewProps.init
         , view = TopicMap.View.view
         , hitTest = TopicMap.Geometry.hitTest
-        , autoSize = TopicMap.Size.autoSize
+        , autoSize = TopicMap.Geometry.autoSize
         , toolbar = TopicMap.Geometry.toolbarPos
         , dragStart = TopicMap.Mouse.dragStart
         , drag = TopicMap.Mouse.drag
         , dragStop = TopicMap.Mouse.dragStop
-        , addTopic = TopicMap.TopicMap.addTopic
+        , addTopic = TopicMap.ViewProps.addTopic
         }
       )
     , ("TopicList",

@@ -7,8 +7,8 @@ import Env exposing (Env2)
 import Feature.Mouse as Mouse
 import Model exposing (Model, Msg(..))
 import ModelBase exposing (..)
-import TopicMap.TopicMap as TM
 import TopicMap.TopicMapDef as TopicMapDef exposing (DragState(..), DragMode(..))
+import TopicMap.ViewProps as TM
 import Undo exposing (UndoModel)
 import Utils as U
 

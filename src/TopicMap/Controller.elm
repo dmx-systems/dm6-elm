@@ -4,8 +4,8 @@ import Env exposing (Env)
 import Model exposing (Msg)
 import Storage as S
 import TopicMap.Mouse as Mouse
-import TopicMap.TopicMap as TM
 import TopicMap.TopicMapDef as TopicMapDef
+import TopicMap.ViewProps as TM
 import Undo exposing (UndoModel)
 
 

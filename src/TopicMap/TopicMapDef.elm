@@ -1,4 +1,4 @@
-module TopicMap.TopicMapDef exposing (Model, TopicMap, MapTopic, DragState(..), DragMode(..),
+module TopicMap.TopicMapDef exposing (Model, ViewProps, TopicProps, DragState(..), DragMode(..),
   Msg(..), init, encode, decoder)
 
 import ModelBase exposing (..)
@@ -11,31 +11,31 @@ import Time
 
 
 type alias Model =
-  { topicMaps : Dict Id TopicMap
+  { viewProps : Dict Id ViewProps
   , dragState : DragState
   }
 
 
 init : Model
 init =
-  { topicMaps =
+  { viewProps =
       Dict.singleton
         (toBoxId rootBoxId)
-        (TopicMap rootBoxId (Rectangle 0 0 0 0) (Point 0 0) Dict.empty)
+        (ViewProps rootBoxId (Rectangle 0 0 0 0) (Point 0 0) Dict.empty)
   -- transient
   , dragState = NoDrag
   }
 
 
-type alias TopicMap =
+type alias ViewProps =
   { id : BoxId
   , rect : Rectangle
   , scroll : Point
-  , topics : Dict Id MapTopic
+  , topics : Dict Id TopicProps
   }
 
 
-type alias MapTopic =
+type alias TopicProps =
   { id : TopicId
   , pos : Point
   , expansion : Expansion -- "effective expansion", computed/transient,
@@ -71,11 +71,11 @@ type Msg
 encode : Model -> E.Value
 encode model =
   E.object
-    [ ("topicMaps", E.list encodeTopicMap (model.topicMaps |> Dict.values))
+    [ ("viewProps", E.list encodeTopicMap (model.viewProps |> Dict.values))
     ]
 
 
-encodeTopicMap : TopicMap -> E.Value
+encodeTopicMap : ViewProps -> E.Value
 encodeTopicMap map =
   E.object
     [ ("id", encodeBoxId map.id)
@@ -97,7 +97,7 @@ encodeTopicMap map =
     ]
 
 
-encodeMapTopic : MapTopic -> E.Value
+encodeMapTopic : TopicProps -> E.Value
 encodeMapTopic topic =
   E.object
     [ ("id", E.int (toTopicId topic.id))
@@ -115,13 +115,13 @@ encodeMapTopic topic =
 decoder : D.Decoder Model
 decoder =
   D.map2 Model
-    (D.field "topicMaps" (toDictDecoderWith toBoxId topicMapDecoder))
+    (D.field "viewProps" (toDictDecoderWith toBoxId topicMapDecoder))
     (D.succeed NoDrag)
 
 
-topicMapDecoder : D.Decoder TopicMap
+topicMapDecoder : D.Decoder ViewProps
 topicMapDecoder =
-  D.map4 TopicMap
+  D.map4 ViewProps
     (D.field "id" boxIdDecoder)
     (D.field "rect" <| D.map4 Rectangle
       (D.field "x1" D.int)
@@ -136,9 +136,9 @@ topicMapDecoder =
     (D.field "topics" (toDictDecoderWith toTopicId mapTopicDecoder))
 
 
-mapTopicDecoder : D.Decoder MapTopic
+mapTopicDecoder : D.Decoder TopicProps
 mapTopicDecoder =
-  D.map3 MapTopic
+  D.map3 TopicProps
     (D.field "id" topicIdDecoder)
     (D.field "pos" <| D.map2
       Point
