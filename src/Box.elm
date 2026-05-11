@@ -16,7 +16,7 @@ import String exposing (fromInt)
 
 
 type alias Transform =
-  List TopicId -> List TopicId
+  BoxId -> Model -> List TopicId -> List TopicId
 
 
 type alias Accumulator acc =
@@ -29,7 +29,10 @@ type alias LevelComplete acc =
 
 topicCount : BoxId -> Model -> Int
 topicCount boxId model =
-  traverse [boxId] identity 0
+  traverse
+    [boxId]
+    (\_ _ topicIds_ -> topicIds_)
+    0
     (\_ _ count childrenCount _ ->
       count + 1 + (childrenCount |> Maybe.withDefault 0)
     )
@@ -40,6 +43,7 @@ topicCount boxId model =
 traverse : BoxPath -> Transform -> acc -> Accumulator acc -> LevelComplete acc -> Model -> acc
 traverse boxPath transform initAcc accumulate levelComplete model =
   let
+    boxId = firstId boxPath
     topicAccumulator : Topic -> acc -> acc
     topicAccumulator topic acc =
       let
@@ -53,8 +57,8 @@ traverse boxPath transform initAcc accumulate levelComplete model =
       in
       accumulate topic boxPath acc children model
   in
-  topicIds (firstId boxPath) model
-    |> transform
+  topicIds boxId model
+    |> transform boxId model
     |> List.filterMap (topicLookup model)
     |> List.foldl topicAccumulator initAcc
     |> levelComplete boxPath

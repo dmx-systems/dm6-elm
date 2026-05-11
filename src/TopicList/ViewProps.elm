@@ -36,7 +36,7 @@ view boxId boxPath ({model} as env) =
     (listStyle boxId boxPath model)
     (Box.traverse
       (boxId :: boxPath)
-      (topicOrder boxId model)
+      topicOrder
       []
       viewListItem
       (viewList env)
