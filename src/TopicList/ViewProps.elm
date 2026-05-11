@@ -1,6 +1,6 @@
 module TopicList.ViewProps exposing (view, listSize, dragStart, drag, dragStop, init, addTopic)
 
-import Box exposing (Accumulator, LevelComplete)
+import Box
 import Config as C
 import Dict
 import Env exposing (Env2)
@@ -34,47 +34,33 @@ view : BoxId -> BoxPath -> Env2 -> Html Msg
 view boxId boxPath ({model} as env) =
   div
     (listStyle boxId boxPath model)
-    (traverseBox (boxId :: boxPath) [] viewListItem (viewList env) model)
+    (Box.traverse
+      (boxId :: boxPath)
+      (topicOrder boxId model)
+      []
+      viewListItem
+      (viewList env)
+      model
+    )
 
 
--- TODO: unify with Box.traverse
-traverseBox : BoxPath -> acc -> Accumulator acc -> LevelComplete acc -> Model -> acc
-traverseBox boxPath initAcc accumulate levelComplete model =
-  let
-    boxId = Box.firstId boxPath
-    topicIds = Box.topicIds boxId model
-    topicAccumulator : Topic -> acc -> acc
-    topicAccumulator topic acc =
-      let
-        childPath = BoxId topic.id :: boxPath
-        children =
-          if Topic.isBox topic.id model then
-            Just (traverseBox childPath initAcc accumulate levelComplete model) -- recursion
-          else
-            Nothing
-      in
-      accumulate topic boxPath acc children model
-  in
+-- Box.Transform
+topicOrder : BoxId -> Model -> List TopicId -> List TopicId
+topicOrder boxId model topicIds =
   case byId boxId model of
     Just {order} ->
       order
-        |> List.filterMap (topicOrder topicIds model)
-        |> List.foldl topicAccumulator initAcc
-        |> levelComplete boxPath
-    Nothing -> U.fail "TopicList.ViewModel.traverseBox" boxId initAcc
+        |> List.filterMap
+          (\orderTopicId ->
+            if List.member orderTopicId topicIds then
+              Just orderTopicId
+            else
+              Nothing
+          )
+    Nothing -> U.fail "TopicList.ViewProps.topicOrder" boxId topicIds
 
 
-topicOrder : List TopicId -> Model -> TopicId -> Maybe Topic
-topicOrder topicIds model orderTopicId =
-  if List.member orderTopicId topicIds then
-    case Topic.fromId orderTopicId model of
-      Just topic -> Just topic
-      Nothing -> U.fail "TopicList.ViewModel.topicOrder" orderTopicId Nothing
-  else
-    Nothing
-
-
--- Accumulator
+-- Box.Accumulator
 viewListItem : Topic -> BoxPath -> HtmlList -> Maybe HtmlList -> Model -> HtmlList
 viewListItem topic boxPath acc childrenAcc model =
   acc ++
@@ -92,7 +78,7 @@ viewListItem topic boxPath acc childrenAcc model =
     ]
 
 
--- LevelComplete
+-- Box.LevelComplete
 viewList : Env2 -> BoxPath -> HtmlList -> HtmlList
 viewList env boxPath topics =
   [ ul

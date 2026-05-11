@@ -1,7 +1,7 @@
-module Box exposing (topicCount, topics, topicIds, assocIds, turnTopicIntoBox, addTopic,
+module Box exposing (topicCount, traverse, topicIds, assocIds, turnTopicIntoBox, addTopic,
   addAssoc, removeTopic, removeAssoc, deleteTopic, deleteAssoc, expansionOf, updateExpansion,
   rendererOf, setRenderer, hasItem, hadDeepTopic, mapTitle, isFullscreen, elemId, firstId,
-  fromPath, Accumulator, LevelComplete)
+  fromPath)
 
 import Assoc
 import Extension exposing (Renderer)
@@ -15,19 +15,21 @@ import String exposing (fromInt)
 
 
 
--- TODO: don't expose
+type alias Transform =
+  List TopicId -> List TopicId
+
+
 type alias Accumulator acc =
   Topic -> BoxPath -> acc -> Maybe acc -> Model -> acc
 
 
--- TODO: don't expose
 type alias LevelComplete acc =
   BoxPath -> acc -> acc
 
 
 topicCount : BoxId -> Model -> Int
 topicCount boxId model =
-  traverse [boxId] 0
+  traverse [boxId] identity 0
     (\_ _ count childrenCount _ ->
       count + 1 + (childrenCount |> Maybe.withDefault 0)
     )
@@ -35,8 +37,8 @@ topicCount boxId model =
     model
 
 
-traverse : BoxPath -> acc -> Accumulator acc -> LevelComplete acc -> Model -> acc
-traverse boxPath initAcc accumulate levelComplete model =
+traverse : BoxPath -> Transform -> acc -> Accumulator acc -> LevelComplete acc -> Model -> acc
+traverse boxPath transform initAcc accumulate levelComplete model =
   let
     topicAccumulator : Topic -> acc -> acc
     topicAccumulator topic acc =
@@ -44,13 +46,15 @@ traverse boxPath initAcc accumulate levelComplete model =
         childPath = BoxId topic.id :: boxPath
         children =
           if Topic.isBox topic.id model then
-            Just (traverse childPath initAcc accumulate levelComplete model) -- recursion
+            -- recursion
+            Just (traverse childPath transform initAcc accumulate levelComplete model)
           else
             Nothing
       in
       accumulate topic boxPath acc children model
   in
   topicIds (firstId boxPath) model
+    |> transform
     |> List.filterMap (topicLookup model)
     |> List.foldl topicAccumulator initAcc
     |> levelComplete boxPath
