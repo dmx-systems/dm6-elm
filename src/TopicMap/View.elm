@@ -492,14 +492,9 @@ whiteBoxTopic topic mapTopic boxPath ext model =
 
 viewItemCount : BoxId -> Model -> List (Html Msg)
 viewItemCount boxId model =
-  let
-    itemCount =
-      Box.topicIds boxId model
-        |> List.length
-  in
   [ div
       itemCountStyle
-      [ text <| fromInt itemCount ]
+      [ text (fromInt (Box.topicCount boxId model)) ]
   ]
 
 

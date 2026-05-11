@@ -1,6 +1,6 @@
 module TopicList.ViewProps exposing (view, listSize, dragStart, drag, dragStop, init, addTopic)
 
-import Box
+import Box exposing (Accumulator, LevelComplete)
 import Config as C
 import Dict
 import Env exposing (Env2)
@@ -21,14 +21,6 @@ import String exposing (fromInt, fromFloat)
 
 
 
-type alias Accumulator acc =
-  Topic -> BoxPath -> acc -> Maybe acc -> Model -> acc
-
-
-type alias LevelComplete acc =
-  BoxPath -> Env2 -> acc -> acc
-
-
 type alias HtmlList = List (Html Msg)
 
 
@@ -41,12 +33,13 @@ type alias HtmlList = List (Html Msg)
 view : BoxId -> BoxPath -> Env2 -> Html Msg
 view boxId boxPath ({model} as env) =
   div
-    ( listStyle boxId boxPath model )
-    ( traverseBox (boxId :: boxPath) [] viewTopicItem viewList env )
+    (listStyle boxId boxPath model)
+    (traverseBox (boxId :: boxPath) [] viewListItem (viewList env) model)
 
 
-traverseBox : BoxPath -> acc -> Accumulator acc -> LevelComplete acc -> Env2 -> acc
-traverseBox boxPath initAcc accumulate levelComplete ({model} as env) =
+-- TODO: unify with Box.traverse
+traverseBox : BoxPath -> acc -> Accumulator acc -> LevelComplete acc -> Model -> acc
+traverseBox boxPath initAcc accumulate levelComplete model =
   let
     boxId = Box.firstId boxPath
     topicIds = Box.topicIds boxId model
@@ -56,7 +49,7 @@ traverseBox boxPath initAcc accumulate levelComplete ({model} as env) =
         childPath = BoxId topic.id :: boxPath
         children =
           if Topic.isBox topic.id model then
-            Just (traverseBox childPath initAcc accumulate levelComplete env) -- recursion
+            Just (traverseBox childPath initAcc accumulate levelComplete model) -- recursion
           else
             Nothing
       in
@@ -67,23 +60,23 @@ traverseBox boxPath initAcc accumulate levelComplete ({model} as env) =
       order
         |> List.filterMap (topicOrder topicIds model)
         |> List.foldl topicAccumulator initAcc
-        |> levelComplete boxPath env
+        |> levelComplete boxPath
     Nothing -> U.fail "TopicList.ViewModel.traverseBox" boxId initAcc
 
 
 topicOrder : List TopicId -> Model -> TopicId -> Maybe Topic
-topicOrder topicIds model topicId =
-  if List.member topicId topicIds then
-    case Topic.fromId topicId model of
+topicOrder topicIds model orderTopicId =
+  if List.member orderTopicId topicIds then
+    case Topic.fromId orderTopicId model of
       Just topic -> Just topic
-      Nothing -> U.fail "TopicList.ViewModel.topicOrder" topicId Nothing
+      Nothing -> U.fail "TopicList.ViewModel.topicOrder" orderTopicId Nothing
   else
     Nothing
 
 
 -- Accumulator
-viewTopicItem : Topic -> BoxPath -> HtmlList -> Maybe HtmlList -> Model -> HtmlList
-viewTopicItem topic boxPath acc childrenAcc model =
+viewListItem : Topic -> BoxPath -> HtmlList -> Maybe HtmlList -> Model -> HtmlList
+viewListItem topic boxPath acc childrenAcc model =
   acc ++
     [ li
         ( Events.itemClickHandler (T topic.id) boxPath
@@ -100,8 +93,8 @@ viewTopicItem topic boxPath acc childrenAcc model =
 
 
 -- LevelComplete
-viewList : BoxPath -> Env2 -> HtmlList -> HtmlList
-viewList boxPath env topics =
+viewList : Env2 -> BoxPath -> HtmlList -> HtmlList
+viewList env boxPath topics =
   [ ul
       []
       topics

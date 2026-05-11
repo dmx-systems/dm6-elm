@@ -1,6 +1,7 @@
-module Box exposing (topics, topicIds, assocIds, turnTopicIntoBox, addTopic, addAssoc,
-  removeTopic, removeAssoc, deleteTopic, deleteAssoc, expansionOf, updateExpansion, rendererOf,
-  setRenderer, hasItem, hadDeepTopic, mapTitle, isFullscreen, elemId, firstId, fromPath)
+module Box exposing (topicCount, topics, topicIds, assocIds, turnTopicIntoBox, addTopic,
+  addAssoc, removeTopic, removeAssoc, deleteTopic, deleteAssoc, expansionOf, updateExpansion,
+  rendererOf, setRenderer, hasItem, hadDeepTopic, mapTitle, isFullscreen, elemId, firstId,
+  fromPath, Accumulator, LevelComplete)
 
 import Assoc
 import Extension exposing (Renderer)
@@ -11,6 +12,55 @@ import Utils as U
 
 import Dict
 import String exposing (fromInt)
+
+
+
+-- TODO: don't expose
+type alias Accumulator acc =
+  Topic -> BoxPath -> acc -> Maybe acc -> Model -> acc
+
+
+-- TODO: don't expose
+type alias LevelComplete acc =
+  BoxPath -> acc -> acc
+
+
+topicCount : BoxId -> Model -> Int
+topicCount boxId model =
+  traverse [boxId] 0
+    (\_ _ count childrenCount _ ->
+      count + 1 + (childrenCount |> Maybe.withDefault 0)
+    )
+    (\_ count -> count)
+    model
+
+
+traverse : BoxPath -> acc -> Accumulator acc -> LevelComplete acc -> Model -> acc
+traverse boxPath initAcc accumulate levelComplete model =
+  let
+    topicAccumulator : Topic -> acc -> acc
+    topicAccumulator topic acc =
+      let
+        childPath = BoxId topic.id :: boxPath
+        children =
+          if Topic.isBox topic.id model then
+            Just (traverse childPath initAcc accumulate levelComplete model) -- recursion
+          else
+            Nothing
+      in
+      accumulate topic boxPath acc children model
+  in
+  topicIds (firstId boxPath) model
+    |> List.filterMap (topicLookup model)
+    |> List.foldl topicAccumulator initAcc
+    |> levelComplete boxPath
+
+
+topicLookup : Model -> TopicId -> Maybe Topic
+topicLookup model topicId =
+  case Topic.fromId topicId model of
+    Just topic -> Just topic
+    Nothing -> U.fail "Box.topicLookup" topicId Nothing
 
 
 
