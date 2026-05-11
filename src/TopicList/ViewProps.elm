@@ -21,48 +21,92 @@ import String exposing (fromInt, fromFloat)
 
 
 
+type alias Accumulator acc =
+  Topic -> BoxPath -> acc -> Maybe acc -> Model -> acc
+
+
+type alias LevelComplete acc =
+  BoxPath -> Env2 -> acc -> acc
+
+
+type alias HtmlList = List (Html Msg)
+
+
+
 -- VIEW
 
 
+-- Extension point
 -- For the fullscreen box boxPath is empty
 view : BoxId -> BoxPath -> Env2 -> Html Msg
 view boxId boxPath ({model} as env) =
   div
     ( listStyle boxId boxPath model )
-    ( viewList (viewModel (boxId :: boxPath) model) env )
+    ( traverseBox (boxId :: boxPath) [] viewTopicItem viewList env )
 
 
-viewList : ViewModel -> Env2 -> List (Html Msg)
-viewList (ViewModel boxPath listItems) ({model} as env) =
+traverseBox : BoxPath -> acc -> Accumulator acc -> LevelComplete acc -> Env2 -> acc
+traverseBox boxPath initAcc accumulate levelComplete ({model} as env) =
+  let
+    boxId = Box.firstId boxPath
+    topicIds = Box.topicIds boxId model
+    topicAccumulator : Topic -> acc -> acc
+    topicAccumulator topic acc =
+      let
+        childPath = BoxId topic.id :: boxPath
+        children =
+          if Topic.isBox topic.id model then
+            Just (traverseBox childPath initAcc accumulate levelComplete env) -- recursion
+          else
+            Nothing
+      in
+      accumulate topic boxPath acc children model
+  in
+  case byId boxId model of
+    Just {order} ->
+      order
+        |> List.filterMap (topicOrder topicIds model)
+        |> List.foldl topicAccumulator initAcc
+        |> levelComplete boxPath env
+    Nothing -> U.fail "TopicList.ViewModel.traverseBox" boxId initAcc
+
+
+topicOrder : List TopicId -> Model -> TopicId -> Maybe Topic
+topicOrder topicIds model topicId =
+  if List.member topicId topicIds then
+    case Topic.fromId topicId model of
+      Just topic -> Just topic
+      Nothing -> U.fail "TopicList.ViewModel.topicOrder" topicId Nothing
+  else
+    Nothing
+
+
+-- Accumulator
+viewTopicItem : Topic -> BoxPath -> HtmlList -> Maybe HtmlList -> Model -> HtmlList
+viewTopicItem topic boxPath acc childrenAcc model =
+  acc ++
+    [ li
+        ( Events.itemClickHandler (T topic.id) boxPath
+          ++ VB.selectionStyle topic.id boxPath model
+          ++ hoverStyle topic.id boxPath model
+        )
+        ( [ viewTopic topic boxPath model ]
+          ++
+          case childrenAcc of
+            Just children -> children
+            Nothing -> []
+        )
+    ]
+
+
+-- LevelComplete
+viewList : BoxPath -> Env2 -> HtmlList -> HtmlList
+viewList boxPath env topics =
   [ ul
       []
-      ( listItems |> List.map
-        (\(ListItem topic maybeChildren) ->
-          li
-            ( Events.itemClickHandler (T topic.id) boxPath
-              ++ VB.selectionStyle topic.id boxPath model
-              ++ hoverStyle topic.id boxPath model
-            )
-            ( [ viewTopic topic boxPath model ]
-              ++
-              case maybeChildren of
-                Just children ->
-                  viewList children env -- recursion
-                Nothing ->
-                  []
-            )
-        )
-      )
+      topics
   ]
   ++ Tool.viewToolbar boxPath env
-
-
-hoverStyle : TopicId -> BoxPath -> Model -> Attrs Msg
-hoverStyle topicId boxPath model =
-  if Mouse.isHovered topicId boxPath model then
-    [ style "background-color" "beige" ] -- for debug
-  else
-    []
 
 
 viewTopic : Topic -> BoxPath -> Model -> Html Msg
@@ -71,6 +115,14 @@ viewTopic topic boxPath model =
     Text.viewInput topic boxPath inputStyle
   else
     text <| Topic.label topic
+
+
+hoverStyle : TopicId -> BoxPath -> Model -> Attrs Msg
+hoverStyle topicId boxPath model =
+  if Mouse.isHovered topicId boxPath model then
+    [ style "background-color" "beige" ] -- for debug
+  else
+    []
 
 
 inputStyle : Attrs Msg
@@ -120,54 +172,6 @@ drag pos {model} =
 dragStop : Env2 -> (Model, Cmd Msg)
 dragStop {model} =
   (model, Cmd.none)
-
-
-
--- VIEW MODEL
-
-
-type ViewModel
-  = ViewModel BoxPath (List ListItem)
-
-
-type ListItem
-  = ListItem Topic (Maybe ViewModel)
-
-
-viewModel : BoxPath -> Model -> ViewModel
-viewModel boxPath model =
-  let
-    boxId = Box.firstId boxPath
-    topicIds = Box.topicIds boxId model
-  in
-  case byId boxId model of
-    Just viewProps ->
-      ViewModel boxPath
-        ( viewProps.order
-            |> List.filterMap (topicOrder topicIds model)
-            |> List.map
-              (\topic ->
-                let
-                  children =
-                    if Topic.isBox topic.id model then
-                      Just (viewModel ((BoxId topic.id) :: boxPath) model)
-                    else
-                      Nothing
-                in
-                ListItem topic children
-              )
-        )
-    Nothing -> U.fail "TopicList.ViewModel.viewModel" boxId (ViewModel [] [])
-
-
-topicOrder : List TopicId -> Model -> TopicId -> Maybe Topic
-topicOrder topicIds model topicId =
-  if List.member topicId topicIds then
-    case Topic.fromId topicId model of
-      Just topic -> Just topic
-      Nothing -> U.fail "TopicList.ViewModel.topicOrder" topicId Nothing
-  else
-    Nothing
 
 
 

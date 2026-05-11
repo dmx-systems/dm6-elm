@@ -14,6 +14,7 @@ import String exposing (fromInt)
 
 
 
+-- Not used
 topics : BoxId -> Model -> List Topic
 topics boxId model =
   topicIds boxId model |> List.foldr
