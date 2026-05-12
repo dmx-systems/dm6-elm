@@ -1,7 +1,7 @@
-module Box exposing (topicCount, traverse, topicIds, assocIds, turnTopicIntoBox, addTopic,
-  addAssoc, removeTopic, removeAssoc, deleteTopic, deleteAssoc, expansionOf, updateExpansion,
-  rendererOf, setRenderer, hasItem, hadDeepTopic, mapTitle, isFullscreen, elemId, firstId,
-  fromPath)
+module Box exposing (topicCount, traverse, traverseWith, topicIds, assocIds, turnTopicIntoBox,
+  addTopic, addAssoc, removeTopic, removeAssoc, deleteTopic, deleteAssoc, expansionOf,
+  updateExpansion, rendererOf, setRenderer, hasItem, hadDeepTopic, mapTitle, isFullscreen,
+  elemId, firstId, fromPath)
 
 import Assoc
 import Extension exposing (Renderer)
@@ -14,6 +14,7 @@ import Dict
 import String exposing (fromInt)
 
 
+-- Traversal
 
 type alias Transform =
   BoxId -> Model -> List TopicId -> List TopicId
@@ -29,19 +30,27 @@ type alias LevelComplete acc =
 
 topicCount : BoxId -> Model -> Int
 topicCount boxId model =
-  traverse
-    [boxId]
-    (\_ _ topicIds_ -> topicIds_)
-    0
+  traverse [boxId] 0
     (\_ _ count childrenCount _ ->
       count + 1 + (childrenCount |> Maybe.withDefault 0)
     )
+    model
+
+
+traverse : BoxPath -> acc -> Accumulator acc -> Model -> acc
+traverse boxPath initAcc accumulate model =
+  traverseWith
+    boxPath
+    (\_ _ topicIds_ -> topicIds_)
+    initAcc
+    accumulate
     (\_ count -> count)
     model
 
 
-traverse : BoxPath -> Transform -> acc -> Accumulator acc -> LevelComplete acc -> Model -> acc
-traverse boxPath transform initAcc accumulate levelComplete model =
+traverseWith : BoxPath -> Transform -> acc -> Accumulator acc -> LevelComplete acc -> Model
+                                                                                          -> acc
+traverseWith boxPath transform initAcc accumulate levelComplete model =
   let
     boxId = firstId boxPath
     topicAccumulator : Topic -> acc -> acc
@@ -51,7 +60,7 @@ traverse boxPath transform initAcc accumulate levelComplete model =
         children =
           if Topic.isBox topic.id model then
             -- recursion
-            Just (traverse childPath transform initAcc accumulate levelComplete model)
+            Just (traverseWith childPath transform initAcc accumulate levelComplete model)
           else
             Nothing
       in

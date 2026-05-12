@@ -233,8 +233,9 @@ fullscreen model =
 byId : BoxId -> Model -> Maybe ViewProps
 byId mapId model =
   case model.topicMap.viewProps |> Dict.get (toBoxId mapId) of
-    Just map -> Just map
-    Nothing -> U.boxNotFound "TopicMap.ViewProps.byId" mapId Nothing
+    Just viewProps -> Just viewProps
+    Nothing -> U.logError "TopicMap.ViewProps.byId"
+      ("Missing ViewProps for " ++ U.toString mapId) Nothing
 
 
 --

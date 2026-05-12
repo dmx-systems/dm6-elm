@@ -34,7 +34,7 @@ view : BoxId -> BoxPath -> Env2 -> Html Msg
 view boxId boxPath ({model} as env) =
   div
     (listStyle boxId boxPath model)
-    (Box.traverse
+    (Box.traverseWith
       (boxId :: boxPath)
       topicOrder
       []
@@ -161,6 +161,15 @@ dragStop {model} =
 init : BoxId -> Model -> Model
 init boxId model =
   model
+    |> Box.topicIds boxId
+    |> List.foldl
+      (\topicId acc ->
+        if Topic.isBox topicId acc then
+          init (BoxId topicId) acc
+        else
+          acc
+      )
+      model
     |> createViewProps boxId
     |> initViewProps boxId
 
@@ -183,7 +192,7 @@ createViewProps boxId ({topicList} as model) =
     in
     { model | topicList =
       { topicList | viewProps = topicList.viewProps |> Dict.insert id
-          (ViewProps boxId [] (Size 0 0)) -- TOOO: "order" list
+          (ViewProps boxId [] (Size 0 0))
       }
     }
 
@@ -194,7 +203,10 @@ initViewProps boxId ({topicList} as model) =
     |> updateOrder boxId
       (\orderList ->
         let
-          missing = List.filterMap (missingTopicIds orderList) (Box.topicIds boxId model)
+          missing =
+            List.filterMap
+              (missingTopicIds orderList)
+              (Box.topicIds boxId model)
           _ = U.info "TopicList.ViewProps.initViewProps"
             ("add missing ViewProps " ++ U.toString missing ++ " to " ++ U.toString orderList)
         in
@@ -245,5 +257,6 @@ listSize boxId model =
 byId : BoxId -> Model -> Maybe ViewProps
 byId boxId model =
   case model.topicList.viewProps |> Dict.get (toBoxId boxId) of
-    Just list -> Just list
-    Nothing -> U.boxNotFound "TopicList.ViewProps.byId" boxId Nothing
+    Just viewProps -> Just viewProps
+    Nothing -> U.logError "TopicList.ViewProps.byId"
+      ("Missing ViewProps for " ++ U.toString boxId) Nothing
