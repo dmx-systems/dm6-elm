@@ -74,29 +74,29 @@ encode model =
 
 
 encodeTopicMap : BoxProps -> E.Value
-encodeTopicMap map =
+encodeTopicMap boxProps =
   E.object
-    [ ("id", encodeBoxId map.id)
+    [ ("id", encodeBoxId boxProps.id)
     , ("rect", E.object
-        [ ("x1", E.int map.rect.x1)
-        , ("y1", E.int map.rect.y1)
-        , ("x2", E.int map.rect.x2)
-        , ("y2", E.int map.rect.y2)
+        [ ("x1", E.int boxProps.rect.x1)
+        , ("y1", E.int boxProps.rect.y1)
+        , ("x2", E.int boxProps.rect.x2)
+        , ("y2", E.int boxProps.rect.y2)
         ]
       )
     , ("scroll", E.object
-        [ ("x", E.int map.scroll.x)
-        , ("y", E.int map.scroll.y)
+        [ ("x", E.int boxProps.scroll.x)
+        , ("y", E.int boxProps.scroll.y)
         ]
       )
-    , ("topics", map.topicProps
+    , ("topicProps", boxProps.topicProps
         |> Dict.values
-        |> E.list encodeMapTopic)
+        |> E.list encodeTopicProps)
     ]
 
 
-encodeMapTopic : TopicProps -> E.Value
-encodeMapTopic topic =
+encodeTopicProps : TopicProps -> E.Value
+encodeTopicProps topic =
   E.object
     [ ("id", E.int (toTopicId topic.id))
     , ("pos", E.object
@@ -131,11 +131,11 @@ topicMapDecoder =
       (D.field "x" D.int)
       (D.field "y" D.int)
     )
-    (D.field "topics" (toDictDecoderWith toTopicId mapTopicDecoder))
+    (D.field "topicProps" (toDictDecoderWith toTopicId topicPropsDecoder))
 
 
-mapTopicDecoder : D.Decoder TopicProps
-mapTopicDecoder =
+topicPropsDecoder : D.Decoder TopicProps
+topicPropsDecoder =
   D.map3 TopicProps
     (D.field "id" topicIdDecoder)
     (D.field "pos" <| D.map2

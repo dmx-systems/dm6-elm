@@ -12,11 +12,11 @@ import Utils as U
 
 {- Projects box data and search state ("limbo") into a TopicMap render model -}
 topicsToRender : BoxProps -> Model -> List TopicProps
-topicsToRender map model =
+topicsToRender boxProps model =
   let
-    topics = TM.topics map model |> List.map
-      (\topic -> effectiveExpansion topic map.id model)
-    limboTopic = limboMapTopic map model
+    topics = TM.allTopicProps boxProps model |> List.map
+      (\topic -> effectiveExpansion topic boxProps.id model)
+    limboTopic = limboTopicProps boxProps model
   in
   topics ++ limboTopic
 
@@ -31,19 +31,20 @@ effectiveExpansion topic boxId model =
   }
 
 
-limboMapTopic : BoxProps -> Model -> List TopicProps
-limboMapTopic map model =
+limboTopicProps : BoxProps -> Model -> List TopicProps
+limboTopicProps boxProps model =
   case limboState model of
     Just (topicId, _, limboBoxId) ->
-      if limboBoxId == map.id && (not <| Box.hasItem (T topicId) map.id model) then
+      if limboBoxId == boxProps.id && (not <| Box.hasItem (T topicId) boxProps.id model) then
         let
-          _ = U.info "TopicMap.ViewModel.limboMapTopic" (topicId, "not in map", map.id)
-          mapTopic =
-            case TM.mapTopicOrNothing topicId map of
+          _ = U.info "TopicMap.ViewModel.limboTopicProps"
+            (topicId, "not in boxProps", boxProps.id)
+          topicProps =
+            case TM.topicPropsOrNothing topicId boxProps of
               Just {pos} -> TopicProps topicId pos Expanded
-              Nothing -> TM.initLimboMapTopic topicId map.id model
+              Nothing -> TM.initLimboTopicProps topicId boxProps.id model
         in
-        [ mapTopic ]
+        [ topicProps ]
       else
         []
     Nothing -> []

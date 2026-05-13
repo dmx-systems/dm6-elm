@@ -71,8 +71,8 @@ setFullscreenBox boxId ({model} as env) =
 setViewport : Model -> Cmd Msg
 setViewport model =
   case TM.fullscreen model of
-    Just map ->
-      Dom.setViewportOf "main" (toFloat map.scroll.x) (toFloat map.scroll.y)
+    Just boxProps ->
+      Dom.setViewportOf "main" (toFloat boxProps.scroll.x) (toFloat boxProps.scroll.y)
       |> Task.attempt
         (\result ->
           case result of

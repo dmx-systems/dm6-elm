@@ -17,10 +17,6 @@ import Utils as U
 -- HIT TEST
 
 
-type alias MapTopics =
-  List TopicProps
-
-
 {-| Finds the topic/box at a given screen position.
 Returns the found topic/box (Id) and its context (BoxPath), or Nothing.
 If `excludeTopicId` is given that topic/box will be excluded from search.
@@ -28,10 +24,10 @@ If `excludeTopicId` is given that topic/box will be excluded from search.
 hitTest : BoxId -> BoxPath -> Point -> Maybe TopicId -> Env2 -> Maybe Target
 hitTest (BoxId topicId as boxId) boxPath pos excludeTopicId ({model} as env) =
   case TM.byId boxId model of
-    Just map ->
+    Just boxProps ->
       let
-        topics = TM.topics map model
-        relPos = mapOffset pos map
+        topics = TM.allTopicProps boxProps model
+        relPos = mapOffset pos boxProps
       in
       case testChildren relPos topics (boxId :: boxPath) excludeTopicId env of
         Just target -> Just target
@@ -42,14 +38,14 @@ hitTest (BoxId topicId as boxId) boxPath pos excludeTopicId ({model} as env) =
             let
               parentBoxId = Box.firstId boxPath
             in
-            if isBoxRectHit pos map parentBoxId model then
+            if isBoxRectHit pos boxProps parentBoxId model then
               Just (T topicId, boxPath)
             else
               Nothing
     Nothing -> Nothing
 
 
-testChildren : Point -> MapTopics -> BoxPath -> Maybe TopicId -> Env2 -> Maybe Target
+testChildren : Point -> List TopicProps -> BoxPath -> Maybe TopicId -> Env2 -> Maybe Target
 testChildren pos topics boxPath excludeTopicId ({model, ext} as env) =
   case topics of
     [] -> Nothing
@@ -98,10 +94,10 @@ isTopicHit itemId boxPath pos model =
 {-| Transforms the given screen position to a map-relative position according to the given map.
 -}
 mapOffset : Point -> BoxProps -> Point
-mapOffset pos map =
+mapOffset pos boxProps =
   Point
-    (pos.x + map.rect.x1 + map.scroll.x)
-    (pos.y + map.rect.y1 + map.scroll.y)
+    (pos.x + boxProps.rect.x1 + boxProps.scroll.x)
+    (pos.y + boxProps.rect.y1 + boxProps.scroll.y)
 
 
 relPos_ : Point -> TopicId -> BoxPath -> Model -> Point
@@ -139,13 +135,13 @@ isTopicDetailHit pos topicId boxId model =
 
 
 isBoxRectHit : Point -> BoxProps -> BoxId -> Model -> Bool
-isBoxRectHit pos map parentBoxId model =
-  case TM.topicPos (fromBoxId map.id) parentBoxId model of
+isBoxRectHit pos boxProps parentBoxId model =
+  case TM.topicPos (fromBoxId boxProps.id) parentBoxId model of
     Just boxPos ->
       pos.x > 0 &&
-      pos.x < map.rect.x2 - map.rect.x1 &&
+      pos.x < boxProps.rect.x2 - boxProps.rect.x1 &&
       pos.y > 0 &&
-      pos.y < map.rect.y2 - map.rect.y1
+      pos.y < boxProps.rect.y2 - boxProps.rect.y1
     Nothing -> False
 
 
@@ -164,9 +160,9 @@ autoSize boxPath ({model, ext}) =
     boxId = Box.firstId boxPath
   in
   case TM.byId boxId model of
-    Just map ->
+    Just boxProps ->
       let
-        topics = VM.topicsToRender map model
+        topics = VM.topicsToRender boxProps model
         (rect, model_) =
           if topics |> List.isEmpty then
             (C.whiteBoxEmpty, model)
@@ -179,7 +175,7 @@ autoSize boxPath ({model, ext}) =
         newRect = addBoxPadding rect
       in
       ( newRect
-      , updateBoxGeometry boxPath newRect map.rect model_
+      , updateBoxGeometry boxPath newRect boxProps.rect model_
       )
     Nothing -> (Rectangle 0 0 0 0, model)
 
@@ -331,12 +327,12 @@ adjustBoxPos (BoxId topicId) parentBoxId newRect oldRect model =
 
 
 toolbarPos : BoxId -> Model -> ToolbarPos
-toolbarPos mapId model =
-  case TM.byId mapId model of
+toolbarPos boxId model =
+  case TM.byId boxId model of
     Just {rect} ->
       ToolbarPos
         (\topic ->
-          case TM.topicPos topic.id mapId model of
+          case TM.topicPos topic.id boxId model of
             Just topicPos ->
               Point
                 (topicPos.x - rect.x1 - C.topicW2)
@@ -344,7 +340,7 @@ toolbarPos mapId model =
             Nothing -> Point 0 0
         )
         (\assoc ->
-          case TM.assocGeometry assoc mapId model of
+          case TM.assocGeometry assoc boxId model of
             Just (p1, p2) ->
               Point
                 ((p1.x + p2.x) // 2 - rect.x1 - 32) -- TODO: 32 ≈ toolbar width / 2

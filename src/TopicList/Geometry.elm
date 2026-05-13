@@ -119,6 +119,6 @@ updateTopicList boxId transform ({topicList} as model) =
 
 
 toolbarPos : BoxId -> Model -> ToolbarPos
-toolbarPos mapId model =
+toolbarPos boxId model =
   -- TODO
   (ToolbarPos (\_ -> Point 0 0) (\_ -> Point 0 0))
