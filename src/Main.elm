@@ -19,7 +19,7 @@ import Shared.Events as Events
 import Storage as S
 import TopicMap.Controller as TMC
 import TopicMap.Mouse as Mouse
-import TopicMap.ViewProps as TM
+import TopicMap.BoxProps as TM
 import Undo exposing (UndoModel)
 import Utils as U
 

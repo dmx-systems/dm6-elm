@@ -8,7 +8,7 @@ import Feature.Mouse as Mouse
 import Model exposing (Model, Msg(..))
 import ModelBase exposing (..)
 import TopicMap.TopicMapDef as TopicMapDef exposing (DragState(..), DragMode(..))
-import TopicMap.ViewProps as TM
+import TopicMap.BoxProps as TM
 import Undo exposing (UndoModel)
 import Utils as U
 

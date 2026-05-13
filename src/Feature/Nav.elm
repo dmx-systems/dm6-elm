@@ -5,7 +5,7 @@ import Feature.NavDef as NavDef
 import Model exposing (Model, Msg(..))
 import ModelBase exposing (..)
 import Storage as S
-import TopicMap.ViewProps as TM
+import TopicMap.BoxProps as TM
 import Undo exposing (UndoModel)
 import Utils as U
 

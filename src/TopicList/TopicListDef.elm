@@ -1,4 +1,4 @@
-module TopicList.TopicListDef exposing (Model, ViewProps, init, encode, decoder)
+module TopicList.TopicListDef exposing (Model, BoxProps, init, encode, decoder)
 
 import ModelBase exposing (..)
 import Dict exposing (Dict)
@@ -8,19 +8,19 @@ import Json.Encode as E
 
 
 type alias Model =
-  { viewProps : Dict Id ViewProps
+  { boxProps : Dict Id BoxProps
   , dragState : DragState -- transient
   }
 
 
 init : Model
 init =
-  { viewProps = Dict.empty
+  { boxProps = Dict.empty
   , dragState = NoDrag
   }
 
 
-type alias ViewProps =
+type alias BoxProps =
   { id : BoxId
   , order : List TopicId
   , size : Size
@@ -41,12 +41,10 @@ type DragState
 
 encode : Model -> E.Value
 encode model =
-  E.object
-    [ ("viewProps", E.list encodeTopicList (model.viewProps |> Dict.values))
-    ]
+  E.list encodeTopicList (model.boxProps |> Dict.values)
 
 
-encodeTopicList : ViewProps -> E.Value
+encodeTopicList : BoxProps -> E.Value
 encodeTopicList list =
   E.object
     [ ("id", encodeBoxId list.id)
@@ -64,13 +62,13 @@ encodeTopicList list =
 decoder : D.Decoder Model
 decoder =
   D.map2 Model
-    (D.field "viewProps" (toDictDecoderWith toBoxId topicListDecoder))
+    (toDictDecoderWith toBoxId topicListDecoder)
     (D.succeed NoDrag)
 
 
-topicListDecoder : D.Decoder ViewProps
+topicListDecoder : D.Decoder BoxProps
 topicListDecoder =
-  D.map3 ViewProps
+  D.map3 BoxProps
     (D.field "id" boxIdDecoder)
     (D.field "order" (D.list topicIdDecoder))
     (D.field "size" <| D.map2 Size

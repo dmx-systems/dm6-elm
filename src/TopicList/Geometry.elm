@@ -8,8 +8,8 @@ import Env exposing (Env2)
 import Model exposing (Model)
 import ModelBase exposing (..)
 import Topic
-import TopicList.ViewProps as TL
-import TopicList.TopicListDef exposing (ViewProps)
+import TopicList.BoxProps as TL
+import TopicList.TopicListDef exposing (BoxProps)
 import Utils as U
 
 
@@ -98,13 +98,13 @@ setSize boxId size ({topicList} as model) =
       (\list -> {list | size = size})
 
 
-{-| Canonical ViewProps transformation.
-Logs an error if ViewProps do not exist.
+{-| Canonical BoxProps transformation.
+Logs an error if BoxProps do not exist.
 -}
-updateTopicList : BoxId -> (ViewProps -> ViewProps) -> Model -> Model
+updateTopicList : BoxId -> (BoxProps -> BoxProps) -> Model -> Model
 updateTopicList boxId transform ({topicList} as model) =
   { model | topicList =
-    { topicList | viewProps = topicList.viewProps |> Dict.update (toBoxId boxId)
+    { topicList | boxProps = topicList.boxProps |> Dict.update (toBoxId boxId)
       (\maybeList ->
         case maybeList of
           Just list -> Just (transform list)

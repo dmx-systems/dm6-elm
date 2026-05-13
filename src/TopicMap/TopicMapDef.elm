@@ -1,4 +1,4 @@
-module TopicMap.TopicMapDef exposing (Model, ViewProps, TopicProps, DragState(..), DragMode(..),
+module TopicMap.TopicMapDef exposing (Model, BoxProps, TopicProps, DragState(..), DragMode(..),
   Msg(..), init, encode, decoder)
 
 import ModelBase exposing (..)
@@ -11,27 +11,27 @@ import Time
 
 
 type alias Model =
-  { viewProps : Dict Id ViewProps
+  { boxProps : Dict Id BoxProps
   , dragState : DragState
   }
 
 
 init : Model
 init =
-  { viewProps =
+  { boxProps =
       Dict.singleton
         (toBoxId rootBoxId)
-        (ViewProps rootBoxId (Rectangle 0 0 0 0) (Point 0 0) Dict.empty)
+        (BoxProps rootBoxId (Rectangle 0 0 0 0) (Point 0 0) Dict.empty)
   -- transient
   , dragState = NoDrag
   }
 
 
-type alias ViewProps =
+type alias BoxProps =
   { id : BoxId
   , rect : Rectangle
   , scroll : Point
-  , topics : Dict Id TopicProps
+  , topicProps : Dict Id TopicProps
   }
 
 
@@ -70,12 +70,10 @@ type Msg
 
 encode : Model -> E.Value
 encode model =
-  E.object
-    [ ("viewProps", E.list encodeTopicMap (model.viewProps |> Dict.values))
-    ]
+  E.list encodeTopicMap (model.boxProps |> Dict.values)
 
 
-encodeTopicMap : ViewProps -> E.Value
+encodeTopicMap : BoxProps -> E.Value
 encodeTopicMap map =
   E.object
     [ ("id", encodeBoxId map.id)
@@ -91,7 +89,7 @@ encodeTopicMap map =
         , ("y", E.int map.scroll.y)
         ]
       )
-    , ("topics", map.topics
+    , ("topics", map.topicProps
         |> Dict.values
         |> E.list encodeMapTopic)
     ]
@@ -115,13 +113,13 @@ encodeMapTopic topic =
 decoder : D.Decoder Model
 decoder =
   D.map2 Model
-    (D.field "viewProps" (toDictDecoderWith toBoxId topicMapDecoder))
+    (toDictDecoderWith toBoxId topicMapDecoder)
     (D.succeed NoDrag)
 
 
-topicMapDecoder : D.Decoder ViewProps
+topicMapDecoder : D.Decoder BoxProps
 topicMapDecoder =
-  D.map4 ViewProps
+  D.map4 BoxProps
     (D.field "id" boxIdDecoder)
     (D.field "rect" <| D.map4 Rectangle
       (D.field "x1" D.int)

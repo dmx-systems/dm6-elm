@@ -16,7 +16,7 @@ import Shared.ViewBase as VB
 import Topic
 import TopicMap.TopicMapDef as TopicMapDef exposing (TopicProps, DragState(..), DragMode(..))
 import TopicMap.ViewModel as VM
-import TopicMap.ViewProps as TM
+import TopicMap.BoxProps as TM
 import Utils as U
 
 import Html exposing (Html, div, text)
@@ -150,7 +150,7 @@ boxInfo boxId boxPath ({model} as env) =
 
 
 -- For the fullscreen box boxPath is empty
-viewItems : TopicMapDef.ViewProps -> BoxPath -> Env2 -> (List (Html Msg), List (Svg Msg))
+viewItems : TopicMapDef.BoxProps -> BoxPath -> Env2 -> (List (Html Msg), List (Svg Msg))
 viewItems map boxPath ({model} as env) =
   let
     newPath = map.id :: boxPath

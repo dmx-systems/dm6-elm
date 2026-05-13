@@ -4,14 +4,14 @@ import Box
 import Feature.SearchDef exposing (SearchResult(..))
 import Model exposing (Model)
 import ModelBase exposing (..)
-import TopicMap.TopicMapDef exposing (ViewProps, TopicProps)
-import TopicMap.ViewProps as TM
+import TopicMap.TopicMapDef exposing (BoxProps, TopicProps)
+import TopicMap.BoxProps as TM
 import Utils as U
 
 
 
 {- Projects box data and search state ("limbo") into a TopicMap render model -}
-topicsToRender : ViewProps -> Model -> List TopicProps
+topicsToRender : BoxProps -> Model -> List TopicProps
 topicsToRender map model =
   let
     topics = TM.topics map model |> List.map
@@ -31,7 +31,7 @@ effectiveExpansion topic boxId model =
   }
 
 
-limboMapTopic : ViewProps -> Model -> List TopicProps
+limboMapTopic : BoxProps -> Model -> List TopicProps
 limboMapTopic map model =
   case limboState model of
     Just (topicId, _, limboBoxId) ->

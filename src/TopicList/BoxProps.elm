@@ -1,4 +1,4 @@
-module TopicList.ViewProps exposing (view, listSize, dragStart, drag, dragStop, init, addTopic)
+module TopicList.BoxProps exposing (view, listSize, dragStart, drag, dragStop, init, addTopic)
 
 import Box
 import Config as C
@@ -12,7 +12,7 @@ import ModelBase exposing (..)
 import Shared.Events as Events
 import Shared.ViewBase as VB
 import Topic
-import TopicList.TopicListDef exposing (ViewProps)
+import TopicList.TopicListDef exposing (BoxProps)
 import Utils as U
 
 import Html exposing (Html, div, ul, li, text)
@@ -57,7 +57,7 @@ topicOrder boxId model topicIds =
             else
               Nothing
           )
-    Nothing -> U.fail "TopicList.ViewProps.topicOrder" boxId topicIds
+    Nothing -> U.fail "TopicList.BoxProps.topicOrder" boxId topicIds
 
 
 -- Box.Accumulator
@@ -179,20 +179,20 @@ createViewProps boxId ({topicList} as model) =
   let
     id = toBoxId boxId
   in
-  if Dict.member id model.topicList.viewProps then
+  if Dict.member id model.topicList.boxProps then
     let
-      _ = U.info "TopicList.ViewProps.createViewProps"
-        ("box " ++ fromInt id ++ " has ViewProps already")
+      _ = U.info "TopicList.BoxProps.createViewProps"
+        ("box " ++ fromInt id ++ " has BoxProps already")
     in
     model
   else
     let
-      _ = U.info "TopicList.ViewProps.createViewProps"
-        ("creating ViewProps for box " ++ fromInt id)
+      _ = U.info "TopicList.BoxProps.createViewProps"
+        ("creating BoxProps for box " ++ fromInt id)
     in
     { model | topicList =
-      { topicList | viewProps = topicList.viewProps |> Dict.insert id
-          (ViewProps boxId [] (Size 0 0))
+      { topicList | boxProps = topicList.boxProps |> Dict.insert id
+          (BoxProps boxId [] (Size 0 0))
       }
     }
 
@@ -207,8 +207,8 @@ initViewProps boxId ({topicList} as model) =
             List.filterMap
               (missingTopicIds orderList)
               (Box.topicIds boxId model)
-          _ = U.info "TopicList.ViewProps.initViewProps"
-            ("add missing ViewProps " ++ U.toString missing ++ " to " ++ U.toString orderList)
+          _ = U.info "TopicList.BoxProps.initViewProps"
+            ("add missing BoxProps " ++ U.toString missing ++ " to " ++ U.toString orderList)
         in
         missing ++ orderList
       )
@@ -235,11 +235,11 @@ addTopic topicId boxId posHint {model} =
 updateOrder : BoxId -> (List TopicId -> List TopicId) -> Model -> Model
 updateOrder boxId transform ({topicList} as model) =
   { model | topicList =
-    { topicList | viewProps = topicList.viewProps |> Dict.update (toBoxId boxId)
+    { topicList | boxProps = topicList.boxProps |> Dict.update (toBoxId boxId)
         (\maybeViewProps ->
           case maybeViewProps of
-            Just viewProps -> Just { viewProps | order = transform viewProps.order }
-            Nothing -> U.logError "TopicList.ViewProps.updateOrder"
+            Just boxProps -> Just { boxProps | order = transform boxProps.order }
+            Nothing -> U.logError "TopicList.BoxProps.updateOrder"
               (U.toString {boxId = boxId}) Nothing
         )
     }
@@ -250,13 +250,13 @@ listSize : BoxId -> Model -> Size
 listSize boxId model =
   case byId boxId model of
     Just {size} -> size
-    Nothing -> U.fail "TopicList.ViewProps.listSize" boxId (Size 0 0)
+    Nothing -> U.fail "TopicList.BoxProps.listSize" boxId (Size 0 0)
 
 
-{-| Logs an error if the ViewProps are missing. -}
-byId : BoxId -> Model -> Maybe ViewProps
+{-| Logs an error if the BoxProps are missing. -}
+byId : BoxId -> Model -> Maybe BoxProps
 byId boxId model =
-  case model.topicList.viewProps |> Dict.get (toBoxId boxId) of
-    Just viewProps -> Just viewProps
-    Nothing -> U.logError "TopicList.ViewProps.byId"
-      ("Missing ViewProps for " ++ U.toString boxId) Nothing
+  case model.topicList.boxProps |> Dict.get (toBoxId boxId) of
+    Just boxProps -> Just boxProps
+    Nothing -> U.logError "TopicList.BoxProps.byId"
+      ("Missing BoxProps for " ++ U.toString boxId) Nothing

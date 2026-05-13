@@ -7,9 +7,9 @@ import Feature.TextDef exposing (EditState(..))
 import Model exposing (Model)
 import ModelBase exposing (..)
 import Topic
-import TopicMap.TopicMapDef exposing (ViewProps, TopicProps, DragState(..), DragMode(..))
+import TopicMap.TopicMapDef exposing (BoxProps, TopicProps, DragState(..), DragMode(..))
 import TopicMap.ViewModel as VM
-import TopicMap.ViewProps as TM
+import TopicMap.BoxProps as TM
 import Utils as U
 
 
@@ -97,7 +97,7 @@ isTopicHit itemId boxPath pos model =
 
 {-| Transforms the given screen position to a map-relative position according to the given map.
 -}
-mapOffset : Point -> ViewProps -> Point
+mapOffset : Point -> BoxProps -> Point
 mapOffset pos map =
   Point
     (pos.x + map.rect.x1 + map.scroll.x)
@@ -114,7 +114,7 @@ relPos_ pos topicId boxPath model =
     Nothing -> pos
 
 
--- TODO: factor out common ViewProps.Size code
+-- TODO: factor out common BoxProps.Size code
 
 isTopicHeaderHit : Point -> TopicId -> BoxId -> Model -> Bool
 isTopicHeaderHit pos topicId boxId model =
@@ -138,7 +138,7 @@ isTopicDetailHit pos topicId boxId model =
     _ -> False
 
 
-isBoxRectHit : Point -> ViewProps -> BoxId -> Model -> Bool
+isBoxRectHit : Point -> BoxProps -> BoxId -> Model -> Bool
 isBoxRectHit pos map parentBoxId model =
   case TM.topicPos (fromBoxId map.id) parentBoxId model of
     Just boxPos ->

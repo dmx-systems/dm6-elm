@@ -7,11 +7,11 @@ import Model exposing (Model, Msg)
 import ModelBase exposing (..)
 -- box renderers
 import TopicList.Geometry
-import TopicList.ViewProps
+import TopicList.BoxProps
 import TopicMap.Geometry
 import TopicMap.Mouse
 import TopicMap.View
-import TopicMap.ViewProps
+import TopicMap.BoxProps
 
 import Dict exposing (Dict)
 import Html exposing (Html, text)
@@ -108,7 +108,7 @@ registry =
   Dict.fromList
     [ ("TopicMap",
         { label = "Topic Map"
-        , init = TopicMap.ViewProps.init
+        , init = TopicMap.BoxProps.init
         , view = TopicMap.View.view
         , hitTest = TopicMap.Geometry.hitTest
         , autoSize = TopicMap.Geometry.autoSize
@@ -116,20 +116,20 @@ registry =
         , dragStart = TopicMap.Mouse.dragStart
         , drag = TopicMap.Mouse.drag
         , dragStop = TopicMap.Mouse.dragStop
-        , addTopic = TopicMap.ViewProps.addTopic
+        , addTopic = TopicMap.BoxProps.addTopic
         }
       )
     , ("TopicList",
         { label = "List"
-        , init = TopicList.ViewProps.init
-        , view = TopicList.ViewProps.view
+        , init = TopicList.BoxProps.init
+        , view = TopicList.BoxProps.view
         , hitTest = TopicList.Geometry.hitTest
         , autoSize = TopicList.Geometry.autoSize
         , toolbar = TopicList.Geometry.toolbarPos
-        , dragStart = TopicList.ViewProps.dragStart
-        , drag = TopicList.ViewProps.drag
-        , dragStop = TopicList.ViewProps.dragStop
-        , addTopic = TopicList.ViewProps.addTopic
+        , dragStart = TopicList.BoxProps.dragStart
+        , drag = TopicList.BoxProps.drag
+        , dragStop = TopicList.BoxProps.dragStop
+        , addTopic = TopicList.BoxProps.addTopic
         }
       )
     ]
