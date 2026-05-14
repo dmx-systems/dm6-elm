@@ -166,7 +166,7 @@ vGap gap =
 viewMapTools : UndoModel -> List (Html Msg)
 viewMapTools undoModel =
   let
-    target = TM.landingTarget undoModel.present
+    target = TM.landingTarget undoModel.present -- FIXME: dispatch via ExtManager
   in
   [ div
       mapToolsStyle
@@ -581,4 +581,4 @@ createBoxOnDemand topicId model =
   else
     model
       |> Box.turnTopicIntoBox topicId
-      |> TM.create (BoxId topicId)
+      |> TM.create (BoxId topicId) -- FIXME: dispatch via ExtManager

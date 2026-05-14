@@ -170,35 +170,35 @@ init boxId model =
           acc
       )
       model
-    |> createViewProps boxId
-    |> initViewProps boxId
+    |> createBoxProps boxId
+    |> initOrder boxId
 
 
-createViewProps : BoxId -> Model -> Model
-createViewProps boxId ({topicList} as model) =
+createBoxProps : BoxId -> Model -> Model
+createBoxProps boxId ({topicList} as model) =
   let
     id = toBoxId boxId
   in
   if Dict.member id model.topicList.boxProps then
     let
-      _ = U.info "TopicList.BoxProps.createViewProps"
-        ("box " ++ fromInt id ++ " has BoxProps already")
+      _ = U.info "TopicList.BoxProps.createBoxProps"
+        ("Box (" ++ U.toString boxId ++ ") has BoxProps entry already")
     in
     model
   else
     let
-      _ = U.info "TopicList.BoxProps.createViewProps"
-        ("creating BoxProps for box " ++ fromInt id)
+      _ = U.info "TopicList.BoxProps.createBoxProps"
+        ("Creating BoxProps entry for box (" ++ U.toString boxId ++ ")")
     in
     { model | topicList =
-      { topicList | boxProps = topicList.boxProps |> Dict.insert id
-          (BoxProps boxId [] (Size 0 0))
+      { topicList | boxProps = topicList.boxProps
+          |> Dict.insert id (BoxProps boxId [] (Size 0 0))
       }
     }
 
 
-initViewProps : BoxId -> Model -> Model
-initViewProps boxId ({topicList} as model) =
+initOrder : BoxId -> Model -> Model
+initOrder boxId ({topicList} as model) =
   model
     |> updateOrder boxId
       (\orderList ->
@@ -207,8 +207,8 @@ initViewProps boxId ({topicList} as model) =
             List.filterMap
               (missingTopicIds orderList)
               (Box.topicIds boxId model)
-          _ = U.info "TopicList.BoxProps.initViewProps"
-            ("add missing BoxProps " ++ U.toString missing ++ " to " ++ U.toString orderList)
+          _ = U.info "TopicList.BoxProps.initOrder"
+            ("Add missing BoxProps " ++ U.toString missing ++ " to " ++ U.toString orderList)
         in
         missing ++ orderList
       )
@@ -253,10 +253,11 @@ listSize boxId model =
     Nothing -> U.fail "TopicList.BoxProps.listSize" boxId (Size 0 0)
 
 
-{-| Logs an error if the BoxProps are missing. -}
+{-| Logs an error if the BoxProps entry is missing.
+-}
 byId : BoxId -> Model -> Maybe BoxProps
 byId boxId model =
   case model.topicList.boxProps |> Dict.get (toBoxId boxId) of
     Just boxProps -> Just boxProps
     Nothing -> U.logError "TopicList.BoxProps.byId"
-      ("Missing BoxProps for " ++ U.toString boxId) Nothing
+      ("Missing BoxProps entry for (" ++ U.toString boxId ++ ")") Nothing

@@ -10,18 +10,67 @@ import Feature.SearchDef exposing (SearchResult(..))
 import Feature.Sel as Sel
 import Model exposing (Model, Msg)
 import ModelBase exposing (..)
+import Topic
 import TopicMap.TopicMapDef as TopicMapDef exposing (BoxProps, TopicProps)
 import Utils as U
 
 import Dict
 import Random
-import String exposing (fromInt)
 
 
 
 init : BoxId -> Model -> Model
 init boxId model =
-  model -- TODO
+  model
+    |> Box.topicIds boxId
+    |> List.foldl
+      (\topicId acc ->
+        if Topic.isBox topicId acc then
+          init (BoxId topicId) acc
+        else
+          acc
+      )
+      model
+    |> createBoxProps boxId
+    |> addMissingTopicProps boxId
+
+
+createBoxProps : BoxId -> Model -> Model
+createBoxProps boxId model =
+  if Dict.member (toBoxId boxId) model.topicMap.boxProps then
+    let
+      _ = U.info "TopicMap.BoxProps.createBoxProps"
+        ("Box (" ++ U.toString boxId ++ ") has BoxProps entry already")
+    in
+    model
+  else
+    let
+      _ = U.info "TopicMap.BoxProps.createBoxProps"
+        ("Creating BoxProps entry for box (" ++ U.toString boxId ++ ")")
+    in
+    create boxId model
+
+
+addMissingTopicProps : BoxId -> Model -> Model
+addMissingTopicProps boxId model =
+  model
+    |> updateBoxProps boxId
+      (\boxProps ->
+        { boxProps | topicProps =
+            Box.topicIds boxId model
+              |> List.foldl
+                (\topicId acc ->
+                  let
+                    id = toTopicId topicId
+                  in
+                  if Dict.member id acc then
+                    acc
+                  else
+                    acc |> Dict.insert id (initTopicProps topicId boxId model)
+                )
+                boxProps.topicProps
+        }
+      )
 
 
 create : BoxId -> Model -> Model
@@ -36,7 +85,9 @@ create boxId model =
 create_ : BoxProps -> Model -> Model
 create_ boxProps ({topicMap} as model) =
   { model | topicMap =
-    { topicMap | boxProps = topicMap.boxProps |> Dict.insert (toBoxId boxProps.id) boxProps }
+    { topicMap | boxProps = topicMap.boxProps
+        |> Dict.insert (toBoxId boxProps.id) boxProps
+    }
   }
 
 
@@ -76,26 +127,6 @@ updateTopicPos topicId boxId transform model =
   model
     |> updateTopicProps topicId boxId
       (\topic -> { topic | pos = transform topic.pos })
-
-
-{-| Canonical TopicProps transformation.
-Logs an error if the BoxProps entry is missing, or inside BoxProps the TopicProps entry is
-missing.
--}
-updateTopicProps : TopicId -> BoxId -> (TopicProps -> TopicProps) -> Model -> Model
-updateTopicProps topicId boxId transform model =
-  model
-    |> updateBoxProps boxId
-      (\boxProps ->
-        { boxProps | topicProps = boxProps.topicProps |> Dict.update (toTopicId topicId)
-          (\maybeTopicProps ->
-            case maybeTopicProps of
-              Just tProps -> Just (transform tProps)
-              Nothing -> U.logError "TopicMap.BoxProps.updateTopicProps"
-                ("Missing TopicProps for " ++ U.toString topicId) Nothing
-          )
-        }
-      )
 
 
 assocGeometry : Assoc -> BoxId -> Model -> Maybe (Point, Point)
@@ -207,9 +238,8 @@ topicProps_ : TopicId -> BoxProps -> Maybe TopicProps
 topicProps_ topicId boxProps =
   case topicPropsOrNothing topicId boxProps of
     Just topic -> Just topic
-    Nothing -> U.logError "TopicMap.BoxProps.topicProps_"
-      ("Missing TopicProps " ++ U.toString topicId ++ " inside " ++ U.toString boxProps.id)
-      Nothing
+    Nothing -> U.logError "TopicMap.BoxProps.topicProps_" ("Missing TopicProps ("
+      ++ U.toString topicId ++ ") inside (" ++ U.toString boxProps.id ++ ")") Nothing
 
 
 topicPropsOrNothing : TopicId -> BoxProps -> Maybe TopicProps
@@ -240,8 +270,8 @@ byId : BoxId -> Model -> Maybe BoxProps
 byId boxId model =
   case model.topicMap.boxProps |> Dict.get (toBoxId boxId) of
     Just boxProps -> Just boxProps
-    Nothing -> U.logError "TopicMap.BoxProps.byId" ("Missing BoxProps for " ++ U.toString boxId)
-      Nothing
+    Nothing -> U.logError "TopicMap.BoxProps.byId"
+      ("Missing BoxProps entry for (" ++ U.toString boxId ++ ")") Nothing
 
 
 --
@@ -264,6 +294,26 @@ updateScrollPos boxId transform model =
       )
 
 
+{-| Canonical TopicProps transformation.
+Logs an error if the BoxProps entry is missing, or inside BoxProps the TopicProps entry is
+missing.
+-}
+updateTopicProps : TopicId -> BoxId -> (TopicProps -> TopicProps) -> Model -> Model
+updateTopicProps topicId boxId transform model =
+  model
+    |> updateBoxProps boxId
+      (\boxProps ->
+        { boxProps | topicProps = boxProps.topicProps |> Dict.update (toTopicId topicId)
+          (\maybeTopicProps ->
+            case maybeTopicProps of
+              Just tProps -> Just (transform tProps)
+              Nothing -> U.logError "TopicMap.BoxProps.updateTopicProps"
+                ("Missing TopicProps entry for (" ++ U.toString topicId ++ ")") Nothing
+          )
+        }
+      )
+
+
 {-| Canonical BoxProps transformation.
 Logs an error if the BoxProps entry is missing.
 -}
@@ -275,7 +325,7 @@ updateBoxProps boxId transform ({topicMap} as model) =
         case maybeBoxProps of
           Just boxProps -> Just (transform boxProps)
           Nothing -> U.logError "TopicMap.BoxProps.updateBoxProps"
-            ("Missing BoxProps for " ++ U.toString boxId) Nothing
+            ("Missing BoxProps entry for (" ++ U.toString boxId ++ ")") Nothing
       )
     }
   }
