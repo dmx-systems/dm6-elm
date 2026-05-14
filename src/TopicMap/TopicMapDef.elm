@@ -70,11 +70,11 @@ type Msg
 
 encode : Model -> E.Value
 encode model =
-  E.list encodeTopicMap (model.boxProps |> Dict.values)
+  E.list encodeBoxProps (model.boxProps |> Dict.values)
 
 
-encodeTopicMap : BoxProps -> E.Value
-encodeTopicMap boxProps =
+encodeBoxProps : BoxProps -> E.Value
+encodeBoxProps boxProps =
   E.object
     [ ("id", encodeBoxId boxProps.id)
     , ("rect", E.object
@@ -113,12 +113,12 @@ encodeTopicProps topic =
 decoder : D.Decoder Model
 decoder =
   D.map2 Model
-    (toDictDecoderWith toBoxId topicMapDecoder)
+    (toDictDecoderWith toBoxId boxPropsDecoder)
     (D.succeed NoDrag)
 
 
-topicMapDecoder : D.Decoder BoxProps
-topicMapDecoder =
+boxPropsDecoder : D.Decoder BoxProps
+boxPropsDecoder =
   D.map4 BoxProps
     (D.field "id" boxIdDecoder)
     (D.field "rect" <| D.map4 Rectangle

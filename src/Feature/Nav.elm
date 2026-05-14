@@ -70,7 +70,7 @@ setFullscreenBox boxId ({model} as env) =
 
 setViewport : Model -> Cmd Msg
 setViewport model =
-  case TM.fullscreen model of
+  case TM.fullscreen model of -- FIXME: dispatch via ExtManager
     Just boxProps ->
       Dom.setViewportOf "main" (toFloat boxProps.scroll.x) (toFloat boxProps.scroll.y)
       |> Task.attempt
