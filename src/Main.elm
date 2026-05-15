@@ -311,7 +311,7 @@ createAssocAndAddToBox assocType topicId1 topicId2 boxId model =
 
 
 moveTopicToBox : TopicId -> BoxId -> Point -> TopicId -> BoxPath -> Env -> (Model, Cmd Msg)
-moveTopicToBox topicId boxId origPos targetTopicId targetPath {model, ext} =
+moveTopicToBox topicId boxId origPos targetTopicId targetPath ({model, ext} as env) =
   let
     targetBoxId = BoxId targetTopicId -- after createBoxOnDemand target topic is a box for sure
     expansion = Box.expansionOf topicId boxId model
@@ -323,6 +323,7 @@ moveTopicToBox topicId boxId origPos targetTopicId targetPath {model, ext} =
     |> Sel.select (T targetTopicId) targetPath
     |> TM.setTopicPos topicId boxId origPos -- TODO: dispatch via ExtManager
     |> ext.addTopic topicId targetBoxId Random
+    |> \(model_, cmd) -> (model_ |> Env.autoSize env, cmd)
 
 
 select : ItemId -> BoxPath -> Model -> (Model, Cmd Msg)
