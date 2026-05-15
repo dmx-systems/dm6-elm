@@ -323,7 +323,9 @@ moveTopicToBox topicId boxId origPos targetTopicId targetPath ({model, ext} as e
     |> Sel.select (T targetTopicId) targetPath
     |> TM.setTopicPos topicId boxId origPos -- TODO: dispatch via ExtManager
     |> ext.addTopic topicId targetBoxId Random
-    |> \(model_, cmd) -> (model_ |> Env.autoSize env, cmd)
+    -- Calling Env.autoSize is the responsibility of the extension's addTopic implementation.
+    -- Particular extensions might add the topic asynchronously (TopicMap extension does) so
+    -- their BoxProps might not yet be initialized but are needed for auto-sizing. 
 
 
 select : ItemId -> BoxPath -> Model -> (Model, Cmd Msg)

@@ -93,7 +93,7 @@ viewTopic topic boxPath model =
   if Text.isEdit topic.id boxPath model then
     Text.viewInput topic boxPath inputStyle
   else
-    text <| Topic.label topic
+    text (Topic.label topic)
 
 
 hoverStyle : TopicId -> BoxPath -> Model -> Attrs Msg
@@ -224,11 +224,12 @@ missingTopicIds orderList topicId =
 
 -- ExtManager.AddTopic
 addTopic : TopicId -> BoxId -> PosHint -> Env2 -> (Model, Cmd Msg)
-addTopic _ boxId _ {model} =
+addTopic _ boxId _ ({model} as env) =
   -- Note: added topic might be nested. Needs to init BoxProps recursively.
   -- We just init entire box.
   ( model
       |> init boxId
+      |> Env.autoSize2 env
   , Cmd.none
   )
 

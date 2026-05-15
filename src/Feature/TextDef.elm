@@ -29,7 +29,7 @@ type EditState
 type Msg
   = OnTextInput String
   | OnTextareaInput String
-  | GotTextSize Id SizeField Size
+  | GotTextSize TopicId SizeField Size
   | LeaveEdit
   | ImageFilePicked TopicImage
   | ImageUrlResolved (ImageId, String)

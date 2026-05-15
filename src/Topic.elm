@@ -46,10 +46,10 @@ setSize topicId sizeField size_ model =
           size__ = topic.size
         in
         { topic | size =
-          case sizeField of
-            -- detail width does not include icon box
-            View -> { size__ | view = { size_ | w = size_.w - C.topicHeight } }
-            Editor -> { size__ | editor = size_ }
+            case sizeField of
+              -- detail width does not include icon box
+              View -> { size__ | view = { size_ | w = size_.w - C.topicHeight } }
+              Editor -> { size__ | editor = size_ }
         }
       )
 

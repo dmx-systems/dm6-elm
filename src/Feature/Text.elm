@@ -76,7 +76,7 @@ topicImageDecoder =
 viewInput : Topic -> BoxPath -> Attrs Msg -> Html Msg
 viewInput topic boxPath style =
   input
-    ( [ id <| Box.elemId "input" topic.id boxPath
+    ( [ id (Box.elemId "input" topic.id boxPath)
       , value topic.text
       , placeholder C.initTopicText
       , onInput (Text << TextDef.OnTextInput)
@@ -91,7 +91,7 @@ viewInput topic boxPath style =
 viewTextarea : Topic -> BoxPath -> Attrs Msg -> Html Msg
 viewTextarea topic boxPath style =
   textarea
-    ( [ id <| Box.elemId "input" topic.id boxPath
+    ( [ id (Box.elemId "input" topic.id boxPath)
       , value topic.text
       , placeholder C.initTopicText
       , onInput (Text << TextDef.OnTextareaInput)
@@ -116,7 +116,7 @@ update msg ({model, undoModel, ext} as env) =
       |> Undo.swap undoModel
     TextDef.GotTextSize topicId sizeField size ->
       model
-        |> Topic.setSize (TopicId topicId) sizeField size
+        |> Topic.setSize topicId sizeField size
         |> Env.autoSize env
         |> S.store
         |> Undo.swap undoModel
@@ -188,7 +188,8 @@ onTextareaInput text model =
 
 measureText : TopicId -> String -> Model -> (Model, Cmd Msg)
 measureText topicId text model =
-  ( model |> setMeasureText text
+  ( model
+      |> setMeasureText text
   , measureElement "measure" topicId Editor
   )
 
@@ -199,7 +200,7 @@ measureElement elemId topicId sizeField =
     (\result ->
       case result of
         Ok {element} -> Text
-          (TextDef.GotTextSize (toTopicId topicId) sizeField
+          (TextDef.GotTextSize topicId sizeField
             <| Size (round element.width) (round element.height)
           )
         Err err -> U.logError "Feature.Text.measureElement" (U.toString err) NoOp
