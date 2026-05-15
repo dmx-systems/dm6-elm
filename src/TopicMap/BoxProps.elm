@@ -1,5 +1,5 @@
 module TopicMap.BoxProps exposing (init, create, allTopicProps, topicPos, setTopicPos,
-  updateTopicPos, topicPropsOrNothing, assocGeometry, addTopic, addTopic_, initLimboTopicProps,
+  updateTopicPos, topicPropsOrNothing, assocGeometry, addTopic, addTopicAt, initLimboTopicProps,
   initTopicPos, hasTopicProps, fullscreen, byId, updateRect, updateScrollPos, revelationBoxId,
   revelationBoxPath, landingTarget)
 
@@ -19,6 +19,7 @@ import Random
 
 
 
+-- ExtManager.ExtInit
 init : BoxId -> Model -> Model
 init boxId model =
   model
@@ -140,6 +141,7 @@ assocGeometry assoc boxId model =
     Nothing -> U.fail "TopicMap.BoxProps.assocGeometry" {assoc = assoc, boxId = boxId} Nothing
 
 
+-- ExtManager.AddTopic
 addTopic : TopicId -> BoxId -> PosHint -> Env2 -> (Model, Cmd Msg)
 addTopic topicId boxId posHint {model} =
   if hasTopicProps topicId boxId model then
@@ -165,15 +167,15 @@ addTopic topicId boxId posHint {model} =
       )
 
 
-addTopic_ : TopicId -> BoxId -> Point -> Env -> Model
-addTopic_ topicId boxId pos ({model} as env) =
+addTopicAt : TopicId -> BoxId -> Point -> Env -> Model
+addTopicAt topicId boxId pos ({model} as env) =
   model
-    |> updateBoxProps boxId (addTopic__ topicId pos)
+    |> updateBoxProps boxId (addTopic_ topicId pos)
     |> Env.autoSize env
 
 
-addTopic__ : TopicId -> Point -> BoxProps -> BoxProps
-addTopic__ topicId pos boxProps =
+addTopic_ : TopicId -> Point -> BoxProps -> BoxProps
+addTopic_ topicId pos boxProps =
   { boxProps | topicProps = boxProps.topicProps |> Dict.insert (toTopicId topicId)
       (TopicProps topicId pos Collapsed)
   }

@@ -28,7 +28,7 @@ type alias HtmlList = List (Html Msg)
 -- VIEW
 
 
--- Extension point
+-- ExtManager.NestingBoxRenderer
 -- For the fullscreen box boxPath is empty
 view : BoxId -> BoxPath -> Env2 -> Html Msg
 view boxId boxPath ({model} as env) =
@@ -157,7 +157,7 @@ dragStop {model} =
 -- MODEL
 
 
--- Extension point
+-- ExtManager.ExtInit
 init : BoxId -> Model -> Model
 init boxId model =
   model
@@ -222,12 +222,13 @@ missingTopicIds orderList topicId =
     Just topicId
 
 
--- Extension point
+-- ExtManager.AddTopic
 addTopic : TopicId -> BoxId -> PosHint -> Env2 -> (Model, Cmd Msg)
-addTopic topicId boxId posHint {model} =
+addTopic _ boxId _ {model} =
+  -- Note: added topic might be nested. Needs to init BoxProps recursively.
+  -- We just init entire box.
   ( model
-      |> updateOrder boxId
-        (\orderList -> topicId :: orderList) -- FIXME: check membership first
+      |> init boxId
   , Cmd.none
   )
 

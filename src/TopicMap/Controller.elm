@@ -17,5 +17,5 @@ update : TopicMapDef.Msg -> Env -> (UndoModel, Cmd Msg)
 update msg ({model, undoModel} as env) =
   case msg of
     TopicMapDef.Time time -> Mouse.timeArrived time undoModel
-    TopicMapDef.GotRandomPos topicId boxId pos -> TM.addTopic_ topicId boxId pos env
+    TopicMapDef.GotRandomPos topicId boxId pos -> TM.addTopicAt topicId boxId pos env
       |> S.store |> Undo.push undoModel

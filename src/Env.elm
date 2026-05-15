@@ -98,11 +98,13 @@ autoSize2 {ext} model =
     |> Tuple.second
 
 
+-- TODO: rename "map"?
 withModel : Env -> Model -> Env
 withModel env model =
   { env | model = model }
 
 
+-- TODO: rename "map"?
 withModel2 : Env2 -> Model -> Env2
 withModel2 env model =
   { env | model = model }
