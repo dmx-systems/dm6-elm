@@ -11,6 +11,7 @@ import Json.Decode as D
 
 
 
+{- Utility for use by application to attach to top-level element -}
 globalMouseHandler : Attrs Msg
 globalMouseHandler =
   -- Topic Dragging. Note: dragging starts within the respective renderers. They attach
@@ -27,10 +28,14 @@ itemClickHandler itemId boxPath =
   [ onClickStop <| ItemClicked itemId boxPath ]
 
 
+{- Utility for use by renderers to attach to topic element -}
 draggable : TopicId -> BoxPath -> Attrs Msg
 draggable topicId boxPath =
   [ stopPropagationWith "pointerdown"
-      (D.map (Mouse << MouseDef.DragStart topicId boxPath) pointDecoder)
+      (D.map
+        (Mouse << MouseDef.DragStart topicId boxPath)
+        pointDecoder
+      )
   ]
 
 

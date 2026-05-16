@@ -1,4 +1,4 @@
-module Feature.Mouse exposing (update, setHover, isHovered)
+module Feature.Mouse exposing (update, clearHover, isHovered)
 
 import Box
 import Config as C
@@ -16,7 +16,8 @@ update msg ({model, undoModel, ext} as env) =
   case (msg, model.mouse.dragState) of
     (MouseDef.DragStart topicId boxPath (pos, pointerType), _) ->
       model
-        |> setDragState (DragInProgress topicId (Box.firstId boxPath))
+        |> setDragState (DragInProgress topicId boxPath)
+        |> emulateHover topicId boxPath pointerType
         |> ext.dragStart topicId boxPath pos pointerType
         |> Undo.swap undoModel
     (MouseDef.Move (pos, pointerType), NoDrag) ->
@@ -24,21 +25,30 @@ update msg ({model, undoModel, ext} as env) =
         |> updateHover pos ext
         |> (\model_ -> Tuple.pair model_ Cmd.none)
         |> Undo.swap undoModel
-    (MouseDef.Move (pos, pointerType), DragInProgress topicId boxId) ->
+    (MouseDef.Move (pos, pointerType), DragInProgress topicId boxPath) ->
       model
         |> updateHover pos ext
-        |> ext.drag boxId pos
+        |> ext.drag (Box.firstId boxPath) pos
         |> Undo.swap undoModel
-    (MouseDef.Up, DragInProgress topicId boxId) ->
+    (MouseDef.Up, DragInProgress topicId boxPath) ->
       model
         |> setDragState (NoDrag)
-        |> ext.dragStop boxId
+        |> ext.dragStop (Box.firstId boxPath)
         |> Undo.swap undoModel
     (MouseDef.Cancel, _) ->
       (undoModel, U.command <| Cancel Nothing)
     _ ->
       -- TODO: match no-op vs. error cases explicitly
       (undoModel, Cmd.none)
+
+
+emulateHover : TopicId -> BoxPath -> PointerType -> Model -> Model
+emulateHover topicId boxPath pointerType model =
+  if pointerType == "touch" then
+    model
+      |> setHover (Just (T topicId, boxPath))
+  else
+    model
 
 
 updateHover : Point -> ExtManager -> Model -> Model
@@ -58,6 +68,12 @@ updateHover {x, y} ext model =
 setDragState : DragState -> Model -> Model
 setDragState dragState ({mouse} as model) =
   { model | mouse = { mouse | dragState = dragState }}
+
+
+clearHover : Model -> Model
+clearHover model =
+  model
+    |> setHover Nothing
 
 
 setHover : Maybe Target -> Model -> Model

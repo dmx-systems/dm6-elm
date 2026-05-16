@@ -6,7 +6,8 @@ import ModelBase exposing (..)
 
 type alias Model =
   { dragState : DragState
-  , hover : Maybe Target -- TODO: make it explicitly TopicTarget?
+  , hover : Maybe Target -- The hovered topic.
+                         -- Synthesized also on pointerdown when pointertype is "touch".
   }
 
 
@@ -18,14 +19,14 @@ init =
 
 
 type DragState
-  = DragInProgress TopicId BoxId
-  | NoDrag
+  = DragInProgress TopicId BoxPath -- entered by DragStart message
+  | NoDrag                         -- entered by Up message
 
 
 type Msg
   -- Topic dragging
-  = DragStart TopicId BoxPath (Point, PointerType) -- mouse down on topic
-  | Move (Point, PointerType)
-  | Up
+  = DragStart TopicId BoxPath (Point, PointerType) -- pointerdown on topic (Events.draggable)
+  | Move (Point, PointerType)    -- (fired by handlers created by Events.globalMouseHandler)
+  | Up                           -- (fired by handlers created by Events.globalMouseHandler)
   -- UI cancellation
-  | Cancel -- mouse down somewhere
+  | Cancel -- pointerdown somewhere (fired by handlers created by Events.globalMouseHandler)

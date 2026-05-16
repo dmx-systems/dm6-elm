@@ -1,5 +1,4 @@
-module TopicMap.Mouse exposing (dragStart, drag, dragStop, timeArrived,
-  isDragInProgress, clearHover)
+module TopicMap.Mouse exposing (dragStart, drag, dragStop, timeArrived, isDragInProgress)
 
 import Box
 import Config as C
@@ -24,22 +23,12 @@ import Time exposing (Posix, posixToMillis)
 dragStart : TopicId -> BoxPath -> Point -> PointerType -> Env2 -> (Model, Cmd Msg)
 dragStart topicId boxPath pos pointerType {model} =
   ( model
-      |> emulateHover topicId boxPath pointerType
       |> setDragState (WaitForStartTime topicId boxPath pos)
   , Cmd.batch
       [ U.command (Cancel (Just (T topicId, boxPath)))
       , Task.perform (TopicMap << TopicMapDef.Time) Time.now
       ]
   )
-
-
-emulateHover : TopicId -> BoxPath -> PointerType -> Model -> Model
-emulateHover topicId boxPath pointerType model =
-  if pointerType == "touch" then
-    model
-      |> Mouse.setHover (Just (T topicId, boxPath))
-  else
-    model
 
 
 timeArrived : Posix -> UndoModel -> (UndoModel, Cmd Msg)
@@ -198,12 +187,6 @@ dragStop {model} =
 setDragState : DragState -> Model -> Model
 setDragState dragState ({topicMap} as model) =
   { model | topicMap = { topicMap | dragState = dragState }}
-
-
-clearHover : Model -> Model
-clearHover model =
-  model
-    |> Mouse.setHover Nothing
 
 
 isDragInProgress : Model -> Bool
