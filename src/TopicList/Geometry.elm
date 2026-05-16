@@ -7,6 +7,7 @@ import Dict
 import Env exposing (Env2)
 import Model exposing (Model)
 import ModelBase exposing (..)
+import String exposing (fromInt)
 import Topic
 import TopicList.BoxProps as TL
 import TopicList.TopicListDef exposing (BoxProps)
@@ -17,11 +18,12 @@ import Utils as U
 -- HIT TEST
 
 
+-- ExtManager.NestingHitTest
 hitTest : BoxId -> BoxPath -> Point -> Maybe TopicId -> Env2 -> Maybe Target
 hitTest (BoxId topicId as boxId) boxPath pos excludeTopicId {model} =
   if isListHovered boxId pos model then
     let
-      t = targets boxId boxPath model
+      t = targets (boxId :: boxPath) model
       i = round (toFloat (pos.y - 30) / (C.topicLineHeight * C.contentFontSize))
       target = Array.get i t
       _ = U.info "TopicList.Geometry.hitTest" target
@@ -31,24 +33,6 @@ hitTest (BoxId topicId as boxId) boxPath pos excludeTopicId {model} =
       Nothing -> Just (T topicId, boxPath)
   else
     Nothing
-
-
-targets : BoxId -> BoxPath -> Model -> Array Target
-targets boxId boxPath model =
-  let
-    path = boxId :: boxPath
-  in
-  Box.topicIds boxId model |> List.foldl
-    (\topicId acc ->
-      let
-        t = Array.push (T topicId, path) acc
-      in
-      if Topic.isBox topicId model then
-        Array.append t (targets (BoxId topicId) path model) -- recursion
-      else
-        t
-    )
-    Array.empty
 
 
 isListHovered : BoxId -> Point -> Model -> Bool
@@ -66,29 +50,18 @@ isListHovered boxId pos model =
 -- AUTO-SIZE
 
 
+-- ExtManager.NestingAutoSize
 autoSize : BoxPath -> Env2 -> (Rectangle, Model)
 autoSize boxPath {model} =
   let
     boxId = Box.firstId boxPath
-    count = topicCount boxId model
+    count = Box.topicCount boxId model
     width = 260 -- ### TODO
     height = round (toFloat count * C.topicLineHeight * C.contentFontSize) + 34
     rect = Rectangle 0 0 width height
     newModel = setSize boxId (Size width height) model
   in
   (rect, newModel)
-
-
-topicCount : BoxId -> Model -> Int
-topicCount boxId model =
-  Box.topicIds boxId model |> List.foldr
-    (\topicId acc ->
-      if Topic.isBox topicId model then
-        acc + 1 + topicCount (BoxId topicId) model -- recursion
-      else
-        acc + 1
-    )
-    0
 
 
 setSize : BoxId -> Size -> Model -> Model
@@ -118,7 +91,53 @@ updateTopicList boxId transform ({topicList} as model) =
 -- TOOLBAR
 
 
-toolbarPos : BoxId -> Model -> ToolbarPos
-toolbarPos boxId model =
-  -- TODO
-  (ToolbarPos (\_ -> Point 0 0) (\_ -> Point 0 0))
+-- ExtManager.NestingToolbar
+toolbarPos : BoxPath -> Model -> ToolbarPos
+toolbarPos boxPath model =
+  (ToolbarPos
+    (\topic ->
+      case targets boxPath model |> maybeIndex (T topic.id, boxPath) of
+        Just i ->
+          Point
+            0
+            (round (toFloat i * C.topicLineHeight * C.contentFontSize) - 12)
+        Nothing -> Point 0 0
+    )
+    (\assoc -> Point 0 0)
+  )
+
+
+maybeIndex : Target -> Array Target -> Maybe Int
+maybeIndex target ts =
+  let
+    found = ts
+      |> Array.toIndexedList
+      |> List.filter (\(_, t) -> t == target)
+  in
+  case found of
+    [(i, _)] -> Just i
+    [] -> U.logError "TopicList.Geometry.maybeIndex"
+      ("Target " ++ U.toString target ++ " not found")
+      Nothing
+    _ -> U.logError "TopicList.Geometry.maybeIndex"
+      ("Target " ++ U.toString target ++ " found " ++ fromInt (List.length found) ++ " times")
+      Nothing
+
+
+{- The content of the given box as an array of targets -}
+targets : BoxPath -> Model -> Array Target
+targets boxPath model =
+  let
+    boxId = Box.firstId boxPath
+  in
+  Box.topicIds boxId model |> List.foldl -- TODO: respect order, utilize Box.traverseWith
+    (\topicId acc ->
+      let
+        t = Array.push (T topicId, boxPath) acc
+      in
+      if Topic.isBox topicId model then
+        Array.append t (targets (BoxId topicId :: boxPath) model) -- recursion
+      else
+        t
+    )
+    Array.empty

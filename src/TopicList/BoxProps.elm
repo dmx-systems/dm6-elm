@@ -60,7 +60,7 @@ topicOrder boxId model topicIds =
     Nothing -> U.fail "TopicList.BoxProps.topicOrder" boxId topicIds
 
 
--- Box.Accumulator
+-- Box.Acc
 viewListItem : Topic -> BoxPath -> HtmlList -> Maybe HtmlList -> Model -> HtmlList
 viewListItem topic boxPath acc childrenAcc model =
   acc ++

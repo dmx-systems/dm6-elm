@@ -17,9 +17,9 @@ import Model exposing (Model, Msg(..))
 import ModelBase exposing (..)
 import Shared.Events as Events
 import Storage as S
+import TopicMap.BoxProps as TM
 import TopicMap.Controller as TMC
 import TopicMap.Mouse as Mouse
-import TopicMap.BoxProps as TM
 import Undo exposing (UndoModel)
 import Utils as U
 
@@ -359,7 +359,7 @@ cancelUIWith maybeTarget ({model} as env) =
         _ -> False
   in
   if isTargeted then
-    ( model, Cmd.none ) -- keep selection, hover state, and edit mode
+    (model, Cmd.none) -- keep selection, hover state, and edit mode
   else
     model
       |> Sel.clear

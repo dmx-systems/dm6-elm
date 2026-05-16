@@ -7,9 +7,9 @@ import Feature.TextDef exposing (EditState(..))
 import Model exposing (Model)
 import ModelBase exposing (..)
 import Topic
+import TopicMap.BoxProps as TM
 import TopicMap.TopicMapDef exposing (BoxProps, TopicProps, DragState(..), DragMode(..))
 import TopicMap.ViewModel as VM
-import TopicMap.BoxProps as TM
 import Utils as U
 
 
@@ -17,6 +17,7 @@ import Utils as U
 -- HIT TEST
 
 
+-- ExtManager.NestingHitTest
 {-| Finds the topic/box at a given screen position.
 Returns the found topic/box (Id) and its context (BoxPath), or Nothing.
 If `excludeTopicId` is given that topic/box will be excluded from search.
@@ -149,6 +150,7 @@ isBoxRectHit pos boxProps parentBoxId model =
 -- AUTO-SIZE
 
 
+-- ExtManager.NestingAutoSize
 {-| Calculates the TopicMap's "rect" (recursively) and modifies the model accordingly.
 Returns the modified model along with, for convenience, the calculated rect.
 Based on the rect's change the TopicMap's topic position adjustment within the parent
@@ -326,8 +328,12 @@ adjustBoxPos (BoxId topicId) parentBoxId newRect oldRect model =
 -- TOOLBAR
 
 
-toolbarPos : BoxId -> Model -> ToolbarPos
-toolbarPos boxId model =
+-- ExtManager.NestingToolbar
+toolbarPos : BoxPath -> Model -> ToolbarPos
+toolbarPos boxPath model =
+  let
+    boxId = Box.firstId boxPath
+  in
   case TM.byId boxId model of
     Just {rect} ->
       ToolbarPos

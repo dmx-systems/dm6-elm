@@ -6,12 +6,12 @@ import Extension
 import Model exposing (Model, Msg)
 import ModelBase exposing (..)
 -- box renderers
-import TopicList.Geometry
 import TopicList.BoxProps
+import TopicList.Geometry
+import TopicMap.BoxProps
 import TopicMap.Geometry
 import TopicMap.Mouse
 import TopicMap.View
-import TopicMap.BoxProps
 
 import Dict exposing (Dict)
 import Html exposing (Html, text)
@@ -60,7 +60,7 @@ type alias NestingAutoSize =
 
 -- TODO: wording, note: ExtManager is not passed
 type alias NestingToolbar =
-  BoxId -> Model -> ToolbarPos
+  BoxPath -> Model -> ToolbarPos
 
 
 -- TODO: wording
@@ -169,10 +169,10 @@ autoSize boxPath model =
     (\env renderer -> renderer.autoSize boxPath env)
 
 
-toolbar : BoxId -> Model -> ToolbarPos
-toolbar boxId model =
-  dispatch boxId model (ToolbarPos (\_ -> Point 0 0) (\_ -> Point 0 0))
-    (\env renderer -> renderer.toolbar boxId model)
+toolbar : BoxPath -> Model -> ToolbarPos
+toolbar boxPath model =
+  dispatch (Box.firstId boxPath) model (ToolbarPos (\_ -> Point 0 0) (\_ -> Point 0 0))
+    (\env renderer -> renderer.toolbar boxPath model)
 
 
 dragStart : TopicId -> BoxPath -> Point -> PointerType -> Model -> (Model, Cmd Msg)

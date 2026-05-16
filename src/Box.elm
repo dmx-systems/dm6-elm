@@ -20,7 +20,7 @@ type alias Transform =
   BoxId -> Model -> List TopicId -> List TopicId
 
 
-type alias Accumulator acc =
+type alias Acc acc =
   Topic -> BoxPath -> acc -> Maybe acc -> Model -> acc
 
 
@@ -37,19 +37,18 @@ topicCount boxId model =
     model
 
 
-traverse : BoxPath -> acc -> Accumulator acc -> Model -> acc
+traverse : BoxPath -> acc -> Acc acc -> Model -> acc
 traverse boxPath initAcc accumulate model =
   traverseWith
     boxPath
     (\_ _ topicIds_ -> topicIds_)
     initAcc
     accumulate
-    (\_ count -> count)
+    (\_ levelResult -> levelResult)
     model
 
 
-traverseWith : BoxPath -> Transform -> acc -> Accumulator acc -> LevelComplete acc -> Model
-                                                                                          -> acc
+traverseWith : BoxPath -> Transform -> acc -> Acc acc -> LevelComplete acc -> Model -> acc
 traverseWith boxPath transform initAcc accumulate levelComplete model =
   let
     boxId = firstId boxPath

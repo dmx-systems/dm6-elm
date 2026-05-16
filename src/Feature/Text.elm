@@ -203,7 +203,9 @@ measureElement elemId topicId sizeField =
           (TextDef.GotTextSize topicId sizeField
             <| Size (round element.width) (round element.height)
           )
-        Err err -> U.logError "Feature.Text.measureElement" (U.toString err) NoOp
+        -- Note: not all renderers do text measuring (the TopicList renderer does not).
+        -- TODO: don't call in the first place and regard dom-not-found an error.
+        Err err -> {- U.logError "Feature.Text.measureElement" (U.toString err) -} NoOp
     )
 
 

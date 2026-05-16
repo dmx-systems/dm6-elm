@@ -59,7 +59,7 @@ type alias AutoSize =
 
 
 type alias Toolbar =
-  BoxId -> Model -> ToolbarPos
+  BoxPath -> Model -> ToolbarPos
 
 
 type alias DragStart =

@@ -3,9 +3,9 @@ module TopicMap.Controller exposing (update)
 import Env exposing (Env)
 import Model exposing (Msg)
 import Storage as S
+import TopicMap.BoxProps as TM
 import TopicMap.Mouse as Mouse
 import TopicMap.TopicMapDef as TopicMapDef
-import TopicMap.BoxProps as TM
 import Undo exposing (UndoModel)
 
 

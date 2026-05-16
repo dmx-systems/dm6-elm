@@ -4,8 +4,8 @@ import Box
 import Feature.SearchDef exposing (SearchResult(..))
 import Model exposing (Model)
 import ModelBase exposing (..)
-import TopicMap.TopicMapDef exposing (BoxProps, TopicProps)
 import TopicMap.BoxProps as TM
+import TopicMap.TopicMapDef exposing (BoxProps, TopicProps)
 import Utils as U
 
 

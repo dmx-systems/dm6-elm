@@ -18,8 +18,8 @@ import ModelBase exposing (..)
 import Shared.Events as Events
 import Storage as S
 import Topic
-import TopicMap.Mouse as TMMouse
 import TopicMap.BoxProps as TM
+import TopicMap.Mouse as TMMouse
 import Undo exposing (UndoModel)
 import Utils as U
 
@@ -192,12 +192,11 @@ mapToolsStyle =
 
 -- Item Tools
 
--- Topic/Assoc toolbar, rendered by Map.view as box children
+-- Topic/Assoc toolbar, rendered by ExtManager.view as box children
 viewToolbar : BoxPath -> Env2 -> List (Html Msg)
 viewToolbar boxPath ({model, ext} as env) =
   let
-    boxId = Box.firstId boxPath
-    toolbar = ext.toolbar boxId model
+    toolbar = ext.toolbar boxPath model
   in
   case Sel.single model of
     Just (itemId, selBoxPath) ->

@@ -14,9 +14,9 @@ import ModelBase exposing (..)
 import Shared.Events as Events
 import Shared.ViewBase as VB
 import Topic
+import TopicMap.BoxProps as TM
 import TopicMap.TopicMapDef as TopicMapDef exposing (TopicProps, DragState(..), DragMode(..))
 import TopicMap.ViewModel as VM
-import TopicMap.BoxProps as TM
 import Utils as U
 
 import Html exposing (Html, div, text)
