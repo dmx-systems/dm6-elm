@@ -19,8 +19,8 @@ init =
 
 
 type DragState
-  = DragInProgress TopicId BoxPath -- entered by DragStart message
-  | NoDrag                         -- entered by Up message
+  = DragInProgress TopicId BoxPath Point -- entered by DragStart message, start pointer position
+  | NoDrag                               -- entered by Up message
 
 
 type Msg

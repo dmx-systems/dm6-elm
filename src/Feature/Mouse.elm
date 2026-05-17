@@ -16,24 +16,24 @@ update msg ({model, undoModel, ext} as env) =
   case (msg, model.mouse.dragState) of
     (MouseDef.DragStart topicId boxPath (pos, pointerType), _) ->
       model
-        |> setDragState (DragInProgress topicId boxPath)
+        |> setDragState (DragInProgress topicId boxPath pos)
         |> emulateHover topicId boxPath pointerType
         |> ext.dragStart topicId boxPath pos pointerType
         |> Undo.swap undoModel
     (MouseDef.Move (pos, pointerType), NoDrag) ->
       model
         |> updateHover pos ext
-        |> (\model_ -> Tuple.pair model_ Cmd.none)
+        |> \model_ -> (model_, Cmd.none)
         |> Undo.swap undoModel
-    (MouseDef.Move (pos, pointerType), DragInProgress topicId boxPath) ->
+    (MouseDef.Move (pos, pointerType), DragInProgress topicId boxPath startPos) ->
       model
         |> updateHover pos ext
         |> ext.drag (Box.firstId boxPath) pos
         |> Undo.swap undoModel
-    (MouseDef.Up, DragInProgress topicId boxPath) ->
+    (MouseDef.Up, DragInProgress topicId boxPath startPos) ->
       model
-        |> setDragState (NoDrag)
         |> ext.dragStop (Box.firstId boxPath)
+        |> \(model_, cmd) -> (model_ |> setDragState NoDrag, cmd)
         |> Undo.swap undoModel
     (MouseDef.Cancel, _) ->
       (undoModel, U.command <| Cancel Nothing)
@@ -57,7 +57,7 @@ updateHover {x, y} ext model =
     pos = Point x (y - C.appHeaderHeight)
     excludeTopicId =
       case model.mouse.dragState of
-        DragInProgress topicId _ -> Just topicId
+        DragInProgress topicId _ _ -> Just topicId
         _ -> Nothing
     maybeTarget = ext.hitTest model.boxId [] pos excludeTopicId model
   in

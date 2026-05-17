@@ -5,7 +5,7 @@ import Config as C
 import Feature.Sel as Sel
 import Model exposing (Model, Msg)
 import ModelBase exposing (..)
-import TopicMap.TopicMapDef exposing (DragState(..), DragMode(..))
+import TopicMap.TopicMapDef exposing (DragState(..), DragMode(..)) -- TODO: remove dependency
 
 import Html.Attributes exposing (style)
 import String exposing (fromInt)
