@@ -19,7 +19,6 @@ import Shared.Events as Events
 import Storage as S
 import Topic
 import TopicMap.BoxProps as TM
-import TopicMap.Mouse as TMMouse
 import Undo exposing (UndoModel)
 import Utils as U
 
@@ -334,7 +333,7 @@ viewTopicTools topicId boxPath model =
   let
     boxId = Box.firstId boxPath
     isHovered = Mouse.isHovered topicId boxPath model
-    isDrag = TMMouse.isDragInProgress model
+    isDrag = Mouse.isDragInProgress model
     isEdit = Text.isEdit topicId boxPath model
   in
   if isHovered && not isDrag && not isEdit then

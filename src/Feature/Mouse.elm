@@ -1,4 +1,4 @@
-module Feature.Mouse exposing (update, clearHover, isHovered)
+module Feature.Mouse exposing (update, isDragInProgress, clearHover, isHovered)
 
 import Box
 import Config as C
@@ -42,6 +42,18 @@ update msg ({model, undoModel, ext} as env) =
       (undoModel, Cmd.none)
 
 
+setDragState : DragState -> Model -> Model
+setDragState dragState ({mouse} as model) =
+  { model | mouse = { mouse | dragState = dragState }}
+
+
+isDragInProgress : Model -> Bool
+isDragInProgress model =
+  case model.mouse.dragState of
+    DragInProgress _ _ _ -> True
+    _ -> False
+
+
 emulateHover : TopicId -> BoxPath -> PointerType -> Model -> Model
 emulateHover topicId boxPath pointerType model =
   if pointerType == "touch" then
@@ -65,20 +77,15 @@ updateHover {x, y} ext model =
     |> setHover maybeTarget
 
 
-setDragState : DragState -> Model -> Model
-setDragState dragState ({mouse} as model) =
-  { model | mouse = { mouse | dragState = dragState }}
+setHover : Maybe Target -> Model -> Model
+setHover hover ({mouse} as model) =
+  { model | mouse = { mouse | hover = hover }}
 
 
 clearHover : Model -> Model
 clearHover model =
   model
     |> setHover Nothing
-
-
-setHover : Maybe Target -> Model -> Model
-setHover hover ({mouse} as model) =
-  { model | mouse = { mouse | hover = hover }}
 
 
 isHovered : TopicId -> BoxPath -> Model -> Bool

@@ -5,6 +5,7 @@ import Box
 import Config as C
 import Env exposing (ExtManager, Env2)
 import Feature.Icon as Icon
+import Feature.MouseDef exposing (DragState(..))
 import Feature.Sel as Sel
 import Feature.Text as Text
 import Feature.ToolDef exposing (LineStyle(..))
@@ -254,8 +255,8 @@ topicStyle id boxPath model =
   let
     boxId = Box.firstId boxPath
     isLimbo = VM.isLimboTopic id boxId model
-    isDragging = case model.topicMap.dragState of
-      Drag DragTopic id_ boxPath_ _ _ _ -> id_ == id && boxPath_ == boxPath
+    isDragging = case model.mouse.dragState of
+      DragInProgress id_ boxPath_ _ -> id_ == id && boxPath_ == boxPath
       _ -> False
     isSelected = Sel.isSelected (T id) boxPath model
   in
@@ -521,8 +522,8 @@ viewAssoc assoc boxPath clickHandler model =
 
 viewAssocDraft : BoxId -> Model -> List (Svg Msg)
 viewAssocDraft boxId model =
-  case model.topicMap.dragState of
-    Drag DraftAssoc _ boxPath origPos pos _ ->
+  case (model.mouse.dragState, model.topicMap.dragState) of
+    (DragInProgress _ boxPath _, Drag DraftAssoc origPos pos _) ->
       case (Box.firstId boxPath == boxId, TM.fullscreen model) of
         (True, Just boxProps) ->
           let

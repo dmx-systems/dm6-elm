@@ -3,6 +3,7 @@ module TopicMap.Geometry exposing (hitTest, autoSize, toolbarPos)
 import Box
 import Config as C
 import Env exposing (Env2, ExtManager)
+import Feature.MouseDef exposing (DragState(..))
 import Feature.TextDef exposing (EditState(..))
 import Model exposing (Model)
 import ModelBase exposing (..)
@@ -276,8 +277,8 @@ updateBoxGeometry boxPath newRect oldRect model =
     boxId :: parentBoxId :: _ ->
       let
         (isDragInProgress, isOnDragPath, isBoxInDragPath) =
-          case model.topicMap.dragState of
-            Drag DragTopic _ dragPath _ _ _ ->
+          case model.mouse.dragState of
+            DragInProgress _ dragPath _ ->
               (True
               , (dragPath |> List.drop (List.length dragPath - List.length boxPath)) == boxPath
               , List.member boxId dragPath

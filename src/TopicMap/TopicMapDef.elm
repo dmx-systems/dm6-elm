@@ -47,8 +47,9 @@ type DragState
   = WaitForStartTime
   | DragEngaged Time.Posix    -- start time
   | WaitForEndTime Time.Posix -- start time (buffered)
-  | Drag DragMode TopicId BoxPath Point Point (Maybe Target) -- orig topic position
-                                                             -- last pointer position
+  | Drag DragMode Point Point (Maybe Target) -- original topic position
+                                             -- last pointer position
+                                             -- accepted drop target
   | NoDrag
 
 

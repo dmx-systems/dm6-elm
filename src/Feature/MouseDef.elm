@@ -6,8 +6,9 @@ import ModelBase exposing (..)
 
 type alias Model =
   { dragState : DragState
-  , hover : Maybe Target -- The hovered topic.
-                         -- Synthesized also on pointerdown when pointertype is "touch".
+  -- The geometrically hovered topic. (Drop semantics is added by particular renderer e.g.
+  -- TopicMap.Mouse.updateTarget.) Synthesized also on pointerdown for touch devices.
+  , hover : Maybe Target
   }
 
 

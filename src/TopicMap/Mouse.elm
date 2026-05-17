@@ -1,4 +1,4 @@
-module TopicMap.Mouse exposing (dragStart, drag, dragStop, timeArrived, isDragInProgress)
+module TopicMap.Mouse exposing (dragStart, drag, dragStop, timeArrived)
 
 import Box
 import Config as C
@@ -21,6 +21,7 @@ import Time exposing (Posix, posixToMillis)
 -- UPDATE
 
 
+-- ExtManager.NestingDragStart
 dragStart : TopicId -> BoxPath -> Point -> PointerType -> Env2 -> (Model, Cmd Msg)
 dragStart topicId boxPath pos pointerType {model} =
   ( model
@@ -40,17 +41,17 @@ timeArrived time ({present} as undoModel) =
         dragState = DragEngaged time
       in
       (setDragState dragState present, Cmd.none) |> Undo.swap undoModel
-    (WaitForEndTime startTime, MouseDef.DragInProgress id boxPath pos) ->
+    (WaitForEndTime startTime, MouseDef.DragInProgress id (boxId :: _) pos) ->
       let
         delay = posixToMillis time - posixToMillis startTime
         (dragMode, undo) =
           case delay > C.assocDelayMillis of
             True -> (DraftAssoc, Undo.swap)
             False -> (DragTopic, Undo.push)
-        maybeOrigPos = TM.topicPos id (Box.firstId boxPath) present
+        maybeOrigPos = TM.topicPos id boxId present
         dragState =
           case maybeOrigPos of
-            Just origPos -> Drag dragMode id boxPath origPos pos Nothing
+            Just origPos -> Drag dragMode origPos pos Nothing
             Nothing -> NoDrag -- error is already logged
       in
       (setDragState dragState present, Cmd.none) |> undo undoModel
@@ -71,27 +72,28 @@ drag pos env =
       ( setDragState (WaitForEndTime time) model
       , Task.perform (TopicMap << TopicMapDef.Time) Time.now
       )
-    Drag _ _ _ _ _ _ ->
+    Drag _ _ _ _ ->
       ( performDrag pos newEnv, Cmd.none )
     _ ->
       ( model, Cmd.none )
 
 
-{-| If Drag is in progress updates its "target" based on Mouse "hover" state.
+{-| If Drag is in progress updates its accepted drop target, based on geometrically hovered
+topic (Feature.Mouse module's "hover" state).
 -}
 updateTarget : Point -> Env2 -> Model
 updateTarget pos {model, ext} =
-  case model.topicMap.dragState of
-    Drag dragMode id boxPath origPos lastPos _ ->
+  case (model.mouse.dragState, model.topicMap.dragState) of
+    (MouseDef.DragInProgress id _ _, Drag dragMode origPos lastPos _) ->
       let
-        dragState = Drag dragMode id boxPath origPos lastPos
+        dragState = Drag dragMode origPos lastPos
       in
       case model.mouse.hover of
         Just ((T topicId, _) as target) ->
           let
             isCyclic = Box.hadDeepTopic topicId id model
             newTarget =
-              -- the hovered item (targetId) is accepted as a drop target if it is
+              -- the geometrically hovered topic (topicId) is accepted as a drop target if it is
               -- 1. not contained in item/box being dragged (id), this would create a cycle
               -- 2. OR draft assoc is in progress
               if not isCyclic || dragMode == DraftAssoc then
@@ -99,10 +101,10 @@ updateTarget pos {model, ext} =
               else
                 Nothing
           in
-          model -- update target
+          model -- update accepted drop target
             |> setDragState (dragState newTarget)
         Nothing ->
-          model -- reset target
+          model -- reset accepted drop target
             |> setDragState (dragState Nothing)
         _ -> model
     _ -> model
@@ -110,10 +112,9 @@ updateTarget pos {model, ext} =
 
 performDrag : Point -> Env2 -> Model
 performDrag pos ({model} as env) =
-  case model.topicMap.dragState of
-    Drag dragMode id boxPath origPos lastPos target ->
+  case (model.mouse.dragState, model.topicMap.dragState) of
+    (MouseDef.DragInProgress id (boxId :: _) _, Drag dragMode origPos lastPos target) ->
       let
-        boxId = Box.firstId boxPath
         newModel =
           case dragMode of
             DragTopic -> TM.updateTopicPos id boxId
@@ -126,18 +127,21 @@ performDrag pos ({model} as env) =
             DraftAssoc -> model
       in
       -- update lastPos
-      setDragState (Drag dragMode id boxPath origPos pos target) newModel
+      newModel
+        |> setDragState (Drag dragMode origPos pos target)
         |> Env.autoSize2 env
     _ -> U.logError "TopicMap.Mouse.performDrag"
       ("Received \"Drag\" when dragState is " ++ U.toString model.topicMap.dragState) model
 
 
+-- ExtManager.NestingDragStop
 dragStop : Env2 -> (Model, Cmd Msg)
 dragStop {model} =
   let
     cmd =
       case (model.topicMap.dragState, model.mouse.dragState) of
-        (Drag DragTopic id boxPath origPos _ (Just (T targetId, targetPath)), _) ->
+        ( Drag DragTopic origPos _ (Just (T targetId, targetPath))
+          , MouseDef.DragInProgress id boxPath _) ->
           let
             _ = U.info "TopicMap.Mouse.dragStop" ("dropped " ++ fromInt (toTopicId id)
               ++ " (box " ++ Box.fromPath boxPath ++ ") on " ++ fromInt (toTopicId targetId)
@@ -153,12 +157,13 @@ dragStop {model} =
           case shouldMoveToBox of
             True -> U.command <| TopicDropped id boxId origPos targetId targetPath
             False -> U.command TopicDragged -- store topic pos
-        (Drag DragTopic _ _ _ _ _, _) ->
+        (Drag DragTopic _ _ _, _) ->
           let
             _ = U.info "TopicMap.Mouse.dragStop" "topic drag ended w/o target"
           in
           U.command TopicDragged
-        (Drag DraftAssoc id boxPath _ _ (Just (T targetId, targetPath)), _) ->
+        (Drag DraftAssoc _ _ (Just (T targetId, targetPath))
+          , MouseDef.DragInProgress id boxPath _) ->
           let
             _ = U.info "TopicMap.Mouse.dragStop" ("assoc drawn from " ++ fromInt (toTopicId id)
               ++ " (box " ++ Box.fromPath boxPath ++ ") to " ++ fromInt (toTopicId targetId)
@@ -170,7 +175,7 @@ dragStop {model} =
           case isSameBox of
             True -> U.command <| CreateAssoc id targetId boxId
             False -> Cmd.none
-        (Drag DraftAssoc _ _ _ _ _, _) ->
+        (Drag DraftAssoc _ _ _, _) ->
           let
             _ = U.info "TopicMap.Mouse.dragStop" "assoc ended w/o target"
           in
@@ -189,10 +194,3 @@ dragStop {model} =
 setDragState : DragState -> Model -> Model
 setDragState dragState ({topicMap} as model) =
   { model | topicMap = { topicMap | dragState = dragState }}
-
-
-isDragInProgress : Model -> Bool
-isDragInProgress model =
-  case model.topicMap.dragState of
-    Drag _ _ _ _ _ _ -> True
-    _ -> False
