@@ -1,4 +1,4 @@
-module TopicList.TopicListDef exposing (Model, BoxProps, init, encode, decoder)
+module TopicList.TopicListDef exposing (Model, BoxProps, DragState(..), init, encode, decoder)
 
 import ModelBase exposing (..)
 import Dict exposing (Dict)
@@ -28,8 +28,7 @@ type alias BoxProps =
 
 
 type DragState
-  = DragEngaged TopicId BoxPath
-  | Drag TopicId BoxPath (Maybe Target)
+  = Drag Point Point -- dragged element position, last pointer position
   | NoDrag
 
 

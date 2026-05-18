@@ -45,11 +45,11 @@ type alias TopicProps =
 
 type DragState
   = WaitForStartTime
-  | DragEngaged Time.Posix    -- start time
-  | WaitForEndTime Time.Posix -- start time (buffered)
-  | Drag DragMode Point Point (Maybe Target) -- original topic position
-                                             -- last pointer position
-                                             -- accepted drop target
+  | DragEngaged Time.Posix    -- start time, entered once start time arrives
+  | WaitForEndTime Time.Posix -- start time (buffered), entered on 1st move (once engaged)
+  | Drag DragMode Point Point (Maybe Target) -- entered once end time arrives
+                                             -- data: drag mode, original topic position,
+                                             -- last pointer position, accepted drop target
   | NoDrag
 
 

@@ -113,11 +113,11 @@ updateTarget pos {model, ext} =
 performDrag : Point -> Env2 -> Model
 performDrag pos ({model} as env) =
   case (model.mouse.dragState, model.topicMap.dragState) of
-    (MouseDef.DragInProgress id (boxId :: _) _, Drag dragMode origPos lastPos target) ->
+    (MouseDef.DragInProgress topicId (boxId :: _) _, Drag dragMode origPos lastPos target) ->
       let
         newModel =
           case dragMode of
-            DragTopic -> TM.updateTopicPos id boxId
+            DragTopic -> TM.updateTopicPos topicId boxId
               (\oldPos ->
                 Point
                   (oldPos.x + pos.x - lastPos.x)

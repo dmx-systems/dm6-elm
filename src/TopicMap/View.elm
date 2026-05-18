@@ -53,6 +53,7 @@ type alias LineRenderer =
 -- VIEW
 
 
+-- ExtManager.NestingBoxRenderer
 -- For the fullscreen box boxPath is empty
 view : BoxId -> BoxPath -> Env2 -> Html Msg
 view boxId boxPath ({model} as env) =

@@ -64,6 +64,7 @@ type alias NestingToolbar =
 
 
 -- TODO: wording
+-- TODO: drop first 4 parameters and let extensions operate on Mouse's dragState instead?
 type alias NestingDragStart =
   TopicId -> BoxPath -> Point -> PointerType -> Env2 -> (Model, Cmd Msg)
 

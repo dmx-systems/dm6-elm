@@ -5,6 +5,7 @@ import Config as C
 import Dict
 import Env exposing (Env2)
 import Feature.Mouse as Mouse
+import Feature.MouseDef exposing (DragState(..))
 import Feature.Text as Text
 import Feature.Tool as Tool
 import Model exposing (Model, Msg)
@@ -12,7 +13,7 @@ import ModelBase exposing (..)
 import Shared.Events as Events
 import Shared.ViewBase as VB
 import Topic
-import TopicList.TopicListDef exposing (BoxProps)
+import TopicList.TopicListDef exposing (BoxProps, DragState(..))
 import Utils as U
 
 import Html exposing (Html, div, ul, li, text)
@@ -34,13 +35,16 @@ view : BoxId -> BoxPath -> Env2 -> Html Msg
 view boxId boxPath ({model} as env) =
   div
     (listStyle boxId boxPath model)
-    (Box.traverseWith
-      (boxId :: boxPath)
-      topicOrder
-      []
-      viewListItem
-      (viewList env)
-      model
+    ( (Box.traverseWith
+        (boxId :: boxPath)
+        topicOrder
+        []
+        viewListItem
+        (viewList env)
+        model
+      )
+      ++
+      viewDraggingTopic model
     )
 
 
@@ -60,13 +64,25 @@ topicOrder boxId model topicIds =
     Nothing -> U.fail "TopicList.BoxProps.topicOrder" boxId topicIds
 
 
+-- Box.LevelComplete
+viewList : Env2 -> BoxPath -> HtmlList -> HtmlList
+viewList env boxPath topics =
+  [ ul
+      []
+      topics
+  ]
+  ++ Tool.viewToolbar boxPath env
+
+
 -- Box.Acc
 viewListItem : Topic -> BoxPath -> HtmlList -> Maybe HtmlList -> Model -> HtmlList
 viewListItem topic boxPath acc childrenAcc model =
   acc ++
     [ li
-        ( Events.itemClickHandler (T topic.id) boxPath
+        ( Events.draggable topic.id boxPath
+          {- ++ Events.itemClickHandler (T topic.id) boxPath -} -- TODO
           ++ VB.selectionStyle topic.id boxPath model
+          ++ listItemStyle topic.id boxPath model
           ++ hoverStyle topic.id boxPath model
         )
         ( [ viewTopic topic boxPath model ]
@@ -78,16 +94,6 @@ viewListItem topic boxPath acc childrenAcc model =
     ]
 
 
--- Box.LevelComplete
-viewList : Env2 -> BoxPath -> HtmlList -> HtmlList
-viewList env boxPath topics =
-  [ ul
-      []
-      topics
-  ]
-  ++ Tool.viewToolbar boxPath env
-
-
 viewTopic : Topic -> BoxPath -> Model -> Html Msg
 viewTopic topic boxPath model =
   if Text.isEdit topic.id boxPath model then
@@ -96,21 +102,25 @@ viewTopic topic boxPath model =
     text (Topic.label topic)
 
 
-hoverStyle : TopicId -> BoxPath -> Model -> Attrs Msg
-hoverStyle topicId boxPath model =
-  if Mouse.isHovered topicId boxPath model then
-    [ style "background-color" "beige" ] -- for debug
-  else
-    []
+viewDraggingTopic : Model -> HtmlList
+viewDraggingTopic model =
+  case (model.mouse.dragState, model.topicList.dragState) of
+    (DragInProgress topicId _ _, Drag elemPos _) ->
+      case Topic.fromId topicId model of
+        Just topic ->
+          [ div
+              (draggingTopicStyle elemPos)
+              [text (Topic.label topic)]
+          ]
+        Nothing -> []
+    _ -> []
 
 
-inputStyle : Attrs Msg
-inputStyle =
-  [ style "font-family" C.mainFont -- Default for <input> is "-apple-system" (on Mac)
-  , style "font-size" <| fromInt C.contentFontSize ++ "px"
-  , style "width" "100%"
-  , style "position" "relative"
-  , style "left" "-4px"
+draggingTopicStyle : Point -> Attrs Msg
+draggingTopicStyle pos =
+  [ style "position" "absolute"
+  , style "left" <| fromInt pos.x ++ "px"
+  , style "top" <| fromInt pos.y ++ "px"
   ]
 
 
@@ -131,26 +141,76 @@ listFontStyle =
   ]
 
 
+listItemStyle : TopicId -> BoxPath -> Model -> Attrs Msg
+listItemStyle topicId boxPath model =
+  if Mouse.isDragging topicId boxPath model then
+    [ style "background-color" "white"
+    , style "filter" C.topicLimboFilter
+    ]
+  else
+    []
 
--- EVENTS
+
+hoverStyle : TopicId -> BoxPath -> Model -> Attrs Msg
+hoverStyle topicId boxPath model =
+  if Mouse.isHovered topicId boxPath model then
+    [ style "border" "1px dotted red" ] -- debugging
+  else
+    []
 
 
--- TODO
+inputStyle : Attrs Msg
+inputStyle =
+  [ style "font-family" C.mainFont -- Default for <input> is "-apple-system" (on Mac)
+  , style "font-size" <| fromInt C.contentFontSize ++ "px"
+  , style "width" "100%"
+  , style "position" "relative"
+  , style "left" "-4px"
+  ]
+
+
+
+-- MOUSE
+
+
+-- ExtManager.NestingDragStart
 dragStart : TopicId -> BoxPath -> Point -> PointerType -> Env2 -> (Model, Cmd Msg)
 dragStart topicId boxPath pos pointerType {model} =
-  (model, Cmd.none)
+  ( model
+      |> setDragState (Drag pos pos) -- TODO: init 1st pos properly (dragged element position)
+  , Cmd.none
+  )
 
 
--- TODO
+-- ExtManager.NestingDrag
 drag : Point -> Env2 -> (Model, Cmd Msg)
 drag pos {model} =
-  (model, Cmd.none)
+  ( case (model.mouse.dragState, model.topicList.dragState) of
+      (DragInProgress topicId (boxId :: _) _, Drag elemPos lastPos) ->
+        let
+          newElemPos = Point
+            elemPos.x
+            (elemPos.y + pos.y - lastPos.y)
+        in
+        -- update elemPos and lastPos
+        model
+          |> setDragState (Drag newElemPos pos)
+      _ -> U.logError "TopicList.BoxProps.drag" ("Unexpected drag state: "
+          ++ U.toString (model.mouse.dragState, model.topicList.dragState))
+        model
+  , Cmd.none
+  )
 
 
--- TODO
+-- ExtManager.NestingDragStop
 dragStop : Env2 -> (Model, Cmd Msg)
 dragStop {model} =
   (model, Cmd.none)
+
+
+setDragState : DragState -> Model -> Model
+setDragState dragState ({topicList} as model) =
+  { model | topicList = { topicList | dragState = dragState }}
 
 
 

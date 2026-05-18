@@ -1,4 +1,4 @@
-module Feature.Mouse exposing (update, isDragInProgress, clearHover, isHovered)
+module Feature.Mouse exposing (update, isDragInProgress, isDragging, clearHover, isHovered)
 
 import Box
 import Config as C
@@ -25,14 +25,14 @@ update msg ({model, undoModel, ext} as env) =
         |> updateHover pos ext
         |> \model_ -> (model_, Cmd.none)
         |> Undo.swap undoModel
-    (MouseDef.Move (pos, pointerType), DragInProgress topicId boxPath startPos) ->
+    (MouseDef.Move (pos, pointerType), DragInProgress topicId (boxId :: _) startPos) ->
       model
         |> updateHover pos ext
-        |> ext.drag (Box.firstId boxPath) pos
+        |> ext.drag boxId pos
         |> Undo.swap undoModel
-    (MouseDef.Up, DragInProgress topicId boxPath startPos) ->
+    (MouseDef.Up, DragInProgress topicId (boxId :: _) startPos) ->
       model
-        |> ext.dragStop (Box.firstId boxPath)
+        |> ext.dragStop boxId
         |> \(model_, cmd) -> (model_ |> setDragState NoDrag, cmd)
         |> Undo.swap undoModel
     (MouseDef.Cancel, _) ->
@@ -51,7 +51,14 @@ isDragInProgress : Model -> Bool
 isDragInProgress model =
   case model.mouse.dragState of
     DragInProgress _ _ _ -> True
-    _ -> False
+    NoDrag -> False
+
+
+isDragging : TopicId -> BoxPath -> Model -> Bool
+isDragging topicId boxPath model =
+  case model.mouse.dragState of
+    DragInProgress topicId_ boxPath_ _ -> topicId_ == topicId && boxPath_ == boxPath
+    NoDrag -> False
 
 
 emulateHover : TopicId -> BoxPath -> PointerType -> Model -> Model
