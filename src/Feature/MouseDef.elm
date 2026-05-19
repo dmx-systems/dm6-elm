@@ -20,15 +20,17 @@ init =
 
 
 type DragState
-  = DragInProgress TopicId BoxPath Point -- entered by DragStart message, start pointer position
-                                         -- TODO: rename to DragStarted?
-  | NoDrag                               -- entered by Up message
+  = DragStarted TopicId BoxPath BoxPath Point
+                                 -- entered by DownOnTopic message, start pointer position
+                                 -- data: 2nd path is "interaction box path"
+  | NoDrag -- entered by Up message
 
 
 type Msg
   -- Topic dragging
-  = DragStart TopicId BoxPath (Point, PointerType) -- pointerdown on topic (Events.draggable)
-                                                   -- TODO: rename to DownOnTopic?
+  = DownOnTopic TopicId BoxPath BoxPath (Point, PointerType)
+                                 -- pointerdown on topic (Events.draggable)
+                                 -- data: 2nd path is "interaction box path"
   | Move (Point, PointerType)    -- (fired by handlers created by Events.globalMouseHandler)
   | Up                           -- (fired by handlers created by Events.globalMouseHandler)
   -- UI cancellation

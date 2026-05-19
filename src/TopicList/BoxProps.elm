@@ -33,18 +33,21 @@ type alias HtmlList = List (Html Msg)
 -- For the fullscreen box boxPath is empty
 view : BoxId -> BoxPath -> Env2 -> Html Msg
 view boxId boxPath ({model} as env) =
+  let
+    boxPath_ = boxId :: boxPath
+  in
   div
     (listStyle boxId boxPath model)
     ( (Box.traverseWith
-        (boxId :: boxPath)
+        boxPath_
         topicOrder
         []
-        viewListItem
+        (viewListItem boxPath_)
         (viewList env)
         model
       )
       ++
-      viewDraggingTopic model
+      viewDraggingTopic boxPath_ model
     )
 
 
@@ -64,7 +67,7 @@ topicOrder boxId model topicIds =
     Nothing -> U.fail "TopicList.BoxProps.topicOrder" boxId topicIds
 
 
--- Box.LevelComplete
+-- Box.LevelComplete (env is applied already)
 viewList : Env2 -> BoxPath -> HtmlList -> HtmlList
 viewList env boxPath topics =
   [ ul
@@ -74,12 +77,12 @@ viewList env boxPath topics =
   ++ Tool.viewToolbar boxPath env
 
 
--- Box.Acc
-viewListItem : Topic -> BoxPath -> HtmlList -> Maybe HtmlList -> Model -> HtmlList
-viewListItem topic boxPath acc childrenAcc model =
+-- Box.Acc (ixBoxPath is applied already)
+viewListItem : BoxPath -> Topic -> BoxPath -> HtmlList -> Maybe HtmlList -> Model -> HtmlList
+viewListItem ixBoxPath topic boxPath acc childrenAcc model =
   acc ++
     [ li
-        ( Events.draggable topic.id boxPath
+        ( Events.draggable topic.id boxPath ixBoxPath
           {- ++ Events.itemClickHandler (T topic.id) boxPath -} -- TODO
           ++ VB.selectionStyle topic.id boxPath model
           ++ listItemStyle topic.id boxPath model
@@ -102,17 +105,17 @@ viewTopic topic boxPath model =
     text (Topic.label topic)
 
 
-viewDraggingTopic : Model -> HtmlList
-viewDraggingTopic model =
+viewDraggingTopic : BoxPath -> Model -> HtmlList
+viewDraggingTopic viewBoxPath model =
   case (model.mouse.dragState, model.topicList.dragState) of
-    (DragInProgress topicId _ _, Drag elemPos _) ->
-      case Topic.fromId topicId model of
-        Just topic ->
+    (DragStarted topicId _ ixBoxPath _, Drag elemPos _) ->
+      case (viewBoxPath == ixBoxPath, Topic.fromId topicId model) of
+        (True, Just topic) ->
           [ div
               (draggingTopicStyle elemPos)
               [text (Topic.label topic)]
           ]
-        Nothing -> []
+        _ -> []
     _ -> []
 
 
@@ -186,7 +189,7 @@ dragStart topicId boxPath pos pointerType {model} =
 drag : Point -> Env2 -> (Model, Cmd Msg)
 drag pos {model} =
   ( case (model.mouse.dragState, model.topicList.dragState) of
-      (DragInProgress topicId (boxId :: _) _, Drag elemPos lastPos) ->
+      (DragStarted topicId (boxId :: _) _ _, Drag elemPos lastPos) ->
         let
           newElemPos = Point
             elemPos.x

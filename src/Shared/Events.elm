@@ -29,11 +29,11 @@ itemClickHandler itemId boxPath =
 
 
 {- Utility for use by renderers to attach to topic element -}
-draggable : TopicId -> BoxPath -> Attrs Msg
-draggable topicId boxPath =
+draggable : TopicId -> BoxPath -> BoxPath -> Attrs Msg
+draggable topicId boxPath ixBoxPath =
   [ stopPropagationWith "pointerdown"
       (D.map
-        (Mouse << MouseDef.DragStart topicId boxPath)
+        (Mouse << MouseDef.DownOnTopic topicId boxPath ixBoxPath)
         pointDecoder
       )
   ]

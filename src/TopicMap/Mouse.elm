@@ -41,7 +41,7 @@ timeArrived time ({present} as undoModel) =
         dragState = DragEngaged time
       in
       (setDragState dragState present, Cmd.none) |> Undo.swap undoModel
-    (WaitForEndTime startTime, MouseDef.DragInProgress id (boxId :: _) pos) ->
+    (WaitForEndTime startTime, MouseDef.DragStarted id (boxId :: _) _ pos) ->
       let
         delay = posixToMillis time - posixToMillis startTime
         (dragMode, undo) =
@@ -84,7 +84,7 @@ topic (Feature.Mouse module's "hover" state).
 updateTarget : Point -> Env2 -> Model
 updateTarget pos {model, ext} =
   case (model.mouse.dragState, model.topicMap.dragState) of
-    (MouseDef.DragInProgress id _ _, Drag dragMode origPos lastPos _) ->
+    (MouseDef.DragStarted id _ _ _, Drag dragMode origPos lastPos _) ->
       let
         dragState = Drag dragMode origPos lastPos
       in
@@ -113,7 +113,7 @@ updateTarget pos {model, ext} =
 performDrag : Point -> Env2 -> Model
 performDrag pos ({model} as env) =
   case (model.mouse.dragState, model.topicMap.dragState) of
-    (MouseDef.DragInProgress topicId (boxId :: _) _, Drag dragMode origPos lastPos target) ->
+    (MouseDef.DragStarted topicId (boxId :: _) _ _, Drag dragMode origPos lastPos target) ->
       let
         newModel =
           case dragMode of
@@ -141,7 +141,7 @@ dragStop {model} =
     cmd =
       case (model.topicMap.dragState, model.mouse.dragState) of
         ( Drag DragTopic origPos _ (Just (T targetId, targetPath))
-          , MouseDef.DragInProgress id boxPath _) ->
+          , MouseDef.DragStarted id boxPath _ _) ->
           let
             _ = U.info "TopicMap.Mouse.dragStop" ("dropped " ++ fromInt (toTopicId id)
               ++ " (box " ++ Box.fromPath boxPath ++ ") on " ++ fromInt (toTopicId targetId)
@@ -163,7 +163,7 @@ dragStop {model} =
           in
           U.command TopicDragged
         (Drag DraftAssoc _ _ (Just (T targetId, targetPath))
-          , MouseDef.DragInProgress id boxPath _) ->
+          , MouseDef.DragStarted id boxPath _ _) ->
           let
             _ = U.info "TopicMap.Mouse.dragStop" ("assoc drawn from " ++ fromInt (toTopicId id)
               ++ " (box " ++ Box.fromPath boxPath ++ ") to " ++ fromInt (toTopicId targetId)
@@ -180,7 +180,7 @@ dragStop {model} =
             _ = U.info "TopicMap.Mouse.dragStop" "assoc ended w/o target"
           in
           Cmd.none
-        (DragEngaged _, MouseDef.DragInProgress id boxPath _) ->
+        (DragEngaged _, MouseDef.DragStarted id boxPath _ _) ->
           let
             _ = U.info "TopicMap.Mouse.dragStop" "topic not moved -> ItemClicked"
           in

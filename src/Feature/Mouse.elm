@@ -1,4 +1,4 @@
-module Feature.Mouse exposing (update, isDragInProgress, isDragging, clearHover, isHovered)
+module Feature.Mouse exposing (update, hasDragStarted, isDragging, clearHover, isHovered)
 
 import Box
 import Config as C
@@ -14,9 +14,9 @@ import Utils as U
 update : MouseDef.Msg -> Env -> (UndoModel, Cmd Msg)
 update msg ({model, undoModel, ext} as env) =
   case (msg, model.mouse.dragState) of
-    (MouseDef.DragStart topicId boxPath (pos, pointerType), _) ->
+    (MouseDef.DownOnTopic topicId boxPath ixBoxPath (pos, pointerType), _) ->
       model
-        |> setDragState (DragInProgress topicId boxPath pos)
+        |> setDragState (DragStarted topicId boxPath ixBoxPath pos)
         |> emulateHover topicId boxPath pointerType
         |> ext.dragStart topicId boxPath pos pointerType
         |> Undo.swap undoModel
@@ -25,12 +25,12 @@ update msg ({model, undoModel, ext} as env) =
         |> updateHover pos ext
         |> \model_ -> (model_, Cmd.none)
         |> Undo.swap undoModel
-    (MouseDef.Move (pos, pointerType), DragInProgress topicId (boxId :: _) startPos) ->
+    (MouseDef.Move (pos, pointerType), DragStarted topicId (boxId :: _) _ startPos) ->
       model
         |> updateHover pos ext
         |> ext.drag boxId pos
         |> Undo.swap undoModel
-    (MouseDef.Up, DragInProgress topicId (boxId :: _) startPos) ->
+    (MouseDef.Up, DragStarted topicId (boxId :: _) _ startPos) ->
       model
         |> ext.dragStop boxId
         |> \(model_, cmd) -> (model_ |> setDragState NoDrag, cmd)
@@ -47,17 +47,17 @@ setDragState dragState ({mouse} as model) =
   { model | mouse = { mouse | dragState = dragState }}
 
 
-isDragInProgress : Model -> Bool
-isDragInProgress model =
+hasDragStarted : Model -> Bool
+hasDragStarted model =
   case model.mouse.dragState of
-    DragInProgress _ _ _ -> True
+    DragStarted _ _ _ _ -> True
     NoDrag -> False
 
 
 isDragging : TopicId -> BoxPath -> Model -> Bool
 isDragging topicId boxPath model =
   case model.mouse.dragState of
-    DragInProgress topicId_ boxPath_ _ -> topicId_ == topicId && boxPath_ == boxPath
+    DragStarted topicId_ boxPath_ _ _ -> topicId_ == topicId && boxPath_ == boxPath
     NoDrag -> False
 
 
@@ -76,7 +76,7 @@ updateHover {x, y} ext model =
     pos = Point x (y - C.appHeaderHeight)
     excludeTopicId =
       case model.mouse.dragState of
-        DragInProgress topicId _ _ -> Just topicId
+        DragStarted topicId _ _ _ -> Just topicId
         _ -> Nothing
     maybeTarget = ext.hitTest model.boxId [] pos excludeTopicId model
   in

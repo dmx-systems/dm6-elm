@@ -237,7 +237,7 @@ viewTopic topic topicProps boxPath ({model, ext}) =
   in
   div
     ( topicAttr topic.id boxPath
-      ++ Events.draggable topic.id boxPath
+      ++ Events.draggable topic.id boxPath boxPath
       ++ topicStyle topic.id boxPath model
       ++ style
     )
@@ -257,7 +257,7 @@ topicStyle id boxPath model =
     boxId = Box.firstId boxPath
     isLimbo = VM.isLimboTopic id boxId model
     isDragging = case model.mouse.dragState of
-      DragInProgress id_ boxPath_ _ -> id_ == id && boxPath_ == boxPath
+      DragStarted id_ boxPath_ _ _ -> id_ == id && boxPath_ == boxPath
       _ -> False
     isSelected = Sel.isSelected (T id) boxPath model
   in
@@ -524,7 +524,7 @@ viewAssoc assoc boxPath clickHandler model =
 viewAssocDraft : BoxId -> Model -> List (Svg Msg)
 viewAssocDraft boxId model =
   case (model.mouse.dragState, model.topicMap.dragState) of
-    (DragInProgress _ boxPath _, Drag DraftAssoc origPos pos _) ->
+    (DragStarted _ boxPath _ _, Drag DraftAssoc origPos pos _) ->
       case (Box.firstId boxPath == boxId, TM.fullscreen model) of
         (True, Just boxProps) ->
           let

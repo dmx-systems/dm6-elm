@@ -44,9 +44,9 @@ topicBorderStyle id boxPath model =
     targeted = case (model.mouse.dragState, model.topicMap.dragState) of
       -- can't move a topic to a box where it is already, can happen if mouse moves very quick
       -- can't create assoc when both topics are in different box
-      (DragInProgress _ (boxId_ :: _) _, Drag DragTopic _ _ target) ->
+      (DragStarted _ (boxId_ :: _) _ _, Drag DragTopic _ _ target) ->
         isTarget_ target && fromBoxId boxId_ /= id
-      (DragInProgress _ boxPath_ _, Drag DraftAssoc _ _ target) ->
+      (DragStarted _ boxPath_ _ _, Drag DraftAssoc _ _ target) ->
         isTarget_ target && boxPath_ == boxPath
       _ -> False
   in

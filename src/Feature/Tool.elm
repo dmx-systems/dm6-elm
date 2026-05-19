@@ -333,7 +333,7 @@ viewTopicTools topicId boxPath model =
   let
     boxId = Box.firstId boxPath
     isHovered = Mouse.isHovered topicId boxPath model
-    isDrag = Mouse.isDragInProgress model
+    isDrag = Mouse.hasDragStarted model
     isEdit = Text.isEdit topicId boxPath model
   in
   if isHovered && not isDrag && not isEdit then
