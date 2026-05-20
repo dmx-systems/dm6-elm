@@ -67,8 +67,7 @@ testChildren pos topics boxPath excludeTopicId ({model, ext} as env) =
                 Just target -> Just target
                 Nothing -> isHeaderHit model
             (False, _) -> isTopicHit topic.id boxPath pos model |> maybeItem
-        -- recursion
-        testTailItems = testChildren pos tailTopics boxPath excludeTopicId
+        testTailItems = testChildren pos tailTopics boxPath excludeTopicId -- recursion
       in
       -- return topic if successfully tested AND not excluded by filter
       case (maybeTarget, excludeTopicId) of

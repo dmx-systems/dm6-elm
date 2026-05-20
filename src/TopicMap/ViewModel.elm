@@ -1,6 +1,8 @@
-module TopicMap.ViewModel exposing (topicsToRender, isLimboTopic, isLimboAssoc, limboState)
+module TopicMap.ViewModel exposing (topicsToRender, isLimboTopic, isLimboAssoc, limboState,
+  relPos)
 
 import Box
+import Config as C
 import Feature.SearchDef exposing (SearchResult(..))
 import Model exposing (Model)
 import ModelBase exposing (..)
@@ -73,3 +75,58 @@ limboState model =
         RelTopics _ (Just (topicId, assocId)) -> Just (topicId, Just assocId, boxId)
         _ -> Nothing
     Nothing -> Nothing
+
+
+--
+
+{-| Transforms a client position to a box-relative position.
+-}
+relPos : Point -> BoxPath -> Model -> Point
+relPos pos boxPath model =
+  case TM.fullscreen model of
+    Just boxProps ->
+      let
+        posAbs = absPos boxPath (Point 0 0) model
+      in
+      Point
+        (pos.x - posAbs.x + boxProps.scroll.x)
+        (pos.y - posAbs.y + boxProps.scroll.y - C.appHeaderHeight)
+    Nothing -> Point 0 0
+
+
+{-| Recursively calculates the absolute position of a box.
+"posAcc" is the position accumulated so far.
+-}
+absPos : BoxPath -> Point -> Model -> Point
+absPos boxPath posAcc model =
+  case boxPath of
+    [ boxId ] -> accumulateRect posAcc boxId model
+    boxId :: parentBoxId :: boxIds -> accumulatePos posAcc boxId parentBoxId boxIds model
+    [] -> U.logError "TopicMap.View.absPos" "boxPath is empty!" (Point 0 0)
+
+
+accumulatePos : Point -> BoxId -> BoxId -> BoxPath -> Model -> Point
+accumulatePos posAcc boxId parentBoxId boxIds model =
+  let
+    {x, y} = accumulateRect posAcc boxId model
+  in
+  case TM.topicPos (fromBoxId boxId) parentBoxId model of
+    Just boxPos ->
+      absPos -- recursion
+        (parentBoxId :: boxIds)
+        (Point
+          (x + boxPos.x - C.topicW2)
+          (y + boxPos.y + C.topicH2)
+        )
+        model
+    Nothing -> Point 0 0 -- error is already logged
+
+
+accumulateRect : Point -> BoxId -> Model -> Point
+accumulateRect posAcc boxId model =
+  case TM.byId boxId model of
+    Just boxProps ->
+      Point
+        (posAcc.x - boxProps.rect.x1)
+        (posAcc.y - boxProps.rect.y1)
+    Nothing -> Point 0 0 -- error is already logged

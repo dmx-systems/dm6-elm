@@ -1,4 +1,4 @@
-module TopicList.BoxProps exposing (view, listSize, dragStart, drag, dragStop, init, addTopic)
+module TopicList.TopicList exposing (view, listSize, dragStart, drag, dragStop, init, addTopic)
 
 import Box
 import Config as C
@@ -14,6 +14,7 @@ import Shared.Events as Events
 import Shared.ViewBase as VB
 import Topic
 import TopicList.TopicListDef exposing (BoxProps, DragState(..))
+import TopicMap.ViewModel exposing (relPos)
 import Utils as U
 
 import Html exposing (Html, div, ul, li, text)
@@ -64,7 +65,7 @@ topicOrder boxId model topicIds =
             else
               Nothing
           )
-    Nothing -> U.fail "TopicList.BoxProps.topicOrder" boxId topicIds
+    Nothing -> U.fail "TopicList.TopicList.topicOrder" boxId topicIds
 
 
 -- Box.LevelComplete (env is applied already)
@@ -177,10 +178,10 @@ inputStyle =
 
 
 -- ExtManager.NestingDragStart
-dragStart : TopicId -> BoxPath -> Point -> PointerType -> Env2 -> (Model, Cmd Msg)
-dragStart topicId boxPath pos pointerType {model} =
+dragStart : TopicId -> BoxPath -> BoxPath -> Point -> PointerType -> Env2 -> (Model, Cmd Msg)
+dragStart topicId boxPath ixBoxPath pos pointerType {model} =
   ( model
-      |> setDragState (Drag pos pos) -- TODO: init 1st pos properly (dragged element position)
+      |> setDragState (Drag (relPos pos ixBoxPath model) pos)
   , Cmd.none
   )
 
@@ -189,7 +190,7 @@ dragStart topicId boxPath pos pointerType {model} =
 drag : Point -> Env2 -> (Model, Cmd Msg)
 drag pos {model} =
   ( case (model.mouse.dragState, model.topicList.dragState) of
-      (DragStarted topicId (boxId :: _) _ _, Drag elemPos lastPos) ->
+      (DragStarted _ _ _ _, Drag elemPos lastPos) ->
         let
           newElemPos = Point
             elemPos.x
@@ -198,7 +199,7 @@ drag pos {model} =
         -- update elemPos and lastPos
         model
           |> setDragState (Drag newElemPos pos)
-      _ -> U.logError "TopicList.BoxProps.drag" ("Unexpected drag state: "
+      _ -> U.logError "TopicList.TopicList.drag" ("Unexpected drag state: "
           ++ U.toString (model.mouse.dragState, model.topicList.dragState))
         model
   , Cmd.none
@@ -244,13 +245,13 @@ createBoxProps boxId ({topicList} as model) =
   in
   if Dict.member id model.topicList.boxProps then
     let
-      _ = U.info "TopicList.BoxProps.createBoxProps"
+      _ = U.info "TopicList.TopicList.createBoxProps"
         ("Box (" ++ U.toString boxId ++ ") has BoxProps entry already")
     in
     model
   else
     let
-      _ = U.info "TopicList.BoxProps.createBoxProps"
+      _ = U.info "TopicList.TopicList.createBoxProps"
         ("Creating BoxProps entry for box (" ++ U.toString boxId ++ ")")
     in
     { model | topicList =
@@ -270,7 +271,7 @@ initOrder boxId ({topicList} as model) =
             List.filterMap
               (missingTopicIds orderList)
               (Box.topicIds boxId model)
-          _ = U.info "TopicList.BoxProps.initOrder"
+          _ = U.info "TopicList.TopicList.initOrder"
             ("Add missing BoxProps " ++ U.toString missing ++ " to " ++ U.toString orderList)
         in
         missing ++ orderList
@@ -304,7 +305,7 @@ updateOrder boxId transform ({topicList} as model) =
         (\maybeViewProps ->
           case maybeViewProps of
             Just boxProps -> Just { boxProps | order = transform boxProps.order }
-            Nothing -> U.logError "TopicList.BoxProps.updateOrder"
+            Nothing -> U.logError "TopicList.TopicList.updateOrder"
               (U.toString {boxId = boxId}) Nothing
         )
     }
@@ -315,7 +316,7 @@ listSize : BoxId -> Model -> Size
 listSize boxId model =
   case byId boxId model of
     Just {size} -> size
-    Nothing -> U.fail "TopicList.BoxProps.listSize" boxId (Size 0 0)
+    Nothing -> U.fail "TopicList.TopicList.listSize" boxId (Size 0 0)
 
 
 {-| Logs an error if the BoxProps entry is missing.
@@ -324,5 +325,5 @@ byId : BoxId -> Model -> Maybe BoxProps
 byId boxId model =
   case model.topicList.boxProps |> Dict.get (toBoxId boxId) of
     Just boxProps -> Just boxProps
-    Nothing -> U.logError "TopicList.BoxProps.byId"
+    Nothing -> U.logError "TopicList.TopicList.byId"
       ("Missing BoxProps entry for (" ++ U.toString boxId ++ ")") Nothing

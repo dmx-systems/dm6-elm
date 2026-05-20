@@ -22,8 +22,8 @@ import Time exposing (Posix, posixToMillis)
 
 
 -- ExtManager.NestingDragStart
-dragStart : TopicId -> BoxPath -> Point -> PointerType -> Env2 -> (Model, Cmd Msg)
-dragStart topicId boxPath pos pointerType {model} =
+dragStart : TopicId -> BoxPath -> BoxPath -> Point -> PointerType -> Env2 -> (Model, Cmd Msg)
+dragStart topicId boxPath ixBoxPath pos pointerType {model} =
   ( model
       |> setDragState WaitForStartTime
   , Cmd.batch
@@ -40,7 +40,8 @@ timeArrived time ({present} as undoModel) =
       let
         dragState = DragEngaged time
       in
-      (setDragState dragState present, Cmd.none) |> Undo.swap undoModel
+      (setDragState dragState present, Cmd.none)
+        |> Undo.swap undoModel
     (WaitForEndTime startTime, MouseDef.DragStarted id (boxId :: _) _ pos) ->
       let
         delay = posixToMillis time - posixToMillis startTime
@@ -54,7 +55,8 @@ timeArrived time ({present} as undoModel) =
             Just origPos -> Drag dragMode origPos pos Nothing
             Nothing -> NoDrag -- error is already logged
       in
-      (setDragState dragState present, Cmd.none) |> undo undoModel
+      (setDragState dragState present, Cmd.none)
+        |> undo undoModel
     _ ->
       U.logError "TopicMap.Mouse.timeArrived"
         "Received Time when dragState is not WaitFor..Time" (undoModel, Cmd.none)

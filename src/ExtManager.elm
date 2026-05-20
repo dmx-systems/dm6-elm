@@ -6,7 +6,7 @@ import Extension
 import Model exposing (Model, Msg)
 import ModelBase exposing (..)
 -- box renderers
-import TopicList.BoxProps
+import TopicList.TopicList
 import TopicList.Geometry
 import TopicMap.BoxProps
 import TopicMap.Geometry
@@ -64,9 +64,9 @@ type alias NestingToolbar =
 
 
 -- TODO: wording
--- TODO: drop first 4 parameters and let extensions operate on Mouse's dragState instead?
+-- TODO: drop first 5 parameters and let extensions operate on Mouse's dragState instead?
 type alias NestingDragStart =
-  TopicId -> BoxPath -> Point -> PointerType -> Env2 -> (Model, Cmd Msg)
+  TopicId -> BoxPath -> BoxPath -> Point -> PointerType -> Env2 -> (Model, Cmd Msg)
 
 
 -- TODO: wording
@@ -122,15 +122,15 @@ registry =
       )
     , ("TopicList",
         { label = "List"
-        , init = TopicList.BoxProps.init
-        , view = TopicList.BoxProps.view
+        , init = TopicList.TopicList.init
+        , view = TopicList.TopicList.view
         , hitTest = TopicList.Geometry.hitTest
         , autoSize = TopicList.Geometry.autoSize
         , toolbar = TopicList.Geometry.toolbarPos
-        , dragStart = TopicList.BoxProps.dragStart
-        , drag = TopicList.BoxProps.drag
-        , dragStop = TopicList.BoxProps.dragStop
-        , addTopic = TopicList.BoxProps.addTopic
+        , dragStart = TopicList.TopicList.dragStart
+        , drag = TopicList.TopicList.drag
+        , dragStop = TopicList.TopicList.dragStop
+        , addTopic = TopicList.TopicList.addTopic
         }
       )
     ]
@@ -176,10 +176,10 @@ toolbar boxPath model =
     (\env renderer -> renderer.toolbar boxPath model)
 
 
-dragStart : TopicId -> BoxPath -> Point -> PointerType -> Model -> (Model, Cmd Msg)
-dragStart topicId boxPath pos pointerType model =
+dragStart : TopicId -> BoxPath -> BoxPath -> Point -> PointerType -> Model -> (Model, Cmd Msg)
+dragStart topicId boxPath ixBoxPath pos pointerType model =
   dispatch (Box.firstId boxPath) model (model, Cmd.none)
-    (\env renderer -> renderer.dragStart topicId boxPath pos pointerType env)
+    (\env renderer -> renderer.dragStart topicId boxPath ixBoxPath pos pointerType env)
 
 
 drag : BoxId -> Point -> Model -> (Model, Cmd Msg)

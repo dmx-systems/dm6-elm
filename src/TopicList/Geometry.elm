@@ -9,7 +9,7 @@ import Model exposing (Model)
 import ModelBase exposing (..)
 import String exposing (fromInt)
 import Topic
-import TopicList.BoxProps as TL
+import TopicList.TopicList as TL
 import TopicList.TopicListDef exposing (BoxProps)
 import Utils as U
 

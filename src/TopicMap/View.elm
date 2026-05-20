@@ -525,67 +525,12 @@ viewAssocDraft : BoxId -> Model -> List (Svg Msg)
 viewAssocDraft boxId model =
   case (model.mouse.dragState, model.topicMap.dragState) of
     (DragStarted _ boxPath _ _, Drag DraftAssoc origPos pos _) ->
-      case (Box.firstId boxPath == boxId, TM.fullscreen model) of
-        (True, Just boxProps) ->
-          let
-            pagePos = Point
-              (pos.x + boxProps.scroll.x)
-              (pos.y + boxProps.scroll.y - C.appHeaderHeight)
-          in
-          (lineRenderer model) origPos (relPos pagePos boxPath model) Nothing [boxId] [] model
-          -- simple box path is sufficient for geometry, draft assoc is never selected
-        _ -> []
+      if Box.firstId boxPath == boxId then
+        (lineRenderer model) origPos (VM.relPos pos boxPath model) Nothing [boxId] [] model
+        -- simple box path is sufficient for geometry, draft assoc is never selected
+      else
+        []
     _ -> []
-
-
-{-| Transforms a viewport position to a box-relative position.
--}
-relPos : Point -> BoxPath -> Model -> Point
-relPos pos boxPath model =
-  let
-    posAbs = absPos boxPath (Point 0 0) model
-  in
-  Point
-    (pos.x - posAbs.x)
-    (pos.y - posAbs.y)
-
-
-{-| Recursively calculates the absolute position of a box.
-"posAcc" is the position accumulated so far.
--}
-absPos : BoxPath -> Point -> Model -> Point
-absPos boxPath posAcc model =
-  case boxPath of
-    [ boxId ] -> accumulateRect posAcc boxId model
-    boxId :: parentBoxId :: boxIds -> accumulatePos posAcc boxId parentBoxId boxIds model
-    [] -> U.logError "TopicMap.View.absPos" "boxPath is empty!" (Point 0 0)
-
-
-accumulatePos : Point -> BoxId -> BoxId -> BoxPath -> Model -> Point
-accumulatePos posAcc boxId parentBoxId boxIds model =
-  let
-    {x, y} = accumulateRect posAcc boxId model
-  in
-  case TM.topicPos (fromBoxId boxId) parentBoxId model of
-    Just boxPos ->
-      absPos -- recursion
-        (parentBoxId :: boxIds)
-        (Point
-          (x + boxPos.x - C.topicW2)
-          (y + boxPos.y + C.topicH2)
-        )
-        model
-    Nothing -> Point 0 0 -- error is already logged
-
-
-accumulateRect : Point -> BoxId -> Model -> Point
-accumulateRect posAcc boxId model =
-  case TM.byId boxId model of
-    Just boxProps ->
-      Point
-        (posAcc.x - boxProps.rect.x1)
-        (posAcc.y - boxProps.rect.y1)
-    Nothing -> Point 0 0 -- error is already logged
 
 
 lineRenderer : Model -> LineRenderer

@@ -62,8 +62,9 @@ type alias Toolbar =
   BoxPath -> Model -> ToolbarPos
 
 
+-- TODO: drop first 5 parameters and let extensions operate on Mouse's dragState instead?
 type alias DragStart =
-  TopicId -> BoxPath -> Point -> PointerType -> Model -> (Model, Cmd Msg)
+  TopicId -> BoxPath -> BoxPath -> Point -> PointerType -> Model -> (Model, Cmd Msg)
 
 
 type alias Drag =
