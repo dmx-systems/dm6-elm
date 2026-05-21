@@ -18,7 +18,7 @@ update msg ({model, undoModel, ext} as env) =
       model
         |> setDragState (DragStarted topicId boxPath ixBoxPath pos)
         |> emulateHover topicId boxPath pointerType
-        |> ext.dragStart topicId boxPath ixBoxPath pos pointerType
+        |> ext.dragStart
         |> Undo.swap undoModel
     (MouseDef.Move (pos, pointerType), NoDrag) ->
       model

@@ -22,15 +22,22 @@ import Time exposing (Posix, posixToMillis)
 
 
 -- ExtManager.NestingDragStart
-dragStart : TopicId -> BoxPath -> BoxPath -> Point -> PointerType -> Env2 -> (Model, Cmd Msg)
-dragStart topicId boxPath ixBoxPath pos pointerType {model} =
-  ( model
-      |> setDragState WaitForStartTime
-  , Cmd.batch
-      [ U.command (Cancel (Just (T topicId, boxPath)))
-      , Task.perform (TopicMap << TopicMapDef.Time) Time.now
-      ]
-  )
+dragStart : Env2 -> (Model, Cmd Msg)
+dragStart {model} =
+  case model.mouse.dragState of
+    MouseDef.DragStarted topicId boxPath _ _ ->
+      ( model
+          |> setDragState WaitForStartTime
+      , Cmd.batch
+          [ U.command (Cancel (Just (T topicId, boxPath)))
+          , Task.perform (TopicMap << TopicMapDef.Time) Time.now
+          ]
+      )
+    _ ->
+      let
+        _ = U.logError "TopicMap.Mouse.dragStart" "Unexpected drag state" model.mouse.dragState
+      in
+      (model, Cmd.none)
 
 
 timeArrived : Posix -> UndoModel -> (UndoModel, Cmd Msg)

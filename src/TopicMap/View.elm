@@ -526,7 +526,7 @@ viewAssocDraft boxId model =
   case (model.mouse.dragState, model.topicMap.dragState) of
     (DragStarted _ boxPath _ _, Drag DraftAssoc origPos pos _) ->
       if Box.firstId boxPath == boxId then
-        (lineRenderer model) origPos (VM.relPos pos boxPath model) Nothing [boxId] [] model
+        (lineRenderer model) origPos (VM.toLocalPos pos boxPath model) Nothing [boxId] [] model
         -- simple box path is sufficient for geometry, draft assoc is never selected
       else
         []

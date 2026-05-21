@@ -14,7 +14,7 @@ import Shared.Events as Events
 import Shared.ViewBase as VB
 import Topic
 import TopicList.TopicListDef exposing (BoxProps, DragState(..))
-import TopicMap.ViewModel exposing (relPos)
+import TopicMap.ViewModel exposing (toLocalPos)
 import Utils as U
 
 import Html exposing (Html, div, ul, li, text)
@@ -178,10 +178,18 @@ inputStyle =
 
 
 -- ExtManager.NestingDragStart
-dragStart : TopicId -> BoxPath -> BoxPath -> Point -> PointerType -> Env2 -> (Model, Cmd Msg)
-dragStart topicId boxPath ixBoxPath pos pointerType {model} =
-  ( model
-      |> setDragState (Drag (relPos pos ixBoxPath model) pos)
+dragStart : Env2 -> (Model, Cmd Msg)
+dragStart {model} =
+  ( case model.mouse.dragState of
+      DragStarted _ _ ixBoxPath startPos ->
+        model
+          |> setDragState (Drag (toLocalPos startPos ixBoxPath model) startPos)
+      _ ->
+        let
+          _ = U.logError "TopicList.TopicList.dragStart" "Unexpected drag state"
+            model.mouse.dragState
+        in
+        model
   , Cmd.none
   )
 
@@ -199,8 +207,11 @@ drag pos {model} =
         -- update elemPos and lastPos
         model
           |> setDragState (Drag newElemPos pos)
-      _ -> U.logError "TopicList.TopicList.drag" ("Unexpected drag state: "
-          ++ U.toString (model.mouse.dragState, model.topicList.dragState))
+      _ ->
+        let
+          _ = U.logError "TopicList.TopicList.drag" "Unexpected drag state"
+            (model.mouse.dragState, model.topicList.dragState)
+        in
         model
   , Cmd.none
   )

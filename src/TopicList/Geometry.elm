@@ -26,7 +26,7 @@ hitTest (BoxId topicId as boxId) boxPath pos excludeTopicId {model} =
       t = targets (boxId :: boxPath) model
       i = round (toFloat (pos.y - 30) / (C.topicLineHeight * C.contentFontSize))
       target = Array.get i t
-      _ = U.info "TopicList.Geometry.hitTest" target
+      -- _ = U.info "TopicList.Geometry.hitTest" target
     in
     case target of
       Just _ -> target

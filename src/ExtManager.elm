@@ -3,6 +3,7 @@ module ExtManager exposing (ext)
 import Box
 import Env exposing (ExtManager, Env2)
 import Extension
+import Feature.MouseDef as MouseDef
 import Model exposing (Model, Msg)
 import ModelBase exposing (..)
 -- box renderers
@@ -12,6 +13,7 @@ import TopicMap.BoxProps
 import TopicMap.Geometry
 import TopicMap.Mouse
 import TopicMap.View
+import Utils as U
 
 import Dict exposing (Dict)
 import Html exposing (Html, text)
@@ -63,10 +65,11 @@ type alias NestingToolbar =
   BoxPath -> Model -> ToolbarPos
 
 
--- TODO: wording
--- TODO: drop first 5 parameters and let extensions operate on Mouse's dragState instead?
+-- Note: no drag specific parameters here. An extension's "dragStart" handler operates on
+-- (feature module) Mouse's "dragState" directly.
+-- TODO: rename OnDragStart
 type alias NestingDragStart =
-  TopicId -> BoxPath -> BoxPath -> Point -> PointerType -> Env2 -> (Model, Cmd Msg)
+  Env2 -> (Model, Cmd Msg)
 
 
 -- TODO: wording
@@ -176,10 +179,20 @@ toolbar boxPath model =
     (\env renderer -> renderer.toolbar boxPath model)
 
 
-dragStart : TopicId -> BoxPath -> BoxPath -> Point -> PointerType -> Model -> (Model, Cmd Msg)
-dragStart topicId boxPath ixBoxPath pos pointerType model =
-  dispatch (Box.firstId boxPath) model (model, Cmd.none)
-    (\env renderer -> renderer.dragStart topicId boxPath ixBoxPath pos pointerType env)
+-- Note: no drag specific parameters here. The dispatcher operates on Mouse's "dragState"
+-- directly. Important: the renderer is selected based on "interaction box path", not
+-- "box path".
+dragStart : Model -> (Model, Cmd Msg)
+dragStart model =
+  case model.mouse.dragState of
+    MouseDef.DragStarted _ _ (boxId :: _) _ ->
+      dispatch boxId model (model, Cmd.none)
+        (\env renderer -> renderer.dragStart env)
+    _ ->
+      let
+        _ = U.logError "ExtManager.dragStart" "Unexpected drag state" model.mouse.dragState
+      in
+      (model, Cmd.none)
 
 
 drag : BoxId -> Point -> Model -> (Model, Cmd Msg)

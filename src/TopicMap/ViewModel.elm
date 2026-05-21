@@ -1,5 +1,5 @@
 module TopicMap.ViewModel exposing (topicsToRender, isLimboTopic, isLimboAssoc, limboState,
-  relPos)
+  toLocalPos)
 
 import Box
 import Config as C
@@ -79,18 +79,18 @@ limboState model =
 
 --
 
-{-| Transforms a client position to a box-relative position.
+{-| Transforms a client position to a box-local position.
 -}
-relPos : Point -> BoxPath -> Model -> Point
-relPos pos boxPath model =
+toLocalPos : Point -> BoxPath -> Model -> Point
+toLocalPos clientPos boxPath model =
   case TM.fullscreen model of
     Just boxProps ->
       let
         posAbs = absPos boxPath (Point 0 0) model
       in
       Point
-        (pos.x - posAbs.x + boxProps.scroll.x)
-        (pos.y - posAbs.y + boxProps.scroll.y - C.appHeaderHeight)
+        (clientPos.x - posAbs.x + boxProps.scroll.x)
+        (clientPos.y - posAbs.y + boxProps.scroll.y - C.appHeaderHeight)
     Nothing -> Point 0 0
 
 
