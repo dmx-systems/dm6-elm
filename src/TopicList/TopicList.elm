@@ -1,5 +1,7 @@
-module TopicList.TopicList exposing (view, listSize, dragStart, drag, dragStop, init, addTopic)
+module TopicList.TopicList exposing (view, targets, listSize, dragStart, drag, dragStop, init,
+  addTopic)
 
+import Array exposing (Array)
 import Box
 import Config as C
 import Dict
@@ -158,7 +160,7 @@ listItemStyle topicId boxPath model =
 hoverStyle : TopicId -> BoxPath -> Model -> Attrs Msg
 hoverStyle topicId boxPath model =
   if Mouse.isHovered topicId boxPath model then
-    [ style "border" "1px dotted red" ] -- debugging
+    [ style "background-color" "yellow" ] -- debugging
   else
     []
 
@@ -183,7 +185,7 @@ dragStart {model} =
   ( case model.mouse.dragState of
       DragStarted _ _ ixBoxPath startPos ->
         model
-          |> setDragState (Drag (toLocalPos startPos ixBoxPath model) startPos)
+          |> setDragState (Drag (toElemPos startPos ixBoxPath model) startPos)
       _ ->
         let
           _ = U.logError "TopicList.TopicList.dragStart" "Unexpected drag state"
@@ -192,6 +194,29 @@ dragStart {model} =
         model
   , Cmd.none
   )
+
+
+toElemPos : Point -> BoxPath -> Model -> Point
+toElemPos clientPos ixBoxPath model =
+  let
+    h = C.topicLineHeight * C.contentFontSize -- float
+    index = toIndex (toLocalPos clientPos ixBoxPath model)
+    level =
+      case Array.get index (targets ixBoxPath model) of
+        Just (level_, _) -> level_
+        Nothing -> 0
+    x = 42 + 40 * level
+    y = round (toFloat index * h) + 20
+    -- _ = U.info "TopicList.TopicList.toElemPos" index
+  in
+  Point x y
+
+
+{-| Transforms a box-local position into an index (for "targets" array).
+-}
+toIndex : Point -> Int
+toIndex localPos =
+  round (toFloat (localPos.y - 12) / (C.topicLineHeight * C.contentFontSize))
 
 
 -- ExtManager.NestingDrag
@@ -230,6 +255,30 @@ setDragState dragState ({topicList} as model) =
 
 
 -- MODEL
+
+
+{- The content of the given box as an array of targets -}
+targets : BoxPath -> Model -> Array (Int, Target) -- Int: nesting level
+targets boxPath model =
+  targets_ 0 boxPath model
+
+
+targets_ : Int -> BoxPath -> Model -> Array (Int, Target) -- Int: nesting level
+targets_ level boxPath model =
+  let
+    boxId = Box.firstId boxPath
+  in
+  Box.topicIds boxId model |> List.foldl -- TODO: respect order, utilize Box.traverseWith
+    (\topicId acc ->
+      let
+        t = Array.push (level, (T topicId, boxPath)) acc
+      in
+      if Topic.isBox topicId model then
+        Array.append t (targets_ (level + 1) (BoxId topicId :: boxPath) model) -- recursion
+      else
+        t
+    )
+    Array.empty
 
 
 -- ExtManager.ExtInit

@@ -23,13 +23,12 @@ hitTest : BoxId -> BoxPath -> Point -> Maybe TopicId -> Env2 -> Maybe Target
 hitTest (BoxId topicId as boxId) boxPath pos excludeTopicId {model} =
   if isListHovered boxId pos model then
     let
-      t = targets (boxId :: boxPath) model
-      i = round (toFloat (pos.y - 30) / (C.topicLineHeight * C.contentFontSize))
-      target = Array.get i t
-      -- _ = U.info "TopicList.Geometry.hitTest" target
+      t = TL.targets (boxId :: boxPath) model
+      index = round (toFloat (pos.y - 30) / (C.topicLineHeight * C.contentFontSize))
+      -- _ = U.info "TopicList.Geometry.hitTest" index
     in
-    case target of
-      Just _ -> target
+    case Array.get index t of
+      Just (_, target) -> Just target
       Nothing -> Just (T topicId, boxPath)
   else
     Nothing
@@ -96,7 +95,7 @@ toolbarPos : BoxPath -> Model -> ToolbarPos
 toolbarPos boxPath model =
   (ToolbarPos
     (\topic ->
-      case targets boxPath model |> maybeIndex (T topic.id, boxPath) of
+      case TL.targets boxPath model |> maybeIndex (T topic.id, boxPath) of
         Just i ->
           Point
             0
@@ -107,12 +106,12 @@ toolbarPos boxPath model =
   )
 
 
-maybeIndex : Target -> Array Target -> Maybe Int
+maybeIndex : Target -> Array (Int, Target) -> Maybe Int
 maybeIndex target ts =
   let
     found = ts
       |> Array.toIndexedList
-      |> List.filter (\(_, t) -> t == target)
+      |> List.filter (\(_, (_, t)) -> t == target)
   in
   case found of
     [(i, _)] -> Just i
@@ -122,22 +121,3 @@ maybeIndex target ts =
     _ -> U.logError "TopicList.Geometry.maybeIndex"
       ("Target " ++ U.toString target ++ " found " ++ fromInt (List.length found) ++ " times")
       Nothing
-
-
-{- The content of the given box as an array of targets -}
-targets : BoxPath -> Model -> Array Target
-targets boxPath model =
-  let
-    boxId = Box.firstId boxPath
-  in
-  Box.topicIds boxId model |> List.foldl -- TODO: respect order, utilize Box.traverseWith
-    (\topicId acc ->
-      let
-        t = Array.push (T topicId, boxPath) acc
-      in
-      if Topic.isBox topicId model then
-        Array.append t (targets (BoxId topicId :: boxPath) model) -- recursion
-      else
-        t
-    )
-    Array.empty
