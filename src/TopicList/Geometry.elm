@@ -24,7 +24,7 @@ hitTest (BoxId topicId as boxId) boxPath pos excludeTopicId {model} =
   if isListHovered boxId pos model then
     let
       t = TL.targets (boxId :: boxPath) model
-      index = (pos.y - 13) // (C.listItemHeight + 1) -- TODO: no magic numbers
+      index = (pos.y - 13) // (C.listItemHeight + 2) -- TODO: no magic numbers
       _ = U.info "TopicList.Geometry.hitTest" index
     in
     case Array.get index t of
@@ -56,7 +56,7 @@ autoSize boxPath {model} =
     boxId = Box.firstId boxPath
     count = Box.topicCount boxId model
     width = 260 -- ### TODO
-    height = count * (C.listItemHeight + 1) + 34
+    height = count * (C.listItemHeight + 2) + 30
     rect = Rectangle 0 0 width height
     newModel = setSize boxId (Size width height) model
   in
@@ -95,19 +95,19 @@ toolbarPos : BoxPath -> Model -> ToolbarPos
 toolbarPos boxPath model =
   (ToolbarPos
     (\topic ->
-      case TL.targets boxPath model |> maybeIndex (T topic.id, boxPath) of
+      case TL.targets boxPath model |> findIndexOf (T topic.id, boxPath) of
         Just index ->
           Point
-            0
-            (index * (C.listItemHeight + 1) - 16)
+            40
+            (index * (C.listItemHeight + 2) - 16)
         Nothing -> Point 0 0
     )
     (\assoc -> Point 0 0)
   )
 
 
-maybeIndex : Target -> Array (Int, Target) -> Maybe Int
-maybeIndex target ts =
+findIndexOf : Target -> Array (Int, Target) -> Maybe Int
+findIndexOf target ts =
   let
     found = ts
       |> Array.toIndexedList
@@ -115,9 +115,9 @@ maybeIndex target ts =
   in
   case found of
     [(i, _)] -> Just i
-    [] -> U.logError "TopicList.Geometry.maybeIndex"
+    [] -> U.logError "TopicList.Geometry.findIndexOf"
       ("Target " ++ U.toString target ++ " not found")
       Nothing
-    _ -> U.logError "TopicList.Geometry.maybeIndex"
+    _ -> U.logError "TopicList.Geometry.findIndexOf"
       ("Target " ++ U.toString target ++ " found " ++ fromInt (List.length found) ++ " times")
       Nothing

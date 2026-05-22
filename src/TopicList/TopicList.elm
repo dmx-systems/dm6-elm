@@ -15,7 +15,7 @@ import ModelBase exposing (..)
 import Shared.Events as Events
 import Shared.ViewBase as VB
 import Topic
-import TopicList.TopicListDef exposing (BoxProps, DragState(..))
+import TopicList.TopicListDef exposing (BoxProps, DragState, DropTarget(..))
 import TopicMap.ViewModel exposing (toLocalPos)
 import Utils as U
 
@@ -91,7 +91,7 @@ viewListItem ixBoxPath topic boxPath acc childrenAcc model =
           ++ listItemStyle topic.id boxPath model
           ++ hoverStyle topic.id boxPath model
         )
-        ( [ viewTopic topic boxPath model ]
+        ( viewTopic topic boxPath model
           ++
           case childrenAcc of
             Just children -> children
@@ -100,18 +100,41 @@ viewListItem ixBoxPath topic boxPath acc childrenAcc model =
     ]
 
 
-viewTopic : Topic -> BoxPath -> Model -> Html Msg
+viewTopic : Topic -> BoxPath -> Model -> HtmlList
 viewTopic topic boxPath model =
-  if Text.isEdit topic.id boxPath model then
-    Text.viewInput topic boxPath inputStyle
-  else
-    text (Topic.label topic)
+    [ div
+        (insertionPointStyle topic.id boxPath model)
+        []
+    , div
+        []
+        [ if Text.isEdit topic.id boxPath model then
+            Text.viewInput topic boxPath inputStyle
+          else
+            text (Topic.label topic)
+        ]
+    ]
+
+
+insertionPointStyle : TopicId -> BoxPath -> Model -> Attrs Msg
+insertionPointStyle topicId boxPath model =
+  [ style "height" "2px" ]
+  ++
+  case model.topicList.dragState of
+    Just {dropTarget} ->
+      case dropTarget of
+        Just (InsertBefore target) ->
+          if target == (T topicId, boxPath) then
+            [ style "background-color" "cadetblue" ]
+          else
+            []
+        _ -> []
+    _ -> []
 
 
 viewDraggingTopic : BoxPath -> Model -> HtmlList
 viewDraggingTopic viewBoxPath model =
   case (model.mouse.dragState, model.topicList.dragState) of
-    (DragStarted topicId _ ixBoxPath _, Drag elemPos _) ->
+    (DragStarted topicId _ ixBoxPath _, Just {elemPos}) ->
       case (viewBoxPath == ixBoxPath, Topic.fromId topicId model) of
         (True, Just topic) ->
           [ div
@@ -185,7 +208,7 @@ dragStart {model} =
   ( case model.mouse.dragState of
       DragStarted _ _ ixBoxPath startPos ->
         model
-          |> setDragState (Drag (toElemPos startPos ixBoxPath model) startPos)
+          |> setDragState (Just (DragState (toElemPos startPos ixBoxPath model) startPos Nothing))
       _ ->
         let
           _ = U.logError "TopicList.TopicList.dragStart" "Unexpected drag state"
@@ -205,7 +228,7 @@ toElemPos clientPos ixBoxPath model =
         Just (level_, _) -> level_
         Nothing -> 0
     x = 40 + 40 * level
-    y = index * (C.listItemHeight + 1) + 14
+    y = index * (C.listItemHeight + 2) + 14
     _ = U.info "TopicList.TopicList.toElemPos" index
   in
   Point x y
@@ -215,22 +238,23 @@ toElemPos clientPos ixBoxPath model =
 -}
 toIndex : Point -> Int
 toIndex localPos =
-  (localPos.y - 1) // (C.listItemHeight + 1)
+  (localPos.y - 1) // (C.listItemHeight + 2)
 
 
 -- ExtManager.NestingDrag
 drag : Point -> Env2 -> (Model, Cmd Msg)
 drag pos {model} =
   ( case (model.mouse.dragState, model.topicList.dragState) of
-      (DragStarted _ _ _ _, Drag elemPos lastPos) ->
+      (DragStarted _ _ _ _, Just {elemPos, lastPos}) ->
         let
           newElemPos = Point
             elemPos.x
             (elemPos.y + pos.y - lastPos.y)
+          newDropTarget = dropTargetAt pos model
         in
         -- update elemPos and lastPos
         model
-          |> setDragState (Drag newElemPos pos)
+          |> setDragState (Just (DragState newElemPos pos newDropTarget))
       _ ->
         let
           _ = U.logError "TopicList.TopicList.drag" "Unexpected drag state"
@@ -241,13 +265,28 @@ drag pos {model} =
   )
 
 
+dropTargetAt : Point -> Model -> Maybe DropTarget
+dropTargetAt clientPos model =
+  case model.mouse.hover of
+    Just target -> Just
+      ( if modBy C.listItemHeight clientPos.y > C.listItemHeight // 2 then -- TODO
+          Drop target
+        else
+          InsertBefore target
+      )
+    Nothing -> Nothing
+
+
 -- ExtManager.NestingDragStop
 dragStop : Env2 -> (Model, Cmd Msg)
 dragStop {model} =
-  (model, Cmd.none)
+  ( model
+      |> setDragState Nothing
+  , Cmd.none
+  )
 
 
-setDragState : DragState -> Model -> Model
+setDragState : Maybe DragState -> Model -> Model
 setDragState dragState ({topicList} as model) =
   { model | topicList = { topicList | dragState = dragState }}
 

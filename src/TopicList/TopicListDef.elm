@@ -1,4 +1,5 @@
-module TopicList.TopicListDef exposing (Model, BoxProps, DragState(..), init, encode, decoder)
+module TopicList.TopicListDef exposing (Model, BoxProps, DragState, DropTarget(..), init,
+  encode, decoder)
 
 import ModelBase exposing (..)
 import Dict exposing (Dict)
@@ -9,14 +10,14 @@ import Json.Encode as E
 
 type alias Model =
   { boxProps : Dict Id BoxProps
-  , dragState : DragState -- transient
+  , dragState : Maybe DragState -- only available while DragStarted (Mouse state), transient
   }
 
 
 init : Model
 init =
   { boxProps = Dict.empty
-  , dragState = NoDrag
+  , dragState = Nothing
   }
 
 
@@ -27,9 +28,16 @@ type alias BoxProps =
   }
 
 
-type DragState
-  = Drag Point Point -- dragged element position, last pointer position
-  | NoDrag
+type alias DragState =
+  { elemPos : Point -- position of dragged element
+  , lastPos : Point -- last pointer position
+  , dropTarget : Maybe DropTarget
+  }
+
+
+type DropTarget
+  = Drop Target
+  | InsertBefore Target
 
 
 
@@ -62,7 +70,7 @@ decoder : D.Decoder Model
 decoder =
   D.map2 Model
     (toDictDecoderWith toBoxId topicListDecoder)
-    (D.succeed NoDrag)
+    (D.succeed Nothing)
 
 
 topicListDecoder : D.Decoder BoxProps
