@@ -40,7 +40,7 @@ view boxId boxPath ({model} as env) =
     boxPath_ = boxId :: boxPath
   in
   div
-    (listStyle boxId boxPath model)
+    ( listStyle boxId boxPath model )
     ( (Box.traverseWith
         boxPath_
         topicOrder
@@ -143,7 +143,7 @@ listFontStyle : Attrs Msg
 listFontStyle =
   [ style "font-family" C.mainFont
   , style "font-size" <| fromInt C.contentFontSize ++ "px"
-  , style "line-height" <| fromFloat C.topicLineHeight
+  , style "line-height" <| fromInt C.listItemHeight ++ "px"
   ]
 
 
@@ -160,7 +160,7 @@ listItemStyle topicId boxPath model =
 hoverStyle : TopicId -> BoxPath -> Model -> Attrs Msg
 hoverStyle topicId boxPath model =
   if Mouse.isHovered topicId boxPath model then
-    [ style "background-color" "yellow" ] -- debugging
+    [ style "background-color" "orange" ] -- debugging
   else
     []
 
@@ -199,15 +199,14 @@ dragStart {model} =
 toElemPos : Point -> BoxPath -> Model -> Point
 toElemPos clientPos ixBoxPath model =
   let
-    h = C.topicLineHeight * C.contentFontSize -- float
     index = toIndex (toLocalPos clientPos ixBoxPath model)
     level =
       case Array.get index (targets ixBoxPath model) of
         Just (level_, _) -> level_
         Nothing -> 0
-    x = 42 + 40 * level
-    y = round (toFloat index * h) + 20
-    -- _ = U.info "TopicList.TopicList.toElemPos" index
+    x = 40 + 40 * level
+    y = index * (C.listItemHeight + 1) + 14
+    _ = U.info "TopicList.TopicList.toElemPos" index
   in
   Point x y
 
@@ -216,7 +215,7 @@ toElemPos clientPos ixBoxPath model =
 -}
 toIndex : Point -> Int
 toIndex localPos =
-  round (toFloat (localPos.y - 12) / (C.topicLineHeight * C.contentFontSize))
+  (localPos.y - 1) // (C.listItemHeight + 1)
 
 
 -- ExtManager.NestingDrag
