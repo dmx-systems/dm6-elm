@@ -9,7 +9,7 @@ import ModelBase exposing (Point, Size, Rectangle)
 
 rootBoxName = "DM6 Elm"
 version = "0.5-SNAPSHOT"
-date = "May 22, 2026"
+date = "May 23, 2026"
 
 appHeaderHeight = 36
 
@@ -75,4 +75,4 @@ blackBoxOffset = 5
 
 -- TopicList
 
-listItemHeight = 24
+listItemHeight = 22

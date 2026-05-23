@@ -37,6 +37,7 @@ nestedBoxStyle boxId size boxPath model =
   ++ selectionStyle (fromBoxId boxId) boxPath model
 
 
+-- TODO: factor out TopicMap specifics?
 topicBorderStyle : TopicId -> BoxPath -> Model -> Attrs Msg
 topicBorderStyle id boxPath model =
   let

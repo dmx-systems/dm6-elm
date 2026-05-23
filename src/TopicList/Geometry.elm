@@ -24,8 +24,8 @@ hitTest (BoxId topicId as boxId) boxPath pos excludeTopicId {model} =
   if isListHovered boxId pos model then
     let
       t = TL.targets (boxId :: boxPath) model
-      index = (pos.y - 13) // (C.listItemHeight + 2) -- TODO: no magic numbers
-      _ = U.info "TopicList.Geometry.hitTest" index
+      index = (pos.y - 13) // (C.listItemHeight + 4) -- TODO: no magic numbers
+      -- _ = U.info "TopicList.Geometry.hitTest" index
     in
     case Array.get index t of
       Just (_, target) -> Just target
@@ -56,7 +56,7 @@ autoSize boxPath {model} =
     boxId = Box.firstId boxPath
     count = Box.topicCount boxId model
     width = 260 -- ### TODO
-    height = count * (C.listItemHeight + 2) + 30
+    height = count * (C.listItemHeight + 4) + 30
     rect = Rectangle 0 0 width height
     newModel = setSize boxId (Size width height) model
   in
@@ -99,7 +99,7 @@ toolbarPos boxPath model =
         Just index ->
           Point
             40
-            (index * (C.listItemHeight + 2) - 16)
+            (index * (C.listItemHeight + 4) - 16)
         Nothing -> Point 0 0
     )
     (\assoc -> Point 0 0)

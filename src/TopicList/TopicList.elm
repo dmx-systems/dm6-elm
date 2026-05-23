@@ -54,6 +54,23 @@ view boxId boxPath ({model} as env) =
     )
 
 
+listStyle : BoxId -> BoxPath -> Model -> Attrs Msg
+listStyle boxId boxPath model =
+  let
+    size = listSize boxId model
+  in
+  VB.boxStyle boxId size boxPath model
+    ++ listFontStyle
+
+
+listFontStyle : Attrs Msg
+listFontStyle =
+  [ style "font-family" C.mainFont
+  , style "font-size" <| fromInt C.contentFontSize ++ "px"
+  , style "line-height" <| fromInt C.listItemHeight ++ "px"
+  ]
+
+
 -- Box.Transform
 topicOrder : BoxId -> Model -> List TopicId -> List TopicId
 topicOrder boxId model topicIds =
@@ -89,7 +106,8 @@ viewListItem ixBoxPath topic boxPath acc childrenAcc model =
           {- ++ Events.itemClickHandler (T topic.id) boxPath -} -- TODO
           ++ VB.selectionStyle topic.id boxPath model
           ++ listItemStyle topic.id boxPath model
-          ++ hoverStyle topic.id boxPath model
+          ++ topicBorderStyle topic.id boxPath model
+          -- ++ hoverStyle topic.id boxPath model -- debug
         )
         ( viewTopic topic boxPath model
           ++
@@ -98,6 +116,36 @@ viewListItem ixBoxPath topic boxPath acc childrenAcc model =
             Nothing -> []
         )
     ]
+
+
+listItemStyle : TopicId -> BoxPath -> Model -> Attrs Msg
+listItemStyle topicId boxPath model =
+  if Mouse.isDragging topicId boxPath model then
+    [ style "background-color" "white"
+    , style "filter" C.topicLimboFilter
+    ]
+  else
+    []
+
+
+topicBorderStyle : TopicId -> BoxPath -> Model -> Attrs Msg
+topicBorderStyle topicId boxPath model =
+  let
+    isTarget_ = isTarget (Drop (T topicId, boxPath)) model
+  in
+  [ style "border-width" <| fromInt C.topicBorderWidth ++ "px"
+  , style "border-color" <| if isTarget_ then "black" else "transparent"
+  , style "border-style" "dashed"
+  ]
+
+
+-- for hit-test debugging
+hoverStyle : TopicId -> BoxPath -> Model -> Attrs Msg
+hoverStyle topicId boxPath model =
+  if Mouse.isHovered topicId boxPath model then
+    [ style "background-color" "orange" ]
+  else
+    []
 
 
 viewTopic : Topic -> BoxPath -> Model -> HtmlList
@@ -117,18 +165,22 @@ viewTopic topic boxPath model =
 
 insertionPointStyle : TopicId -> BoxPath -> Model -> Attrs Msg
 insertionPointStyle topicId boxPath model =
+  let
+    isTarget_ = isTarget (InsertBefore (T topicId, boxPath)) model
+  in
   [ style "height" "2px" ]
   ++
+  if isTarget_ then
+    [ style "background-color" "black" ]
+  else
+    []
+
+
+isTarget : DropTarget -> Model -> Bool
+isTarget dropTarget_ model =
   case model.topicList.dragState of
-    Just {dropTarget} ->
-      case dropTarget of
-        Just (InsertBefore target) ->
-          if target == (T topicId, boxPath) then
-            [ style "background-color" "cadetblue" ]
-          else
-            []
-        _ -> []
-    _ -> []
+    Just {dropTarget} -> dropTarget == Just dropTarget_
+    _ -> False
 
 
 viewDraggingTopic : BoxPath -> Model -> HtmlList
@@ -153,41 +205,6 @@ draggingTopicStyle pos =
   ]
 
 
-listStyle : BoxId -> BoxPath -> Model -> Attrs Msg
-listStyle boxId boxPath model =
-  let
-    size = listSize boxId model
-  in
-  VB.boxStyle boxId size boxPath model
-    ++ listFontStyle
-
-
-listFontStyle : Attrs Msg
-listFontStyle =
-  [ style "font-family" C.mainFont
-  , style "font-size" <| fromInt C.contentFontSize ++ "px"
-  , style "line-height" <| fromInt C.listItemHeight ++ "px"
-  ]
-
-
-listItemStyle : TopicId -> BoxPath -> Model -> Attrs Msg
-listItemStyle topicId boxPath model =
-  if Mouse.isDragging topicId boxPath model then
-    [ style "background-color" "white"
-    , style "filter" C.topicLimboFilter
-    ]
-  else
-    []
-
-
-hoverStyle : TopicId -> BoxPath -> Model -> Attrs Msg
-hoverStyle topicId boxPath model =
-  if Mouse.isHovered topicId boxPath model then
-    [ style "background-color" "orange" ] -- debugging
-  else
-    []
-
-
 inputStyle : Attrs Msg
 inputStyle =
   [ style "font-family" C.mainFont -- Default for <input> is "-apple-system" (on Mac)
@@ -207,8 +224,11 @@ dragStart : Env2 -> (Model, Cmd Msg)
 dragStart {model} =
   ( case model.mouse.dragState of
       DragStarted _ _ ixBoxPath startPos ->
+        let
+          elemPos = toElemPos startPos ixBoxPath model
+        in
         model
-          |> setDragState (Just (DragState (toElemPos startPos ixBoxPath model) startPos Nothing))
+          |> setDragState (Just (DragState elemPos startPos Nothing))
       _ ->
         let
           _ = U.logError "TopicList.TopicList.dragStart" "Unexpected drag state"
@@ -227,8 +247,8 @@ toElemPos clientPos ixBoxPath model =
       case Array.get index (targets ixBoxPath model) of
         Just (level_, _) -> level_
         Nothing -> 0
-    x = 40 + 40 * level
-    y = index * (C.listItemHeight + 2) + 14
+    x = 41 + 41 * level -- 41 = 40 + 1px item border
+    y = index * (C.listItemHeight + 4) - level + 16 -- 4 = 2px border (top/bottom) + 2px browser
     _ = U.info "TopicList.TopicList.toElemPos" index
   in
   Point x y
@@ -238,23 +258,23 @@ toElemPos clientPos ixBoxPath model =
 -}
 toIndex : Point -> Int
 toIndex localPos =
-  (localPos.y - 1) // (C.listItemHeight + 2)
+  (localPos.y - 1) // (C.listItemHeight + 4)
 
 
 -- ExtManager.NestingDrag
 drag : Point -> Env2 -> (Model, Cmd Msg)
-drag pos {model} =
+drag clientPos {model} =
   ( case (model.mouse.dragState, model.topicList.dragState) of
-      (DragStarted _ _ _ _, Just {elemPos, lastPos}) ->
-        let
-          newElemPos = Point
-            elemPos.x
-            (elemPos.y + pos.y - lastPos.y)
-          newDropTarget = dropTargetAt pos model
-        in
-        -- update elemPos and lastPos
+      (DragStarted _ _ ixBoxPath _, Just ({elemPos, lastPos} as dragState)) ->
         model
-          |> setDragState (Just (DragState newElemPos pos newDropTarget))
+          |> setDragState
+            (Just
+              { dragState |
+                elemPos = { elemPos | y = elemPos.y + clientPos.y - lastPos.y }
+              , lastPos = clientPos
+              , dropTarget = dropTargetAt (toLocalPos clientPos ixBoxPath model) model
+              }
+            )
       _ ->
         let
           _ = U.logError "TopicList.TopicList.drag" "Unexpected drag state"
@@ -266,10 +286,10 @@ drag pos {model} =
 
 
 dropTargetAt : Point -> Model -> Maybe DropTarget
-dropTargetAt clientPos model =
+dropTargetAt localPos model =
   case model.mouse.hover of
     Just target -> Just
-      ( if modBy C.listItemHeight clientPos.y > C.listItemHeight // 2 then -- TODO
+      ( if modBy (C.listItemHeight + 4) (localPos.y - 1) > (C.listItemHeight + 4) // 2 then
           Drop target
         else
           InsertBefore target

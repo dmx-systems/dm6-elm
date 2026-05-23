@@ -5,6 +5,7 @@ import Box
 import Config as C
 import Env exposing (ExtManager, Env2)
 import Feature.Icon as Icon
+import Feature.Mouse as Mouse
 import Feature.MouseDef exposing (DragState(..))
 import Feature.Sel as Sel
 import Feature.Text as Text
@@ -256,9 +257,7 @@ topicStyle id boxPath model =
   let
     boxId = Box.firstId boxPath
     isLimbo = VM.isLimboTopic id boxId model
-    isDragging = case model.mouse.dragState of
-      DragStarted id_ boxPath_ _ _ -> id_ == id && boxPath_ == boxPath
-      _ -> False
+    isDragging = Mouse.isDragging id boxPath model
     isSelected = Sel.isSelected (T id) boxPath model
   in
   [ style "position" "absolute"
