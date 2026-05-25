@@ -1,6 +1,7 @@
-module Undo exposing (UndoModel, undo, redo, push, swap, reset, hasPast, hasFuture)
+module Undo exposing (UndoModel, undo, redo, push, swap, mapPresent, reset, hasPast, hasFuture)
 
 import Model exposing (Model, Msg)
+import Utils as U
 
 import UndoList exposing (UndoList)
 
@@ -33,12 +34,21 @@ redo undoModel =
 
 push : UndoModel -> (Model, Cmd Msg) -> (UndoModel, Cmd Msg)
 push undoModel (model, cmd) =
+  let
+    _ = U.info "Undo.push" "<------------------"
+  in
   (UndoList.new model undoModel, cmd)
 
 
 swap : UndoModel -> (Model, Cmd Msg) -> (UndoModel, Cmd Msg)
 swap undoModel (model, cmd) =
   (UndoList.mapPresent (\_ -> model) undoModel, cmd)
+
+
+-- Not used
+mapPresent : (Model -> Model) -> (UndoModel, Cmd Msg) -> (UndoModel, Cmd Msg)
+mapPresent transform (undoModel, cmd) =
+  (UndoList.mapPresent transform undoModel, cmd)
 
 
 reset : (Model, Cmd Msg) -> (UndoModel, Cmd Msg)

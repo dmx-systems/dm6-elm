@@ -2,6 +2,7 @@ module Env exposing (Env, Env2, ExtManager, autoSize, autoSize2, withModel, with
 
 import Model exposing (Model, Msg)
 import ModelBase exposing (..)
+import Outcome exposing (Outcome)
 import Undo exposing (UndoModel)
 
 import Html exposing (Html)
@@ -11,7 +12,9 @@ import Html exposing (Html)
 -- TYPES
 
 
-{-| The environment the application passes to the modules -}
+{-| The environment the application passes to the modules.
+TODO: rename AppEnv?
+-}
 type alias Env =
   { model : Model
   , undoModel : UndoModel
@@ -19,7 +22,9 @@ type alias Env =
   }
 
 
-{-| The environment the dispatcher passes to the extensions -}
+{-| The environment the dispatcher passes to the extensions/feature modules
+TODO: rename ModEnv (or just Env)?
+-}
 type alias Env2 =
   { model : Model
   , ext : ExtManager
@@ -73,7 +78,7 @@ type alias Drag =
 
 
 type alias DragStop =
-  BoxId -> Model -> (Model, Cmd Msg)
+  BoxId -> Model -> Outcome
 
 
 type alias AddTopic =

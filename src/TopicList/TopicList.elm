@@ -12,8 +12,10 @@ import Feature.Text as Text
 import Feature.Tool as Tool
 import Model exposing (Model, Msg)
 import ModelBase exposing (..)
+import Outcome exposing (..)
 import Shared.Events as Events
 import Shared.ViewBase as VB
+import Storage as S
 import Topic
 import TopicList.TopicListDef exposing (BoxProps, DragState, DropTarget(..))
 import TopicMap.ViewModel exposing (toLocalPos)
@@ -21,7 +23,7 @@ import Utils as U
 
 import Html exposing (Html, div, ul, li, text)
 import Html.Attributes exposing (style)
-import String exposing (fromInt, fromFloat)
+import String exposing (fromInt)
 
 
 
@@ -298,12 +300,17 @@ dropTargetAt localPos model =
 
 
 -- ExtManager.NestingDragStop
-dragStop : Env2 -> (Model, Cmd Msg)
+dragStop : Env2 -> Outcome
 dragStop {model} =
-  ( model
-      |> setDragState Nothing
-  , Cmd.none
-  )
+  case model.mouse.dragState of
+    DragStarted topicId (boxId :: _) _ _ ->
+      model
+        |> Box.removeTopic topicId boxId
+        -- TODO: add/insert topic
+        |> setDragState Nothing
+        |> Outcome (Directives Persistent StoreUndo) Cmd.none
+    _ -> U.logError "TopicList.TopicList.dragStop" (U.toString model.mouse.dragState)
+      (Outcome.with model Cmd.none)
 
 
 setDragState : Maybe DragState -> Model -> Model

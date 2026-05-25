@@ -1,11 +1,11 @@
 module Feature.Mouse exposing (update, hasDragStarted, isDragging, clearHover, isHovered)
 
-import Box
 import Config as C
 import Env exposing (Env, ExtManager)
 import Feature.MouseDef as MouseDef exposing (DragState(..))
 import Model exposing (Model, Msg(..))
 import ModelBase exposing (..)
+import Outcome
 import Undo exposing (UndoModel)
 import Utils as U
 
@@ -25,16 +25,18 @@ update msg ({model, undoModel, ext} as env) =
         |> updateHover pos ext
         |> \model_ -> (model_, Cmd.none)
         |> Undo.swap undoModel
-    (MouseDef.Move (pos, pointerType), DragStarted topicId _ (boxId :: _) startPos) ->
+    (MouseDef.Move (pos, pointerType), DragStarted _ _ (boxId :: _) _) ->
       model
         |> updateHover pos ext
         |> ext.drag boxId pos
         |> Undo.swap undoModel
-    (MouseDef.Up, DragStarted topicId _ (boxId :: _) startPos) ->
+    (MouseDef.Up, DragStarted _ _ (boxId :: _) _) ->
       model
         |> ext.dragStop boxId
-        |> \(model_, cmd) -> (model_ |> setDragState NoDrag, cmd)
-        |> Undo.swap undoModel
+        -- Note: typically extension's dragStop handler operates on DragStarted data,
+        -- so we reset to NoDrag afterwards
+        |> Outcome.map (setDragState NoDrag)
+        |> Outcome.exec undoModel
     (MouseDef.Cancel, _) ->
       (undoModel, U.command <| Cancel Nothing)
     _ ->
