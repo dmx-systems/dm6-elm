@@ -1,4 +1,4 @@
-module Model exposing (Model, Msg(..), init, encode, decoder, nextId)
+module Model exposing (Model, Msg(..), init, resetTransient, encode, decoder, nextId)
 
 import Config as C
 import Extension
@@ -65,6 +65,15 @@ init =
   , search = SearchDef.init
   , icon = IconDef.init
   , selection = SelDef.init
+  }
+
+
+resetTransient : Model -> Model
+resetTransient model =
+  { model
+    | mouse = model.mouse |> MouseDef.resetTransient
+    , topicList = model.topicList |> TopicListDef.resetTransient
+    -- TODO: add other modules as well
   }
 
 

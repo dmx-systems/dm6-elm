@@ -15,7 +15,6 @@ import ModelBase exposing (..)
 import Outcome exposing (..)
 import Shared.Events as Events
 import Shared.ViewBase as VB
-import Storage as S
 import Topic
 import TopicList.TopicListDef exposing (BoxProps, DragState, DropTarget(..))
 import TopicMap.ViewModel exposing (toLocalPos)
@@ -152,17 +151,17 @@ hoverStyle topicId boxPath model =
 
 viewTopic : Topic -> BoxPath -> Model -> HtmlList
 viewTopic topic boxPath model =
-    [ div
-        (insertionPointStyle topic.id boxPath model)
-        []
-    , div
-        []
-        [ if Text.isEdit topic.id boxPath model then
-            Text.viewInput topic boxPath inputStyle
-          else
-            text (Topic.label topic)
-        ]
-    ]
+  [ div
+      (insertionPointStyle topic.id boxPath model)
+      []
+  , div
+      []
+      [ if Text.isEdit topic.id boxPath model then
+          Text.viewInput topic boxPath inputStyle
+        else
+          text (Topic.label topic)
+      ]
+  ]
 
 
 insertionPointStyle : TopicId -> BoxPath -> Model -> Attrs Msg
@@ -310,7 +309,7 @@ dragStop {model} =
         |> setDragState Nothing
         |> Outcome (Directives Persistent StoreUndo) Cmd.none
     _ -> U.logError "TopicList.TopicList.dragStop" (U.toString model.mouse.dragState)
-      (Outcome.with model Cmd.none)
+      (Outcome.with Cmd.none model)
 
 
 setDragState : Maybe DragState -> Model -> Model

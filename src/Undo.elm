@@ -1,6 +1,6 @@
-module Undo exposing (UndoModel, undo, redo, push, swap, mapPresent, reset, hasPast, hasFuture)
+module Undo exposing (UndoModel, undo, redo, push, swap, reset, hasPast, hasFuture)
 
-import Model exposing (Model, Msg)
+import Model exposing (Model, Msg, resetTransient)
 import Utils as U
 
 import UndoList exposing (UndoList)
@@ -19,36 +19,41 @@ type alias UndoModel = UndoList Model
 
 undo : UndoModel -> UndoModel
 undo undoModel =
-  UndoList.undo undoModel
-  -- TODO: reset some transient state, e.g. close search menu
+  undoModel
+    |> UndoList.undo
 
 
 redo : UndoModel -> UndoModel
 redo undoModel =
-  UndoList.redo undoModel
+  undoModel
+    |> UndoList.redo
 
 
 
 -- STACK MANAGEMENT
 
 
+{- Push the current present (as in UndoModel) to the past and make the given model (as in tupel)
+the new present.
+-}
 push : UndoModel -> (Model, Cmd Msg) -> (UndoModel, Cmd Msg)
 push undoModel (model, cmd) =
   let
     _ = U.info "Undo.push" "<------------------"
   in
-  (UndoList.new model undoModel, cmd)
+  ( undoModel
+      |> UndoList.mapPresent resetTransient
+      |> UndoList.new model
+  , cmd
+  )
 
 
+
+{- Swap the current present (as in UndoModel) with the given model (as in tupel).
+-}
 swap : UndoModel -> (Model, Cmd Msg) -> (UndoModel, Cmd Msg)
 swap undoModel (model, cmd) =
   (UndoList.mapPresent (\_ -> model) undoModel, cmd)
-
-
--- Not used
-mapPresent : (Model -> Model) -> (UndoModel, Cmd Msg) -> (UndoModel, Cmd Msg)
-mapPresent transform (undoModel, cmd) =
-  (UndoList.mapPresent transform undoModel, cmd)
 
 
 reset : (Model, Cmd Msg) -> (UndoModel, Cmd Msg)

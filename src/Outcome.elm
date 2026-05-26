@@ -31,8 +31,8 @@ type History
 
 --
 
-with : Model -> Cmd Msg -> Outcome
-with model cmd =
+with : Cmd Msg -> Model -> Outcome
+with cmd model =
   Outcome (Directives Transient SkipUndo) cmd model
 
 

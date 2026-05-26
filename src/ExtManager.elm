@@ -204,7 +204,7 @@ drag boxId pos model =
 
 dragStop : BoxId -> Model -> Outcome
 dragStop boxId model =
-  dispatch boxId model (Outcome.with model Cmd.none)
+  dispatch boxId model (Outcome.with Cmd.none model)
     (\env renderer -> renderer.dragStop env)
 
 

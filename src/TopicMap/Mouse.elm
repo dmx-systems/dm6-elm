@@ -197,7 +197,7 @@ dragStop {model} =
         _ ->
           Cmd.none
   in
-  Outcome.with model cmd
+  Outcome.with cmd model
     |> Outcome.map (setDragState NoDrag)
 
 
