@@ -300,16 +300,47 @@ dropTargetAt localPos model =
 
 -- ExtManager.NestingDragStop
 dragStop : Env2 -> Outcome
-dragStop {model} =
-  case model.mouse.dragState of
-    DragStarted topicId (boxId :: _) _ _ ->
+dragStop ({model} as env2) =
+  let
+    outcome =
+      case (model.mouse.dragState, model.topicList.dragState) of
+        (DragStarted topicId (boxId :: _) _ _, Just dragState) ->
+          env2
+            |> processDrop topicId boxId dragState.dropTarget
+        _ -> U.logError "TopicList.TopicList.dragStop" (U.toString model.mouse.dragState)
+          (Outcome.with Cmd.none model)
+  in
+  outcome
+    |> Outcome.map (setDragState Nothing)
+
+
+processDrop : TopicId -> BoxId -> Maybe DropTarget -> Env2 -> Outcome
+processDrop sourceTopicId sourceBoxid maybeDropTarget ({model} as env) =
+  case maybeDropTarget of
+    Just dropTarget ->
       model
-        |> Box.removeTopic topicId boxId
-        -- TODO: add/insert topic
-        |> setDragState Nothing
+        |> Box.removeTopic sourceTopicId sourceBoxid
+        |> \model_ ->
+          ( case dropTarget of
+            Drop (T targetTopicId, _) ->
+              let
+                boxId = BoxId targetTopicId
+                _ = U.info "TopicList.TopicList.processDrop" dropTarget
+              in
+              model_
+                |> Tool.createBoxOnDemand targetTopicId
+                |> Box.addTopic (BoxTopic sourceTopicId Expanded) boxId
+                |> init boxId
+                |> Env.autoSize2 env
+            InsertBefore (targetTopicId, targetBoxId :: _) ->
+              model_ -- TODO
+            _ -> U.logError "TopicList.TopicList.processDrop" (U.toString dropTarget)
+              model_
+          )
         |> Outcome (Directives Persistent StoreUndo) Cmd.none
-    _ -> U.logError "TopicList.TopicList.dragStop" (U.toString model.mouse.dragState)
-      (Outcome.with Cmd.none model)
+    Nothing ->
+      model
+        |> Outcome.with Cmd.none
 
 
 setDragState : Maybe DragState -> Model -> Model

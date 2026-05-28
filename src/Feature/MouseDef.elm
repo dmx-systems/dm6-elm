@@ -20,7 +20,7 @@ init =
 
 
 resetTransient : Model -> Model
-resetTransient model =
+resetTransient _ =
   init
 
 
