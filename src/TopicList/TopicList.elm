@@ -316,6 +316,13 @@ dragStop ({model} as env2) =
 
 processDrop : TopicId -> BoxId -> Maybe DropTarget -> Env2 -> Outcome
 processDrop sourceTopicId sourceBoxid maybeDropTarget ({model} as env) =
+  let
+    _ = U.info "TopicList.TopicList.processDrop"
+      { sourceTopicId = sourceTopicId
+      , sourceBoxid = sourceBoxid
+      , maybeDropTarget = maybeDropTarget
+      }
+  in
   case maybeDropTarget of
     Just dropTarget ->
       model
@@ -325,15 +332,18 @@ processDrop sourceTopicId sourceBoxid maybeDropTarget ({model} as env) =
             Drop (T targetTopicId, _) ->
               let
                 boxId = BoxId targetTopicId
-                _ = U.info "TopicList.TopicList.processDrop" dropTarget
               in
               model_
                 |> Tool.createBoxOnDemand targetTopicId
                 |> Box.addTopic (BoxTopic sourceTopicId Expanded) boxId
                 |> init boxId
                 |> Env.autoSize2 env
-            InsertBefore (targetTopicId, targetBoxId :: _) ->
-              model_ -- TODO
+            InsertBefore (T targetTopicId, targetBoxId :: _) ->
+              model_
+                |> Box.addTopic (BoxTopic sourceTopicId Expanded) targetBoxId
+                -- TODO: remove from order list before inserting
+                |> insert sourceTopicId targetBoxId targetTopicId
+                |> Env.autoSize2 env
             _ -> U.logError "TopicList.TopicList.processDrop" (U.toString dropTarget)
               model_
           )
@@ -341,6 +351,25 @@ processDrop sourceTopicId sourceBoxid maybeDropTarget ({model} as env) =
     Nothing ->
       model
         |> Outcome.with Cmd.none
+
+
+{- Inserts a topic ID into the box's order list at the given position.
+-}
+insert : TopicId -> BoxId -> TopicId -> Model -> Model
+insert topicId boxId beforeTopicId model =
+  model
+    |> updateOrder boxId
+      (\orderList -> orderList
+        |> List.foldr
+          (\id (list, found) ->
+            if id == beforeTopicId then
+              ([topicId, id] ++ list, True)
+            else
+              (id :: list, found)
+          )
+          ([], False)
+        |> Tuple.first
+      )
 
 
 setDragState : Maybe DragState -> Model -> Model
@@ -352,7 +381,7 @@ setDragState dragState ({topicList} as model) =
 -- MODEL
 
 
-{- The content of the given box as an array of targets -}
+{- Box content as an array of targets -}
 targets : BoxPath -> Model -> Array (Int, Target) -- Int: nesting level
 targets boxPath model =
   targets_ 0 boxPath model
@@ -453,12 +482,15 @@ addTopic _ boxId _ ({model} as env) =
   )
 
 
+{- Canonical order list transformation.
+Logs an error if the BoxProps entry is missing.
+-}
 updateOrder : BoxId -> (List TopicId -> List TopicId) -> Model -> Model
 updateOrder boxId transform ({topicList} as model) =
   { model | topicList =
     { topicList | boxProps = topicList.boxProps |> Dict.update (toBoxId boxId)
-        (\maybeViewProps ->
-          case maybeViewProps of
+        (\maybeBoxProps ->
+          case maybeBoxProps of
             Just boxProps -> Just { boxProps | order = transform boxProps.order }
             Nothing -> U.logError "TopicList.TopicList.updateOrder"
               (U.toString {boxId = boxId}) Nothing
