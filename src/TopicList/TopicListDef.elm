@@ -1,5 +1,5 @@
 module TopicList.TopicListDef exposing (Model, BoxProps, DragState, DropTarget(..), init,
-  encode, decoder)
+  resetTransient, encode, decoder)
 
 import ModelBase exposing (..)
 import Dict exposing (Dict)
@@ -19,6 +19,11 @@ init =
   { boxProps = Dict.empty
   , dragState = Nothing
   }
+
+
+resetTransient : Model -> Model
+resetTransient model =
+  { model | dragState = Nothing }
 
 
 type alias BoxProps =

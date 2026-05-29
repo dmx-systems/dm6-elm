@@ -8,7 +8,6 @@ import Env exposing (Env2)
 import Model exposing (Model)
 import ModelBase exposing (..)
 import String exposing (fromInt)
-import Topic
 import TopicList.TopicList as TL
 import TopicList.TopicListDef exposing (BoxProps)
 import Utils as U

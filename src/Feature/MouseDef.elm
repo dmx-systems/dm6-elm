@@ -19,10 +19,19 @@ init =
   }
 
 
+resetTransient : Model -> Model
+resetTransient _ =
+  init
+
+
 type DragState
   = DragStarted TopicId BoxPath BoxPath Point
-                                 -- entered by DownOnTopic message, start pointer position
-                                 -- data: 2nd path is "interaction box path"
+                                 -- entered by DownOnTopic message
+                                 -- represents what is dragged, does not change while dragging
+                                 -- data: topicId - what topic to be dragged
+                                 --       box path - direct topic context
+                                 --       interaction box path - wider topic context
+                                 --       start pos - where mousedown took place
   | NoDrag -- entered by Up message
 
 

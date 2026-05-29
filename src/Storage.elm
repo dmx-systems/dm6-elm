@@ -21,7 +21,10 @@ port exportJSON : () -> Cmd msg
 -- Convenience (for update function)
 store : Model -> (Model, Cmd Msg)
 store model =
-  ( model, model |> storeCmd )
+  ( model
+  , model
+      |> storeCmd
+  )
 
 
 -- Convenience (for update function)
@@ -30,11 +33,14 @@ storeWith (model, cmd) =
   ( model
   , Cmd.batch
       [ cmd
-      , model |> storeCmd
+      , model
+          |> storeCmd
       ]
   )
 
 
 storeCmd : Model -> Cmd Msg
 storeCmd model =
-  Model.encode model |> storeModel
+  model
+    |> Model.encode
+    |> storeModel

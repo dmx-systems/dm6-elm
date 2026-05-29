@@ -9,7 +9,7 @@ import Model exposing (Model)
 import ModelBase exposing (..)
 import Topic
 import TopicMap.BoxProps as TM
-import TopicMap.TopicMapDef exposing (BoxProps, TopicProps, DragState(..), DragMode(..))
+import TopicMap.TopicMapDef exposing (BoxProps, TopicProps, DragState(..))
 import TopicMap.ViewModel as VM
 import Utils as U
 

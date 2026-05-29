@@ -3,10 +3,10 @@ module TopicMap.Mouse exposing (dragStart, drag, dragStop, timeArrived)
 import Box
 import Config as C
 import Env exposing (Env2)
-import Feature.Mouse as Mouse
 import Feature.MouseDef as MouseDef
 import Model exposing (Model, Msg(..))
 import ModelBase exposing (..)
+import Outcome exposing (Outcome)
 import TopicMap.BoxProps as TM
 import TopicMap.TopicMapDef as TopicMapDef exposing (DragState(..), DragMode(..))
 import Undo exposing (UndoModel)
@@ -144,7 +144,7 @@ performDrag pos ({model} as env) =
 
 
 -- ExtManager.NestingDragStop
-dragStop : Env2 -> (Model, Cmd Msg)
+dragStop : Env2 -> Outcome
 dragStop {model} =
   let
     cmd =
@@ -197,7 +197,8 @@ dragStop {model} =
         _ ->
           Cmd.none
   in
-  (setDragState NoDrag model, cmd)
+  Outcome.with cmd model
+    |> Outcome.map (setDragState NoDrag)
 
 
 setDragState : DragState -> Model -> Model

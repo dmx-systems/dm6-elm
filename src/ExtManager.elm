@@ -6,6 +6,7 @@ import Extension
 import Feature.MouseDef as MouseDef
 import Model exposing (Model, Msg)
 import ModelBase exposing (..)
+import Outcome exposing (Outcome)
 -- box renderers
 import TopicList.TopicList
 import TopicList.Geometry
@@ -79,7 +80,7 @@ type alias NestingDrag =
 
 -- TODO: wording
 type alias NestingDragStop =
-  Env2 -> (Model, Cmd Msg)
+  Env2 -> Outcome
 
 
 type alias AddTopic =
@@ -201,9 +202,9 @@ drag boxId pos model =
     (\env renderer -> renderer.drag pos env)
 
 
-dragStop : BoxId -> Model -> (Model, Cmd Msg)
+dragStop : BoxId -> Model -> Outcome
 dragStop boxId model =
-  dispatch boxId model (model, Cmd.none)
+  dispatch boxId model (Outcome.with Cmd.none model)
     (\env renderer -> renderer.dragStop env)
 
 
