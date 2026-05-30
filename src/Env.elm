@@ -55,6 +55,7 @@ type alias BoxRenderer =
   BoxId -> BoxPath -> Model -> Html Msg
 
 
+-- Point is in box-local coordinates
 type alias HitTest =
   BoxId -> BoxPath -> Point -> Maybe TopicId -> Model -> Maybe Target
 

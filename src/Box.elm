@@ -21,22 +21,24 @@ type alias Transform =
 
 
 type alias Acc acc =
-  Topic -> BoxPath -> acc -> Maybe acc -> Model -> acc
+  Topic -> Level -> BoxPath -> acc -> Maybe acc -> Model -> acc
 
 
-type alias LevelComplete acc =
+type alias LevelDone acc =
   BoxPath -> acc -> acc
 
 
 topicCount : BoxId -> Model -> Int
 topicCount boxId model =
   traverse [boxId] 0
-    (\_ _ count childrenCount _ ->
+    (\_ _ _ count childrenCount _ ->
       count + 1 + (childrenCount |> Maybe.withDefault 0)
     )
     model
 
 
+{- A simple traversal, takes just an Acc function and the initial accumulator value.
+-}
 traverse : BoxPath -> acc -> Acc acc -> Model -> acc
 traverse boxPath initAcc accumulate model =
   traverseWith
@@ -48,8 +50,15 @@ traverse boxPath initAcc accumulate model =
     model
 
 
-traverseWith : BoxPath -> Transform -> acc -> Acc acc -> LevelComplete acc -> Model -> acc
-traverseWith boxPath transform initAcc accumulate levelComplete model =
+{- A more complex traversal, takes additionally Transform and LevelDone functions.
+-}
+traverseWith : BoxPath -> Transform -> acc -> Acc acc -> LevelDone acc -> Model -> acc
+traverseWith boxPath transform initAcc accumulate levelDone model =
+  traverseWith_ 0 boxPath transform initAcc accumulate levelDone model
+
+
+traverseWith_ : Level -> BoxPath -> Transform -> acc -> Acc acc -> LevelDone acc -> Model -> acc
+traverseWith_ level boxPath transform initAcc accumulate levelDone model =
   let
     boxId = firstId boxPath
     topicAccumulator : Topic -> acc -> acc
@@ -59,17 +68,18 @@ traverseWith boxPath transform initAcc accumulate levelComplete model =
         children =
           if Topic.isBox topic.id model then
             -- recursion
-            Just (traverseWith childPath transform initAcc accumulate levelComplete model)
+            Just <|
+              traverseWith_ (level + 1) childPath transform initAcc accumulate levelDone model
           else
             Nothing
       in
-      accumulate topic boxPath acc children model
+      accumulate topic level boxPath acc children model
   in
   topicIds boxId model
     |> transform boxId model
     |> List.filterMap (topicLookup model)
     |> List.foldl topicAccumulator initAcc
-    |> levelComplete boxPath
+    |> levelDone boxPath
 
 
 topicLookup : Model -> TopicId -> Maybe Topic
@@ -77,7 +87,6 @@ topicLookup model topicId =
   case Topic.fromId topicId model of
     Just topic -> Just topic
     Nothing -> U.fail "Box.topicLookup" topicId Nothing
-
 
 
 -- Not used
@@ -95,31 +104,24 @@ topics boxId model =
 {-| The TopicIds contained in the box's underlying ItemSet.
 -}
 topicIds : BoxId -> Model -> List TopicId
-topicIds boxId model =
-  case itemSetOf boxId model of
-    Just itemSet ->
-      itemSet.items |> List.filterMap
-        (\{id} ->
-          case id of
-            T id_ -> Just id_
-            A _ -> Nothing
-        )
-    Nothing -> U.fail "Box.topicIds" boxId []
+topicIds =
+  itemIds maybeTopicId
 
 
 {-| The AssocIds contained in the box's underlying ItemSet.
 -}
 assocIds : BoxId -> Model -> List AssocId
-assocIds boxId model =
+assocIds =
+  itemIds maybeAssocId
+
+
+itemIds : (ItemId -> Maybe id) -> BoxId -> Model -> List id
+itemIds filter boxId model =
   case itemSetOf boxId model of
     Just itemSet ->
-      itemSet.items |> List.filterMap
-        (\{id} ->
-          case id of
-            A id_ -> Just id_
-            T _ -> Nothing
-        )
-    Nothing -> U.fail "Box.assocIds" boxId []
+      itemSet.items
+        |> List.filterMap (.id >> filter)
+    Nothing -> U.fail "Box.itemIds" boxId []
 
 
 -- Create box

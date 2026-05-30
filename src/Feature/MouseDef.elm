@@ -31,7 +31,7 @@ type DragState
                                  -- data: topicId - what topic to be dragged
                                  --       box path - direct topic context
                                  --       interaction box path - wider topic context
-                                 --       start pos - where mousedown took place
+                                 --       start pos - where mousedown took place (client coord)
   | NoDrag -- entered by Up message
 
 

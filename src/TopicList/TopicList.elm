@@ -1,7 +1,6 @@
 module TopicList.TopicList exposing (view, targets, listSize, dragStart, drag, dragStop, init,
   addTopic)
 
-import Array exposing (Array)
 import Box
 import Config as C
 import Dict
@@ -16,17 +15,18 @@ import Outcome exposing (..)
 import Shared.Events as Events
 import Shared.ViewBase as VB
 import Topic
-import TopicList.TopicListDef exposing (BoxProps, DragState, DropTarget(..))
+import TopicList.TopicListDef exposing (BoxProps, DragState, DropTarget(..), Targets)
 import TopicMap.ViewModel exposing (toLocalPos)
 import Utils as U
 
+import Array
 import Html exposing (Html, div, ul, li, text)
 import Html.Attributes exposing (style)
 import String exposing (fromInt)
 
 
 
-type alias HtmlList = List (Html Msg)
+type alias HtList = List (Html Msg)
 
 
 
@@ -93,8 +93,8 @@ listOrder boxId model topicIds =
     Nothing -> U.fail "TopicList.TopicList.listOrder" boxId topicIds
 
 
--- Box.LevelComplete (env is applied already)
-viewList : Env2 -> BoxPath -> HtmlList -> HtmlList
+-- Box.LevelDone (env is applied already)
+viewList : Env2 -> BoxPath -> HtList -> HtList
 viewList env boxPath topics =
   [ ul
       []
@@ -104,8 +104,8 @@ viewList env boxPath topics =
 
 
 -- Box.Acc (ixBoxPath is applied already)
-viewListItem : BoxPath -> Topic -> BoxPath -> HtmlList -> Maybe HtmlList -> Model -> HtmlList
-viewListItem ixBoxPath topic boxPath acc childrenAcc model =
+viewListItem : BoxPath -> Topic -> Level -> BoxPath -> HtList -> Maybe HtList -> Model -> HtList
+viewListItem ixBoxPath topic level boxPath acc childrenAcc model =
   acc ++
     [ li
         ( Events.draggable topic.id boxPath ixBoxPath
@@ -113,7 +113,7 @@ viewListItem ixBoxPath topic boxPath acc childrenAcc model =
           ++ VB.selectionStyle topic.id boxPath model
           ++ listItemStyle topic.id boxPath model
           ++ topicBorderStyle topic.id boxPath model
-          -- ++ hoverStyle topic.id boxPath model -- debug
+          ++ hoverStyle topic.id boxPath model -- debug
         )
         ( viewTopic topic boxPath model
           ++
@@ -154,7 +154,7 @@ hoverStyle topicId boxPath model =
     []
 
 
-viewTopic : Topic -> BoxPath -> Model -> HtmlList
+viewTopic : Topic -> BoxPath -> Model -> HtList
 viewTopic topic boxPath model =
   [ div
       (insertionPointStyle topic.id boxPath model)
@@ -189,7 +189,7 @@ isTarget dropTarget_ model =
     _ -> False
 
 
-viewDraggingTopic : BoxPath -> Model -> HtmlList
+viewDraggingTopic : BoxPath -> Model -> HtList
 viewDraggingTopic viewBoxPath model =
   case (model.mouse.dragState, model.topicList.dragState) of
     (DragStarted topicId _ ixBoxPath _, Just {elemPos}) ->
@@ -394,27 +394,23 @@ setDragState dragState ({topicList} as model) =
 
 
 {- Box content as an array of targets -}
-targets : BoxPath -> Model -> Array (Int, Target) -- Int: nesting level
+targets : BoxPath -> Model -> Targets
 targets boxPath model =
-  targets_ 0 boxPath model
-
-
-targets_ : Int -> BoxPath -> Model -> Array (Int, Target) -- Int: nesting level
-targets_ level boxPath model =
-  let
-    boxId = Box.firstId boxPath
-  in
-  Box.topicIds boxId model |> List.foldl -- TODO: respect order, utilize Box.traverseWith
-    (\topicId acc ->
-      let
-        t = Array.push (level, (T topicId, boxPath)) acc
-      in
-      if Topic.isBox topicId model then
-        Array.append t (targets_ (level + 1) (BoxId topicId :: boxPath) model) -- recursion
-      else
-        t
-    )
+  Box.traverseWith
+    boxPath
+    listOrder
     Array.empty
+    targetAcc
+    (\_ levelResult -> levelResult)
+    model
+
+
+-- Box.Acc
+targetAcc : Topic -> Level -> BoxPath -> Targets -> Maybe Targets -> Model -> Targets
+targetAcc topic level boxPath acc childrenAcc model =
+  acc
+    |> Array.push (level, (T topic.id, boxPath))
+    |> \t -> Array.append t (childrenAcc |> Maybe.withDefault Array.empty)
 
 
 -- ExtManager.ExtInit

@@ -1,10 +1,10 @@
 module ModelBase exposing (Id, TopicId(..), AssocId(..), ItemId(..), AssocIds, Topic, Icon,
   TextSize, Size, SizeField(..), Point, Rectangle, Assoc, AssocType(..), ItemSet, SetItem, Box,
-  BoxId(..), BoxPath, Target, BoxTopic, Expansion(..), ImageId, Attrs, PointerType, Extensions,
-  ExtLabel, PosHint(..), ToolbarPos, toTopicId, toAssocId, toBoxId, fromBoxId, rootBoxId,
-  encodeTopic, encodeAssoc, encodeItemSet, encodeBox, encodeTopicId, encodeBoxId, topicDecoder,
-  assocDecoder, itemSetDecoder, boxDecoder, topicIdDecoder, boxIdDecoder, toDictDecoder,
-  toDictDecoderWith)
+  BoxId(..), Level, BoxPath, Target, BoxTopic, Expansion(..), ImageId, Attrs, PointerType,
+  Extensions, ExtLabel, PosHint(..), ToolbarPos, toTopicId, toAssocId, toBoxId, fromBoxId,
+  maybeTopicId, maybeAssocId, rootBoxId, encodeTopic, encodeAssoc, encodeItemSet, encodeBox,
+  encodeTopicId, encodeBoxId, topicDecoder, assocDecoder, itemSetDecoder, boxDecoder,
+  topicIdDecoder, boxIdDecoder, toDictDecoder, toDictDecoderWith)
 
 import Extension exposing (Renderer, encodeRenderer)
 
@@ -117,6 +117,20 @@ fromBoxId (BoxId id) =
   id
 
 
+maybeTopicId : ItemId -> Maybe TopicId
+maybeTopicId id =
+  case id of
+    T id_ -> Just id_
+    A _ -> Nothing
+
+
+maybeAssocId : ItemId -> Maybe AssocId
+maybeAssocId id =
+  case id of
+    T _ -> Nothing
+    A id_ -> Just id_
+
+
 type alias AssocIds = List AssocId
 type alias Icon = String -- name of feather icon, https://feathericons.com
 type alias ImageId = Int
@@ -125,6 +139,9 @@ type alias PointerType = String
 
 
 -- Box
+
+type alias Level = Int -- nesting level
+
 
 type alias BoxPath = List BoxId
 

@@ -53,6 +53,7 @@ type alias NestingBoxRenderer =
   BoxId -> BoxPath -> Env2 -> Html Msg
 
 
+-- Point is in box-local coordinates
 type alias NestingHitTest =
   BoxId -> BoxPath -> Point -> Maybe TopicId -> Env2 -> Maybe Target
 

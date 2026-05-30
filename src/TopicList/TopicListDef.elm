@@ -1,10 +1,12 @@
-module TopicList.TopicListDef exposing (Model, BoxProps, DragState, DropTarget(..), init,
-  resetTransient, encode, decoder)
+module TopicList.TopicListDef exposing (Model, BoxProps, DragState, DropTarget(..), Targets,
+  init, resetTransient, encode, decoder)
 
 import ModelBase exposing (..)
 import Dict exposing (Dict)
 import Json.Decode as D
 import Json.Encode as E
+
+import Array exposing (Array)
 
 
 
@@ -43,6 +45,9 @@ type alias DragState =
 type DropTarget
   = Drop Target
   | InsertBefore Target
+
+
+type alias Targets = Array (Level, Target)
 
 
 

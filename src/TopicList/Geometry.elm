@@ -9,7 +9,7 @@ import Model exposing (Model)
 import ModelBase exposing (..)
 import String exposing (fromInt)
 import TopicList.TopicList as TL
-import TopicList.TopicListDef exposing (BoxProps)
+import TopicList.TopicListDef exposing (BoxProps, Targets)
 import Utils as U
 
 
@@ -18,6 +18,7 @@ import Utils as U
 
 
 -- ExtManager.NestingHitTest
+-- Point is in box-local coordinates
 hitTest : BoxId -> BoxPath -> Point -> Maybe TopicId -> Env2 -> Maybe Target
 hitTest (BoxId topicId as boxId) boxPath pos excludeTopicId {model} =
   if isListHovered boxId pos model then
@@ -105,15 +106,15 @@ toolbarPos boxPath model =
   )
 
 
-findIndexOf : Target -> Array (Int, Target) -> Maybe Int
-findIndexOf target ts =
+findIndexOf : Target -> Targets -> Maybe Int
+findIndexOf target targets =
   let
-    found = ts
+    found = targets
       |> Array.toIndexedList
       |> List.filter (\(_, (_, t)) -> t == target)
   in
   case found of
-    [(i, _)] -> Just i
+    [(index, _)] -> Just index
     [] -> U.logError "TopicList.Geometry.findIndexOf"
       ("Target " ++ U.toString target ++ " not found")
       Nothing
