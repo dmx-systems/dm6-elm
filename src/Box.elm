@@ -92,32 +92,34 @@ topics boxId model =
     []
 
 
+{-| The TopicIds contained in the box's underlying ItemSet.
+-}
 topicIds : BoxId -> Model -> List TopicId
 topicIds boxId model =
   case itemSetOf boxId model of
     Just itemSet ->
-      itemSet.items |> List.foldr
-        (\setItem acc ->
-          case setItem.id of
-            T id -> id :: acc
-            A _ -> acc
+      itemSet.items |> List.filterMap
+        (\{id} ->
+          case id of
+            T id_ -> Just id_
+            A _ -> Nothing
         )
-        []
-    Nothing -> []
+    Nothing -> U.fail "Box.topicIds" boxId []
 
 
+{-| The AssocIds contained in the box's underlying ItemSet.
+-}
 assocIds : BoxId -> Model -> List AssocId
 assocIds boxId model =
   case itemSetOf boxId model of
     Just itemSet ->
-      itemSet.items |> List.foldr
-        (\setItem acc ->
-          case setItem.id of
-            A id -> id :: acc
-            T _ -> acc
+      itemSet.items |> List.filterMap
+        (\{id} ->
+          case id of
+            A id_ -> Just id_
+            T _ -> Nothing
         )
-        []
-    Nothing -> []
+    Nothing -> U.fail "Box.assocIds" boxId []
 
 
 -- Create box
@@ -465,7 +467,8 @@ hadDeepTopic topicId boxId model =
       False
 
 
-{-| Logs an error if the box is missing, or its underlying ItemSet is missing.
+{-| The box's underlying ItemSet.
+Logs an error (and returns Nothing) if the box is missing, or its underlying ItemSet is missing.
 -}
 itemSetOf : BoxId -> Model -> Maybe ItemSet
 itemSetOf boxId model =

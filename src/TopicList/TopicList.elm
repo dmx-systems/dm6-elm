@@ -44,7 +44,7 @@ view boxId boxPath ({model} as env) =
     ( listStyle boxId boxPath model )
     ( (Box.traverseWith
         boxPath_
-        topicOrder
+        listOrder
         []
         (viewListItem boxPath_)
         (viewList env)
@@ -73,19 +73,24 @@ listFontStyle =
 
 
 -- Box.Transform
-topicOrder : BoxId -> Model -> List TopicId -> List TopicId
-topicOrder boxId model topicIds =
+{- Applies list order to box content. Iterates over list's order list and filters those TopicIds
+contained in the box. Note: order list might be longer than box's content list (maintaining
+stability).
+-}
+listOrder : BoxId -> Model -> List TopicId -> List TopicId
+listOrder boxId model topicIds =
+  let
+    isBoxContent : TopicId -> Maybe TopicId
+    isBoxContent topicId =
+      if List.member topicId topicIds then
+        Just topicId
+      else
+        Nothing
+  in
   case byId boxId model of
-    Just {order} ->
-      order
-        |> List.filterMap
-          (\orderTopicId ->
-            if List.member orderTopicId topicIds then
-              Just orderTopicId
-            else
-              Nothing
-          )
-    Nothing -> U.fail "TopicList.TopicList.topicOrder" boxId topicIds
+    Just {order} -> order
+      |> List.filterMap isBoxContent
+    Nothing -> U.fail "TopicList.TopicList.listOrder" boxId topicIds
 
 
 -- Box.LevelComplete (env is applied already)
@@ -353,22 +358,29 @@ processDrop sourceTopicId sourceBoxid maybeDropTarget ({model} as env) =
         |> Outcome.with Cmd.none
 
 
-{- Inserts a topic ID into the box's order list at the given position.
+{- Inserts a topic ID into the order list at the given insertion point.
 -}
 insert : TopicId -> BoxId -> TopicId -> Model -> Model
 insert topicId boxId beforeTopicId model =
+  let
+    insertion : TopicId -> (List TopicId, Bool) -> (List TopicId, Bool)
+    insertion id (list, found) =
+      case (id == beforeTopicId, found) of -- at insertion point? insertion point found already?
+        (False, _) -> (id :: list, found)
+        (True, False) -> ([topicId, id] ++ list, True)
+        (True, True) -> U.logError "TopicList.TopicList.insert"
+          "Found more than one insertion point" (list, found)
+  in
   model
     |> updateOrder boxId
       (\orderList -> orderList
-        |> List.foldr
-          (\id (list, found) ->
-            if id == beforeTopicId then
-              ([topicId, id] ++ list, True)
-            else
-              (id :: list, found)
-          )
-          ([], False)
-        |> Tuple.first
+        |> List.filter (\id -> id /= topicId) -- remove before inserting
+        |> List.foldr insertion ([], False)
+        |> \(list, found) ->
+            case found of
+              True -> list
+              False -> U.logError "TopicList.TopicList.insert" "Insertion point not found"
+                orderList
       )
 
 
