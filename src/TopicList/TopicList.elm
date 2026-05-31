@@ -271,14 +271,17 @@ toIndex localPos =
 drag : Point -> Env2 -> (Model, Cmd Msg)
 drag clientPos {model} =
   ( case (model.mouse.dragState, model.topicList.dragState) of
-      (DragStarted _ _ ixBoxPath _, Just ({elemPos, lastPos} as dragState)) ->
+      (DragStarted dragTopicId _ ixBoxPath _, Just ({elemPos, lastPos} as dragState)) ->
+        let
+          localPos = toLocalPos clientPos ixBoxPath model
+        in
         model
           |> setDragState
             (Just
               { dragState |
                 elemPos = { elemPos | y = elemPos.y + clientPos.y - lastPos.y }
               , lastPos = clientPos
-              , dropTarget = dropTargetAt (toLocalPos clientPos ixBoxPath model) model
+              , dropTarget = dropTargetAt localPos dragTopicId model
               }
             )
       _ ->
@@ -291,16 +294,23 @@ drag clientPos {model} =
   )
 
 
-dropTargetAt : Point -> Model -> Maybe DropTarget
-dropTargetAt localPos model =
+dropTargetAt : Point -> TopicId -> Model -> Maybe DropTarget
+dropTargetAt localPos dragTopicId model =
   case model.mouse.hover of
-    Just target -> Just
-      ( if modBy (C.listItemHeight + 4) (localPos.y - 1) > (C.listItemHeight + 4) // 2 then
-          Drop target
-        else
-          InsertBefore target
-      )
-    Nothing -> Nothing
+    Just ((T dropTopicId, dropBoxId :: _) as target) ->
+      let
+        lowerHalf = modBy (C.listItemHeight + 4) (localPos.y - 1) > (C.listItemHeight + 4) // 2
+        (dropMode, targetBoxId) =
+          case lowerHalf of
+            True -> (Drop, dropTopicId)
+            False -> (InsertBefore, fromBoxId dropBoxId)
+        isCyclic = Box.hadDeepTopic targetBoxId dragTopicId model
+      in
+      if not isCyclic then
+        Just (dropMode target)
+      else
+        Nothing
+    _ -> Nothing
 
 
 -- ExtManager.NestingDragStop
@@ -334,23 +344,23 @@ processDrop sourceTopicId sourceBoxid maybeDropTarget ({model} as env) =
         |> Box.removeTopic sourceTopicId sourceBoxid
         |> \model_ ->
           ( case dropTarget of
-            Drop (T targetTopicId, _) ->
-              let
-                boxId = BoxId targetTopicId
-              in
-              model_
-                |> Tool.createBoxOnDemand targetTopicId
-                |> Box.addTopic (BoxTopic sourceTopicId Expanded) boxId
-                |> init boxId
-                |> Env.autoSize2 env
-            InsertBefore (T targetTopicId, targetBoxId :: _) ->
-              model_
-                |> Box.addTopic (BoxTopic sourceTopicId Expanded) targetBoxId
-                -- TODO: remove from order list before inserting
-                |> insert sourceTopicId targetBoxId targetTopicId
-                |> Env.autoSize2 env
-            _ -> U.logError "TopicList.TopicList.processDrop" (U.toString dropTarget)
-              model_
+              Drop (T targetTopicId, _) ->
+                let
+                  boxId = BoxId targetTopicId
+                in
+                model_
+                  |> Tool.createBoxOnDemand targetTopicId
+                  |> Box.addTopic (BoxTopic sourceTopicId Expanded) boxId
+                  |> init boxId
+                  |> Env.autoSize2 env
+              InsertBefore (T targetTopicId, targetBoxId :: _) ->
+                model_
+                  |> Box.addTopic (BoxTopic sourceTopicId Expanded) targetBoxId
+                  -- TODO: remove from order list before inserting
+                  |> insert sourceTopicId targetBoxId targetTopicId
+                  |> Env.autoSize2 env
+              _ -> U.logError "TopicList.TopicList.processDrop" (U.toString dropTarget)
+                model_
           )
         |> Outcome (Directives Persistent StoreUndo) Cmd.none
     Nothing ->

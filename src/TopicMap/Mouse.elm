@@ -71,39 +71,39 @@ timeArrived time ({present} as undoModel) =
 
 -- ExtManager.NestingDrag
 drag : Point -> Env2 -> (Model, Cmd Msg)
-drag pos env =
+drag pos ({model} as env) =
   let
-    model = updateTarget pos env
-    newEnv = Env.withModel2 env model
+    newModel = updateTarget pos model -- TODO: pipe model, having dropTargetAt, like TopicList
+    newEnv = Env.withModel2 env newModel
   in
-  case model.topicMap.dragState of
+  case newModel.topicMap.dragState of
     DragEngaged time ->
-      ( setDragState (WaitForEndTime time) model
+      ( setDragState (WaitForEndTime time) newModel
       , Task.perform (TopicMap << TopicMapDef.Time) Time.now
       )
     Drag _ _ _ _ ->
       ( performDrag pos newEnv, Cmd.none )
     _ ->
-      ( model, Cmd.none )
+      ( newModel, Cmd.none )
 
 
 {-| If Drag is in progress updates its accepted drop target, based on geometrically hovered
 topic (Feature.Mouse module's "hover" state).
 -}
-updateTarget : Point -> Env2 -> Model
-updateTarget pos {model, ext} =
+updateTarget : Point -> Model -> Model
+updateTarget pos model =
   case (model.mouse.dragState, model.topicMap.dragState) of
-    (MouseDef.DragStarted id _ _ _, Drag dragMode origPos lastPos _) ->
+    (MouseDef.DragStarted dragTopicId _ _ _, Drag dragMode origPos lastPos _) ->
       let
         dragState = Drag dragMode origPos lastPos
       in
       case model.mouse.hover of
-        Just ((T topicId, _) as target) ->
+        Just ((T dropTopicId, _) as target) ->
           let
-            isCyclic = Box.hadDeepTopic topicId id model
+            isCyclic = Box.hadDeepTopic dropTopicId dragTopicId model
             newTarget =
-              -- the geometrically hovered topic (topicId) is accepted as a drop target if it is
-              -- 1. not contained in item/box being dragged (id), this would create a cycle
+              -- geometrically hovered topic (dropTopicId) is accepted as a drop target if it is
+              -- 1. not contained in item/box being dragged (dragTopicId), would create a cycle
               -- 2. OR draft assoc is in progress
               if not isCyclic || dragMode == DraftAssoc then
                 Just target

@@ -28,7 +28,7 @@ type DragState
   = DragStarted TopicId BoxPath BoxPath Point
                                  -- entered by DownOnTopic message
                                  -- represents what is dragged, does not change while dragging
-                                 -- data: topicId - what topic to be dragged
+                                 -- data: topicId - the topic being dragged
                                  --       box path - direct topic context
                                  --       interaction box path - wider topic context
                                  --       start pos - where mousedown took place (client coord)

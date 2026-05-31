@@ -72,15 +72,18 @@ emulateHover topicId boxPath pointerType model =
     model
 
 
+{- Updates the geometrically hovered topic, utilizing hit-test.
+The Point is in client coordinates.
+-}
 updateHover : Point -> ExtManager -> Model -> Model
-updateHover {x, y} ext model =
+updateHover ({y} as clientPos) ext model =
   let
-    pos = Point x (y - C.appHeaderHeight)
+    localPos = { clientPos | y = y - C.appHeaderHeight } -- local to fullscreen box
     excludeTopicId =
       case model.mouse.dragState of
         DragStarted topicId _ _ _ -> Just topicId
         _ -> Nothing
-    maybeTarget = ext.hitTest model.boxId [] pos excludeTopicId model
+    maybeTarget = ext.hitTest model.boxId [] localPos excludeTopicId model
   in
   model
     |> setHover maybeTarget
