@@ -17,7 +17,7 @@ import Shared.Events as Events
 import Shared.ViewBase as VB
 import Topic
 import TopicMap.BoxProps as TM
-import TopicMap.TopicMapDef as TopicMapDef exposing (TopicProps, DragState(..), DragMode(..))
+import TopicMap.TopicMapDef as TopicMapDef exposing (TopicProps, MouseState(..), DragMode(..))
 import TopicMap.ViewModel as VM
 import Utils as U
 
@@ -522,10 +522,13 @@ viewAssoc assoc boxPath clickHandler model =
 
 viewAssocDraft : BoxId -> Model -> List (Svg Msg)
 viewAssocDraft boxId model =
-  case (model.mouse.dragState, model.topicMap.dragState) of
-    (DragStarted _ boxPath _ _, Drag DraftAssoc origPos pos _) ->
+  case (model.mouse.dragState, model.topicMap.mouseState) of
+    (DragStarted _ boxPath _ _, Drag DraftAssoc {origTopicPos, lastPointerPos}) ->
       if Box.firstId boxPath == boxId then
-        (lineRenderer model) origPos (VM.toLocalPos pos boxPath model) Nothing [boxId] [] model
+        let
+          pos = VM.toLocalPos lastPointerPos boxPath model
+        in
+        (lineRenderer model) origTopicPos pos Nothing [boxId] [] model
         -- simple box path is sufficient for geometry, draft assoc is never selected
       else
         []

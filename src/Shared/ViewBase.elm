@@ -6,7 +6,7 @@ import Feature.MouseDef exposing (DragState(..))
 import Feature.Sel as Sel
 import Model exposing (Model, Msg)
 import ModelBase exposing (..)
-import TopicMap.TopicMapDef exposing (DragState(..), DragMode(..)) -- TODO: remove dependency
+import TopicMap.TopicMapDef exposing (MouseState(..), DragMode(..)) -- TODO: remove dependency?
 
 import Html.Attributes exposing (style)
 import String exposing (fromInt)
@@ -42,13 +42,13 @@ topicBorderStyle : TopicId -> BoxPath -> Model -> Attrs Msg
 topicBorderStyle id boxPath model =
   let
     isTarget_ = isTarget id boxPath
-    targeted = case (model.mouse.dragState, model.topicMap.dragState) of
+    targeted = case (model.mouse.dragState, model.topicMap.mouseState) of
       -- can't move a topic to a box where it is already, can happen if mouse moves very quick
       -- can't create assoc when both topics are in different box
-      (DragStarted _ (boxId_ :: _) _ _, Drag DragTopic _ _ target) ->
-        isTarget_ target && fromBoxId boxId_ /= id
-      (DragStarted _ boxPath_ _ _, Drag DraftAssoc _ _ target) ->
-        isTarget_ target && boxPath_ == boxPath
+      (DragStarted _ (boxId_ :: _) _ _, Drag DragTopic {dropTarget}) ->
+        isTarget_ dropTarget && fromBoxId boxId_ /= id
+      (DragStarted _ boxPath_ _ _, Drag DraftAssoc {dropTarget}) ->
+        isTarget_ dropTarget && boxPath_ == boxPath
       _ -> False
   in
   [ style "border-width" <| fromInt C.topicBorderWidth ++ "px"
