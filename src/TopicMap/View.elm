@@ -256,7 +256,7 @@ topicStyle id boxPath model =
   let
     boxId = Box.firstId boxPath
     isLimbo = VM.isLimboTopic id boxId model
-    isDragging = Mouse.isDragging id boxPath model
+    isDragging = Mouse.isTopicDragging id boxPath model
     isSelected = Sel.isSelected (T id) boxPath model
   in
   [ style "position" "absolute"

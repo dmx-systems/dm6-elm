@@ -8,7 +8,7 @@ import Env exposing (Env2)
 import Feature.Mouse as Mouse
 import Feature.Text as Text
 import Feature.Tool as Tool
-import Model exposing (Model, Msg)
+import Model exposing (Model, Msg(..))
 import ModelBase exposing (..)
 import Outcome exposing (..)
 import Shared.Events as Events
@@ -108,11 +108,11 @@ viewListItem ixBoxPath topic level boxPath acc childrenAcc model =
   acc ++
     [ li
         ( Events.draggable topic.id boxPath ixBoxPath
-          {- ++ Events.itemClickHandler (T topic.id) boxPath -} -- TODO
+          -- ++ Events.itemClickHandler (T topic.id) boxPath -- TODO
           ++ VB.selectionStyle topic.id boxPath model
           ++ listItemStyle topic.id boxPath model
           ++ topicBorderStyle topic.id boxPath model
-          ++ hoverStyle topic.id boxPath model -- debug
+          -- ++ hoverStyle topic.id boxPath model -- debug
         )
         ( viewTopic topic boxPath model
           ++
@@ -125,7 +125,7 @@ viewListItem ixBoxPath topic level boxPath acc childrenAcc model =
 
 listItemStyle : TopicId -> BoxPath -> Model -> Attrs Msg
 listItemStyle topicId boxPath model =
-  if Mouse.isDragging topicId boxPath model then
+  if Mouse.isTopicDragging topicId boxPath model then
     [ style "background-color" "white"
     , style "filter" C.topicLimboFilter
     ]
@@ -319,8 +319,18 @@ dragStop ({model} as env2) =
     outcome =
       case (model.mouse.dragState, model.topicList.dragState) of
         (Just {topicId, boxPath}, Just dragState) ->
-          env2
-            |> processDrop topicId (Box.firstId boxPath) dragState.dropTarget
+          case dragState.dropTarget of
+            Just dropTarget ->
+              env2
+                |> processDrop topicId (Box.firstId boxPath) dropTarget
+            Nothing ->
+              let
+                _ = U.info "TopicList.TopicList.dragStop" "no drop target -> ItemClicked"
+              in
+              (Outcome.with
+                (U.command <| ItemClicked (T topicId) boxPath)
+                model
+              )
         _ -> U.logError "TopicList.TopicList.dragStop" (U.toString model.mouse.dragState)
           (Outcome.with Cmd.none model)
   in
@@ -328,43 +338,36 @@ dragStop ({model} as env2) =
     |> Outcome.map (setDragState Nothing)
 
 
-processDrop : TopicId -> BoxId -> Maybe DropTarget -> Env2 -> Outcome
-processDrop sourceTopicId sourceBoxid maybeDropTarget ({model} as env) =
+processDrop : TopicId -> BoxId -> DropTarget -> Env2 -> Outcome
+processDrop sourceTopicId sourceBoxid dropTarget ({model} as env) =
   let
     _ = U.info "TopicList.TopicList.processDrop"
       { sourceTopicId = sourceTopicId
       , sourceBoxid = sourceBoxid
-      , maybeDropTarget = maybeDropTarget
+      , dropTarget = dropTarget
       }
   in
-  case maybeDropTarget of
-    Just dropTarget ->
-      model
-        |> Box.removeTopic sourceTopicId sourceBoxid
-        |> \model_ ->
-          ( case dropTarget of
-              Drop (T targetTopicId, _) ->
-                let
-                  boxId = BoxId targetTopicId
-                in
-                model_
-                  |> Tool.createBoxOnDemand targetTopicId
-                  |> Box.addTopic (BoxTopic sourceTopicId Expanded) boxId
-                  |> init boxId
-                  |> Env.autoSize2 env
-              InsertBefore (T targetTopicId, targetBoxId :: _) ->
-                model_
-                  |> Box.addTopic (BoxTopic sourceTopicId Expanded) targetBoxId
-                  -- TODO: remove from order list before inserting
-                  |> insert sourceTopicId targetBoxId targetTopicId
-                  |> Env.autoSize2 env
-              _ -> U.logError "TopicList.TopicList.processDrop" (U.toString dropTarget)
-                model_
-          )
-        |> Outcome (Directives Persistent StoreUndo) Cmd.none
-    Nothing ->
-      model
-        |> Outcome.with Cmd.none
+  model
+    |> Box.removeTopic sourceTopicId sourceBoxid
+    |> \model_ ->
+      (case dropTarget of
+        Drop (T targetTopicId, _) ->
+          let
+            boxId = BoxId targetTopicId
+          in
+          model_
+            |> Tool.createBoxOnDemand targetTopicId
+            |> Box.addTopic (BoxTopic sourceTopicId Expanded) boxId
+            |> init boxId
+            |> Env.autoSize2 env
+        InsertBefore (T targetTopicId, targetBoxId :: _) ->
+          model_
+            |> Box.addTopic (BoxTopic sourceTopicId Expanded) targetBoxId
+            |> insert sourceTopicId targetBoxId targetTopicId
+            |> Env.autoSize2 env
+        _ -> U.logError "TopicList.TopicList.processDrop" (U.toString dropTarget) model_
+      )
+    |> Outcome (Directives Persistent StoreUndo) Cmd.none
 
 
 {- Inserts a topic ID into the order list at the given insertion point.

@@ -102,7 +102,7 @@ absPos boxPath posAcc model =
   case boxPath of
     [ boxId ] -> accumulateRect posAcc boxId model
     boxId :: parentBoxId :: boxIds -> accumulatePos posAcc boxId parentBoxId boxIds model
-    [] -> U.logError "TopicMap.View.absPos" "boxPath is empty!" (Point 0 0)
+    [] -> U.logError "TopicMap.ViewModel.absPos" "boxPath is empty!" (Point 0 0)
 
 
 accumulatePos : Point -> BoxId -> BoxId -> BoxPath -> Model -> Point

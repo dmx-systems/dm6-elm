@@ -1,4 +1,4 @@
-module Feature.Mouse exposing (update, hasDragStarted, isDragging, clearHover, isHovered)
+module Feature.Mouse exposing (update, isDragActive, isTopicDragging, clearHover, isHovered)
 
 import Box
 import Config as C
@@ -34,8 +34,8 @@ update msg ({model, undoModel, ext} as env) =
     (MouseDef.Up, Just dragState) ->
       model
         |> ext.dragStop (Box.firstId dragState.ixBoxPath)
-        -- Note: typically extension's dragStop handler operates on DragStarted data,
-        -- so we reset to NoDrag afterwards
+        -- Note: typically extension's dragStop handler operates on Mouse's DragState,
+        -- so we reset afterwards
         |> Outcome.map (setDragState Nothing)
         |> Outcome.exec undoModel
     (MouseDef.Cancel, _) ->
@@ -50,15 +50,15 @@ setDragState dragState ({mouse} as model) =
   { model | mouse = { mouse | dragState = dragState }}
 
 
-hasDragStarted : Model -> Bool
-hasDragStarted model =
+isDragActive : Model -> Bool
+isDragActive model =
   case model.mouse.dragState of
     Just _ -> True
     Nothing -> False
 
 
-isDragging : TopicId -> BoxPath -> Model -> Bool
-isDragging topicId boxPath model =
+isTopicDragging : TopicId -> BoxPath -> Model -> Bool
+isTopicDragging topicId boxPath model =
   case model.mouse.dragState of
     Just dragState -> dragState.topicId == topicId && dragState.boxPath == boxPath
     Nothing -> False

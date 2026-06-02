@@ -12,7 +12,7 @@ import Array exposing (Array)
 
 type alias Model =
   { boxProps : Dict Id BoxProps
-  , dragState : Maybe DragState -- only available while DragStarted (Mouse state), transient
+  , dragState : Maybe DragState -- only available while drag is active (Mouse state), transient
   }
 
 
