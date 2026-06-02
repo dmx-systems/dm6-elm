@@ -6,7 +6,6 @@ import Config as C
 import Dict
 import Env exposing (Env2)
 import Feature.Mouse as Mouse
-import Feature.MouseDef exposing (DragState(..))
 import Feature.Text as Text
 import Feature.Tool as Tool
 import Model exposing (Model, Msg)
@@ -192,7 +191,7 @@ isTarget dropTarget_ model =
 viewDraggingTopic : BoxPath -> Model -> HtList
 viewDraggingTopic viewBoxPath model =
   case (model.mouse.dragState, model.topicList.dragState) of
-    (DragStarted topicId _ ixBoxPath _, Just {elemPos}) ->
+    (Just {topicId, ixBoxPath}, Just {elemPos}) ->
       case (viewBoxPath == ixBoxPath, Topic.fromId topicId model) of
         (True, Just topic) ->
           [ div
@@ -229,13 +228,13 @@ inputStyle =
 dragStart : Env2 -> (Model, Cmd Msg)
 dragStart {model} =
   ( case model.mouse.dragState of
-      DragStarted _ _ ixBoxPath startPos ->
+      Just {ixBoxPath, startPos} ->
         let
           elemPos = toElemPos startPos ixBoxPath model
         in
         model
           |> setDragState (Just (DragState elemPos startPos Nothing))
-      _ ->
+      Nothing ->
         let
           _ = U.logError "TopicList.TopicList.dragStart" "Unexpected drag state"
             model.mouse.dragState
@@ -271,7 +270,7 @@ toIndex localPos =
 drag : Point -> Env2 -> (Model, Cmd Msg)
 drag clientPos {model} =
   ( case (model.mouse.dragState, model.topicList.dragState) of
-      (DragStarted dragTopicId _ ixBoxPath _, Just ({elemPos, lastPos} as dragState)) ->
+      (Just {topicId, ixBoxPath}, Just ({elemPos, lastPos} as dragState)) ->
         let
           localPos = toLocalPos clientPos ixBoxPath model
         in
@@ -281,7 +280,7 @@ drag clientPos {model} =
               { dragState |
                 elemPos = { elemPos | y = elemPos.y + clientPos.y - lastPos.y }
               , lastPos = clientPos
-              , dropTarget = dropTargetAt localPos dragTopicId model
+              , dropTarget = dropTargetAt localPos topicId model
               }
             )
       _ ->
@@ -319,9 +318,9 @@ dragStop ({model} as env2) =
   let
     outcome =
       case (model.mouse.dragState, model.topicList.dragState) of
-        (DragStarted topicId (boxId :: _) _ _, Just dragState) ->
+        (Just {topicId, boxPath}, Just dragState) ->
           env2
-            |> processDrop topicId boxId dragState.dropTarget
+            |> processDrop topicId (Box.firstId boxPath) dragState.dropTarget
         _ -> U.logError "TopicList.TopicList.dragStop" (U.toString model.mouse.dragState)
           (Outcome.with Cmd.none model)
   in

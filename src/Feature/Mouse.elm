@@ -1,8 +1,9 @@
 module Feature.Mouse exposing (update, hasDragStarted, isDragging, clearHover, isHovered)
 
+import Box
 import Config as C
 import Env exposing (Env, ExtManager)
-import Feature.MouseDef as MouseDef exposing (DragState(..))
+import Feature.MouseDef as MouseDef exposing (DragState)
 import Model exposing (Model, Msg(..))
 import ModelBase exposing (..)
 import Outcome
@@ -16,26 +17,26 @@ update msg ({model, undoModel, ext} as env) =
   case (msg, model.mouse.dragState) of
     (MouseDef.DownOnTopic topicId boxPath ixBoxPath (pos, pointerType), _) ->
       model
-        |> setDragState (DragStarted topicId boxPath ixBoxPath pos)
+        |> setDragState (Just (DragState topicId boxPath ixBoxPath pos))
         |> emulateHover topicId boxPath pointerType
         |> ext.dragStart
         |> Undo.swap undoModel
-    (MouseDef.Move (pos, pointerType), NoDrag) ->
+    (MouseDef.Move (pos, _), Nothing) ->
       model
         |> updateHover pos ext
         |> \model_ -> (model_, Cmd.none)
         |> Undo.swap undoModel
-    (MouseDef.Move (pos, pointerType), DragStarted _ _ (boxId :: _) _) ->
+    (MouseDef.Move (pos, _), Just dragState) ->
       model
         |> updateHover pos ext
-        |> ext.drag boxId pos
+        |> ext.drag (Box.firstId dragState.ixBoxPath) pos
         |> Undo.swap undoModel
-    (MouseDef.Up, DragStarted _ _ (boxId :: _) _) ->
+    (MouseDef.Up, Just dragState) ->
       model
-        |> ext.dragStop boxId
+        |> ext.dragStop (Box.firstId dragState.ixBoxPath)
         -- Note: typically extension's dragStop handler operates on DragStarted data,
         -- so we reset to NoDrag afterwards
-        |> Outcome.map (setDragState NoDrag)
+        |> Outcome.map (setDragState Nothing)
         |> Outcome.exec undoModel
     (MouseDef.Cancel, _) ->
       (undoModel, U.command <| Cancel Nothing)
@@ -44,7 +45,7 @@ update msg ({model, undoModel, ext} as env) =
       (undoModel, Cmd.none)
 
 
-setDragState : DragState -> Model -> Model
+setDragState : Maybe DragState -> Model -> Model
 setDragState dragState ({mouse} as model) =
   { model | mouse = { mouse | dragState = dragState }}
 
@@ -52,15 +53,15 @@ setDragState dragState ({mouse} as model) =
 hasDragStarted : Model -> Bool
 hasDragStarted model =
   case model.mouse.dragState of
-    DragStarted _ _ _ _ -> True
-    NoDrag -> False
+    Just _ -> True
+    Nothing -> False
 
 
 isDragging : TopicId -> BoxPath -> Model -> Bool
 isDragging topicId boxPath model =
   case model.mouse.dragState of
-    DragStarted topicId_ boxPath_ _ _ -> topicId_ == topicId && boxPath_ == boxPath
-    NoDrag -> False
+    Just dragState -> dragState.topicId == topicId && dragState.boxPath == boxPath
+    Nothing -> False
 
 
 emulateHover : TopicId -> BoxPath -> PointerType -> Model -> Model
@@ -81,8 +82,8 @@ updateHover ({y} as clientPos) ext model =
     localPos = { clientPos | y = y - C.appHeaderHeight } -- local to fullscreen box
     excludeTopicId =
       case model.mouse.dragState of
-        DragStarted topicId _ _ _ -> Just topicId
-        _ -> Nothing
+        Just {topicId} -> Just topicId
+        Nothing -> Nothing
     maybeTarget = ext.hitTest model.boxId [] localPos excludeTopicId model
   in
   model

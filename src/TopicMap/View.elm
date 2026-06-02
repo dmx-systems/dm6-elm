@@ -6,7 +6,6 @@ import Config as C
 import Env exposing (ExtManager, Env2)
 import Feature.Icon as Icon
 import Feature.Mouse as Mouse
-import Feature.MouseDef exposing (DragState(..))
 import Feature.Sel as Sel
 import Feature.Text as Text
 import Feature.ToolDef exposing (LineStyle(..))
@@ -523,7 +522,7 @@ viewAssoc assoc boxPath clickHandler model =
 viewAssocDraft : BoxId -> Model -> List (Svg Msg)
 viewAssocDraft boxId model =
   case (model.mouse.dragState, model.topicMap.mouseState) of
-    (DragStarted _ boxPath _ _, Drag DraftAssoc {origTopicPos, lastPointerPos}) ->
+    (Just {boxPath}, Drag DraftAssoc {origTopicPos, lastPointerPos}) ->
       if Box.firstId boxPath == boxId then
         let
           pos = VM.toLocalPos lastPointerPos boxPath model

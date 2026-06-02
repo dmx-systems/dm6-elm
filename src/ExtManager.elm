@@ -3,7 +3,6 @@ module ExtManager exposing (ext)
 import Box
 import Env exposing (ExtManager, Env2)
 import Extension
-import Feature.MouseDef as MouseDef
 import Model exposing (Model, Msg)
 import ModelBase exposing (..)
 import Outcome exposing (Outcome)
@@ -187,8 +186,8 @@ toolbar boxPath model =
 dragStart : Model -> (Model, Cmd Msg)
 dragStart model =
   case model.mouse.dragState of
-    MouseDef.DragStarted _ _ (boxId :: _) _ ->
-      dispatch boxId model (model, Cmd.none)
+    Just {ixBoxPath} ->
+      dispatch (Box.firstId ixBoxPath) model (model, Cmd.none)
         (\env renderer -> renderer.dragStart env)
     _ ->
       let
