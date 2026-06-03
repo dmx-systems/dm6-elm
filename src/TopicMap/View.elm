@@ -9,7 +9,7 @@ import Feature.Mouse as Mouse
 import Feature.Sel as Sel
 import Feature.Text as Text
 import Feature.ToolDef exposing (LineStyle(..))
-import Feature.Tool as Tool
+import Feature.Tool as Tool exposing (ToolbarPos)
 import Model exposing (Model, Msg)
 import ModelBase exposing (..)
 import Shared.Events as Events
@@ -58,6 +58,7 @@ type alias LineRenderer =
 view : BoxId -> BoxPath -> Env2 -> Html Msg
 view boxId boxPath ({model} as env) =
   let
+    boxPath_ = boxId :: boxPath
     ((topics, assocs), boxRect, (svgSize, boxStyle)) =
       boxInfo boxId boxPath env
   in
@@ -79,7 +80,7 @@ view boxId boxPath ({model} as env) =
               )
           ]
       ]
-      ++ Tool.viewToolbar (boxId :: boxPath) env
+      ++ Tool.viewToolbar boxPath_ (toolbarPos boxPath_ model) env
     )
 
 
@@ -678,3 +679,33 @@ lineDasharray assoc =
         Association -> "5 0" -- solid
         Hierarchy -> "5" -- dotted
     Nothing -> "5 0" -- solid
+
+
+-- Toolbar
+
+toolbarPos : BoxPath -> Model -> ToolbarPos
+toolbarPos boxPath model =
+  let
+    boxId = Box.firstId boxPath
+  in
+  case TM.byId boxId model of
+    Just {rect} ->
+      ToolbarPos
+        (\topic ->
+          case TM.topicPos topic.id boxId model of
+            Just topicPos ->
+              Point
+                (topicPos.x - rect.x1 - C.topicW2)
+                (topicPos.y - rect.y1 - C.topicH2 - 29) -- TODO: 29 ≈ toolbar height
+            Nothing -> Point 0 0
+        )
+        (\assoc ->
+          case TM.assocGeometry assoc boxId model of
+            Just (p1, p2) ->
+              Point
+                ((p1.x + p2.x) // 2 - rect.x1 - 32) -- TODO: 32 ≈ toolbar width / 2
+                ((p1.y + p2.y) // 2 - rect.y1 - 13) -- TODO: 13 ≈ toolbar height / 2
+            Nothing -> Point 0 0
+        )
+    Nothing ->
+      (ToolbarPos (\_ -> Point 0 0) (\_ -> Point 0 0))

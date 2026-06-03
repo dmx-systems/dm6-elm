@@ -7,7 +7,7 @@ import Dict
 import Env exposing (Env2)
 import Feature.Mouse as Mouse
 import Feature.Text as Text
-import Feature.Tool as Tool
+import Feature.Tool as Tool exposing (ToolbarPos)
 import Model exposing (Model, Msg(..))
 import ModelBase exposing (..)
 import Outcome exposing (..)
@@ -46,7 +46,7 @@ view boxId boxPath ({model} as env) =
         listOrder
         []
         (viewListItem boxPath_)
-        (viewList env)
+        (viewList boxPath_ env)
         model
       )
       ++
@@ -92,14 +92,14 @@ listOrder boxId model topicIds =
     Nothing -> U.fail "TopicList.TopicList.listOrder" boxId topicIds
 
 
--- Box.LevelDone (env is applied already)
-viewList : Env2 -> BoxPath -> HtList -> HtList
-viewList env boxPath topics =
+-- Box.LevelDone (ixBoxPath and env are applied already)
+viewList : BoxPath -> Env2 -> BoxPath -> HtList -> HtList
+viewList ixBoxPath ({model} as env) boxPath topics =
   [ ul
       []
       topics
   ]
-  ++ Tool.viewToolbar boxPath env
+  ++ Tool.viewToolbar boxPath (toolbarPos boxPath ixBoxPath model) env
 
 
 -- Box.Acc (ixBoxPath is applied already)
@@ -218,6 +218,40 @@ inputStyle =
   , style "position" "relative"
   , style "left" "-4px"
   ]
+
+
+-- Toolbar
+
+toolbarPos : BoxPath -> BoxPath -> Model -> ToolbarPos
+toolbarPos boxPath ixBoxPath model =
+  ToolbarPos
+    (\topic ->
+      case targets ixBoxPath model |> findIndexOf (T topic.id, boxPath) of
+        Just (index, level) ->
+          Point
+            (40 + 40 * level)
+            (index * (C.listItemHeight + 4) - 16)
+        Nothing -> Point 0 0
+    )
+    (\assoc -> Point 0 0)
+
+
+findIndexOf : Target -> Targets -> Maybe (Int, Level)
+findIndexOf target targets_ =
+  let
+    found =
+      targets_
+        |> Array.toIndexedList
+        |> List.filter (\(_, (_, t)) -> t == target)
+  in
+  case found of
+    [(index, (level, _))] -> Just (index, level)
+    [] -> U.logError "TopicList.Geometry.findIndexOf"
+      ("Target " ++ U.toString target ++ " not found")
+      Nothing
+    _ -> U.logError "TopicList.Geometry.findIndexOf"
+      ("Target " ++ U.toString target ++ " found " ++ fromInt (List.length found) ++ " times")
+      Nothing
 
 
 

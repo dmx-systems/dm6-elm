@@ -36,7 +36,6 @@ type alias ExtManager =
   , view : BoxRenderer
   , hitTest : HitTest
   , autoSize : AutoSize
-  , toolbar : Toolbar
   , dragStart : DragStart
   , drag : Drag
   , dragStop : DragStop
@@ -62,10 +61,6 @@ type alias HitTest =
 
 type alias AutoSize =
   BoxPath -> Model -> (Rectangle, Model)
-
-
-type alias Toolbar =
-  BoxPath -> Model -> ToolbarPos
 
 
 -- Note: no drag specific parameters here. An extension's "dragStart" handler operates on

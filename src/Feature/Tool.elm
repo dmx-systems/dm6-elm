@@ -1,5 +1,5 @@
-module Feature.Tool exposing (viewGlobalTools, viewMapTools, viewToolbar, viewTopicTools,
-  closeMenu, update, createBoxOnDemand)
+module Feature.Tool exposing (ToolbarPos, viewGlobalTools, viewMapTools, viewToolbar,
+  viewTopicTools, closeMenu, update, createBoxOnDemand)
 
 import Assoc
 import Box
@@ -27,6 +27,16 @@ import Html.Attributes exposing (class, style, title, name, value, type_, disabl
 import Html.Events exposing (onClick, on, targetValue)
 import Json.Decode as D
 import String exposing (fromInt)
+
+
+
+-- MODEL
+
+
+type alias ToolbarPos =
+  { topic : Topic -> Point
+  , assoc : Assoc -> Point
+  }
 
 
 
@@ -192,11 +202,8 @@ mapToolsStyle =
 -- Item Tools
 
 -- Topic/Assoc toolbar, rendered by ExtManager.view as box children
-viewToolbar : BoxPath -> Env2 -> List (Html Msg)
-viewToolbar boxPath ({model, ext} as env) =
-  let
-    toolbar = ext.toolbar boxPath model
-  in
+viewToolbar : BoxPath -> ToolbarPos -> Env2 -> List (Html Msg)
+viewToolbar boxPath toolbarPos ({model, ext} as env) =
   case Sel.single model of
     Just (itemId, selBoxPath) ->
       if selBoxPath == boxPath then
@@ -205,7 +212,7 @@ viewToolbar boxPath ({model, ext} as env) =
             case Topic.fromId id model of
               Just topic ->
                 let
-                  pos = toolbar.topic topic
+                  pos = toolbarPos.topic topic
                 in
                 case (Text.isEdit id boxPath model, Topic.isBox id model) of
                   (False, _) -> [ viewTopicToolbar pos id boxPath env ]
@@ -216,7 +223,7 @@ viewToolbar boxPath ({model, ext} as env) =
             case Assoc.fromId id model of
               Just assoc ->
                 let
-                  pos = toolbar.assoc assoc
+                  pos = toolbarPos.assoc assoc
                 in
                 [ viewAssocToolbar pos assoc boxPath ]
               Nothing -> []

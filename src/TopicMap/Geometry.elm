@@ -1,4 +1,4 @@
-module TopicMap.Geometry exposing (hitTest, autoSize, toolbarPos)
+module TopicMap.Geometry exposing (hitTest, autoSize)
 
 import Box
 import Config as C
@@ -324,36 +324,3 @@ adjustBoxPos (BoxId topicId) parentBoxId newRect oldRect model =
           (oldPos.y + newRect.y1 - oldRect.y1)
         )
       )
-
-
-
--- TOOLBAR
-
-
--- ExtManager.NestingToolbar
-toolbarPos : BoxPath -> Model -> ToolbarPos
-toolbarPos boxPath model =
-  let
-    boxId = Box.firstId boxPath
-  in
-  case TM.byId boxId model of
-    Just {rect} ->
-      ToolbarPos
-        (\topic ->
-          case TM.topicPos topic.id boxId model of
-            Just topicPos ->
-              Point
-                (topicPos.x - rect.x1 - C.topicW2)
-                (topicPos.y - rect.y1 - C.topicH2 - 29) -- TODO: 29 ≈ toolbar height
-            Nothing -> Point 0 0
-        )
-        (\assoc ->
-          case TM.assocGeometry assoc boxId model of
-            Just (p1, p2) ->
-              Point
-                ((p1.x + p2.x) // 2 - rect.x1 - 32) -- TODO: 32 ≈ toolbar width / 2
-                ((p1.y + p2.y) // 2 - rect.y1 - 13) -- TODO: 13 ≈ toolbar height / 2
-            Nothing -> Point 0 0
-        )
-    Nothing ->
-      (ToolbarPos (\_ -> Point 0 0) (\_ -> Point 0 0))

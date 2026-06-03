@@ -1,4 +1,4 @@
-module TopicList.Geometry exposing (hitTest, autoSize, toolbarPos)
+module TopicList.Geometry exposing (hitTest, autoSize)
 
 import Array exposing (Array)
 import Box
@@ -84,40 +84,3 @@ updateTopicList boxId transform ({topicList} as model) =
       )
     }
   }
-
-
-
--- TOOLBAR
-
-
--- ExtManager.NestingToolbar
-toolbarPos : BoxPath -> Model -> ToolbarPos
-toolbarPos boxPath model =
-  (ToolbarPos
-    (\topic ->
-      case TL.targets boxPath model |> findIndexOf (T topic.id, boxPath) of
-        Just index ->
-          Point
-            40
-            (index * (C.listItemHeight + 4) - 16)
-        Nothing -> Point 0 0
-    )
-    (\assoc -> Point 0 0)
-  )
-
-
-findIndexOf : Target -> Targets -> Maybe Int
-findIndexOf target targets =
-  let
-    found = targets
-      |> Array.toIndexedList
-      |> List.filter (\(_, (_, t)) -> t == target)
-  in
-  case found of
-    [(index, _)] -> Just index
-    [] -> U.logError "TopicList.Geometry.findIndexOf"
-      ("Target " ++ U.toString target ++ " not found")
-      Nothing
-    _ -> U.logError "TopicList.Geometry.findIndexOf"
-      ("Target " ++ U.toString target ++ " found " ++ fromInt (List.length found) ++ " times")
-      Nothing

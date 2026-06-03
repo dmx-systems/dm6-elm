@@ -1,10 +1,10 @@
 module ModelBase exposing (Id, TopicId(..), AssocId(..), ItemId(..), AssocIds, Topic, Icon,
   TextSize, Size, SizeField(..), Point, Rectangle, Assoc, AssocType(..), ItemSet, SetItem, Box,
   BoxId(..), Level, BoxPath, Target, BoxTopic, Expansion(..), ImageId, Attrs, PointerType,
-  Extensions, ExtLabel, PosHint(..), ToolbarPos, toTopicId, toAssocId, toBoxId, fromBoxId,
-  maybeTopicId, maybeAssocId, rootBoxId, encodeTopic, encodeAssoc, encodeItemSet, encodeBox,
-  encodeTopicId, encodeBoxId, topicDecoder, assocDecoder, itemSetDecoder, boxDecoder,
-  topicIdDecoder, boxIdDecoder, toDictDecoder, toDictDecoderWith)
+  Extensions, ExtLabel, PosHint(..), toTopicId, toAssocId, toBoxId, fromBoxId, maybeTopicId,
+  maybeAssocId, rootBoxId, encodeTopic, encodeAssoc, encodeItemSet, encodeBox, encodeTopicId,
+  encodeBoxId, topicDecoder, assocDecoder, itemSetDecoder, boxDecoder, topicIdDecoder,
+  boxIdDecoder, toDictDecoder, toDictDecoderWith)
 
 import Extension exposing (Renderer, encodeRenderer)
 
@@ -201,12 +201,6 @@ type alias Extensions = List (ExtName, ExtLabel)
 type PosHint
   = Default
   | Random
-
-
-type alias ToolbarPos =
-  { topic : Topic -> Point
-  , assoc : Assoc -> Point
-  }
 
 
 

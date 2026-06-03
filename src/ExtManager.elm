@@ -29,7 +29,6 @@ type alias Extension =
   , view : NestingBoxRenderer
   , hitTest : NestingHitTest
   , autoSize : NestingAutoSize
-  , toolbar : NestingToolbar
   , dragStart : NestingDragStart
   , drag : NestingDrag
   , dragStop : NestingDragStop
@@ -59,11 +58,6 @@ type alias NestingHitTest =
 
 type alias NestingAutoSize =
   BoxPath -> Env2 -> (Rectangle, Model)
-
-
--- TODO: wording, note: ExtManager is not passed
-type alias NestingToolbar =
-  BoxPath -> Model -> ToolbarPos
 
 
 -- Note: no drag specific parameters here. An extension's "dragStart" handler operates on
@@ -97,7 +91,6 @@ ext =
   , view = view
   , hitTest = hitTest
   , autoSize = autoSize
-  , toolbar = toolbar
   , dragStart = dragStart
   , drag = drag
   , dragStop = dragStop
@@ -117,7 +110,6 @@ registry =
         , view = TopicMap.View.view
         , hitTest = TopicMap.Geometry.hitTest
         , autoSize = TopicMap.Geometry.autoSize
-        , toolbar = TopicMap.Geometry.toolbarPos
         , dragStart = TopicMap.Mouse.dragStart
         , drag = TopicMap.Mouse.drag
         , dragStop = TopicMap.Mouse.dragStop
@@ -130,7 +122,6 @@ registry =
         , view = TopicList.TopicList.view
         , hitTest = TopicList.Geometry.hitTest
         , autoSize = TopicList.Geometry.autoSize
-        , toolbar = TopicList.Geometry.toolbarPos
         , dragStart = TopicList.TopicList.dragStart
         , drag = TopicList.TopicList.drag
         , dragStop = TopicList.TopicList.dragStop
@@ -172,12 +163,6 @@ autoSize : BoxPath -> Model -> (Rectangle, Model)
 autoSize boxPath model =
   dispatch (Box.firstId boxPath) model (Rectangle 0 0 0 0, model)
     (\env renderer -> renderer.autoSize boxPath env)
-
-
-toolbar : BoxPath -> Model -> ToolbarPos
-toolbar boxPath model =
-  dispatch (Box.firstId boxPath) model (ToolbarPos (\_ -> Point 0 0) (\_ -> Point 0 0))
-    (\env renderer -> renderer.toolbar boxPath model)
 
 
 -- Note: no drag specific parameters here. The dispatcher operates on Mouse's "dragState"
