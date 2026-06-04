@@ -1,11 +1,12 @@
 module TopicMap.Mouse exposing (dragStart, drag, dragStop, timeArrived)
 
+import Assoc
 import Box
 import Config as C
 import Env exposing (Env2)
 import Model exposing (Model, Msg(..))
 import ModelBase exposing (..)
-import Outcome exposing (Outcome)
+import Outcome exposing (..)
 import TopicMap.BoxProps as TM
 import TopicMap.TopicMapDef as TopicMapDef exposing (MouseState(..), DragState, DragMode(..))
 import Undo exposing (UndoModel)
@@ -142,33 +143,38 @@ performDrag pos ({model} as env) =
 dragStop : Env2 -> Outcome
 dragStop {model} =
   let
-    cmd =
+    out =
       case (model.topicMap.mouseState, model.mouse.dragState) of
         (Drag DragTopic {origTopicPos, dropTarget}, Just {topicId, boxPath}) ->
-          case dropTarget of
-            Just (T targetId, targetPath) ->
-              let
-                _ = U.info "TopicMap.Mouse.dragStop" ("dropped " ++ fromInt (toTopicId topicId)
-                  ++ " (box " ++ Box.fromPath boxPath ++ ") on " ++ fromInt (toTopicId targetId)
-                  ++ " (box " ++ Box.fromPath targetPath ++ ") --> "
-                  ++ if shouldMoveToBox then "move topic to box" else "abort")
-                -- When dragging a topic inside a nested box that box will be the target (this
-                -- is since target is determined by map geometry, not by enter/leave events
-                -- anymore). We distinguish a topic-moved-to-box from a topic-dragged-inside-box
-                -- by comparing the dragged topic's parent box.
-                boxId = Box.firstId boxPath
-                shouldMoveToBox = fromBoxId boxId /= targetId
-              in
-              case shouldMoveToBox of
-                True -> U.command (TopicDropped topicId boxId origTopicPos targetId targetPath)
-                False -> U.command TopicDragged -- store topic pos
-            Nothing ->
-              let
-                _ = U.info "TopicMap.Mouse.dragStop" "topic drag ended w/o target"
-              in
-              U.command TopicDragged
-            _ ->
-              Cmd.none
+          Outcome.with
+            (case dropTarget of
+              Just (T targetId, targetPath) ->
+                let
+                  _ = U.info "TopicMap.Mouse.dragStop" ("dropped "
+                    ++ fromInt (toTopicId topicId) ++ " (box " ++ Box.fromPath boxPath
+                    ++ ") on " ++ fromInt (toTopicId targetId) ++ " (box "
+                    ++ Box.fromPath targetPath ++ ") --> "
+                    ++ if shouldMoveToBox then "move topic to box" else "abort")
+                  -- When dragging a topic inside a nested box that box will be the target (this
+                  -- is since target is determined by map geometry, not by enter/leave events
+                  -- anymore). We distinguish a topic-moved-to-box from a topic-dragged-inside-
+                  -- box by comparing the dragged topic's parent box.
+                  boxId = Box.firstId boxPath
+                  shouldMoveToBox = fromBoxId boxId /= targetId
+                in
+                case shouldMoveToBox of
+                  True ->
+                    U.command (TopicDropped topicId boxId origTopicPos targetId targetPath)
+                  False -> U.command TopicDragged -- store topic pos
+              Nothing ->
+                let
+                  _ = U.info "TopicMap.Mouse.dragStop" "topic drag ended w/o target"
+                in
+                U.command TopicDragged
+              _ ->
+                Cmd.none
+            )
+            model
         (Drag DraftAssoc {dropTarget}, Just {topicId, boxPath}) ->
           case dropTarget of
             Just (T targetId, targetPath) ->
@@ -181,25 +187,41 @@ dragStop {model} =
                 isSameBox = boxId == Box.firstId targetPath
               in
               case isSameBox of
-                True -> U.command <| CreateAssoc topicId targetId boxId
-                False -> Cmd.none
+                True ->
+                  Outcome
+                    (Directives Persistent StoreUndo)
+                    Cmd.none
+                    (model |> createAssoc topicId targetId boxId)
+                False -> Outcome.with Cmd.none model
             Nothing ->
               let
                 _ = U.info "TopicMap.Mouse.dragStop" "assoc ended w/o target"
               in
-              Cmd.none
+              Outcome.with Cmd.none model
             _ ->
-              Cmd.none
+              Outcome.with Cmd.none model
         (DragEngaged _, Just {topicId, boxPath}) ->
           let
             _ = U.info "TopicMap.Mouse.dragStop" "topic not moved -> ItemClicked"
           in
-          U.command <| ItemClicked (T topicId) boxPath
+          Outcome.with
+            (U.command <| ItemClicked (T topicId) boxPath)
+            model
         _ ->
-          Cmd.none
+          Outcome.with Cmd.none model
   in
-  Outcome.with cmd model
+  out
     |> Outcome.map (setMouseState NoDrag)
+
+
+-- Presumption: both topics exist in same box
+createAssoc : TopicId -> TopicId -> BoxId -> Model -> Model
+createAssoc topicId1 topicId2 boxId model =
+  model
+    |> Assoc.create Association topicId1 topicId2
+    |> \(model_, assocId) ->
+      model_
+        |> Box.addAssoc assocId boxId
 
 
 setMouseState : MouseState -> Model -> Model

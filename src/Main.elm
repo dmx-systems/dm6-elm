@@ -1,6 +1,5 @@
 port module Main exposing (..)
 
-import Assoc
 import Box
 import Config as C
 import Env exposing (Env)
@@ -271,9 +270,7 @@ update msg ({present} as undoModel) =
         _ -> U.info "Main.update" msg
   in
   case msg of
-    -- gestures detected by Mouse module
-    CreateAssoc topicId1 topicId2 boxId -> createAssoc topicId1 topicId2 boxId present
-      |> S.store |> Undo.push undoModel
+    -- gestures detected by Mouse module ### TODO: drop
     TopicDropped topicId boxId origPos targetId targetPath -> moveTopicToBox topicId boxId
       origPos targetId targetPath env |> S.storeWith |> Undo.push undoModel
     TopicDragged -> present |> S.store |> Undo.swap undoModel
@@ -291,22 +288,6 @@ update msg ({present} as undoModel) =
     --
     Scrolled pos -> updateScrollPos pos present |> S.store |> Undo.swap undoModel
     NoOp -> (undoModel, Cmd.none)
-
-
--- Presumption: both topics exist in same box
-createAssoc : TopicId -> TopicId -> BoxId -> Model -> Model
-createAssoc topicId1 topicId2 boxId model =
-  createAssocAndAddToBox Association topicId1 topicId2 boxId model
-
-
--- Presumption: both topics exist in same box
-createAssocAndAddToBox : AssocType -> TopicId -> TopicId -> BoxId -> Model -> Model
-createAssocAndAddToBox assocType topicId1 topicId2 boxId model =
-  let
-    (newModel, assocId) = Assoc.create assocType topicId1 topicId2 model
-  in
-  newModel
-    |> Box.addAssoc assocId boxId
 
 
 moveTopicToBox : TopicId -> BoxId -> Point -> TopicId -> BoxPath -> Env -> (Model, Cmd Msg)

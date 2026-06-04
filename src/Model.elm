@@ -79,8 +79,7 @@ resetTransient model =
 
 type Msg
   -- gestures detected by Mouse module
-  = CreateAssoc TopicId TopicId BoxId
-  | TopicDropped TopicId BoxId Point TopicId BoxPath
+  = TopicDropped TopicId BoxId Point TopicId BoxPath
   | TopicDragged
   | ItemClicked ItemId BoxPath
   | Cancel (Maybe Target)
