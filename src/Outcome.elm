@@ -1,4 +1,4 @@
-module Outcome exposing (Outcome, Directives, Persistence(..), History(..), with, map, exec)
+module Outcome exposing (Outcome, Directives, Storage(..), History(..), with, map, exec)
 
 import Model exposing (Model, Msg)
 import Storage as S
@@ -14,26 +14,26 @@ type alias Outcome =
 
 
 type alias Directives =
-  { persistence : Persistence
+  { storage : Storage
   , history : History
   }
 
 
-type Persistence
-  = Persistent
-  | Transient
+type Storage
+  = Store
+  | NoStore
 
 
 type History
-  = StoreUndo
-  | SkipUndo
+  = Push
+  | Swap
 
 
 --
 
 with : Cmd Msg -> Model -> Outcome
 with cmd model =
-  Outcome (Directives Transient SkipUndo) cmd model
+  Outcome (Directives NoStore Swap) cmd model
 
 
 map : (Model -> Model) -> Outcome -> Outcome
@@ -45,10 +45,10 @@ exec : UndoModel -> Outcome -> (UndoModel, Cmd Msg)
 exec undoModel {directives, cmd, model} =
   let
     mct =
-      case directives.persistence of
-        Persistent -> S.storeWith (model, cmd)
-        Transient -> (model, cmd)
+      case directives.storage of
+        Store -> S.storeWith (model, cmd)
+        NoStore -> (model, cmd)
   in
   case directives.history of
-    StoreUndo -> Undo.push undoModel mct
-    SkipUndo -> Undo.swap undoModel mct
+    Push -> Undo.push undoModel mct
+    Swap -> Undo.swap undoModel mct

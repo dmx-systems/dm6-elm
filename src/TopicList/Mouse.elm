@@ -159,7 +159,7 @@ processDrop sourceTopicId sourceBoxid dropTarget ({model} as env) =
             |> Env.autoSize2 env
         _ -> U.logError "TopicList.Mouse.processDrop" (U.toString dropTarget) model_
       )
-    |> Outcome (Directives Persistent StoreUndo) Cmd.none
+    |> Outcome (Directives Store Push) Cmd.none
 
 
 setDragState : Maybe DragState -> Model -> Model
