@@ -7,8 +7,9 @@ import Model exposing (Model, Msg)
 import ModelBase exposing (..)
 import Outcome exposing (Outcome)
 -- box renderers
-import TopicList.TopicList
-import TopicList.Geometry
+import TopicList.Model
+import TopicList.Mouse
+import TopicList.View
 import TopicMap.BoxProps
 import TopicMap.Geometry
 import TopicMap.Mouse
@@ -118,14 +119,14 @@ registry =
       )
     , ("TopicList",
         { label = "List"
-        , init = TopicList.TopicList.init
-        , view = TopicList.TopicList.view
-        , hitTest = TopicList.Geometry.hitTest
-        , autoSize = TopicList.Geometry.autoSize
-        , dragStart = TopicList.TopicList.dragStart
-        , drag = TopicList.TopicList.drag
-        , dragStop = TopicList.TopicList.dragStop
-        , addTopic = TopicList.TopicList.addTopic
+        , init = TopicList.Model.init
+        , view = TopicList.View.view
+        , hitTest = TopicList.Model.hitTest
+        , autoSize = TopicList.Model.autoSize
+        , dragStart = TopicList.Mouse.dragStart
+        , drag = TopicList.Mouse.drag
+        , dragStop = TopicList.Mouse.dragStop
+        , addTopic = TopicList.Model.addTopic
         }
       )
     ]

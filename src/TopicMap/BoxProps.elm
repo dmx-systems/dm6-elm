@@ -322,13 +322,14 @@ Logs an error if the BoxProps entry is missing.
 updateBoxProps : BoxId -> (BoxProps -> BoxProps) -> Model -> Model
 updateBoxProps boxId transform ({topicMap} as model) =
   { model | topicMap =
-    { topicMap | boxProps = topicMap.boxProps |> Dict.update (toBoxId boxId)
-      (\maybeBoxProps ->
-        case maybeBoxProps of
-          Just boxProps -> Just (transform boxProps)
-          Nothing -> U.logError "TopicMap.BoxProps.updateBoxProps"
-            ("Missing BoxProps entry for (" ++ U.toString boxId ++ ")") Nothing
-      )
+    { topicMap | boxProps = topicMap.boxProps
+        |> Dict.update (toBoxId boxId)
+          (\maybeBoxProps ->
+            case maybeBoxProps of
+              Just boxProps -> Just (transform boxProps)
+              Nothing -> U.logError "TopicMap.BoxProps.updateBoxProps"
+                ("Missing BoxProps entry for (" ++ U.toString boxId ++ ")") Nothing
+          )
     }
   }
 

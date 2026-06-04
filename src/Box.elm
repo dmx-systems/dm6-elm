@@ -1,7 +1,7 @@
-module Box exposing (topicCount, traverse, traverseWith, topicIds, assocIds, turnTopicIntoBox,
-  addTopic, addAssoc, removeTopic, removeAssoc, deleteTopic, deleteAssoc, expansionOf,
-  updateExpansion, rendererOf, setRenderer, hasItem, hadDeepTopic, mapTitle, isFullscreen,
-  elemId, firstId, fromPath)
+module Box exposing (topicCount, traverseWith, topicIds, assocIds, turnTopicIntoBox, addTopic,
+  addAssoc, removeTopic, removeAssoc, deleteTopic, deleteAssoc, expansionOf, updateExpansion,
+  rendererOf, setRenderer, hasItem, hadDeepTopic, mapTitle, isFullscreen, elemId, firstId,
+  fromPath)
 
 import Assoc
 import Extension exposing (Renderer)
