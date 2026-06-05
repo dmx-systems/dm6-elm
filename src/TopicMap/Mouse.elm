@@ -4,6 +4,8 @@ import Assoc
 import Box
 import Config as C
 import Env exposing (Env2)
+import Feature.Sel as Sel
+import Feature.Tool as Tool
 import Model exposing (Model, Msg(..))
 import ModelBase exposing (..)
 import Outcome exposing (..)
@@ -141,7 +143,7 @@ performDrag pos ({model} as env) =
 
 -- ExtManager.NestingDragStop
 dragStop : Env2 -> Outcome
-dragStop {model} =
+dragStop ({model} as env) =
   let
     out =
       case (model.topicMap.mouseState, model.mouse.dragState) of
@@ -161,9 +163,9 @@ dragStop {model} =
                 shouldMoveToBox = fromBoxId boxId /= targetId
               in
               if shouldMoveToBox then
-                Outcome.with
-                  (U.command (TopicDropped topicId boxId origTopicPos targetId targetPath))
-                  model
+                env
+                  |> moveTopicToBox topicId boxId origTopicPos targetId targetPath
+                  |> \(model_, cmd) -> Outcome (Directives Store Push) cmd model_
               else
                 Outcome (Directives Store Swap) Cmd.none model -- store topic pos
             Nothing ->
@@ -210,6 +212,24 @@ dragStop {model} =
   in
   out
     |> Outcome.map (setMouseState NoDrag)
+
+
+moveTopicToBox : TopicId -> BoxId -> Point -> TopicId -> BoxPath -> Env2 -> (Model, Cmd Msg)
+moveTopicToBox topicId boxId origPos targetTopicId targetPath ({model, ext} as env) =
+  let
+    targetBoxId = BoxId targetTopicId -- after createBoxOnDemand target topic is a box for sure
+    expansion = Box.expansionOf topicId boxId model
+  in
+  model
+    |> Tool.createBoxOnDemand targetTopicId
+    |> Box.addTopic (BoxTopic topicId expansion) targetBoxId
+    |> Box.removeTopic topicId boxId
+    |> Sel.select (T targetTopicId) targetPath
+    |> TM.setTopicPos topicId boxId origPos
+    |> ext.addTopic topicId targetBoxId Random -- TODO: remove extension point
+    -- Calling Env.autoSize is the responsibility of the extension's addTopic implementation.
+    -- Particular extensions might add the topic asynchronously (TopicMap extension does) so
+    -- their BoxProps might not yet be initialized but are needed for auto-sizing. 
 
 
 -- Presumption: both topics exist in same box

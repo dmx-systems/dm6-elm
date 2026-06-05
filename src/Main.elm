@@ -271,8 +271,6 @@ update msg ({present} as undoModel) =
   in
   case msg of
     -- gestures detected by Mouse module ### TODO: drop
-    TopicDropped topicId boxId origPos targetId targetPath -> moveTopicToBox topicId boxId
-      origPos targetId targetPath env |> S.storeWith |> Undo.push undoModel
     ItemClicked itemId boxPath -> select itemId boxPath present |> Undo.swap undoModel
     Cancel maybeTarget -> cancelUI maybeTarget env |> Undo.swap undoModel
     -- renderer modules
@@ -287,24 +285,6 @@ update msg ({present} as undoModel) =
     --
     Scrolled pos -> updateScrollPos pos present |> S.store |> Undo.swap undoModel
     NoOp -> (undoModel, Cmd.none)
-
-
-moveTopicToBox : TopicId -> BoxId -> Point -> TopicId -> BoxPath -> Env -> (Model, Cmd Msg)
-moveTopicToBox topicId boxId origPos targetTopicId targetPath ({model, ext} as env) =
-  let
-    targetBoxId = BoxId targetTopicId -- after createBoxOnDemand target topic is a box for sure
-    expansion = Box.expansionOf topicId boxId model
-  in
-  model
-    |> Tool.createBoxOnDemand targetTopicId
-    |> Box.addTopic (BoxTopic topicId expansion) targetBoxId
-    |> Box.removeTopic topicId boxId
-    |> Sel.select (T targetTopicId) targetPath
-    |> TM.setTopicPos topicId boxId origPos -- TODO: dispatch via ExtManager
-    |> ext.addTopic topicId targetBoxId Random
-    -- Calling Env.autoSize is the responsibility of the extension's addTopic implementation.
-    -- Particular extensions might add the topic asynchronously (TopicMap extension does) so
-    -- their BoxProps might not yet be initialized but are needed for auto-sizing. 
 
 
 select : ItemId -> BoxPath -> Model -> (Model, Cmd Msg)
