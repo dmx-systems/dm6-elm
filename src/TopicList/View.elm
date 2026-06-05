@@ -81,7 +81,6 @@ viewListItem ixBoxPath topic level boxPath acc childrenAcc model =
   acc ++
     [ li
         ( Events.draggable topic.id boxPath ixBoxPath
-          -- ++ Events.itemClickHandler (T topic.id) boxPath -- TODO
           ++ VB.selectionStyle topic.id boxPath model
           ++ listItemStyle topic.id boxPath model
           ++ topicBorderStyle topic.id boxPath model

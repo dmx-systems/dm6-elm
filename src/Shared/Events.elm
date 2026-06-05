@@ -1,5 +1,5 @@
-module Shared.Events exposing (globalMouseHandler, itemClickHandler, draggable, onEsc,
-  onEnterOrEsc, onClickStop, onPointerDownStop, onPointerOverStop, onPointerOutStop)
+module Shared.Events exposing (globalMouseHandler, draggable, onEsc, onEnterOrEsc, onClickStop,
+  onPointerDownStop, onPointerOverStop, onPointerOutStop)
 
 import Feature.MouseDef as MouseDef
 import Model exposing (Msg(..))
@@ -21,11 +21,6 @@ globalMouseHandler =
   -- "Cancel UI"
   , on "pointerdown" (D.succeed (Mouse MouseDef.Cancel))
   ]
-
-
-itemClickHandler : ItemId -> BoxPath -> Attrs Msg
-itemClickHandler itemId boxPath =
-  [ onClickStop <| ItemClicked itemId boxPath ]
 
 
 {- Utility for use by renderers to attach to topic element -}

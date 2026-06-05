@@ -3,8 +3,9 @@ module TopicList.Mouse exposing (dragStart, drag, dragStop)
 import Box
 import Config as C
 import Env exposing (Env2)
+import Feature.Sel as Sel
 import Feature.Tool as Tool
-import Model exposing (Model, Msg(..))
+import Model exposing (Model, Msg)
 import ModelBase exposing (..)
 import Outcome exposing (..)
 import TopicList.Model as TopicList
@@ -117,12 +118,9 @@ dragStop ({model} as env2) =
                 |> processDrop topicId (Box.firstId boxPath) dropTarget
             Nothing ->
               let
-                _ = U.info "TopicList.Mouse.dragStop" "no drop target -> ItemClicked"
+                _ = U.info "TopicList.Mouse.dragStop" "no drop target -> select topic"
               in
-              (Outcome.with
-                (U.command <| ItemClicked (T topicId) boxPath)
-                model
-              )
+              Outcome.with Cmd.none <| Sel.select (T topicId) boxPath model
         _ -> U.logError "TopicList.Mouse.dragStop" (U.toString model.mouse.dragState)
           (Outcome.with Cmd.none model)
   in

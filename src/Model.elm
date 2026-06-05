@@ -78,11 +78,8 @@ resetTransient model =
 
 
 type Msg
-  -- gestures detected by Mouse module
-  = ItemClicked ItemId BoxPath
-  | Cancel (Maybe Target)
   -- renderer modules
-  | TopicMap TopicMapDef.Msg
+  = TopicMap TopicMapDef.Msg
   -- feature modules
   | Tool ToolDef.Msg
   | Text TextDef.Msg
@@ -92,6 +89,7 @@ type Msg
   | Nav NavDef.Msg
   --
   | Scrolled Point
+  | Cancel (Maybe Target)
   | NoOp
 
 

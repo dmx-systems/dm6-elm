@@ -270,9 +270,6 @@ update msg ({present} as undoModel) =
         _ -> U.info "Main.update" msg
   in
   case msg of
-    -- gestures detected by Mouse module ### TODO: drop
-    ItemClicked itemId boxPath -> select itemId boxPath present |> Undo.swap undoModel
-    Cancel maybeTarget -> cancelUI maybeTarget env |> Undo.swap undoModel
     -- renderer modules
     TopicMap topicMapMsg -> TMC.update topicMapMsg env
     -- feature modules
@@ -284,15 +281,8 @@ update msg ({present} as undoModel) =
     Nav navMsg -> Nav.update navMsg env
     --
     Scrolled pos -> updateScrollPos pos present |> S.store |> Undo.swap undoModel
+    Cancel maybeTarget -> cancelUI maybeTarget env |> Undo.swap undoModel
     NoOp -> (undoModel, Cmd.none)
-
-
-select : ItemId -> BoxPath -> Model -> (Model, Cmd Msg)
-select itemId boxPath model =
-  ( model
-      |> Sel.select itemId boxPath
-  , Cmd.none
-  )
 
 
 cancelUI : Maybe Target -> Env -> (Model, Cmd Msg)

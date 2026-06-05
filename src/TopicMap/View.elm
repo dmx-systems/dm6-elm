@@ -10,7 +10,7 @@ import Feature.Sel as Sel
 import Feature.Text as Text
 import Feature.ToolDef exposing (LineStyle(..))
 import Feature.Tool as Tool exposing (ToolbarPos)
-import Model exposing (Model, Msg)
+import Model exposing (Model, Msg(..))
 import ModelBase exposing (..)
 import Shared.Events as Events
 import Shared.ViewBase as VB
@@ -171,7 +171,7 @@ viewItems boxProps boxPath ({model} as env) =
           case Assoc.fromId id model of
             Just assoc ->
               let
-                clickHandler = Events.itemClickHandler (A id) newPath
+                clickHandler = assocClickHandler id newPath
               in
               svgAcc ++ viewAssoc assoc newPath clickHandler model
             _ -> U.logError "TopicMap.View.viewItems"
@@ -180,6 +180,11 @@ viewItems boxProps boxPath ({model} as env) =
         []
   in
   (topics, assocs)
+
+
+assocClickHandler : AssocId -> BoxPath -> Attrs Msg
+assocClickHandler assocId boxPath =
+  [ Events.onClickStop (TopicMap <| TopicMapDef.AssocClicked assocId boxPath) ]
 
 
 viewLimboAssoc : BoxId -> Model -> List (Html Msg)

@@ -32,7 +32,7 @@ dragStart {model} =
           |> setMouseState WaitForStartTime
       , Cmd.batch
           [ U.command (Cancel (Just (T topicId, boxPath)))
-          , Task.perform (TopicMap << TopicMapDef.Time) Time.now
+          , Task.perform (TopicMap << TopicMapDef.GotTime) Time.now
           ]
       )
     Nothing ->
@@ -81,7 +81,7 @@ drag pos ({model} as env) =
   case newModel.topicMap.mouseState of
     DragEngaged time ->
       ( setMouseState (WaitForEndTime time) newModel
-      , Task.perform (TopicMap << TopicMapDef.Time) Time.now
+      , Task.perform (TopicMap << TopicMapDef.GotTime) Time.now
       )
     Drag _ _ ->
       ( performDrag pos newEnv, Cmd.none )
@@ -202,11 +202,9 @@ dragStop ({model} as env) =
               Outcome.with Cmd.none model
         (DragEngaged _, Just {topicId, boxPath}) ->
           let
-            _ = U.info "TopicMap.Mouse.dragStop" "topic not moved -> ItemClicked"
+            _ = U.info "TopicMap.Mouse.dragStop" "topic not moved -> select topic"
           in
-          Outcome.with
-            (U.command <| ItemClicked (T topicId) boxPath)
-            model
+          Outcome.with Cmd.none <| Sel.select (T topicId) boxPath model
         _ ->
           Outcome.with Cmd.none model
   in

@@ -64,7 +64,8 @@ type DragMode
 
 
 type Msg
-  = Time Time.Posix
+  = AssocClicked AssocId BoxPath
+  | GotTime Time.Posix
   | GotRandomPos TopicId BoxId Point
 
 
