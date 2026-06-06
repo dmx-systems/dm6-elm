@@ -5,8 +5,7 @@ import ModelBase exposing (..)
 
 
 type alias Model =
-  { dragState : Maybe DragState -- Represents what is dragged, does not change while dragging.
-                                -- Initialzed on DownOnTopic, reset on Up (see Msg below).
+  { dragState : Maybe DragState -- Initialzed on DownOnTopic, reset on Up (see Msg below).
   , hover : Maybe Target        -- The geometrically hovered topic. (Drop semantics is added by
                                 -- particular renderer e.g. TopicMap.Mouse.updateTarget.)
                                 -- Synthesized also on pointerdown for touch devices.
@@ -26,10 +25,11 @@ resetTransient _ =
 
 
 type alias DragState =
-  { topicId : TopicId   -- the topic being dragged
-  , boxPath : BoxPath   -- direct topic context
-  , ixBoxPath : BoxPath -- interaction box path - wider topic context
-  , startPos : Point    -- where mousedown took place (client coordinates)
+  { topicId : TopicId      -- the topic being dragged
+  , boxPath : BoxPath      -- direct topic context
+  , ixBoxPath : BoxPath    -- interaction box path - wider topic context
+  , startPos : Point       -- pointerdown position (client coordinates)
+  , lastPointerPos : Point -- pointermove position (client coordinates)
   }
 
 

@@ -37,7 +37,6 @@ type alias BoxProps =
 
 type alias DragState =
   { elemPos : Point -- position of dragged element
-  , lastPos : Point -- last pointer position
   , dropTarget : Maybe DropTarget
   }
 

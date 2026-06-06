@@ -26,7 +26,7 @@ dragStart {model} =
           elemPos = toElemPos startPos ixBoxPath model
         in
         model
-          |> setDragState (Just (DragState elemPos startPos Nothing))
+          |> setDragState (Just (DragState elemPos Nothing))
       Nothing ->
         let
           _ = U.logError "TopicList.Mouse.dragStart" "Unexpected drag state"
@@ -63,7 +63,7 @@ toIndex localPos =
 drag : Point -> Env2 -> (Model, Cmd Msg)
 drag clientPos {model} =
   ( case (model.mouse.dragState, model.topicList.dragState) of
-      (Just {topicId, ixBoxPath}, Just ({elemPos, lastPos} as dragState)) ->
+      (Just {topicId, ixBoxPath, lastPointerPos}, Just ({elemPos} as dragState)) ->
         let
           localPos = toLocalPos clientPos ixBoxPath model
         in
@@ -71,8 +71,7 @@ drag clientPos {model} =
           |> setDragState
             (Just
               { dragState |
-                elemPos = { elemPos | y = elemPos.y + clientPos.y - lastPos.y }
-              , lastPos = clientPos
+                elemPos = { elemPos | y = elemPos.y + clientPos.y - lastPointerPos.y }
               , dropTarget = dropTargetAt localPos topicId model
               }
             )

@@ -17,7 +17,7 @@ update msg ({model, undoModel, ext} as env) =
   case (msg, model.mouse.dragState) of
     (MouseDef.DownOnTopic topicId boxPath ixBoxPath (pos, pointerType), _) ->
       model
-        |> setDragState (Just (DragState topicId boxPath ixBoxPath pos))
+        |> setDragState (Just (DragState topicId boxPath ixBoxPath pos pos))
         |> emulateHover topicId boxPath pointerType
         |> ext.dragStart
         |> Undo.swap undoModel
@@ -30,6 +30,11 @@ update msg ({model, undoModel, ext} as env) =
       model
         |> updateHover pos ext
         |> ext.drag (Box.firstId dragState.ixBoxPath) pos
+        |> \(model_, cmd) ->
+          ( model_
+              |> setDragState (Just {dragState | lastPointerPos = pos})
+          , cmd
+          )
         |> Undo.swap undoModel
     (MouseDef.Up, Just dragState) ->
       model

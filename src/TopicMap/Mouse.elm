@@ -51,7 +51,7 @@ timeArrived time ({present} as undoModel) =
       in
       (setMouseState mouseState present, Cmd.none)
         |> Undo.swap undoModel
-    (WaitForEndTime startTime, Just {topicId, boxPath, startPos}) ->
+    (WaitForEndTime startTime, Just {topicId, boxPath}) ->
       let
         delay = posixToMillis time - posixToMillis startTime
         (dragMode, undo) =
@@ -61,7 +61,7 @@ timeArrived time ({present} as undoModel) =
         maybeOrigPos = TM.topicPos topicId (Box.firstId boxPath) present
         mouseState =
           case maybeOrigPos of
-            Just origPos -> Drag dragMode (DragState origPos startPos Nothing)
+            Just origPos -> Drag dragMode (DragState origPos Nothing)
             Nothing -> NoDrag -- error is already logged
       in
       (setMouseState mouseState present, Cmd.none)
@@ -121,7 +121,7 @@ updateTarget model =
 performDrag : Point -> Env2 -> Model
 performDrag pos ({model} as env) =
   case (model.topicMap.mouseState, model.mouse.dragState) of
-    (Drag dragMode ({lastPointerPos} as dragState), Just {topicId, boxPath}) ->
+    (Drag dragMode _, Just {topicId, boxPath, lastPointerPos}) ->
       let
         newModel =
           case dragMode of
@@ -135,7 +135,6 @@ performDrag pos ({model} as env) =
             DraftAssoc -> model
       in
       newModel
-        |> setMouseState (Drag dragMode {dragState | lastPointerPos = pos})
         |> Env.autoSize2 env
     _ -> U.logError "TopicMap.Mouse.performDrag"
       ("Received \"Drag\" when mouseState is " ++ U.toString model.topicMap.mouseState) model
@@ -224,7 +223,7 @@ moveTopicToBox topicId boxId origPos targetTopicId targetPath ({model, ext} as e
     |> Box.removeTopic topicId boxId
     |> Sel.select (T targetTopicId) targetPath
     |> TM.setTopicPos topicId boxId origPos
-    |> ext.addTopic topicId targetBoxId Random -- TODO: remove extension point
+    |> ext.addTopic topicId targetBoxId Random -- TODO: revise extension point -> use init?
     -- Calling Env.autoSize is the responsibility of the extension's addTopic implementation.
     -- Particular extensions might add the topic asynchronously (TopicMap extension does) so
     -- their BoxProps might not yet be initialized but are needed for auto-sizing. 

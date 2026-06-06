@@ -53,7 +53,6 @@ type MouseState
 
 type alias DragState =
   { origTopicPos : Point
-  , lastPointerPos : Point
   , dropTarget : Maybe Target
   }
 

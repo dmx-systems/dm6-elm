@@ -528,7 +528,7 @@ viewAssoc assoc boxPath clickHandler model =
 viewAssocDraft : BoxId -> Model -> List (Svg Msg)
 viewAssocDraft boxId model =
   case (model.mouse.dragState, model.topicMap.mouseState) of
-    (Just {boxPath}, Drag DraftAssoc {origTopicPos, lastPointerPos}) ->
+    (Just {boxPath, lastPointerPos}, Drag DraftAssoc {origTopicPos}) ->
       if Box.firstId boxPath == boxId then
         let
           pos = VM.toLocalPos lastPointerPos boxPath model
