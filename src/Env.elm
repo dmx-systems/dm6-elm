@@ -31,6 +31,8 @@ type alias Env2 =
   }
 
 
+{-| A value of this type is exported as "ext" by ExtManager module.
+-}
 type alias ExtManager =
   { init : Init
   , view : BoxRenderer
@@ -38,13 +40,16 @@ type alias ExtManager =
   , autoSize : AutoSize
   , dragStart : DragStart
   , drag : Drag
+  , dragTargeting : DragTargeting
   , dragStop : DragStop
   , addTopic : AddTopic
   , all : Extensions
   }
 
 
--- Extension capabilities
+-- Extension Points
+--
+-- Called on the "ext" value by the application developer.
 
 type alias Init =
   BoxId -> Model -> Model
@@ -71,6 +76,10 @@ type alias DragStart =
 
 type alias Drag =
   BoxId -> Point -> Model -> (Model, Cmd Msg)
+
+
+type alias DragTargeting =
+  BoxId -> Point -> Model -> Model
 
 
 type alias DragStop =

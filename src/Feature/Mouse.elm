@@ -24,17 +24,17 @@ update msg ({model, undoModel, ext} as env) =
     (MouseDef.Move (pos, _), Nothing) ->
       model
         |> updateHover pos ext
-        |> \model_ -> (model_, Cmd.none)
+        |> Model.with Cmd.none
         |> Undo.swap undoModel
     (MouseDef.Move (pos, _), Just dragState) ->
+      let
+        boxId = (Box.firstId dragState.ixBoxPath)
+      in
       model
         |> updateHover pos ext
-        |> ext.drag (Box.firstId dragState.ixBoxPath) pos
-        |> \(model_, cmd) ->
-          ( model_
-              |> setDragState (Just {dragState | lastPointerPos = pos})
-          , cmd
-          )
+        |> ext.drag boxId pos
+        |> Model.map (ext.dragTargeting boxId pos)
+        |> Model.map (setDragState (Just {dragState | lastPointerPos = pos}))
         |> Undo.swap undoModel
     (MouseDef.Up, Just dragState) ->
       model

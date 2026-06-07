@@ -1,4 +1,4 @@
-module TopicMap.Mouse exposing (dragStart, drag, dragStop, timeArrived)
+module TopicMap.Mouse exposing (dragStart, drag, dragTargeting, dragStop, timeArrived)
 
 import Assoc
 import Box
@@ -73,53 +73,33 @@ timeArrived time ({present} as undoModel) =
 
 -- ExtManager.NestingDrag
 drag : Point -> Env2 -> (Model, Cmd Msg)
-drag pos ({model} as env) =
-  let
-    newModel = updateTarget model -- TODO: pipe model, having dropTargetAt, like TopicList
-    newEnv = Env.withModel2 env newModel
-  in
-  case newModel.topicMap.mouseState of
+drag clientPos ({model} as env) =
+  case model.topicMap.mouseState of
     DragEngaged time ->
-      ( setMouseState (WaitForEndTime time) newModel
+      ( setMouseState (WaitForEndTime time) model
       , Task.perform (TopicMap << TopicMapDef.GotTime) Time.now
       )
     Drag _ _ ->
-      ( performDrag pos newEnv, Cmd.none )
+      (updateTopicPos clientPos env, Cmd.none)
     _ ->
-      ( newModel, Cmd.none )
+      (model, Cmd.none)
 
 
-{-| If Drag is in progress updates its accepted drop target, based on geometrically hovered
-topic (Feature.Mouse module's "hover" state).
--}
-updateTarget : Model -> Model
-updateTarget model =
-  case (model.topicMap.mouseState, model.mouse.dragState) of
-    (Drag dragMode dragState, Just {topicId}) ->
-      case model.mouse.hover of
-        Just ((T dropTopicId, _) as target) ->
-          let
-            isCyclic = Box.hadDeepTopic dropTopicId topicId model
-            newTarget =
-              -- geometrically hovered topic (dropTopicId) is accepted as a drop target if it is
-              -- 1. not contained in item/box being dragged (topicId), would create a cycle
-              -- 2. OR draft assoc is in progress
-              if not isCyclic || dragMode == DraftAssoc then
-                Just target
-              else
-                Nothing
-          in
-          model -- update accepted drop target
-            |> setMouseState (Drag dragMode {dragState | dropTarget = newTarget})
-        Nothing ->
-          model -- reset accepted drop target
-            |> setMouseState (Drag dragMode {dragState | dropTarget = Nothing})
-        _ -> model
-    _ -> model
+-- ExtManager.DragTargeting
+dragTargeting : Point -> Env2 -> Model
+dragTargeting _ {model} =
+  case model.topicMap.mouseState of
+    Drag dragMode dragState ->
+      let
+        target = dropTargetFor dragMode model
+      in
+      model
+        |> setMouseState (Drag dragMode {dragState | dropTarget = target})
+    _ -> model -- TODO: error?
 
 
-performDrag : Point -> Env2 -> Model
-performDrag pos ({model} as env) =
+updateTopicPos : Point -> Env2 -> Model
+updateTopicPos pos ({model} as env) =
   case (model.topicMap.mouseState, model.mouse.dragState) of
     (Drag dragMode _, Just {topicId, boxPath, lastPointerPos}) ->
       let
@@ -136,8 +116,28 @@ performDrag pos ({model} as env) =
       in
       newModel
         |> Env.autoSize2 env
-    _ -> U.logError "TopicMap.Mouse.performDrag"
+    _ -> U.logError "TopicMap.Mouse.updateTopicPos"
       ("Received \"Drag\" when mouseState is " ++ U.toString model.topicMap.mouseState) model
+
+
+{-| If Drag is in progress updates its accepted drop target, based on geometrically hovered
+topic (Feature.Mouse module's "hover" state). ### FIXDOC
+-}
+dropTargetFor : DragMode -> Model -> Maybe Target
+dropTargetFor dragMode model =
+  case (model.mouse.hover, model.mouse.dragState) of
+    (Just ((T dropTopicId, _) as target), Just {topicId}) ->
+      let
+        isCyclic = Box.hadDeepTopic dropTopicId topicId model
+      in
+      -- geometrically hovered topic (dropTopicId) is accepted as a drop target if it is
+      -- 1. not contained in item/box being dragged (topicId), would create a cycle
+      -- 2. OR draft assoc is in progress
+      if not isCyclic || dragMode == DraftAssoc then
+        Just target
+      else
+        Nothing
+    _ -> Nothing -- TODO: error?
 
 
 -- ExtManager.NestingDragStop
@@ -212,7 +212,7 @@ dragStop ({model} as env) =
 
 
 moveTopicToBox : TopicId -> BoxId -> Point -> TopicId -> BoxPath -> Env2 -> (Model, Cmd Msg)
-moveTopicToBox topicId boxId origPos targetTopicId targetPath ({model, ext} as env) =
+moveTopicToBox topicId boxId origPos targetTopicId targetPath {model, ext} =
   let
     targetBoxId = BoxId targetTopicId -- after createBoxOnDemand target topic is a box for sure
     expansion = Box.expansionOf topicId boxId model

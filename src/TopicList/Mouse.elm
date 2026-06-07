@@ -1,4 +1,4 @@
-module TopicList.Mouse exposing (dragStart, drag, dragStop)
+module TopicList.Mouse exposing (dragStart, drag, dragTargeting, dragStop)
 
 import Box
 import Config as C
@@ -63,16 +63,12 @@ toIndex localPos =
 drag : Point -> Env2 -> (Model, Cmd Msg)
 drag clientPos {model} =
   ( case (model.mouse.dragState, model.topicList.dragState) of
-      (Just {topicId, ixBoxPath, lastPointerPos}, Just ({elemPos} as dragState)) ->
-        let
-          localPos = toLocalPos clientPos ixBoxPath model
-        in
+      (Just {lastPointerPos}, Just ({elemPos} as dragState)) ->
         model
           |> setDragState
             (Just
               { dragState |
                 elemPos = { elemPos | y = elemPos.y + clientPos.y - lastPointerPos.y }
-              , dropTarget = dropTargetAt localPos topicId model
               }
             )
       _ ->
@@ -83,6 +79,25 @@ drag clientPos {model} =
         model
   , Cmd.none
   )
+
+
+-- ExtManager.DragTargeting
+dragTargeting : Point -> Env2 -> Model
+dragTargeting clientPos {model} =
+  case (model.mouse.dragState, model.topicList.dragState) of
+    (Just {topicId, ixBoxPath}, Just dragState) ->
+      let
+        localPos = toLocalPos clientPos ixBoxPath model
+      in
+      model
+        |> setDragState
+          (Just { dragState | dropTarget = dropTargetAt localPos topicId model })
+    _ ->
+      let
+        _ = U.logError "TopicList.Mouse.dragTargeting" "Unexpected drag state"
+          (model.mouse.dragState, model.topicList.dragState)
+      in
+      model
 
 
 dropTargetAt : Point -> TopicId -> Model -> Maybe DropTarget

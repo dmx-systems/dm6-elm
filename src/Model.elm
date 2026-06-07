@@ -1,4 +1,4 @@
-module Model exposing (Model, Msg(..), init, resetTransient, encode, decoder, nextId)
+module Model exposing (Model, Msg(..), init, resetTransient, encode, decoder, map, with, nextId)
 
 import Config as C
 import Extension
@@ -137,6 +137,16 @@ decoder =
 
 
 -- API
+
+
+map : (Model -> Model) -> (Model, Cmd Msg) -> (Model, Cmd Msg)
+map transform (model, cmd) =
+  (transform model, cmd)
+
+
+with : Cmd Msg -> Model -> (Model, Cmd Msg)
+with cmd model =
+  (model, cmd)
 
 
 nextId : Model -> Model

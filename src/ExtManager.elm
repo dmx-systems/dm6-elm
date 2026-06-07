@@ -32,9 +32,17 @@ type alias Extension =
   , autoSize : NestingAutoSize
   , dragStart : NestingDragStart
   , drag : NestingDrag
+  , dragTargeting : DragTargeting
   , dragStop : NestingDragStop
   , addTopic : AddTopic
   }
+
+
+
+-- Extension Points
+--
+-- Implemented by the plugin developer.
+-- Called on a specific plugin by the dispatcher (see below).
 
 
 type alias ExtInit =
@@ -73,6 +81,10 @@ type alias NestingDrag =
   Point -> Env2 -> (Model, Cmd Msg)
 
 
+type alias DragTargeting =
+  Point -> Env2 -> Model
+
+
 -- TODO: wording
 type alias NestingDragStop =
   Env2 -> Outcome
@@ -94,6 +106,7 @@ ext =
   , autoSize = autoSize
   , dragStart = dragStart
   , drag = drag
+  , dragTargeting = dragTargeting
   , dragStop = dragStop
   , addTopic = addTopic
   , all = all
@@ -113,6 +126,7 @@ registry =
         , autoSize = TopicMap.Geometry.autoSize
         , dragStart = TopicMap.Mouse.dragStart
         , drag = TopicMap.Mouse.drag
+        , dragTargeting = TopicMap.Mouse.dragTargeting
         , dragStop = TopicMap.Mouse.dragStop
         , addTopic = TopicMap.BoxProps.addTopic
         }
@@ -125,6 +139,7 @@ registry =
         , autoSize = TopicList.Model.autoSize
         , dragStart = TopicList.Mouse.dragStart
         , drag = TopicList.Mouse.drag
+        , dragTargeting = TopicList.Mouse.dragTargeting
         , dragStop = TopicList.Mouse.dragStop
         , addTopic = TopicList.Model.addTopic
         }
@@ -133,7 +148,7 @@ registry =
 
 
 
--- Note: these functions implement the "capability" type signatures defined in Env.elm
+-- Note: these functions implement the Extension Point type signatures defined in Env.elm
 
 
 init : BoxId -> Model -> Model
@@ -186,6 +201,12 @@ drag : BoxId -> Point -> Model -> (Model, Cmd Msg)
 drag boxId pos model =
   dispatch boxId model (model, Cmd.none)
     (\env renderer -> renderer.drag pos env)
+
+
+dragTargeting : BoxId -> Point -> Model -> Model
+dragTargeting boxId pos model =
+  dispatch boxId model model
+    (\env renderer -> renderer.dragTargeting pos env)
 
 
 dragStop : BoxId -> Model -> Outcome
