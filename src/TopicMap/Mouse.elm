@@ -169,7 +169,8 @@ dragStop ({model} as env) =
                 Outcome (Directives Store Swap) Cmd.none model -- store topic pos
             Nothing ->
               let
-                _ = U.info "TopicMap.Mouse.dragStop" "topic drag ended w/o target"
+                _ = U.info "TopicMap.Mouse.dragStop"
+                  "topic drag ended w/o target -> store position"
               in
               Outcome (Directives Store Swap) Cmd.none model
             _ ->

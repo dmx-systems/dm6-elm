@@ -6,7 +6,7 @@ import Env exposing (Env, ExtManager)
 import Feature.MouseDef as MouseDef exposing (DragState)
 import Model exposing (Model, Msg(..))
 import ModelBase exposing (..)
-import Outcome
+import Outcome exposing (Outcome)
 import Undo exposing (UndoModel)
 import Utils as U
 
@@ -27,20 +27,15 @@ update msg ({model, undoModel, ext} as env) =
         |> Model.with Cmd.none
         |> Undo.swap undoModel
     (MouseDef.Move (pos, _), Just dragState) ->
-      let
-        boxId = (Box.firstId dragState.ixBoxPath)
-      in
       model
         |> updateHover pos ext
-        |> ext.drag boxId pos
+        |> ext.drag (Box.firstId dragState.ixBoxPath) pos
         |> dragTargeting pos ext
         |> Model.map (setDragState (Just {dragState | lastPointerPos = pos}))
         |> Undo.swap undoModel
     (MouseDef.Up, Just dragState) ->
       model
-        |> ext.dragStop (Box.firstId dragState.ixBoxPath)
-        -- Note: typically extension's dragStop handler operates on Mouse's DragState,
-        -- so we reset afterwards
+        |> dragStop dragState ext
         |> Outcome.map (setDragState Nothing)
         |> Outcome.exec undoModel
     (MouseDef.Cancel, _) ->
@@ -57,6 +52,31 @@ dragTargeting clientPos ext ((model, _) as mct) =
       mct
         |> Model.map (ext.dragTargeting boxId clientPos)
     _ -> mct
+
+
+dragStop : DragState -> ExtManager -> Model -> Outcome
+dragStop dragState ext model =
+  let
+    maybeBoxId =
+      case (model.mouse.hover, dragState.ixBoxPath) of
+        (Just (_, boxId :: _), _) ->
+          Just boxId
+        (Nothing, boxId :: _) ->
+          Just boxId
+        _ ->
+          let
+            _ = U.logError "Feature.Mouse.dragStop" "Unexpected drag state"
+              (model.mouse.hover, dragState.ixBoxPath)
+          in
+          Nothing
+  in
+  case maybeBoxId of
+    Just boxId ->
+      model
+        |> ext.dragStop boxId
+    Nothing ->
+      model
+        |> Outcome.with Cmd.none
 
 
 setDragState : Maybe DragState -> Model -> Model
