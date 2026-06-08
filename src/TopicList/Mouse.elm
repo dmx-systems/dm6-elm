@@ -23,10 +23,10 @@ dragStart {model} =
   ( case model.mouse.dragState of
       Just {ixBoxPath, startPos} ->
         let
-          elemPos = toElemPos startPos ixBoxPath model
+          itemPos = toElemPos startPos ixBoxPath model
         in
         model
-          |> setDragState (Just (DragState elemPos Nothing))
+          |> setDragState (DragState (Just itemPos) Nothing)
       Nothing ->
         let
           _ = U.logError "TopicList.Mouse.dragStart" "Unexpected drag state"
@@ -62,14 +62,12 @@ toIndex localPos =
 -- ExtManager.NestingDrag
 drag : Point -> Env2 -> (Model, Cmd Msg)
 drag clientPos {model} =
-  ( case (model.mouse.dragState, model.topicList.dragState) of
-      (Just {lastPointerPos}, Just ({elemPos} as dragState)) ->
+  ( case (model.mouse.dragState, model.topicList.dragState.itemPos) of
+      (Just {lastPointerPos}, Just itemPos) ->
         model
-          |> setDragState
+          |> setItemPos
             (Just
-              { dragState |
-                elemPos = { elemPos | y = elemPos.y + clientPos.y - lastPointerPos.y }
-              }
+              { itemPos | y = itemPos.y + clientPos.y - lastPointerPos.y }
             )
       _ ->
         let
@@ -84,18 +82,18 @@ drag clientPos {model} =
 -- ExtManager.DragTargeting
 dragTargeting : Point -> Env2 -> Model
 dragTargeting clientPos {model} =
-  case (model.mouse.dragState, model.topicList.dragState) of
-    (Just {topicId, ixBoxPath}, Just dragState) ->
-      let
-        localPos = toLocalPos clientPos ixBoxPath model
-      in
+  case model.mouse.dragState of
+    Just {topicId, ixBoxPath} ->
       model
-        |> setDragState
-          (Just { dragState | dropTarget = dropTargetAt localPos topicId model })
+        |> setDropTarget
+          (dropTargetAt
+            (toLocalPos clientPos ixBoxPath model)
+            topicId model
+          )
     _ ->
       let
         _ = U.logError "TopicList.Mouse.dragTargeting" "Unexpected drag state"
-          (model.mouse.dragState, model.topicList.dragState)
+          model.mouse.dragState
       in
       model
 
@@ -124,9 +122,9 @@ dragStop : Env2 -> Outcome
 dragStop ({model} as env2) =
   let
     outcome =
-      case (model.mouse.dragState, model.topicList.dragState) of
-        (Just {topicId, boxPath}, Just dragState) ->
-          case dragState.dropTarget of
+      case model.mouse.dragState of
+        Just {topicId, boxPath} ->
+          case model.topicList.dragState.dropTarget of
             Just dropTarget ->
               env2
                 |> processDrop topicId (Box.firstId boxPath) dropTarget
@@ -139,7 +137,7 @@ dragStop ({model} as env2) =
           (Outcome.with Cmd.none model)
   in
   outcome
-    |> Outcome.map (setDragState Nothing)
+    |> Outcome.map (setDragState (DragState Nothing Nothing))
 
 
 processDrop : TopicId -> BoxId -> DropTarget -> Env2 -> Outcome
@@ -174,6 +172,24 @@ processDrop sourceTopicId sourceBoxid dropTarget ({model} as env) =
     |> Outcome (Directives Store Push) Cmd.none
 
 
-setDragState : Maybe DragState -> Model -> Model
+setItemPos : Maybe Point -> Model -> Model
+setItemPos itemPos model =
+  let
+    dragState = model.topicList.dragState
+  in
+  model
+    |> setDragState { dragState | itemPos = itemPos }
+
+
+setDropTarget : Maybe DropTarget -> Model -> Model
+setDropTarget dropTarget model =
+  let
+    dragState = model.topicList.dragState
+  in
+  model
+    |> setDragState { dragState | dropTarget = dropTarget }
+
+
+setDragState : DragState -> Model -> Model
 setDragState dragState ({topicList} as model) =
   { model | topicList = { topicList | dragState = dragState }}

@@ -12,20 +12,20 @@ import Array exposing (Array)
 
 type alias Model =
   { boxProps : Dict Id BoxProps
-  , dragState : Maybe DragState -- only available while drag is active (Mouse state), transient
+  , dragState : DragState -- transient
   }
 
 
 init : Model
 init =
   { boxProps = Dict.empty
-  , dragState = Nothing
+  , dragState = DragState Nothing Nothing
   }
 
 
 resetTransient : Model -> Model
 resetTransient model =
-  { model | dragState = Nothing }
+  { model | dragState = DragState Nothing Nothing }
 
 
 type alias BoxProps =
@@ -36,7 +36,11 @@ type alias BoxProps =
 
 
 type alias DragState =
-  { elemPos : Point -- position of dragged element
+  -- position of dragging list item
+  -- available while a drag that started from a list rendering is active
+  { itemPos : Maybe Point
+  -- accepted drop location within a list rendering
+  -- Note: the drag has not necessarily started from a list rendering (but another renderer)
   , dropTarget : Maybe DropTarget
   }
 
@@ -79,7 +83,7 @@ decoder : D.Decoder Model
 decoder =
   D.map2 Model
     (toDictDecoderWith toBoxId topicListDecoder)
-    (D.succeed Nothing)
+    (D.succeed <| DragState Nothing Nothing)
 
 
 topicListDecoder : D.Decoder BoxProps

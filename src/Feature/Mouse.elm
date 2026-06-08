@@ -33,7 +33,7 @@ update msg ({model, undoModel, ext} as env) =
       model
         |> updateHover pos ext
         |> ext.drag boxId pos
-        |> Model.map (ext.dragTargeting boxId pos)
+        |> dragTargeting pos ext
         |> Model.map (setDragState (Just {dragState | lastPointerPos = pos}))
         |> Undo.swap undoModel
     (MouseDef.Up, Just dragState) ->
@@ -48,6 +48,15 @@ update msg ({model, undoModel, ext} as env) =
     _ ->
       -- TODO: match no-op vs. error cases explicitly
       (undoModel, Cmd.none)
+
+
+dragTargeting : Point -> ExtManager -> (Model, Cmd Msg) -> (Model, Cmd Msg)
+dragTargeting clientPos ext ((model, _) as mct) =
+  case model.mouse.hover of
+    Just (_, boxId :: _) ->
+      mct
+        |> Model.map (ext.dragTargeting boxId clientPos)
+    _ -> mct
 
 
 setDragState : Maybe DragState -> Model -> Model

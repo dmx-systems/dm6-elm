@@ -44,7 +44,7 @@ view boxId boxPath ({model} as env) =
         model
       )
       ++
-      viewDraggingTopic boxPath_ model
+      viewDraggingItem boxPath_ model
     )
 
 
@@ -155,19 +155,19 @@ insertionPointStyle topicId boxPath model =
 
 isTarget : DropTarget -> Model -> Bool
 isTarget dropTarget_ model =
-  case model.topicList.dragState of
-    Just {dropTarget} -> dropTarget == Just dropTarget_
+  case model.topicList.dragState.dropTarget of
+    Just dropTarget -> dropTarget == dropTarget_
     _ -> False
 
 
-viewDraggingTopic : BoxPath -> Model -> HtList
-viewDraggingTopic viewBoxPath model =
-  case (model.mouse.dragState, model.topicList.dragState) of
-    (Just {topicId, ixBoxPath}, Just {elemPos}) ->
+viewDraggingItem : BoxPath -> Model -> HtList
+viewDraggingItem viewBoxPath model =
+  case (model.mouse.dragState, model.topicList.dragState.itemPos) of
+    (Just {topicId, ixBoxPath}, Just itemPos) ->
       case (viewBoxPath == ixBoxPath, Topic.fromId topicId model) of
         (True, Just topic) ->
           [ div
-              (draggingTopicStyle elemPos)
+              (draggingTopicStyle itemPos)
               [text (Topic.label topic)]
           ]
         _ -> []
