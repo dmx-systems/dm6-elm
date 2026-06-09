@@ -126,17 +126,20 @@ topic (Feature.Mouse module's "hover" state). ### FIXDOC
 dropTargetFor : DragMode -> Model -> Maybe Target
 dropTargetFor dragMode model =
   case (model.mouse.hover, model.mouse.dragState) of
-    (Just ((T dropTopicId, _) as target), Just {topicId}) ->
-      let
-        isCyclic = Box.hadDeepTopic dropTopicId topicId model
-      in
-      -- geometrically hovered topic (dropTopicId) is accepted as a drop target if it is
-      -- 1. not contained in item/box being dragged (topicId), would create a cycle
-      -- 2. OR draft assoc is in progress
-      if not isCyclic || dragMode == DraftAssoc then
-        Just target
-      else
-        Nothing
+    (Just {target}, Just {topicId}) ->
+      case target of
+        (T dropTopicId, _) ->
+          let
+            isCyclic = Box.hadDeepTopic dropTopicId topicId model
+          in
+          -- geometrically hovered topic (dropTopicId) is accepted as a drop target if it is
+          -- 1. not contained in item/box being dragged (topicId), would create a cycle
+          -- 2. OR draft assoc is in progress
+          if not isCyclic || dragMode == DraftAssoc then
+            Just target
+          else
+            Nothing
+        _ -> Nothing -- TODO: error?
     _ -> Nothing -- TODO: error?
 
 

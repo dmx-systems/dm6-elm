@@ -18,7 +18,7 @@ update msg ({model, undoModel, ext} as env) =
     (MouseDef.DownOnTopic topicId boxPath ixBoxPath (pos, pointerType), _) ->
       model
         |> setDragState (Just (DragState topicId boxPath ixBoxPath pos pos))
-        |> emulateHover topicId boxPath pointerType
+        |> emulateHover topicId boxPath (Box.firstId ixBoxPath) pointerType
         |> ext.dragStart
         |> Undo.swap undoModel
     (MouseDef.Move (pos, _), Nothing) ->
@@ -48,10 +48,10 @@ update msg ({model, undoModel, ext} as env) =
 dragTargeting : Point -> ExtManager -> (Model, Cmd Msg) -> (Model, Cmd Msg)
 dragTargeting clientPos ext ((model, _) as mct) =
   case model.mouse.hover of
-    Just (_, boxId :: _) ->
+    Just {ixBoxId} ->
       mct
-        |> Model.map (ext.dragTargeting boxId clientPos)
-    _ -> mct
+        |> Model.map (ext.dragTargeting ixBoxId clientPos)
+    Nothing -> mct
 
 
 dragStop : DragState -> ExtManager -> Model -> Outcome
@@ -59,8 +59,8 @@ dragStop dragState ext model =
   let
     maybeBoxId =
       case (model.mouse.hover, dragState.ixBoxPath) of
-        (Just (_, boxId :: _), _) ->
-          Just boxId
+        (Just {ixBoxId}, _) ->
+          Just ixBoxId
         (Nothing, boxId :: _) ->
           Just boxId
         _ ->
@@ -98,11 +98,11 @@ isTopicDragging topicId boxPath model =
     Nothing -> False
 
 
-emulateHover : TopicId -> BoxPath -> PointerType -> Model -> Model
-emulateHover topicId boxPath pointerType model =
+emulateHover : TopicId -> BoxPath -> BoxId -> PointerType -> Model -> Model
+emulateHover topicId boxPath ixBoxId pointerType model =
   if pointerType == "touch" then
     model
-      |> setHover (Just (T topicId, boxPath))
+      |> setHover (Just (BoxTarget ixBoxId (T topicId, boxPath)))
   else
     model
 
@@ -124,7 +124,7 @@ updateHover ({y} as clientPos) ext model =
     |> setHover maybeTarget
 
 
-setHover : Maybe Target -> Model -> Model
+setHover : Maybe BoxTarget -> Model -> Model
 setHover hover ({mouse} as model) =
   { model | mouse = { mouse | hover = hover }}
 
@@ -138,6 +138,9 @@ clearHover model =
 isHovered : TopicId -> BoxPath -> Model -> Bool
 isHovered topicId boxPath model =
   case model.mouse.hover of
-    Just (T topicId_, boxPath_) ->
-      topicId == topicId_ && boxPath == boxPath_
+    Just {target} ->
+      case target of
+        (T topicId_, boxPath_) ->
+          topicId == topicId_ && boxPath == boxPath_
+        _ -> False
     _ -> False

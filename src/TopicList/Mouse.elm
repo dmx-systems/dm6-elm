@@ -101,20 +101,24 @@ dragTargeting clientPos {model} =
 dropTargetAt : Point -> TopicId -> Model -> Maybe DropTarget
 dropTargetAt localPos dragTopicId model =
   case model.mouse.hover of
-    Just ((T dropTopicId, dropBoxId :: _) as target) ->
-      let
-        lowerHalf = modBy (C.listItemHeight + 4) (localPos.y - 1) > (C.listItemHeight + 4) // 2
-        (dropMode, targetBoxId) =
-          case lowerHalf of
-            True -> (Drop, dropTopicId)
-            False -> (InsertBefore, fromBoxId dropBoxId)
-        isCyclic = Box.hadDeepTopic targetBoxId dragTopicId model
-      in
-      if not isCyclic then
-        Just (dropMode target)
-      else
-        Nothing
-    _ -> Nothing
+    Just {target} ->
+      case target of
+        (T dropTopicId, dropBoxId :: _) ->
+          let
+            lowerHalf =
+              modBy (C.listItemHeight + 4) (localPos.y - 1) > (C.listItemHeight + 4) // 2
+            (dropMode, targetBoxId) =
+              case lowerHalf of
+                True -> (Drop, dropTopicId)
+                False -> (InsertBefore, fromBoxId dropBoxId)
+            isCyclic = Box.hadDeepTopic targetBoxId dragTopicId model
+          in
+          if not isCyclic then
+            Just (dropMode target)
+          else
+            Nothing
+        _ -> Nothing -- TODO: error?
+    Nothing -> Nothing
 
 
 -- ExtManager.NestingDragStop

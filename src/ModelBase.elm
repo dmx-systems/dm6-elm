@@ -1,10 +1,10 @@
 module ModelBase exposing (Id, TopicId(..), AssocId(..), ItemId(..), AssocIds, Topic, Icon,
   TextSize, Size, SizeField(..), Point, Rectangle, Assoc, AssocType(..), ItemSet, SetItem, Box,
-  BoxId(..), Level, BoxPath, Target, BoxTopic, Expansion(..), ImageId, Attrs, PointerType,
-  Extensions, ExtLabel, PosHint(..), toTopicId, toAssocId, toBoxId, fromBoxId, maybeTopicId,
-  maybeAssocId, rootBoxId, encodeTopic, encodeAssoc, encodeItemSet, encodeBox, encodeTopicId,
-  encodeBoxId, topicDecoder, assocDecoder, itemSetDecoder, boxDecoder, topicIdDecoder,
-  boxIdDecoder, toDictDecoder, toDictDecoderWith)
+  BoxId(..), Level, BoxPath, Target, BoxTarget, BoxTopic, Expansion(..), ImageId, Attrs,
+  PointerType, Extensions, ExtLabel, PosHint(..), toTopicId, toAssocId, toBoxId, fromBoxId,
+  maybeTopicId, maybeAssocId, rootBoxId, encodeTopic, encodeAssoc, encodeItemSet, encodeBox,
+  encodeTopicId, encodeBoxId, topicDecoder, assocDecoder, itemSetDecoder, boxDecoder,
+  topicIdDecoder, boxIdDecoder, toDictDecoder, toDictDecoderWith)
 
 import Extension exposing (Renderer, encodeRenderer)
 
@@ -147,6 +147,12 @@ type alias BoxPath = List BoxId
 
 
 type alias Target = (ItemId, BoxPath)
+
+
+type alias BoxTarget =
+  { ixBoxId : BoxId
+  , target : Target
+  }
 
 
 type alias Box =

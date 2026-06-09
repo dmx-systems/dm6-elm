@@ -61,7 +61,7 @@ type alias BoxRenderer =
 
 -- Point is in box-local coordinates
 type alias HitTest =
-  BoxId -> BoxPath -> Point -> Maybe TopicId -> Model -> Maybe Target
+  BoxId -> BoxPath -> Point -> Maybe TopicId -> Model -> Maybe BoxTarget
 
 
 type alias AutoSize =

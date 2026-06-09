@@ -6,7 +6,7 @@ import ModelBase exposing (..)
 
 type alias Model =
   { dragState : Maybe DragState -- Initialzed on DownOnTopic, reset on Up (see Msg below).
-  , hover : Maybe Target        -- The geometrically hovered topic. (Drop semantics is added by
+  , hover : Maybe BoxTarget     -- The geometrically hovered topic. (Drop semantics is added by
                                 -- particular renderer e.g. TopicMap.Mouse.updateTarget.)
                                 -- Synthesized also on pointerdown for touch devices.
   }

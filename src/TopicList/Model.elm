@@ -182,7 +182,7 @@ insertIntoOrder topicId boxId beforeTopicId model =
 
 -- ExtManager.NestingHitTest
 -- Point is in box-local coordinates
-hitTest : BoxId -> BoxPath -> Point -> Maybe TopicId -> Env2 -> Maybe Target
+hitTest : BoxId -> BoxPath -> Point -> Maybe TopicId -> Env2 -> Maybe BoxTarget
 hitTest (BoxId topicId as boxId) boxPath pos excludeTopicId {model} =
   if isListHovered boxId pos model then
     let
@@ -191,8 +191,8 @@ hitTest (BoxId topicId as boxId) boxPath pos excludeTopicId {model} =
       -- _ = U.info "TopicList.Geometry.hitTest" index
     in
     case Array.get index t of
-      Just (_, target) -> Just target
-      Nothing -> Just (T topicId, boxPath)
+      Just (_, target) -> Just (BoxTarget boxId target)
+      Nothing -> Just (BoxTarget boxId (T topicId, boxPath))
   else
     Nothing
 
