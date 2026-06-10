@@ -3,7 +3,7 @@ port module Main exposing (..)
 import Box
 import Config as C
 import Env exposing (Env)
-import ExtManager
+import ExtManager exposing (ext)
 import Feature.Icon as Icon
 import Feature.Mouse as Mouse
 import Feature.MouseDef as MouseDef
@@ -116,7 +116,7 @@ view ({present} as undoModel) =
             ( [ id "main" ]
               ++ mainStyle
             )
-            ( [ ExtManager.ext.view present.boxId [] present ] -- boxPath = []
+            ( [ ext.view present.boxId [] present ] -- boxPath = []
               ++ Tool.viewMapTools undoModel
             )
         ]
@@ -262,7 +262,7 @@ update msg ({present} as undoModel) =
     env =
       { model = present
       , undoModel = undoModel
-      , ext = ExtManager.ext
+      , ext = ext
       }
     _ =
       case msg of
@@ -312,7 +312,7 @@ cancelUIWith maybeTarget ({model} as env) =
   else
     model
       |> Sel.clear
-      |> Mouse.clearHover
+      |> Mouse.clearHover ext -- TODO: needed?
       |> Env.withModel env
       |> Text.leaveEdit
 

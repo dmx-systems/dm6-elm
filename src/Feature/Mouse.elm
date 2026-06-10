@@ -18,7 +18,7 @@ update msg ({model, undoModel, ext} as env) =
     (MouseDef.DownOnTopic topicId boxPath ixBoxPath (pos, pointerType), _) ->
       model
         |> setDragState (Just (DragState topicId boxPath ixBoxPath pos pos))
-        |> emulateHover topicId boxPath (Box.firstId ixBoxPath) pointerType
+        |> emulateHover topicId boxPath (Box.firstId ixBoxPath) pointerType ext
         |> ext.dragStart
         |> Undo.swap undoModel
     (MouseDef.Move (pos, _), Nothing) ->
@@ -98,11 +98,11 @@ isTopicDragging topicId boxPath model =
     Nothing -> False
 
 
-emulateHover : TopicId -> BoxPath -> BoxId -> PointerType -> Model -> Model
-emulateHover topicId boxPath ixBoxId pointerType model =
+emulateHover : TopicId -> BoxPath -> BoxId -> PointerType -> ExtManager -> Model -> Model
+emulateHover topicId boxPath ixBoxId pointerType ext model =
   if pointerType == "touch" then
     model
-      |> setHover (Just (BoxTarget ixBoxId (T topicId, boxPath)))
+      |> setHover (Just (BoxTarget ixBoxId (T topicId, boxPath))) ext
   else
     model
 
@@ -114,25 +114,39 @@ updateHover : Point -> ExtManager -> Model -> Model
 updateHover ({y} as clientPos) ext model =
   let
     localPos = { clientPos | y = y - C.appHeaderHeight } -- local to fullscreen box
-    excludeTopicId =
+    maybeFilter =
       case model.mouse.dragState of
         Just {topicId} -> Just topicId
         Nothing -> Nothing
-    maybeTarget = ext.hitTest model.boxId [] localPos excludeTopicId model
+    maybeHover = ext.hitTest model.boxId [] localPos maybeFilter model
   in
   model
-    |> setHover maybeTarget
+    |> setHover maybeHover ext
 
 
-setHover : Maybe BoxTarget -> Model -> Model
-setHover hover ({mouse} as model) =
-  { model | mouse = { mouse | hover = hover }}
-
-
-clearHover : Model -> Model
-clearHover model =
+clearHover : ExtManager -> Model -> Model
+clearHover ext model =
   model
-    |> setHover Nothing
+    |> setHover Nothing ext
+
+
+setHover : Maybe BoxTarget -> ExtManager -> Model -> Model
+setHover maybeHover ext model =
+  model
+    |> resetDropTarget ext
+    |> setHover_ maybeHover
+
+
+resetDropTarget : ExtManager -> Model -> Model
+resetDropTarget ext model =
+  case model.mouse.hover of
+    Just {ixBoxId} -> model |> ext.resetDropTarget ixBoxId
+    Nothing -> model
+
+
+setHover_ : Maybe BoxTarget -> Model -> Model
+setHover_ maybeHover ({mouse} as model) =
+  { model | mouse = { mouse | hover = maybeHover }}
 
 
 isHovered : TopicId -> BoxPath -> Model -> Bool

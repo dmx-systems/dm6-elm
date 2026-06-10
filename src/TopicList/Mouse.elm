@@ -1,4 +1,4 @@
-module TopicList.Mouse exposing (dragStart, drag, dragTargeting, dragStop)
+module TopicList.Mouse exposing (dragStart, drag, dragTargeting, resetDropTarget, dragStop)
 
 import Box
 import Config as C
@@ -119,6 +119,13 @@ dropTargetAt localPos dragTopicId model =
             Nothing
         _ -> Nothing -- TODO: error?
     Nothing -> Nothing
+
+
+-- ExtManager.DropTargetReset
+resetDropTarget : Env2 -> Model
+resetDropTarget ({model} as env2) =
+  model
+    |> setDropTarget Nothing
 
 
 -- ExtManager.NestingDragStop

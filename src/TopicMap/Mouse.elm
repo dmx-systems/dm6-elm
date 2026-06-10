@@ -1,4 +1,5 @@
-module TopicMap.Mouse exposing (dragStart, drag, dragTargeting, dragStop, timeArrived)
+module TopicMap.Mouse exposing (dragStart, drag, dragTargeting, resetDropTarget, dragStop,
+  timeArrived)
 
 import Assoc
 import Box
@@ -143,6 +144,12 @@ dropTargetFor dragMode model =
     _ -> Nothing -- TODO: error?
 
 
+-- ExtManager.DropTargetReset
+resetDropTarget : Env2 -> Model
+resetDropTarget ({model} as env2) =
+  model -- TODO
+
+
 -- ExtManager.NestingDragStop
 dragStop : Env2 -> Outcome
 dragStop ({model} as env) =
@@ -156,7 +163,7 @@ dragStop ({model} as env) =
                 _ = U.info "TopicMap.Mouse.dragStop" ("dropped " ++ fromInt (toTopicId topicId)
                   ++ " (box " ++ Box.fromPath boxPath ++ ") on " ++ fromInt (toTopicId targetId)
                   ++ " (box " ++ Box.fromPath targetPath ++ ") --> "
-                  ++ if shouldMoveToBox then "move topic to box" else "abort")
+                  ++ if shouldMoveToBox then "move topic to box" else "abort, store position")
                 -- When dragging a topic inside a nested box that box will be the target (this
                 -- is since target is determined by map geometry, not by enter/leave events
                 -- anymore). We distinguish a topic-moved-to-box from a topic-dragged-inside-box

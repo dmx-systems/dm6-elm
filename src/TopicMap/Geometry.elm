@@ -20,7 +20,7 @@ import Utils as U
 -- ExtManager.NestingHitTest
 {-| Finds the topic/box at a given screen position.
 Returns the found topic/box (Id) and its context (BoxPath), or Nothing.
-If `excludeTopicId` is given that topic/box will be excluded from search.
+If `maybeFilter` is given that topic/box will be excluded from search.
 
 boxId - the Box to search, result is one of its (deep) children or the box itself
 boxPath - path of Box boxId (1st param)
@@ -103,6 +103,7 @@ isTopicHit itemId boxPath pos model =
 
 
 {-| Transforms the given screen position to a map-relative position according to the given map.
+TODO: function name, description, FIXME: don't apply scroll value for nested boxes?
 -}
 mapOffset : Point -> BoxProps -> Point
 mapOffset pos boxProps =
@@ -111,6 +112,7 @@ mapOffset pos boxProps =
     (pos.y + boxProps.rect.y1 + boxProps.scroll.y)
 
 
+-- TODO: function name, description
 relPos_ : Point -> TopicId -> BoxPath -> Model -> Point
 relPos_ pos topicId boxPath model =
   case TM.topicPos topicId (Box.firstId boxPath) model of

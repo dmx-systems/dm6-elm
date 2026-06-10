@@ -33,6 +33,7 @@ type alias Extension =
   , dragStart : NestingDragStart
   , drag : NestingDrag
   , dragTargeting : DragTargeting
+  , resetDropTarget : DropTargetReset
   , dragStop : NestingDragStop
   , addTopic : AddTopic
   }
@@ -85,6 +86,10 @@ type alias DragTargeting =
   Point -> Env2 -> Model
 
 
+type alias DropTargetReset =
+  Env2 -> Model
+
+
 -- TODO: wording
 type alias NestingDragStop =
   Env2 -> Outcome
@@ -107,6 +112,7 @@ ext =
   , dragStart = dragStart
   , drag = drag
   , dragTargeting = dragTargeting
+  , resetDropTarget = resetDropTarget
   , dragStop = dragStop
   , addTopic = addTopic
   , all = all
@@ -127,6 +133,7 @@ registry =
         , dragStart = TopicMap.Mouse.dragStart
         , drag = TopicMap.Mouse.drag
         , dragTargeting = TopicMap.Mouse.dragTargeting
+        , resetDropTarget = TopicMap.Mouse.resetDropTarget
         , dragStop = TopicMap.Mouse.dragStop
         , addTopic = TopicMap.BoxProps.addTopic
         }
@@ -140,6 +147,7 @@ registry =
         , dragStart = TopicList.Mouse.dragStart
         , drag = TopicList.Mouse.drag
         , dragTargeting = TopicList.Mouse.dragTargeting
+        , resetDropTarget = TopicList.Mouse.resetDropTarget
         , dragStop = TopicList.Mouse.dragStop
         , addTopic = TopicList.Model.addTopic
         }
@@ -170,9 +178,9 @@ view boxId boxPath model =
 
 
 hitTest : BoxId -> BoxPath -> Point -> Maybe TopicId -> Model -> Maybe BoxTarget
-hitTest boxId boxPath pos excludeTopicId model =
+hitTest boxId boxPath pos maybeFilter model =
   dispatch boxId model Nothing
-    (\env renderer -> renderer.hitTest boxId boxPath pos excludeTopicId env)
+    (\env renderer -> renderer.hitTest boxId boxPath pos maybeFilter env)
 
 
 autoSize : BoxPath -> Model -> (Rectangle, Model)
@@ -207,6 +215,12 @@ dragTargeting : BoxId -> Point -> Model -> Model
 dragTargeting boxId pos model =
   dispatch boxId model model
     (\env renderer -> renderer.dragTargeting pos env)
+
+
+resetDropTarget : BoxId -> Model -> Model
+resetDropTarget boxId model =
+  dispatch boxId model model
+    (\env renderer -> renderer.resetDropTarget env)
 
 
 dragStop : BoxId -> Model -> Outcome
