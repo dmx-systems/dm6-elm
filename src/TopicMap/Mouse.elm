@@ -11,7 +11,7 @@ import Model exposing (Model, Msg(..))
 import ModelBase exposing (..)
 import Outcome exposing (..)
 import TopicMap.BoxProps as TM
-import TopicMap.TopicMapDef as TopicMapDef exposing (MouseState(..), DragState, DragMode(..))
+import TopicMap.TopicMapDef as TopicMapDef exposing (DragState(..), DragMode(..))
 import Undo exposing (UndoModel)
 import Utils as U
 
@@ -30,7 +30,7 @@ dragStart {model} =
   case model.mouse.dragState of
     Just {topicId, boxPath} ->
       ( model
-          |> setMouseState WaitForStartTime
+          |> setDragState WaitForStartTime
       , Cmd.batch
           [ U.command (Cancel (Just (T topicId, boxPath)))
           , Task.perform (TopicMap << TopicMapDef.GotTime) Time.now
@@ -45,42 +45,40 @@ dragStart {model} =
 
 timeArrived : Posix -> UndoModel -> (UndoModel, Cmd Msg)
 timeArrived time ({present} as undoModel) =
-  case (present.topicMap.mouseState, present.mouse.dragState) of
-    (WaitForStartTime, _) ->
+  case (present.mouse.dragState, present.topicMap.dragState) of
+    (_, WaitForStartTime) ->
       let
-        mouseState = DragEngaged time
+        dragState = DragEngaged time
       in
-      (setMouseState mouseState present, Cmd.none)
+      (setDragState dragState present, Cmd.none)
         |> Undo.swap undoModel
-    (WaitForEndTime startTime, Just {topicId, boxPath}) ->
+    (Just {topicId, boxPath}, WaitForEndTime startTime) ->
       let
         delay = posixToMillis time - posixToMillis startTime
-        (dragMode, undo) =
-          case delay > C.assocDelayMillis of
-            True -> (DraftAssoc, Undo.swap)
-            False -> (DragTopic, Undo.push)
-        maybeOrigPos = TM.topicPos topicId (Box.firstId boxPath) present
-        mouseState =
-          case maybeOrigPos of
-            Just origPos -> Drag dragMode (DragState origPos Nothing)
-            Nothing -> NoDrag -- error is already logged
+        (dragState, undo) =
+          if delay > C.assocDelayMillis then
+            (Drag DraftAssoc, Undo.swap)
+          else
+            case TM.topicPos topicId (Box.firstId boxPath) present of
+              Just origPos -> (Drag (DragTopic origPos), Undo.push)
+              Nothing -> (NoDrag, Undo.swap) -- error is already logged
       in
-      (setMouseState mouseState present, Cmd.none)
+      (setDragState dragState present, Cmd.none)
         |> undo undoModel
     _ ->
       U.logError "TopicMap.Mouse.timeArrived"
-        "Received Time when mouseState is not WaitFor..Time" (undoModel, Cmd.none)
+        "Received Time when dragState is not WaitFor..Time" (undoModel, Cmd.none)
 
 
 -- ExtManager.NestingDrag
 drag : Point -> Env2 -> (Model, Cmd Msg)
 drag clientPos ({model} as env) =
-  case model.topicMap.mouseState of
+  case model.topicMap.dragState of
     DragEngaged time ->
-      ( setMouseState (WaitForEndTime time) model
+      ( setDragState (WaitForEndTime time) model
       , Task.perform (TopicMap << TopicMapDef.GotTime) Time.now
       )
-    Drag _ _ ->
+    Drag _ ->
       (updateTopicPos clientPos env, Cmd.none)
     _ ->
       (model, Cmd.none)
@@ -89,36 +87,38 @@ drag clientPos ({model} as env) =
 -- ExtManager.DragTargeting
 dragTargeting : Point -> Env2 -> Model
 dragTargeting _ {model} =
-  case model.topicMap.mouseState of
-    Drag dragMode dragState ->
-      let
-        target = dropTargetFor dragMode model
-      in
+  case model.topicMap.dragState of
+    Drag dragMode ->
       model
-        |> setMouseState (Drag dragMode {dragState | dropTarget = target})
-    _ -> model -- TODO: error?
+        |> setDropTarget (dropTargetFor dragMode model)
+    _ ->
+      model -- TODO: error?
 
 
 updateTopicPos : Point -> Env2 -> Model
-updateTopicPos pos ({model} as env) =
-  case (model.topicMap.mouseState, model.mouse.dragState) of
-    (Drag dragMode _, Just {topicId, boxPath, lastPointerPos}) ->
+updateTopicPos clientPos ({model} as env) =
+  case (model.mouse.dragState, model.topicMap.dragState) of
+    (Just {topicId, boxPath, lastPointerPos}, Drag dragMode) ->
       let
-        newModel =
+        updateTopicPos_ : Model -> Model
+        updateTopicPos_ model_ =
           case dragMode of
-            DragTopic -> TM.updateTopicPos topicId (Box.firstId boxPath)
-              (\oldPos ->
-                Point
-                  (oldPos.x + pos.x - lastPointerPos.x)
-                  (oldPos.y + pos.y - lastPointerPos.y)
-              )
-              model
-            DraftAssoc -> model
+            DragTopic _ ->
+              model_
+                |> TM.updateTopicPos topicId (Box.firstId boxPath)
+                  (\pos ->
+                    Point
+                      (pos.x + clientPos.x - lastPointerPos.x)
+                      (pos.y + clientPos.y - lastPointerPos.y)
+                  )
+            DraftAssoc ->
+              model_
       in
-      newModel
+      model
+        |> updateTopicPos_
         |> Env.autoSize2 env
     _ -> U.logError "TopicMap.Mouse.updateTopicPos"
-      ("Received \"Drag\" when mouseState is " ++ U.toString model.topicMap.mouseState) model
+      ("Received \"Drag\" when dragState is " ++ U.toString model.topicMap.dragState) model
 
 
 {-| If Drag is in progress updates its accepted drop target, based on geometrically hovered
@@ -155,9 +155,9 @@ dragStop : Env2 -> Outcome
 dragStop ({model} as env) =
   let
     out =
-      case (model.topicMap.mouseState, model.mouse.dragState) of
-        (Drag DragTopic {origTopicPos, dropTarget}, Just {topicId, boxPath}) ->
-          case dropTarget of
+      case (model.mouse.dragState, model.topicMap.dragState) of
+        (Just {topicId, boxPath}, Drag (DragTopic origTopicPos)) ->
+          case model.topicMap.dropTarget of
             Just (T targetId, targetPath) ->
               let
                 _ = U.info "TopicMap.Mouse.dragStop" ("dropped " ++ fromInt (toTopicId topicId)
@@ -185,8 +185,8 @@ dragStop ({model} as env) =
               Outcome (Directives Store Swap) Cmd.none model
             _ ->
               Outcome.with Cmd.none model
-        (Drag DraftAssoc {dropTarget}, Just {topicId, boxPath}) ->
-          case dropTarget of
+        (Just {topicId, boxPath}, Drag DraftAssoc) ->
+          case model.topicMap.dropTarget of
             Just (T targetId, targetPath) ->
               let
                 _ = U.info "TopicMap.Mouse.dragStop" ("assoc drawn from "
@@ -210,7 +210,7 @@ dragStop ({model} as env) =
               Outcome.with Cmd.none model
             _ ->
               Outcome.with Cmd.none model
-        (DragEngaged _, Just {topicId, boxPath}) ->
+        (Just {topicId, boxPath}, DragEngaged _) ->
           let
             _ = U.info "TopicMap.Mouse.dragStop" "topic not moved -> select topic"
           in
@@ -219,7 +219,8 @@ dragStop ({model} as env) =
           Outcome.with Cmd.none model
   in
   out
-    |> Outcome.map (setMouseState NoDrag)
+    |> Outcome.map (setDragState NoDrag)
+    |> Outcome.map (setDropTarget Nothing)
 
 
 moveTopicToBox : TopicId -> BoxId -> Point -> TopicId -> BoxPath -> Env2 -> (Model, Cmd Msg)
@@ -250,6 +251,11 @@ createAssoc topicId1 topicId2 boxId model =
         |> Box.addAssoc assocId boxId
 
 
-setMouseState : MouseState -> Model -> Model
-setMouseState mouseState ({topicMap} as model) =
-  { model | topicMap = { topicMap | mouseState = mouseState }}
+setDragState : DragState -> Model -> Model
+setDragState dragState ({topicMap} as model) =
+  { model | topicMap = { topicMap | dragState = dragState }}
+
+
+setDropTarget : Maybe Target -> Model -> Model
+setDropTarget maybeTarget ({topicMap} as model) =
+  { model | topicMap = { topicMap | dropTarget = maybeTarget }}

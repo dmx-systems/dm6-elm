@@ -1,5 +1,5 @@
-module TopicMap.TopicMapDef exposing (Model, BoxProps, TopicProps, MouseState(..), DragState,
-  DragMode(..), Msg(..), init, encode, decoder)
+module TopicMap.TopicMapDef exposing (Model, BoxProps, TopicProps, DragState(..), DragMode(..),
+  Msg(..), init, encode, decoder)
 
 import ModelBase exposing (..)
 
@@ -12,7 +12,8 @@ import Time
 
 type alias Model =
   { boxProps : Dict Id BoxProps
-  , mouseState : MouseState
+  , dragState : DragState
+  , dropTarget : Maybe Target
   }
 
 
@@ -23,7 +24,8 @@ init =
         (toBoxId rootBoxId)
         (BoxProps rootBoxId (Rectangle 0 0 0 0) (Point 0 0) Dict.empty)
   -- transient
-  , mouseState = NoDrag
+  , dragState = NoDrag
+  , dropTarget = Nothing
   }
 
 
@@ -43,22 +45,16 @@ type alias TopicProps =
   }
 
 
-type MouseState
+type DragState
   = WaitForStartTime
   | DragEngaged Time.Posix    -- start time, entered once start time arrives
   | WaitForEndTime Time.Posix -- start time (buffered), entered on 1st move (once engaged)
-  | Drag DragMode DragState   -- entered once end time arrives
+  | Drag DragMode             -- entered once end time arrives
   | NoDrag
 
 
-type alias DragState =
-  { origTopicPos : Point
-  , dropTarget : Maybe Target
-  }
-
-
 type DragMode
-  = DragTopic
+  = DragTopic Point -- original topic position
   | DraftAssoc
 
 
@@ -118,9 +114,10 @@ encodeTopicProps topic =
 
 decoder : D.Decoder Model
 decoder =
-  D.map2 Model
+  D.map3 Model
     (toDictDecoderWith toBoxId boxPropsDecoder)
     (D.succeed NoDrag)
+    (D.succeed Nothing)
 
 
 boxPropsDecoder : D.Decoder BoxProps
