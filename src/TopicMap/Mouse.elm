@@ -147,7 +147,8 @@ dropTargetFor dragMode model =
 -- ExtManager.DropTargetReset
 resetDropTarget : Env2 -> Model
 resetDropTarget ({model} as env2) =
-  model -- TODO
+  model
+    |> setDropTarget Nothing
 
 
 -- ExtManager.NestingDragStop
