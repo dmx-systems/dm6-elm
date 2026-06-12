@@ -8,7 +8,7 @@ import Feature.Tool as Tool
 import Model exposing (Model, Msg)
 import ModelBase exposing (..)
 import Outcome exposing (..)
-import TopicList.Model as TopicList
+import TopicList.TopicList as TopicList
 import TopicList.TopicListDef exposing (DropTarget(..))
 import TopicMap.ViewModel exposing (toLocalPos)
 import Utils as U
@@ -17,13 +17,13 @@ import Array
 
 
 
--- ExtManager.NestingDragStart
+-- ExtManager.ExtDragStart
 dragStart : Env2 -> (Model, Cmd Msg)
 dragStart {model} =
   ( case model.mouse.dragSource of
       Just {ixBoxPath, startPos} ->
         model
-          |> setItemPos (Just (toElemPos startPos ixBoxPath model))
+          |> setDragPos (Just (toElemPos startPos ixBoxPath model))
       Nothing ->
         let
           _ = U.logError "TopicList.Mouse.dragStart" "Unexpected drag state"
@@ -56,23 +56,23 @@ toIndex localPos =
   (localPos.y - 1) // (C.listItemHeight + 4)
 
 
--- ExtManager.NestingDrag
+-- ExtManager.ExtDrag
 drag : Point -> Env2 -> (Model, Cmd Msg)
 drag clientPos {model} =
-  ( case (model.mouse.dragSource, model.topicList.itemPos) of
-      (Just {lastPointerPos}, Just itemPos) ->
+  ( case (model.mouse.dragSource, model.topicList.dragPos) of
+      (Just {lastPointerPos}, Just dragPos) ->
         model
-          |> setItemPos
+          |> setDragPos
             (Just
-              { itemPos
-              | x = itemPos.x + clientPos.x - lastPointerPos.x
-              , y = itemPos.y + clientPos.y - lastPointerPos.y
+              { dragPos
+              | x = dragPos.x + clientPos.x - lastPointerPos.x
+              , y = dragPos.y + clientPos.y - lastPointerPos.y
               }
             )
       _ ->
         let
           _ = U.logError "TopicList.Mouse.drag" "Unexpected drag state"
-            (model.mouse.dragSource, model.topicList.itemPos)
+            (model.mouse.dragSource, model.topicList.dragPos)
         in
         model
   , Cmd.none
@@ -128,7 +128,7 @@ resetDropTarget ({model} as env2) =
     |> setDropTarget Nothing
 
 
--- ExtManager.NestingDragStop
+-- ExtManager.ExtDragStop
 dragStop : Env2 -> Outcome
 dragStop ({model} as env2) =
   let
@@ -148,7 +148,7 @@ dragStop ({model} as env2) =
           (Outcome.with Cmd.none model)
   in
   outcome
-    |> Outcome.map (setItemPos Nothing)
+    |> Outcome.map (setDragPos Nothing)
     |> Outcome.map (setDropTarget Nothing)
 
 
@@ -184,9 +184,9 @@ processDrop sourceTopicId sourceBoxid dropTarget ({model} as env) =
     |> Outcome (Directives Store Push) Cmd.none
 
 
-setItemPos : Maybe Point -> Model -> Model
-setItemPos itemPos ({topicList} as model) =
-  { model | topicList = { topicList | itemPos = itemPos }}
+setDragPos : Maybe Point -> Model -> Model
+setDragPos dragPos ({topicList} as model) =
+  { model | topicList = { topicList | dragPos = dragPos }}
 
 
 setDropTarget : Maybe DropTarget -> Model -> Model

@@ -11,7 +11,7 @@ import ModelBase exposing (..)
 import Shared.Events as Events
 import Shared.ViewBase as VB
 import Topic
-import TopicList.Model as TopicList
+import TopicList.TopicList as TopicList
 import TopicList.TopicListDef exposing (DropTarget(..), Targets)
 import Utils as U
 
@@ -26,7 +26,7 @@ type alias HtList = List (Html Msg)
 
 
 
--- ExtManager.NestingBoxRenderer
+-- ExtManager.ExtBoxView
 -- For the fullscreen box boxPath is empty
 view : BoxId -> BoxPath -> Env2 -> Html Msg
 view boxId boxPath ({model} as env) =
@@ -162,12 +162,12 @@ isTarget dropTarget_ model =
 
 viewDraggingItem : BoxPath -> Model -> HtList
 viewDraggingItem viewBoxPath model =
-  case (model.mouse.dragSource, model.topicList.itemPos) of
-    (Just {topicId, ixBoxPath}, Just itemPos) ->
+  case (model.mouse.dragSource, model.topicList.dragPos) of
+    (Just {topicId, ixBoxPath}, Just dragPos) ->
       case (viewBoxPath == ixBoxPath, Topic.fromId topicId model) of
         (True, Just topic) ->
           [ div
-              (draggingTopicStyle itemPos)
+              (draggingTopicStyle dragPos)
               [text (Topic.label topic)]
           ]
         _ -> []

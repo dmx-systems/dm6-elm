@@ -14,7 +14,7 @@ type alias Model =
   { boxProps : Dict Id BoxProps
   -- position of dragging list item -- transient
   -- available while a drag that started from a list rendering is active
-  , itemPos : Maybe Point
+  , dragPos : Maybe Point
   -- accepted drop location within a list rendering -- transient
   -- Note: the drag has not necessarily started from a list rendering (but another renderer)
   , dropTarget : Maybe DropTarget
@@ -24,7 +24,7 @@ type alias Model =
 init : Model
 init =
   { boxProps = Dict.empty
-  , itemPos = Nothing
+  , dragPos = Nothing
   , dropTarget = Nothing
   }
 
@@ -32,7 +32,7 @@ init =
 resetTransient : Model -> Model
 resetTransient model =
   { model
-  | itemPos = Nothing
+  | dragPos = Nothing
   , dropTarget = Nothing
   }
 

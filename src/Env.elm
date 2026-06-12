@@ -79,7 +79,6 @@ type alias DragStart =
   Model -> (Model, Cmd Msg)
 
 
--- TODO: rename DragPos
 type alias Drag =
   BoxId -> Point -> Model -> (Model, Cmd Msg)
 

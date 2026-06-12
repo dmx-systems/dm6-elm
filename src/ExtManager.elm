@@ -7,8 +7,8 @@ import Model exposing (Model, Msg)
 import ModelBase exposing (..)
 import Outcome exposing (Outcome)
 -- box renderers
-import TopicList.Model
 import TopicList.Mouse
+import TopicList.TopicList
 import TopicList.View
 import TopicMap.BoxProps
 import TopicMap.Geometry
@@ -27,15 +27,15 @@ import Html exposing (Html, text)
 type alias Extension =
   { label : ExtLabel
   , init : ExtInit
-  , view : NestingBoxRenderer
-  , hitTest : NestingHitTest
-  , autoSize : NestingAutoSize
+  , view : ExtBoxView
+  , hitTest : ExtHitTest
+  , autoSize : ExtAutoSize
   -- Drag and Drop
-  , dragStart : NestingDragStart
-  , drag : NestingDrag
+  , dragStart : ExtDragStart
+  , drag : ExtDrag
   , updateDropTarget : ExtDropTargeting
   , resetDropTarget : ExtDropTargetReset
-  , dragStop : NestingDragStop
+  , dragStop : ExtDragStop
   --
   , addTopic : AddTopic
   }
@@ -59,16 +59,16 @@ Note: the actual box renderers get access to the dispatching box renderer as an 
 their "view" function instead of importing a module. This avoids circular dependencies in
 conjunction with recursively nested renderers.
 -}
-type alias NestingBoxRenderer =
+type alias ExtBoxView =
   BoxId -> BoxPath -> Env2 -> Html Msg
 
 
 -- Point is in box-local coordinates
-type alias NestingHitTest =
+type alias ExtHitTest =
   BoxId -> BoxPath -> Point -> Maybe TopicId -> Env2 -> Maybe BoxTarget
 
 
-type alias NestingAutoSize =
+type alias ExtAutoSize =
   BoxPath -> Env2 -> (Rectangle, Model)
 
 
@@ -76,13 +76,11 @@ type alias NestingAutoSize =
 
 -- Note: no drag specific parameters here. An extension's "dragStart" handler operates on
 -- (feature module) Mouse's "dragSource" directly.
--- TODO: rename OnDragStart
-type alias NestingDragStart =
+type alias ExtDragStart =
   Env2 -> (Model, Cmd Msg)
 
 
--- TODO: wording
-type alias NestingDrag =
+type alias ExtDrag =
   Point -> Env2 -> (Model, Cmd Msg)
 
 
@@ -94,8 +92,7 @@ type alias ExtDropTargetReset =
   Env2 -> Model
 
 
--- TODO: wording
-type alias NestingDragStop =
+type alias ExtDragStop =
   Env2 -> Outcome
 
 
@@ -146,16 +143,16 @@ registry =
       )
     , ("TopicList",
         { label = "List"
-        , init = TopicList.Model.init
+        , init = TopicList.TopicList.init
         , view = TopicList.View.view
-        , hitTest = TopicList.Model.hitTest
-        , autoSize = TopicList.Model.autoSize
+        , hitTest = TopicList.TopicList.hitTest
+        , autoSize = TopicList.TopicList.autoSize
         , dragStart = TopicList.Mouse.dragStart
         , drag = TopicList.Mouse.drag
         , updateDropTarget = TopicList.Mouse.updateDropTarget
         , resetDropTarget = TopicList.Mouse.resetDropTarget
         , dragStop = TopicList.Mouse.dragStop
-        , addTopic = TopicList.Model.addTopic
+        , addTopic = TopicList.TopicList.addTopic
         }
       )
     ]

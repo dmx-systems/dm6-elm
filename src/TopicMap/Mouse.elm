@@ -24,7 +24,7 @@ import Time exposing (Posix, posixToMillis)
 -- UPDATE
 
 
--- ExtManager.NestingDragStart
+-- ExtManager.ExtDragStart
 dragStart : Env2 -> (Model, Cmd Msg)
 dragStart {model} =
   case model.mouse.dragSource of
@@ -70,7 +70,7 @@ timeArrived time ({present} as undoModel) =
         "Received Time when dragState is not WaitFor..Time" (undoModel, Cmd.none)
 
 
--- ExtManager.NestingDrag
+-- ExtManager.ExtDrag
 drag : Point -> Env2 -> (Model, Cmd Msg)
 drag clientPos ({model} as env) =
   case model.topicMap.dragState of
@@ -151,7 +151,7 @@ resetDropTarget ({model} as env2) =
     |> setDropTarget Nothing
 
 
--- ExtManager.NestingDragStop
+-- ExtManager.ExtDragStop
 dragStop : Env2 -> Outcome
 dragStop ({model} as env) =
   let

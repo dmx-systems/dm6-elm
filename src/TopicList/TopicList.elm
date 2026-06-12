@@ -1,4 +1,4 @@
-module TopicList.Model exposing (init, targets, listOrder, getSize, addTopic, insertIntoOrder,
+module TopicList.TopicList exposing (init, targets, listOrder, getSize, addTopic, insertIntoOrder,
   hitTest, autoSize)
 
 import Box
@@ -180,7 +180,7 @@ insertIntoOrder topicId boxId beforeTopicId model =
 -- HIT TEST
 
 
--- ExtManager.NestingHitTest
+-- ExtManager.ExtHitTest
 -- Point is in box-local coordinates
 hitTest : BoxId -> BoxPath -> Point -> Maybe TopicId -> Env2 -> Maybe BoxTarget
 hitTest (BoxId topicId as boxId) boxPath pos maybeFilter {model} =
@@ -212,7 +212,7 @@ isListHovered boxId pos model =
 -- AUTO-SIZE
 
 
--- ExtManager.NestingAutoSize
+-- ExtManager.ExtAutoSize
 autoSize : BoxPath -> Env2 -> (Rectangle, Model)
 autoSize boxPath {model} =
   let
