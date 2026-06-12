@@ -155,14 +155,14 @@ insertionPointStyle topicId boxPath model =
 
 isTarget : DropTarget -> Model -> Bool
 isTarget dropTarget_ model =
-  case model.topicList.dragState.dropTarget of
+  case model.topicList.dropTarget of
     Just dropTarget -> dropTarget == dropTarget_
     _ -> False
 
 
 viewDraggingItem : BoxPath -> Model -> HtList
 viewDraggingItem viewBoxPath model =
-  case (model.mouse.dragState, model.topicList.dragState.itemPos) of
+  case (model.mouse.dragSource, model.topicList.itemPos) of
     (Just {topicId, ixBoxPath}, Just itemPos) ->
       case (viewBoxPath == ixBoxPath, Topic.fromId topicId model) of
         (True, Just topic) ->

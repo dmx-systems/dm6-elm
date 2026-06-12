@@ -38,11 +38,13 @@ type alias ExtManager =
   , view : BoxRenderer
   , hitTest : HitTest
   , autoSize : AutoSize
+  -- Drag and Drop
   , dragStart : DragStart
   , drag : Drag
-  , dragTargeting : DragTargeting
+  , updateDropTarget : DropTargeting
   , resetDropTarget : DropTargetReset
   , dragStop : DragStop
+  --
   , addTopic : AddTopic
   , all : Extensions
   }
@@ -69,8 +71,10 @@ type alias AutoSize =
   BoxPath -> Model -> (Rectangle, Model)
 
 
+-- Drag and Drop
+
 -- Note: no drag specific parameters here. An extension's "dragStart" handler operates on
--- (feature module) Mouse's "dragState" directly.
+-- (feature module) Mouse's "dragSource" directly.
 type alias DragStart =
   Model -> (Model, Cmd Msg)
 
@@ -80,8 +84,7 @@ type alias Drag =
   BoxId -> Point -> Model -> (Model, Cmd Msg)
 
 
--- TODO: rename DropTarget(ing)?
-type alias DragTargeting =
+type alias DropTargeting =
   BoxId -> Point -> Model -> Model
 
 
@@ -92,6 +95,8 @@ type alias DropTargetReset =
 type alias DragStop =
   BoxId -> Model -> Outcome
 
+
+--
 
 type alias AddTopic =
   TopicId -> BoxId -> PosHint -> Model -> (Model, Cmd Msg)

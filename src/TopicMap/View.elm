@@ -527,7 +527,7 @@ viewAssoc assoc boxPath clickHandler model =
 
 viewAssocDraft : BoxId -> Model -> List (Svg Msg)
 viewAssocDraft boxId model =
-  case (model.mouse.dragState, model.topicMap.dragState) of
+  case (model.mouse.dragSource, model.topicMap.dragState) of
     (Just {topicId, boxPath, lastPointerPos}, Drag DraftAssoc) ->
       let
         sourceBoxId = Box.firstId boxPath

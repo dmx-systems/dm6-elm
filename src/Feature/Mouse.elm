@@ -3,7 +3,7 @@ module Feature.Mouse exposing (update, isDragActive, isTopicDragging, clearHover
 import Box
 import Config as C
 import Env exposing (Env, ExtManager)
-import Feature.MouseDef as MouseDef exposing (DragState)
+import Feature.MouseDef as MouseDef exposing (DragSource)
 import Model exposing (Model, Msg(..))
 import ModelBase exposing (..)
 import Outcome exposing (Outcome)
@@ -14,10 +14,10 @@ import Utils as U
 
 update : MouseDef.Msg -> Env -> (UndoModel, Cmd Msg)
 update msg ({model, undoModel, ext} as env) =
-  case (msg, model.mouse.dragState) of
+  case (msg, model.mouse.dragSource) of
     (MouseDef.DownOnTopic topicId boxPath ixBoxPath (pos, pointerType), _) ->
       model
-        |> setDragState (Just (DragState topicId boxPath ixBoxPath pos pos))
+        |> setDragSource (Just (DragSource topicId boxPath ixBoxPath pos pos))
         |> emulateHover topicId boxPath (Box.firstId ixBoxPath) pointerType ext
         |> ext.dragStart
         |> Undo.swap undoModel
@@ -26,17 +26,17 @@ update msg ({model, undoModel, ext} as env) =
         |> updateHover pos ext
         |> Model.with Cmd.none
         |> Undo.swap undoModel
-    (MouseDef.Move (pos, _), Just dragState) ->
+    (MouseDef.Move (pos, _), Just dragSource) ->
       model
         |> updateHover pos ext
-        |> ext.drag (Box.firstId dragState.ixBoxPath) pos
-        |> dragTargeting pos ext
-        |> Model.map (setDragState (Just {dragState | lastPointerPos = pos}))
+        |> ext.drag (Box.firstId dragSource.ixBoxPath) pos
+        |> updateDropTarget pos ext
+        |> Model.map (setDragSource (Just {dragSource | lastPointerPos = pos}))
         |> Undo.swap undoModel
-    (MouseDef.Up, Just dragState) ->
+    (MouseDef.Up, Just dragSource) ->
       model
-        |> dragStop dragState ext
-        |> Outcome.map (setDragState Nothing)
+        |> dragStop dragSource ext
+        |> Outcome.map (setDragSource Nothing)
         |> Outcome.exec undoModel
     (MouseDef.Cancel, _) ->
       (undoModel, U.command <| Cancel Nothing)
@@ -45,20 +45,20 @@ update msg ({model, undoModel, ext} as env) =
       (undoModel, Cmd.none)
 
 
-dragTargeting : Point -> ExtManager -> (Model, Cmd Msg) -> (Model, Cmd Msg)
-dragTargeting clientPos ext ((model, _) as mct) =
+updateDropTarget : Point -> ExtManager -> (Model, Cmd Msg) -> (Model, Cmd Msg)
+updateDropTarget clientPos ext ((model, _) as mct) =
   case model.mouse.hover of
     Just {ixBoxId} ->
       mct
-        |> Model.map (ext.dragTargeting ixBoxId clientPos)
+        |> Model.map (ext.updateDropTarget ixBoxId clientPos)
     Nothing -> mct
 
 
-dragStop : DragState -> ExtManager -> Model -> Outcome
-dragStop dragState ext model =
+dragStop : DragSource -> ExtManager -> Model -> Outcome
+dragStop dragSource ext model =
   let
     maybeBoxId =
-      case (model.mouse.hover, dragState.ixBoxPath) of
+      case (model.mouse.hover, dragSource.ixBoxPath) of
         (Just {ixBoxId}, _) ->
           Just ixBoxId
         (Nothing, boxId :: _) ->
@@ -66,7 +66,7 @@ dragStop dragState ext model =
         _ ->
           let
             _ = U.logError "Feature.Mouse.dragStop" "Unexpected drag state"
-              (model.mouse.hover, dragState.ixBoxPath)
+              (model.mouse.hover, dragSource.ixBoxPath)
           in
           Nothing
   in
@@ -79,22 +79,22 @@ dragStop dragState ext model =
         |> Outcome.with Cmd.none
 
 
-setDragState : Maybe DragState -> Model -> Model
-setDragState dragState ({mouse} as model) =
-  { model | mouse = { mouse | dragState = dragState }}
+setDragSource : Maybe DragSource -> Model -> Model
+setDragSource dragSource ({mouse} as model) =
+  { model | mouse = { mouse | dragSource = dragSource }}
 
 
 isDragActive : Model -> Bool
 isDragActive model =
-  case model.mouse.dragState of
+  case model.mouse.dragSource of
     Just _ -> True
     Nothing -> False
 
 
 isTopicDragging : TopicId -> BoxPath -> Model -> Bool
 isTopicDragging topicId boxPath model =
-  case model.mouse.dragState of
-    Just dragState -> dragState.topicId == topicId && dragState.boxPath == boxPath
+  case model.mouse.dragSource of
+    Just dragSource -> dragSource.topicId == topicId && dragSource.boxPath == boxPath
     Nothing -> False
 
 
@@ -115,7 +115,7 @@ updateHover ({y} as clientPos) ext model =
   let
     localPos = { clientPos | y = y - C.appHeaderHeight } -- local to fullscreen box
     maybeFilter =
-      case model.mouse.dragState of
+      case model.mouse.dragSource of
         Just {topicId} -> Just topicId
         Nothing -> Nothing
     maybeHover = ext.hitTest model.boxId [] localPos maybeFilter model

@@ -42,13 +42,13 @@ topicBorderStyle topicId boxPath model =
   let
     isTarget_ = isTarget topicId boxPath model.topicMap.dropTarget
     targeted =
-      case (model.mouse.dragState, model.topicMap.dragState) of
+      case (model.mouse.dragSource, model.topicMap.dragState) of
         -- can't move a topic to a box where it is already, can happen if mouse moves very quick
         -- can't create assoc when both topics are in different box
-        (Just dragState, Drag (DragTopic _)) ->
-          isTarget_ && fromBoxId (Box.firstId dragState.boxPath) /= topicId
-        (Just dragState, Drag DraftAssoc) ->
-          isTarget_ && dragState.boxPath == boxPath
+        (Just dragSource, Drag (DragTopic _)) ->
+          isTarget_ && fromBoxId (Box.firstId dragSource.boxPath) /= topicId
+        (Just dragSource, Drag DraftAssoc) ->
+          isTarget_ && dragSource.boxPath == boxPath
         _ -> False
   in
   [ style "border-width" <| fromInt C.topicBorderWidth ++ "px"

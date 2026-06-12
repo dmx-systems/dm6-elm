@@ -30,11 +30,13 @@ type alias Extension =
   , view : NestingBoxRenderer
   , hitTest : NestingHitTest
   , autoSize : NestingAutoSize
+  -- Drag and Drop
   , dragStart : NestingDragStart
   , drag : NestingDrag
-  , dragTargeting : DragTargeting
-  , resetDropTarget : DropTargetReset
+  , updateDropTarget : ExtDropTargeting
+  , resetDropTarget : ExtDropTargetReset
   , dragStop : NestingDragStop
+  --
   , addTopic : AddTopic
   }
 
@@ -70,8 +72,10 @@ type alias NestingAutoSize =
   BoxPath -> Env2 -> (Rectangle, Model)
 
 
+-- Drag and Drop
+
 -- Note: no drag specific parameters here. An extension's "dragStart" handler operates on
--- (feature module) Mouse's "dragState" directly.
+-- (feature module) Mouse's "dragSource" directly.
 -- TODO: rename OnDragStart
 type alias NestingDragStart =
   Env2 -> (Model, Cmd Msg)
@@ -82,11 +86,11 @@ type alias NestingDrag =
   Point -> Env2 -> (Model, Cmd Msg)
 
 
-type alias DragTargeting =
+type alias ExtDropTargeting =
   Point -> Env2 -> Model
 
 
-type alias DropTargetReset =
+type alias ExtDropTargetReset =
   Env2 -> Model
 
 
@@ -94,6 +98,8 @@ type alias DropTargetReset =
 type alias NestingDragStop =
   Env2 -> Outcome
 
+
+--
 
 type alias AddTopic =
   TopicId -> BoxId -> PosHint -> Env2 -> (Model, Cmd Msg)
@@ -111,7 +117,7 @@ ext =
   , autoSize = autoSize
   , dragStart = dragStart
   , drag = drag
-  , dragTargeting = dragTargeting
+  , updateDropTarget = updateDropTarget
   , resetDropTarget = resetDropTarget
   , dragStop = dragStop
   , addTopic = addTopic
@@ -132,7 +138,7 @@ registry =
         , autoSize = TopicMap.Geometry.autoSize
         , dragStart = TopicMap.Mouse.dragStart
         , drag = TopicMap.Mouse.drag
-        , dragTargeting = TopicMap.Mouse.dragTargeting
+        , updateDropTarget = TopicMap.Mouse.updateDropTarget
         , resetDropTarget = TopicMap.Mouse.resetDropTarget
         , dragStop = TopicMap.Mouse.dragStop
         , addTopic = TopicMap.BoxProps.addTopic
@@ -146,7 +152,7 @@ registry =
         , autoSize = TopicList.Model.autoSize
         , dragStart = TopicList.Mouse.dragStart
         , drag = TopicList.Mouse.drag
-        , dragTargeting = TopicList.Mouse.dragTargeting
+        , updateDropTarget = TopicList.Mouse.updateDropTarget
         , resetDropTarget = TopicList.Mouse.resetDropTarget
         , dragStop = TopicList.Mouse.dragStop
         , addTopic = TopicList.Model.addTopic
@@ -189,18 +195,18 @@ autoSize boxPath model =
     (\env renderer -> renderer.autoSize boxPath env)
 
 
--- Note: no drag specific parameters here. The dispatcher operates on Mouse's "dragState"
+-- Note: no drag specific parameters here. The dispatcher operates on Mouse's "dragSource"
 -- directly. Important: the renderer is selected based on "interaction box path", not
 -- "box path".
 dragStart : Model -> (Model, Cmd Msg)
 dragStart model =
-  case model.mouse.dragState of
+  case model.mouse.dragSource of
     Just {ixBoxPath} ->
       dispatch (Box.firstId ixBoxPath) model (model, Cmd.none)
         (\env renderer -> renderer.dragStart env)
     _ ->
       let
-        _ = U.logError "ExtManager.dragStart" "Unexpected drag state" model.mouse.dragState
+        _ = U.logError "ExtManager.dragStart" "Unexpected drag state" model.mouse.dragSource
       in
       (model, Cmd.none)
 
@@ -211,10 +217,10 @@ drag boxId pos model =
     (\env renderer -> renderer.drag pos env)
 
 
-dragTargeting : BoxId -> Point -> Model -> Model
-dragTargeting boxId pos model =
+updateDropTarget : BoxId -> Point -> Model -> Model
+updateDropTarget boxId pos model =
   dispatch boxId model model
-    (\env renderer -> renderer.dragTargeting pos env)
+    (\env renderer -> renderer.updateDropTarget pos env)
 
 
 resetDropTarget : BoxId -> Model -> Model

@@ -1,5 +1,5 @@
-module TopicList.TopicListDef exposing (Model, BoxProps, DragState, DropTarget(..), Targets,
-  init, resetTransient, encode, decoder)
+module TopicList.TopicListDef exposing (Model, BoxProps, DropTarget(..), Targets, init,
+  resetTransient, encode, decoder)
 
 import ModelBase exposing (..)
 import Dict exposing (Dict)
@@ -12,36 +12,35 @@ import Array exposing (Array)
 
 type alias Model =
   { boxProps : Dict Id BoxProps
-  , dragState : DragState -- transient
+  -- position of dragging list item -- transient
+  -- available while a drag that started from a list rendering is active
+  , itemPos : Maybe Point
+  -- accepted drop location within a list rendering -- transient
+  -- Note: the drag has not necessarily started from a list rendering (but another renderer)
+  , dropTarget : Maybe DropTarget
   }
 
 
 init : Model
 init =
   { boxProps = Dict.empty
-  , dragState = DragState Nothing Nothing
+  , itemPos = Nothing
+  , dropTarget = Nothing
   }
 
 
 resetTransient : Model -> Model
 resetTransient model =
-  { model | dragState = DragState Nothing Nothing }
+  { model
+  | itemPos = Nothing
+  , dropTarget = Nothing
+  }
 
 
 type alias BoxProps =
   { id : BoxId
   , order : List TopicId
   , size : Size
-  }
-
-
-type alias DragState =
-  -- position of dragging list item
-  -- available while a drag that started from a list rendering is active
-  { itemPos : Maybe Point
-  -- accepted drop location within a list rendering
-  -- Note: the drag has not necessarily started from a list rendering (but another renderer)
-  , dropTarget : Maybe DropTarget
   }
 
 
@@ -81,9 +80,10 @@ encodeTopicList list =
 
 decoder : D.Decoder Model
 decoder =
-  D.map2 Model
+  D.map3 Model
     (toDictDecoderWith toBoxId topicListDecoder)
-    (D.succeed <| DragState Nothing Nothing)
+    (D.succeed Nothing)
+    (D.succeed Nothing)
 
 
 topicListDecoder : D.Decoder BoxProps

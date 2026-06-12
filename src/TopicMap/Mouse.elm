@@ -1,4 +1,4 @@
-module TopicMap.Mouse exposing (dragStart, drag, dragTargeting, resetDropTarget, dragStop,
+module TopicMap.Mouse exposing (dragStart, drag, updateDropTarget, resetDropTarget, dragStop,
   timeArrived)
 
 import Assoc
@@ -27,7 +27,7 @@ import Time exposing (Posix, posixToMillis)
 -- ExtManager.NestingDragStart
 dragStart : Env2 -> (Model, Cmd Msg)
 dragStart {model} =
-  case model.mouse.dragState of
+  case model.mouse.dragSource of
     Just {topicId, boxPath} ->
       ( model
           |> setDragState WaitForStartTime
@@ -38,14 +38,14 @@ dragStart {model} =
       )
     Nothing ->
       let
-        _ = U.logError "TopicMap.Mouse.dragStart" "Unexpected drag state" model.mouse.dragState
+        _ = U.logError "TopicMap.Mouse.dragStart" "Unexpected drag state" model.mouse.dragSource
       in
       (model, Cmd.none)
 
 
 timeArrived : Posix -> UndoModel -> (UndoModel, Cmd Msg)
 timeArrived time ({present} as undoModel) =
-  case (present.mouse.dragState, present.topicMap.dragState) of
+  case (present.mouse.dragSource, present.topicMap.dragState) of
     (_, WaitForStartTime) ->
       let
         dragState = DragEngaged time
@@ -84,9 +84,9 @@ drag clientPos ({model} as env) =
       (model, Cmd.none)
 
 
--- ExtManager.DragTargeting
-dragTargeting : Point -> Env2 -> Model
-dragTargeting _ {model} =
+-- ExtManager.ExtDropTargeting
+updateDropTarget : Point -> Env2 -> Model
+updateDropTarget _ {model} =
   case model.topicMap.dragState of
     Drag dragMode ->
       model
@@ -97,7 +97,7 @@ dragTargeting _ {model} =
 
 updateTopicPos : Point -> Env2 -> Model
 updateTopicPos clientPos ({model} as env) =
-  case (model.mouse.dragState, model.topicMap.dragState) of
+  case (model.mouse.dragSource, model.topicMap.dragState) of
     (Just {topicId, boxPath, lastPointerPos}, Drag dragMode) ->
       let
         updateTopicPos_ : Model -> Model
@@ -126,7 +126,7 @@ topic (Feature.Mouse module's "hover" state). ### FIXDOC
 -}
 dropTargetFor : DragMode -> Model -> Maybe Target
 dropTargetFor dragMode model =
-  case (model.mouse.hover, model.mouse.dragState) of
+  case (model.mouse.hover, model.mouse.dragSource) of
     (Just {target}, Just {topicId}) ->
       case target of
         (T dropTopicId, _) ->
@@ -144,7 +144,7 @@ dropTargetFor dragMode model =
     _ -> Nothing -- TODO: error?
 
 
--- ExtManager.DropTargetReset
+-- ExtManager.ExtDropTargetReset
 resetDropTarget : Env2 -> Model
 resetDropTarget ({model} as env2) =
   model
@@ -156,7 +156,7 @@ dragStop : Env2 -> Outcome
 dragStop ({model} as env) =
   let
     out =
-      case (model.mouse.dragState, model.topicMap.dragState) of
+      case (model.mouse.dragSource, model.topicMap.dragState) of
         (Just {topicId, boxPath}, Drag (DragTopic origTopicPos)) ->
           case model.topicMap.dropTarget of
             Just (T targetId, targetPath) ->
