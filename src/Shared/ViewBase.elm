@@ -5,23 +5,22 @@ import Config as C
 import Feature.Sel as Sel
 import Model exposing (Model, Msg)
 import ModelBase exposing (..)
-import TopicMap.TopicMapDef exposing (DragState(..), DragMode(..)) -- TODO: remove dependency?
 
 import Html.Attributes exposing (style)
 import String exposing (fromInt)
 
 
 
-boxStyle : BoxId -> Size -> BoxPath -> Model -> Attrs Msg
-boxStyle boxId size boxPath model =
+boxStyle : BoxId -> BoxPath -> Size -> Bool -> Model -> Attrs Msg
+boxStyle boxId boxPath size isTarget model =
   if Box.isFullscreen boxId model then
     []
   else
-    nestedBoxStyle boxId size boxPath model
+    nestedBoxStyle boxId boxPath size isTarget model
 
 
-nestedBoxStyle : BoxId -> Size -> BoxPath -> Model -> Attrs Msg
-nestedBoxStyle boxId size boxPath model =
+nestedBoxStyle : BoxId -> BoxPath -> Size -> Bool -> Model -> Attrs Msg
+nestedBoxStyle boxId boxPath size isTarget model =
   let
     r = fromInt C.whiteBoxRadius ++ "px"
   in
@@ -32,37 +31,17 @@ nestedBoxStyle boxId size boxPath model =
   , style "height" <| fromInt size.h ++ "px"
   , style "border-radius" <| "0 " ++ r ++ " " ++ r ++ " " ++ r
   ]
-  ++ topicBorderStyle (fromBoxId boxId) boxPath model
+  ++ topicBorderStyle (fromBoxId boxId) boxPath isTarget model
   ++ selectionStyle (fromBoxId boxId) boxPath model
 
 
--- TODO: factor out TopicMap specifics?
-topicBorderStyle : TopicId -> BoxPath -> Model -> Attrs Msg
-topicBorderStyle topicId boxPath model =
-  let
-    isTarget_ = isTarget topicId boxPath model.topicMap.dropTarget
-    targeted =
-      case (model.mouse.dragSource, model.topicMap.dragState) of
-        -- can't move a topic to a box where it is already, can happen if mouse moves very quick
-        -- can't create assoc when both topics are in different box
-        (Just dragSource, Drag (DragTopic _)) ->
-          isTarget_ && fromBoxId (Box.firstId dragSource.boxPath) /= topicId
-        (Just dragSource, Drag DraftAssoc) ->
-          isTarget_ && dragSource.boxPath == boxPath
-        _ -> False
-  in
+topicBorderStyle : TopicId -> BoxPath -> Bool -> Model -> Attrs Msg
+topicBorderStyle topicId boxPath isTarget model =
   [ style "border-width" <| fromInt C.topicBorderWidth ++ "px"
-  , style "border-style" <| if targeted then "dashed" else "solid"
+  , style "border-style" <| if isTarget then "dashed" else "solid"
   , style "box-sizing" "border-box"
   , style "background-color" "white"
   ]
-
-
-isTarget : TopicId -> BoxPath -> Maybe Target -> Bool
-isTarget topicId boxPath maybeTarget =
-  case maybeTarget of
-    Just target -> target == (T topicId, boxPath)
-    Nothing -> False
 
 
 selectionStyle : TopicId -> BoxPath -> Model -> Attrs Msg

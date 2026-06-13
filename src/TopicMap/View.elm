@@ -138,13 +138,14 @@ boxInfo boxId boxPath ({model} as env) =
       let
         width = boxProps.rect.x2 - boxProps.rect.x1
         height = boxProps.rect.y2 - boxProps.rect.y1
+        isTarget_ = isTarget (fromBoxId boxId) boxPath model
       in
       ( viewItems boxProps boxPath env
       , boxProps.rect
       , ( { w = fromInt width
           , h = fromInt height
           }
-        , VB.boxStyle boxId (Size width height) boxPath model
+        , VB.boxStyle boxId boxPath (Size width height) isTarget_ model
         )
       )
     Nothing ->
@@ -361,6 +362,7 @@ detailTextStyle : TopicId -> BoxPath -> Model -> Attrs Msg
 detailTextStyle topicId boxPath model =
   let
     r = fromInt C.topicRadius ++ "px"
+    isTarget_ = isTarget topicId boxPath model
   in
   [ style "font-size" <| fromInt C.contentFontSize ++ "px"
   , style "width" <| fromInt C.topicDetailMaxWidth ++ "px"
@@ -368,7 +370,7 @@ detailTextStyle topicId boxPath model =
   , style "padding" <| fromInt C.topicDetailPadding ++ "px"
   , style "border-radius" <| "0 " ++ r ++ " " ++ r ++ " " ++ r
   ]
-  ++ VB.topicBorderStyle topicId boxPath model
+  ++ VB.topicBorderStyle topicId boxPath isTarget_ model
   ++ VB.selectionStyle topicId boxPath model
 
 
@@ -459,6 +461,7 @@ topicFlexboxStyle topicProps boxPath model =
       case (Topic.isBox topicProps.id model, topicProps.expansion) of
         (True, Expanded) -> "0"
         _ -> r12
+    isTarget_ = isTarget topicProps.id boxPath model
   in
   [ style "display" "flex"
   , style "align-items" "center"
@@ -467,11 +470,14 @@ topicFlexboxStyle topicProps boxPath model =
   , style "height" <| fromInt C.topicSize.h ++ "px"
   , style "border-radius" <| r12 ++ " " ++ r12 ++ " " ++ r34 ++ " " ++ r34
   ]
-  ++ VB.topicBorderStyle topicProps.id boxPath model
+  ++ VB.topicBorderStyle topicProps.id boxPath isTarget_ model
 
 
 ghostTopicStyle : Topic -> BoxPath -> Model -> Attrs Msg
 ghostTopicStyle topic boxPath model =
+  let
+    isTarget_ = isTarget topic.id boxPath model
+  in
   [ style "position" "absolute"
   , style "left" <| fromInt C.blackBoxOffset ++ "px"
   , style "top" <| fromInt C.blackBoxOffset ++ "px"
@@ -480,8 +486,15 @@ ghostTopicStyle topic boxPath model =
   , style "border-radius" <| fromInt C.topicRadius ++ "px"
   , style "z-index" "-1" -- behind topic
   ]
-  ++ VB.topicBorderStyle topic.id boxPath model
+  ++ VB.topicBorderStyle topic.id boxPath isTarget_ model
   ++ VB.selectionStyle topic.id boxPath model
+
+
+isTarget : TopicId -> BoxPath -> Model -> Bool
+isTarget topicId boxPath model =
+  case model.topicMap.dropTarget of
+    Just target -> target == (T topicId, boxPath)
+    Nothing -> False
 
 
 whiteBoxTopic : Topic -> TopicProps -> BoxPath -> ExtManager -> Model -> TopicRendering

@@ -53,7 +53,7 @@ listStyle boxId boxPath model =
   let
     size = TopicList.getSize boxId model
   in
-  VB.boxStyle boxId size boxPath model
+  VB.boxStyle boxId boxPath size False model -- TODO: isTarget (False)
     ++ listFontStyle
 
 
