@@ -1,5 +1,5 @@
-module TopicList.TopicList exposing (init, targets, listOrder, getSize, addTopic, insertIntoOrder,
-  hitTest, autoSize)
+module TopicList.TopicList exposing (init, targets, listOrder, getSize, addTopic,
+  insertIntoOrder, hitTest, autoSize)
 
 import Box
 import Config as C
@@ -39,13 +39,13 @@ createBoxProps boxId ({topicList} as model) =
   in
   if Dict.member id model.topicList.boxProps then
     let
-      _ = U.info "TopicList.Model.createBoxProps"
+      _ = U.info "TopicList.TopicList.createBoxProps"
         ("Box (" ++ U.toString boxId ++ ") has BoxProps entry already")
     in
     model
   else
     let
-      _ = U.info "TopicList.Model.createBoxProps"
+      _ = U.info "TopicList.TopicList.createBoxProps"
         ("Creating BoxProps entry for box (" ++ U.toString boxId ++ ")")
     in
     { model | topicList =
@@ -65,7 +65,7 @@ initOrder boxId ({topicList} as model) =
             List.filterMap
               (missingTopicIds orderList)
               (Box.topicIds boxId model)
-          _ = U.info "TopicList.Model.initOrder"
+          _ = U.info "TopicList.TopicList.initOrder"
             ("Add missing BoxProps " ++ U.toString missing ++ " to " ++ U.toString orderList)
         in
         missing ++ orderList
@@ -110,7 +110,7 @@ listOrder boxId model topicIds =
   case boxPropsFromId boxId model of
     Just {order} -> order
       |> List.filterMap isBoxContent
-    Nothing -> U.fail "TopicList.Model.listOrder" boxId topicIds
+    Nothing -> U.fail "TopicList.TopicList.listOrder" boxId topicIds
 
 
 -- Box.Acc
@@ -143,7 +143,7 @@ updateOrder boxId transform ({topicList} as model) =
         (\maybeBoxProps ->
           case maybeBoxProps of
             Just boxProps -> Just { boxProps | order = transform boxProps.order }
-            Nothing -> U.logError "TopicList.Model.updateOrder"
+            Nothing -> U.logError "TopicList.TopicList.updateOrder"
               (U.toString {boxId = boxId}) Nothing
         )
     }
@@ -160,7 +160,7 @@ insertIntoOrder topicId boxId beforeTopicId model =
       case (id == beforeTopicId, found) of -- at insertion point? insertion point found already?
         (False, _) -> (id :: list, found)
         (True, False) -> ([topicId, id] ++ list, True)
-        (True, True) -> U.logError "TopicList.Model.insertIntoOrder"
+        (True, True) -> U.logError "TopicList.TopicList.insertIntoOrder"
           "Found more than one insertion point" (list, found)
   in
   model
@@ -171,8 +171,8 @@ insertIntoOrder topicId boxId beforeTopicId model =
         |> \(list, found) ->
             case found of
               True -> list
-              False -> U.logError "TopicList.Model.insertIntoOrder" "Insertion point not found"
-                orderList
+              False -> U.logError "TopicList.TopicList.insertIntoOrder"
+                "Insertion point not found" orderList
       )
 
 
@@ -188,7 +188,7 @@ hitTest (BoxId topicId as boxId) boxPath pos maybeFilter {model} =
     let
       t = targets (boxId :: boxPath) model
       index = (pos.y - 13) // (C.listItemHeight + 4) -- TODO: no magic numbers
-      -- _ = U.info "TopicList.Geometry.hitTest" index
+      -- _ = U.info "TopicList.TopicList.hitTest" index
     in
     case Array.get index t of
       Just (_, target) -> Just (BoxTarget boxId target)
@@ -244,7 +244,7 @@ updateBoxProps boxId transform ({topicList} as model) =
           (\maybeBoxProps ->
             case maybeBoxProps of
               Just boxProps -> Just (transform boxProps)
-              Nothing -> U.logError "TopicList.Model.updateBoxProps"
+              Nothing -> U.logError "TopicList.TopicList.updateBoxProps"
                 ("Missing BoxProps entry for (" ++ U.toString boxId ++ ")") Nothing
           )
     }
@@ -255,7 +255,7 @@ getSize : BoxId -> Model -> Size
 getSize boxId model =
   case boxPropsFromId boxId model of
     Just boxProps -> boxProps.size
-    Nothing -> U.fail "TopicList.Model.getSize" boxId (Size 0 0)
+    Nothing -> U.fail "TopicList.TopicList.getSize" boxId (Size 0 0)
 
 
 {-| Logs an error if the BoxProps entry is missing.
@@ -264,5 +264,5 @@ boxPropsFromId : BoxId -> Model -> Maybe BoxProps
 boxPropsFromId boxId model =
   case model.topicList.boxProps |> Dict.get (toBoxId boxId) of
     Just boxProps -> Just boxProps
-    Nothing -> U.logError "TopicList.Model.boxPropsFromId"
+    Nothing -> U.logError "TopicList.TopicList.boxPropsFromId"
       ("Missing BoxProps entry for (" ++ U.toString boxId ++ ")") Nothing

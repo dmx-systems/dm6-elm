@@ -18,13 +18,13 @@ import Utils as U
 
 
 -- ExtManager.ExtHitTest
-{-| Finds the topic/box at a given screen position.
+{-| Finds the topic/box at a given screen position, if any.
 Returns the found topic/box (Id) and its context (BoxPath), or Nothing.
 If `maybeFilter` is given that topic/box will be excluded from search.
 
-boxId - the Box to search, result is one of its (deep) children or the box itself
-boxPath - path of Box boxId (1st param)
-localPos - local to Box boxId (1st param)
+boxId - the Box to search in, result is one of its (deep) children or the box itself
+boxPath - path of the Box to search in
+localPos - the screen position, local to the Box to search in
 -}
 hitTest : BoxId -> BoxPath -> Point -> Maybe TopicId -> Env2 -> Maybe BoxTarget
 hitTest (BoxId topicId as boxId) boxPath localPos maybeFilter ({model} as env) =
@@ -32,9 +32,9 @@ hitTest (BoxId topicId as boxId) boxPath localPos maybeFilter ({model} as env) =
     Just boxProps ->
       let
         topics = TM.allTopicProps boxProps model
-        relPos = mapOffset localPos boxProps
+        modelPos = toModelPos localPos boxProps
       in
-      case testChildren relPos topics (boxId :: boxPath) maybeFilter env of
+      case testChildren modelPos topics (boxId :: boxPath) maybeFilter env of
         Just boxTarget -> Just boxTarget
         Nothing ->
           if Box.isFullscreen boxId model then
@@ -50,31 +50,40 @@ hitTest (BoxId topicId as boxId) boxPath localPos maybeFilter ({model} as env) =
     Nothing -> Nothing
 
 
+{-| Finds the topic/box at a given screen position within the given topics which all originate
+from the same box, that is the 1st box in BoxPath.
+
+modelPos - the screen position, in box-model coordinates
+topics - the topics to search in (deep), result is one of these or their children
+-}
 testChildren : Point -> List TopicProps -> BoxPath -> Maybe TopicId -> Env2 -> Maybe BoxTarget
-testChildren pos topics boxPath maybeFilter ({model, ext} as env) =
+testChildren modelPos topics boxPath maybeFilter ({model, ext} as env) =
   case topics of
     [] -> Nothing
     topic :: tailTopics ->
       let
-        topicResult : Bool -> Maybe BoxTarget
-        topicResult found =
-          if found then
-            Just (BoxTarget boxId (T topic.id, boxPath))
-          else
-            Nothing
-        --
         boxId = Box.firstId boxPath
-        isHeaderHit = isTopicHeaderHit pos topic.id boxId >> topicResult
-        relPos = relPos_ pos topic.id boxPath
+        -- partially applied
+        isHeaderHit = isTopicHeaderHit modelPos topic.id boxId >> result
+        continueTest = testChildren modelPos tailTopics boxPath maybeFilter -- recursion
+        --
+        relPos = relPos_ modelPos topic.id boxPath
         maybeBoxTarget =
           case (Topic.isBox topic.id model, Box.expansionOf topic.id boxId model) of
             (True, Collapsed) -> isHeaderHit model
             (True, Expanded) ->
+              -- recursion
               case ext.hitTest (BoxId topic.id) boxPath (relPos model) maybeFilter model of
                 Just boxTarget -> Just boxTarget
                 Nothing -> isHeaderHit model
-            (False, _) -> isTopicHit topic.id boxPath pos model |> topicResult
-        testTailItems = testChildren pos tailTopics boxPath maybeFilter -- recursion
+            (False, _) -> isTopicHit topic.id boxPath modelPos model |> result
+        -- if positive returns current topic as the result
+        result : Bool -> Maybe BoxTarget
+        result found =
+          if found then
+            Just (BoxTarget boxId (T topic.id, boxPath))
+          else
+            Nothing
       in
       -- return topic if successfully tested AND not excluded by filter,
       -- otherwise continue testing
@@ -84,32 +93,34 @@ testChildren pos topics boxPath maybeFilter ({model, ext} as env) =
             ((itemId, _), Just filterTopicId) ->
               case itemId /= T filterTopicId of
                 True -> maybeBoxTarget
-                False -> testTailItems env
+                False -> continueTest env
             (_, Nothing) -> maybeBoxTarget
-        Nothing -> testTailItems env
+        Nothing -> continueTest env
 
 
 isTopicHit : TopicId -> BoxPath -> Point -> Model -> Bool
-isTopicHit itemId boxPath pos model =
+isTopicHit topicId boxPath pos model =
   let
     boxId = Box.firstId boxPath -- Note: a topic is never displayed fullscreen
-    isHeaderHit = isTopicHeaderHit pos itemId boxId
-    isDetailHit = isTopicDetailHit pos itemId boxId
+    -- partially applied
+    isHeaderHit = isTopicHeaderHit pos topicId boxId
+    isDetailHit = isTopicDetailHit pos topicId boxId
   in
   -- test depends on topic's expansion
-  case Box.expansionOf itemId boxId model of
+  case Box.expansionOf topicId boxId model of
     Collapsed -> isHeaderHit model
     Expanded -> isHeaderHit model || isDetailHit model
 
 
-{-| Transforms the given screen position to a map-relative position according to the given map.
-TODO: function name, description, FIXME: don't apply scroll value for nested boxes?
+{-| Transforms a box-local (screen) position to box-model coordinates, involving both the box's
+coordinate system translation (rect) and the box's scroll values.
 -}
-mapOffset : Point -> BoxProps -> Point
-mapOffset pos boxProps =
+toModelPos : Point -> BoxProps -> Point
+toModelPos pos boxProps =
   Point
     (pos.x + boxProps.rect.x1 + boxProps.scroll.x)
     (pos.y + boxProps.rect.y1 + boxProps.scroll.y)
+    -- FIXME: don't apply scroll value of nested boxes?
 
 
 -- TODO: function name, description

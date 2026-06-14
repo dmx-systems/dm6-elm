@@ -98,8 +98,10 @@ updateDropTarget clientPos {model} =
       model
 
 
+{-| Projects Feature.Mouse's general "hover" state to TopicList specific accepted DropTarget.
+-}
 dropTargetAt : Point -> TopicId -> Model -> Maybe DropTarget
-dropTargetAt localPos dragTopicId model =
+dropTargetAt localPos sourceTopicId model =
   case model.mouse.hover of
     Just {target} ->
       case target of
@@ -111,7 +113,7 @@ dropTargetAt localPos dragTopicId model =
               case lowerHalf of
                 True -> (Drop, dropTopicId)
                 False -> (InsertBefore, fromBoxId dropBoxId)
-            isCyclic = Box.hadDeepTopic targetBoxId dragTopicId model
+            isCyclic = Box.hadDeepTopic targetBoxId sourceTopicId model
           in
           if not isCyclic then
             Just (dropMode target)

@@ -84,17 +84,6 @@ drag clientPos ({model} as env) =
       (model, Cmd.none)
 
 
--- ExtManager.ExtDropTargeting
-updateDropTarget : Point -> Env2 -> Model
-updateDropTarget _ {model} =
-  case model.topicMap.dragState of
-    Drag dragMode ->
-      model
-        |> setDropTarget (dropTargetFor dragMode model)
-    _ ->
-      model -- TODO: error?
-
-
 updateTopicPos : Point -> Env2 -> Model
 updateTopicPos clientPos ({model} as env) =
   case (model.mouse.dragSource, model.topicMap.dragState) of
@@ -121,13 +110,19 @@ updateTopicPos clientPos ({model} as env) =
       ("Received \"Drag\" when dragState is " ++ U.toString model.topicMap.dragState) model
 
 
-{-| If Drag is in progress updates its accepted drop target, based on geometrically hovered
-topic (Feature.Mouse module's "hover" state). ### FIXDOC
+-- ExtManager.ExtDropTargeting
+updateDropTarget : Point -> Env2 -> Model
+updateDropTarget _ {model} =
+  model
+    |> setDropTarget (dropTarget model)
+
+
+{-| Projects Feature.Mouse's general "hover" state to TopicMap specific accepted "dropTarget".
 -}
-dropTargetFor : DragMode -> Model -> Maybe Target
-dropTargetFor dragMode model =
-  case model.mouse.hover of
-    Just {target} ->
+dropTarget : Model -> Maybe Target
+dropTarget model =
+  case (model.mouse.hover, model.topicMap.dragState) of
+    (Just {target}, Drag dragMode) ->
       case (model.mouse.dragSource, target) of
         (Just {topicId, boxPath}, (T targetTopicId, targetBoxPath)) ->
           case dragMode of
@@ -153,7 +148,7 @@ dropTargetFor dragMode model =
               else
                 Nothing
         _ -> Nothing -- TODO: error?
-    Nothing -> Nothing -- TODO: error?
+    _ -> Nothing -- TODO: error?
 
 
 -- ExtManager.ExtDropTargetReset
