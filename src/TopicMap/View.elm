@@ -490,9 +490,10 @@ ghostTopicStyle topic boxPath model =
   ++ VB.selectionStyle topic.id boxPath model
 
 
+-- TODO: move to Feature.Mouse
 isTarget : TopicId -> BoxPath -> Model -> Bool
 isTarget topicId boxPath model =
-  case model.topicMap.dropTarget of
+  case model.mouse.dropTarget of
     Just target -> target == (T topicId, boxPath)
     Nothing -> False
 

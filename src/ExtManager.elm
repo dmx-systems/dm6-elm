@@ -85,7 +85,7 @@ type alias ExtDrag =
 
 
 type alias ExtDropTargeting =
-  Point -> Env2 -> Model
+  Point -> Env2 -> (Model, Maybe Target)
 
 
 type alias ExtDropTargetReset =
@@ -214,9 +214,9 @@ drag boxId pos model =
     (\env renderer -> renderer.drag pos env)
 
 
-updateDropTarget : BoxId -> Point -> Model -> Model
+updateDropTarget : BoxId -> Point -> Model -> (Model, Maybe Target)
 updateDropTarget boxId pos model =
-  dispatch boxId model model
+  dispatch boxId model (model, Nothing)
     (\env renderer -> renderer.updateDropTarget pos env)
 
 

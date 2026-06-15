@@ -37,6 +37,7 @@ update msg ({model, undoModel, ext} as env) =
       model
         |> dragStop dragSource ext
         |> Outcome.map (setDragSource Nothing)
+        |> Outcome.map (setDropTarget Nothing)
         |> Outcome.exec undoModel
     (MouseDef.Cancel, _) ->
       (undoModel, U.command <| Cancel Nothing)
@@ -46,12 +47,17 @@ update msg ({model, undoModel, ext} as env) =
 
 
 updateDropTarget : Point -> ExtManager -> (Model, Cmd Msg) -> (Model, Cmd Msg)
-updateDropTarget clientPos ext ((model, _) as mct) =
+updateDropTarget clientPos ext (model, cmd) =
   case model.mouse.hover of
     Just {ixBoxId} ->
-      mct
-        |> Model.map (ext.updateDropTarget ixBoxId clientPos)
-    Nothing -> mct
+      let
+        (model_, maybeTarget) = ext.updateDropTarget ixBoxId clientPos model
+      in
+      ( model_
+          |> setDropTarget maybeTarget
+      , cmd
+      )
+    Nothing -> (model, cmd)
 
 
 dragStop : DragSource -> ExtManager -> Model -> Outcome
@@ -133,8 +139,14 @@ clearHover ext model =
 setHover : Maybe BoxTarget -> ExtManager -> Model -> Model
 setHover maybeHover ext model =
   model
-    |> resetDropTarget ext
+    |> setDropTarget Nothing -- updates app state
+    |> resetDropTarget ext   -- updates renderer states, calls hook
     |> setHover_ maybeHover
+
+
+setDropTarget : Maybe Target -> Model -> Model
+setDropTarget dropTarget ({mouse} as model) =
+  { model | mouse = { mouse | dropTarget = dropTarget }}
 
 
 resetDropTarget : ExtManager -> Model -> Model

@@ -12,6 +12,7 @@ type alias Model =
   -- by respective renderers, e.g. TopicMap.Mouse.updateTarget.)
   -- Synthesized also on pointerdown for touch devices.
   , hover : Maybe BoxTarget
+  , dropTarget : Maybe Target
   }
 
 
@@ -19,6 +20,7 @@ init : Model
 init =
   { dragSource = Nothing
   , hover = Nothing
+  , dropTarget = Nothing
   }
 
 

@@ -1,4 +1,4 @@
-module TopicList.TopicListDef exposing (Model, BoxProps, DropTarget(..), Targets, init,
+module TopicList.TopicListDef exposing (Model, BoxProps, DropMode(..), Targets, init,
   resetTransient, encode, decoder)
 
 import ModelBase exposing (..)
@@ -17,7 +17,7 @@ type alias Model =
   , dragPos : Maybe Point
   -- accepted drop location within a list rendering -- transient
   -- Note: the drag has not necessarily started from a list rendering (but another renderer)
-  , dropTarget : Maybe DropTarget
+  , dropMode : Maybe DropMode
   }
 
 
@@ -25,7 +25,7 @@ init : Model
 init =
   { boxProps = Dict.empty
   , dragPos = Nothing
-  , dropTarget = Nothing
+  , dropMode = Nothing
   }
 
 
@@ -33,7 +33,7 @@ resetTransient : Model -> Model
 resetTransient model =
   { model
   | dragPos = Nothing
-  , dropTarget = Nothing
+  , dropMode = Nothing
   }
 
 
@@ -44,9 +44,9 @@ type alias BoxProps =
   }
 
 
-type DropTarget
-  = Drop Target
-  | InsertBefore Target
+type DropMode
+  = Drop
+  | InsertBefore
 
 
 type alias Targets = Array (Level, Target)

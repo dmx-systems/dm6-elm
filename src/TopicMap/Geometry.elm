@@ -66,8 +66,8 @@ testChildren modelPos topics boxPath maybeFilter ({model, ext} as env) =
         -- partially applied
         isHeaderHit = isTopicHeaderHit modelPos topic.id boxId >> result
         continueTest = testChildren modelPos tailTopics boxPath maybeFilter -- recursion
-        --
         relPos = relPos_ modelPos topic.id boxPath
+        --
         maybeBoxTarget =
           case (Topic.isBox topic.id model, Box.expansionOf topic.id boxId model) of
             (True, Collapsed) -> isHeaderHit model

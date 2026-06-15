@@ -111,10 +111,9 @@ updateTopicPos clientPos ({model} as env) =
 
 
 -- ExtManager.ExtDropTargeting
-updateDropTarget : Point -> Env2 -> Model
+updateDropTarget : Point -> Env2 -> (Model, Maybe Target)
 updateDropTarget _ {model} =
-  model
-    |> setDropTarget (dropTarget model)
+  (model, dropTarget model)
 
 
 {-| Projects Feature.Mouse's general "hover" state to TopicMap specific accepted "dropTarget".
@@ -154,8 +153,7 @@ dropTarget model =
 -- ExtManager.ExtDropTargetReset
 resetDropTarget : Env2 -> Model
 resetDropTarget ({model} as env2) =
-  model
-    |> setDropTarget Nothing
+  model -- no-op -- TODO: hook still needed in general?
 
 
 -- ExtManager.ExtDragStop
@@ -165,7 +163,7 @@ dragStop ({model} as env) =
     out =
       case (model.mouse.dragSource, model.topicMap.dragState) of
         (Just {topicId, boxPath}, Drag (DragTopic origTopicPos)) ->
-          case model.topicMap.dropTarget of
+          case model.mouse.dropTarget of
             Just (T targetId, targetPath) ->
               let
                 _ = U.info "TopicMap.Mouse.dragStop" ("dropped " ++ fromInt (toTopicId topicId)
@@ -185,7 +183,7 @@ dragStop ({model} as env) =
             _ ->
               Outcome.with Cmd.none model
         (Just {topicId, boxPath}, Drag DraftAssoc) ->
-          case model.topicMap.dropTarget of
+          case model.mouse.dropTarget of
             Just (T targetId, targetPath) ->
               let
                 _ = U.info "TopicMap.Mouse.dragStop" ("assoc drawn from "
@@ -215,7 +213,6 @@ dragStop ({model} as env) =
   in
   out
     |> Outcome.map (setDragState NoDrag)
-    |> Outcome.map (setDropTarget Nothing)
 
 
 moveTopicToBox : TopicId -> BoxId -> Point -> TopicId -> BoxPath -> Env2 -> (Model, Cmd Msg)
@@ -249,8 +246,3 @@ createAssoc topicId1 topicId2 boxId model =
 setDragState : DragState -> Model -> Model
 setDragState dragState ({topicMap} as model) =
   { model | topicMap = { topicMap | dragState = dragState }}
-
-
-setDropTarget : Maybe Target -> Model -> Model
-setDropTarget maybeTarget ({topicMap} as model) =
-  { model | topicMap = { topicMap | dropTarget = maybeTarget }}

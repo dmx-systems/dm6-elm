@@ -9,7 +9,7 @@ import Model exposing (Model, Msg)
 import ModelBase exposing (..)
 import Outcome exposing (..)
 import TopicList.TopicList as TopicList
-import TopicList.TopicListDef exposing (DropTarget(..))
+import TopicList.TopicListDef exposing (DropMode(..))
 import TopicMap.ViewModel exposing (toLocalPos)
 import Utils as U
 
@@ -80,27 +80,31 @@ drag clientPos {model} =
 
 
 -- ExtManager.ExtDropTargeting
-updateDropTarget : Point -> Env2 -> Model
+updateDropTarget : Point -> Env2 -> (Model, Maybe Target)
 updateDropTarget clientPos {model} =
   case model.mouse.dragSource of
     Just {topicId, ixBoxPath} ->
-      model
-        |> setDropTarget
-          (dropTargetAt
-            (toLocalPos clientPos ixBoxPath model)
-            topicId model
+      let
+        localPos = toLocalPos clientPos ixBoxPath model
+      in
+      case dropTargetAt localPos topicId model of
+        Just (dropTarget, dropMode) ->
+          ( model
+              |> setDropMode (Just dropMode)
+          , Just dropTarget
           )
+        Nothing -> (model, Nothing)
     _ ->
       let
         _ = U.logError "TopicList.Mouse.updateDropTarget" "Unexpected drag state"
           model.mouse.dragSource
       in
-      model
+      (model, Nothing)
 
 
 {-| Projects Feature.Mouse's general "hover" state to TopicList specific accepted DropTarget.
 -}
-dropTargetAt : Point -> TopicId -> Model -> Maybe DropTarget
+dropTargetAt : Point -> TopicId -> Model -> Maybe (Target, DropMode)
 dropTargetAt localPos sourceTopicId model =
   case model.mouse.hover of
     Just {target} ->
@@ -116,7 +120,7 @@ dropTargetAt localPos sourceTopicId model =
             isCyclic = Box.hadDeepTopic targetBoxId sourceTopicId model
           in
           if not isCyclic then
-            Just (dropMode target)
+            Just (target, dropMode)
           else
             Nothing
         _ -> Nothing -- TODO: error?
@@ -127,7 +131,7 @@ dropTargetAt localPos sourceTopicId model =
 resetDropTarget : Env2 -> Model
 resetDropTarget ({model} as env2) =
   model
-    |> setDropTarget Nothing
+    |> setDropMode Nothing -- TODO: needed? Hook still needed in general?
 
 
 -- ExtManager.ExtDragStop
@@ -137,37 +141,42 @@ dragStop ({model} as env2) =
     outcome =
       case model.mouse.dragSource of
         Just {topicId, boxPath} ->
-          case model.topicList.dropTarget of
-            Just dropTarget ->
+          case model.mouse.dropTarget of
+            Just (T targetTopicId, targetBoxId :: _) ->
               env2
-                |> processDrop topicId (Box.firstId boxPath) dropTarget
+                |> processDrop topicId (Box.firstId boxPath) targetTopicId targetBoxId
             Nothing ->
               let
                 _ = U.info "TopicList.Mouse.dragStop" "no drop target -> select topic"
               in
               Outcome.with Cmd.none <| Sel.select (T topicId) boxPath model
-        _ -> U.logError "TopicList.Mouse.dragStop" (U.toString model.mouse.dragSource)
-          (Outcome.with Cmd.none model)
+            _ ->
+              U.logError "TopicList.Mouse.dragStop" (U.toString model.mouse.dropTarget)
+                (Outcome.with Cmd.none model)
+        _ ->
+          U.logError "TopicList.Mouse.dragStop" (U.toString model.mouse.dragSource)
+            (Outcome.with Cmd.none model)
   in
   outcome
     |> Outcome.map (setDragPos Nothing)
-    |> Outcome.map (setDropTarget Nothing)
+    |> Outcome.map (setDropMode Nothing)
 
 
-processDrop : TopicId -> BoxId -> DropTarget -> Env2 -> Outcome
-processDrop sourceTopicId sourceBoxid dropTarget ({model} as env) =
+processDrop : TopicId -> BoxId -> TopicId -> BoxId -> Env2 -> Outcome
+processDrop sourceTopicId sourceBoxid targetTopicId targetBoxId ({model} as env) =
   let
     _ = U.info "TopicList.Mouse.processDrop"
       { sourceTopicId = sourceTopicId
       , sourceBoxid = sourceBoxid
-      , dropTarget = dropTarget
+      , targetTopicId = targetTopicId
+      , targetBoxId = targetBoxId
       }
   in
   model
     |> Box.removeTopic sourceTopicId sourceBoxid
     |> \model_ ->
-      (case dropTarget of
-        Drop (T targetTopicId, _) ->
+      (case model.topicList.dropMode of
+        Just Drop ->
           let
             boxId = BoxId targetTopicId
           in
@@ -176,12 +185,13 @@ processDrop sourceTopicId sourceBoxid dropTarget ({model} as env) =
             |> Box.addTopic (BoxTopic sourceTopicId Expanded) boxId
             |> TopicList.init boxId
             |> Env.autoSize2 env
-        InsertBefore (T targetTopicId, targetBoxId :: _) ->
+        Just InsertBefore ->
           model_
             |> Box.addTopic (BoxTopic sourceTopicId Expanded) targetBoxId
             |> TopicList.insertIntoOrder sourceTopicId targetBoxId targetTopicId
             |> Env.autoSize2 env
-        _ -> U.logError "TopicList.Mouse.processDrop" (U.toString dropTarget) model_
+        Nothing ->
+          U.logError "TopicList.Mouse.processDrop" (U.toString model.topicList.dropMode) model_
       )
     |> Outcome (Directives Store Push) Cmd.none
 
@@ -191,6 +201,6 @@ setDragPos dragPos ({topicList} as model) =
   { model | topicList = { topicList | dragPos = dragPos }}
 
 
-setDropTarget : Maybe DropTarget -> Model -> Model
-setDropTarget dropTarget ({topicList} as model) =
-  { model | topicList = { topicList | dropTarget = dropTarget }}
+setDropMode : Maybe DropMode -> Model -> Model
+setDropMode dropMode ({topicList} as model) =
+  { model | topicList = { topicList | dropMode = dropMode }}

@@ -188,7 +188,7 @@ hitTest (BoxId topicId as boxId) boxPath pos maybeFilter {model} =
     let
       t = targets (boxId :: boxPath) model
       index = (pos.y - 13) // (C.listItemHeight + 4) -- TODO: no magic numbers
-      -- _ = U.info "TopicList.TopicList.hitTest" index
+      -- _ = U.info "TopicList.TopicList.hitTest" (boxId, index)
     in
     case Array.get index t of
       Just (_, target) -> Just (BoxTarget boxId target)

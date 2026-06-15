@@ -12,7 +12,7 @@ import Shared.Events as Events
 import Shared.ViewBase as VB
 import Topic
 import TopicList.TopicList as TopicList
-import TopicList.TopicListDef exposing (DropTarget(..), Targets)
+import TopicList.TopicListDef exposing (DropMode(..), Targets)
 import Utils as U
 
 import Array
@@ -108,7 +108,7 @@ listItemStyle topicId boxPath model =
 topicBorderStyle : TopicId -> BoxPath -> Model -> Attrs Msg
 topicBorderStyle topicId boxPath model =
   let
-    isTarget_ = isTarget (Drop (T topicId, boxPath)) model
+    isTarget_ = isTarget topicId boxPath Drop model
   in
   [ style "border-width" <| fromInt C.topicBorderWidth ++ "px"
   , style "border-color" <| if isTarget_ then "black" else "transparent"
@@ -143,7 +143,7 @@ viewTopic topic boxPath model =
 insertionPointStyle : TopicId -> BoxPath -> Model -> Attrs Msg
 insertionPointStyle topicId boxPath model =
   let
-    isTarget_ = isTarget (InsertBefore (T topicId, boxPath)) model
+    isTarget_ = isTarget topicId boxPath InsertBefore model
   in
   [ style "height" "2px" ]
   ++
@@ -153,10 +153,11 @@ insertionPointStyle topicId boxPath model =
     []
 
 
-isTarget : DropTarget -> Model -> Bool
-isTarget dropTarget_ model =
-  case model.topicList.dropTarget of
-    Just dropTarget -> dropTarget == dropTarget_
+isTarget : TopicId -> BoxPath -> DropMode -> Model -> Bool
+isTarget topicId boxPath dropMode model =
+  case (model.mouse.dropTarget, model.topicList.dropMode) of
+    (Just target, Just dropMode_) ->
+      target == (T topicId, boxPath) && dropMode_ == dropMode
     _ -> False
 
 

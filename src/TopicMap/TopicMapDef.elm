@@ -13,7 +13,6 @@ import Time
 type alias Model =
   { boxProps : Dict Id BoxProps
   , dragState : DragState
-  , dropTarget : Maybe Target
   }
 
 
@@ -25,7 +24,6 @@ init =
         (BoxProps rootBoxId (Rectangle 0 0 0 0) (Point 0 0) Dict.empty)
   -- transient
   , dragState = NoDrag
-  , dropTarget = Nothing
   }
 
 
@@ -114,10 +112,9 @@ encodeTopicProps topic =
 
 decoder : D.Decoder Model
 decoder =
-  D.map3 Model
+  D.map2 Model
     (toDictDecoderWith toBoxId boxPropsDecoder)
     (D.succeed NoDrag)
-    (D.succeed Nothing)
 
 
 boxPropsDecoder : D.Decoder BoxProps

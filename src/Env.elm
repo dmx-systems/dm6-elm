@@ -84,7 +84,7 @@ type alias Drag =
 
 
 type alias DropTargeting =
-  BoxId -> Point -> Model -> Model
+  BoxId -> Point -> Model -> (Model, Maybe Target)
 
 
 type alias DropTargetReset =
