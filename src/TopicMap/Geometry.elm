@@ -63,20 +63,21 @@ testChildren modelPos topics boxPath maybeFilter ({model, ext} as env) =
     topic :: tailTopics ->
       let
         boxId = Box.firstId boxPath
+        isHeaderHit = isTopicHeaderHit modelPos topic.id boxId model
         -- partially applied
-        isHeaderHit = isTopicHeaderHit modelPos topic.id boxId >> result
+        isDetailHit = isTopicDetailHit modelPos topic.id boxId
         continueTest = testChildren modelPos tailTopics boxPath maybeFilter -- recursion
         relPos = relPos_ modelPos topic.id boxPath
         --
         maybeBoxTarget =
-          case (Topic.isBox topic.id model, Box.expansionOf topic.id boxId model) of
-            (True, Collapsed) -> isHeaderHit model
-            (True, Expanded) ->
-              -- recursion
-              case ext.hitTest (BoxId topic.id) boxPath (relPos model) maybeFilter model of
-                Just boxTarget -> Just boxTarget
-                Nothing -> isHeaderHit model
-            (False, _) -> isTopicHit topic.id boxPath modelPos model |> result
+          if isHeaderHit then
+            result True
+          else
+            case (Box.expansionOf topic.id boxId model, Topic.isBox topic.id model) of
+              (Expanded, True) -> -- recursion
+                ext.hitTest (BoxId topic.id) boxPath (relPos model) maybeFilter model
+              (Expanded, False) -> isDetailHit model |> result
+              (Collapsed, _) -> result False
         -- if positive returns current topic as the result
         result : Bool -> Maybe BoxTarget
         result found =
@@ -96,20 +97,6 @@ testChildren modelPos topics boxPath maybeFilter ({model, ext} as env) =
                 False -> continueTest env
             (_, Nothing) -> maybeBoxTarget
         Nothing -> continueTest env
-
-
-isTopicHit : TopicId -> BoxPath -> Point -> Model -> Bool
-isTopicHit topicId boxPath pos model =
-  let
-    boxId = Box.firstId boxPath -- Note: a topic is never displayed fullscreen
-    -- partially applied
-    isHeaderHit = isTopicHeaderHit pos topicId boxId
-    isDetailHit = isTopicDetailHit pos topicId boxId
-  in
-  -- test depends on topic's expansion
-  case Box.expansionOf topicId boxId model of
-    Collapsed -> isHeaderHit model
-    Expanded -> isHeaderHit model || isDetailHit model
 
 
 {-| Transforms a box-local (screen) position to box-model coordinates, involving both the box's
