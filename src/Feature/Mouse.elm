@@ -1,4 +1,5 @@
-module Feature.Mouse exposing (update, isDragActive, isTopicDragging, clearHover, isHovered)
+module Feature.Mouse exposing (update, clearHover, isHovered, isDragActive, isTopicDragging,
+  isDropTarget)
 
 import Box
 import Config as C
@@ -85,24 +86,7 @@ dragStop dragSource ext model =
         |> Outcome.with Cmd.none
 
 
-setDragSource : Maybe DragSource -> Model -> Model
-setDragSource dragSource ({mouse} as model) =
-  { model | mouse = { mouse | dragSource = dragSource }}
-
-
-isDragActive : Model -> Bool
-isDragActive model =
-  case model.mouse.dragSource of
-    Just _ -> True
-    Nothing -> False
-
-
-isTopicDragging : TopicId -> BoxPath -> Model -> Bool
-isTopicDragging topicId boxPath model =
-  case model.mouse.dragSource of
-    Just dragSource -> dragSource.topicId == topicId && dragSource.boxPath == boxPath
-    Nothing -> False
-
+-- Hover
 
 emulateHover : TopicId -> BoxPath -> BoxId -> PointerType -> ExtManager -> Model -> Model
 emulateHover topicId boxPath ixBoxId pointerType ext model =
@@ -144,18 +128,6 @@ setHover maybeHover ext model =
     |> setHover_ maybeHover
 
 
-setDropTarget : Maybe Target -> Model -> Model
-setDropTarget dropTarget ({mouse} as model) =
-  { model | mouse = { mouse | dropTarget = dropTarget }}
-
-
-resetDropTarget : ExtManager -> Model -> Model
-resetDropTarget ext model =
-  case model.mouse.hover of
-    Just {ixBoxId} -> model |> ext.resetDropTarget ixBoxId
-    Nothing -> model
-
-
 setHover_ : Maybe BoxTarget -> Model -> Model
 setHover_ maybeHover ({mouse} as model) =
   { model | mouse = { mouse | hover = maybeHover }}
@@ -170,3 +142,45 @@ isHovered topicId boxPath model =
           topicId == topicId_ && boxPath == boxPath_
         _ -> False
     _ -> False
+
+
+-- Drag Source
+
+setDragSource : Maybe DragSource -> Model -> Model
+setDragSource dragSource ({mouse} as model) =
+  { model | mouse = { mouse | dragSource = dragSource }}
+
+
+isDragActive : Model -> Bool
+isDragActive model =
+  case model.mouse.dragSource of
+    Just _ -> True
+    Nothing -> False
+
+
+isTopicDragging : TopicId -> BoxPath -> Model -> Bool
+isTopicDragging topicId boxPath model =
+  case model.mouse.dragSource of
+    Just dragSource -> dragSource.topicId == topicId && dragSource.boxPath == boxPath
+    Nothing -> False
+
+
+-- Drop Target
+
+isDropTarget : TopicId -> BoxPath -> Model -> Bool
+isDropTarget topicId boxPath model =
+  case model.mouse.dropTarget of
+    Just target -> target == (T topicId, boxPath)
+    Nothing -> False
+
+
+setDropTarget : Maybe Target -> Model -> Model
+setDropTarget dropTarget ({mouse} as model) =
+  { model | mouse = { mouse | dropTarget = dropTarget }}
+
+
+resetDropTarget : ExtManager -> Model -> Model
+resetDropTarget ext model =
+  case model.mouse.hover of
+    Just {ixBoxId} -> model |> ext.resetDropTarget ixBoxId
+    Nothing -> model
