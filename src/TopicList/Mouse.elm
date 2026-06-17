@@ -170,6 +170,7 @@ processDrop sourceTopicId sourceBoxid targetTopicId targetBoxId ({model} as env)
       , sourceBoxid = sourceBoxid
       , targetTopicId = targetTopicId
       , targetBoxId = targetBoxId
+      , dropMode = model.topicList.dropMode
       }
   in
   model
@@ -203,4 +204,7 @@ setDragPos dragPos ({topicList} as model) =
 
 setDropMode : Maybe DropMode -> Model -> Model
 setDropMode dropMode ({topicList} as model) =
+  -- let
+  --   _ = U.info "TopicList.Mouse.setDropMode" dropMode
+  -- in
   { model | topicList = { topicList | dropMode = dropMode }}

@@ -64,25 +64,26 @@ testChildren modelPos topics boxPath maybeFilter ({model, ext} as env) =
       let
         boxId = Box.firstId boxPath
         isHeaderHit = isTopicHeaderHit modelPos topic.id boxId model
+        isBox = Topic.isBox topic.id model
+        expansion = Box.expansionOf topic.id boxId model
+        ixBoxId = if isBox then BoxId topic.id else boxId
         -- partially applied
         isDetailHit = isTopicDetailHit modelPos topic.id boxId
         continueTest = testChildren modelPos tailTopics boxPath maybeFilter -- recursion
         relPos = relPos_ modelPos topic.id boxPath
         --
         maybeBoxTarget =
-          if isHeaderHit then
-            result True
-          else
-            case (Box.expansionOf topic.id boxId model, Topic.isBox topic.id model) of
-              (Expanded, True) -> -- recursion
-                ext.hitTest (BoxId topic.id) boxPath (relPos model) maybeFilter model
-              (Expanded, False) -> isDetailHit model |> result
-              (Collapsed, _) -> result False
+          case (isBox, expansion, isHeaderHit) of
+            (_, _, True) -> result True
+            (_, Collapsed, False) -> result False
+            (False, Expanded, False) -> result (isDetailHit model)
+            (True, Expanded, False) -> -- recursion
+              ext.hitTest (BoxId topic.id) boxPath (relPos model) maybeFilter model
         -- if positive returns current topic as the result
         result : Bool -> Maybe BoxTarget
         result found =
           if found then
-            Just (BoxTarget boxId (T topic.id, boxPath))
+            Just (BoxTarget ixBoxId (T topic.id, boxPath))
           else
             Nothing
       in

@@ -209,6 +209,9 @@ dragStop ({model} as env) =
           in
           Outcome.with Cmd.none <| Sel.select (T topicId) boxPath model
         _ ->
+          let
+            _ = U.info "TopicMap.Mouse.dragStop" "no drag in progress -> do nothing"
+          in
           Outcome.with Cmd.none model
   in
   out
