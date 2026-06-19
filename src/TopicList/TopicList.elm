@@ -1,5 +1,5 @@
 module TopicList.TopicList exposing (init, targets, listOrder, getSize, addTopic,
-  insertIntoOrder, hitTest, autoSize)
+  insertIntoOrder, isListHovered, hitTest, autoSize)
 
 import Box
 import Config as C
@@ -183,12 +183,12 @@ insertIntoOrder topicId boxId beforeTopicId model =
 -- ExtManager.ExtHitTest
 -- Point is in box-local coordinates
 hitTest : BoxId -> BoxPath -> Point -> Maybe TopicId -> Env2 -> Maybe BoxTarget
-hitTest (BoxId topicId as boxId) boxPath pos maybeFilter {model} =
-  if isListHovered boxId pos model then
+hitTest (BoxId topicId as boxId) boxPath localPos maybeFilter {model} =
+  if isListHovered boxId localPos model then
     let
       fullPath = boxId :: boxPath
       t = targets fullPath model
-      index = (pos.y - 13) // (C.listItemHeight + 4) -- TODO: no magic numbers
+      index = (localPos.y - 13) // (C.listItemHeight + 4) -- TODO: no magic numbers
       -- _ = U.info "TopicList.TopicList.hitTest" (boxId, index)
     in
     case Array.get index t of
@@ -199,14 +199,14 @@ hitTest (BoxId topicId as boxId) boxPath pos maybeFilter {model} =
 
 
 isListHovered : BoxId -> Point -> Model -> Bool
-isListHovered boxId pos model =
+isListHovered boxId localPos model =
   let
     size = getSize boxId model
   in
-  pos.x > 0 &&
-  pos.x < size.w &&
-  pos.y > 0 &&
-  pos.y < size.h
+  localPos.x > 0 &&
+  localPos.x < size.w &&
+  localPos.y > 0 &&
+  localPos.y < size.h
 
 
 

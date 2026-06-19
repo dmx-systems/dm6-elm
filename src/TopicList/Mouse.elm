@@ -100,18 +100,20 @@ dropTargetAt : Point -> Model -> Maybe (Target, DropMode)
 dropTargetAt clientPos model =
   case (model.mouse.hover, model.mouse.dragSource) of
     (Just {ixBoxPath, target}, Just {topicId}) ->
-      case target of
-        (T dropTopicId, dropBoxId :: _) ->
+      case (ixBoxPath, target) of
+        (ixBoxId :: _, (T dropTopicId, dropBoxId :: _)) ->
           let
             localPos = toLocalPos clientPos ixBoxPath model
+            isListHovered = TopicList.isListHovered ixBoxId localPos model
             lowerHalf =
               modBy (C.listItemHeight + 4) (localPos.y - 1) > (C.listItemHeight + 4) // 2
             (dropMode, targetBoxId) =
-              if lowerHalf then
+              if not isListHovered || lowerHalf then
                 (Drop, dropTopicId)
               else
                 (InsertBefore, fromBoxId dropBoxId)
             isCyclic = Box.hadDeepTopic targetBoxId topicId model
+            _ = U.info "TopicList.Mouse.dropTargetAt" (targetBoxId, dropMode)
           in
           if not isCyclic then
             Just (target, dropMode)
