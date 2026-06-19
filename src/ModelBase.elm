@@ -150,7 +150,7 @@ type alias Target = (ItemId, BoxPath)
 
 
 type alias BoxTarget =
-  { ixBoxId : BoxId
+  { ixBoxPath : BoxPath
   , target : Target
   }
 

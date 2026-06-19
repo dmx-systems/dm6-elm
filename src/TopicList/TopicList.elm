@@ -186,13 +186,14 @@ hitTest : BoxId -> BoxPath -> Point -> Maybe TopicId -> Env2 -> Maybe BoxTarget
 hitTest (BoxId topicId as boxId) boxPath pos maybeFilter {model} =
   if isListHovered boxId pos model then
     let
-      t = targets (boxId :: boxPath) model
+      fullPath = boxId :: boxPath
+      t = targets fullPath model
       index = (pos.y - 13) // (C.listItemHeight + 4) -- TODO: no magic numbers
       -- _ = U.info "TopicList.TopicList.hitTest" (boxId, index)
     in
     case Array.get index t of
-      Just (_, target) -> Just (BoxTarget boxId target)
-      Nothing -> Just (BoxTarget boxId (T topicId, boxPath))
+      Just (_, target) -> Just (BoxTarget fullPath target)
+      Nothing -> Just (BoxTarget fullPath (T topicId, boxPath))
   else
     Nothing
 

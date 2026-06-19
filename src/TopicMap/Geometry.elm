@@ -31,10 +31,11 @@ hitTest (BoxId topicId as boxId) boxPath localPos maybeFilter ({model} as env) =
   case TM.byId boxId model of
     Just boxProps ->
       let
+        fullPath = boxId :: boxPath
         topics = TM.allTopicProps boxProps model
         modelPos = toModelPos localPos boxProps
       in
-      case testChildren modelPos topics (boxId :: boxPath) maybeFilter env of
+      case testChildren modelPos topics fullPath maybeFilter env of
         Just boxTarget -> Just boxTarget
         Nothing ->
           if Box.isFullscreen boxId model then
@@ -44,7 +45,7 @@ hitTest (BoxId topicId as boxId) boxPath localPos maybeFilter ({model} as env) =
               parentBoxId = Box.firstId boxPath
             in
             if isBoxRectHit localPos boxProps parentBoxId model then
-              Just (BoxTarget boxId (T topicId, boxPath))
+              Just (BoxTarget fullPath (T topicId, boxPath))
             else
               Nothing
     Nothing -> Nothing
@@ -66,13 +67,13 @@ testChildren modelPos topics boxPath maybeFilter ({model, ext} as env) =
         isHeaderHit = isTopicHeaderHit modelPos topic.id boxId model
         isBox = Topic.isBox topic.id model
         expansion = Box.expansionOf topic.id boxId model
-        ixBoxId = if isBox then BoxId topic.id else boxId
+        ixBoxPath = if isBox then BoxId topic.id :: boxPath else boxPath
         -- partially applied
         isDetailHit = isTopicDetailHit modelPos topic.id boxId
         continueTest = testChildren modelPos tailTopics boxPath maybeFilter -- recursion
         relPos = relPos_ modelPos topic.id boxPath
         --
-        maybeBoxTarget =
+        maybeHit =
           case (isBox, expansion, isHeaderHit) of
             (_, _, True) -> result True
             (_, Collapsed, False) -> result False
@@ -83,20 +84,20 @@ testChildren modelPos topics boxPath maybeFilter ({model, ext} as env) =
         result : Bool -> Maybe BoxTarget
         result found =
           if found then
-            Just (BoxTarget ixBoxId (T topic.id, boxPath))
+            Just (BoxTarget ixBoxPath (T topic.id, boxPath))
           else
             Nothing
       in
       -- return topic if successfully tested AND not excluded by filter,
       -- otherwise continue testing
-      case maybeBoxTarget of
+      case maybeHit of
         Just {target} ->
           case (target, maybeFilter) of
-            ((itemId, _), Just filterTopicId) ->
-              case itemId /= T filterTopicId of
-                True -> maybeBoxTarget
+            ((T topicId, _), Just filterTopicId) ->
+              case topicId /= filterTopicId of
+                True -> maybeHit
                 False -> continueTest env
-            (_, Nothing) -> maybeBoxTarget
+            _ -> maybeHit
         Nothing -> continueTest env
 
 

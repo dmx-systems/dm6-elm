@@ -82,49 +82,48 @@ drag clientPos {model} =
 -- ExtManager.ExtDropTargeting
 updateDropTarget : Point -> Env2 -> (Model, Maybe Target)
 updateDropTarget clientPos {model} =
-  case model.mouse.dragSource of
-    Just {topicId, ixBoxPath} ->
-      let
-        localPos = toLocalPos clientPos ixBoxPath model
-      in
-      case dropTargetAt localPos topicId model of
-        Just (dropTarget, dropMode) ->
-          ( model
-              |> setDropMode (Just dropMode)
-          , Just dropTarget
-          )
-        Nothing -> (model, Nothing)
-    _ ->
-      let
-        _ = U.logError "TopicList.Mouse.updateDropTarget" "Unexpected drag state"
-          model.mouse.dragSource
-      in
-      (model, Nothing)
+  case dropTargetAt clientPos model of
+    Just (dropTarget, dropMode) ->
+      ( model
+          |> setDropMode (Just dropMode)
+      , Just dropTarget
+      )
+    Nothing -> (model, Nothing)
 
 
-{-| Projects Feature.Mouse's general "hover" state to TopicList specific accepted DropTarget.
+{-| Checks if the currently hovered list item is accepted as a drop target. If so the drop
+target is returned, along with the drop mode (drop vs. insert). Acceptance depends on a cycle
+check. Drop mode depends on vertical mouse position within the hovered list item (upper half
+vs. lower half).
 -}
-dropTargetAt : Point -> TopicId -> Model -> Maybe (Target, DropMode)
-dropTargetAt localPos sourceTopicId model =
-  case model.mouse.hover of
-    Just {target} ->
+dropTargetAt : Point -> Model -> Maybe (Target, DropMode)
+dropTargetAt clientPos model =
+  case (model.mouse.hover, model.mouse.dragSource) of
+    (Just {ixBoxPath, target}, Just {topicId}) ->
       case target of
         (T dropTopicId, dropBoxId :: _) ->
           let
+            localPos = toLocalPos clientPos ixBoxPath model
             lowerHalf =
               modBy (C.listItemHeight + 4) (localPos.y - 1) > (C.listItemHeight + 4) // 2
             (dropMode, targetBoxId) =
-              case lowerHalf of
-                True -> (Drop, dropTopicId)
-                False -> (InsertBefore, fromBoxId dropBoxId)
-            isCyclic = Box.hadDeepTopic targetBoxId sourceTopicId model
+              if lowerHalf then
+                (Drop, dropTopicId)
+              else
+                (InsertBefore, fromBoxId dropBoxId)
+            isCyclic = Box.hadDeepTopic targetBoxId topicId model
           in
           if not isCyclic then
             Just (target, dropMode)
           else
             Nothing
         _ -> Nothing -- TODO: error?
-    Nothing -> Nothing
+    _ ->
+      let
+        _ = U.logError "TopicList.Mouse.dropTargetAt" "Unexpected drag state"
+          model.mouse.dragSource
+      in
+      Nothing
 
 
 -- ExtManager.ExtDropTargetReset

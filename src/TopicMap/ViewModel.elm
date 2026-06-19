@@ -86,6 +86,8 @@ toLocalPos clientPos boxPath model =
   case TM.fullscreen model of
     Just boxProps ->
       let
+        -- The box's absolute position is computed first. This involves the positions
+        -- of all of its parent boxes. So the box's entire path is needed.
         posAbs = absPos boxPath (Point 0 0) model
       in
       Point
