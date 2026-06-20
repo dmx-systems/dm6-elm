@@ -52,10 +52,10 @@ updateDropTarget clientPos ext (model, cmd) =
   case model.mouse.hover of
     Just {ixBoxPath} ->
       let
-        (model_, maybeTarget) = ext.updateDropTarget (Box.firstId ixBoxPath) clientPos model
+        (model_, dropTarget) = ext.updateDropTarget (Box.firstId ixBoxPath) clientPos model
       in
       ( model_
-          |> setDropTarget maybeTarget
+          |> setDropTarget dropTarget
       , cmd
       )
     Nothing -> (model, cmd)

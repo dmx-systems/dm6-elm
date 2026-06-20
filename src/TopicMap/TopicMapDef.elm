@@ -12,7 +12,9 @@ import Time
 
 type alias Model =
   { boxProps : Dict Id BoxProps
-  , dragState : DragState
+  -- State machine to initiate a drag from a TopicMap box.
+  -- Available while a drag that started from a TopicMap box is active.
+  , dragState : Maybe DragState -- transient
   }
 
 
@@ -23,7 +25,7 @@ init =
         (toBoxId rootBoxId)
         (BoxProps rootBoxId (Rectangle 0 0 0 0) (Point 0 0) Dict.empty)
   -- transient
-  , dragState = NoDrag
+  , dragState = Nothing
   }
 
 
@@ -48,7 +50,6 @@ type DragState
   | DragEngaged Time.Posix    -- start time, entered once start time arrives
   | WaitForEndTime Time.Posix -- start time (buffered), entered on 1st move (once engaged)
   | Drag DragMode             -- entered once end time arrives
-  | NoDrag
 
 
 type DragMode
@@ -114,7 +115,7 @@ decoder : D.Decoder Model
 decoder =
   D.map2 Model
     (toDictDecoderWith toBoxId boxPropsDecoder)
-    (D.succeed NoDrag)
+    (D.succeed Nothing)
 
 
 boxPropsDecoder : D.Decoder BoxProps

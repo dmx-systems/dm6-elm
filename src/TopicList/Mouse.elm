@@ -119,11 +119,12 @@ dropTargetAt clientPos model =
             Just (target, dropMode)
           else
             Nothing
-        _ -> Nothing -- TODO: error?
+        _ ->
+          Nothing -- TODO: error?
     _ ->
       let
-        _ = U.logError "TopicList.Mouse.dropTargetAt" "Unexpected drag state"
-          model.mouse.dragSource
+        _ = U.logError "TopicList.Mouse.dropTargetAt" "Unexpected mouse state"
+          (model.mouse.hover, model.mouse.dragSource)
       in
       Nothing
 

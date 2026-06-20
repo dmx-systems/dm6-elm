@@ -12,12 +12,12 @@ import Array exposing (Array)
 
 type alias Model =
   { boxProps : Dict Id BoxProps
-  -- position of dragging list item -- transient
-  -- available while a drag that started from a list rendering is active
-  , dragPos : Maybe Point
-  -- accepted drop location within a list rendering -- transient
-  -- Note: the drag has not necessarily started from a list rendering (but another renderer)
-  , dropMode : Maybe DropMode
+  -- Position of dragging list item.
+  -- Available while a drag that started from a TopicList box is active.
+  , dragPos : Maybe Point -- transient
+  -- Accepted drop location within a TopicList box.
+  -- Note: the drag has not necessarily started from a TopicList box (but another renderer).
+  , dropMode : Maybe DropMode -- transient
   }
 
 

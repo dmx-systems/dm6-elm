@@ -5,14 +5,16 @@ import ModelBase exposing (..)
 
 
 type alias Model =
-  -- The geometrically hovered topic. (Drop target semantics is added
-  -- by respective renderers, e.g. TopicMap.Mouse.updateTarget.)
+  -- The geometrically hovered topic, if any.
   -- Synthesized also on pointerdown for touch devices.
-  { hover : Maybe BoxTarget
-  -- Tracks what topic is dragged, the "source".
-  -- Initialzed on DownOnTopic, reset on Up (see Msg below).
-  , dragSource : Maybe DragSource
-  , dropTarget : Maybe Target
+  { hover : Maybe BoxTarget -- transient
+  -- The topic being dragged.
+  -- Available while drag is active (initialzed on DownOnTopic, reset on Up).
+  , dragSource : Maybe DragSource -- transient
+  -- While drag is active: the drop target as accepted by currently hovered renderer,
+  -- e.g. TopicMap, TopicList. Note: additional renderer specific drop state might be
+  -- hold by the respective renderer.
+  , dropTarget : Maybe Target -- transient
   }
 
 
