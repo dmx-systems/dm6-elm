@@ -120,12 +120,12 @@ updateDropTarget _ {model} =
 -}
 dropTarget : Model -> Maybe Target
 dropTarget model =
-  case (model.mouse.hover, model.topicMap.dragState) of
-    (Just {target}, Just (Drag dragMode)) ->
-      case (model.mouse.dragSource, target) of
-        (Just {topicId, boxPath}, (T targetTopicId, targetBoxPath)) ->
-          case dragMode of
-            DragTopic _ ->
+  case (model.mouse.hover, model.mouse.dragSource) of
+    (Just {target}, Just {topicId, boxPath}) ->
+      case target of
+        (T targetTopicId, targetBoxPath) ->
+          case model.topicMap.dragState of
+            Just (Drag (DragTopic _)) ->
               let
                 -- When dragging a topic inside a nested box that box will be the target (this
                 -- is since target is determined by map geometry, not by enter/leave events
@@ -140,9 +140,19 @@ dropTarget model =
                 Just target
               else
                 Nothing
-            DraftAssoc ->
+            Just (Drag DraftAssoc) ->
               -- only create assoc if both topics are in same box
               if boxPath == targetBoxPath then
+                Just target
+              else
+                Nothing
+            Just _ -> Nothing
+            Nothing ->
+              -- foreign drop (from non-TopicMap renderer)
+              let
+                isCyclic = Box.hadDeepTopic targetTopicId topicId model
+              in
+              if not isCyclic then
                 Just target
               else
                 Nothing
