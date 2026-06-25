@@ -170,6 +170,7 @@ resetDropTarget ({model} as env2) =
 dragStop : Env2 -> Outcome
 dragStop ({model} as env) =
   let
+    noOp = Outcome.with Cmd.none model
     outcome =
       case model.mouse.dragSource of
         Just {topicId, boxPath} ->
@@ -182,7 +183,7 @@ dragStop ({model} as env) =
               let
                 _ = U.info "TopicMap.Mouse.dragStop" "topic not moved -> select topic"
               in
-              Outcome.with Cmd.none model
+              noOp
                 |> Outcome.map (Sel.select (T topicId) boxPath)
             Nothing ->
               foreignTopicDrop topicId boxPath env
@@ -191,13 +192,13 @@ dragStop ({model} as env) =
                 _ = U.logError "TopicMap.Mouse.dragStop" "Unexpected drag state"
                   model.mouse.dragSource
               in
-              Outcome.with Cmd.none model
+              noOp
         Nothing ->
           let
             _ = U.logError "TopicMap.Mouse.dragStop" "Unexpected drag source"
               model.mouse.dragSource
           in
-          Outcome.with Cmd.none model
+          noOp
   in
   outcome
     |> Outcome.map (setDragState Nothing)
@@ -215,7 +216,8 @@ topicDragEnd sourceTopicId sourceBoxPath origTopicPos ({model} as env) =
         boxId = Box.firstId sourceBoxPath
       in
       env
-        |> moveTopicToBox sourceTopicId boxId origTopicPos targetId targetPath
+        |> moveTopicToBox sourceTopicId boxId targetId targetPath
+        |> Model.map (TM.setTopicPos sourceTopicId boxId origTopicPos)
         |> \(model_, cmd) -> Outcome (Directives Store Push) cmd model_
     Nothing ->
       let
@@ -229,6 +231,9 @@ topicDragEnd sourceTopicId sourceBoxPath origTopicPos ({model} as env) =
 
 foreignTopicDrop : TopicId -> BoxPath -> Env2 -> Outcome
 foreignTopicDrop sourceTopicId sourceBoxPath ({model} as env) =
+  let
+    noOp = Outcome.with Cmd.none model
+  in
   case model.mouse.dropTarget of
     Just (T targetId, targetPath) ->
       let
@@ -236,20 +241,23 @@ foreignTopicDrop sourceTopicId sourceBoxPath ({model} as env) =
           ++ fromInt (toTopicId sourceTopicId) ++ " (box " ++ Box.fromPath sourceBoxPath
           ++ ") on " ++ fromInt (toTopicId targetId) ++ " (box " ++ Box.fromPath targetPath
           ++ ") --> foreign topic drop")
+        boxId = Box.firstId sourceBoxPath
       in
-      Outcome.with Cmd.none model -- TODO
+      env
+        |> moveTopicToBox sourceTopicId boxId targetId targetPath
+        |> \(model_, cmd) -> Outcome (Directives Store Push) cmd model_
     Nothing ->
       let
         _ = U.info "TopicMap.Mouse.foreignTopicDrop"
           "foreign topic drag ended w/o target -> do nothing"
       in
-      Outcome.with Cmd.none model
+      noOp
     _ ->
       let
         _ = U.logError "TopicMap.Mouse.foreignTopicDrop" "Unexpected drop target"
           model.mouse.dropTarget
       in
-      Outcome.with Cmd.none model
+      noOp
 
 
 assocDragEnd : TopicId -> BoxPath -> Model -> Outcome
@@ -276,8 +284,8 @@ assocDragEnd sourceTopicId sourceBoxPath model =
       Outcome.with Cmd.none model
 
 
-moveTopicToBox : TopicId -> BoxId -> Point -> TopicId -> BoxPath -> Env2 -> (Model, Cmd Msg)
-moveTopicToBox topicId boxId origPos targetTopicId targetPath {model, ext} =
+moveTopicToBox : TopicId -> BoxId -> TopicId -> BoxPath -> Env2 -> (Model, Cmd Msg)
+moveTopicToBox topicId boxId targetTopicId targetPath {model, ext} =
   let
     targetBoxId = BoxId targetTopicId -- after createBoxOnDemand target topic is a box for sure
     expansion = Box.expansionOf topicId boxId model
@@ -287,7 +295,6 @@ moveTopicToBox topicId boxId origPos targetTopicId targetPath {model, ext} =
     |> Box.addTopic (BoxTopic topicId expansion) targetBoxId
     |> Box.removeTopic topicId boxId
     |> Sel.select (T targetTopicId) targetPath
-    |> TM.setTopicPos topicId boxId origPos
     |> ext.addTopic topicId targetBoxId Random -- TODO: revise extension point -> use init?
     -- Calling Env.autoSize is the responsibility of the extension's addTopic implementation.
     -- Particular extensions might add the topic asynchronously (TopicMap extension does) so

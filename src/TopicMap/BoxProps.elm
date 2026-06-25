@@ -27,7 +27,7 @@ init boxId model =
     |> List.foldl
       (\topicId acc ->
         if Topic.isBox topicId acc then
-          init (BoxId topicId) acc
+          init (BoxId topicId) acc -- recursion
         else
           acc
       )
