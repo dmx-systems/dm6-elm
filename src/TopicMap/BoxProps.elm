@@ -92,6 +92,8 @@ create_ boxProps ({topicMap} as model) =
   }
 
 
+--
+
 {-| Projects the given BoxProps into what is to be rendered based on actual box content.
 Note: the box content is the source of truth. BoxProps on the other hand remember everything
 once rendered. ### TODO: function name
@@ -147,24 +149,18 @@ addTopic topicId boxId posHint {model} =
   if hasTopicProps topicId boxId model then
     (model, Cmd.none)
   else
-    if posHint == Random then
-      let
-        toMsg = Model.TopicMap << TopicMapDef.GotRandomPos topicId boxId
-      in
-      (model, Random.generate toMsg pointGen)
-    else
-      let
-        topic = initTopicProps topicId boxId model
-        _ = U.info "TopicMap.BoxProps.addTopic" {topicId = topicId, boxId = boxId}
-      in
-      ( model |> updateBoxProps boxId
-          (\boxProps ->
-            { boxProps | topicProps =
-                boxProps.topicProps |> Dict.insert (toTopicId topicId) topic
-            }
-          )
-      , Cmd.none
-      )
+    let
+      cmd =
+        if posHint == Random then
+          Random.generate
+            (Model.TopicMap << TopicMapDef.GotRandomPos topicId boxId)
+            pointGen
+        else
+          Cmd.none
+    in
+    ( model |> init boxId
+    , cmd
+    )
 
 
 addTopicAt : TopicId -> BoxId -> Point -> Env -> Model
@@ -176,8 +172,10 @@ addTopicAt topicId boxId pos ({model} as env) =
 
 addTopic_ : TopicId -> Point -> BoxProps -> BoxProps
 addTopic_ topicId pos boxProps =
-  { boxProps | topicProps = boxProps.topicProps |> Dict.insert (toTopicId topicId)
-      (TopicProps topicId pos Collapsed)
+  { boxProps | topicProps =
+      boxProps.topicProps |> Dict.insert
+        (toTopicId topicId)
+        (TopicProps topicId pos Collapsed)
   }
 
 
