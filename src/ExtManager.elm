@@ -36,8 +36,6 @@ type alias Extension =
   , updateDropTarget : ExtDropTargeting
   , resetDropTarget : ExtDropTargetReset
   , dragStop : ExtDragStop
-  --
-  , addTopic : AddTopic
   }
 
 
@@ -96,12 +94,6 @@ type alias ExtDragStop =
   Env2 -> Outcome
 
 
---
-
-type alias AddTopic =
-  TopicId -> BoxId -> Env2 -> Model
-
-
 
 -- VALUES
 
@@ -117,7 +109,6 @@ ext =
   , updateDropTarget = updateDropTarget
   , resetDropTarget = resetDropTarget
   , dragStop = dragStop
-  , addTopic = addTopic
   , all = all
   }
 
@@ -138,7 +129,6 @@ registry =
         , updateDropTarget = TopicMap.Mouse.updateDropTarget
         , resetDropTarget = TopicMap.Mouse.resetDropTarget
         , dragStop = TopicMap.Mouse.dragStop
-        , addTopic = TopicMap.BoxProps.addTopic
         }
       )
     , ("TopicList",
@@ -152,7 +142,6 @@ registry =
         , updateDropTarget = TopicList.Mouse.updateDropTarget
         , resetDropTarget = TopicList.Mouse.resetDropTarget
         , dragStop = TopicList.Mouse.dragStop
-        , addTopic = TopicList.TopicList.addTopic
         }
       )
     ]
@@ -230,12 +219,6 @@ dragStop : BoxId -> Model -> Outcome
 dragStop boxId model =
   dispatch boxId model (Outcome.with Cmd.none model)
     (\env renderer -> renderer.dragStop env)
-
-
-addTopic : TopicId -> BoxId -> Model -> Model
-addTopic topicId boxId model =
-  dispatch boxId model model
-    (\env renderer -> renderer.addTopic topicId boxId env)
 
 
 dispatch : BoxId -> Model -> result -> (Env2 -> Extension -> result) -> result

@@ -369,7 +369,7 @@ revealTopic_ : TopicId -> BoxId -> Env -> Model -> Model
 revealTopic_ topicId boxId {ext} model =
   model
     |> Box.addTopic (BoxTopic topicId Collapsed) boxId
-    |> ext.addTopic topicId boxId
+    |> ext.init boxId
 
 
 revealAssoc_ : AssocId -> BoxId -> Model -> Model

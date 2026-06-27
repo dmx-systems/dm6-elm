@@ -176,7 +176,7 @@ dragStop ({model} as env) =
         Just {topicId, boxPath} ->
           case model.topicMap.dragState of
             Just (Drag (DragTopic origTopicPos)) ->
-              topicDragEnd topicId boxPath origTopicPos env
+              topicDragEnd topicId boxPath origTopicPos model
             Just (Drag DraftAssoc) ->
               assocDragEnd topicId boxPath model
             Just (DragEngaged _) ->
@@ -186,7 +186,7 @@ dragStop ({model} as env) =
               noOp
                 |> Outcome.map (Sel.select (T topicId) boxPath)
             Nothing ->
-              foreignTopicDrop topicId boxPath env
+              foreignTopicDrop topicId boxPath model
             _ ->
               let
                 _ = U.logError "TopicMap.Mouse.dragStop" "Unexpected drag state"
@@ -204,8 +204,8 @@ dragStop ({model} as env) =
     |> Outcome.map (setDragState Nothing)
 
 
-topicDragEnd : TopicId -> BoxPath -> Point -> Env2 -> Outcome
-topicDragEnd sourceTopicId sourceBoxPath origTopicPos ({model} as env) =
+topicDragEnd : TopicId -> BoxPath -> Point -> Model -> Outcome
+topicDragEnd sourceTopicId sourceBoxPath origTopicPos model =
   case model.mouse.dropTarget of
     Just (T targetId, targetPath) ->
       let
@@ -215,7 +215,7 @@ topicDragEnd sourceTopicId sourceBoxPath origTopicPos ({model} as env) =
           ++ ") --> move topic to box")
         boxId = Box.firstId sourceBoxPath
       in
-      env
+      model
         |> moveTopicToBox sourceTopicId boxId targetId targetPath
         |> Model.map (TM.setTopicPos sourceTopicId boxId origTopicPos)
         |> \(model_, cmd) -> Outcome (Directives Store Push) cmd model_
@@ -229,8 +229,8 @@ topicDragEnd sourceTopicId sourceBoxPath origTopicPos ({model} as env) =
       Outcome.with Cmd.none model
 
 
-foreignTopicDrop : TopicId -> BoxPath -> Env2 -> Outcome
-foreignTopicDrop sourceTopicId sourceBoxPath ({model} as env) =
+foreignTopicDrop : TopicId -> BoxPath -> Model -> Outcome
+foreignTopicDrop sourceTopicId sourceBoxPath model =
   let
     noOp = Outcome.with Cmd.none model
   in
@@ -243,7 +243,7 @@ foreignTopicDrop sourceTopicId sourceBoxPath ({model} as env) =
           ++ ") --> foreign topic drop")
         boxId = Box.firstId sourceBoxPath
       in
-      env
+      model
         |> moveTopicToBox sourceTopicId boxId targetId targetPath
         |> \(model_, cmd) -> Outcome (Directives Store Push) cmd model_
     Nothing ->
@@ -284,8 +284,8 @@ assocDragEnd sourceTopicId sourceBoxPath model =
       Outcome.with Cmd.none model
 
 
-moveTopicToBox : TopicId -> BoxId -> TopicId -> BoxPath -> Env2 -> (Model, Cmd Msg)
-moveTopicToBox topicId boxId targetTopicId targetPath ({model} as env) =
+moveTopicToBox : TopicId -> BoxId -> TopicId -> BoxPath -> Model -> (Model, Cmd Msg)
+moveTopicToBox topicId boxId targetTopicId targetPath model =
   let
     targetBoxId = BoxId targetTopicId -- after createBoxOnDemand target topic is a box for sure
     expansion = Box.expansionOf topicId boxId model
@@ -295,11 +295,7 @@ moveTopicToBox topicId boxId targetTopicId targetPath ({model} as env) =
     |> Box.addTopic (BoxTopic topicId expansion) targetBoxId
     |> Box.removeTopic topicId boxId
     |> Sel.select (T targetTopicId) targetPath
-    |> Env.withModel2 env
     |> TM.setTopicRandomPos topicId targetBoxId
-    -- Calling Env.autoSize is the responsibility of the extension's addTopic implementation.
-    -- Particular extensions might add the topic asynchronously (TopicMap extension does) so
-    -- their BoxProps might not yet be initialized but are needed for auto-sizing. 
 
 
 -- Presumption: both topics exist in same box

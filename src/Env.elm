@@ -45,7 +45,6 @@ type alias ExtManager =
   , resetDropTarget : DropTargetReset
   , dragStop : DragStop
   --
-  , addTopic : AddTopic
   , all : Extensions
   }
 
@@ -93,12 +92,6 @@ type alias DropTargetReset =
 
 type alias DragStop =
   BoxId -> Model -> Outcome
-
-
---
-
-type alias AddTopic =
-  TopicId -> BoxId -> Model -> Model
 
 
 

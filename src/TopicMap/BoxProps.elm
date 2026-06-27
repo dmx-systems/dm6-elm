@@ -1,11 +1,11 @@
 module TopicMap.BoxProps exposing (init, create, allTopicProps, topicPos, setTopicRandomPos,
-  setTopicPos, updateTopicPos, topicPropsOrNothing, assocGeometry, addTopic, addTopicAt,
+  setTopicPos, updateTopicPos, topicPropsOrNothing, assocGeometry, addTopicAt,
   initLimboTopicProps, initTopicPos, hasTopicProps, fullscreen, byId, updateRect,
   updateScrollPos, revelationBoxId, revelationBoxPath, landingTarget)
 
 import Box
 import Config as C
-import Env exposing (Env, Env2)
+import Env exposing (Env)
 import Feature.SearchDef exposing (SearchResult(..))
 import Feature.Sel as Sel
 import Model exposing (Model, Msg)
@@ -143,18 +143,11 @@ assocGeometry assoc boxId model =
     Nothing -> U.fail "TopicMap.BoxProps.assocGeometry" {assoc = assoc, boxId = boxId} Nothing
 
 
-setTopicRandomPos : TopicId -> BoxId -> Env2 -> (Model, Cmd Msg)
-setTopicRandomPos topicId boxId ({model} as env) =
-  env
-    |> addTopic topicId boxId
-    |> randomPos topicId boxId
-
-
--- ExtManager.AddTopic
-addTopic : TopicId -> BoxId -> Env2 -> Model
-addTopic topicId boxId {model} =
+setTopicRandomPos : TopicId -> BoxId -> Model -> (Model, Cmd Msg)
+setTopicRandomPos topicId boxId model =
   model
     |> init boxId
+    |> randomPos topicId boxId
 
 
 randomPos : TopicId -> BoxId -> Model -> (Model, Cmd Msg)
@@ -166,7 +159,7 @@ randomPos topicId boxId model =
   (model, cmd)
 
 
--- handles GotRandomPos message
+-- GotRandomPos message handler
 addTopicAt : TopicId -> BoxId -> Point -> Env -> Model
 addTopicAt topicId boxId pos ({model} as env) =
   model

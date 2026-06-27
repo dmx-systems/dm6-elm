@@ -1,11 +1,11 @@
-module TopicList.TopicList exposing (init, targets, listOrder, getSize, addTopic,
-  insertIntoOrder, isListHovered, hitTest, autoSize)
+module TopicList.TopicList exposing (init, targets, listOrder, getSize, insertIntoOrder,
+  isListHovered, hitTest, autoSize)
 
 import Box
 import Config as C
 import Dict
 import Env exposing (Env2)
-import Model exposing (Model, Msg)
+import Model exposing (Model)
 import ModelBase exposing (..)
 import Topic
 import TopicList.TopicListDef exposing (BoxProps, Targets)
@@ -121,16 +121,6 @@ targetAcc topic level boxPath acc childrenAcc model =
   acc
     |> Array.push (level, (T topic.id, boxPath))
     |> \t -> Array.append t (childrenAcc |> Maybe.withDefault Array.empty)
-
-
--- ExtManager.AddTopic
-addTopic : TopicId -> BoxId -> Env2 -> Model
-addTopic _ boxId ({model} as env) =
-  -- Note: added topic might be nested. Needs to init BoxProps recursively.
-  -- We just init entire box.
-  model
-    |> init boxId
-    |> Env.autoSize2 env
 
 
 {- Canonical order list transformation.
