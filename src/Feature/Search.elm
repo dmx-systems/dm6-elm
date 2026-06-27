@@ -369,8 +369,7 @@ revealTopic_ : TopicId -> BoxId -> Env -> Model -> Model
 revealTopic_ topicId boxId {ext} model =
   model
     |> Box.addTopic (BoxTopic topicId Collapsed) boxId
-    |> ext.addTopic topicId boxId Default
-    |> Tuple.first -- Note: Cmd is ignored, OK for the moment ;-)
+    |> ext.addTopic topicId boxId
 
 
 revealAssoc_ : AssocId -> BoxId -> Model -> Model

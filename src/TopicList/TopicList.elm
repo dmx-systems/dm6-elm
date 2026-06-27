@@ -124,15 +124,13 @@ targetAcc topic level boxPath acc childrenAcc model =
 
 
 -- ExtManager.AddTopic
-addTopic : TopicId -> BoxId -> PosHint -> Env2 -> (Model, Cmd Msg)
-addTopic _ boxId _ ({model} as env) =
+addTopic : TopicId -> BoxId -> Env2 -> Model
+addTopic _ boxId ({model} as env) =
   -- Note: added topic might be nested. Needs to init BoxProps recursively.
   -- We just init entire box.
-  ( model
-      |> init boxId
-      |> Env.autoSize2 env
-  , Cmd.none
-  )
+  model
+    |> init boxId
+    |> Env.autoSize2 env
 
 
 {- Canonical order list transformation.

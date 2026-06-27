@@ -98,7 +98,7 @@ type alias DragStop =
 --
 
 type alias AddTopic =
-  TopicId -> BoxId -> PosHint -> Model -> (Model, Cmd Msg)
+  TopicId -> BoxId -> Model -> Model
 
 
 

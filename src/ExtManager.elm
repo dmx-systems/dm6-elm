@@ -99,7 +99,7 @@ type alias ExtDragStop =
 --
 
 type alias AddTopic =
-  TopicId -> BoxId -> PosHint -> Env2 -> (Model, Cmd Msg)
+  TopicId -> BoxId -> Env2 -> Model
 
 
 
@@ -232,10 +232,10 @@ dragStop boxId model =
     (\env renderer -> renderer.dragStop env)
 
 
-addTopic : TopicId -> BoxId -> PosHint -> Model -> (Model, Cmd Msg)
-addTopic topicId boxId posHint model =
-  dispatch boxId model (model, Cmd.none)
-    (\env renderer -> renderer.addTopic topicId boxId posHint env)
+addTopic : TopicId -> BoxId -> Model -> Model
+addTopic topicId boxId model =
+  dispatch boxId model model
+    (\env renderer -> renderer.addTopic topicId boxId env)
 
 
 dispatch : BoxId -> Model -> result -> (Env2 -> Extension -> result) -> result

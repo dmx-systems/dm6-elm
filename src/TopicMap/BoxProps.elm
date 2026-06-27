@@ -1,7 +1,7 @@
-module TopicMap.BoxProps exposing (init, create, allTopicProps, topicPos, setTopicPos,
-  updateTopicPos, topicPropsOrNothing, assocGeometry, addTopic, addTopicAt, initLimboTopicProps,
-  initTopicPos, hasTopicProps, fullscreen, byId, updateRect, updateScrollPos, revelationBoxId,
-  revelationBoxPath, landingTarget)
+module TopicMap.BoxProps exposing (init, create, allTopicProps, topicPos, setTopicRandomPos,
+  setTopicPos, updateTopicPos, topicPropsOrNothing, assocGeometry, addTopic, addTopicAt,
+  initLimboTopicProps, initTopicPos, hasTopicProps, fullscreen, byId, updateRect,
+  updateScrollPos, revelationBoxId, revelationBoxPath, landingTarget)
 
 import Box
 import Config as C
@@ -143,26 +143,30 @@ assocGeometry assoc boxId model =
     Nothing -> U.fail "TopicMap.BoxProps.assocGeometry" {assoc = assoc, boxId = boxId} Nothing
 
 
+setTopicRandomPos : TopicId -> BoxId -> Env2 -> (Model, Cmd Msg)
+setTopicRandomPos topicId boxId ({model} as env) =
+  env
+    |> addTopic topicId boxId
+    |> randomPos topicId boxId
+
+
 -- ExtManager.AddTopic
-addTopic : TopicId -> BoxId -> PosHint -> Env2 -> (Model, Cmd Msg)
-addTopic topicId boxId posHint {model} =
-  if hasTopicProps topicId boxId model then
-    (model, Cmd.none)
-  else
-    let
-      cmd =
-        if posHint == Random then
-          Random.generate
-            (Model.TopicMap << TopicMapDef.GotRandomPos topicId boxId)
-            pointGen
-        else
-          Cmd.none
-    in
-    ( model |> init boxId
-    , cmd
-    )
+addTopic : TopicId -> BoxId -> Env2 -> Model
+addTopic topicId boxId {model} =
+  model
+    |> init boxId
 
 
+randomPos : TopicId -> BoxId -> Model -> (Model, Cmd Msg)
+randomPos topicId boxId model =
+  let
+    toMsg = Model.TopicMap << TopicMapDef.GotRandomPos topicId boxId
+    cmd = Random.generate toMsg pointGen
+  in
+  (model, cmd)
+
+
+-- handles GotRandomPos message
 addTopicAt : TopicId -> BoxId -> Point -> Env -> Model
 addTopicAt topicId boxId pos ({model} as env) =
   model

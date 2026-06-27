@@ -486,8 +486,7 @@ landTopic topicId ({model, ext} as env) =
   in
   model -- TODO: pipe env instead model
     |> Box.addTopic (BoxTopic topicId Collapsed) boxId
-    |> ext.addTopic topicId boxId Default
-    |> Tuple.first -- Note: Cmd is ignored, OK for the moment ;-)
+    |> ext.addTopic topicId boxId
     |> Sel.select (T topicId) boxPath
     |> Env.withModel env
     |> Text.enterEdit topicId boxPath

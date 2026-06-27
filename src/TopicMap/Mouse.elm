@@ -285,7 +285,7 @@ assocDragEnd sourceTopicId sourceBoxPath model =
 
 
 moveTopicToBox : TopicId -> BoxId -> TopicId -> BoxPath -> Env2 -> (Model, Cmd Msg)
-moveTopicToBox topicId boxId targetTopicId targetPath {model, ext} =
+moveTopicToBox topicId boxId targetTopicId targetPath ({model} as env) =
   let
     targetBoxId = BoxId targetTopicId -- after createBoxOnDemand target topic is a box for sure
     expansion = Box.expansionOf topicId boxId model
@@ -295,7 +295,8 @@ moveTopicToBox topicId boxId targetTopicId targetPath {model, ext} =
     |> Box.addTopic (BoxTopic topicId expansion) targetBoxId
     |> Box.removeTopic topicId boxId
     |> Sel.select (T targetTopicId) targetPath
-    |> ext.addTopic topicId targetBoxId Random -- TODO: revise extension point -> use init?
+    |> Env.withModel2 env
+    |> TM.setTopicRandomPos topicId targetBoxId
     -- Calling Env.autoSize is the responsibility of the extension's addTopic implementation.
     -- Particular extensions might add the topic asynchronously (TopicMap extension does) so
     -- their BoxProps might not yet be initialized but are needed for auto-sizing. 
