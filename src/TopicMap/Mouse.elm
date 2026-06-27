@@ -10,7 +10,7 @@ import Feature.Tool as Tool
 import Model exposing (Model, Msg(..))
 import ModelBase exposing (..)
 import Outcome exposing (..)
-import TopicMap.BoxProps as TM
+import TopicMap.TopicMap as TM
 import TopicMap.TopicMapDef as TopicMapDef exposing (DragState(..), DragMode(..))
 import Undo exposing (UndoModel)
 import Utils as U

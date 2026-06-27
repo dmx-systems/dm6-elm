@@ -10,7 +10,7 @@ import Outcome exposing (Outcome)
 import TopicList.Mouse
 import TopicList.TopicList
 import TopicList.View
-import TopicMap.BoxProps
+import TopicMap.TopicMap
 import TopicMap.Geometry
 import TopicMap.Mouse
 import TopicMap.View
@@ -120,7 +120,7 @@ registry =
   Dict.fromList
     [ ("TopicMap",
         { label = "Topic Map"
-        , init = TopicMap.BoxProps.init
+        , init = TopicMap.TopicMap.init
         , view = TopicMap.View.view
         , hitTest = TopicMap.Geometry.hitTest
         , autoSize = TopicMap.Geometry.autoSize

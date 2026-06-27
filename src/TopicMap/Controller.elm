@@ -5,7 +5,7 @@ import Env exposing (Env)
 import Feature.Sel as Sel
 import Model exposing (Model, Msg)
 import Storage as S
-import TopicMap.BoxProps as TM
+import TopicMap.TopicMap as TM
 import TopicMap.Mouse as Mouse
 import TopicMap.TopicMapDef as TopicMapDef
 import Undo exposing (UndoModel)

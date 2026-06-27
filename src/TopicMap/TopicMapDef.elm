@@ -1,4 +1,4 @@
-module TopicMap.TopicMapDef exposing (Model, BoxProps, TopicProps, DragState(..), DragMode(..),
+module TopicMap.TopicMapDef exposing (Model, TopicMap, MapTopic, DragState(..), DragMode(..),
   Msg(..), init, encode, decoder)
 
 import ModelBase exposing (..)
@@ -11,7 +11,7 @@ import Time
 
 
 type alias Model =
-  { boxProps : Dict Id BoxProps
+  { maps : Dict Id TopicMap
   -- State machine to initiate a drag from a TopicMap box.
   -- Available while a drag that started from a TopicMap box is active.
   , dragState : Maybe DragState -- transient
@@ -20,24 +20,24 @@ type alias Model =
 
 init : Model
 init =
-  { boxProps =
+  { maps =
       Dict.singleton
         (toBoxId rootBoxId)
-        (BoxProps rootBoxId (Rectangle 0 0 0 0) (Point 0 0) Dict.empty)
+        (TopicMap rootBoxId (Rectangle 0 0 0 0) (Point 0 0) Dict.empty)
   -- transient
   , dragState = Nothing
   }
 
 
-type alias BoxProps =
+type alias TopicMap =
   { id : BoxId
   , rect : Rectangle
   , scroll : Point
-  , topicProps : Dict Id TopicProps
+  , topics : Dict Id MapTopic
   }
 
 
-type alias TopicProps =
+type alias MapTopic =
   { id : TopicId
   , pos : Point
   , expansion : Expansion -- "effective expansion", computed/transient,
@@ -71,10 +71,10 @@ type Msg
 
 encode : Model -> E.Value
 encode model =
-  E.list encodeBoxProps (model.boxProps |> Dict.values)
+  E.list encodeBoxProps (model.maps |> Dict.values)
 
 
-encodeBoxProps : BoxProps -> E.Value
+encodeBoxProps : TopicMap -> E.Value
 encodeBoxProps boxProps =
   E.object
     [ ("id", encodeBoxId boxProps.id)
@@ -90,13 +90,13 @@ encodeBoxProps boxProps =
         , ("y", E.int boxProps.scroll.y)
         ]
       )
-    , ("topicProps", boxProps.topicProps
+    , ("topics", boxProps.topics
         |> Dict.values
         |> E.list encodeTopicProps)
     ]
 
 
-encodeTopicProps : TopicProps -> E.Value
+encodeTopicProps : MapTopic -> E.Value
 encodeTopicProps topic =
   E.object
     [ ("id", E.int (toTopicId topic.id))
@@ -118,9 +118,9 @@ decoder =
     (D.succeed Nothing)
 
 
-boxPropsDecoder : D.Decoder BoxProps
+boxPropsDecoder : D.Decoder TopicMap
 boxPropsDecoder =
-  D.map4 BoxProps
+  D.map4 TopicMap
     (D.field "id" boxIdDecoder)
     (D.field "rect" <| D.map4 Rectangle
       (D.field "x1" D.int)
@@ -132,12 +132,12 @@ boxPropsDecoder =
       (D.field "x" D.int)
       (D.field "y" D.int)
     )
-    (D.field "topicProps" (toDictDecoderWith toTopicId topicPropsDecoder))
+    (D.field "topics" (toDictDecoderWith toTopicId topicPropsDecoder))
 
 
-topicPropsDecoder : D.Decoder TopicProps
+topicPropsDecoder : D.Decoder MapTopic
 topicPropsDecoder =
-  D.map3 TopicProps
+  D.map3 MapTopic
     (D.field "id" topicIdDecoder)
     (D.field "pos" <| D.map2
       Point

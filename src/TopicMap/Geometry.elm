@@ -7,8 +7,8 @@ import Feature.TextDef exposing (EditState(..))
 import Model exposing (Model)
 import ModelBase exposing (..)
 import Topic
-import TopicMap.BoxProps as TM
-import TopicMap.TopicMapDef exposing (BoxProps, TopicProps)
+import TopicMap.TopicMap as TM
+import TopicMap.TopicMapDef exposing (TopicMap, MapTopic)
 import TopicMap.ViewModel as VM
 import Utils as U
 
@@ -57,7 +57,7 @@ from the same box, that is the 1st box in BoxPath.
 modelPos - the screen position, in box-model coordinates
 topics - the topics to search in (deep), result is one of these or their children
 -}
-testChildren : Point -> List TopicProps -> BoxPath -> Maybe TopicId -> Env2 -> Maybe BoxTarget
+testChildren : Point -> List MapTopic -> BoxPath -> Maybe TopicId -> Env2 -> Maybe BoxTarget
 testChildren modelPos topics boxPath maybeFilter ({model, ext} as env) =
   case topics of
     [] -> Nothing
@@ -104,7 +104,7 @@ testChildren modelPos topics boxPath maybeFilter ({model, ext} as env) =
 {-| Transforms a box-local (screen) position to box-model coordinates, involving both the box's
 coordinate system translation (rect) and the box's scroll values.
 -}
-toModelPos : Point -> BoxProps -> Point
+toModelPos : Point -> TopicMap -> Point
 toModelPos pos boxProps =
   Point
     (pos.x + boxProps.rect.x1 + boxProps.scroll.x)
@@ -123,7 +123,7 @@ relPos_ pos topicId boxPath model =
     Nothing -> pos
 
 
--- TODO: factor out common BoxProps.Size code
+-- TODO: factor out common TopicMap.Size code
 
 isTopicHeaderHit : Point -> TopicId -> BoxId -> Model -> Bool
 isTopicHeaderHit pos topicId boxId model =
@@ -147,7 +147,7 @@ isTopicDetailHit pos topicId boxId model =
     _ -> False
 
 
-isBoxRectHit : Point -> BoxProps -> BoxId -> Model -> Bool
+isBoxRectHit : Point -> TopicMap -> BoxId -> Model -> Bool
 isBoxRectHit pos boxProps parentBoxId model =
   case TM.topicPos (fromBoxId boxProps.id) parentBoxId model of
     Just boxPos ->
@@ -194,7 +194,7 @@ autoSize boxPath ({model, ext}) =
     Nothing -> (Rectangle 0 0 0 0, model)
 
 
-accumulateItem : TopicProps -> BoxPath -> Rectangle -> ExtManager -> Model -> (Rectangle, Model)
+accumulateItem : MapTopic -> BoxPath -> Rectangle -> ExtManager -> Model -> (Rectangle, Model)
 accumulateItem mapItem boxPath rectAcc ext model =
   let
     (rect, model_) = calcItemRect mapItem boxPath ext model
@@ -202,7 +202,7 @@ accumulateItem mapItem boxPath rectAcc ext model =
   (accumulateRect rectAcc rect, model_)
 
 
-calcItemRect : TopicProps -> BoxPath -> ExtManager -> Model -> (Rectangle, Model)
+calcItemRect : MapTopic -> BoxPath -> ExtManager -> Model -> (Rectangle, Model)
 calcItemRect ({pos, expansion} as topic) boxPath ext model =
   case (Topic.isBox topic.id model, expansion) of
     (False, Collapsed) -> (topicExtent pos, model)

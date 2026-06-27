@@ -14,7 +14,7 @@ import ModelBase exposing (..)
 import Shared.Events as Events
 import Storage as S
 import Topic
-import TopicMap.BoxProps as TM
+import TopicMap.TopicMap as TM
 import Undo exposing (UndoModel)
 import Utils as U
 
