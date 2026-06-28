@@ -160,9 +160,9 @@ viewItems topicMap boxPath ({model} as env) =
     newPath = topicMap.id :: boxPath
     topics =
       VM.topicsToRender topicMap model |> List.map
-        (\({id} as topicProps) ->
+        (\({id} as mapTopic) ->
           case Topic.fromId id model of
-            Just topic -> viewTopic topic topicProps newPath env
+            Just topic -> viewTopic topic mapTopic newPath env
             _ -> U.logError "TopicMap.View.viewItems"
               ("problem with topic " ++ fromInt (toTopicId id)) (text "")
         )
@@ -206,7 +206,7 @@ viewLimboAssoc boxId model =
             Just assoc ->
               -- only if connected topic has geometry in this map already we can call
               -- viewAssoc()
-              if TM.hasTopicProps topicId boxId model then
+              if TM.hasMapTopic topicId boxId model then
                 viewAssoc assoc [boxId] [] model -- simple box path is sufficient for geometry,
                                                  -- limbo assoc is never selected
               else
@@ -232,14 +232,14 @@ viewLimboAssoc boxId model =
 -- Topic Rendering
 
 viewTopic : Topic -> MapTopic -> BoxPath -> Env2 -> Html Msg
-viewTopic topic topicProps boxPath ({model, ext}) =
+viewTopic topic mapTopic boxPath ({model, ext}) =
   let
     render =
-      case (Topic.isBox topic.id model, topicProps.expansion) of
-        (False, Collapsed) -> labelTopic topic topicProps boxPath
-        (False, Expanded) -> detailTopic topic topicProps boxPath
-        (True, Collapsed) -> blackBoxTopic topic topicProps boxPath
-        (True, Expanded) -> whiteBoxTopic topic topicProps boxPath ext
+      case (Topic.isBox topic.id model, mapTopic.expansion) of
+        (False, Collapsed) -> labelTopic topic mapTopic boxPath
+        (False, Expanded) -> detailTopic topic mapTopic boxPath
+        (True, Collapsed) -> blackBoxTopic topic mapTopic boxPath
+        (True, Expanded) -> whiteBoxTopic topic mapTopic boxPath ext
     (style, children) = render model
   in
   div
@@ -274,16 +274,16 @@ topicStyle id boxPath model =
 
 
 labelTopic : Topic -> MapTopic -> BoxPath -> Model -> TopicRendering
-labelTopic topic topicProps boxPath model =
-  ( topicPosStyle topicProps
-      ++ topicFlexboxStyle topicProps boxPath model
+labelTopic topic mapTopic boxPath model =
+  ( topicPosStyle mapTopic
+      ++ topicFlexboxStyle mapTopic boxPath model
       ++ VB.selectionStyle topic.id boxPath model
-  , viewLabelTopic topic topicProps boxPath model
+  , viewLabelTopic topic mapTopic boxPath model
   )
 
 
 viewLabelTopic : Topic -> MapTopic -> BoxPath -> Model -> List (Html Msg)
-viewLabelTopic topic topicProps boxPath model =
+viewLabelTopic topic mapTopic boxPath model =
   let
     textElem =
       if Text.isEdit topic.id boxPath model then
@@ -294,7 +294,7 @@ viewLabelTopic topic topicProps boxPath model =
           [ text <| Topic.label topic ]
   in
   [ div
-    (iconBoxStyle topicProps model)
+    (iconBoxStyle mapTopic model)
     [ Icon.viewTopicIcon topic.id C.topicIconSize topicIconStyle model ]
   , textElem
   ]
@@ -322,7 +322,7 @@ labelTopicStyle =
 
 
 detailTopic : Topic -> MapTopic -> BoxPath -> Model -> TopicRendering
-detailTopic topic topicProps boxPath model =
+detailTopic topic mapTopic boxPath model =
   let
     textElem =
       case Text.isEdit topic.id boxPath model of
@@ -338,9 +338,9 @@ detailTopic topic topicProps boxPath model =
             )
             ( Text.markdown topic.text model )
   in
-  ( detailTopicStyle topicProps
+  ( detailTopicStyle mapTopic
   , [ div
-      ( iconBoxStyle topicProps model
+      ( iconBoxStyle mapTopic model
         ++ detailTopicIconBoxStyle
         ++ VB.selectionStyle topic.id boxPath model
       )
@@ -397,11 +397,11 @@ textEditorStyle topicId model =
 
 
 iconBoxStyle : MapTopic -> Model -> Attrs Msg
-iconBoxStyle topicProps model =
+iconBoxStyle mapTopic model =
   let
     r1 = fromInt C.topicRadius ++ "px"
     r4 =
-      case (Topic.isBox topicProps.id model, topicProps.expansion) of
+      case (Topic.isBox mapTopic.id model, mapTopic.expansion) of
         (True, Expanded) -> "0"
         _ -> r1
   in
@@ -431,11 +431,11 @@ topicIconStyle =
 
 
 blackBoxTopic : Topic -> MapTopic -> BoxPath -> Model -> TopicRendering
-blackBoxTopic topic topicProps boxPath model =
-  ( topicPosStyle topicProps
+blackBoxTopic topic mapTopic boxPath model =
+  ( topicPosStyle mapTopic
   , [ div
-      (topicFlexboxStyle topicProps boxPath model)
-      (viewLabelTopic topic topicProps boxPath model
+      (topicFlexboxStyle mapTopic boxPath model)
+      (viewLabelTopic topic mapTopic boxPath model
         ++ viewItemCount (BoxId topic.id) model -- topic has proven to be a box by caller
       )
     , div
@@ -453,11 +453,11 @@ topicPosStyle { pos } =
 
 
 topicFlexboxStyle : MapTopic -> BoxPath -> Model -> Attrs Msg
-topicFlexboxStyle topicProps boxPath model =
+topicFlexboxStyle mapTopic boxPath model =
   let
     r12 = fromInt C.topicRadius ++ "px"
     r34 =
-      case (Topic.isBox topicProps.id model, topicProps.expansion) of
+      case (Topic.isBox mapTopic.id model, mapTopic.expansion) of
         (True, Expanded) -> "0"
         _ -> r12
   in
@@ -468,7 +468,7 @@ topicFlexboxStyle topicProps boxPath model =
   , style "height" <| fromInt C.topicSize.h ++ "px"
   , style "border-radius" <| r12 ++ " " ++ r12 ++ " " ++ r34 ++ " " ++ r34
   ]
-  ++ VB.topicBorderStyle topicProps.id boxPath model
+  ++ VB.topicBorderStyle mapTopic.id boxPath model
 
 
 ghostTopicStyle : Topic -> BoxPath -> Model -> Attrs Msg
@@ -486,9 +486,9 @@ ghostTopicStyle topic boxPath model =
 
 
 whiteBoxTopic : Topic -> MapTopic -> BoxPath -> ExtManager -> Model -> TopicRendering
-whiteBoxTopic topic topicProps boxPath ext model =
+whiteBoxTopic topic mapTopic boxPath ext model =
   let
-    (style, children) = labelTopic topic topicProps boxPath model
+    (style, children) = labelTopic topic mapTopic boxPath model
   in
   ( style
   , children

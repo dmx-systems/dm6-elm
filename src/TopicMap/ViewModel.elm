@@ -16,9 +16,9 @@ import Utils as U
 topicsToRender : TopicMap -> Model -> List MapTopic
 topicsToRender topicMap model =
   let
-    topics = TM.allTopicProps topicMap model |> List.map
+    topics = TM.allMapTopics topicMap model |> List.map
       (\topic -> effectiveExpansion topic topicMap.id model)
-    limboTopic = limboTopicProps topicMap model
+    limboTopic = limboMapTopic topicMap model
   in
   topics ++ limboTopic
 
@@ -33,20 +33,20 @@ effectiveExpansion topic boxId model =
   }
 
 
-limboTopicProps : TopicMap -> Model -> List MapTopic
-limboTopicProps topicMap model =
+limboMapTopic : TopicMap -> Model -> List MapTopic
+limboMapTopic topicMap model =
   case limboState model of
     Just (topicId, _, limboBoxId) ->
       if limboBoxId == topicMap.id && (not <| Box.hasItem (T topicId) topicMap.id model) then
         let
-          _ = U.info "TopicMap.ViewModel.limboTopicProps"
+          _ = U.info "TopicMap.ViewModel.limboMapTopic"
             (topicId, "not in topicMap", topicMap.id)
-          topicProps =
-            case TM.topicPropsOrNothing topicId topicMap of
+          mapTopic =
+            case TM.mapTopicOrNothing topicId topicMap of
               Just {pos} -> MapTopic topicId pos Expanded
-              Nothing -> TM.initLimboTopicProps topicId topicMap.id model
+              Nothing -> TM.initLimboMapTopic topicId topicMap.id model
         in
-        [ topicProps ]
+        [ mapTopic ]
       else
         []
     Nothing -> []

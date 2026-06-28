@@ -11,7 +11,7 @@ import Time
 
 
 type alias Model =
-  { maps : Dict Id TopicMap
+  { topicMaps : Dict Id TopicMap
   -- State machine to initiate a drag from a TopicMap box.
   -- Available while a drag that started from a TopicMap box is active.
   , dragState : Maybe DragState -- transient
@@ -20,7 +20,7 @@ type alias Model =
 
 init : Model
 init =
-  { maps =
+  { topicMaps =
       Dict.singleton
         (toBoxId rootBoxId)
         (TopicMap rootBoxId (Rectangle 0 0 0 0) (Point 0 0) Dict.empty)
@@ -71,11 +71,11 @@ type Msg
 
 encode : Model -> E.Value
 encode model =
-  E.list encodeBoxProps (model.maps |> Dict.values)
+  E.list encodeTopicMap (model.topicMaps |> Dict.values)
 
 
-encodeBoxProps : TopicMap -> E.Value
-encodeBoxProps topicMap =
+encodeTopicMap : TopicMap -> E.Value
+encodeTopicMap topicMap =
   E.object
     [ ("id", encodeBoxId topicMap.id)
     , ("rect", E.object
@@ -92,12 +92,12 @@ encodeBoxProps topicMap =
       )
     , ("topics", topicMap.topics
         |> Dict.values
-        |> E.list encodeTopicProps)
+        |> E.list encodeMapTopic)
     ]
 
 
-encodeTopicProps : MapTopic -> E.Value
-encodeTopicProps topic =
+encodeMapTopic : MapTopic -> E.Value
+encodeMapTopic topic =
   E.object
     [ ("id", E.int (toTopicId topic.id))
     , ("pos", E.object
@@ -114,12 +114,12 @@ encodeTopicProps topic =
 decoder : D.Decoder Model
 decoder =
   D.map2 Model
-    (toDictDecoderWith toBoxId boxPropsDecoder)
+    (toDictDecoderWith toBoxId topicMapDecoder)
     (D.succeed Nothing)
 
 
-boxPropsDecoder : D.Decoder TopicMap
-boxPropsDecoder =
+topicMapDecoder : D.Decoder TopicMap
+topicMapDecoder =
   D.map4 TopicMap
     (D.field "id" boxIdDecoder)
     (D.field "rect" <| D.map4 Rectangle
@@ -132,11 +132,11 @@ boxPropsDecoder =
       (D.field "x" D.int)
       (D.field "y" D.int)
     )
-    (D.field "topics" (toDictDecoderWith toTopicId topicPropsDecoder))
+    (D.field "topics" (toDictDecoderWith toTopicId mapTopicDecoder))
 
 
-topicPropsDecoder : D.Decoder MapTopic
-topicPropsDecoder =
+mapTopicDecoder : D.Decoder MapTopic
+mapTopicDecoder =
   D.map3 MapTopic
     (D.field "id" topicIdDecoder)
     (D.field "pos" <| D.map2

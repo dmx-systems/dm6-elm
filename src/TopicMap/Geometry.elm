@@ -32,7 +32,7 @@ hitTest (BoxId topicId as boxId) boxPath localPos maybeFilter ({model} as env) =
     Just topicMap ->
       let
         fullPath = boxId :: boxPath
-        topics = TM.allTopicProps topicMap model
+        topics = TM.allMapTopics topicMap model
         modelPos = toModelPos localPos topicMap
       in
       case testChildren modelPos topics fullPath maybeFilter env of
