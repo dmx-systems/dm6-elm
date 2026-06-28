@@ -1,4 +1,4 @@
-module TopicList.TopicListDef exposing (Model, BoxProps, DropMode(..), Targets, init,
+module TopicList.TopicListDef exposing (Model, TopicList, DropMode(..), Targets, init,
   resetTransient, encode, decoder)
 
 import ModelBase exposing (..)
@@ -11,7 +11,7 @@ import Array exposing (Array)
 
 
 type alias Model =
-  { boxProps : Dict Id BoxProps
+  { topicLists : Dict Id TopicList
   -- Position of dragging list item.
   -- Available while a drag that started from a TopicList box is active.
   , dragPos : Maybe Point -- transient
@@ -23,7 +23,7 @@ type alias Model =
 
 init : Model
 init =
-  { boxProps = Dict.empty
+  { topicLists = Dict.empty
   , dragPos = Nothing
   , dropMode = Nothing
   }
@@ -37,7 +37,7 @@ resetTransient model =
   }
 
 
-type alias BoxProps =
+type alias TopicList =
   { id : BoxId
   , order : List TopicId
   , size : Size
@@ -60,10 +60,10 @@ type alias Targets = Array (Level, Target)
 
 encode : Model -> E.Value
 encode model =
-  E.list encodeTopicList (model.boxProps |> Dict.values)
+  E.list encodeTopicList (model.topicLists |> Dict.values)
 
 
-encodeTopicList : BoxProps -> E.Value
+encodeTopicList : TopicList -> E.Value
 encodeTopicList list =
   E.object
     [ ("id", encodeBoxId list.id)
@@ -86,9 +86,9 @@ decoder =
     (D.succeed Nothing)
 
 
-topicListDecoder : D.Decoder BoxProps
+topicListDecoder : D.Decoder TopicList
 topicListDecoder =
-  D.map3 BoxProps
+  D.map3 TopicList
     (D.field "id" boxIdDecoder)
     (D.field "order" (D.list topicIdDecoder))
     (D.field "size" <| D.map2 Size

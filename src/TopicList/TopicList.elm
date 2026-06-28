@@ -8,7 +8,7 @@ import Env exposing (Env2)
 import Model exposing (Model)
 import ModelBase exposing (..)
 import Topic
-import TopicList.TopicListDef exposing (BoxProps, Targets)
+import TopicList.TopicListDef exposing (TopicList, Targets)
 import Utils as U
 
 import Array
@@ -28,29 +28,29 @@ init boxId model =
           acc
       )
       model
-    |> createBoxProps boxId
+    |> initTopicList boxId
     |> initOrder boxId
 
 
-createBoxProps : BoxId -> Model -> Model
-createBoxProps boxId ({topicList} as model) =
+initTopicList : BoxId -> Model -> Model
+initTopicList boxId ({topicList} as model) =
   let
     id = toBoxId boxId
   in
-  if Dict.member id model.topicList.boxProps then
+  if Dict.member id model.topicList.topicLists then
     let
-      _ = U.info "TopicList.TopicList.createBoxProps"
-        ("Box (" ++ U.toString boxId ++ ") has BoxProps entry already")
+      _ = U.info "TopicList.TopicList.initTopicList"
+        ("Box (" ++ U.toString boxId ++ ") has TopicList entry already")
     in
     model
   else
     let
-      _ = U.info "TopicList.TopicList.createBoxProps"
-        ("Creating BoxProps entry for box (" ++ U.toString boxId ++ ")")
+      _ = U.info "TopicList.TopicList.initTopicList"
+        ("Creating TopicList entry for box (" ++ U.toString boxId ++ ")")
     in
     { model | topicList =
-      { topicList | boxProps = topicList.boxProps
-          |> Dict.insert id (BoxProps boxId [] (Size 0 0))
+      { topicList | topicLists = topicList.topicLists
+          |> Dict.insert id (TopicList boxId [] (Size 0 0))
       }
     }
 
@@ -66,7 +66,7 @@ initOrder boxId ({topicList} as model) =
               (missingTopicIds orderList)
               (Box.topicIds boxId model)
           _ = U.info "TopicList.TopicList.initOrder"
-            ("Add missing BoxProps " ++ U.toString missing ++ " to " ++ U.toString orderList)
+            ("Add missing TopicList " ++ U.toString missing ++ " to " ++ U.toString orderList)
         in
         missing ++ orderList
       )
@@ -109,7 +109,7 @@ listOrder boxId model topicIds =
       else
         Nothing
   in
-  case boxPropsFromId boxId model of
+  case fromId boxId model of
     Just {order} -> order
       |> List.filterMap isBoxContent
     Nothing -> U.fail "TopicList.TopicList.listOrder" boxId topicIds
@@ -124,15 +124,15 @@ targetAcc topic level boxPath acc childrenAcc model =
 
 
 {- Canonical order list transformation.
-Logs an error if the BoxProps entry is missing.
+Logs an error if the TopicList entry is missing.
 -}
 updateOrder : BoxId -> (List TopicId -> List TopicId) -> Model -> Model
 updateOrder boxId transform ({topicList} as model) =
   { model | topicList =
-    { topicList | boxProps = topicList.boxProps |> Dict.update (toBoxId boxId)
-        (\maybeBoxProps ->
-          case maybeBoxProps of
-            Just boxProps -> Just { boxProps | order = transform boxProps.order }
+    { topicList | topicLists = topicList.topicLists |> Dict.update (toBoxId boxId)
+        (\maybeTopicList ->
+          case maybeTopicList of
+            Just topicList_ -> Just { topicList_ | order = transform topicList_.order }
             Nothing -> U.logError "TopicList.TopicList.updateOrder"
               (U.toString {boxId = boxId}) Nothing
         )
@@ -220,23 +220,23 @@ autoSize boxPath {model} =
 setSize : BoxId -> Size -> Model -> Model
 setSize boxId size model =
   model
-    |> updateBoxProps boxId
-      (\boxProps -> {boxProps | size = size})
+    |> updateTopicList boxId
+      (\topicList -> {topicList | size = size})
 
 
-{-| Canonical BoxProps transformation.
-Logs an error if BoxProps do not exist.
+{-| Canonical TopicList transformation.
+Logs an error if TopicList do not exist.
 -}
-updateBoxProps : BoxId -> (BoxProps -> BoxProps) -> Model -> Model
-updateBoxProps boxId transform ({topicList} as model) =
+updateTopicList : BoxId -> (TopicList -> TopicList) -> Model -> Model
+updateTopicList boxId transform ({topicList} as model) =
   { model | topicList =
-    { topicList | boxProps = topicList.boxProps
+    { topicList | topicLists = topicList.topicLists
         |> Dict.update (toBoxId boxId)
-          (\maybeBoxProps ->
-            case maybeBoxProps of
-              Just boxProps -> Just (transform boxProps)
-              Nothing -> U.logError "TopicList.TopicList.updateBoxProps"
-                ("Missing BoxProps entry for (" ++ U.toString boxId ++ ")") Nothing
+          (\maybeTopicList ->
+            case maybeTopicList of
+              Just topicList_ -> Just (transform topicList_)
+              Nothing -> U.logError "TopicList.TopicList.updateTopicList"
+                ("Missing TopicList entry for (" ++ U.toString boxId ++ ")") Nothing
           )
     }
   }
@@ -244,16 +244,16 @@ updateBoxProps boxId transform ({topicList} as model) =
 
 getSize : BoxId -> Model -> Size
 getSize boxId model =
-  case boxPropsFromId boxId model of
-    Just boxProps -> boxProps.size
+  case fromId boxId model of
+    Just topicList -> topicList.size
     Nothing -> U.fail "TopicList.TopicList.getSize" boxId (Size 0 0)
 
 
-{-| Logs an error if the BoxProps entry is missing.
+{-| Logs an error if the TopicList entry is missing.
 -}
-boxPropsFromId : BoxId -> Model -> Maybe BoxProps
-boxPropsFromId boxId model =
-  case model.topicList.boxProps |> Dict.get (toBoxId boxId) of
-    Just boxProps -> Just boxProps
-    Nothing -> U.logError "TopicList.TopicList.boxPropsFromId"
-      ("Missing BoxProps entry for (" ++ U.toString boxId ++ ")") Nothing
+fromId : BoxId -> Model -> Maybe TopicList
+fromId boxId model =
+  case model.topicList.topicLists |> Dict.get (toBoxId boxId) of
+    Just topicList -> Just topicList
+    Nothing -> U.logError "TopicList.TopicList.fromId"
+      ("Missing TopicList entry for (" ++ U.toString boxId ++ ")") Nothing
