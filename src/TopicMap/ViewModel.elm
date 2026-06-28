@@ -14,11 +14,11 @@ import Utils as U
 
 {- Projects box data and search state ("limbo") into a TopicMap render model -}
 topicsToRender : TopicMap -> Model -> List MapTopic
-topicsToRender boxProps model =
+topicsToRender topicMap model =
   let
-    topics = TM.allTopicProps boxProps model |> List.map
-      (\topic -> effectiveExpansion topic boxProps.id model)
-    limboTopic = limboTopicProps boxProps model
+    topics = TM.allTopicProps topicMap model |> List.map
+      (\topic -> effectiveExpansion topic topicMap.id model)
+    limboTopic = limboTopicProps topicMap model
   in
   topics ++ limboTopic
 
@@ -34,17 +34,17 @@ effectiveExpansion topic boxId model =
 
 
 limboTopicProps : TopicMap -> Model -> List MapTopic
-limboTopicProps boxProps model =
+limboTopicProps topicMap model =
   case limboState model of
     Just (topicId, _, limboBoxId) ->
-      if limboBoxId == boxProps.id && (not <| Box.hasItem (T topicId) boxProps.id model) then
+      if limboBoxId == topicMap.id && (not <| Box.hasItem (T topicId) topicMap.id model) then
         let
           _ = U.info "TopicMap.ViewModel.limboTopicProps"
-            (topicId, "not in boxProps", boxProps.id)
+            (topicId, "not in topicMap", topicMap.id)
           topicProps =
-            case TM.topicPropsOrNothing topicId boxProps of
+            case TM.topicPropsOrNothing topicId topicMap of
               Just {pos} -> MapTopic topicId pos Expanded
-              Nothing -> TM.initLimboTopicProps topicId boxProps.id model
+              Nothing -> TM.initLimboTopicProps topicId topicMap.id model
         in
         [ topicProps ]
       else
@@ -84,15 +84,15 @@ limboState model =
 toLocalPos : Point -> BoxPath -> Model -> Point
 toLocalPos clientPos boxPath model =
   case TM.fullscreen model of
-    Just boxProps ->
+    Just topicMap ->
       let
         -- The box's absolute position is computed first. This involves the positions
         -- of all of its parent boxes. So the box's entire path is needed.
         posAbs = absPos boxPath (Point 0 0) model
       in
       Point
-        (clientPos.x - posAbs.x + boxProps.scroll.x)
-        (clientPos.y - posAbs.y + boxProps.scroll.y - C.appHeaderHeight)
+        (clientPos.x - posAbs.x + topicMap.scroll.x)
+        (clientPos.y - posAbs.y + topicMap.scroll.y - C.appHeaderHeight)
     Nothing -> Point 0 0
 
 
@@ -127,8 +127,8 @@ accumulatePos posAcc boxId parentBoxId boxIds model =
 accumulateRect : Point -> BoxId -> Model -> Point
 accumulateRect posAcc boxId model =
   case TM.byId boxId model of
-    Just boxProps ->
+    Just topicMap ->
       Point
-        (posAcc.x - boxProps.rect.x1)
-        (posAcc.y - boxProps.rect.y1)
+        (posAcc.x - topicMap.rect.x1)
+        (posAcc.y - topicMap.rect.y1)
     Nothing -> Point 0 0 -- error is already logged

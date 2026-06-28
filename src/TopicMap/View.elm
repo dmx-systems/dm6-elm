@@ -16,7 +16,8 @@ import Shared.Events as Events
 import Shared.ViewBase as VB
 import Topic
 import TopicMap.TopicMap as TM
-import TopicMap.TopicMapDef as TopicMapDef exposing (MapTopic, DragState(..), DragMode(..))
+import TopicMap.TopicMapDef as TopicMapDef exposing (TopicMap, MapTopic, DragState(..),
+  DragMode(..))
 import TopicMap.ViewModel as VM
 import Utils as U
 
@@ -134,13 +135,13 @@ gAttr boxId boxRect model =
 boxInfo : BoxId -> BoxPath -> Env2 -> BoxInfo
 boxInfo boxId boxPath ({model} as env) =
   case TM.byId boxId model of
-    Just boxProps ->
+    Just topicMap ->
       let
-        width = boxProps.rect.x2 - boxProps.rect.x1
-        height = boxProps.rect.y2 - boxProps.rect.y1
+        width = topicMap.rect.x2 - topicMap.rect.x1
+        height = topicMap.rect.y2 - topicMap.rect.y1
       in
-      ( viewItems boxProps boxPath env
-      , boxProps.rect
+      ( viewItems topicMap boxPath env
+      , topicMap.rect
       , ( { w = fromInt width
           , h = fromInt height
           }
@@ -153,12 +154,12 @@ boxInfo boxId boxPath ({model} as env) =
 
 
 -- For the fullscreen box boxPath is empty
-viewItems : TopicMapDef.TopicMap -> BoxPath -> Env2 -> (List (Html Msg), List (Svg Msg))
-viewItems boxProps boxPath ({model} as env) =
+viewItems : TopicMap -> BoxPath -> Env2 -> (List (Html Msg), List (Svg Msg))
+viewItems topicMap boxPath ({model} as env) =
   let
-    newPath = boxProps.id :: boxPath
+    newPath = topicMap.id :: boxPath
     topics =
-      VM.topicsToRender boxProps model |> List.map
+      VM.topicsToRender topicMap model |> List.map
         (\({id} as topicProps) ->
           case Topic.fromId id model of
             Just topic -> viewTopic topic topicProps newPath env
@@ -166,7 +167,7 @@ viewItems boxProps boxPath ({model} as env) =
               ("problem with topic " ++ fromInt (toTopicId id)) (text "")
         )
     assocs =
-      Box.assocIds boxProps.id model |> List.foldr
+      Box.assocIds topicMap.id model |> List.foldr
         (\id svgAcc ->
           case Assoc.fromId id model of
             Just assoc ->
@@ -184,7 +185,7 @@ viewItems boxProps boxPath ({model} as env) =
 
 assocClickHandler : AssocId -> BoxPath -> Attrs Msg
 assocClickHandler assocId boxPath =
-  [ Events.onClickStop (TopicMap <| TopicMapDef.AssocClicked assocId boxPath) ]
+  [ Events.onClickStop (Model.TopicMap <| TopicMapDef.AssocClicked assocId boxPath) ]
 
 
 viewLimboAssoc : BoxId -> Model -> List (Html Msg)

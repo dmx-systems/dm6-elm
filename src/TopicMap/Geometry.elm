@@ -29,11 +29,11 @@ localPos - the screen position, local to the Box to search in
 hitTest : BoxId -> BoxPath -> Point -> Maybe TopicId -> Env2 -> Maybe BoxTarget
 hitTest (BoxId topicId as boxId) boxPath localPos maybeFilter ({model} as env) =
   case TM.byId boxId model of
-    Just boxProps ->
+    Just topicMap ->
       let
         fullPath = boxId :: boxPath
-        topics = TM.allTopicProps boxProps model
-        modelPos = toModelPos localPos boxProps
+        topics = TM.allTopicProps topicMap model
+        modelPos = toModelPos localPos topicMap
       in
       case testChildren modelPos topics fullPath maybeFilter env of
         Just boxTarget -> Just boxTarget
@@ -44,7 +44,7 @@ hitTest (BoxId topicId as boxId) boxPath localPos maybeFilter ({model} as env) =
             let
               parentBoxId = Box.firstId boxPath
             in
-            if isBoxRectHit localPos boxProps parentBoxId model then
+            if isBoxRectHit localPos topicMap parentBoxId model then
               Just (BoxTarget fullPath (T topicId, boxPath))
             else
               Nothing
@@ -105,10 +105,10 @@ testChildren modelPos topics boxPath maybeFilter ({model, ext} as env) =
 coordinate system translation (rect) and the box's scroll values.
 -}
 toModelPos : Point -> TopicMap -> Point
-toModelPos pos boxProps =
+toModelPos pos topicMap =
   Point
-    (pos.x + boxProps.rect.x1 + boxProps.scroll.x)
-    (pos.y + boxProps.rect.y1 + boxProps.scroll.y)
+    (pos.x + topicMap.rect.x1 + topicMap.scroll.x)
+    (pos.y + topicMap.rect.y1 + topicMap.scroll.y)
     -- FIXME: don't apply scroll value of nested boxes?
 
 
@@ -148,13 +148,13 @@ isTopicDetailHit pos topicId boxId model =
 
 
 isBoxRectHit : Point -> TopicMap -> BoxId -> Model -> Bool
-isBoxRectHit pos boxProps parentBoxId model =
-  case TM.topicPos (fromBoxId boxProps.id) parentBoxId model of
+isBoxRectHit pos topicMap parentBoxId model =
+  case TM.topicPos (fromBoxId topicMap.id) parentBoxId model of
     Just boxPos ->
       pos.x > 0 &&
-      pos.x < boxProps.rect.x2 - boxProps.rect.x1 &&
+      pos.x < topicMap.rect.x2 - topicMap.rect.x1 &&
       pos.y > 0 &&
-      pos.y < boxProps.rect.y2 - boxProps.rect.y1
+      pos.y < topicMap.rect.y2 - topicMap.rect.y1
     Nothing -> False
 
 
@@ -174,9 +174,9 @@ autoSize boxPath ({model, ext}) =
     boxId = Box.firstId boxPath
   in
   case TM.byId boxId model of
-    Just boxProps ->
+    Just topicMap ->
       let
-        topics = VM.topicsToRender boxProps model
+        topics = VM.topicsToRender topicMap model
         (rect, model_) =
           if topics |> List.isEmpty then
             (C.whiteBoxEmpty, model)
@@ -189,7 +189,7 @@ autoSize boxPath ({model, ext}) =
         newRect = addBoxPadding rect
       in
       ( newRect
-      , updateBoxGeometry boxPath newRect boxProps.rect model_
+      , updateBoxGeometry boxPath newRect topicMap.rect model_
       )
     Nothing -> (Rectangle 0 0 0 0, model)
 

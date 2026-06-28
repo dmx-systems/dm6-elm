@@ -56,8 +56,8 @@ addMissingTopicProps : BoxId -> Model -> Model
 addMissingTopicProps boxId model =
   model
     |> updateBoxProps boxId
-      (\boxProps ->
-        { boxProps | topics =
+      (\topicMap ->
+        { topicMap | topics =
             Box.topicIds boxId model
               |> List.foldl
                 (\topicId acc ->
@@ -69,7 +69,7 @@ addMissingTopicProps boxId model =
                   else
                     acc |> Dict.insert id (initTopicProps topicId boxId model)
                 )
-                boxProps.topics
+                topicMap.topics
         }
       )
 
@@ -77,17 +77,17 @@ addMissingTopicProps boxId model =
 create : BoxId -> Model -> Model
 create boxId model =
   let
-    boxProps = TopicMap boxId (Rectangle 0 0 0 0) (Point 0 0) Dict.empty
+    topicMap = TopicMap boxId (Rectangle 0 0 0 0) (Point 0 0) Dict.empty
   in
   model
-    |> create_ boxProps
+    |> create_ topicMap
 
 
 create_ : TopicMap -> Model -> Model
-create_ boxProps ({topicMap} as model) =
+create_ topicMap_ ({topicMap} as model) =
   { model | topicMap =
     { topicMap | maps = topicMap.maps
-        |> Dict.insert (toBoxId boxProps.id) boxProps
+        |> Dict.insert (toBoxId topicMap_.id) topicMap_
     }
   }
 
@@ -99,10 +99,10 @@ Note: the box content is the source of truth. TopicMap on the other hand remembe
 once rendered. ### TODO: function name
 -}
 allTopicProps : TopicMap -> Model -> List MapTopic
-allTopicProps boxProps model =
-  Box.topicIds boxProps.id model
+allTopicProps topicMap model =
+  Box.topicIds topicMap.id model
     |> List.filterMap
-      (\topicId -> topicProps_ topicId boxProps)
+      (\topicId -> topicProps_ topicId topicMap)
 
 
 {-| Logs an error if the TopicMap entry is missing, or inside TopicMap the MapTopic entry is
@@ -168,9 +168,9 @@ addTopicAt topicId boxId pos ({model} as env) =
 
 
 addTopic_ : TopicId -> Point -> TopicMap -> TopicMap
-addTopic_ topicId pos boxProps =
-  { boxProps | topics =
-      boxProps.topics |> Dict.insert
+addTopic_ topicId pos topicMap =
+  { topicMap | topics =
+      topicMap.topics |> Dict.insert
         (toTopicId topicId)
         (MapTopic topicId pos Collapsed)
   }
@@ -211,10 +211,10 @@ initLimboTopicProps topicId boxId model =
 initTopicPos : BoxId -> Model -> Point
 initTopicPos boxId model =
   case byId boxId model of
-    Just boxProps ->
+    Just topicMap ->
       Point
-        (C.initTopicPos.x + boxProps.rect.x1 + boxProps.scroll.x)
-        (C.initTopicPos.y + boxProps.rect.y1 + boxProps.scroll.y)
+        (C.initTopicPos.x + topicMap.rect.x1 + topicMap.scroll.x)
+        (C.initTopicPos.y + topicMap.rect.y1 + topicMap.scroll.y)
     Nothing -> Point 0 0 -- error is already logged
 
 
@@ -232,16 +232,16 @@ topicProps topicId boxId model =
 Logs an error if the MapTopic entry is missing.
 -}
 topicProps_ : TopicId -> TopicMap -> Maybe MapTopic
-topicProps_ topicId boxProps =
-  case topicPropsOrNothing topicId boxProps of
+topicProps_ topicId topicMap =
+  case topicPropsOrNothing topicId topicMap of
     Just topic -> Just topic
     Nothing -> U.logError "TopicMap.TopicMap.topicProps_" ("Missing MapTopic ("
-      ++ U.toString topicId ++ ") inside (" ++ U.toString boxProps.id ++ ")") Nothing
+      ++ U.toString topicId ++ ") inside (" ++ U.toString topicMap.id ++ ")") Nothing
 
 
 topicPropsOrNothing : TopicId -> TopicMap -> Maybe MapTopic
-topicPropsOrNothing topicId boxProps =
-  case boxProps.topics |> Dict.get (toTopicId topicId) of
+topicPropsOrNothing topicId topicMap =
+  case topicMap.topics |> Dict.get (toTopicId topicId) of
     Just topic -> Just topic
     Nothing -> Nothing
 
@@ -249,7 +249,7 @@ topicPropsOrNothing topicId boxProps =
 hasTopicProps : TopicId -> BoxId -> Model -> Bool
 hasTopicProps topicId boxId model =
   case byId boxId model of
-    Just boxProps -> boxProps.topics |> Dict.member (toTopicId topicId)
+    Just topicMap -> topicMap.topics |> Dict.member (toTopicId topicId)
     Nothing -> U.fail "TopicMap.TopicMap.hasTopicProps" {topicId = topicId, boxId = boxId} False
 
 
@@ -266,7 +266,7 @@ fullscreen model =
 byId : BoxId -> Model -> Maybe TopicMap
 byId boxId model =
   case model.topicMap.maps |> Dict.get (toBoxId boxId) of
-    Just boxProps -> Just boxProps
+    Just topicMap -> Just topicMap
     Nothing -> U.logError "TopicMap.TopicMap.byId"
       ("Missing TopicMap entry for (" ++ U.toString boxId ++ ")") Nothing
 
@@ -277,8 +277,8 @@ updateRect : BoxId -> (Rectangle -> Rectangle) -> Model -> Model
 updateRect boxId transform model =
   model
     |> updateBoxProps boxId
-      (\boxProps ->
-        { boxProps | rect = transform boxProps.rect }
+      (\topicMap ->
+        { topicMap | rect = transform topicMap.rect }
       )
 
 
@@ -286,8 +286,8 @@ updateScrollPos : BoxId -> (Point -> Point) -> Model -> Model
 updateScrollPos boxId transform model =
   model
     |> updateBoxProps boxId
-      (\boxProps ->
-        { boxProps | scroll = transform boxProps.scroll }
+      (\topicMap ->
+        { topicMap | scroll = transform topicMap.scroll }
       )
 
 
@@ -299,8 +299,8 @@ updateTopicProps : TopicId -> BoxId -> (MapTopic -> MapTopic) -> Model -> Model
 updateTopicProps topicId boxId transform model =
   model
     |> updateBoxProps boxId
-      (\boxProps ->
-        { boxProps | topics = boxProps.topics |> Dict.update (toTopicId topicId)
+      (\topicMap ->
+        { topicMap | topics = topicMap.topics |> Dict.update (toTopicId topicId)
           (\maybeTopicProps ->
             case maybeTopicProps of
               Just tProps -> Just (transform tProps)
@@ -321,7 +321,7 @@ updateBoxProps boxId transform ({topicMap} as model) =
         |> Dict.update (toBoxId boxId)
           (\maybeBoxProps ->
             case maybeBoxProps of
-              Just boxProps -> Just (transform boxProps)
+              Just topicMap_ -> Just (transform topicMap_)
               Nothing -> U.logError "TopicMap.TopicMap.updateBoxProps"
                 ("Missing TopicMap entry for (" ++ U.toString boxId ++ ")") Nothing
           )

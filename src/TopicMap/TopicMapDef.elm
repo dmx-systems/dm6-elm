@@ -75,22 +75,22 @@ encode model =
 
 
 encodeBoxProps : TopicMap -> E.Value
-encodeBoxProps boxProps =
+encodeBoxProps topicMap =
   E.object
-    [ ("id", encodeBoxId boxProps.id)
+    [ ("id", encodeBoxId topicMap.id)
     , ("rect", E.object
-        [ ("x1", E.int boxProps.rect.x1)
-        , ("y1", E.int boxProps.rect.y1)
-        , ("x2", E.int boxProps.rect.x2)
-        , ("y2", E.int boxProps.rect.y2)
+        [ ("x1", E.int topicMap.rect.x1)
+        , ("y1", E.int topicMap.rect.y1)
+        , ("x2", E.int topicMap.rect.x2)
+        , ("y2", E.int topicMap.rect.y2)
         ]
       )
     , ("scroll", E.object
-        [ ("x", E.int boxProps.scroll.x)
-        , ("y", E.int boxProps.scroll.y)
+        [ ("x", E.int topicMap.scroll.x)
+        , ("y", E.int topicMap.scroll.y)
         ]
       )
-    , ("topics", boxProps.topics
+    , ("topics", topicMap.topics
         |> Dict.values
         |> E.list encodeTopicProps)
     ]
