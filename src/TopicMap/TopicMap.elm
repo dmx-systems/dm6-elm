@@ -1,7 +1,7 @@
 module TopicMap.TopicMap exposing (init, create, allMapTopics, topicPos, setTopicRandomPos,
-  setTopicPos, updateTopicPos, mapTopicOrNothing, assocGeometry, addTopicAt,
-  initLimboMapTopic, initTopicPos, hasMapTopic, fullscreen, byId, updateRect,
-  updateScrollPos, revelationBoxId, revelationBoxPath, landingTarget)
+  setTopicPos, updateTopicPos, mapTopicOrNothing, assocGeometry, addTopicAt, initLimboMapTopic,
+  initTopicPos, hasMapTopic, fullscreen, byId, updateRect, updateScrollPos, revelationBoxId,
+  revelationBoxPath, landingTarget, toLocalPos, toLocalModelPos)
 
 import Box
 import Config as C
@@ -362,3 +362,71 @@ landingTarget model =
     [] -> Nothing
     [ boxId ] -> Nothing -- The fullscreen box is never selected
     BoxId topicId :: boxPath -> Just (T topicId, boxPath)
+
+
+--
+
+toLocalPos : Point -> BoxPath -> Model -> Point
+toLocalPos clientPos boxPath model =
+  let
+    pos = toLocalModelPos clientPos boxPath model
+  in
+  accumulateRect pos (Box.firstId boxPath) model
+
+
+{-| Transforms a client position to a box-local position.
+-}
+toLocalModelPos : Point -> BoxPath -> Model -> Point
+toLocalModelPos clientPos boxPath model =
+  case fullscreen model of
+    Just topicMap ->
+      let
+        -- The box's absolute position is computed first. This involves the positions
+        -- of all of its parent boxes. So the box's entire path is needed.
+        posAbs = absPos boxPath (Point 0 0) model
+      in
+      -- Basically the box-local position is computed by substracting the box's absolute
+      -- position from the client position. Additionally the fullscreen box's scroll value
+      -- must be respected.
+      Point
+        (clientPos.x - posAbs.x + topicMap.scroll.x)
+        (clientPos.y - posAbs.y + topicMap.scroll.y - C.appHeaderHeight)
+    Nothing -> Point 0 0
+
+
+{-| Recursively calculates the absolute position of a box.
+"posAcc" is the position accumulated so far.
+-}
+absPos : BoxPath -> Point -> Model -> Point
+absPos boxPath posAcc model =
+  case boxPath of
+    [ boxId ] -> accumulateRect posAcc boxId model
+    boxId :: parentBoxId :: boxIds -> accumulatePos posAcc boxId parentBoxId boxIds model
+    [] -> U.logError "TopicMap.ViewModel.absPos" "boxPath is empty!" (Point 0 0)
+
+
+accumulatePos : Point -> BoxId -> BoxId -> BoxPath -> Model -> Point
+accumulatePos posAcc boxId parentBoxId boxIds model =
+  let
+    {x, y} = accumulateRect posAcc boxId model
+  in
+  case topicPos (fromBoxId boxId) parentBoxId model of
+    Just boxPos ->
+      absPos -- recursion
+        (parentBoxId :: boxIds)
+        (Point
+          (x + boxPos.x - C.topicW2)
+          (y + boxPos.y + C.topicH2)
+        )
+        model
+    Nothing -> Point 0 0 -- error is already logged
+
+
+accumulateRect : Point -> BoxId -> Model -> Point
+accumulateRect posAcc boxId model =
+  case byId boxId model of
+    Just topicMap ->
+      Point
+        (posAcc.x - topicMap.rect.x1)
+        (posAcc.y - topicMap.rect.y1)
+    Nothing -> Point 0 0 -- error is already logged

@@ -1,5 +1,5 @@
 module TopicList.TopicList exposing (init, targets, listOrder, getSize, insertIntoOrder,
-  isListHovered, hitTest, autoSize)
+  isContentHovered, hitTest, autoSize)
 
 import Box
 import Config as C
@@ -12,6 +12,7 @@ import TopicList.TopicListDef exposing (TopicList, Targets)
 import Utils as U
 
 import Array
+import String exposing (fromInt)
 
 
 
@@ -174,22 +175,29 @@ insertIntoOrder topicId boxId beforeTopicId model =
 -- Point is in box-local coordinates
 hitTest : BoxId -> BoxPath -> Point -> Maybe TopicId -> Env2 -> Maybe BoxTarget
 hitTest (BoxId topicId as boxId) boxPath localPos maybeFilter {model} =
-  if isListHovered boxId localPos model then
+  if isBoxHovered boxId localPos model then
     let
       fullPath = boxId :: boxPath
-      t = targets fullPath model
-      index = (localPos.y - 13) // (C.listItemHeight + 4) -- TODO: no magic numbers
-      -- _ = U.info "TopicList.TopicList.hitTest" (boxId, index)
     in
-    case Array.get index t of
-      Just (_, target) -> Just (BoxTarget fullPath target)
-      Nothing -> Just (BoxTarget fullPath (T topicId, boxPath))
+    if isContentHovered boxId localPos model then
+      let
+        index = (localPos.y - 13) // (C.listItemHeight + 4) -- TODO: no magic numbers
+        -- _ = U.info "TopicList.TopicList.hitTest" (boxId, index, localPos)
+      in
+      case Array.get index (targets fullPath model) of
+        Just (_, target) -> Just (BoxTarget fullPath target)
+        Nothing ->
+          U.logError "TopicList.TopicList.hitTest"
+            ("Array lookup failed for index " ++ fromInt index)
+            Nothing
+    else
+      Just (BoxTarget fullPath (T topicId, boxPath))
   else
     Nothing
 
 
-isListHovered : BoxId -> Point -> Model -> Bool
-isListHovered boxId localPos model =
+isBoxHovered : BoxId -> Point -> Model -> Bool
+isBoxHovered boxId localPos model =
   let
     size = getSize boxId model
   in
@@ -197,6 +205,17 @@ isListHovered boxId localPos model =
   localPos.x < size.w &&
   localPos.y > 0 &&
   localPos.y < size.h
+
+
+isContentHovered : BoxId -> Point -> Model -> Bool
+isContentHovered boxId localPos model =
+  let
+    size = getSize boxId model
+  in
+  localPos.x > 20 &&          -- 40px is <ul> padding-inline-start browser style, TODO
+  localPos.x < size.w - 13 &&
+  localPos.y > 13 &&          -- 1em is <ul> margin-block-start browser style, TODO
+  localPos.y < size.h - 17    -- 1em is <ul> margin-block-end browser style, TODO
 
 
 

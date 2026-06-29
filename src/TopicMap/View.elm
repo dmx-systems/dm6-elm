@@ -10,7 +10,7 @@ import Feature.Sel as Sel
 import Feature.Text as Text
 import Feature.ToolDef exposing (LineStyle(..))
 import Feature.Tool as Tool exposing (ToolbarPos)
-import Model exposing (Model, Msg(..))
+import Model exposing (Model, Msg)
 import ModelBase exposing (..)
 import Shared.Events as Events
 import Shared.ViewBase as VB
@@ -537,7 +537,7 @@ viewAssocDraft boxId model =
         case TM.topicPos topicId sourceBoxId model of
           Just pos1 ->
             let
-              pos2 = VM.toLocalPos lastPointerPos boxPath model
+              pos2 = TM.toLocalModelPos lastPointerPos boxPath model
             in
             (lineRenderer model) pos1 pos2 Nothing [boxId] [] model
             -- simple box path is sufficient for geometry, draft assoc is never selected

@@ -10,7 +10,7 @@ import ModelBase exposing (..)
 import Outcome exposing (..)
 import TopicList.TopicList as TopicList
 import TopicList.TopicListDef exposing (DropMode(..))
-import TopicMap.ViewModel exposing (toLocalPos)
+import TopicMap.TopicMap exposing (toLocalPos)
 import Utils as U
 
 import Array
@@ -37,14 +37,15 @@ dragStart {model} =
 toElemPos : Point -> BoxPath -> Model -> Point
 toElemPos clientPos ixBoxPath model =
   let
-    index = toIndex (toLocalPos clientPos ixBoxPath model)
+    localPos = toLocalPos clientPos ixBoxPath model
+    index = toIndex localPos
     level =
       case Array.get index (TopicList.targets ixBoxPath model) of
         Just (level_, _) -> level_
         Nothing -> 0
     x = 41 + 41 * level -- 41 = 40 + 1px item border
     y = index * (C.listItemHeight + 4) - level + 16 -- 4 = 2px border (top/bottom) + 2px browser
-    _ = U.info "TopicList.Mouse.toElemPos" index
+    _ = U.info "TopicList.Mouse.toElemPos" (index, localPos)
   in
   Point x y
 
@@ -53,7 +54,7 @@ toElemPos clientPos ixBoxPath model =
 -}
 toIndex : Point -> Int
 toIndex localPos =
-  (localPos.y - 1) // (C.listItemHeight + 4)
+  (localPos.y - 13) // (C.listItemHeight + 4)
 
 
 -- ExtManager.ExtDrag
@@ -104,16 +105,16 @@ dropTargetAt clientPos model =
         (ixBoxId :: _, (T dropTopicId, dropBoxId :: _)) ->
           let
             localPos = toLocalPos clientPos ixBoxPath model
-            isListHovered = TopicList.isListHovered ixBoxId localPos model
             lowerHalf =
-              modBy (C.listItemHeight + 4) (localPos.y - 1) > (C.listItemHeight + 4) // 2
+              modBy (C.listItemHeight + 4) (localPos.y - 13) > (C.listItemHeight + 4) // 2
+            isContentHovered = TopicList.isContentHovered ixBoxId localPos model
             (dropMode, targetBoxId) =
-              if not isListHovered || lowerHalf then
+              if lowerHalf || not isContentHovered then
                 (Drop, dropTopicId)
               else
                 (InsertBefore, fromBoxId dropBoxId)
             isCyclic = Box.hadDeepTopic targetBoxId topicId model
-            _ = U.info "TopicList.Mouse.dropTargetAt" (targetBoxId, dropMode)
+            -- _ = U.info "TopicList.Mouse.dropTargetAt" (targetBoxId, dropMode, localPos)
           in
           if not isCyclic then
             Just (target, dropMode)
