@@ -1,4 +1,4 @@
-module TopicList.TopicList exposing (init, targets, listOrder, getSize, insertIntoOrder,
+module TopicList.TopicList exposing (init, targets, listOrder, getSize, reorderTopic,
   isContentHovered, hitTest, autoSize)
 
 import Box
@@ -19,6 +19,9 @@ import String exposing (fromInt)
 -- ExtManager.ExtInit
 init : BoxId -> Model -> Model
 init boxId model =
+  let
+    _ = U.info "TopicList.TopicList.init" boxId
+  in
   model
     |> Box.topicIds boxId
     |> List.foldl
@@ -124,6 +127,32 @@ targetAcc topic level boxPath acc childrenAcc model =
     |> \t -> Array.append t (childrenAcc |> Maybe.withDefault Array.empty)
 
 
+{- Inserts a topic ID into the order list at the given insertion point.
+-}
+reorderTopic : TopicId -> BoxId -> TopicId -> Model -> Model
+reorderTopic topicId boxId beforeTopicId model =
+  let
+    insertion : TopicId -> (List TopicId, Bool) -> (List TopicId, Bool)
+    insertion id (list, found) =
+      case (id == beforeTopicId, found) of -- at insertion point? insertion point found already?
+        (False, _) -> (id :: list, found)
+        (True, False) -> ([topicId, id] ++ list, True)
+        (True, True) -> U.logError "TopicList.TopicList.reorderTopic"
+          "Found more than one insertion point" (list, found)
+  in
+  model
+    |> updateOrder boxId
+      (\orderList -> orderList
+        |> List.filter (\id -> id /= topicId) -- remove before inserting
+        |> List.foldr insertion ([], False)
+        |> \(list, found) ->
+            case found of
+              True -> list
+              False -> U.logError "TopicList.TopicList.reorderTopic"
+                "Insertion point not found" orderList
+      )
+
+
 {- Canonical order list transformation.
 Logs an error if the TopicList entry is missing.
 -}
@@ -139,32 +168,6 @@ updateOrder boxId transform ({topicList} as model) =
         )
     }
   }
-
-
-{- Inserts a topic ID into the order list at the given insertion point.
--}
-insertIntoOrder : TopicId -> BoxId -> TopicId -> Model -> Model
-insertIntoOrder topicId boxId beforeTopicId model =
-  let
-    insertion : TopicId -> (List TopicId, Bool) -> (List TopicId, Bool)
-    insertion id (list, found) =
-      case (id == beforeTopicId, found) of -- at insertion point? insertion point found already?
-        (False, _) -> (id :: list, found)
-        (True, False) -> ([topicId, id] ++ list, True)
-        (True, True) -> U.logError "TopicList.TopicList.insertIntoOrder"
-          "Found more than one insertion point" (list, found)
-  in
-  model
-    |> updateOrder boxId
-      (\orderList -> orderList
-        |> List.filter (\id -> id /= topicId) -- remove before inserting
-        |> List.foldr insertion ([], False)
-        |> \(list, found) ->
-            case found of
-              True -> list
-              False -> U.logError "TopicList.TopicList.insertIntoOrder"
-                "Insertion point not found" orderList
-      )
 
 
 

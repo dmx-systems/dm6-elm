@@ -192,7 +192,8 @@ processDrop sourceTopicId sourceBoxid targetTopicId targetBoxId ({model} as env)
         Just InsertBefore ->
           model_
             |> Box.addTopic (BoxTopic sourceTopicId Expanded) targetBoxId
-            |> TopicList.insertIntoOrder sourceTopicId targetBoxId targetTopicId
+            |> TopicList.init targetBoxId
+            |> TopicList.reorderTopic sourceTopicId targetBoxId targetTopicId
             |> Env.autoSize2 env
         Nothing ->
           U.logError "TopicList.Mouse.processDrop" (U.toString model.topicList.dropMode) model_

@@ -293,9 +293,10 @@ moveTopicToBox topicId boxId targetTopicId targetPath model =
   model
     |> Tool.createBoxOnDemand targetTopicId
     |> Box.addTopic (BoxTopic topicId expansion) targetBoxId
+    |> TM.init targetBoxId
     |> Box.removeTopic topicId boxId
     |> Sel.select (T targetTopicId) targetPath
-    |> TM.setTopicRandomPos topicId targetBoxId
+    |> TM.randomPos topicId targetBoxId
 
 
 -- Presumption: both topics exist in same box

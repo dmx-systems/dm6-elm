@@ -155,6 +155,8 @@ createItemSet set ({itemSets} as model) =
 
 {-| Adds an item to a box and creates a connecting association. This is an idempotent operation.
 This is a generic operation: works for both, topics and associations.
+-- Note: this is actually a low-level function as the view is not initialized.
+-- TODO: move it to Tool module (like createBoxOnDemand)?
 -}
 addTopic : BoxTopic -> BoxId -> Model -> Model
 addTopic topic boxId model =

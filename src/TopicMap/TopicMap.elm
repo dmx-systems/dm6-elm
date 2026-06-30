@@ -1,6 +1,6 @@
-module TopicMap.TopicMap exposing (init, create, allMapTopics, topicPos, setTopicRandomPos,
-  setTopicPos, updateTopicPos, mapTopicOrNothing, assocGeometry, addTopicAt, initLimboMapTopic,
-  initTopicPos, hasMapTopic, fullscreen, byId, updateRect, updateScrollPos, revelationBoxId,
+module TopicMap.TopicMap exposing (init, create, allMapTopics, topicPos, randomPos, setTopicPos,
+  updateTopicPos, mapTopicOrNothing, assocGeometry, addTopicAt, initLimboMapTopic, initTopicPos,
+  hasMapTopic, fullscreen, byId, updateRect, updateScrollPos, revelationBoxId,
   revelationBoxPath, landingTarget, toLocalPos, toLocalModelPos)
 
 import Box
@@ -22,6 +22,9 @@ import Random
 -- ExtManager.ExtInit
 init : BoxId -> Model -> Model
 init boxId model =
+  let
+    _ = U.info "TopicMap.TopicMap.init" boxId
+  in
   model
     |> Box.topicIds boxId
     |> List.foldl
@@ -141,13 +144,6 @@ assocGeometry assoc boxId model =
   case Maybe.map2 (\p1 p2 -> (p1, p2)) pos1 pos2 of
     Just geometry -> Just geometry
     Nothing -> U.fail "TopicMap.TopicMap.assocGeometry" {assoc = assoc, boxId = boxId} Nothing
-
-
-setTopicRandomPos : TopicId -> BoxId -> Model -> (Model, Cmd Msg)
-setTopicRandomPos topicId boxId model =
-  model
-    |> init boxId
-    |> randomPos topicId boxId
 
 
 randomPos : TopicId -> BoxId -> Model -> (Model, Cmd Msg)
