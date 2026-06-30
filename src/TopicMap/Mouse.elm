@@ -10,7 +10,7 @@ import Feature.Tool as Tool
 import Model exposing (Model, Msg(..))
 import ModelBase exposing (..)
 import Outcome exposing (..)
-import TopicMap.TopicMap as TM
+import TopicMap.TopicMap as TopicMap
 import TopicMap.TopicMapDef as TopicMapDef exposing (DragState(..), DragMode(..))
 import Undo exposing (UndoModel)
 import Utils as U
@@ -60,7 +60,7 @@ timeArrived time ({present} as undoModel) =
           if delay > C.assocDelayMillis then
             (Just <| Drag DraftAssoc, Undo.swap)
           else
-            case TM.topicPos topicId (Box.firstId boxPath) present of
+            case TopicMap.topicPos topicId (Box.firstId boxPath) present of
               Just origPos -> (Just <| Drag <| DragTopic origPos, Undo.push)
               Nothing -> (Nothing, Undo.swap) -- error is already logged
       in
@@ -95,7 +95,7 @@ updateTopicPos clientPos ({model} as env) =
           case dragMode of
             DragTopic _ ->
               model_
-                |> TM.updateTopicPos topicId (Box.firstId boxPath)
+                |> TopicMap.updateTopicPos topicId (Box.firstId boxPath)
                   (\pos ->
                     Point
                       (pos.x + clientPos.x - lastPointerPos.x)
@@ -217,7 +217,7 @@ topicDragEnd sourceTopicId sourceBoxPath origTopicPos model =
       in
       model
         |> moveTopicToBox sourceTopicId boxId targetId targetPath
-        |> Model.map (TM.setTopicPos sourceTopicId boxId origTopicPos)
+        |> Model.map (TopicMap.setTopicPos sourceTopicId boxId origTopicPos)
         |> \(model_, cmd) -> Outcome (Directives Store Push) cmd model_
     Nothing ->
       let
@@ -293,10 +293,10 @@ moveTopicToBox topicId boxId targetTopicId targetPath model =
   model
     |> Tool.createBoxOnDemand targetTopicId
     |> Box.addTopic (BoxTopic topicId expansion) targetBoxId
-    |> TM.init targetBoxId
+    |> TopicMap.init targetBoxId
     |> Box.removeTopic topicId boxId
     |> Sel.select (T targetTopicId) targetPath
-    |> TM.randomPos topicId targetBoxId
+    |> TopicMap.randomPos topicId targetBoxId
 
 
 -- Presumption: both topics exist in same box

@@ -14,7 +14,7 @@ import ModelBase exposing (..)
 import Shared.Events as Events
 import Storage as S
 import Topic
-import TopicMap.TopicMap as TM
+import TopicMap.TopicMap as TopicMap
 import Undo exposing (UndoModel)
 import Utils as U
 
@@ -33,7 +33,7 @@ import String exposing (fromInt)
 viewInput : Model -> Html Msg
 viewInput model =
   let
-    target = TM.landingTarget model
+    target = TopicMap.landingTarget model
   in
   div
     []
@@ -236,7 +236,7 @@ fullscreenButtonStyle =
 
 isItemDisabled : TopicId -> Model -> Bool
 isItemDisabled topicId model =
-  case TM.revelationBoxId model of
+  case TopicMap.revelationBoxId model of
     Just (BoxId topicId_) -> Box.hadDeepTopic topicId_ topicId model
     Nothing -> False
 
@@ -341,7 +341,7 @@ onRelTopicUnhovered ({model} as env) =
 
 revealTopic : TopicId -> Env -> Model
 revealTopic topicId ({model} as env) =
-  case TM.revelationBoxPath model of
+  case TopicMap.revelationBoxPath model of
     Just (boxId :: _ as boxPath) ->
       model -- TODO: pipe env instead model
         |> revealTopic_ topicId boxId env
@@ -353,7 +353,7 @@ revealTopic topicId ({model} as env) =
 
 revealRelTopic : (TopicId, AssocId) -> Env -> Model
 revealRelTopic (topicId, assocId) ({model} as env) =
-  case TM.revelationBoxPath model of
+  case TopicMap.revelationBoxPath model of
     Just (boxId :: _ as boxPath) ->
       model -- TODO: pipe env instead model
         |> revealTopic_ topicId boxId env

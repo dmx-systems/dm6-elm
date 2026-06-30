@@ -41,7 +41,7 @@ init boxId model =
 
 initTopicMap : BoxId -> Model -> Model
 initTopicMap boxId model =
-  if Dict.member (toBoxId boxId) model.topicMap.topicMaps then
+  if Dict.member (toBoxId boxId) model.topicMap.view then
     let
       _ = U.info "TopicMap.TopicMap.initTopicMap"
         ("Box (" ++ U.toString boxId ++ ") has TopicMap entry already")
@@ -89,7 +89,7 @@ create boxId model =
 create_ : TopicMap -> Model -> Model
 create_ topicMap_ ({topicMap} as model) =
   { model | topicMap =
-    { topicMap | topicMaps = topicMap.topicMaps
+    { topicMap | view = topicMap.view
         |> Dict.insert (toBoxId topicMap_.id) topicMap_
     }
   }
@@ -261,7 +261,7 @@ fullscreen model =
 -}
 byId : BoxId -> Model -> Maybe TopicMap
 byId boxId model =
-  case model.topicMap.topicMaps |> Dict.get (toBoxId boxId) of
+  case model.topicMap.view |> Dict.get (toBoxId boxId) of
     Just topicMap -> Just topicMap
     Nothing -> U.logError "TopicMap.TopicMap.byId"
       ("Missing TopicMap entry for (" ++ U.toString boxId ++ ")") Nothing
@@ -313,7 +313,7 @@ Logs an error if the TopicMap entry is missing.
 updateTopicMap : BoxId -> (TopicMap -> TopicMap) -> Model -> Model
 updateTopicMap boxId transform ({topicMap} as model) =
   { model | topicMap =
-    { topicMap | topicMaps = topicMap.topicMaps
+    { topicMap | view = topicMap.view
         |> Dict.update (toBoxId boxId)
           (\maybeTopicMap ->
             case maybeTopicMap of

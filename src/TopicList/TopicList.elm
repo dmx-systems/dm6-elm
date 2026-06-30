@@ -41,7 +41,7 @@ initTopicList boxId ({topicList} as model) =
   let
     id = toBoxId boxId
   in
-  if Dict.member id model.topicList.topicLists then
+  if Dict.member id model.topicList.view then
     let
       _ = U.info "TopicList.TopicList.initTopicList"
         ("Box (" ++ U.toString boxId ++ ") has TopicList entry already")
@@ -53,7 +53,7 @@ initTopicList boxId ({topicList} as model) =
         ("Creating TopicList entry for box (" ++ U.toString boxId ++ ")")
     in
     { model | topicList =
-      { topicList | topicLists = topicList.topicLists
+      { topicList | view = topicList.view
           |> Dict.insert id (TopicList boxId [] (Size 0 0))
       }
     }
@@ -159,7 +159,7 @@ Logs an error if the TopicList entry is missing.
 updateOrder : BoxId -> (List TopicId -> List TopicId) -> Model -> Model
 updateOrder boxId transform ({topicList} as model) =
   { model | topicList =
-    { topicList | topicLists = topicList.topicLists |> Dict.update (toBoxId boxId)
+    { topicList | view = topicList.view |> Dict.update (toBoxId boxId)
         (\maybeTopicList ->
           case maybeTopicList of
             Just topicList_ -> Just { topicList_ | order = transform topicList_.order }
@@ -252,7 +252,7 @@ Logs an error if TopicList do not exist.
 updateTopicList : BoxId -> (TopicList -> TopicList) -> Model -> Model
 updateTopicList boxId transform ({topicList} as model) =
   { model | topicList =
-    { topicList | topicLists = topicList.topicLists
+    { topicList | view = topicList.view
         |> Dict.update (toBoxId boxId)
           (\maybeTopicList ->
             case maybeTopicList of
@@ -275,7 +275,7 @@ getSize boxId model =
 -}
 fromId : BoxId -> Model -> Maybe TopicList
 fromId boxId model =
-  case model.topicList.topicLists |> Dict.get (toBoxId boxId) of
+  case model.topicList.view |> Dict.get (toBoxId boxId) of
     Just topicList -> Just topicList
     Nothing -> U.logError "TopicList.TopicList.fromId"
       ("Missing TopicList entry for (" ++ U.toString boxId ++ ")") Nothing

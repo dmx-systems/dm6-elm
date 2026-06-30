@@ -5,7 +5,7 @@ import Feature.NavDef as NavDef
 import Model exposing (Model, Msg(..))
 import ModelBase exposing (..)
 import Storage as S
-import TopicMap.TopicMap as TM
+import TopicMap.TopicMap as TopicMap
 import Undo exposing (UndoModel)
 import Utils as U
 
@@ -70,7 +70,7 @@ setFullscreenBox boxId ({model} as env) =
 
 setViewport : Model -> Cmd Msg
 setViewport model =
-  case TM.fullscreen model of -- FIXME: dispatch via ExtManager
+  case TopicMap.fullscreen model of -- FIXME: dispatch via ExtManager
     Just topicMap ->
       Dom.setViewportOf "main" (toFloat topicMap.scroll.x) (toFloat topicMap.scroll.y)
       |> Task.attempt

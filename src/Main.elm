@@ -16,8 +16,8 @@ import Model exposing (Model, Msg(..))
 import ModelBase exposing (..)
 import Shared.Events as Events
 import Storage as S
-import TopicMap.TopicMap as TM
 import TopicMap.Controller as TMC
+import TopicMap.TopicMap as TopicMap
 import Undo exposing (UndoModel)
 import Utils as U
 
@@ -319,4 +319,4 @@ cancelUIWith maybeTarget ({model} as env) =
 
 updateScrollPos : Point -> Model -> Model
 updateScrollPos pos model =
-  TM.updateScrollPos model.boxId (\_ -> pos) model
+  TopicMap.updateScrollPos model.boxId (\_ -> pos) model

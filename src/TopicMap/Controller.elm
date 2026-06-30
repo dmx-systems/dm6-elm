@@ -5,7 +5,7 @@ import Env exposing (Env)
 import Feature.Sel as Sel
 import Model exposing (Model, Msg)
 import Storage as S
-import TopicMap.TopicMap as TM
+import TopicMap.TopicMap as TopicMap
 import TopicMap.Mouse as Mouse
 import TopicMap.TopicMapDef as TopicMapDef
 import Undo exposing (UndoModel)
@@ -21,7 +21,7 @@ update msg ({model, undoModel} as env) =
     TopicMapDef.AssocClicked assocId boxPath -> selectAssoc assocId boxPath model
       |> Undo.swap undoModel
     TopicMapDef.GotTime time -> Mouse.timeArrived time undoModel
-    TopicMapDef.GotRandomPos topicId boxId pos -> TM.addTopicAt topicId boxId pos env
+    TopicMapDef.GotRandomPos topicId boxId pos -> TopicMap.addTopicAt topicId boxId pos env
       |> S.store |> Undo.push undoModel
 
 

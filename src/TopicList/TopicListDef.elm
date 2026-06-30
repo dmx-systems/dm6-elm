@@ -11,7 +11,7 @@ import Array exposing (Array)
 
 
 type alias Model =
-  { topicLists : Dict Id TopicList
+  { view : Dict Id TopicList
   -- Position of dragging list item.
   -- Available while a drag that started from a TopicList box is active.
   , dragPos : Maybe Point -- transient
@@ -23,7 +23,7 @@ type alias Model =
 
 init : Model
 init =
-  { topicLists = Dict.empty
+  { view = Dict.empty
   , dragPos = Nothing
   , dropMode = Nothing
   }
@@ -60,7 +60,7 @@ type alias Targets = Array (Level, Target)
 
 encode : Model -> E.Value
 encode model =
-  E.list encodeTopicList (model.topicLists |> Dict.values)
+  E.list encodeTopicList (model.view |> Dict.values)
 
 
 encodeTopicList : TopicList -> E.Value

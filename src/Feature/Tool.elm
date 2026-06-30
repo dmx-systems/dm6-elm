@@ -18,7 +18,7 @@ import ModelBase exposing (..)
 import Shared.Events as Events
 import Storage as S
 import Topic
-import TopicMap.TopicMap as TM
+import TopicMap.TopicMap as TopicMap
 import Undo exposing (UndoModel)
 import Utils as U
 
@@ -175,7 +175,7 @@ vGap gap =
 viewMapTools : UndoModel -> List (Html Msg)
 viewMapTools undoModel =
   let
-    target = TM.landingTarget undoModel.present -- FIXME: dispatch via ExtManager
+    target = TopicMap.landingTarget undoModel.present -- FIXME: dispatch via ExtManager
   in
   [ div
       mapToolsStyle
@@ -585,4 +585,4 @@ createBoxOnDemand topicId model =
   else
     model
       |> Box.turnTopicIntoBox topicId
-      |> TM.create (BoxId topicId) -- FIXME: dispatch via ExtManager
+      |> TopicMap.create (BoxId topicId) -- FIXME: dispatch via ExtManager

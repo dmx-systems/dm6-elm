@@ -11,7 +11,7 @@ import Time
 
 
 type alias Model =
-  { topicMaps : Dict Id TopicMap
+  { view : Dict Id TopicMap
   -- State machine to initiate a drag from a TopicMap box.
   -- Available while a drag that started from a TopicMap box is active.
   , dragState : Maybe DragState -- transient
@@ -20,7 +20,7 @@ type alias Model =
 
 init : Model
 init =
-  { topicMaps =
+  { view =
       Dict.singleton
         (toBoxId rootBoxId)
         (TopicMap rootBoxId (Rectangle 0 0 0 0) (Point 0 0) Dict.empty)
@@ -71,7 +71,7 @@ type Msg
 
 encode : Model -> E.Value
 encode model =
-  E.list encodeTopicMap (model.topicMaps |> Dict.values)
+  E.list encodeTopicMap (model.view |> Dict.values)
 
 
 encodeTopicMap : TopicMap -> E.Value
