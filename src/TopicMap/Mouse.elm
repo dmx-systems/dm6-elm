@@ -1,5 +1,4 @@
-module TopicMap.Mouse exposing (dragStart, drag, updateDropTarget, resetDropTarget, dragStop,
-  timeArrived)
+module TopicMap.Mouse exposing (dragStart, drag, updateDropTarget, dragStop, timeArrived)
 
 import Assoc
 import Box
@@ -158,12 +157,6 @@ dropTarget model =
                 Nothing
         _ -> Nothing -- TODO: error?
     _ -> Nothing -- TODO: error?
-
-
--- ExtManager.ExtDropTargetReset
-resetDropTarget : Env2 -> Model
-resetDropTarget ({model} as env2) =
-  model -- no-op -- TODO: hook still needed in general?
 
 
 -- ExtManager.ExtDragStop

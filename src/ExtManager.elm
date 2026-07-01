@@ -34,7 +34,6 @@ type alias Extension =
   , dragStart : ExtDragStart
   , drag : ExtDrag
   , updateDropTarget : ExtDropTargeting
-  , resetDropTarget : ExtDropTargetReset
   , dragStop : ExtDragStop
   }
 
@@ -86,10 +85,6 @@ type alias ExtDropTargeting =
   Point -> Env2 -> (Model, Maybe Target)
 
 
-type alias ExtDropTargetReset =
-  Env2 -> Model
-
-
 type alias ExtDragStop =
   Env2 -> Outcome
 
@@ -107,7 +102,6 @@ ext =
   , dragStart = dragStart
   , drag = drag
   , updateDropTarget = updateDropTarget
-  , resetDropTarget = resetDropTarget
   , dragStop = dragStop
   , all = all
   }
@@ -127,7 +121,6 @@ registry =
         , dragStart = TopicMap.Mouse.dragStart
         , drag = TopicMap.Mouse.drag
         , updateDropTarget = TopicMap.Mouse.updateDropTarget
-        , resetDropTarget = TopicMap.Mouse.resetDropTarget
         , dragStop = TopicMap.Mouse.dragStop
         }
       )
@@ -140,7 +133,6 @@ registry =
         , dragStart = TopicList.Mouse.dragStart
         , drag = TopicList.Mouse.drag
         , updateDropTarget = TopicList.Mouse.updateDropTarget
-        , resetDropTarget = TopicList.Mouse.resetDropTarget
         , dragStop = TopicList.Mouse.dragStop
         }
       )
@@ -207,12 +199,6 @@ updateDropTarget : BoxId -> Point -> Model -> (Model, Maybe Target)
 updateDropTarget boxId pos model =
   dispatch boxId model (model, Nothing)
     (\env renderer -> renderer.updateDropTarget pos env)
-
-
-resetDropTarget : BoxId -> Model -> Model
-resetDropTarget boxId model =
-  dispatch boxId model model
-    (\env renderer -> renderer.resetDropTarget env)
 
 
 dragStop : BoxId -> Model -> Outcome

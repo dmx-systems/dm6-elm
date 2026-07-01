@@ -42,7 +42,6 @@ type alias ExtManager =
   , dragStart : DragStart
   , drag : Drag
   , updateDropTarget : DropTargeting
-  , resetDropTarget : DropTargetReset
   , dragStop : DragStop
   --
   , all : Extensions
@@ -84,10 +83,6 @@ type alias Drag =
 
 type alias DropTargeting =
   BoxId -> Point -> Model -> (Model, Maybe Target)
-
-
-type alias DropTargetReset =
-  BoxId -> Model -> Model
 
 
 type alias DragStop =

@@ -1,4 +1,4 @@
-module TopicList.Mouse exposing (dragStart, drag, updateDropTarget, resetDropTarget, dragStop)
+module TopicList.Mouse exposing (dragStart, drag, updateDropTarget, dragStop)
 
 import Box
 import Config as C
@@ -128,13 +128,6 @@ dropTargetAt clientPos model =
           (model.mouse.hover, model.mouse.dragSource)
       in
       Nothing
-
-
--- ExtManager.ExtDropTargetReset
-resetDropTarget : Env2 -> Model
-resetDropTarget ({model} as env2) =
-  model
-    |> setDropMode Nothing -- TODO: needed? Hook still needed in general?
 
 
 -- ExtManager.ExtDragStop

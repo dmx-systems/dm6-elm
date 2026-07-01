@@ -312,7 +312,7 @@ cancelUIWith maybeTarget ({model} as env) =
   else
     model
       |> Sel.clear
-      |> Mouse.clearHover ext -- TODO: needed?
+      |> Mouse.clearHover -- TODO: needed?
       |> Env.withModel env
       |> Text.leaveEdit
 
