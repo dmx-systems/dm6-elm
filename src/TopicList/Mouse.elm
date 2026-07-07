@@ -10,7 +10,8 @@ import ModelBase exposing (..)
 import Outcome exposing (..)
 import TopicList.TopicList as TopicList
 import TopicList.TopicListDef exposing (DropMode(..))
-import TopicMap.TopicMap exposing (toLocalPos)
+import TopicMap.Mouse
+import TopicMap.TopicMap as TopicMap
 import Utils as U
 
 import Array
@@ -37,7 +38,7 @@ dragStart {model} =
 toElemPos : Point -> BoxPath -> Model -> Point
 toElemPos clientPos ixBoxPath model =
   let
-    localPos = toLocalPos clientPos ixBoxPath model
+    localPos = TopicMap.toLocalPos clientPos ixBoxPath model
     index = toIndex localPos
     level =
       case Array.get index (TopicList.targets ixBoxPath model) of
@@ -83,13 +84,35 @@ drag clientPos {model} =
 -- ExtManager.ExtDropTargeting
 updateDropTarget : Point -> Env2 -> (Model, Maybe Target)
 updateDropTarget clientPos {model} =
-  case dropTargetAt clientPos model of
-    Just (dropTarget, dropMode) ->
-      ( model
-          |> setDropMode (Just dropMode)
-      , Just dropTarget
-      )
-    Nothing -> (model, Nothing)
+  if TopicMap.Mouse.isDraftAssoc model then
+    (model, acceptAssoc model)
+  else
+    case dropTargetAt clientPos model of
+      Just (dropTarget, dropMode) ->
+        ( model
+            |> setDropMode (Just dropMode)
+        , Just dropTarget
+        )
+      Nothing -> (model, Nothing)
+
+
+acceptAssoc : Model -> Maybe Target
+acceptAssoc model =
+  case (model.mouse.hover, model.mouse.dragSource) of
+    (Just {ixBoxPath}, Just {boxPath}) ->
+      case ixBoxPath of
+        BoxId topicId :: targetPath ->
+          if targetPath == boxPath then
+            Just (T topicId, targetPath)
+          else
+            Nothing
+        _ -> U.logError "TopicList.Mouse.acceptAssoc" "Empty ixBoxPath" Nothing
+    _ ->
+      let
+        _ = U.logError "TopicList.Mouse.acceptAssoc" "Unexpected mouse state"
+          (model.mouse.hover, model.mouse.dragSource)
+      in
+      Nothing
 
 
 {-| Checks if the currently hovered list item is accepted as a drop target. If so the drop
@@ -104,7 +127,7 @@ dropTargetAt clientPos model =
       case (ixBoxPath, target) of
         (ixBoxId :: _, (T dropTopicId, dropBoxId :: _)) ->
           let
-            localPos = toLocalPos clientPos ixBoxPath model
+            localPos = TopicMap.toLocalPos clientPos ixBoxPath model
             lowerHalf =
               modBy (C.listItemHeight + 4) (localPos.y - 13) > (C.listItemHeight + 4) // 2
             isContentHovered = TopicList.isContentHovered ixBoxId localPos model
@@ -189,7 +212,11 @@ processDrop sourceTopicId sourceBoxid targetTopicId targetBoxId ({model} as env)
             |> TopicList.reorderTopic sourceTopicId targetBoxId targetTopicId
             |> Env.autoSize2 env
         Nothing ->
-          U.logError "TopicList.Mouse.processDrop" (U.toString model.topicList.dropMode) model_
+          let
+            _ = U.logError "TopicList.Mouse.processDrop" "Unexpected dropMode"
+              model.topicList.dropMode
+          in
+          model_
       )
     |> Outcome (Directives Store Push) Cmd.none
 

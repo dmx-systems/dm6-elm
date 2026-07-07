@@ -1,4 +1,5 @@
-module TopicMap.Mouse exposing (dragStart, drag, updateDropTarget, dragStop, timeArrived)
+module TopicMap.Mouse exposing (dragStart, drag, updateDropTarget, dragStop, timeArrived,
+  isDraftAssoc)
 
 import Assoc
 import Box
@@ -305,3 +306,10 @@ createAssoc topicId1 topicId2 boxId model =
 setDragState : Maybe DragState -> Model -> Model
 setDragState dragState ({topicMap} as model) =
   { model | topicMap = { topicMap | dragState = dragState }}
+
+
+isDraftAssoc : Model -> Bool
+isDraftAssoc model =
+  case model.topicMap.dragState of
+    Just (Drag DraftAssoc) -> True
+    _ -> False
