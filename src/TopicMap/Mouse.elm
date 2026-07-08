@@ -5,6 +5,7 @@ import Assoc
 import Box
 import Config as C
 import Env exposing (Env2)
+import Extension
 import Feature.Sel as Sel
 import Feature.Tool as Tool
 import Model exposing (Model, Msg(..))
@@ -170,7 +171,7 @@ dragStop ({model} as env) =
         Just {topicId, boxPath} ->
           case model.topicMap.dragState of
             Just (Drag (DragTopic origTopicPos)) ->
-              topicDragEnd topicId boxPath origTopicPos model
+              topicDragEnd topicId boxPath origTopicPos env
             Just (Drag DraftAssoc) ->
               assocDragEnd topicId boxPath model
             Just (DragEngaged _) ->
@@ -180,7 +181,7 @@ dragStop ({model} as env) =
               noOp
                 |> Outcome.map (Sel.select (T topicId) boxPath)
             Nothing ->
-              foreignTopicDrop topicId boxPath model
+              foreignTopicDrop topicId boxPath env
             _ ->
               let
                 _ = U.logError "TopicMap.Mouse.dragStop" "Unexpected drag state"
@@ -198,8 +199,8 @@ dragStop ({model} as env) =
     |> Outcome.map (setDragState Nothing)
 
 
-topicDragEnd : TopicId -> BoxPath -> Point -> Model -> Outcome
-topicDragEnd sourceTopicId sourceBoxPath origTopicPos model =
+topicDragEnd : TopicId -> BoxPath -> Point -> Env2 -> Outcome
+topicDragEnd sourceTopicId sourceBoxPath origTopicPos ({model} as env) =
   case model.mouse.dropTarget of
     Just (T targetId, targetPath) ->
       let
@@ -209,7 +210,7 @@ topicDragEnd sourceTopicId sourceBoxPath origTopicPos model =
           ++ ") --> move topic to box")
         boxId = Box.firstId sourceBoxPath
       in
-      model
+      env
         |> moveTopicToBox sourceTopicId boxId targetId targetPath
         |> Model.map (TopicMap.setTopicPos sourceTopicId boxId origTopicPos)
         |> \(model_, cmd) -> Outcome (Directives Store Push) cmd model_
@@ -223,8 +224,8 @@ topicDragEnd sourceTopicId sourceBoxPath origTopicPos model =
       Outcome.with Cmd.none model
 
 
-foreignTopicDrop : TopicId -> BoxPath -> Model -> Outcome
-foreignTopicDrop sourceTopicId sourceBoxPath model =
+foreignTopicDrop : TopicId -> BoxPath -> Env2 -> Outcome
+foreignTopicDrop sourceTopicId sourceBoxPath ({model} as env) =
   let
     noOp = Outcome.with Cmd.none model
   in
@@ -237,7 +238,7 @@ foreignTopicDrop sourceTopicId sourceBoxPath model =
           ++ ") --> foreign topic drop")
         boxId = Box.firstId sourceBoxPath
       in
-      model
+      env
         |> moveTopicToBox sourceTopicId boxId targetId targetPath
         |> \(model_, cmd) -> Outcome (Directives Store Push) cmd model_
     Nothing ->
@@ -278,19 +279,24 @@ assocDragEnd sourceTopicId sourceBoxPath model =
       Outcome.with Cmd.none model
 
 
-moveTopicToBox : TopicId -> BoxId -> TopicId -> BoxPath -> Model -> (Model, Cmd Msg)
-moveTopicToBox topicId boxId targetTopicId targetPath model =
+moveTopicToBox : TopicId -> BoxId -> TopicId -> BoxPath -> Env2 -> (Model, Cmd Msg)
+moveTopicToBox topicId boxId targetTopicId targetPath ({model, ext} as env) =
   let
     targetBoxId = BoxId targetTopicId -- after createBoxOnDemand target topic is a box for sure
     expansion = Box.expansionOf topicId boxId model
+    maybeRenderer = Extension.fromString "TopicMap"
   in
-  model
-    |> Tool.createBoxOnDemand targetTopicId
-    |> Box.addTopic (BoxTopic topicId expansion) targetBoxId
-    |> TopicMap.init targetBoxId
-    |> Box.removeTopic topicId boxId
-    |> Sel.select (T targetTopicId) targetPath
-    |> TopicMap.randomPos topicId targetBoxId
+  case maybeRenderer of
+    Just renderer ->
+      env
+        |> Tool.createBoxOnDemand targetTopicId renderer
+        |> Box.addTopic (BoxTopic topicId expansion) targetBoxId
+        |> ext.init targetBoxId
+        |> Box.removeTopic topicId boxId
+        |> Sel.select (T targetTopicId) targetPath
+        |> TopicMap.randomPos topicId targetBoxId
+    Nothing ->
+      (model, Cmd.none)
 
 
 -- Presumption: both topics exist in same box

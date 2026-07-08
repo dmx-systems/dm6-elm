@@ -416,7 +416,7 @@ iconButtonStyle =
 
 
 update : ToolDef.Msg -> Env -> (UndoModel, Cmd Msg)
-update msg ({model, undoModel} as env) =
+update msg ({model, undoModel, ext} as env) =
   case msg of
     -- Global Tools
     ToolDef.Home -> (undoModel, Nav.pushUrl rootBoxId)
@@ -434,7 +434,8 @@ update msg ({model, undoModel} as env) =
     ToolDef.Traverse -> (Search.traverse model, Cmd.none) |> Undo.swap undoModel
     ToolDef.Delete -> delete env |> S.store |> Undo.push undoModel
     ToolDef.Remove -> remove env |> S.store |> Undo.push undoModel
-    ToolDef.Fullscreen topicId -> fullscreen topicId model |> S.storeWith |> Undo.push undoModel
+    ToolDef.Fullscreen topicId -> fullscreen topicId (Env2 model ext) |> S.storeWith
+      |> Undo.push undoModel
     ToolDef.RendererSelected renderer -> setRenderer renderer env |> S.store
       |> Undo.swap undoModel
     ToolDef.ToggleExpansion topicId boxId -> toggleExpansion topicId boxId env |> S.store
@@ -541,10 +542,10 @@ remove_ (itemId, boxPath) model =
     A id -> Box.removeAssoc id boxId model
 
 
-fullscreen : TopicId -> Model -> (Model, Cmd Msg)
-fullscreen topicId model =
-  ( model
-      |> createBoxOnDemand topicId
+fullscreen : TopicId -> Env2 -> (Model, Cmd Msg)
+fullscreen topicId env =
+  ( env
+      |> createBoxOnDemand topicId Extension.defaultRenderer
   , Nav.pushUrl (BoxId topicId)
   )
 
@@ -578,11 +579,11 @@ toggleExpansion topicId boxId ({model} as env) =
 
 --
 
-createBoxOnDemand : TopicId -> Model -> Model
-createBoxOnDemand topicId model =
+createBoxOnDemand : TopicId -> Renderer -> Env2 -> Model
+createBoxOnDemand topicId renderer {model, ext} =
   if Topic.isBox topicId model then
     model
   else
     model
-      |> Box.turnTopicIntoBox topicId
-      |> TopicMap.create (BoxId topicId) -- FIXME: dispatch via ExtManager
+      |> Box.turnTopicIntoBox topicId renderer
+      |> ext.init (BoxId topicId)

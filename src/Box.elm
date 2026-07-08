@@ -128,12 +128,12 @@ itemIds filter boxId model =
 
 -- Note: these 3 are actually low-level functions as the default view is not initialized.
 -- Possibly move these 3 to Tool.createBoxOnDemand (and export none of them).
-turnTopicIntoBox : TopicId -> Model -> Model
-turnTopicIntoBox topicId model =
+turnTopicIntoBox : TopicId -> Renderer -> Model -> Model
+turnTopicIntoBox topicId renderer model =
   let
     setId = model.nextId
     set = ItemSet setId []
-    box = Box (BoxId topicId) setId Dict.empty Extension.defaultRenderer
+    box = Box (BoxId topicId) setId Dict.empty renderer
   in
   model
     |> create box

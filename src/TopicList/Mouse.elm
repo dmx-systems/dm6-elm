@@ -3,6 +3,7 @@ module TopicList.Mouse exposing (dragStart, drag, updateDropTarget, dragStop)
 import Box
 import Config as C
 import Env exposing (Env2)
+import Extension
 import Feature.Sel as Sel
 import Feature.Tool as Tool
 import Model exposing (Model, Msg)
@@ -182,33 +183,38 @@ dragStop ({model} as env2) =
 
 
 processDrop : TopicId -> BoxId -> TopicId -> BoxId -> Env2 -> Outcome
-processDrop sourceTopicId sourceBoxid targetTopicId targetBoxId ({model} as env) =
+processDrop sourceTopicId sourceBoxId targetTopicId targetBoxId ({model, ext} as env) =
   let
     _ = U.info "TopicList.Mouse.processDrop"
       { sourceTopicId = sourceTopicId
-      , sourceBoxid = sourceBoxid
+      , sourceBoxId = sourceBoxId
       , targetTopicId = targetTopicId
       , targetBoxId = targetBoxId
       , dropMode = model.topicList.dropMode
       }
   in
   model
-    |> Box.removeTopic sourceTopicId sourceBoxid
+    |> Box.removeTopic sourceTopicId sourceBoxId
     |> \model_ ->
       (case model.topicList.dropMode of
         Just Drop ->
           let
+            maybeRenderer = Extension.fromString "TopicList"
             boxId = BoxId targetTopicId
           in
-          model_
-            |> Tool.createBoxOnDemand targetTopicId
-            |> Box.addTopic (BoxTopic sourceTopicId Expanded) boxId
-            |> TopicList.init boxId
-            |> Env.autoSize2 env
+          case maybeRenderer of
+            Just renderer ->
+              Env2 model_ ext -- TODO: pipe env from the start
+                |> Tool.createBoxOnDemand targetTopicId renderer
+                |> Box.addTopic (BoxTopic sourceTopicId Expanded) boxId
+                |> ext.init boxId
+                |> Env.autoSize2 env
+            Nothing ->
+              model_
         Just InsertBefore ->
           model_
             |> Box.addTopic (BoxTopic sourceTopicId Expanded) targetBoxId
-            |> TopicList.init targetBoxId
+            |> ext.init targetBoxId
             |> TopicList.reorderTopic sourceTopicId targetBoxId targetTopicId
             |> Env.autoSize2 env
         Nothing ->

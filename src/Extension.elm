@@ -1,4 +1,7 @@
-module Extension exposing (Renderer, defaultRenderer, toString, encodeRenderer, rendererDecoder)
+module Extension exposing (Renderer, defaultRenderer, toString, fromString, encodeRenderer,
+  rendererDecoder)
+
+-- import Utils as U -- TODO: cyclic
 
 import Json.Decode as D
 import Json.Encode as E
@@ -27,7 +30,11 @@ fromString str =
   case str of
     "TopicMap" -> Just TopicMap
     "TopicList" -> Just TopicList
-    _ -> Nothing
+    _ ->
+      -- let
+      --   _ = U.logError "Extension.fromString" "Unknown renderer" str
+      -- in
+      Nothing
 
 
 
