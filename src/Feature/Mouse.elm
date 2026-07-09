@@ -8,6 +8,7 @@ import Feature.MouseDef as MouseDef exposing (DragSource)
 import Model exposing (Model, Msg(..))
 import ModelBase exposing (..)
 import Outcome exposing (Outcome)
+import TopicMap.Mouse
 import Undo exposing (UndoModel)
 import Utils as U
 
@@ -35,8 +36,8 @@ update msg ({model, undoModel, ext} as env) =
         |> Model.map (setDragSource (Just {dragSource | lastPointerPos = pos}))
         |> Undo.swap undoModel
     (MouseDef.Up, Just dragSource) ->
-      model
-        |> dragStop dragSource ext
+      env
+        |> dragStop dragSource
         |> Outcome.map (setDragSource Nothing)
         |> Outcome.map (setDropTarget Nothing)
         |> Outcome.exec undoModel
@@ -61,29 +62,18 @@ updateDropTarget clientPos ext (model, cmd) =
     Nothing -> (model, cmd)
 
 
-dragStop : DragSource -> ExtManager -> Model -> Outcome
-dragStop dragSource ext model =
+dragStop : DragSource -> Env -> Outcome
+dragStop dragSource {model, ext} =
   let
-    maybeBoxId =
-      case (model.mouse.hover, dragSource.ixBoxPath) of
-        (Just {ixBoxPath}, _) ->
-          Just (Box.firstId ixBoxPath)
-        (Nothing, boxId :: _) ->
-          Just boxId
-        _ ->
-          let
-            _ = U.logError "Feature.Mouse.dragStop" "Unexpected drag state"
-              (model.mouse.hover, dragSource.ixBoxPath)
-          in
-          Nothing
+    isDraftAssoc = TopicMap.Mouse.isDraftAssoc model
+    sourceBoxId = Box.firstId dragSource.ixBoxPath
+    stopBoxId =
+      case (model.mouse.hover, isDraftAssoc) of
+        (Just {ixBoxPath}, False) -> Box.firstId ixBoxPath
+        _ -> sourceBoxId
   in
-  case maybeBoxId of
-    Just boxId ->
-      model
-        |> ext.dragStop boxId
-    Nothing ->
-      model
-        |> Outcome.with Cmd.none
+  model
+    |> ext.dragStop stopBoxId
 
 
 -- Hover

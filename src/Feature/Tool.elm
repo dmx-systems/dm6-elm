@@ -1,5 +1,5 @@
 module Feature.Tool exposing (ToolbarPos, viewGlobalTools, viewMapTools, viewToolbar,
-  viewTopicTools, closeMenu, update, createBoxOnDemand)
+  viewTopicTools, closeMenu, update)
 
 import Assoc
 import Box
@@ -545,7 +545,7 @@ remove_ (itemId, boxPath) model =
 fullscreen : TopicId -> Env2 -> (Model, Cmd Msg)
 fullscreen topicId env =
   ( env
-      |> createBoxOnDemand topicId Extension.defaultRenderer
+      |> Box.turnTopicIntoBox topicId Extension.defaultRenderer
   , Nav.pushUrl (BoxId topicId)
   )
 
@@ -575,15 +575,3 @@ toggleExpansion topicId boxId ({model} as env) =
             Expanded -> Collapsed
         )
     |> Env.autoSize env
-
-
---
-
-createBoxOnDemand : TopicId -> Renderer -> Env2 -> Model
-createBoxOnDemand topicId renderer {model, ext} =
-  if Topic.isBox topicId model then
-    model
-  else
-    model
-      |> Box.turnTopicIntoBox topicId renderer
-      |> ext.init (BoxId topicId)

@@ -205,7 +205,7 @@ processDrop sourceTopicId sourceBoxId targetTopicId targetBoxId ({model, ext} as
           case maybeRenderer of
             Just renderer ->
               Env2 model_ ext -- TODO: pipe env from the start
-                |> Tool.createBoxOnDemand targetTopicId renderer
+                |> Box.turnTopicIntoBox targetTopicId renderer
                 |> Box.addTopic (BoxTopic sourceTopicId Expanded) boxId
                 |> ext.init boxId
                 |> Env.autoSize2 env

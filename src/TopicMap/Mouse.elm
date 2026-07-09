@@ -7,7 +7,6 @@ import Config as C
 import Env exposing (Env2)
 import Extension
 import Feature.Sel as Sel
-import Feature.Tool as Tool
 import Model exposing (Model, Msg(..))
 import ModelBase exposing (..)
 import Outcome exposing (..)
@@ -282,14 +281,14 @@ assocDragEnd sourceTopicId sourceBoxPath model =
 moveTopicToBox : TopicId -> BoxId -> TopicId -> BoxPath -> Env2 -> (Model, Cmd Msg)
 moveTopicToBox topicId boxId targetTopicId targetPath ({model, ext} as env) =
   let
-    targetBoxId = BoxId targetTopicId -- after createBoxOnDemand target topic is a box for sure
+    targetBoxId = BoxId targetTopicId -- after turnTopicIntoBox target topic is a box for sure
     expansion = Box.expansionOf topicId boxId model
     maybeRenderer = Extension.fromString "TopicMap"
   in
   case maybeRenderer of
     Just renderer ->
       env
-        |> Tool.createBoxOnDemand targetTopicId renderer
+        |> Box.turnTopicIntoBox targetTopicId renderer
         |> Box.addTopic (BoxTopic topicId expansion) targetBoxId
         |> ext.init targetBoxId
         |> Box.removeTopic topicId boxId

@@ -4,6 +4,7 @@ module Box exposing (topicCount, traverseWith, topicIds, assocIds, turnTopicInto
   fromPath)
 
 import Assoc
+import Env exposing (Env2)
 import Extension exposing (Renderer)
 import Model exposing (Model)
 import ModelBase exposing (..)
@@ -126,10 +127,18 @@ itemIds filter boxId model =
 
 -- Create box
 
--- Note: these 3 are actually low-level functions as the default view is not initialized.
--- Possibly move these 3 to Tool.createBoxOnDemand (and export none of them).
-turnTopicIntoBox : TopicId -> Renderer -> Model -> Model
-turnTopicIntoBox topicId renderer model =
+turnTopicIntoBox : TopicId -> Renderer -> Env2 -> Model
+turnTopicIntoBox topicId renderer {model, ext} =
+  if Topic.isBox topicId model then
+    model
+  else
+    model
+      |> turnTopicIntoBox_ topicId renderer
+      |> ext.init (BoxId topicId)
+
+
+turnTopicIntoBox_ : TopicId -> Renderer -> Model -> Model
+turnTopicIntoBox_ topicId renderer model =
   let
     setId = model.nextId
     set = ItemSet setId []
@@ -156,7 +165,7 @@ createItemSet set ({itemSets} as model) =
 {-| Adds an item to a box and creates a connecting association. This is an idempotent operation.
 This is a generic operation: works for both, topics and associations.
 -- Note: this is actually a low-level function as the view is not initialized.
--- TODO: move it to Tool module (like createBoxOnDemand)?
+-- ### TODO: move it to Tool module (like turnTopicIntoBox)? -> No!
 -}
 addTopic : BoxTopic -> BoxId -> Model -> Model
 addTopic topic boxId model =
