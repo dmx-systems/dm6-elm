@@ -206,17 +206,14 @@ processDrop sourceTopicId sourceBoxId targetTopicId targetBoxId ({model, ext} as
             Just renderer ->
               Env2 model_ ext -- TODO: pipe env from the start
                 |> Box.turnTopicIntoBox targetTopicId renderer
-                |> Box.addTopic (BoxTopic sourceTopicId Expanded) boxId
                 |> Env.with2 ext
-                |> Box.init boxId
+                |> Box.addTopic (BoxTopic sourceTopicId Expanded) boxId
                 |> Env.autoSize2 env
             Nothing ->
               model_
         Just InsertBefore ->
-          model_
+          Env2 model_ ext
             |> Box.addTopic (BoxTopic sourceTopicId Expanded) targetBoxId
-            |> Env.with2 ext
-            |> Box.init targetBoxId
             |> TopicList.reorderTopic sourceTopicId targetBoxId targetTopicId
             |> Env.autoSize2 env
         Nothing ->

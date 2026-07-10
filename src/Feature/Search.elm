@@ -4,7 +4,7 @@ module Feature.Search exposing (viewInput, viewSearchResult, viewTraversalResult
 import Assoc
 import Box
 import Config as C
-import Env exposing (Env)
+import Env exposing (Env, Env2)
 import Feature.Icon as Icon
 import Feature.Nav as Nav
 import Feature.SearchDef as SearchDef exposing (SearchResult(..))
@@ -366,10 +366,8 @@ revealRelTopic (topicId, assocId) ({model} as env) =
 
 revealTopic_ : TopicId -> BoxId -> Env -> Model
 revealTopic_ topicId boxId {model, ext} =
-  model
+  Env2 model ext
     |> Box.addTopic (BoxTopic topicId Collapsed) boxId
-    |> Env.with2 ext
-    |> Box.init boxId
 
 
 revealAssoc_ : AssocId -> BoxId -> Model -> Model

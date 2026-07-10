@@ -162,49 +162,18 @@ createItemSet set ({itemSets} as model) =
   { model | itemSets = itemSets |> Dict.insert set.id set }
 
 
--- Update view model
-
-init : BoxId -> Env2 -> Model
-init boxId {model, ext} =
-  case rendererOf boxId model of
-    Just renderer ->
-      let
-        updateView : BoxId -> Model -> Model
-        updateView =
-          ext.init boxId model
-        --
-        init_ : BoxId -> Model -> Model
-        init_ boxId_ model_ =
-          model_
-            |> topicIds boxId_
-            |> List.foldl
-              (\topicId acc ->
-                if Topic.isBox topicId acc then
-                  acc
-                    |> setRenderer (BoxId topicId) renderer
-                    |> init_ (BoxId topicId) -- recursion
-                else
-                  acc
-              )
-              model_
-            |> updateView boxId_
-      in
-      init_ boxId model
-    Nothing -> model
-
-
 -- Add item to box
 
 {-| Adds an item to a box and creates a connecting association. This is an idempotent operation.
 This is a generic operation: works for both, topics and associations.
--- Note: this is actually a low-level function as the view is not initialized.
--- ### TODO: move it to Tool module (like turnTopicIntoBox)? -> No!
 -}
-addTopic : BoxTopic -> BoxId -> Model -> Model
-addTopic topic boxId model =
+addTopic : BoxTopic -> BoxId -> Env2 -> Model
+addTopic topic boxId ({model} as env) =
   model
     |> addToItemSet (T topic.id) boxId
     |> addToBoxTopics topic boxId
+    |> Env.withModel2 env
+    |> init boxId
 
 
 addAssoc : AssocId -> BoxId -> Model -> Model
@@ -264,6 +233,33 @@ addToBoxTopics topic boxId ({boxes} as model) =
           Nothing -> Nothing
       )
     }
+
+
+-- Update view model
+
+init : BoxId -> Env2 -> Model
+init boxId {model, ext} =
+  let
+    updateView : BoxId -> Model -> Model
+    updateView =
+      ext.init boxId model
+    --
+    init_ : BoxId -> Model -> Model
+    init_ boxId_ model_ =
+      model_
+        |> topicIds boxId_
+        |> List.foldl
+          (\topicId acc ->
+            if Topic.isBox topicId acc then
+              acc
+                |> init_ (BoxId topicId) -- recursion
+            else
+              acc
+          )
+          model_
+        |> updateView boxId_
+  in
+  init_ boxId model
 
 
 -- Remove item from box

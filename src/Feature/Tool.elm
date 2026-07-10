@@ -485,10 +485,8 @@ landTopic topicId ({model, ext} as env) =
     boxPath = Sel.landingBoxPath model
     boxId = Box.firstId boxPath
   in
-  model -- TODO: pipe env instead model
+  Env2 model ext
     |> Box.addTopic (BoxTopic topicId Collapsed) boxId
-    |> Env.with2 ext
-    |> Box.init boxId
     |> Sel.select (T topicId) boxPath
     |> Env.withModel env
     |> Text.enterEdit topicId boxPath
