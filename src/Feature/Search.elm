@@ -343,8 +343,8 @@ revealTopic : TopicId -> Env -> Model
 revealTopic topicId ({model} as env) =
   case TopicMap.revelationBoxPath model of
     Just (boxId :: _ as boxPath) ->
-      model -- TODO: pipe env instead model
-        |> revealTopic_ topicId boxId env
+      env
+        |> revealTopic_ topicId boxId
         |> closeMenu
         |> Sel.select (T topicId) boxPath
         |> Env.autoSize env
@@ -355,8 +355,8 @@ revealRelTopic : (TopicId, AssocId) -> Env -> Model
 revealRelTopic (topicId, assocId) ({model} as env) =
   case TopicMap.revelationBoxPath model of
     Just (boxId :: _ as boxPath) ->
-      model -- TODO: pipe env instead model
-        |> revealTopic_ topicId boxId env
+      env
+        |> revealTopic_ topicId boxId
         |> revealAssoc_ assocId boxId
         |> closeMenu
         |> Sel.select (T topicId) boxPath
@@ -364,12 +364,12 @@ revealRelTopic (topicId, assocId) ({model} as env) =
     _ -> model
 
 
--- TODO: drop model parameter, use env
-revealTopic_ : TopicId -> BoxId -> Env -> Model -> Model
-revealTopic_ topicId boxId {ext} model =
+revealTopic_ : TopicId -> BoxId -> Env -> Model
+revealTopic_ topicId boxId {model, ext} =
   model
     |> Box.addTopic (BoxTopic topicId Collapsed) boxId
-    |> ext.init boxId
+    |> Env.with2 ext
+    |> Box.init boxId
 
 
 revealAssoc_ : AssocId -> BoxId -> Model -> Model

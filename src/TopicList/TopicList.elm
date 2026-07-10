@@ -23,15 +23,6 @@ init boxId model =
     _ = U.info "TopicList.TopicList.init" boxId
   in
   model
-    |> Box.topicIds boxId
-    |> List.foldl
-      (\topicId acc ->
-        if Topic.isBox topicId acc then
-          init (BoxId topicId) acc -- recursion
-        else
-          acc
-      )
-      model
     |> initTopicList boxId
     |> initOrder boxId
 
@@ -41,7 +32,7 @@ initTopicList boxId ({topicList} as model) =
   let
     id = toBoxId boxId
   in
-  if Dict.member id model.topicList.view then
+  if Dict.member id topicList.view then
     let
       _ = U.info "TopicList.TopicList.initTopicList"
         ("Box (" ++ U.toString boxId ++ ") has TopicList entry already")
@@ -51,10 +42,11 @@ initTopicList boxId ({topicList} as model) =
     let
       _ = U.info "TopicList.TopicList.initTopicList"
         ("Creating TopicList entry for box (" ++ U.toString boxId ++ ")")
+      topicList_ = TopicList boxId [] (Size 0 0)
     in
     { model | topicList =
       { topicList | view = topicList.view
-          |> Dict.insert id (TopicList boxId [] (Size 0 0))
+          |> Dict.insert id topicList_
       }
     }
 

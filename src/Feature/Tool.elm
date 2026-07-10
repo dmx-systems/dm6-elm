@@ -487,7 +487,8 @@ landTopic topicId ({model, ext} as env) =
   in
   model -- TODO: pipe env instead model
     |> Box.addTopic (BoxTopic topicId Collapsed) boxId
-    |> ext.init boxId
+    |> Env.with2 ext
+    |> Box.init boxId
     |> Sel.select (T topicId) boxPath
     |> Env.withModel env
     |> Text.enterEdit topicId boxPath
@@ -559,7 +560,8 @@ setRenderer renderer ({model, ext} as env) =
       in
       model
         |> Box.setRenderer boxId renderer
-        |> ext.init boxId
+        |> Env.with2 ext
+        |> Box.init boxId
         |> Env.autoSize env
     _ -> U.logError "Feature.Tool.setRenderer" "called when there is no single topic selection"
       model

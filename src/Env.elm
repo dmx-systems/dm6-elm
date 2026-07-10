@@ -1,4 +1,4 @@
-module Env exposing (Env, Env2, ExtManager, autoSize, autoSize2, withModel, withModel2)
+module Env exposing (Env, Env2, ExtManager, autoSize, autoSize2, withModel, withModel2, with2)
 
 import Model exposing (Model, Msg)
 import ModelBase exposing (..)
@@ -53,7 +53,7 @@ type alias ExtManager =
 -- Called on the "ext" value by the application developer.
 
 type alias Init =
-  BoxId -> Model -> Model
+  BoxId -> Model -> (BoxId -> Model -> Model)
 
 
 type alias BoxRenderer =
@@ -109,13 +109,19 @@ autoSize2 {ext} model =
     |> Tuple.second
 
 
--- TODO: rename "map"?
+-- TODO: drop
+with2 : ExtManager -> Model -> Env2
+with2 ext model =
+  Env2 model ext
+
+
+-- TODO: rename "map" (or "mapModel")? -> Yes!
 withModel : Env -> Model -> Env
 withModel env model =
   { env | model = model }
 
 
--- TODO: rename "map"?
+-- TODO: rename "map2" (or "mapModel2")? -> Yes!
 withModel2 : Env2 -> Model -> Env2
 withModel2 env model =
   { env | model = model }

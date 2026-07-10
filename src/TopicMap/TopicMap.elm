@@ -1,4 +1,4 @@
-module TopicMap.TopicMap exposing (init, create, allMapTopics, topicPos, randomPos, setTopicPos,
+module TopicMap.TopicMap exposing (init, allMapTopics, topicPos, randomPos, setTopicPos,
   updateTopicPos, mapTopicOrNothing, assocGeometry, addTopicAt, initLimboMapTopic, initTopicPos,
   hasMapTopic, fullscreen, byId, updateRect, updateScrollPos, revelationBoxId,
   revelationBoxPath, landingTarget, toLocalPos, toLocalModelPos)
@@ -26,22 +26,16 @@ init boxId model =
     _ = U.info "TopicMap.TopicMap.init" boxId
   in
   model
-    |> Box.topicIds boxId
-    |> List.foldl
-      (\topicId acc ->
-        if Topic.isBox topicId acc then
-          init (BoxId topicId) acc -- recursion
-        else
-          acc
-      )
-      model
     |> initTopicMap boxId
     |> initMapTopics boxId
 
 
 initTopicMap : BoxId -> Model -> Model
-initTopicMap boxId model =
-  if Dict.member (toBoxId boxId) model.topicMap.view then
+initTopicMap boxId ({topicMap} as model) =
+  let
+    id = toBoxId boxId
+  in
+  if Dict.member id topicMap.view then
     let
       _ = U.info "TopicMap.TopicMap.initTopicMap"
         ("Box (" ++ U.toString boxId ++ ") has TopicMap entry already")
@@ -51,8 +45,13 @@ initTopicMap boxId model =
     let
       _ = U.info "TopicMap.TopicMap.initTopicMap"
         ("Creating TopicMap entry for box (" ++ U.toString boxId ++ ")")
+      topicMap_ = TopicMap boxId (Rectangle 0 0 0 0) (Point 0 0) Dict.empty
     in
-    create boxId model
+    { model | topicMap =
+      { topicMap | view = topicMap.view
+          |> Dict.insert id topicMap_
+      }
+    }
 
 
 initMapTopics : BoxId -> Model -> Model
@@ -75,24 +74,6 @@ initMapTopics boxId model =
                 topicMap.topics
         }
       )
-
-
-create : BoxId -> Model -> Model
-create boxId model =
-  let
-    topicMap = TopicMap boxId (Rectangle 0 0 0 0) (Point 0 0) Dict.empty
-  in
-  model
-    |> create_ topicMap
-
-
-create_ : TopicMap -> Model -> Model
-create_ topicMap_ ({topicMap} as model) =
-  { model | topicMap =
-    { topicMap | view = topicMap.view
-        |> Dict.insert (toBoxId topicMap_.id) topicMap_
-    }
-  }
 
 
 --

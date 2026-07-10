@@ -143,10 +143,10 @@ registry =
 -- Note: these functions implement the Extension Point type signatures defined in Env.elm
 
 
-init : BoxId -> Model -> Model
+init : BoxId -> Model -> (BoxId -> Model -> Model)
 init boxId model =
-  dispatch boxId model model
-    (\env renderer -> renderer.init boxId model)
+  dispatch boxId model (\_ _ -> model)
+    (\env renderer -> renderer.init)
 
 
 {-| The dispatching box renderer.

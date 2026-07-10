@@ -1,7 +1,7 @@
-module Box exposing (topicCount, traverseWith, topicIds, assocIds, turnTopicIntoBox, addTopic,
-  addAssoc, removeTopic, removeAssoc, deleteTopic, deleteAssoc, expansionOf, updateExpansion,
-  rendererOf, setRenderer, hasItem, hadDeepTopic, mapTitle, isFullscreen, elemId, firstId,
-  fromPath)
+module Box exposing (topicCount, traverseWith, topicIds, assocIds, turnTopicIntoBox, init,
+  addTopic, addAssoc, removeTopic, removeAssoc, deleteTopic, deleteAssoc, expansionOf,
+  updateExpansion, rendererOf, setRenderer, hasItem, hadDeepTopic, mapTitle, isFullscreen,
+  elemId, firstId, fromPath)
 
 import Assoc
 import Env exposing (Env2)
@@ -39,6 +39,7 @@ topicCount boxId model =
 
 
 {- A simple traversal, takes just an Acc function and the initial accumulator value.
+TODO: rename to "fold"
 -}
 traverse : BoxPath -> acc -> Acc acc -> Model -> acc
 traverse boxPath initAcc accumulate model =
@@ -128,17 +129,17 @@ itemIds filter boxId model =
 -- Create box
 
 turnTopicIntoBox : TopicId -> Renderer -> Env2 -> Model
-turnTopicIntoBox topicId renderer {model, ext} =
+turnTopicIntoBox topicId renderer ({model} as env) =
   if Topic.isBox topicId model then
     model
   else
-    model
+    env
       |> turnTopicIntoBox_ topicId renderer
-      |> ext.init (BoxId topicId)
+      |> init (BoxId topicId)
 
 
-turnTopicIntoBox_ : TopicId -> Renderer -> Model -> Model
-turnTopicIntoBox_ topicId renderer model =
+turnTopicIntoBox_ : TopicId -> Renderer -> Env2 -> Env2
+turnTopicIntoBox_ topicId renderer ({model} as env) =
   let
     setId = model.nextId
     set = ItemSet setId []
@@ -148,6 +149,7 @@ turnTopicIntoBox_ topicId renderer model =
     |> create box
     |> createItemSet set
     |> Model.nextId
+    |> Env.withModel2 env
 
 
 create : Box -> Model -> Model
@@ -158,6 +160,37 @@ create box ({boxes} as model) =
 createItemSet : ItemSet -> Model -> Model
 createItemSet set ({itemSets} as model) =
   { model | itemSets = itemSets |> Dict.insert set.id set }
+
+
+-- Update view model
+
+init : BoxId -> Env2 -> Model
+init boxId {model, ext} =
+  case rendererOf boxId model of
+    Just renderer ->
+      let
+        updateView : BoxId -> Model -> Model
+        updateView =
+          ext.init boxId model
+        --
+        init_ : BoxId -> Model -> Model
+        init_ boxId_ model_ =
+          model_
+            |> topicIds boxId_
+            |> List.foldl
+              (\topicId acc ->
+                if Topic.isBox topicId acc then
+                  acc
+                    |> setRenderer (BoxId topicId) renderer
+                    |> init_ (BoxId topicId) -- recursion
+                else
+                  acc
+              )
+              model_
+            |> updateView boxId_
+      in
+      init_ boxId model
+    Nothing -> model
 
 
 -- Add item to box
