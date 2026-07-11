@@ -9,6 +9,7 @@ import Feature.Tool as Tool
 import Model exposing (Model, Msg)
 import ModelBase exposing (..)
 import Outcome exposing (..)
+import Topic
 import TopicList.TopicList as TopicList
 import TopicList.TopicListDef exposing (DropMode(..))
 import TopicMap.Mouse
@@ -183,7 +184,7 @@ dragStop ({model} as env2) =
 
 
 processDrop : TopicId -> BoxId -> TopicId -> BoxId -> Env2 -> Outcome
-processDrop sourceTopicId sourceBoxId targetTopicId targetBoxId ({model, ext} as env) =
+processDrop sourceTopicId sourceBoxId targetTopicId targetBoxId ({model} as env) =
   let
     _ = U.info "TopicList.Mouse.processDrop"
       { sourceTopicId = sourceTopicId
@@ -192,38 +193,43 @@ processDrop sourceTopicId sourceBoxId targetTopicId targetBoxId ({model, ext} as
       , targetBoxId = targetBoxId
       , dropMode = model.topicList.dropMode
       }
-  in
-  model
-    |> Box.removeTopic sourceTopicId sourceBoxId
-    |> \model_ ->
-      (case model.topicList.dropMode of
+    addTopic : Env2 -> Model
+    addTopic env_ =
+      case env_.model.topicList.dropMode of
         Just Drop ->
-          let
-            maybeRenderer = Extension.fromString "TopicList"
-            boxId = BoxId targetTopicId
-          in
-          case maybeRenderer of
-            Just renderer ->
-              Env2 model_ ext -- TODO: pipe env from the start
-                |> Box.turnTopicIntoBox targetTopicId renderer
-                |> Env.with2 ext
-                |> Box.addTopic (BoxTopic sourceTopicId Expanded) boxId
-                |> Env.autoSize2 env
-            Nothing ->
-              model_
+          env_
+            |> Box.turnTopicIntoBox targetTopicId Extension.TopicList
+            |> Env.withModel2 env_
+            |> addTopic_ sourceTopicId (BoxId targetTopicId)
+            |> Env.autoSize2 env_
         Just InsertBefore ->
-          Env2 model_ ext
-            |> Box.addTopic (BoxTopic sourceTopicId Expanded) targetBoxId
+          env_
+            |> addTopic_ sourceTopicId targetBoxId
             |> TopicList.reorderTopic sourceTopicId targetBoxId targetTopicId
-            |> Env.autoSize2 env
+            |> Env.autoSize2 env_
         Nothing ->
           let
-            _ = U.logError "TopicList.Mouse.processDrop" "Unexpected dropMode"
-              model.topicList.dropMode
+            _ = U.logError "TopicList.Mouse.processDrop" "Unexpected dropMode" Nothing
           in
-          model_
-      )
+          env_.model
+  in
+  model -- TODO: pipe env instead
+    |> Box.removeTopic sourceTopicId sourceBoxId
+    |> Env.withModel2 env
+    |> addTopic
     |> Outcome (Directives Store Push) Cmd.none
+
+
+addTopic_ : TopicId -> BoxId -> Env2 -> Model
+addTopic_ topicId boxId env =
+  env
+    |> Box.addTopic (BoxTopic topicId Expanded) boxId
+    |> \model ->
+      if Topic.isBox topicId model then
+        model
+          |> Box.setRenderer (BoxId topicId) Extension.TopicList
+      else
+        model
 
 
 setDragPos : Maybe Point -> Model -> Model

@@ -378,12 +378,33 @@ rendererOf boxId model =
 
 
 setRenderer : BoxId -> Renderer -> Model -> Model
-setRenderer boxId renderer ({boxes} as model) =
+setRenderer boxId renderer model =
+  -- set for box itself
+  let
+    model_ = setRenderer_ boxId renderer model
+  in
+  -- set for all child boxes (deep)
+  fold boxId model_
+    (\topicId modelAcc ->
+      if Topic.isBox topicId modelAcc then
+        setRenderer_ (BoxId topicId) renderer modelAcc
+      else
+        modelAcc
+    )
+    model_
+
+
+setRenderer_ : BoxId -> Renderer -> Model -> Model
+setRenderer_ boxId renderer ({boxes} as model) =
   { model | boxes = boxes |> Dict.update (toBoxId boxId)
     (\maybeBox ->
       case maybeBox of
         Just box -> Just { box | renderer = renderer }
-        Nothing -> Nothing
+        Nothing ->
+          let
+            _ = U.logError "Box.setRenderer_" "Box not found" boxId
+          in
+          Nothing
     )
   }
 
@@ -504,6 +525,8 @@ type alias TopicFold acc =
   TopicId -> acc -> acc
 
 
+{- Folds box content into a single value.
+-}
 fold : BoxId -> acc -> TopicFold acc -> Model -> acc
 fold boxId initAcc foldTopic model =
   let
@@ -534,6 +557,7 @@ topicCount boxId model =
 
 -- Traversal
 
+-- TODO: are both acc parameter really needed?
 type alias Acc acc =
   Topic -> Level -> BoxPath -> acc -> Maybe acc -> Model -> acc
 
@@ -552,32 +576,29 @@ TODO: rename to "fold"?
 -}
 traverse : BoxPath -> Transform -> acc -> Acc acc -> LevelDone acc -> Model -> acc
 traverse boxPath transform initAcc accumulate levelDone model =
-  traverse_ 0 boxPath transform initAcc accumulate levelDone model
-
-
-traverse_ : Level -> BoxPath -> Transform -> acc -> Acc acc -> LevelDone acc -> Model -> acc
-traverse_ level boxPath transform initAcc accumulate levelDone model =
   let
-    boxId = firstId boxPath
-    topicAccumulator : Topic -> acc -> acc
-    topicAccumulator topic acc =
+    traverse_ : Level -> BoxPath -> acc
+    traverse_ level boxPath_ =
       let
-        childPath = BoxId topic.id :: boxPath
-        children =
-          if Topic.isBox topic.id model then
-            -- recursion
-            Just <|
-              traverse_ (level + 1) childPath transform initAcc accumulate levelDone model
-          else
-            Nothing
+        boxId = firstId boxPath_
+        topicAccumulator : Topic -> acc -> acc
+        topicAccumulator topic acc =
+          let
+            children =
+              if Topic.isBox topic.id model then
+                Just <| traverse_ (level + 1) (BoxId topic.id :: boxPath_) -- recursion
+              else
+                Nothing
+          in
+          accumulate topic level boxPath_ acc children model
       in
-      accumulate topic level boxPath acc children model
+      topicIds boxId model
+        |> transform boxId model
+        |> List.filterMap (topicLookup model)
+        |> List.foldl topicAccumulator initAcc
+        |> levelDone boxPath_
   in
-  topicIds boxId model
-    |> transform boxId model
-    |> List.filterMap (topicLookup model)
-    |> List.foldl topicAccumulator initAcc
-    |> levelDone boxPath
+  traverse_ 0 boxPath
 
 
 topicLookup : Model -> TopicId -> Maybe Topic

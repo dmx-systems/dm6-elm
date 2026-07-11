@@ -1,4 +1,4 @@
-module Extension exposing (Renderer, defaultRenderer, toString, fromString, encodeRenderer,
+module Extension exposing (Renderer(..), defaultRenderer, toString, fromString, encodeRenderer,
   rendererDecoder)
 
 -- import Utils as U -- TODO: cyclic
