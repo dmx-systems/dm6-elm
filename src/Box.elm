@@ -1,7 +1,7 @@
-module Box exposing (topicCount, traverseWith, topicIds, assocIds, turnTopicIntoBox, init,
-  addTopic, addAssoc, removeTopic, removeAssoc, deleteTopic, deleteAssoc, expansionOf,
-  updateExpansion, rendererOf, setRenderer, hasItem, hadDeepTopic, mapTitle, isFullscreen,
-  elemId, firstId, fromPath)
+module Box exposing (topicIds, assocIds, turnTopicIntoBox, init, addTopic, addAssoc,
+  removeTopic, removeAssoc, deleteTopic, deleteAssoc, expansionOf, updateExpansion, rendererOf,
+  setRenderer, hasItem, hadDeepTopic, mapTitle, isFullscreen, elemId, firstId, fromPath,
+  topicCount, traverse)
 
 import Assoc
 import Env exposing (Env2)
@@ -14,93 +14,6 @@ import Utils as U
 import Dict
 import String exposing (fromInt)
 
-
--- Traversal
-
-type alias Transform =
-  BoxId -> Model -> List TopicId -> List TopicId
-
-
-type alias Acc acc =
-  Topic -> Level -> BoxPath -> acc -> Maybe acc -> Model -> acc
-
-
-type alias LevelDone acc =
-  BoxPath -> acc -> acc
-
-
-topicCount : BoxId -> Model -> Int
-topicCount boxId model =
-  traverse [boxId] 0
-    (\_ _ _ count childrenCount _ ->
-      count + 1 + (childrenCount |> Maybe.withDefault 0)
-    )
-    model
-
-
-{- A simple traversal, takes just an Acc function and the initial accumulator value.
-TODO: rename to "fold"
--}
-traverse : BoxPath -> acc -> Acc acc -> Model -> acc
-traverse boxPath initAcc accumulate model =
-  traverseWith
-    boxPath
-    (\_ _ topicIds_ -> topicIds_)
-    initAcc
-    accumulate
-    (\_ levelResult -> levelResult)
-    model
-
-
-{- A more complex traversal, takes additionally Transform and LevelDone functions.
--}
-traverseWith : BoxPath -> Transform -> acc -> Acc acc -> LevelDone acc -> Model -> acc
-traverseWith boxPath transform initAcc accumulate levelDone model =
-  traverseWith_ 0 boxPath transform initAcc accumulate levelDone model
-
-
-traverseWith_ : Level -> BoxPath -> Transform -> acc -> Acc acc -> LevelDone acc -> Model -> acc
-traverseWith_ level boxPath transform initAcc accumulate levelDone model =
-  let
-    boxId = firstId boxPath
-    topicAccumulator : Topic -> acc -> acc
-    topicAccumulator topic acc =
-      let
-        childPath = BoxId topic.id :: boxPath
-        children =
-          if Topic.isBox topic.id model then
-            -- recursion
-            Just <|
-              traverseWith_ (level + 1) childPath transform initAcc accumulate levelDone model
-          else
-            Nothing
-      in
-      accumulate topic level boxPath acc children model
-  in
-  topicIds boxId model
-    |> transform boxId model
-    |> List.filterMap (topicLookup model)
-    |> List.foldl topicAccumulator initAcc
-    |> levelDone boxPath
-
-
-topicLookup : Model -> TopicId -> Maybe Topic
-topicLookup model topicId =
-  case Topic.fromId topicId model of
-    Just topic -> Just topic
-    Nothing -> U.fail "Box.topicLookup" topicId Nothing
-
-
--- Not used
-topics : BoxId -> Model -> List Topic
-topics boxId model =
-  topicIds boxId model |> List.foldr
-    (\id acc ->
-      case Topic.fromId id model of
-        Just topic -> topic :: acc
-        Nothing -> acc
-    )
-    []
 
 
 {-| The TopicIds contained in the box's underlying ItemSet.
@@ -583,3 +496,92 @@ fromPath boxPath =
   boxPath
     |> List.map (fromInt << toBoxId)
     |> String.join ","
+
+
+-- Fold
+
+type alias TopicFold acc =
+  TopicId -> acc -> acc
+
+
+fold : BoxId -> acc -> TopicFold acc -> Model -> acc
+fold boxId initAcc foldTopic model =
+  let
+    fold_ : BoxId -> acc -> acc
+    fold_ boxId_ initAcc_ =
+      topicIds boxId_ model
+        |> List.foldl
+          (\topicId accVal ->
+            let
+              newAcc = foldTopic topicId accVal
+            in
+            if Topic.isBox topicId model then
+              fold_ (BoxId topicId) newAcc -- recursion
+            else
+              newAcc
+          )
+          initAcc_
+  in
+  fold_ boxId initAcc
+
+
+topicCount : BoxId -> Model -> Int
+topicCount boxId model =
+  fold boxId 0
+    (\_ count -> count + 1)
+    model
+
+
+-- Traversal
+
+type alias Acc acc =
+  Topic -> Level -> BoxPath -> acc -> Maybe acc -> Model -> acc
+
+
+-- Box content transformation before traversal
+type alias Transform =
+  BoxId -> Model -> List TopicId -> List TopicId
+
+
+type alias LevelDone acc =
+  BoxPath -> acc -> acc
+
+
+{- A box content traversal that accumulates a single value.
+TODO: rename to "fold"?
+-}
+traverse : BoxPath -> Transform -> acc -> Acc acc -> LevelDone acc -> Model -> acc
+traverse boxPath transform initAcc accumulate levelDone model =
+  traverse_ 0 boxPath transform initAcc accumulate levelDone model
+
+
+traverse_ : Level -> BoxPath -> Transform -> acc -> Acc acc -> LevelDone acc -> Model -> acc
+traverse_ level boxPath transform initAcc accumulate levelDone model =
+  let
+    boxId = firstId boxPath
+    topicAccumulator : Topic -> acc -> acc
+    topicAccumulator topic acc =
+      let
+        childPath = BoxId topic.id :: boxPath
+        children =
+          if Topic.isBox topic.id model then
+            -- recursion
+            Just <|
+              traverse_ (level + 1) childPath transform initAcc accumulate levelDone model
+          else
+            Nothing
+      in
+      accumulate topic level boxPath acc children model
+  in
+  topicIds boxId model
+    |> transform boxId model
+    |> List.filterMap (topicLookup model)
+    |> List.foldl topicAccumulator initAcc
+    |> levelDone boxPath
+
+
+topicLookup : Model -> TopicId -> Maybe Topic
+topicLookup model topicId =
+  case Topic.fromId topicId model of
+    Just topic -> Just topic
+    Nothing -> U.fail "Box.topicLookup" topicId Nothing

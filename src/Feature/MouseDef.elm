@@ -7,6 +7,7 @@ import ModelBase exposing (..)
 type alias Model =
   -- The geometrically hovered topic, if any.
   -- Synthesized also on pointerdown for touch devices.
+  -- TODO: meanwhile a box's renderer is set deep. Is ixBoxPath still needed in hover target?
   { hover : Maybe BoxTarget -- transient
   -- The topic being dragged.
   -- Available while drag is active (initialzed on DownOnTopic, reset on Up).

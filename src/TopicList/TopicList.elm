@@ -81,7 +81,7 @@ missingTopicIds orderList topicId =
 {- Box content as a flat array of targets -}
 targets : BoxPath -> Model -> Targets
 targets boxPath model =
-  Box.traverseWith
+  Box.traverse
     boxPath
     listOrder
     Array.empty

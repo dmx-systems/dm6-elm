@@ -35,7 +35,7 @@ view boxId boxPath ({model} as env) =
   in
   div
     ( listStyle boxId boxPath model )
-    ( (Box.traverseWith
+    ( (Box.traverse
         boxPath_
         TopicList.listOrder
         []
