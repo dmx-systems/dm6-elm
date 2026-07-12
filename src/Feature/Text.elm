@@ -3,7 +3,7 @@ port module Feature.Text exposing (viewInput, viewTextarea, enterEdit, leaveEdit
 
 import Box
 import Config as C
-import Env exposing (Env)
+import Env exposing (Env, Env2)
 import Feature.TextDef as TextDef exposing (EditState(..), TopicImage)
 import Model exposing (Model, Msg(..))
 import ModelBase exposing (..)
@@ -127,16 +127,16 @@ update msg ({model, undoModel, ext} as env) =
       |> Undo.swap undoModel
 
 
-enterEdit : TopicId -> BoxPath -> Env -> (Model, Cmd Msg)
-enterEdit topicId boxPath ({model} as env) =
+enterEdit : TopicId -> BoxPath -> Env2 -> (Model, Cmd Msg)
+enterEdit topicId boxPath env =
   let
-    newModel =
-      model
-        |> setEditState (Edit topicId boxPath)
-        |> switchTopicDisplay topicId (Box.firstId boxPath)
-        |> Env.autoSize env
+    model =
+      env
+        |> Env.map (setEditState (Edit topicId boxPath))
+        |> Env.map (setExpansion topicId (Box.firstId boxPath))
+        |> Env.auto
   in
-  (newModel, focus newModel)
+  (model, focus model)
 
 
 leaveEdit : Env -> (Model, Cmd Msg)
@@ -154,8 +154,8 @@ leaveEdit ({model} as env) =
     NoEdit -> (model, Cmd.none)
 
 
-switchTopicDisplay : TopicId -> BoxId -> Model -> Model
-switchTopicDisplay topicId boxId model =
+setExpansion : TopicId -> BoxId -> Model -> Model
+setExpansion topicId boxId model =
   model
     |> Box.updateExpansion topicId boxId
       (\expansion ->

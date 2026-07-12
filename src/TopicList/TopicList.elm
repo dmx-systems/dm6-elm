@@ -7,7 +7,6 @@ import Dict
 import Env exposing (Env2)
 import Model exposing (Model)
 import ModelBase exposing (..)
-import Topic
 import TopicList.TopicListDef exposing (TopicList, Targets)
 import Utils as U
 

@@ -345,9 +345,9 @@ revealTopic topicId ({model} as env) =
     Just (boxId :: _ as boxPath) ->
       env
         |> revealTopic_ topicId boxId
-        |> closeMenu
-        |> Sel.select (T topicId) boxPath
-        |> Env.autoSize env
+        |> Env.map closeMenu
+        |> Env.map (Sel.select (T topicId) boxPath)
+        |> Env.auto
     _ -> model
 
 
@@ -357,14 +357,14 @@ revealRelTopic (topicId, assocId) ({model} as env) =
     Just (boxId :: _ as boxPath) ->
       env
         |> revealTopic_ topicId boxId
-        |> revealAssoc_ assocId boxId
-        |> closeMenu
-        |> Sel.select (T topicId) boxPath
-        |> Env.autoSize env
+        |> Env.map (revealAssoc_ assocId boxId)
+        |> Env.map closeMenu
+        |> Env.map (Sel.select (T topicId) boxPath)
+        |> Env.auto
     _ -> model
 
 
-revealTopic_ : TopicId -> BoxId -> Env -> Model
+revealTopic_ : TopicId -> BoxId -> Env -> Env2
 revealTopic_ topicId boxId {model, ext} =
   Env2 model ext
     |> Box.addTopic (BoxTopic topicId Collapsed) boxId
@@ -414,7 +414,8 @@ isMatch text searchTerm =
 
 closeMenu : Model -> Model
 closeMenu model =
-  model |> setResult NoSearch
+  model
+    |> setResult NoSearch
 
 
 setTerm : String -> Model -> Model

@@ -1,4 +1,5 @@
-module Env exposing (Env, Env2, ExtManager, autoSize, autoSize2, withModel, withModel2, with2)
+module Env exposing (Env, Env2, ExtManager, map, auto, from, autoSize, autoSize2, withModel,
+  withModel2, with2)
 
 import Model exposing (Model, Msg)
 import ModelBase exposing (..)
@@ -48,9 +49,12 @@ type alias ExtManager =
   }
 
 
+
 -- Extension Points
 --
--- Called on the "ext" value by the application developer.
+-- Called by the **extension user** (by using the "ext" value).
+-- Compare to ExtManager.elm
+
 
 type alias Init =
   BoxId -> Model -> (BoxId -> Model -> Model)
@@ -93,8 +97,7 @@ type alias DragStop =
 -- HELPER
 
 
--- TODO: consolidate
-
+-- TODO: drop
 autoSize : Env -> Model -> Model
 autoSize {ext} model =
   model
@@ -102,11 +105,31 @@ autoSize {ext} model =
     |> Tuple.second
 
 
+-- TODO: drop
 autoSize2 : Env2 -> Model -> Model
 autoSize2 {ext} model =
   model
     |> ext.autoSize [ model.boxId ]
     |> Tuple.second
+
+
+-- TODO: rename "autoSize"
+-- TODO: return Env2?
+auto : Env2 -> Model
+auto ({model, ext} as env) =
+  model
+    |> ext.autoSize [ model.boxId ]
+    |> Tuple.second
+
+
+map : (Model -> Model) -> Env2 -> Env2
+map transform ({model} as env) =
+  { env | model = transform model }
+
+
+from: Env -> Env2
+from {model, ext} =
+  Env2 model ext
 
 
 -- TODO: drop
@@ -115,13 +138,13 @@ with2 ext model =
   Env2 model ext
 
 
--- TODO: rename "map" (or "mapModel")? -> Yes!
+-- TODO: drop
 withModel : Env -> Model -> Env
 withModel env model =
   { env | model = model }
 
 
--- TODO: rename "map2" (or "mapModel2")? -> Yes!
+-- TODO: drop
 withModel2 : Env2 -> Model -> Env2
 withModel2 env model =
   { env | model = model }

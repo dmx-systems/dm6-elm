@@ -41,8 +41,9 @@ type alias Extension =
 
 -- Extension Points
 --
--- Implemented by the plugin developer.
--- Called on a specific plugin by the dispatcher (see below).
+-- Implemented by the **extension developer**.
+-- Called by the extension dispatcher (see below).
+-- Compare to Env.elm
 
 
 type alias ExtInit =

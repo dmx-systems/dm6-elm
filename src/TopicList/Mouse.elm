@@ -5,7 +5,6 @@ import Config as C
 import Env exposing (Env2)
 import Extension
 import Feature.Sel as Sel
-import Feature.Tool as Tool
 import Model exposing (Model, Msg)
 import ModelBase exposing (..)
 import Outcome exposing (..)
@@ -193,43 +192,46 @@ processDrop sourceTopicId sourceBoxId targetTopicId targetBoxId ({model} as env)
       , targetBoxId = targetBoxId
       , dropMode = model.topicList.dropMode
       }
+    --
     addTopic : Env2 -> Model
     addTopic env_ =
       case env_.model.topicList.dropMode of
         Just Drop ->
           env_
             |> Box.turnTopicIntoBox targetTopicId Extension.TopicList
-            |> Env.withModel2 env_
             |> addTopic_ sourceTopicId (BoxId targetTopicId)
-            |> Env.autoSize2 env_
+            |> Env.auto
         Just InsertBefore ->
           env_
             |> addTopic_ sourceTopicId targetBoxId
-            |> TopicList.reorderTopic sourceTopicId targetBoxId targetTopicId
-            |> Env.autoSize2 env_
+            |> Env.map (TopicList.reorderTopic sourceTopicId targetBoxId targetTopicId)
+            |> Env.auto
         Nothing ->
           let
             _ = U.logError "TopicList.Mouse.processDrop" "Unexpected dropMode" Nothing
           in
           env_.model
   in
-  model -- TODO: pipe env instead
-    |> Box.removeTopic sourceTopicId sourceBoxId
-    |> Env.withModel2 env
+  env
+    |> Env.map (Box.removeTopic sourceTopicId sourceBoxId)
     |> addTopic
     |> Outcome (Directives Store Push) Cmd.none
 
 
-addTopic_ : TopicId -> BoxId -> Env2 -> Model
+addTopic_ : TopicId -> BoxId -> Env2 -> Env2
 addTopic_ topicId boxId env =
+  let
+    setBoxRenderer : Env2 -> Env2
+    setBoxRenderer ({model} as env_) =
+      if Topic.isBox topicId model then
+        env_
+          |> Env.map (Box.setRenderer (BoxId topicId) Extension.TopicList)
+      else
+        env_
+  in
   env
     |> Box.addTopic (BoxTopic topicId Expanded) boxId
-    |> \model ->
-      if Topic.isBox topicId model then
-        model
-          |> Box.setRenderer (BoxId topicId) Extension.TopicList
-      else
-        model
+    |> setBoxRenderer
 
 
 setDragPos : Maybe Point -> Model -> Model

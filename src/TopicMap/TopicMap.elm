@@ -10,7 +10,6 @@ import Feature.SearchDef exposing (SearchResult(..))
 import Feature.Sel as Sel
 import Model exposing (Model, Msg)
 import ModelBase exposing (..)
-import Topic
 import TopicMap.TopicMapDef as TopicMapDef exposing (TopicMap, MapTopic)
 import Utils as U
 

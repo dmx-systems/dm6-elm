@@ -429,14 +429,14 @@ update msg ({model, undoModel, ext} as env) =
     ToolDef.Undo -> undoModel |> Undo.undo |> store
     ToolDef.Redo -> undoModel |> Undo.redo |> store
     -- Item Tools
-    ToolDef.Edit -> edit env |> S.storeWith |> Undo.push undoModel
+    ToolDef.Edit -> edit (Env.from env) |> S.storeWith |> Undo.push undoModel
     ToolDef.Icon -> (Icon.openPicker model, Cmd.none) |> Undo.swap undoModel
     ToolDef.Traverse -> (Search.traverse model, Cmd.none) |> Undo.swap undoModel
     ToolDef.Delete -> delete env |> S.store |> Undo.push undoModel
     ToolDef.Remove -> remove env |> S.store |> Undo.push undoModel
     ToolDef.Fullscreen topicId -> fullscreen topicId (Env2 model ext) |> S.storeWith
       |> Undo.push undoModel
-    ToolDef.RendererSelected renderer -> setRenderer renderer env |> S.store
+    ToolDef.RendererSelected renderer -> setRenderer renderer (Env.from env) |> S.store
       |> Undo.swap undoModel
     ToolDef.ToggleExpansion topicId boxId -> toggleExpansion topicId boxId env |> S.store
       |> Undo.swap undoModel
@@ -487,8 +487,7 @@ landTopic topicId ({model, ext} as env) =
   in
   Env2 model ext
     |> Box.addTopic (BoxTopic topicId Collapsed) boxId
-    |> Sel.select (T topicId) boxPath
-    |> Env.withModel env
+    |> Env.map (Sel.select (T topicId) boxPath)
     |> Text.enterEdit topicId boxPath
 
 
@@ -499,7 +498,7 @@ store undoModel =
 
 -- Item Tools
 
-edit : Env -> (Model, Cmd Msg)
+edit : Env2 -> (Model, Cmd Msg)
 edit ({model} as env) =
   case Sel.single model of
     Just (T id, boxPath) -> Text.enterEdit id boxPath env
@@ -545,23 +544,27 @@ fullscreen : TopicId -> Env2 -> (Model, Cmd Msg)
 fullscreen topicId env =
   ( env
       |> Box.turnTopicIntoBox topicId Extension.defaultRenderer
+      |> .model
   , Nav.pushUrl (BoxId topicId)
   )
 
 
-setRenderer : Renderer -> Env -> Model
-setRenderer renderer ({model, ext} as env) =
+setRenderer : Renderer -> Env2 -> Model
+setRenderer renderer ({model} as env) =
   case Sel.single model of
     Just (T topicId, _) ->
       let
         boxId = (BoxId topicId)
       in
-      model
-        |> Box.setRenderer boxId renderer
-        |> Env.with2 ext
+      env
+        |> Env.map (Box.setRenderer boxId renderer)
         |> Box.init boxId
-        |> Env.autoSize env
-    _ -> U.logError "Feature.Tool.setRenderer" "called when there is no single topic selection"
+        |> Env.auto
+    _ ->
+      let
+        _ = U.logError "Feature.Tool.setRenderer" "Unexpected selection state"
+          (Sel.single model)
+      in
       model
 
 

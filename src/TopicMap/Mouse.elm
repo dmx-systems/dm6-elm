@@ -289,8 +289,8 @@ moveTopicToBox topicId boxId targetTopicId targetPath ({model, ext} as env) =
     Just renderer ->
       env
         |> Box.turnTopicIntoBox targetTopicId renderer
-        |> Env.with2 ext
         |> Box.addTopic (BoxTopic topicId expansion) targetBoxId
+        |> .model
         |> Box.removeTopic topicId boxId
         |> Sel.select (T targetTopicId) targetPath
         |> TopicMap.randomPos topicId targetBoxId

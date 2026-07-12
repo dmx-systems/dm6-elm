@@ -41,10 +41,10 @@ itemIds filter boxId model =
 
 -- Create box
 
-turnTopicIntoBox : TopicId -> Renderer -> Env2 -> Model
+turnTopicIntoBox : TopicId -> Renderer -> Env2 -> Env2
 turnTopicIntoBox topicId renderer ({model} as env) =
   if Topic.isBox topicId model then
-    model
+    env
   else
     env
       |> turnTopicIntoBox_ topicId renderer
@@ -80,12 +80,11 @@ createItemSet set ({itemSets} as model) =
 {-| Adds an item to a box and creates a connecting association. This is an idempotent operation.
 This is a generic operation: works for both, topics and associations.
 -}
-addTopic : BoxTopic -> BoxId -> Env2 -> Model
-addTopic topic boxId ({model} as env) =
-  model
-    |> addToItemSet (T topic.id) boxId
-    |> addToBoxTopics topic boxId
-    |> Env.withModel2 env
+addTopic : BoxTopic -> BoxId -> Env2 -> Env2
+addTopic topic boxId env =
+  env
+    |> Env.map (addToItemSet (T topic.id) boxId)
+    |> Env.map (addToBoxTopics topic boxId)
     |> init boxId
 
 
@@ -148,31 +147,32 @@ addToBoxTopics topic boxId ({boxes} as model) =
     }
 
 
--- Update view model
+-- Initialize/Update box view model
 
-init : BoxId -> Env2 -> Model
-init boxId {model, ext} =
+init : BoxId -> Env2 -> Env2
+init boxId ({model, ext} as env) =
   let
-    updateView : BoxId -> Model -> Model
-    updateView =
+    initBox : BoxId -> Model -> Model
+    initBox =
       ext.init boxId model
     --
     init_ : BoxId -> Model -> Model
     init_ boxId_ model_ =
       model_
+        -- 1) init child boxes, must perform first, TODO: why?
         |> topicIds boxId_
-        |> List.foldl
-          (\topicId acc ->
-            if Topic.isBox topicId acc then
-              acc
-                |> init_ (BoxId topicId) -- recursion
-            else
-              acc
-          )
-          model_
-        |> updateView boxId_
+        |> List.foldl childBoxInit model_
+        -- 2) init box itself
+        |> initBox boxId_
+    --
+    childBoxInit : TopicId -> Model -> Model
+    childBoxInit topicId modelAcc =
+      if Topic.isBox topicId modelAcc then
+        modelAcc |> init_ (BoxId topicId) -- recursion
+      else
+        modelAcc
   in
-  init_ boxId model
+  Env.map (init_ boxId) env
 
 
 -- Remove item from box
@@ -185,7 +185,11 @@ removeTopic topicId boxId model =
         |> removeItem (T topicId) boxId
         |> removeAssocs topic boxId
         |> deleteAssoc assocId
-    _ -> U.fail "Box.removeTopic" {topicId = topicId, boxId = boxId} model
+    _ ->
+      let
+        _ = U.fail "Box.removeTopic" "Unexpected state" {topicId = topicId, boxId = boxId}
+      in
+      model
 
 
 removeAssocs : Topic -> BoxId -> Model -> Model
