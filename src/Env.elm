@@ -1,4 +1,4 @@
-module Env exposing (Env, Env2, ExtManager, map, auto, from, autoSize, autoSize2)
+module Env exposing (Env, Env2, ExtManager, map, auto, from, autoSize)
 
 import Model exposing (Model, Msg)
 import ModelBase exposing (..)
@@ -99,14 +99,6 @@ type alias DragStop =
 -- TODO: drop
 autoSize : Env -> Model -> Model
 autoSize {ext} model =
-  model
-    |> ext.autoSize [ model.boxId ]
-    |> Tuple.second
-
-
--- TODO: drop
-autoSize2 : Env2 -> Model -> Model
-autoSize2 {ext} model =
   model
     |> ext.autoSize [ model.boxId ]
     |> Tuple.second

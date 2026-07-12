@@ -76,39 +76,41 @@ drag : Point -> Env2 -> (Model, Cmd Msg)
 drag clientPos ({model} as env) =
   case model.topicMap.dragState of
     Just (DragEngaged time) ->
-      ( setDragState (Just <| WaitForEndTime time) model
+      ( model
+          |> setDragState (Just <| WaitForEndTime time)
       , Task.perform (TopicMap << TopicMapDef.GotTime) Time.now
       )
     Just (Drag _) ->
-      (updateTopicPos clientPos env, Cmd.none)
+      ( env
+          |> Env.map (updateTopicPos clientPos)
+          |> Env.auto
+      , Cmd.none
+      )
     _ ->
       (model, Cmd.none)
 
 
-updateTopicPos : Point -> Env2 -> Model
-updateTopicPos clientPos ({model} as env) =
+updateTopicPos : Point -> Model -> Model
+updateTopicPos clientPos model =
   case (model.mouse.dragSource, model.topicMap.dragState) of
     (Just {topicId, boxPath, lastPointerPos}, Just (Drag dragMode)) ->
+      case dragMode of
+        DragTopic _ ->
+          model
+            |> TopicMap.updateTopicPos topicId (Box.firstId boxPath)
+              (\pos ->
+                Point
+                  (pos.x + clientPos.x - lastPointerPos.x)
+                  (pos.y + clientPos.y - lastPointerPos.y)
+              )
+        DraftAssoc ->
+          model
+    _ ->
       let
-        updateTopicPos_ : Model -> Model
-        updateTopicPos_ model_ =
-          case dragMode of
-            DragTopic _ ->
-              model_
-                |> TopicMap.updateTopicPos topicId (Box.firstId boxPath)
-                  (\pos ->
-                    Point
-                      (pos.x + clientPos.x - lastPointerPos.x)
-                      (pos.y + clientPos.y - lastPointerPos.y)
-                  )
-            DraftAssoc ->
-              model_
+        _ = U.logError "TopicMap.Mouse.updateTopicPos" "Unexpected mouse state"
+          (model.mouse.dragSource, model.topicMap.dragState)
       in
       model
-        |> updateTopicPos_
-        |> Env.autoSize2 env
-    _ -> U.logError "TopicMap.Mouse.updateTopicPos"
-      ("Received \"Drag\" when dragState is " ++ U.toString model.topicMap.dragState) model
 
 
 -- ExtManager.ExtDropTargeting
