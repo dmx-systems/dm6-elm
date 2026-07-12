@@ -425,7 +425,7 @@ update msg ({model, undoModel, ext} as env) =
     ToolDef.Import -> (model, S.importJSON ()) |> Undo.swap undoModel
     ToolDef.Export -> (model, S.exportJSON ()) |> Undo.swap undoModel
     -- Map Tools
-    ToolDef.CreateTopic -> createTopic env |> S.storeWith |> Undo.push undoModel
+    ToolDef.CreateTopic -> createTopic (Env.from env) |> S.storeWith |> Undo.push undoModel
     ToolDef.Undo -> undoModel |> Undo.undo |> store
     ToolDef.Redo -> undoModel |> Undo.redo |> store
     -- Item Tools
@@ -443,7 +443,7 @@ update msg ({model, undoModel, ext} as env) =
     -- Text Tools
     ToolDef.Image topicId -> Text.openImageFilePicker topicId model |> S.storeWith
       |> Undo.swap undoModel
-    ToolDef.LeaveEdit -> Text.leaveEdit env |> Undo.swap undoModel
+    ToolDef.LeaveEdit -> Text.leaveEdit (Env.from env) |> Undo.swap undoModel
 
 
 -- Global Tools
@@ -470,22 +470,15 @@ setLineStyle lineStyle ({tool} as model) =
 
 -- Map Tools
 
-createTopic : Env -> (Model, Cmd Msg)
+createTopic : Env2 -> (Model, Cmd Msg)
 createTopic ({model} as env) =
   let
     (newModel, topicId) = Topic.create "" C.initTopicIcon model
-    newEnv = Env.withModel env newModel
-  in
-  landTopic topicId newEnv
-
-
-landTopic : TopicId -> Env -> (Model, Cmd Msg)
-landTopic topicId ({model, ext} as env) =
-  let
     boxPath = Sel.landingBoxPath model
     boxId = Box.firstId boxPath
   in
-  Env2 model ext
+  env
+    |> Env.map (\_ -> newModel)
     |> Box.addTopic (BoxTopic topicId Collapsed) boxId
     |> Env.map (Sel.select (T topicId) boxPath)
     |> Text.enterEdit topicId boxPath
@@ -493,7 +486,10 @@ landTopic topicId ({model, ext} as env) =
 
 store : UndoModel -> (UndoModel, Cmd Msg)
 store undoModel =
-  ( undoModel, undoModel.present |> S.storeCmd )
+  ( undoModel
+  , undoModel.present
+      |> S.storeCmd
+  )
 
 
 -- Item Tools

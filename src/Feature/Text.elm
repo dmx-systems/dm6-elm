@@ -120,7 +120,7 @@ update msg ({model, undoModel, ext} as env) =
         |> Env.autoSize env
         |> S.store
         |> Undo.swap undoModel
-    TextDef.LeaveEdit -> leaveEdit env |> Undo.swap undoModel
+    TextDef.LeaveEdit -> leaveEdit (Env.from env) |> Undo.swap undoModel
     TextDef.ImageFilePicked {topicId, imageId} -> insertImage topicId imageId model
       |> Undo.swap undoModel
     TextDef.ImageUrlResolved (imageId, url) -> (addToImageCache imageId url model, Cmd.none)
@@ -139,19 +139,20 @@ enterEdit topicId boxPath env =
   (model, focus model)
 
 
-leaveEdit : Env -> (Model, Cmd Msg)
+leaveEdit : Env2 -> (Model, Cmd Msg)
 leaveEdit ({model} as env) =
   case model.text.edit of
     Edit topicId boxPath ->
       let
         elemId = Box.elemId "topic" topicId boxPath
       in
-      ( model
-          |> setEditState NoEdit
-          |> Env.autoSize env
+      ( env
+          |> Env.map (setEditState NoEdit)
+          |> Env.auto
       , measureElement elemId topicId View
       )
-    NoEdit -> (model, Cmd.none)
+    NoEdit ->
+      (model, Cmd.none)
 
 
 setExpansion : TopicId -> BoxId -> Model -> Model

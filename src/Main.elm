@@ -2,7 +2,7 @@ port module Main exposing (..)
 
 import Box
 import Config as C
-import Env exposing (Env)
+import Env exposing (Env, Env2)
 import ExtManager exposing (ext)
 import Feature.Icon as Icon
 import Feature.Mouse as Mouse
@@ -281,21 +281,20 @@ update msg ({present} as undoModel) =
     Nav navMsg -> Nav.update navMsg env
     --
     Scrolled pos -> updateScrollPos pos present |> S.store |> Undo.swap undoModel
-    Cancel maybeTarget -> cancelUI maybeTarget env |> Undo.swap undoModel
+    Cancel maybeTarget -> cancelUI maybeTarget (Env.from env) |> Undo.swap undoModel
     NoOp -> (undoModel, Cmd.none)
 
 
-cancelUI : Maybe Target -> Env -> (Model, Cmd Msg)
-cancelUI maybeTarget ({model} as env) =
-  model
-    |> Icon.closePicker
-    |> Search.closeMenu
-    |> Tool.closeMenu
-    |> Env.withModel env
+cancelUI : Maybe Target -> Env2 -> (Model, Cmd Msg)
+cancelUI maybeTarget env =
+  env
+    |> Env.map Icon.closePicker
+    |> Env.map Search.closeMenu
+    |> Env.map Tool.closeMenu
     |> cancelUIWith maybeTarget
 
 
-cancelUIWith : Maybe Target -> Env -> (Model, Cmd Msg)
+cancelUIWith : Maybe Target -> Env2 -> (Model, Cmd Msg)
 cancelUIWith maybeTarget ({model} as env) =
   let
     isTargeted =
@@ -310,10 +309,9 @@ cancelUIWith maybeTarget ({model} as env) =
   if isTargeted then
     (model, Cmd.none) -- keep selection, hover state, and edit mode
   else
-    model
-      |> Sel.clear
-      |> Mouse.clearHover -- TODO: needed?
-      |> Env.withModel env
+    env
+      |> Env.map Sel.clear
+      |> Env.map Mouse.clearHover -- TODO: needed?
       |> Text.leaveEdit
 
 

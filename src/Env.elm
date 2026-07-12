@@ -1,5 +1,4 @@
-module Env exposing (Env, Env2, ExtManager, map, auto, from, autoSize, autoSize2, withModel,
-  withModel2, with2)
+module Env exposing (Env, Env2, ExtManager, map, auto, from, autoSize, autoSize2)
 
 import Model exposing (Model, Msg)
 import ModelBase exposing (..)
@@ -14,7 +13,7 @@ import Html exposing (Html)
 
 
 {-| The environment the application passes to the modules.
-TODO: rename AppEnv?
+TODO: drop
 -}
 type alias Env =
   { model : Model
@@ -24,7 +23,7 @@ type alias Env =
 
 
 {-| The environment the dispatcher passes to the extensions/feature modules
-TODO: rename ModEnv (or just Env)?
+TODO: rename "Env"
 -}
 type alias Env2 =
   { model : Model
@@ -130,21 +129,3 @@ map transform ({model} as env) =
 from: Env -> Env2
 from {model, ext} =
   Env2 model ext
-
-
--- TODO: drop
-with2 : ExtManager -> Model -> Env2
-with2 ext model =
-  Env2 model ext
-
-
--- TODO: drop
-withModel : Env -> Model -> Env
-withModel env model =
-  { env | model = model }
-
-
--- TODO: drop
-withModel2 : Env2 -> Model -> Env2
-withModel2 env model =
-  { env | model = model }

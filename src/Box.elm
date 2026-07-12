@@ -58,11 +58,10 @@ turnTopicIntoBox_ topicId renderer ({model} as env) =
     set = ItemSet setId []
     box = Box (BoxId topicId) setId Dict.empty renderer
   in
-  model
-    |> create box
-    |> createItemSet set
-    |> Model.nextId
-    |> Env.withModel2 env
+  env
+    |> Env.map (create box)
+    |> Env.map (createItemSet set)
+    |> Env.map Model.nextId
 
 
 create : Box -> Model -> Model
@@ -172,7 +171,8 @@ init boxId ({model, ext} as env) =
       else
         modelAcc
   in
-  Env.map (init_ boxId) env
+  env
+    |> Env.map (init_ boxId)
 
 
 -- Remove item from box
