@@ -1,7 +1,7 @@
 module Box exposing (topicIds, assocIds, turnTopicIntoBox, init, addTopic, addAssoc,
   removeTopic, removeAssoc, deleteTopic, deleteAssoc, expansionOf, updateExpansion, rendererOf,
-  setRenderer, hasItem, hadDeepTopic, mapTitle, isFullscreen, elemId, firstId, fromPath,
-  topicCount, traverse)
+  setRenderer, hasItem, hadDeepTopic, mapTitle, isFullscreen, setFullscreen, elemId, firstId,
+  fromPath, topicCount, traverse)
 
 import Assoc
 import Env exposing (Env2)
@@ -500,6 +500,11 @@ mapTitle model =
 isFullscreen : BoxId -> Model -> Bool
 isFullscreen boxId model =
   boxId == model.boxId
+
+
+setFullscreen : BoxId -> Model -> Model
+setFullscreen boxId model =
+  { model | boxId = boxId }
 
 
 elemId : String -> TopicId -> BoxPath -> String

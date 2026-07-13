@@ -21,8 +21,8 @@ update msg ({model, undoModel} as env) =
     TopicMapDef.AssocClicked assocId boxPath -> selectAssoc assocId boxPath model
       |> Undo.swap undoModel
     TopicMapDef.GotTime time -> Mouse.timeArrived time undoModel
-    TopicMapDef.GotRandomPos topicId boxId pos -> TopicMap.addTopicAt topicId boxId pos env
-      |> S.store |> Undo.push undoModel
+    TopicMapDef.GotRandomPos topicId boxId pos ->
+      TopicMap.addTopicAt topicId boxId pos (Env.from env) |> S.store |> Undo.push undoModel
 
 
 selectAssoc : AssocId -> BoxPath -> Model -> (Model, Cmd Msg)

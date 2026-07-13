@@ -432,14 +432,14 @@ update msg ({model, undoModel, ext} as env) =
     ToolDef.Edit -> edit (Env.from env) |> S.storeWith |> Undo.push undoModel
     ToolDef.Icon -> (Icon.openPicker model, Cmd.none) |> Undo.swap undoModel
     ToolDef.Traverse -> (Search.traverse model, Cmd.none) |> Undo.swap undoModel
-    ToolDef.Delete -> delete env |> S.store |> Undo.push undoModel
-    ToolDef.Remove -> remove env |> S.store |> Undo.push undoModel
+    ToolDef.Delete -> delete (Env.from env) |> S.store |> Undo.push undoModel
+    ToolDef.Remove -> remove (Env.from env) |> S.store |> Undo.push undoModel
     ToolDef.Fullscreen topicId -> fullscreen topicId (Env2 model ext) |> S.storeWith
       |> Undo.push undoModel
     ToolDef.RendererSelected renderer -> setRenderer renderer (Env.from env) |> S.store
       |> Undo.swap undoModel
-    ToolDef.ToggleExpansion topicId boxId -> toggleExpansion topicId boxId env |> S.store
-      |> Undo.swap undoModel
+    ToolDef.ToggleExpansion topicId boxId -> toggleExpansion topicId boxId (Env.from env)
+      |> S.store |> Undo.swap undoModel
     -- Text Tools
     ToolDef.Image topicId -> Text.openImageFilePicker topicId model |> S.storeWith
       |> Undo.swap undoModel
@@ -497,37 +497,53 @@ store undoModel =
 edit : Env2 -> (Model, Cmd Msg)
 edit ({model} as env) =
   case Sel.single model of
-    Just (T id, boxPath) -> Text.enterEdit id boxPath env
-    _ -> U.logError "Feature.Tool.edit" "called when there is no single topic selection"
+    Just (T id, boxPath) ->
+      Text.enterEdit id boxPath env
+    _ ->
+      let
+        _ = U.logError "Feature.Tool.edit" "No single topic selection" (Sel.single model)
+      in
       (model, Cmd.none)
 
 
-delete : Env -> Model
-delete ({model} as env) =
+delete : Env2 -> Model
+delete env =
+  env
+    |> Env.map deleteSelection
+    |> Env.map Sel.clear
+    |> Env.autoSize
+
+
+deleteSelection : Model -> Model
+deleteSelection model =
   model.selection.items
     |> List.map Tuple.first
-    |> List.foldr delete_ model
-    |> Sel.clear
-    |> Env.autoSize env
+    |> List.foldr deleteItem model
 
 
-delete_ : ItemId -> Model -> Model
-delete_ itemId model =
+deleteItem : ItemId -> Model -> Model
+deleteItem itemId model =
   case itemId of
     T id -> Box.deleteTopic id model
     A id -> Box.deleteAssoc id model
 
 
-remove : Env -> Model
-remove ({model} as env) =
+remove : Env2 -> Model
+remove env =
+  env
+    |> Env.map removeSelection
+    |> Env.map Sel.clear
+    |> Env.autoSize
+
+
+removeSelection : Model -> Model
+removeSelection model =
   model.selection.items
-    |> List.foldr remove_ model
-    |> Sel.clear
-    |> Env.autoSize env
+    |> List.foldr removeItem model
 
 
-remove_ : (ItemId, BoxPath) -> Model -> Model
-remove_ (itemId, boxPath) model =
+removeItem : (ItemId, BoxPath) -> Model -> Model
+removeItem (itemId, boxPath) model =
   let
     boxId = (Box.firstId boxPath)
   in
@@ -555,22 +571,28 @@ setRenderer renderer ({model} as env) =
       env
         |> Env.map (Box.setRenderer boxId renderer)
         |> Box.init boxId
-        |> Env.auto
+        |> Env.autoSize
     _ ->
       let
-        _ = U.logError "Feature.Tool.setRenderer" "Unexpected selection state"
+        _ = U.logError "Feature.Tool.setRenderer" "No single topic selection"
           (Sel.single model)
       in
       model
 
 
-toggleExpansion : TopicId -> BoxId -> Env -> Model
-toggleExpansion topicId boxId ({model} as env) =
-  model
-    |> Box.updateExpansion topicId boxId  
-        (\expansion ->
-          case expansion of
-            Collapsed -> Expanded
-            Expanded -> Collapsed
-        )
-    |> Env.autoSize env
+toggleExpansion : TopicId -> BoxId -> Env2 -> Model
+toggleExpansion topicId boxId env =
+  let
+    toggle : Model -> Model
+    toggle model =
+      model
+        |> Box.updateExpansion topicId boxId  
+            (\expansion ->
+              case expansion of
+                Collapsed -> Expanded
+                Expanded -> Collapsed
+            )
+  in
+  env
+    |> Env.map toggle
+    |> Env.autoSize

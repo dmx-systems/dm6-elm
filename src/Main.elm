@@ -2,7 +2,7 @@ port module Main exposing (..)
 
 import Box
 import Config as C
-import Env exposing (Env, Env2)
+import Env exposing (Env2)
 import ExtManager exposing (ext)
 import Feature.Icon as Icon
 import Feature.Mouse as Mouse

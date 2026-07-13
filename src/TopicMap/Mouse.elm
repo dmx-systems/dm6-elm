@@ -83,7 +83,7 @@ drag clientPos ({model} as env) =
     Just (Drag _) ->
       ( env
           |> Env.map (updateTopicPos clientPos)
-          |> Env.auto
+          |> Env.autoSize
       , Cmd.none
       )
     _ ->

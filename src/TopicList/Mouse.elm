@@ -200,12 +200,12 @@ processDrop sourceTopicId sourceBoxId targetTopicId targetBoxId ({model} as env)
           env_
             |> Box.turnTopicIntoBox targetTopicId Extension.TopicList
             |> addTopic_ sourceTopicId (BoxId targetTopicId)
-            |> Env.auto
+            |> Env.autoSize
         Just InsertBefore ->
           env_
             |> addTopic_ sourceTopicId targetBoxId
             |> Env.map (TopicList.reorderTopic sourceTopicId targetBoxId targetTopicId)
-            |> Env.auto
+            |> Env.autoSize
         Nothing ->
           let
             _ = U.logError "TopicList.Mouse.processDrop" "Unexpected dropMode" Nothing

@@ -115,9 +115,9 @@ update msg ({model, undoModel, ext} as env) =
     TextDef.OnTextareaInput text -> onTextareaInput text model |> S.storeWith
       |> Undo.swap undoModel
     TextDef.GotTextSize topicId sizeField size ->
-      model
-        |> Topic.setSize topicId sizeField size
-        |> Env.autoSize env
+      (Env.from env)
+        |> Env.map (Topic.setSize topicId sizeField size)
+        |> Env.autoSize
         |> S.store
         |> Undo.swap undoModel
     TextDef.LeaveEdit -> leaveEdit (Env.from env) |> Undo.swap undoModel
@@ -134,7 +134,7 @@ enterEdit topicId boxPath env =
       env
         |> Env.map (setEditState (Edit topicId boxPath))
         |> Env.map (setExpansion topicId (Box.firstId boxPath))
-        |> Env.auto
+        |> Env.autoSize
   in
   (model, focus model)
 
@@ -148,7 +148,7 @@ leaveEdit ({model} as env) =
       in
       ( env
           |> Env.map (setEditState NoEdit)
-          |> Env.auto
+          |> Env.autoSize
       , measureElement elemId topicId View
       )
     NoEdit ->
@@ -173,7 +173,12 @@ onTextInput text model =
     Edit topicId _ ->
       model
         |> setTopicText topicId text
-    NoEdit -> U.logError "Feature.Text.onTextInput" "called when text.edit is NoEdit" model
+    NoEdit ->
+      let
+        _ = U.logError "Feature.Text.onTextInput" "Unexpected model.text.edit state"
+          model.text.edit
+      in
+      model
 
 
 onTextareaInput : String -> Model -> (Model, Cmd Msg)
@@ -183,7 +188,11 @@ onTextareaInput text model =
       model
         |> setTopicText topicId text
         |> measureText topicId text
-    NoEdit -> U.logError "Feature.Text.onTextareaInput" "called when text.edit is NoEdit"
+    NoEdit ->
+      let
+        _ = U.logError "Feature.Text.onTextareaInput" "Unexpected model.text.edit state"
+          model.text.edit
+      in
       (model, Cmd.none)
 
 
@@ -213,17 +222,25 @@ measureElement elemId topicId sizeField =
 focus : Model -> Cmd Msg
 focus model =
   let
+    elemId : String
     elemId =
       case model.text.edit of
-        Edit id boxPath -> Box.elemId "input" id boxPath
-        NoEdit -> U.logError "Feature.Text.focus" "called when text.edit is NoEdit" ""
+        Edit id boxPath ->
+          Box.elemId "input" id boxPath
+        NoEdit ->
+          let
+            _ = U.logError "Feature.Text.focus" "Unexpected model.text.edit state"
+              model.text.edit
+          in
+          ""
   in
-  Dom.focus elemId |> Task.attempt
-    (\result ->
-      case result of
-        Ok () -> NoOp
-        Err e -> U.logError "Feature.Text.focus" (U.toString e) NoOp
-    )
+  Dom.focus elemId
+    |> Task.attempt
+      (\result ->
+        case result of
+          Ok () -> NoOp
+          Err e -> U.logError "Feature.Text.focus" (U.toString e) NoOp
+      )
 
 
 isEdit : TopicId -> BoxPath -> Model -> Bool

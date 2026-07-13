@@ -5,7 +5,7 @@ module TopicMap.TopicMap exposing (init, allMapTopics, topicPos, randomPos, setT
 
 import Box
 import Config as C
-import Env exposing (Env)
+import Env exposing (Env2)
 import Feature.SearchDef exposing (SearchResult(..))
 import Feature.Sel as Sel
 import Model exposing (Model, Msg)
@@ -136,11 +136,11 @@ randomPos topicId boxId model =
 
 
 -- GotRandomPos message handler
-addTopicAt : TopicId -> BoxId -> Point -> Env -> Model
-addTopicAt topicId boxId pos ({model} as env) =
-  model
-    |> updateTopicMap boxId (addTopic_ topicId pos)
-    |> Env.autoSize env
+addTopicAt : TopicId -> BoxId -> Point -> Env2 -> Model
+addTopicAt topicId boxId pos env =
+  env
+    |> Env.map (updateTopicMap boxId (addTopic_ topicId pos))
+    |> Env.autoSize
 
 
 addTopic_ : TopicId -> Point -> TopicMap -> TopicMap
