@@ -1,13 +1,13 @@
 module Feature.Icon exposing (view, viewTopicIcon, viewPicker, openPicker, closePicker, update)
 
+import Env exposing (Env2)
 import Feature.IconDef as IconDef
 import Feature.Sel as Sel
 import Model exposing (Model, Msg(..))
 import ModelBase exposing (..)
+import Outcome exposing (Outcome, Directives, Storage(..), History(..))
 import Shared.Events as Events
-import Storage as S
 import Topic
-import Undo exposing (UndoModel)
 
 import Dict
 import Html exposing (Html, div, text, button)
@@ -69,12 +69,14 @@ iconButtonStyle =
 viewTopicIcon : TopicId -> Int -> Attrs Msg -> Model -> Html Msg
 viewTopicIcon topicId size style_ model =
   case Topic.fromId topicId model of
-    Just topic ->
-      case topic.icon of
+    Just {icon} ->
+      case icon of
         Just iconName ->
           view iconName size style_
-        Nothing -> text ""
-    Nothing -> text "?"
+        Nothing ->
+          text ""
+    Nothing ->
+      text "?"
 
 
 view : String -> Int -> Attrs Msg -> Html Msg
@@ -82,22 +84,35 @@ view iconName size style_ =
   case FI.icons |> Dict.get iconName of
     Just icon ->
       icon
-      |> FI.withSize (toFloat size)
-      |> FI.toHtml style_
-    Nothing -> text "??"
+        |> FI.withSize (toFloat size)
+        |> FI.toHtml style_
+    Nothing ->
+      text "??"
 
 
 
 -- UPDATE
 
 
-update : IconDef.Msg -> UndoModel -> (UndoModel, Cmd Msg)
-update msg ({present} as undoModel) =
+update : IconDef.Msg -> Env2 -> Outcome
+update msg env =
   case msg of
-    IconDef.IconSelected maybeIcon -> setIcon maybeIcon present
-      |> closePicker
-      |> S.store
-      |> Undo.push undoModel
+    IconDef.IconSelected icon ->
+      env
+        |> Env.map (setIcon icon)
+        |> Env.map closePicker
+        |> Env.outcome (Directives Store Push)
+
+
+setIcon : Maybe Icon -> Model -> Model
+setIcon iconName model =
+  case Sel.single model of
+    Just (T topicId, _) ->
+      model
+        |> Topic.update topicId
+          (\topic -> { topic | icon = iconName })
+    _ ->
+      model
 
 
 openPicker : Model -> Model
@@ -108,12 +123,3 @@ openPicker ({icon} as model) =
 closePicker : Model -> Model
 closePicker ({icon} as model) =
   { model | icon = { icon | picker = IconDef.Closed }}
-
-
-setIcon : Maybe Icon -> Model -> Model
-setIcon iconName model =
-  case Sel.single model of
-    Just (T topicId, _) -> Topic.update topicId
-      (\topic -> { topic | icon = iconName })
-      model
-    _ -> model

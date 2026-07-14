@@ -2,7 +2,7 @@ port module Main exposing (..)
 
 import Box
 import Config as C
-import Env exposing (Env2)
+import Env exposing (Env, Env2)
 import ExtManager exposing (ext)
 import Feature.Icon as Icon
 import Feature.Mouse as Mouse
@@ -14,6 +14,7 @@ import Feature.Text as Text
 import Feature.Tool as Tool
 import Model exposing (Model, Msg(..))
 import ModelBase exposing (..)
+import Outcome
 import Shared.Events as Events
 import Storage as S
 import TopicMap.Controller as TMC
@@ -259,11 +260,8 @@ measureStyle =
 update : Msg -> UndoModel -> (UndoModel, Cmd Msg)
 update msg ({present} as undoModel) =
   let
-    env =
-      { model = present
-      , undoModel = undoModel
-      , ext = ext
-      }
+    env = Env present undoModel ext -- TODO: drop
+    env2 = Env2 present ext
     _ =
       case msg of
         Mouse (MouseDef.Move _) -> msg
@@ -271,14 +269,14 @@ update msg ({present} as undoModel) =
   in
   case msg of
     -- renderer modules
-    TopicMap topicMapMsg -> TMC.update topicMapMsg env
+    TopicMap msg_ -> TMC.update msg_ env
     -- feature modules
-    Tool toolMsg -> Tool.update toolMsg env
-    Text textMsg -> Text.update textMsg env
-    Mouse mouseMsg -> Mouse.update mouseMsg env
-    Search searchMsg -> Search.update searchMsg env
-    Icon iconMenuMsg -> Icon.update iconMenuMsg undoModel
-    Nav navMsg -> Nav.update navMsg env
+    Tool msg_ -> Tool.update msg_ env
+    Text msg_ -> Text.update msg_ env
+    Mouse msg_ -> Mouse.update msg_ env
+    Search msg_ -> Search.update msg_ env
+    Icon msg_ -> Icon.update msg_ env2 |> Outcome.exec undoModel
+    Nav msg_ -> Nav.update msg_ env
     --
     Scrolled pos -> updateScrollPos pos present |> S.store |> Undo.swap undoModel
     Cancel maybeTarget -> cancelUI maybeTarget (Env.from env) |> Undo.swap undoModel

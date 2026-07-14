@@ -1,8 +1,8 @@
-module Env exposing (Env, Env2, ExtManager, map, autoSize, from)
+module Env exposing (Env, Env2, ExtManager, map, autoSize, from, outcome)
 
 import Model exposing (Model, Msg)
 import ModelBase exposing (..)
-import Outcome exposing (Outcome)
+import Outcome exposing (Outcome, Directives)
 import Undo exposing (UndoModel)
 
 import Html exposing (Html)
@@ -114,3 +114,8 @@ map transform ({model} as env) =
 from: Env -> Env2
 from {model, ext} =
   Env2 model ext
+
+
+outcome : Directives -> Env2 -> Outcome
+outcome directives env =
+  Outcome directives Cmd.none env.model
