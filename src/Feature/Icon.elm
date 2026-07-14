@@ -28,7 +28,8 @@ viewPicker model =
         pickerStyle
         viewIconList
       ]
-    IconDef.Closed -> []
+    IconDef.Closed ->
+      []
 
 
 pickerStyle : Attrs Msg
@@ -101,7 +102,7 @@ update msg env =
       env
         |> Env.map (setIcon icon)
         |> Env.map closePicker
-        |> Env.outcome (Directives Store Push)
+        |> Env.outcomeWith (Directives Store Push)
 
 
 setIcon : Maybe Icon -> Model -> Model

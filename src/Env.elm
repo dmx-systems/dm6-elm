@@ -1,8 +1,9 @@
-module Env exposing (Env, Env2, ExtManager, map, autoSize, from, outcome)
+module Env exposing (Env, Env2, ExtManager, map, auto, autoSize, from, outcome, outcomeWith,
+  outcomeWithCmd)
 
 import Model exposing (Model, Msg)
 import ModelBase exposing (..)
-import Outcome exposing (Outcome, Directives)
+import Outcome exposing (Outcome, Directives, Storage(..), History(..))
 import Undo exposing (UndoModel)
 
 import Html exposing (Html)
@@ -68,6 +69,7 @@ type alias HitTest =
   BoxId -> BoxPath -> Point -> Maybe TopicId -> Model -> Maybe BoxTarget
 
 
+-- TODO: return just Model
 type alias AutoSize =
   BoxPath -> Model -> (Rectangle, Model)
 
@@ -96,8 +98,14 @@ type alias DragStop =
 -- HELPER
 
 
--- TODO: rename "autoSize"
--- TODO: return Env2?
+auto : Env2 -> Env2
+auto env =
+  env
+    |> autoSize
+    |> \model -> map (\_ -> model) env
+
+
+-- TODO: drop?
 autoSize : Env2 -> Model
 autoSize {model, ext} =
   model
@@ -116,6 +124,19 @@ from {model, ext} =
   Env2 model ext
 
 
-outcome : Directives -> Env2 -> Outcome
-outcome directives env =
+-- Outcome
+
+outcome : Env2 -> Outcome
+outcome  env =
+  env
+    |> outcomeWith (Directives NoStore Swap)
+
+
+outcomeWith : Directives -> Env2 -> Outcome
+outcomeWith directives env =
   Outcome directives Cmd.none env.model
+
+
+outcomeWithCmd : Cmd Msg -> Env2 -> Outcome
+outcomeWithCmd cmd env =
+  Outcome (Directives NoStore Swap) cmd env.model

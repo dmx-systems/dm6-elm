@@ -11,6 +11,7 @@ import Feature.SearchDef as SearchDef exposing (SearchResult(..))
 import Feature.Sel as Sel
 import Model exposing (Model, Msg(..))
 import ModelBase exposing (..)
+import Outcome exposing (Outcome, Directives, Storage(..), History(..))
 import Shared.Events as Events
 import Storage as S
 import Topic
@@ -259,27 +260,47 @@ isRelTopicHover relTopic model =
 -- UPDATE
 
 
-update : SearchDef.Msg -> Env -> (UndoModel, Cmd Msg)
-update msg ({model, undoModel} as env) =
+update : SearchDef.Msg -> Env2 -> Outcome
+update msg env =
   case msg of
     -- Search
-    SearchDef.Input term -> (setSearchTerm term model, Cmd.none) |> Undo.swap undoModel
-    SearchDef.InputFocused -> (onInputFocused model, Cmd.none) |> Undo.swap undoModel
-    SearchDef.TopicHovered topicId -> (onTopicHovered topicId (Env.from env), Cmd.none)
-      |> Undo.swap undoModel
-    SearchDef.TopicUnhovered _ -> (onTopicUnhovered (Env.from env), Cmd.none)
-      |> Undo.swap undoModel
-    SearchDef.TopicClicked topicId -> revealTopic topicId (Env.from env) |> S.store
-      |> Undo.push undoModel
+    SearchDef.Input term ->
+      env
+        |> Env.map (setSearchTerm term)
+        |> Env.outcome
+    SearchDef.InputFocused ->
+      env
+        |> Env.map onInputFocused
+        |> Env.outcome
+    SearchDef.TopicHovered topicId ->
+      env
+        |> onTopicHovered topicId
+        |> Env.outcome
+    SearchDef.TopicUnhovered _ ->
+      env
+        |> onTopicUnhovered
+        |> Env.outcome
+    SearchDef.TopicClicked topicId ->
+      env
+        |> revealTopic topicId
+        |> Env.outcomeWith (Directives Store Push)
     -- Traverse
     SearchDef.RelTopicHovered relTopicId ->
-      (onRelTopicHovered relTopicId (Env.from env), Cmd.none) |> Undo.swap undoModel
-    SearchDef.RelTopicUnhovered _ -> (onRelTopicUnhovered (Env.from env), Cmd.none)
-      |> Undo.swap undoModel
-    SearchDef.RelTopicClicked relTopicId -> revealRelTopic relTopicId (Env.from env) |> S.store
-      |> Undo.push undoModel
+      env
+        |> onRelTopicHovered relTopicId
+        |> Env.outcome
+    SearchDef.RelTopicUnhovered _ ->
+      env
+        |> onRelTopicUnhovered
+        |> Env.outcome
+    SearchDef.RelTopicClicked relTopicId ->
+      env
+        |> revealRelTopic relTopicId
+        |> Env.outcomeWith (Directives Store Push)
     -- Fullscreen (Search & Traverse)
-    SearchDef.Fullscreen boxId -> (undoModel, Nav.pushUrl boxId)
+    SearchDef.Fullscreen boxId ->
+      env
+        |> Env.outcomeWithCmd (Nav.pushUrl boxId)
 
 
 setSearchTerm : String -> Model -> Model
@@ -294,67 +315,67 @@ onInputFocused =
   searchTopics
 
 
-onTopicHovered : TopicId -> Env2 -> Model
+onTopicHovered : TopicId -> Env2 -> Env2
 onTopicHovered topicId ({model} as env) =
   case model.search.result of
     Topics topicIds _ ->
       env
         |> Env.map (setResult (Topics topicIds (Just topicId))) -- update hover state
-        |> Env.autoSize
+        |> Env.auto
     _ ->
       let
         _ = U.logError "Feature.Search.onTopicHovered"
           "For model.search.result Topics is expected but is" model.search.result
       in
-      model
+      env
 
 
-onRelTopicHovered : (TopicId, AssocId) -> Env2 -> Model
+onRelTopicHovered : (TopicId, AssocId) -> Env2 -> Env2
 onRelTopicHovered relTopicId ({model} as env) =
   case model.search.result of
     RelTopics relTopicIds _ ->
       env
         |> Env.map (setResult (RelTopics relTopicIds (Just relTopicId))) -- update hover state
-        |> Env.autoSize
+        |> Env.auto
     _ ->
       let
         _ = U.logError "Feature.Search.onRelTopicHovered"
           "For model.search.result RelTopics is expected but is" model.search.result
       in
-      model
+      env
 
 
-onTopicUnhovered : Env2 -> Model
+onTopicUnhovered : Env2 -> Env2
 onTopicUnhovered ({model} as env) =
   case model.search.result of
     Topics topicIds _ ->
       env
         |> Env.map (setResult (Topics topicIds Nothing)) -- update hover state
-        |> Env.autoSize
+        |> Env.auto
     _ ->
       let
         _ = U.logError "Feature.Search.onTopicUnhovered"
           "For model.search.result Topics is expected but is" model.search.result
       in
-      model
+      env
 
 
-onRelTopicUnhovered : Env2 -> Model
+onRelTopicUnhovered : Env2 -> Env2
 onRelTopicUnhovered ({model} as env) =
   case model.search.result of
     RelTopics relTopicIds _ ->
       env
         |> Env.map (setResult (RelTopics relTopicIds Nothing)) -- update hover state
-        |> Env.autoSize
+        |> Env.auto
     _ ->
       let
         _ = U.logError "Feature.Search.onRelTopicUnhovered"
           "For model.search.result RelTopics is expected but is" model.search.result
       in
-      model
+      env
 
 
-revealTopic : TopicId -> Env2 -> Model
+revealTopic : TopicId -> Env2 -> Env2
 revealTopic topicId ({model} as env) =
   case TopicMap.revelationBoxPath model of
     Just (boxId :: _ as boxPath) ->
@@ -362,11 +383,12 @@ revealTopic topicId ({model} as env) =
         |> revealTopic_ topicId boxId
         |> Env.map closeMenu
         |> Env.map (Sel.select (T topicId) boxPath)
-        |> Env.autoSize
-    _ -> model
+        |> Env.auto
+    _ ->
+      env
 
 
-revealRelTopic : (TopicId, AssocId) -> Env2 -> Model
+revealRelTopic : (TopicId, AssocId) -> Env2 -> Env2
 revealRelTopic (topicId, assocId) ({model} as env) =
   case TopicMap.revelationBoxPath model of
     Just (boxId :: _ as boxPath) ->
@@ -375,8 +397,8 @@ revealRelTopic (topicId, assocId) ({model} as env) =
         |> Env.map (revealAssoc_ assocId boxId)
         |> Env.map closeMenu
         |> Env.map (Sel.select (T topicId) boxPath)
-        |> Env.autoSize
-    _ -> model
+        |> Env.auto
+    _ -> env
 
 
 revealTopic_ : TopicId -> BoxId -> Env2 -> Env2
