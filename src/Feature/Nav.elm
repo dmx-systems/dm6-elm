@@ -1,13 +1,12 @@
 port module Feature.Nav exposing (boxIdFromHash, pushUrl, update, sub)
 
 import Box
-import Env exposing (Env, Env2)
+import Env exposing (Env2)
 import Feature.NavDef as NavDef
 import Model exposing (Model, Msg(..))
 import ModelBase exposing (..)
-import Storage as S
+import Outcome exposing (Outcome, Directives, Storage(..), History(..))
 import TopicMap.TopicMap as TopicMap
-import Undo exposing (UndoModel)
 import Utils as U
 
 import Browser.Dom as Dom
@@ -37,23 +36,27 @@ sub =
 -- UPDATE
 
 
-update : NavDef.Msg -> Env -> (UndoModel, Cmd Msg)
+update : NavDef.Msg -> Env2 -> Outcome
 update msg env =
   case msg of
-    NavDef.HashChanged hash -> hashChanged hash env
+    NavDef.HashChanged hash ->
+      env
+        |> hashChanged hash
 
 
-hashChanged : String -> Env -> (UndoModel, Cmd Msg)
-hashChanged hash ({model, undoModel} as env) =
+hashChanged : String -> Env2 -> Outcome
+hashChanged hash ({model} as env) =
   case boxIdFromHash hash of
     Just boxId ->
-      setFullscreen boxId (Env.from env) |> S.storeWith |> Undo.reset
+      env
+        |> setFullscreen boxId
+        |> Outcome.new (Directives Store Reset)
     Nothing ->
       let
         _ = U.info "Feature.Nav.hashChanged"
           ("No hash -> redirect to " ++ fromInt (toBoxId model.boxId))
       in
-      (undoModel, pushUrl model.boxId)
+      Outcome.with (pushUrl model.boxId) model
 
 
 setFullscreen : BoxId -> Env2 -> (Model, Cmd Msg)

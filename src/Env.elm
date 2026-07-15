@@ -1,5 +1,5 @@
-module Env exposing (Env, Env2, ExtManager, map, auto, autoSize, from, outcome, outcomeWith,
-  outcomeWithCmd)
+module Env exposing (Env, Env2, ExtManager, map, auto, autoSize, from, outcomeDefault,
+  outcomeWith, outcomeWithCmd, outcome)
 
 import Model exposing (Model, Msg)
 import ModelBase exposing (..)
@@ -126,10 +126,9 @@ from {model, ext} =
 
 -- Outcome
 
-outcome : Env2 -> Outcome
-outcome  env =
-  env
-    |> outcomeWith (Directives NoStore Swap)
+outcomeDefault : Env2 -> Outcome
+outcomeDefault  env =
+  Outcome (Directives NoStore Swap) Cmd.none env.model
 
 
 outcomeWith : Directives -> Env2 -> Outcome
@@ -140,3 +139,8 @@ outcomeWith directives env =
 outcomeWithCmd : Cmd Msg -> Env2 -> Outcome
 outcomeWithCmd cmd env =
   Outcome (Directives NoStore Swap) cmd env.model
+
+
+outcome : Directives -> Cmd Msg -> Env2 -> Outcome
+outcome directives cmd env =
+  Outcome directives cmd env.model

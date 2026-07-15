@@ -267,19 +267,19 @@ update msg env =
     SearchDef.Input term ->
       env
         |> Env.map (setSearchTerm term)
-        |> Env.outcome
+        |> Env.outcomeDefault
     SearchDef.InputFocused ->
       env
         |> Env.map onInputFocused
-        |> Env.outcome
+        |> Env.outcomeDefault
     SearchDef.TopicHovered topicId ->
       env
         |> onTopicHovered topicId
-        |> Env.outcome
+        |> Env.outcomeDefault
     SearchDef.TopicUnhovered _ ->
       env
         |> onTopicUnhovered
-        |> Env.outcome
+        |> Env.outcomeDefault
     SearchDef.TopicClicked topicId ->
       env
         |> revealTopic topicId
@@ -288,11 +288,11 @@ update msg env =
     SearchDef.RelTopicHovered relTopicId ->
       env
         |> onRelTopicHovered relTopicId
-        |> Env.outcome
+        |> Env.outcomeDefault
     SearchDef.RelTopicUnhovered _ ->
       env
         |> onRelTopicUnhovered
-        |> Env.outcome
+        |> Env.outcomeDefault
     SearchDef.RelTopicClicked relTopicId ->
       env
         |> revealRelTopic relTopicId

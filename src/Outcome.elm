@@ -1,4 +1,4 @@
-module Outcome exposing (Outcome, Directives, Storage(..), History(..), with, map, exec)
+module Outcome exposing (Outcome, Directives, Storage(..), History(..), new, with, map, exec)
 
 import Model exposing (Model, Msg)
 import Storage as S
@@ -27,10 +27,17 @@ type Storage
 type History
   = Push
   | Swap
+  | Reset
 
 
 --
 
+new : Directives -> (Model, Cmd Msg) -> Outcome
+new directives (model, cmd) =
+  Outcome directives cmd model
+
+
+-- TODO: rename "default" (meaning: default directives)? Compare to Env.outcomeDefault
 with : Cmd Msg -> Model -> Outcome
 with cmd model =
   Outcome (Directives NoStore Swap) cmd model
@@ -52,3 +59,4 @@ exec undoModel {directives, cmd, model} =
   case directives.history of
     Push -> Undo.push undoModel mct
     Swap -> Undo.swap undoModel mct
+    Reset -> Undo.reset mct

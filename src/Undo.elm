@@ -48,7 +48,6 @@ push undoModel (model, cmd) =
   )
 
 
-
 {- Swap the current present (as in UndoModel) with the given model (as in tupel).
 -}
 swap : UndoModel -> (Model, Cmd Msg) -> (UndoModel, Cmd Msg)

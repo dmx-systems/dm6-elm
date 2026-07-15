@@ -276,7 +276,7 @@ update msg ({present} as undoModel) =
     Mouse msg_ -> Mouse.update msg_ env
     Search msg_ -> Search.update msg_ env2 |> Outcome.exec undoModel
     Icon msg_ -> Icon.update msg_ env2 |> Outcome.exec undoModel
-    Nav msg_ -> Nav.update msg_ env
+    Nav msg_ -> Nav.update msg_ env2 |> Outcome.exec undoModel
     --
     Scrolled pos -> updateScrollPos pos present |> S.store |> Undo.swap undoModel
     Cancel maybeTarget -> cancelUI maybeTarget (Env.from env) |> Undo.swap undoModel
