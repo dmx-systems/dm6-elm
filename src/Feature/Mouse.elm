@@ -3,49 +3,48 @@ module Feature.Mouse exposing (update, clearHover, isHovered, isDragActive, isTo
 
 import Box
 import Config as C
-import Env exposing (Env, ExtManager)
+import Env exposing (Env2, ExtManager)
 import Feature.MouseDef as MouseDef exposing (DragSource)
 import Model exposing (Model, Msg(..))
 import ModelBase exposing (..)
 import Outcome exposing (Outcome)
 import TopicMap.Mouse
-import Undo exposing (UndoModel)
 import Utils as U
 
 
 
-update : MouseDef.Msg -> Env -> (UndoModel, Cmd Msg)
-update msg ({model, undoModel, ext} as env) =
+update : MouseDef.Msg -> Env2 -> Outcome
+update msg ({model, ext} as env) =
   case (msg, model.mouse.dragSource) of
     (MouseDef.DownOnTopic topicId boxPath ixBoxPath (pos, pointerType), _) ->
       model
         |> setDragSource (Just (DragSource topicId boxPath ixBoxPath pos pos))
         |> emulateHover topicId boxPath ixBoxPath pointerType
         |> ext.dragStart
-        |> Undo.swap undoModel
+        |> Outcome.new
     (MouseDef.Move (pos, _), Nothing) ->
       model
         |> updateHover pos ext
-        |> Model.with Cmd.none
-        |> Undo.swap undoModel
+        |> Outcome.default
     (MouseDef.Move (pos, _), Just dragSource) ->
       model
         |> updateHover pos ext
         |> ext.drag (Box.firstId dragSource.ixBoxPath) pos
         |> updateDropTarget pos ext
         |> Model.map (setDragSource (Just {dragSource | lastPointerPos = pos}))
-        |> Undo.swap undoModel
+        |> Outcome.new
     (MouseDef.Up, Just dragSource) ->
       env
         |> dragStop dragSource
         |> Outcome.map (setDragSource Nothing)
         |> Outcome.map (setDropTarget Nothing)
-        |> Outcome.exec undoModel
     (MouseDef.Cancel, _) ->
-      (undoModel, U.command <| Cancel Nothing)
+      model
+        |> Outcome.with (U.command <| Cancel Nothing)
     _ ->
       -- TODO: match no-op vs. error cases explicitly
-      (undoModel, Cmd.none)
+      model
+        |> Outcome.default
 
 
 updateDropTarget : Point -> ExtManager -> (Model, Cmd Msg) -> (Model, Cmd Msg)
@@ -62,7 +61,7 @@ updateDropTarget clientPos ext (model, cmd) =
     Nothing -> (model, cmd)
 
 
-dragStop : DragSource -> Env -> Outcome
+dragStop : DragSource -> Env2 -> Outcome
 dragStop dragSource {model, ext} =
   let
     isDraftAssoc = TopicMap.Mouse.isDraftAssoc model

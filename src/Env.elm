@@ -52,7 +52,8 @@ type alias ExtManager =
 
 -- Extension Points
 --
--- Called by the **extension user** (by using the "ext" value).
+-- The functions of the "ext" value (as imported from ExtManager) have these types.
+-- Called by the **extension user**.
 -- Compare to ExtManager.elm
 
 

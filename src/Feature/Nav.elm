@@ -50,7 +50,7 @@ hashChanged hash ({model} as env) =
     Just boxId ->
       env
         |> setFullscreen boxId
-        |> Outcome.new (Directives Store Reset)
+        |> Outcome.newWith (Directives Store Reset)
     Nothing ->
       let
         _ = U.info "Feature.Nav.hashChanged"

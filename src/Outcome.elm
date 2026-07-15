@@ -1,4 +1,5 @@
-module Outcome exposing (Outcome, Directives, Storage(..), History(..), new, with, map, exec)
+module Outcome exposing (Outcome, Directives, Storage(..), History(..), default, new, newWith,
+  with, map, exec)
 
 import Model exposing (Model, Msg)
 import Storage as S
@@ -21,23 +22,32 @@ type alias Directives =
 
 type Storage
   = Store
-  | NoStore
+  | NoStore -- default
 
 
 type History
   = Push
-  | Swap
+  | Swap -- default
   | Reset
 
 
 --
 
-new : Directives -> (Model, Cmd Msg) -> Outcome
-new directives (model, cmd) =
+default : Model -> Outcome
+default model =
+  Outcome (Directives NoStore Swap) Cmd.none model
+
+
+new : (Model, Cmd Msg) -> Outcome
+new (model, cmd) =
+  Outcome (Directives NoStore Swap) cmd model
+
+
+newWith : Directives -> (Model, Cmd Msg) -> Outcome
+newWith directives (model, cmd) =
   Outcome directives cmd model
 
 
--- TODO: rename "default" (meaning: default directives)? Compare to Env.outcomeDefault
 with : Cmd Msg -> Model -> Outcome
 with cmd model =
   Outcome (Directives NoStore Swap) cmd model
