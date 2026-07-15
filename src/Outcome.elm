@@ -1,5 +1,5 @@
-module Outcome exposing (Outcome, Directives, Storage(..), History(..), default, new, newWith,
-  with, map, exec)
+module Outcome exposing (Outcome, Directives, Storage(..), History(..), default, from, new,
+  newWith, with, map, exec)
 
 import Model exposing (Model, Msg)
 import Storage as S
@@ -36,6 +36,11 @@ type History
 default : Model -> Outcome
 default model =
   Outcome (Directives NoStore Swap) Cmd.none model
+
+
+from : Directives -> Model -> Outcome
+from directives model =
+  Outcome directives Cmd.none model
 
 
 new : (Model, Cmd Msg) -> Outcome

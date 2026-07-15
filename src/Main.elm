@@ -272,7 +272,7 @@ update msg ({present} as undoModel) =
     TopicMap msg_ -> TMC.update msg_ env
     -- feature modules
     Tool msg_ -> Tool.update msg_ env
-    Text msg_ -> Text.update msg_ env
+    Text msg_ -> Text.update msg_ env2 |> Outcome.exec undoModel
     Mouse msg_ -> Mouse.update msg_ env2 |> Outcome.exec undoModel
     Search msg_ -> Search.update msg_ env2 |> Outcome.exec undoModel
     Icon msg_ -> Icon.update msg_ env2 |> Outcome.exec undoModel

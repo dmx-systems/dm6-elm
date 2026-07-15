@@ -3,15 +3,14 @@ port module Feature.Text exposing (viewInput, viewTextarea, enterEdit, leaveEdit
 
 import Box
 import Config as C
-import Env exposing (Env, Env2)
+import Env exposing (Env2)
 import Feature.TextDef as TextDef exposing (EditState(..), TopicImage)
 import Model exposing (Model, Msg(..))
 import ModelBase exposing (..)
+import Outcome exposing (..)
 import Shared.Events as Events
-import Storage as S
 import Task
 import Topic
-import Undo exposing (UndoModel)
 import Utils as U
 
 import Browser.Dom as Dom
@@ -107,24 +106,34 @@ viewTextarea topic boxPath style =
 -- UPDATE
 
 
-update : TextDef.Msg -> Env -> (UndoModel, Cmd Msg)
-update msg ({model, undoModel, ext} as env) =
+update : TextDef.Msg -> Env2 -> Outcome
+update msg ({model} as env) =
   case msg of
-    TextDef.OnTextInput text -> onTextInput text model |> S.store
-      |> Undo.swap undoModel
-    TextDef.OnTextareaInput text -> onTextareaInput text model |> S.storeWith
-      |> Undo.swap undoModel
+    TextDef.OnTextInput text ->
+      model
+        |> onTextInput text
+        |> Outcome.from (Directives Store Swap)
+    TextDef.OnTextareaInput text ->
+      model
+        |> onTextareaInput text
+        |> Outcome.newWith (Directives Store Swap)
     TextDef.GotTextSize topicId sizeField size ->
-      (Env.from env)
+      env
         |> Env.map (Topic.setSize topicId sizeField size)
-        |> Env.autoSize
-        |> S.store
-        |> Undo.swap undoModel
-    TextDef.LeaveEdit -> leaveEdit (Env.from env) |> Undo.swap undoModel
-    TextDef.ImageFilePicked {topicId, imageId} -> insertImage topicId imageId model
-      |> Undo.swap undoModel
-    TextDef.ImageUrlResolved (imageId, url) -> (addToImageCache imageId url model, Cmd.none)
-      |> Undo.swap undoModel
+        |> Env.auto
+        |> Env.outcomeWith (Directives Store Swap)
+    TextDef.LeaveEdit ->
+      env
+        |> leaveEdit
+        |> Outcome.new
+    TextDef.ImageFilePicked {topicId, imageId} ->
+      model
+        |> insertImage topicId imageId
+        |> Outcome.new
+    TextDef.ImageUrlResolved (imageId, url) ->
+      model
+        |> addToImageCache imageId url
+        |> Outcome.default
 
 
 enterEdit : TopicId -> BoxPath -> Env2 -> (Model, Cmd Msg)
