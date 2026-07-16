@@ -1,5 +1,5 @@
-module Env exposing (Env, Env2, ExtManager, map, auto, autoSize, from, outcomeDefault,
-  outcomeWith, outcomeWithCmd, outcome)
+module Env exposing (Env2, ExtManager, map, auto, autoSize, outcomeDefault, outcomeWith,
+  outcomeWithCmd)
 
 import Model exposing (Model, Msg)
 import ModelBase exposing (..)
@@ -13,18 +13,8 @@ import Html exposing (Html)
 -- TYPES
 
 
-{-| The environment the application passes to the modules.
-TODO: drop
--}
-type alias Env =
-  { model : Model
-  , undoModel : UndoModel
-  , ext : ExtManager
-  }
-
-
 {-| The environment the dispatcher passes to the extensions/feature modules
-TODO: rename "Env"
+TODO: rename "Env" ### FIXDOC
 -}
 type alias Env2 =
   { model : Model
@@ -119,12 +109,6 @@ map transform ({model} as env) =
   { env | model = transform model }
 
 
--- TODO: drop
-from: Env -> Env2
-from {model, ext} =
-  Env2 model ext
-
-
 -- Outcome
 
 outcomeDefault : Env2 -> Outcome
@@ -140,8 +124,3 @@ outcomeWith directives env =
 outcomeWithCmd : Cmd Msg -> Env2 -> Outcome
 outcomeWithCmd cmd env =
   Outcome (Directives NoStore Swap) cmd env.model
-
-
-outcome : Directives -> Cmd Msg -> Env2 -> Outcome
-outcome directives cmd env =
-  Outcome directives cmd env.model

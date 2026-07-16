@@ -136,11 +136,11 @@ randomPos topicId boxId model =
 
 
 -- GotRandomPos message handler
-addTopicAt : TopicId -> BoxId -> Point -> Env2 -> Model
+addTopicAt : TopicId -> BoxId -> Point -> Env2 -> Env2
 addTopicAt topicId boxId pos env =
   env
     |> Env.map (updateTopicMap boxId (addTopic_ topicId pos))
-    |> Env.autoSize
+    |> Env.auto
 
 
 addTopic_ : TopicId -> Point -> TopicMap -> TopicMap

@@ -29,7 +29,9 @@ type History
   = Push
   | Swap -- default
   | Reset
-
+  --
+  | Undo
+  | Redo
 
 --
 
@@ -66,12 +68,20 @@ map transform ({model} as out) =
 exec : UndoModel -> Outcome -> (UndoModel, Cmd Msg)
 exec undoModel {directives, cmd, model} =
   let
-    mct =
-      case directives.storage of
-        Store -> S.storeWith (model, cmd)
-        NoStore -> (model, cmd)
+    newUndoModel =
+      case directives.history of
+        Push -> Undo.push undoModel model
+        Swap -> Undo.swap undoModel model
+        Reset -> Undo.reset model
+        Undo -> Undo.undo undoModel
+        Redo -> Undo.redo undoModel
   in
-  case directives.history of
-    Push -> Undo.push undoModel mct
-    Swap -> Undo.swap undoModel mct
-    Reset -> Undo.reset mct
+  case directives.storage of
+    Store ->
+      ( newUndoModel
+      , Cmd.batch
+          [ cmd
+          , S.store newUndoModel.present
+          ]
+      )
+    NoStore -> (newUndoModel, cmd)

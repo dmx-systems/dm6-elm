@@ -2,7 +2,7 @@ port module Main exposing (..)
 
 import Box
 import Config as C
-import Env exposing (Env, Env2)
+import Env exposing (Env2)
 import ExtManager exposing (ext)
 import Feature.Icon as Icon
 import Feature.Mouse as Mouse
@@ -14,9 +14,8 @@ import Feature.Text as Text
 import Feature.Tool as Tool
 import Model exposing (Model, Msg(..))
 import ModelBase exposing (..)
-import Outcome
+import Outcome exposing (..)
 import Shared.Events as Events
-import Storage as S
 import TopicMap.Controller as TMC
 import TopicMap.TopicMap as TopicMap
 import Undo exposing (UndoModel)
@@ -67,7 +66,9 @@ init (flags, hash) =
         Nothing -> model.boxId
     cmd = Nav.pushUrl boxId
   in
-  (model, cmd) |> Undo.reset
+  ( model |> Undo.reset
+  , cmd
+  )
 
 
 initModel : E.Value -> Model
@@ -260,27 +261,37 @@ measureStyle =
 update : Msg -> UndoModel -> (UndoModel, Cmd Msg)
 update msg ({present} as undoModel) =
   let
-    env = Env present undoModel ext -- TODO: drop
-    env2 = Env2 present ext
     _ =
       case msg of
         Mouse (MouseDef.Move _) -> msg
         _ -> U.info "Main.update" msg
+    env2 = Env2 present ext
+    outcome =
+      case msg of
+        -- renderer modules
+        TopicMap msg_ -> TMC.update msg_ env2
+        -- feature modules
+        Tool msg_ -> Tool.update msg_ env2
+        Text msg_ -> Text.update msg_ env2
+        Mouse msg_ -> Mouse.update msg_ env2
+        Search msg_ -> Search.update msg_ env2
+        Icon msg_ -> Icon.update msg_ env2
+        Nav msg_ -> Nav.update msg_ env2
+        --
+        Scrolled pos ->
+          present
+            |> updateScrollPos pos
+            |> Outcome.from (Directives Store Swap)
+        Cancel maybeTarget ->
+          env2
+            |> cancelUI maybeTarget
+            |> Outcome.new
+        NoOp ->
+          present
+            |> Outcome.default
   in
-  case msg of
-    -- renderer modules
-    TopicMap msg_ -> TMC.update msg_ env
-    -- feature modules
-    Tool msg_ -> Tool.update msg_ env
-    Text msg_ -> Text.update msg_ env2 |> Outcome.exec undoModel
-    Mouse msg_ -> Mouse.update msg_ env2 |> Outcome.exec undoModel
-    Search msg_ -> Search.update msg_ env2 |> Outcome.exec undoModel
-    Icon msg_ -> Icon.update msg_ env2 |> Outcome.exec undoModel
-    Nav msg_ -> Nav.update msg_ env2 |> Outcome.exec undoModel
-    --
-    Scrolled pos -> updateScrollPos pos present |> S.store |> Undo.swap undoModel
-    Cancel maybeTarget -> cancelUI maybeTarget (Env.from env) |> Undo.swap undoModel
-    NoOp -> (undoModel, Cmd.none)
+  outcome
+    |> Outcome.exec undoModel
 
 
 cancelUI : Maybe Target -> Env2 -> (Model, Cmd Msg)

@@ -4,7 +4,7 @@ module Feature.Search exposing (viewInput, viewSearchResult, viewTraversalResult
 import Assoc
 import Box
 import Config as C
-import Env exposing (Env, Env2)
+import Env exposing (Env2)
 import Feature.Icon as Icon
 import Feature.Nav as Nav
 import Feature.SearchDef as SearchDef exposing (SearchResult(..))
@@ -13,10 +13,8 @@ import Model exposing (Model, Msg(..))
 import ModelBase exposing (..)
 import Outcome exposing (Outcome, Directives, Storage(..), History(..))
 import Shared.Events as Events
-import Storage as S
 import Topic
 import TopicMap.TopicMap as TopicMap
-import Undo exposing (UndoModel)
 import Utils as U
 
 import Dict
