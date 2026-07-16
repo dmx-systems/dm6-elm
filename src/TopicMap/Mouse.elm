@@ -44,31 +44,34 @@ dragStart {model} =
       (model, Cmd.none)
 
 
-timeArrived : Posix -> UndoModel -> (UndoModel, Cmd Msg)
-timeArrived time ({present} as undoModel) =
-  case (present.mouse.dragSource, present.topicMap.dragState) of
+timeArrived : Posix -> Model -> Outcome
+timeArrived time model =
+  case (model.mouse.dragSource, model.topicMap.dragState) of
     (_, Just WaitForStartTime) ->
-      let
-        dragState = Just <| DragEngaged time
-      in
-      (setDragState dragState present, Cmd.none)
-        |> Undo.swap undoModel
+      model
+        |> setDragState (Just <| DragEngaged time)
+        |> Outcome.default
     (Just {topicId, boxPath}, Just (WaitForEndTime startTime)) ->
       let
         delay = posixToMillis time - posixToMillis startTime
-        (dragState, undo) =
+        (dragState, historyOp) =
           if delay > C.assocDelayMillis then
-            (Just <| Drag DraftAssoc, Undo.swap)
+            (Just <| Drag DraftAssoc, Swap)
           else
-            case TopicMap.topicPos topicId (Box.firstId boxPath) present of
-              Just origPos -> (Just <| Drag <| DragTopic origPos, Undo.push)
-              Nothing -> (Nothing, Undo.swap) -- error is already logged
+            case TopicMap.topicPos topicId (Box.firstId boxPath) model of
+              Just origPos -> (Just <| Drag <| DragTopic origPos, Push)
+              Nothing -> (Nothing, Swap) -- error is already logged
       in
-      (setDragState dragState present, Cmd.none)
-        |> undo undoModel
+      model
+        |> setDragState dragState
+        |> Outcome.from (Directives NoStore historyOp)
     _ ->
-      U.logError "TopicMap.Mouse.timeArrived"
-        "Received Time when dragState is not WaitFor..Time" (undoModel, Cmd.none)
+      let
+        _ = U.logError "TopicMap.Mouse.timeArrived" "Unexpected drag state"
+          (model.mouse.dragSource, model.topicMap.dragState)
+      in
+      model
+        |> Outcome.default
 
 
 -- ExtManager.ExtDrag

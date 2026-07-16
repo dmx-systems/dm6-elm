@@ -1,33 +1,36 @@
 module TopicMap.Controller exposing (update)
 
 import ModelBase exposing (..)
-import Env exposing (Env)
+import Env exposing (Env2)
 import Feature.Sel as Sel
-import Model exposing (Model, Msg)
-import Storage as S
-import TopicMap.TopicMap as TopicMap
+import Model exposing (Model)
+import Outcome exposing (..)
 import TopicMap.Mouse as Mouse
+import TopicMap.TopicMap as TopicMap
 import TopicMap.TopicMapDef as TopicMapDef
-import Undo exposing (UndoModel)
 
 
 
 -- UPDATE
 
 
-update : TopicMapDef.Msg -> Env -> (UndoModel, Cmd Msg)
-update msg ({model, undoModel} as env) =
+update : TopicMapDef.Msg -> Env2 -> Outcome
+update msg ({model} as env) =
   case msg of
-    TopicMapDef.AssocClicked assocId boxPath -> selectAssoc assocId boxPath model
-      |> Undo.swap undoModel
-    TopicMapDef.GotTime time -> Mouse.timeArrived time undoModel
+    TopicMapDef.AssocClicked assocId boxPath ->
+      model
+        |> selectAssoc assocId boxPath
+        |> Outcome.default
+    TopicMapDef.GotTime time ->
+      model
+        |> Mouse.timeArrived time
     TopicMapDef.GotRandomPos topicId boxId pos ->
-      TopicMap.addTopicAt topicId boxId pos (Env.from env) |> S.store |> Undo.push undoModel
+      env
+        |> TopicMap.addTopicAt topicId boxId pos
+        |> Env.outcomeWith (Directives Store Push)
 
 
-selectAssoc : AssocId -> BoxPath -> Model -> (Model, Cmd Msg)
+selectAssoc : AssocId -> BoxPath -> Model -> Model
 selectAssoc assocId boxPath model =
-  ( model
-      |> Sel.select (A assocId) boxPath
-  , Cmd.none
-  )
+  model
+    |> Sel.select (A assocId) boxPath
