@@ -15,6 +15,7 @@ import Feature.Text as Text
 import Feature.ToolDef as ToolDef exposing (LineStyle(..))
 import Model exposing (Model, Msg(..))
 import ModelBase exposing (..)
+import Outcome exposing (..)
 import Shared.Events as Events
 import Storage as S
 import Topic
@@ -203,7 +204,7 @@ mapToolsStyle =
 
 -- Topic/Assoc toolbar, rendered by ExtManager.view as box children
 viewToolbar : BoxPath -> ToolbarPos -> Env2 -> List (Html Msg)
-viewToolbar boxPath toolbarPos ({model, ext} as env) =
+viewToolbar boxPath toolbarPos ({model} as env) =
   case Sel.single model of
     Just (itemId, selBoxPath) ->
       if selBoxPath == boxPath then
@@ -415,35 +416,76 @@ iconButtonStyle =
 -- UPDATE
 
 
-update : ToolDef.Msg -> Env -> (UndoModel, Cmd Msg)
-update msg ({model, undoModel, ext} as env) =
+update : ToolDef.Msg -> Env2 -> Outcome
+update msg ({model} as env) =
   case msg of
     -- Global Tools
-    ToolDef.Home -> (undoModel, Nav.pushUrl rootBoxId)
-    ToolDef.Menu -> (openMenu model, Cmd.none) |> Undo.swap undoModel
-    ToolDef.Set lineStyle -> setLineStyle lineStyle model |> S.store |> Undo.push undoModel
-    ToolDef.Import -> (model, S.importJSON ()) |> Undo.swap undoModel
-    ToolDef.Export -> (model, S.exportJSON ()) |> Undo.swap undoModel
+    ToolDef.Home ->
+      env
+        |> Env.outcomeWithCmd (Nav.pushUrl rootBoxId)
+    ToolDef.Menu ->
+      env
+        |> Env.map (openMenu model)
+        |> Env.outcomeDefault
+    ToolDef.Set lineStyle ->
+      env
+        |> Env.map (setLineStyle lineStyle)
+        |> Env.outcomeWith (Directives Store Push)
+    ToolDef.Import ->
+      env
+        |> Env.outcomeWithCmd (S.importJSON ())
+    ToolDef.Export ->
+      env
+        |> Env.outcomeWithCmd (S.exportJSON ())
     -- Map Tools
-    ToolDef.CreateTopic -> createTopic (Env.from env) |> S.storeWith |> Undo.push undoModel
-    ToolDef.Undo -> undoModel |> Undo.undo |> store
-    ToolDef.Redo -> undoModel |> Undo.redo |> store
+    ToolDef.CreateTopic ->
+      env
+        |> createTopic
+        |> Outcome.newWith (Directives Store Push)
+    ToolDef.Undo -> undoModel |> Undo.undo |> store -- TODO
+    ToolDef.Redo -> undoModel |> Undo.redo |> store -- TODO
     -- Item Tools
-    ToolDef.Edit -> edit (Env.from env) |> S.storeWith |> Undo.push undoModel
-    ToolDef.Icon -> (Icon.openPicker model, Cmd.none) |> Undo.swap undoModel
-    ToolDef.Traverse -> (Search.traverse model, Cmd.none) |> Undo.swap undoModel
-    ToolDef.Delete -> delete (Env.from env) |> S.store |> Undo.push undoModel
-    ToolDef.Remove -> remove (Env.from env) |> S.store |> Undo.push undoModel
-    ToolDef.Fullscreen topicId -> fullscreen topicId (Env2 model ext) |> S.storeWith
-      |> Undo.push undoModel
-    ToolDef.RendererSelected renderer -> setRenderer renderer (Env.from env) |> S.store
-      |> Undo.swap undoModel
-    ToolDef.ToggleExpansion topicId boxId -> toggleExpansion topicId boxId (Env.from env)
-      |> S.store |> Undo.swap undoModel
+    ToolDef.Edit ->
+      env
+        |> edit
+        |> Outcome.newWith (Directives Store Push)
+    ToolDef.Icon ->
+      env
+        |> Env.map Icon.openPicker
+        |> Env.outcomeDefault
+    ToolDef.Traverse ->
+      env
+        |> Env.map Search.traverse
+        |> Env.outcomeDefault
+    ToolDef.Delete ->
+      env
+        |> delete
+        |> Env.outcomeWith (Directives Store Push)
+    ToolDef.Remove ->
+      env
+        |> remove
+        |> Env.outcomeWith (Directives Store Push)
+    ToolDef.Fullscreen topicId ->
+      env
+        |> fullscreen topicId
+        |> Outcome.newWith (Directives Store Push)
+    ToolDef.RendererSelected renderer ->
+      env
+        |> setRenderer renderer
+        |> Env.outcomeWith (Directives Store Swap) -- TODO: better Push?
+    ToolDef.ToggleExpansion topicId boxId ->
+      env
+        |> toggleExpansion topicId boxId
+        |> Env.outcomeWith (Directives Store Swap)
     -- Text Tools
-    ToolDef.Image topicId -> Text.openImageFilePicker topicId model |> S.storeWith
-      |> Undo.swap undoModel
-    ToolDef.LeaveEdit -> Text.leaveEdit (Env.from env) |> Undo.swap undoModel
+    ToolDef.Image topicId ->
+      model
+        |> Text.openImageFilePicker topicId
+        |> Outcome.newWith (Directives Store Swap)
+    ToolDef.LeaveEdit ->
+      env
+        |> Text.leaveEdit
+        |> Outcome.new
 
 
 -- Global Tools
@@ -506,12 +548,12 @@ edit ({model} as env) =
       (model, Cmd.none)
 
 
-delete : Env2 -> Model
+delete : Env2 -> Env2
 delete env =
   env
     |> Env.map deleteSelection
     |> Env.map Sel.clear
-    |> Env.autoSize
+    |> Env.auto
 
 
 deleteSelection : Model -> Model
@@ -528,12 +570,12 @@ deleteItem itemId model =
     A id -> Box.deleteAssoc id model
 
 
-remove : Env2 -> Model
+remove : Env2 -> Env2
 remove env =
   env
     |> Env.map removeSelection
     |> Env.map Sel.clear
-    |> Env.autoSize
+    |> Env.auto
 
 
 removeSelection : Model -> Model
@@ -561,7 +603,7 @@ fullscreen topicId env =
   )
 
 
-setRenderer : Renderer -> Env2 -> Model
+setRenderer : Renderer -> Env2 -> Env2
 setRenderer renderer ({model} as env) =
   case Sel.single model of
     Just (T topicId, _) ->
@@ -571,16 +613,16 @@ setRenderer renderer ({model} as env) =
       env
         |> Env.map (Box.setRenderer boxId renderer)
         |> Box.init boxId
-        |> Env.autoSize
+        |> Env.auto
     _ ->
       let
         _ = U.logError "Feature.Tool.setRenderer" "No single topic selection"
           (Sel.single model)
       in
-      model
+      env
 
 
-toggleExpansion : TopicId -> BoxId -> Env2 -> Model
+toggleExpansion : TopicId -> BoxId -> Env2 -> Env2
 toggleExpansion topicId boxId env =
   let
     toggle : Model -> Model
@@ -595,4 +637,4 @@ toggleExpansion topicId boxId env =
   in
   env
     |> Env.map toggle
-    |> Env.autoSize
+    |> Env.auto
