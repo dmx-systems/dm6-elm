@@ -12,7 +12,6 @@ import ModelBase exposing (..)
 import Outcome exposing (..)
 import TopicMap.TopicMap as TopicMap
 import TopicMap.TopicMapDef as TopicMapDef exposing (DragState(..), DragMode(..))
-import Undo exposing (UndoModel)
 import Utils as U
 
 import String exposing (fromInt)

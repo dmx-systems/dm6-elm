@@ -1,4 +1,4 @@
-port module Storage exposing (store, storeWith, storeCmd, importJSON, exportJSON)
+port module Storage exposing (store, importJSON, exportJSON)
 
 import Model exposing (Model, Msg)
 
@@ -18,29 +18,8 @@ port exportJSON : () -> Cmd msg
 -- API
 
 
--- Convenience (for update function)
-store : Model -> (Model, Cmd Msg)
+store : Model -> Cmd Msg
 store model =
-  ( model
-  , model
-      |> storeCmd
-  )
-
-
--- Convenience (for update function)
-storeWith : (Model, Cmd Msg) -> (Model, Cmd Msg)
-storeWith (model, cmd) =
-  ( model
-  , Cmd.batch
-      [ cmd
-      , model
-          |> storeCmd
-      ]
-  )
-
-
-storeCmd : Model -> Cmd Msg
-storeCmd model =
   model
     |> Model.encode
     |> storeModel

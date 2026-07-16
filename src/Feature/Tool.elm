@@ -4,7 +4,7 @@ module Feature.Tool exposing (ToolbarPos, viewGlobalTools, viewMapTools, viewToo
 import Assoc
 import Box
 import Config as C
-import Env exposing (ExtManager, Env, Env2)
+import Env exposing (ExtManager, Env2)
 import Extension exposing (Renderer)
 import Feature.Icon as Icon
 import Feature.Mouse as Mouse
@@ -425,7 +425,7 @@ update msg ({model} as env) =
         |> Env.outcomeWithCmd (Nav.pushUrl rootBoxId)
     ToolDef.Menu ->
       env
-        |> Env.map (openMenu model)
+        |> Env.map openMenu
         |> Env.outcomeDefault
     ToolDef.Set lineStyle ->
       env
@@ -442,8 +442,12 @@ update msg ({model} as env) =
       env
         |> createTopic
         |> Outcome.newWith (Directives Store Push)
-    ToolDef.Undo -> undoModel |> Undo.undo |> store -- TODO
-    ToolDef.Redo -> undoModel |> Undo.redo |> store -- TODO
+    ToolDef.Undo ->
+      model
+        |> Outcome.from (Directives Store Undo)
+    ToolDef.Redo ->
+      model
+        |> Outcome.from (Directives Store Redo)
     -- Item Tools
     ToolDef.Edit ->
       env
@@ -524,14 +528,6 @@ createTopic ({model} as env) =
     |> Box.addTopic (BoxTopic topicId Collapsed) boxId
     |> Env.map (Sel.select (T topicId) boxPath)
     |> Text.enterEdit topicId boxPath
-
-
-store : UndoModel -> (UndoModel, Cmd Msg)
-store undoModel =
-  ( undoModel
-  , undoModel.present
-      |> S.storeCmd
-  )
 
 
 -- Item Tools
