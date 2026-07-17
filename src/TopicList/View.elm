@@ -26,7 +26,7 @@ type alias HtList = List (Html Msg)
 
 
 
--- ExtManager.ExtBoxView
+-- Dispatch.ExtBoxView
 -- For the fullscreen box boxPath is empty
 view : BoxId -> BoxPath -> Env -> Html Msg
 view boxId boxPath ({model} as env) =

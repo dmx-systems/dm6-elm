@@ -1,4 +1,4 @@
-module Env exposing (Env, ExtManager, map, autoSize, outcome, outcomeWith, outcomeWithCmd)
+module Env exposing (Env, Dispatch, map, autoSize, outcome, outcomeWith, outcomeWithCmd)
 
 import Model exposing (Model, Msg)
 import ModelBase exposing (..)
@@ -17,13 +17,13 @@ TODO: rename "Env" ### FIXDOC
 -}
 type alias Env =
   { model : Model
-  , ext : ExtManager
+  , dispatch : Dispatch
   }
 
 
-{-| A value of this type is exported as "ext" by ExtManager module.
+{-| A value of this type is exported as "dispatch" by Dispatch module.
 -}
-type alias ExtManager =
+type alias Dispatch =
   { init : Init
   , view : BoxRenderer
   , hitTest : HitTest
@@ -41,9 +41,9 @@ type alias ExtManager =
 
 -- Extension Points
 --
--- The functions of the "ext" value (as imported from ExtManager) have these types.
+-- The functions of the "dispatch" value (as imported from Dispatch) have these types.
 -- Called by the **extension user**.
--- Compare to ExtManager.elm
+-- Compare to Dispatch.elm
 
 
 type alias Init =
@@ -94,7 +94,7 @@ autoSize env =
     autoSize_ : Model -> Model
     autoSize_ model =
       model
-        |> env.ext.autoSize [ model.boxId ]
+        |> env.dispatch.autoSize [ model.boxId ]
         |> Tuple.second
   in
   env

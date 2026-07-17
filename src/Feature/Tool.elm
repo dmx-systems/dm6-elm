@@ -4,7 +4,7 @@ module Feature.Tool exposing (ToolbarPos, viewGlobalTools, viewMapTools, viewToo
 import Assoc
 import Box
 import Config as C
-import Env exposing (ExtManager, Env)
+import Env exposing (Env, Dispatch)
 import Extension exposing (Renderer)
 import Feature.Icon as Icon
 import Feature.Mouse as Mouse
@@ -176,7 +176,7 @@ vGap gap =
 viewMapTools : UndoModel -> List (Html Msg)
 viewMapTools undoModel =
   let
-    target = TopicMap.landingTarget undoModel.present -- FIXME: dispatch via ExtManager
+    target = TopicMap.landingTarget undoModel.present -- FIXME: dispatch instead
   in
   [ div
       mapToolsStyle
@@ -202,7 +202,7 @@ mapToolsStyle =
 
 -- Item Tools
 
--- Topic/Assoc toolbar, rendered by ExtManager.view as box children
+-- Topic/Assoc toolbar, rendered by Dispatch.view as box children
 viewToolbar : BoxPath -> ToolbarPos -> Env -> List (Html Msg)
 viewToolbar boxPath toolbarPos ({model} as env) =
   case Sel.single model of
@@ -234,7 +234,7 @@ viewToolbar boxPath toolbarPos ({model} as env) =
 
 
 viewTopicToolbar : Point -> TopicId -> BoxPath -> Env -> Html Msg
-viewTopicToolbar pos topicId boxPath ({model, ext}) =
+viewTopicToolbar pos topicId boxPath ({model, dispatch}) =
   let
     target = (T topicId, boxPath)
     topicTools =
@@ -249,7 +249,7 @@ viewTopicToolbar pos topicId boxPath ({model, ext}) =
       if Topic.isBox topicId model then
         case Box.rendererOf (BoxId topicId) model of
           Just renderer ->
-            [ viewRendererSelect renderer (Tool << ToolDef.RendererSelected) ext ]
+            [ viewRendererSelect renderer (Tool << ToolDef.RendererSelected) dispatch ]
           Nothing -> []
       else
         []
@@ -263,8 +263,8 @@ viewTopicToolbar pos topicId boxPath ({model, ext}) =
     )
 
 
-viewRendererSelect : Renderer -> (Renderer -> Msg) -> ExtManager -> Html Msg
-viewRendererSelect renderer toMsg ext =
+viewRendererSelect : Renderer -> (Renderer -> Msg) -> Dispatch -> Html Msg
+viewRendererSelect renderer toMsg dispatch =
   select
     ( [ value <| Extension.toString renderer
       , on "input" (targetValue |> Extension.rendererDecoder |> D.map toMsg)
@@ -272,12 +272,12 @@ viewRendererSelect renderer toMsg ext =
       ]
       ++ selectStyle
     )
-    ( viewRendererOptions ext )
+    ( viewRendererOptions dispatch )
 
 
-viewRendererOptions : ExtManager -> List (Html Msg)
-viewRendererOptions ext =
-  ext.all
+viewRendererOptions : Dispatch -> List (Html Msg)
+viewRendererOptions dispatch =
+  dispatch.all
     |> List.map
       (\(name, label) ->
         option

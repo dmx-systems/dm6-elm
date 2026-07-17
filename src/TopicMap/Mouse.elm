@@ -23,7 +23,7 @@ import Time exposing (Posix, posixToMillis)
 -- UPDATE
 
 
--- ExtManager.ExtDragStart
+-- Dispatch.ExtDragStart
 dragStart : Env -> (Model, Cmd Msg)
 dragStart {model} =
   case model.mouse.dragSource of
@@ -73,7 +73,7 @@ timeArrived time model =
         |> Outcome.default
 
 
--- ExtManager.ExtDrag
+-- Dispatch.ExtDrag
 drag : Point -> Env -> (Model, Cmd Msg)
 drag clientPos ({model} as env) =
   case model.topicMap.dragState of
@@ -116,7 +116,7 @@ updateTopicPos clientPos model =
       model
 
 
--- ExtManager.ExtDropTargeting
+-- Dispatch.ExtDropTargeting
 updateDropTarget : Point -> Env -> (Model, Maybe Target)
 updateDropTarget _ {model} =
   (model, dropTarget model)
@@ -165,7 +165,7 @@ dropTarget model =
     _ -> Nothing -- TODO: error?
 
 
--- ExtManager.ExtDragStop
+-- Dispatch.ExtDragStop
 dragStop : Env -> Outcome
 dragStop ({model} as env) =
   let
@@ -284,7 +284,7 @@ assocDragEnd sourceTopicId sourceBoxPath model =
 
 
 moveTopicToBox : TopicId -> BoxId -> TopicId -> BoxPath -> Env -> (Model, Cmd Msg)
-moveTopicToBox topicId boxId targetTopicId targetPath ({model, ext} as env) =
+moveTopicToBox topicId boxId targetTopicId targetPath ({model, dispatch} as env) =
   let
     targetBoxId = BoxId targetTopicId -- after turnTopicIntoBox target topic is a box for sure
     expansion = Box.expansionOf topicId boxId model

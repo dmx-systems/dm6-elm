@@ -2,7 +2,7 @@ module TopicMap.Geometry exposing (hitTest, autoSize)
 
 import Box
 import Config as C
-import Env exposing (Env, ExtManager)
+import Env exposing (Env, Dispatch)
 import Feature.TextDef exposing (EditState(..))
 import Model exposing (Model)
 import ModelBase exposing (..)
@@ -17,7 +17,7 @@ import Utils as U
 -- HIT TEST
 
 
--- ExtManager.ExtHitTest
+-- Dispatch.ExtHitTest
 {-| Finds the topic/box at a given screen position, if any.
 Returns the found topic/box (Id) and its context (BoxPath), or Nothing.
 If `maybeFilter` is given that topic/box will be excluded from search.
@@ -58,7 +58,7 @@ modelPos - the screen position, in box-model coordinates
 topics - the topics to search in (deep), result is one of these or their children
 -}
 testChildren : Point -> List MapTopic -> BoxPath -> Maybe TopicId -> Env -> Maybe BoxTarget
-testChildren modelPos topics boxPath maybeFilter ({model, ext} as env) =
+testChildren modelPos topics boxPath maybeFilter ({model, dispatch} as env) =
   case topics of
     [] -> Nothing
     topic :: tailTopics ->
@@ -79,7 +79,7 @@ testChildren modelPos topics boxPath maybeFilter ({model, ext} as env) =
             (_, Collapsed, False) -> result False
             (False, Expanded, False) -> result (isDetailHit model)
             (True, Expanded, False) -> -- recursion
-              ext.hitTest (BoxId topic.id) boxPath (relPos model) maybeFilter model
+              dispatch.hitTest (BoxId topic.id) boxPath (relPos model) maybeFilter model
         -- if positive returns current topic as the result
         result : Bool -> Maybe BoxTarget
         result found =
@@ -162,14 +162,14 @@ isBoxRectHit pos topicMap parentBoxId model =
 -- AUTO-SIZE
 
 
--- ExtManager.ExtAutoSize
+-- Dispatch.ExtAutoSize
 {-| Calculates the TopicMap's "rect" (recursively) and modifies the model accordingly.
 Returns the modified model along with, for convenience, the calculated rect.
 Based on the rect's change the TopicMap's topic position adjustment within the parent
 TopicMap (if any) is calculated as well.
 -}
 autoSize : BoxPath -> Env -> (Rectangle, Model)
-autoSize boxPath ({model, ext}) =
+autoSize boxPath ({model, dispatch}) =
   let
     boxId = Box.firstId boxPath
   in
@@ -183,7 +183,7 @@ autoSize boxPath ({model, ext}) =
           else
             topics |> List.foldr
               (\mapItem (rectAcc, modelAcc) ->
-                accumulateItem mapItem boxPath rectAcc ext modelAcc
+                accumulateItem mapItem boxPath rectAcc dispatch modelAcc
               )
               (Rectangle 0 0 0 0, model)
         newRect = addBoxPadding rect
@@ -194,23 +194,23 @@ autoSize boxPath ({model, ext}) =
     Nothing -> (Rectangle 0 0 0 0, model)
 
 
-accumulateItem : MapTopic -> BoxPath -> Rectangle -> ExtManager -> Model -> (Rectangle, Model)
-accumulateItem mapItem boxPath rectAcc ext model =
+accumulateItem : MapTopic -> BoxPath -> Rectangle -> Dispatch -> Model -> (Rectangle, Model)
+accumulateItem mapItem boxPath rectAcc dispatch model =
   let
-    (rect, model_) = calcItemRect mapItem boxPath ext model
+    (rect, model_) = calcItemRect mapItem boxPath dispatch model
   in
   (accumulateRect rectAcc rect, model_)
 
 
-calcItemRect : MapTopic -> BoxPath -> ExtManager -> Model -> (Rectangle, Model)
-calcItemRect ({pos, expansion} as topic) boxPath ext model =
+calcItemRect : MapTopic -> BoxPath -> Dispatch -> Model -> (Rectangle, Model)
+calcItemRect ({pos, expansion} as topic) boxPath dispatch model =
   case (Topic.isBox topic.id model, expansion) of
     (False, Collapsed) -> (topicExtent pos, model)
     (False, Expanded) -> (detailTopicExtent topic.id boxPath pos model, model)
     (True, Collapsed) -> (topicExtent pos, model)
     (True, Expanded) ->
       let
-        (rect_, model_) = ext.autoSize (BoxId topic.id :: boxPath) model -- recursion
+        (rect_, model_) = dispatch.autoSize (BoxId topic.id :: boxPath) model -- recursion
       in
       (boxExtent pos rect_, model_)
 

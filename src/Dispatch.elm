@@ -1,7 +1,7 @@
-module ExtManager exposing (ext)
+module Dispatch exposing (dispatch)
 
 import Box
-import Env exposing (ExtManager, Env)
+import Env exposing (Env, Dispatch)
 import Extension
 import Model exposing (Model, Msg)
 import ModelBase exposing (..)
@@ -94,8 +94,8 @@ type alias ExtDragStop =
 -- VALUES
 
 
-ext : ExtManager
-ext =
+dispatch : Dispatch
+dispatch =
   { init = init
   , view = view
   , hitTest = hitTest
@@ -146,7 +146,7 @@ registry =
 
 init : BoxId -> Model -> (BoxId -> Model -> Model)
 init boxId model =
-  dispatch boxId model (\_ _ -> model)
+  dispatch_ boxId model (\_ _ -> model)
     (\env renderer -> renderer.init)
 
 
@@ -158,19 +158,19 @@ returns HTML.
 -}
 view : BoxId -> BoxPath -> Model -> Html Msg
 view boxId boxPath model =
-  dispatch boxId model (text "Renderer ?")
+  dispatch_ boxId model (text "Renderer ?")
     (\env renderer -> renderer.view boxId boxPath env)
 
 
 hitTest : BoxId -> BoxPath -> Point -> Maybe TopicId -> Model -> Maybe BoxTarget
 hitTest boxId boxPath pos maybeFilter model =
-  dispatch boxId model Nothing
+  dispatch_ boxId model Nothing
     (\env renderer -> renderer.hitTest boxId boxPath pos maybeFilter env)
 
 
 autoSize : BoxPath -> Model -> (Rectangle, Model)
 autoSize boxPath model =
-  dispatch (Box.firstId boxPath) model (Rectangle 0 0 0 0, model)
+  dispatch_ (Box.firstId boxPath) model (Rectangle 0 0 0 0, model)
     (\env renderer -> renderer.autoSize boxPath env)
 
 
@@ -181,38 +181,38 @@ dragStart : Model -> (Model, Cmd Msg)
 dragStart model =
   case model.mouse.dragSource of
     Just {ixBoxPath} ->
-      dispatch (Box.firstId ixBoxPath) model (model, Cmd.none)
+      dispatch_ (Box.firstId ixBoxPath) model (model, Cmd.none)
         (\env renderer -> renderer.dragStart env)
     _ ->
       let
-        _ = U.logError "ExtManager.dragStart" "Unexpected drag state" model.mouse.dragSource
+        _ = U.logError "Dispatch.dragStart" "Unexpected drag state" model.mouse.dragSource
       in
       (model, Cmd.none)
 
 
 drag : BoxId -> Point -> Model -> (Model, Cmd Msg)
 drag boxId pos model =
-  dispatch boxId model (model, Cmd.none)
+  dispatch_ boxId model (model, Cmd.none)
     (\env renderer -> renderer.drag pos env)
 
 
 updateDropTarget : BoxId -> Point -> Model -> (Model, Maybe Target)
 updateDropTarget boxId pos model =
-  dispatch boxId model (model, Nothing)
+  dispatch_ boxId model (model, Nothing)
     (\env renderer -> renderer.updateDropTarget pos env)
 
 
 dragStop : BoxId -> Model -> Outcome
 dragStop boxId model =
-  dispatch boxId model (Outcome.with Cmd.none model)
+  dispatch_ boxId model (Outcome.with Cmd.none model)
     (\env renderer -> renderer.dragStop env)
 
 
-dispatch : BoxId -> Model -> result -> (Env -> Extension -> result) -> result
-dispatch boxId model errVal callExtWith =
+dispatch_ : BoxId -> Model -> result -> (Env -> Extension -> result) -> result
+dispatch_ boxId model errVal callExtWith =
   Box.rendererOf boxId model
     |> Maybe.andThen (\renderer -> registry |> Dict.get (Extension.toString renderer))
-    |> Maybe.map (callExtWith <| Env model ext)
+    |> Maybe.map (callExtWith <| Env model dispatch)
     |> Maybe.withDefault errVal
 
 

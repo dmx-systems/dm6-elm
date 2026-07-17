@@ -19,7 +19,7 @@ import Array
 
 
 
--- ExtManager.ExtDragStart
+-- Dispatch.ExtDragStart
 dragStart : Env -> (Model, Cmd Msg)
 dragStart {model} =
   ( case model.mouse.dragSource of
@@ -59,7 +59,7 @@ toIndex localPos =
   (localPos.y - 13) // (C.listItemHeight + 4)
 
 
--- ExtManager.ExtDrag
+-- Dispatch.ExtDrag
 drag : Point -> Env -> (Model, Cmd Msg)
 drag clientPos {model} =
   ( case (model.mouse.dragSource, model.topicList.dragPos) of
@@ -82,7 +82,7 @@ drag clientPos {model} =
   )
 
 
--- ExtManager.ExtDropTargeting
+-- Dispatch.ExtDropTargeting
 updateDropTarget : Point -> Env -> (Model, Maybe Target)
 updateDropTarget clientPos {model} =
   if TopicMap.Mouse.isDraftAssoc model then
@@ -154,7 +154,7 @@ dropTargetAt clientPos model =
       Nothing
 
 
--- ExtManager.ExtDragStop
+-- Dispatch.ExtDragStop
 dragStop : Env -> Outcome
 dragStop ({model} as env) =
   let

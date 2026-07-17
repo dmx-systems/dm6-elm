@@ -77,7 +77,7 @@ setFullscreen boxId ({model} as env) =
 
 setViewport : Model -> Cmd Msg
 setViewport model =
-  case TopicMap.fullscreen model of -- FIXME: dispatch via ExtManager
+  case TopicMap.fullscreen model of -- FIXME: dispatch instead
     Just topicMap ->
       Dom.setViewportOf "main" (toFloat topicMap.scroll.x) (toFloat topicMap.scroll.y)
         |> Task.attempt

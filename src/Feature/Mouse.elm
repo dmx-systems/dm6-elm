@@ -3,7 +3,7 @@ module Feature.Mouse exposing (update, clearHover, isHovered, isDragActive, isTo
 
 import Box
 import Config as C
-import Env exposing (Env, ExtManager)
+import Env exposing (Env, Dispatch)
 import Feature.MouseDef as MouseDef exposing (DragSource)
 import Model exposing (Model, Msg(..))
 import ModelBase exposing (..)
@@ -14,23 +14,23 @@ import Utils as U
 
 
 update : MouseDef.Msg -> Env -> Outcome
-update msg ({model, ext} as env) =
+update msg ({model, dispatch} as env) =
   case (msg, model.mouse.dragSource) of
     (MouseDef.DownOnTopic topicId boxPath ixBoxPath (pos, pointerType), _) ->
       model
         |> setDragSource (Just (DragSource topicId boxPath ixBoxPath pos pos))
         |> emulateHover topicId boxPath ixBoxPath pointerType
-        |> ext.dragStart
+        |> dispatch.dragStart
         |> Outcome.new
     (MouseDef.Move (pos, _), Nothing) ->
       model
-        |> updateHover pos ext
+        |> updateHover pos dispatch
         |> Outcome.default
     (MouseDef.Move (pos, _), Just dragSource) ->
       model
-        |> updateHover pos ext
-        |> ext.drag (Box.firstId dragSource.ixBoxPath) pos
-        |> updateDropTarget pos ext
+        |> updateHover pos dispatch
+        |> dispatch.drag (Box.firstId dragSource.ixBoxPath) pos
+        |> updateDropTarget pos dispatch
         |> Model.map (setDragSource (Just {dragSource | lastPointerPos = pos}))
         |> Outcome.new
     (MouseDef.Up, Just dragSource) ->
@@ -47,12 +47,12 @@ update msg ({model, ext} as env) =
         |> Outcome.default
 
 
-updateDropTarget : Point -> ExtManager -> (Model, Cmd Msg) -> (Model, Cmd Msg)
-updateDropTarget clientPos ext (model, cmd) =
+updateDropTarget : Point -> Dispatch -> (Model, Cmd Msg) -> (Model, Cmd Msg)
+updateDropTarget clientPos dispatch (model, cmd) =
   case model.mouse.hover of
     Just {ixBoxPath} ->
       let
-        (model_, dropTarget) = ext.updateDropTarget (Box.firstId ixBoxPath) clientPos model
+        (model_, dropTarget) = dispatch.updateDropTarget (Box.firstId ixBoxPath) clientPos model
       in
       ( model_
           |> setDropTarget dropTarget
@@ -62,7 +62,7 @@ updateDropTarget clientPos ext (model, cmd) =
 
 
 dragStop : DragSource -> Env -> Outcome
-dragStop dragSource {model, ext} =
+dragStop dragSource {model, dispatch} =
   let
     isDraftAssoc = TopicMap.Mouse.isDraftAssoc model
     sourceBoxId = Box.firstId dragSource.ixBoxPath
@@ -72,7 +72,7 @@ dragStop dragSource {model, ext} =
         _ -> sourceBoxId
   in
   model
-    |> ext.dragStop stopBoxId
+    |> dispatch.dragStop stopBoxId
 
 
 -- Hover
@@ -89,15 +89,15 @@ emulateHover topicId boxPath ixBoxPath pointerType model =
 {- Updates the geometrically hovered topic, utilizing hit-test.
 The Point is in client coordinates.
 -}
-updateHover : Point -> ExtManager -> Model -> Model
-updateHover ({y} as clientPos) ext model =
+updateHover : Point -> Dispatch -> Model -> Model
+updateHover ({y} as clientPos) dispatch model =
   let
     localPos = { clientPos | y = y - C.appHeaderHeight } -- local to fullscreen box
     maybeFilter =
       case model.mouse.dragSource of
         Just {topicId} -> Just topicId
         Nothing -> Nothing
-    maybeHover = ext.hitTest model.boxId [] localPos maybeFilter model
+    maybeHover = dispatch.hitTest model.boxId [] localPos maybeFilter model
   in
   model
     |> setHover maybeHover

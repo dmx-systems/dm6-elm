@@ -3,7 +3,7 @@ module TopicMap.View exposing (view)
 import Assoc
 import Box
 import Config as C
-import Env exposing (ExtManager, Env)
+import Env exposing (Env, Dispatch)
 import Feature.Icon as Icon
 import Feature.Mouse as Mouse
 import Feature.Sel as Sel
@@ -54,7 +54,7 @@ type alias LineRenderer =
 -- VIEW
 
 
--- ExtManager.ExtBoxView
+-- Dispatch.ExtBoxView
 -- For the fullscreen box boxPath is empty
 view : BoxId -> BoxPath -> Env -> Html Msg
 view boxId boxPath ({model} as env) =
@@ -232,14 +232,14 @@ viewLimboAssoc boxId model =
 -- Topic Rendering
 
 viewTopic : Topic -> MapTopic -> BoxPath -> Env -> Html Msg
-viewTopic topic mapTopic boxPath ({model, ext}) =
+viewTopic topic mapTopic boxPath ({model, dispatch}) =
   let
     render =
       case (Topic.isBox topic.id model, mapTopic.expansion) of
         (False, Collapsed) -> labelTopic topic mapTopic boxPath
         (False, Expanded) -> detailTopic topic mapTopic boxPath
         (True, Collapsed) -> blackBoxTopic topic mapTopic boxPath
-        (True, Expanded) -> whiteBoxTopic topic mapTopic boxPath ext
+        (True, Expanded) -> whiteBoxTopic topic mapTopic boxPath dispatch
     (style, children) = render model
   in
   div
@@ -485,15 +485,15 @@ ghostTopicStyle topic boxPath model =
   ++ VB.selectionStyle topic.id boxPath model
 
 
-whiteBoxTopic : Topic -> MapTopic -> BoxPath -> ExtManager -> Model -> TopicRendering
-whiteBoxTopic topic mapTopic boxPath ext model =
+whiteBoxTopic : Topic -> MapTopic -> BoxPath -> Dispatch -> Model -> TopicRendering
+whiteBoxTopic topic mapTopic boxPath dispatch model =
   let
     (style, children) = labelTopic topic mapTopic boxPath model
   in
   ( style
   , children
     ++ viewItemCount (BoxId topic.id) model -- topic has proven to be a box by caller
-    ++ [ ext.view (BoxId topic.id) boxPath model ]
+    ++ [ dispatch.view (BoxId topic.id) boxPath model ]
   )
 
 

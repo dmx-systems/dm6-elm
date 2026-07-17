@@ -18,7 +18,7 @@ import Random
 
 
 
--- ExtManager.ExtInit
+-- Dispatch.ExtInit
 init : BoxId -> Model -> Model
 init boxId model =
   let

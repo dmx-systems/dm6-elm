@@ -149,11 +149,11 @@ addToBoxTopics topic boxId ({boxes} as model) =
 -- Initialize/Update box view model
 
 init : BoxId -> Env -> Env
-init boxId ({model, ext} as env) =
+init boxId ({model, dispatch} as env) =
   let
     initBox : BoxId -> Model -> Model
     initBox =
-      ext.init boxId model
+      dispatch.init boxId model
     --
     init_ : BoxId -> Model -> Model
     init_ boxId_ model_ =
@@ -317,7 +317,7 @@ deleteTopic_ topicId ({itemSets, topicMap} as model) =
         }
       )
   -- TODO: if item is box delete from "boxes" state as well
-  -- TODO: don't operate on "topicMap" directly, let ExtManager dispatch instead
+  -- TODO: don't operate on "topicMap" directly, dispatch instead
   , topicMap =
       { topicMap | view = topicMap.view |> Dict.map -- delete item from all boxes
         (\_ topicMap_ ->

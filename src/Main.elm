@@ -3,7 +3,7 @@ port module Main exposing (..)
 import Box
 import Config as C
 import Env exposing (Env)
-import ExtManager exposing (ext)
+import Dispatch exposing (dispatch)
 import Feature.Icon as Icon
 import Feature.Mouse as Mouse
 import Feature.MouseDef as MouseDef
@@ -118,7 +118,7 @@ view ({present} as undoModel) =
             ( [ id "main" ]
               ++ mainStyle
             )
-            ( [ ext.view present.boxId [] present ] -- boxPath = []
+            ( [ dispatch.view present.boxId [] present ] -- boxPath = []
               ++ Tool.viewMapTools undoModel
             )
         ]
@@ -265,7 +265,7 @@ update msg ({present} as undoModel) =
       case msg of
         Mouse (MouseDef.Move _) -> msg
         _ -> U.info "Main.update" msg
-    env = Env present ext
+    env = Env present dispatch
     outcome =
       case msg of
         -- renderer modules
