@@ -4,7 +4,7 @@ module Feature.Search exposing (viewInput, viewSearchResult, viewTraversalResult
 import Assoc
 import Box
 import Config as C
-import Env exposing (Env2)
+import Env exposing (Env)
 import Feature.Icon as Icon
 import Feature.Nav as Nav
 import Feature.SearchDef as SearchDef exposing (SearchResult(..))
@@ -258,26 +258,26 @@ isRelTopicHover relTopic model =
 -- UPDATE
 
 
-update : SearchDef.Msg -> Env2 -> Outcome
+update : SearchDef.Msg -> Env -> Outcome
 update msg env =
   case msg of
     -- Search
     SearchDef.Input term ->
       env
         |> Env.map (setSearchTerm term)
-        |> Env.outcomeDefault
+        |> Env.outcome
     SearchDef.InputFocused ->
       env
         |> Env.map onInputFocused
-        |> Env.outcomeDefault
+        |> Env.outcome
     SearchDef.TopicHovered topicId ->
       env
         |> onTopicHovered topicId
-        |> Env.outcomeDefault
+        |> Env.outcome
     SearchDef.TopicUnhovered _ ->
       env
         |> onTopicUnhovered
-        |> Env.outcomeDefault
+        |> Env.outcome
     SearchDef.TopicClicked topicId ->
       env
         |> revealTopic topicId
@@ -286,11 +286,11 @@ update msg env =
     SearchDef.RelTopicHovered relTopicId ->
       env
         |> onRelTopicHovered relTopicId
-        |> Env.outcomeDefault
+        |> Env.outcome
     SearchDef.RelTopicUnhovered _ ->
       env
         |> onRelTopicUnhovered
-        |> Env.outcomeDefault
+        |> Env.outcome
     SearchDef.RelTopicClicked relTopicId ->
       env
         |> revealRelTopic relTopicId
@@ -313,13 +313,13 @@ onInputFocused =
   searchTopics
 
 
-onTopicHovered : TopicId -> Env2 -> Env2
+onTopicHovered : TopicId -> Env -> Env
 onTopicHovered topicId ({model} as env) =
   case model.search.result of
     Topics topicIds _ ->
       env
         |> Env.map (setResult (Topics topicIds (Just topicId))) -- update hover state
-        |> Env.auto
+        |> Env.autoSize
     _ ->
       let
         _ = U.logError "Feature.Search.onTopicHovered"
@@ -328,13 +328,13 @@ onTopicHovered topicId ({model} as env) =
       env
 
 
-onRelTopicHovered : (TopicId, AssocId) -> Env2 -> Env2
+onRelTopicHovered : (TopicId, AssocId) -> Env -> Env
 onRelTopicHovered relTopicId ({model} as env) =
   case model.search.result of
     RelTopics relTopicIds _ ->
       env
         |> Env.map (setResult (RelTopics relTopicIds (Just relTopicId))) -- update hover state
-        |> Env.auto
+        |> Env.autoSize
     _ ->
       let
         _ = U.logError "Feature.Search.onRelTopicHovered"
@@ -343,13 +343,13 @@ onRelTopicHovered relTopicId ({model} as env) =
       env
 
 
-onTopicUnhovered : Env2 -> Env2
+onTopicUnhovered : Env -> Env
 onTopicUnhovered ({model} as env) =
   case model.search.result of
     Topics topicIds _ ->
       env
         |> Env.map (setResult (Topics topicIds Nothing)) -- update hover state
-        |> Env.auto
+        |> Env.autoSize
     _ ->
       let
         _ = U.logError "Feature.Search.onTopicUnhovered"
@@ -358,13 +358,13 @@ onTopicUnhovered ({model} as env) =
       env
 
 
-onRelTopicUnhovered : Env2 -> Env2
+onRelTopicUnhovered : Env -> Env
 onRelTopicUnhovered ({model} as env) =
   case model.search.result of
     RelTopics relTopicIds _ ->
       env
         |> Env.map (setResult (RelTopics relTopicIds Nothing)) -- update hover state
-        |> Env.auto
+        |> Env.autoSize
     _ ->
       let
         _ = U.logError "Feature.Search.onRelTopicUnhovered"
@@ -373,7 +373,7 @@ onRelTopicUnhovered ({model} as env) =
       env
 
 
-revealTopic : TopicId -> Env2 -> Env2
+revealTopic : TopicId -> Env -> Env
 revealTopic topicId ({model} as env) =
   case TopicMap.revelationBoxPath model of
     Just (boxId :: _ as boxPath) ->
@@ -381,12 +381,12 @@ revealTopic topicId ({model} as env) =
         |> revealTopic_ topicId boxId
         |> Env.map closeMenu
         |> Env.map (Sel.select (T topicId) boxPath)
-        |> Env.auto
+        |> Env.autoSize
     _ ->
       env
 
 
-revealRelTopic : (TopicId, AssocId) -> Env2 -> Env2
+revealRelTopic : (TopicId, AssocId) -> Env -> Env
 revealRelTopic (topicId, assocId) ({model} as env) =
   case TopicMap.revelationBoxPath model of
     Just (boxId :: _ as boxPath) ->
@@ -395,11 +395,11 @@ revealRelTopic (topicId, assocId) ({model} as env) =
         |> Env.map (revealAssoc_ assocId boxId)
         |> Env.map closeMenu
         |> Env.map (Sel.select (T topicId) boxPath)
-        |> Env.auto
+        |> Env.autoSize
     _ -> env
 
 
-revealTopic_ : TopicId -> BoxId -> Env2 -> Env2
+revealTopic_ : TopicId -> BoxId -> Env -> Env
 revealTopic_ topicId boxId env =
   env
     |> Box.addTopic (BoxTopic topicId Collapsed) boxId

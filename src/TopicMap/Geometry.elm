@@ -2,7 +2,7 @@ module TopicMap.Geometry exposing (hitTest, autoSize)
 
 import Box
 import Config as C
-import Env exposing (Env2, ExtManager)
+import Env exposing (Env, ExtManager)
 import Feature.TextDef exposing (EditState(..))
 import Model exposing (Model)
 import ModelBase exposing (..)
@@ -26,7 +26,7 @@ boxId - the Box to search in, result is one of its (deep) children or the box it
 boxPath - path of the Box to search in
 localPos - the screen position, local to the Box to search in
 -}
-hitTest : BoxId -> BoxPath -> Point -> Maybe TopicId -> Env2 -> Maybe BoxTarget
+hitTest : BoxId -> BoxPath -> Point -> Maybe TopicId -> Env -> Maybe BoxTarget
 hitTest (BoxId topicId as boxId) boxPath localPos maybeFilter ({model} as env) =
   case TM.byId boxId model of
     Just topicMap ->
@@ -57,7 +57,7 @@ from the same box, that is the 1st box in BoxPath.
 modelPos - the screen position, in box-model coordinates
 topics - the topics to search in (deep), result is one of these or their children
 -}
-testChildren : Point -> List MapTopic -> BoxPath -> Maybe TopicId -> Env2 -> Maybe BoxTarget
+testChildren : Point -> List MapTopic -> BoxPath -> Maybe TopicId -> Env -> Maybe BoxTarget
 testChildren modelPos topics boxPath maybeFilter ({model, ext} as env) =
   case topics of
     [] -> Nothing
@@ -168,7 +168,7 @@ Returns the modified model along with, for convenience, the calculated rect.
 Based on the rect's change the TopicMap's topic position adjustment within the parent
 TopicMap (if any) is calculated as well.
 -}
-autoSize : BoxPath -> Env2 -> (Rectangle, Model)
+autoSize : BoxPath -> Env -> (Rectangle, Model)
 autoSize boxPath ({model, ext}) =
   let
     boxId = Box.firstId boxPath

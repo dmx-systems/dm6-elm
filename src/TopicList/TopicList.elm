@@ -4,7 +4,7 @@ module TopicList.TopicList exposing (init, targets, listOrder, getSize, reorderT
 import Box
 import Config as C
 import Dict
-import Env exposing (Env2)
+import Env exposing (Env)
 import Model exposing (Model)
 import ModelBase exposing (..)
 import TopicList.TopicListDef exposing (TopicList, Targets)
@@ -167,7 +167,7 @@ updateOrder boxId transform ({topicList} as model) =
 
 -- ExtManager.ExtHitTest
 -- Point is in box-local coordinates
-hitTest : BoxId -> BoxPath -> Point -> Maybe TopicId -> Env2 -> Maybe BoxTarget
+hitTest : BoxId -> BoxPath -> Point -> Maybe TopicId -> Env -> Maybe BoxTarget
 hitTest (BoxId topicId as boxId) boxPath localPos maybeFilter {model} =
   if isBoxHovered boxId localPos model then
     let
@@ -217,7 +217,7 @@ isContentHovered boxId localPos model =
 
 
 -- ExtManager.ExtAutoSize
-autoSize : BoxPath -> Env2 -> (Rectangle, Model)
+autoSize : BoxPath -> Env -> (Rectangle, Model)
 autoSize boxPath {model} =
   let
     boxId = Box.firstId boxPath

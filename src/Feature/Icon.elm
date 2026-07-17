@@ -1,6 +1,6 @@
 module Feature.Icon exposing (view, viewTopicIcon, viewPicker, openPicker, closePicker, update)
 
-import Env exposing (Env2)
+import Env exposing (Env)
 import Feature.IconDef as IconDef
 import Feature.Sel as Sel
 import Model exposing (Model, Msg(..))
@@ -95,7 +95,7 @@ view iconName size style_ =
 -- UPDATE
 
 
-update : IconDef.Msg -> Env2 -> Outcome
+update : IconDef.Msg -> Env -> Outcome
 update msg env =
   case msg of
     IconDef.IconSelected icon ->

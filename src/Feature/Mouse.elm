@@ -3,7 +3,7 @@ module Feature.Mouse exposing (update, clearHover, isHovered, isDragActive, isTo
 
 import Box
 import Config as C
-import Env exposing (Env2, ExtManager)
+import Env exposing (Env, ExtManager)
 import Feature.MouseDef as MouseDef exposing (DragSource)
 import Model exposing (Model, Msg(..))
 import ModelBase exposing (..)
@@ -13,7 +13,7 @@ import Utils as U
 
 
 
-update : MouseDef.Msg -> Env2 -> Outcome
+update : MouseDef.Msg -> Env -> Outcome
 update msg ({model, ext} as env) =
   case (msg, model.mouse.dragSource) of
     (MouseDef.DownOnTopic topicId boxPath ixBoxPath (pos, pointerType), _) ->
@@ -61,7 +61,7 @@ updateDropTarget clientPos ext (model, cmd) =
     Nothing -> (model, cmd)
 
 
-dragStop : DragSource -> Env2 -> Outcome
+dragStop : DragSource -> Env -> Outcome
 dragStop dragSource {model, ext} =
   let
     isDraftAssoc = TopicMap.Mouse.isDraftAssoc model

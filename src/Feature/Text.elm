@@ -3,7 +3,7 @@ port module Feature.Text exposing (viewInput, viewTextarea, enterEdit, leaveEdit
 
 import Box
 import Config as C
-import Env exposing (Env2)
+import Env exposing (Env)
 import Feature.TextDef as TextDef exposing (EditState(..), TopicImage)
 import Model exposing (Model, Msg(..))
 import ModelBase exposing (..)
@@ -106,7 +106,7 @@ viewTextarea topic boxPath style =
 -- UPDATE
 
 
-update : TextDef.Msg -> Env2 -> Outcome
+update : TextDef.Msg -> Env -> Outcome
 update msg ({model} as env) =
   case msg of
     TextDef.OnTextInput text ->
@@ -120,7 +120,7 @@ update msg ({model} as env) =
     TextDef.GotTextSize topicId sizeField size ->
       env
         |> Env.map (Topic.setSize topicId sizeField size)
-        |> Env.auto
+        |> Env.autoSize
         |> Env.outcomeWith (Directives Store Swap)
     TextDef.LeaveEdit ->
       env
@@ -136,7 +136,7 @@ update msg ({model} as env) =
         |> Outcome.default
 
 
-enterEdit : TopicId -> BoxPath -> Env2 -> (Model, Cmd Msg)
+enterEdit : TopicId -> BoxPath -> Env -> (Model, Cmd Msg)
 enterEdit topicId boxPath env =
   let
     model =
@@ -144,11 +144,12 @@ enterEdit topicId boxPath env =
         |> Env.map (setEditState (Edit topicId boxPath))
         |> Env.map (setExpansion topicId (Box.firstId boxPath))
         |> Env.autoSize
+        |> .model
   in
   (model, focus model)
 
 
-leaveEdit : Env2 -> (Model, Cmd Msg)
+leaveEdit : Env -> (Model, Cmd Msg)
 leaveEdit ({model} as env) =
   case model.text.edit of
     Edit topicId boxPath ->
@@ -158,6 +159,7 @@ leaveEdit ({model} as env) =
       ( env
           |> Env.map (setEditState NoEdit)
           |> Env.autoSize
+          |> .model
       , measureElement elemId topicId View
       )
     NoEdit ->

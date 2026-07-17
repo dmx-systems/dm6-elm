@@ -4,7 +4,7 @@ module TopicMap.Mouse exposing (dragStart, drag, updateDropTarget, dragStop, tim
 import Assoc
 import Box
 import Config as C
-import Env exposing (Env2)
+import Env exposing (Env)
 import Extension
 import Feature.Sel as Sel
 import Model exposing (Model, Msg(..))
@@ -24,7 +24,7 @@ import Time exposing (Posix, posixToMillis)
 
 
 -- ExtManager.ExtDragStart
-dragStart : Env2 -> (Model, Cmd Msg)
+dragStart : Env -> (Model, Cmd Msg)
 dragStart {model} =
   case model.mouse.dragSource of
     Just {topicId, boxPath} ->
@@ -74,7 +74,7 @@ timeArrived time model =
 
 
 -- ExtManager.ExtDrag
-drag : Point -> Env2 -> (Model, Cmd Msg)
+drag : Point -> Env -> (Model, Cmd Msg)
 drag clientPos ({model} as env) =
   case model.topicMap.dragState of
     Just (DragEngaged time) ->
@@ -86,6 +86,7 @@ drag clientPos ({model} as env) =
       ( env
           |> Env.map (updateTopicPos clientPos)
           |> Env.autoSize
+          |> .model
       , Cmd.none
       )
     _ ->
@@ -116,7 +117,7 @@ updateTopicPos clientPos model =
 
 
 -- ExtManager.ExtDropTargeting
-updateDropTarget : Point -> Env2 -> (Model, Maybe Target)
+updateDropTarget : Point -> Env -> (Model, Maybe Target)
 updateDropTarget _ {model} =
   (model, dropTarget model)
 
@@ -165,7 +166,7 @@ dropTarget model =
 
 
 -- ExtManager.ExtDragStop
-dragStop : Env2 -> Outcome
+dragStop : Env -> Outcome
 dragStop ({model} as env) =
   let
     noOp = Outcome.with Cmd.none model
@@ -202,7 +203,7 @@ dragStop ({model} as env) =
     |> Outcome.map (setDragState Nothing)
 
 
-topicDragEnd : TopicId -> BoxPath -> Point -> Env2 -> Outcome
+topicDragEnd : TopicId -> BoxPath -> Point -> Env -> Outcome
 topicDragEnd sourceTopicId sourceBoxPath origTopicPos ({model} as env) =
   case model.mouse.dropTarget of
     Just (T targetId, targetPath) ->
@@ -227,7 +228,7 @@ topicDragEnd sourceTopicId sourceBoxPath origTopicPos ({model} as env) =
       Outcome.with Cmd.none model
 
 
-foreignTopicDrop : TopicId -> BoxPath -> Env2 -> Outcome
+foreignTopicDrop : TopicId -> BoxPath -> Env -> Outcome
 foreignTopicDrop sourceTopicId sourceBoxPath ({model} as env) =
   let
     noOp = Outcome.with Cmd.none model
@@ -282,7 +283,7 @@ assocDragEnd sourceTopicId sourceBoxPath model =
       Outcome.with Cmd.none model
 
 
-moveTopicToBox : TopicId -> BoxId -> TopicId -> BoxPath -> Env2 -> (Model, Cmd Msg)
+moveTopicToBox : TopicId -> BoxId -> TopicId -> BoxPath -> Env -> (Model, Cmd Msg)
 moveTopicToBox topicId boxId targetTopicId targetPath ({model, ext} as env) =
   let
     targetBoxId = BoxId targetTopicId -- after turnTopicIntoBox target topic is a box for sure

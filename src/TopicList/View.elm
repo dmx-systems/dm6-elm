@@ -2,7 +2,7 @@ module TopicList.View exposing (view)
 
 import Box
 import Config as C
-import Env exposing (Env2)
+import Env exposing (Env)
 import Feature.Mouse as Mouse
 import Feature.Text as Text
 import Feature.Tool as Tool exposing (ToolbarPos)
@@ -28,7 +28,7 @@ type alias HtList = List (Html Msg)
 
 -- ExtManager.ExtBoxView
 -- For the fullscreen box boxPath is empty
-view : BoxId -> BoxPath -> Env2 -> Html Msg
+view : BoxId -> BoxPath -> Env -> Html Msg
 view boxId boxPath ({model} as env) =
   let
     boxPath_ = boxId :: boxPath
@@ -66,7 +66,7 @@ listFontStyle =
 
 
 -- Box.LevelDone (ixBoxPath and env are applied already)
-viewList : BoxPath -> Env2 -> BoxPath -> HtList -> HtList
+viewList : BoxPath -> Env -> BoxPath -> HtList -> HtList
 viewList ixBoxPath ({model} as env) boxPath topics =
   [ ul
       []

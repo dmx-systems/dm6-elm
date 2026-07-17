@@ -4,7 +4,7 @@ module Feature.Tool exposing (ToolbarPos, viewGlobalTools, viewMapTools, viewToo
 import Assoc
 import Box
 import Config as C
-import Env exposing (ExtManager, Env2)
+import Env exposing (ExtManager, Env)
 import Extension exposing (Renderer)
 import Feature.Icon as Icon
 import Feature.Mouse as Mouse
@@ -203,7 +203,7 @@ mapToolsStyle =
 -- Item Tools
 
 -- Topic/Assoc toolbar, rendered by ExtManager.view as box children
-viewToolbar : BoxPath -> ToolbarPos -> Env2 -> List (Html Msg)
+viewToolbar : BoxPath -> ToolbarPos -> Env -> List (Html Msg)
 viewToolbar boxPath toolbarPos ({model} as env) =
   case Sel.single model of
     Just (itemId, selBoxPath) ->
@@ -233,7 +233,7 @@ viewToolbar boxPath toolbarPos ({model} as env) =
     Nothing -> []
 
 
-viewTopicToolbar : Point -> TopicId -> BoxPath -> Env2 -> Html Msg
+viewTopicToolbar : Point -> TopicId -> BoxPath -> Env -> Html Msg
 viewTopicToolbar pos topicId boxPath ({model, ext}) =
   let
     target = (T topicId, boxPath)
@@ -416,7 +416,7 @@ iconButtonStyle =
 -- UPDATE
 
 
-update : ToolDef.Msg -> Env2 -> Outcome
+update : ToolDef.Msg -> Env -> Outcome
 update msg ({model} as env) =
   case msg of
     -- Global Tools
@@ -426,7 +426,7 @@ update msg ({model} as env) =
     ToolDef.Menu ->
       env
         |> Env.map openMenu
-        |> Env.outcomeDefault
+        |> Env.outcome
     ToolDef.Set lineStyle ->
       env
         |> Env.map (setLineStyle lineStyle)
@@ -456,11 +456,11 @@ update msg ({model} as env) =
     ToolDef.Icon ->
       env
         |> Env.map Icon.openPicker
-        |> Env.outcomeDefault
+        |> Env.outcome
     ToolDef.Traverse ->
       env
         |> Env.map Search.traverse
-        |> Env.outcomeDefault
+        |> Env.outcome
     ToolDef.Delete ->
       env
         |> delete
@@ -516,7 +516,7 @@ setLineStyle lineStyle ({tool} as model) =
 
 -- Map Tools
 
-createTopic : Env2 -> (Model, Cmd Msg)
+createTopic : Env -> (Model, Cmd Msg)
 createTopic ({model} as env) =
   let
     (newModel, topicId) = Topic.create "" C.initTopicIcon model
@@ -532,7 +532,7 @@ createTopic ({model} as env) =
 
 -- Item Tools
 
-edit : Env2 -> (Model, Cmd Msg)
+edit : Env -> (Model, Cmd Msg)
 edit ({model} as env) =
   case Sel.single model of
     Just (T id, boxPath) ->
@@ -544,12 +544,12 @@ edit ({model} as env) =
       (model, Cmd.none)
 
 
-delete : Env2 -> Env2
+delete : Env -> Env
 delete env =
   env
     |> Env.map deleteSelection
     |> Env.map Sel.clear
-    |> Env.auto
+    |> Env.autoSize
 
 
 deleteSelection : Model -> Model
@@ -566,12 +566,12 @@ deleteItem itemId model =
     A id -> Box.deleteAssoc id model
 
 
-remove : Env2 -> Env2
+remove : Env -> Env
 remove env =
   env
     |> Env.map removeSelection
     |> Env.map Sel.clear
-    |> Env.auto
+    |> Env.autoSize
 
 
 removeSelection : Model -> Model
@@ -590,7 +590,7 @@ removeItem (itemId, boxPath) model =
     A id -> Box.removeAssoc id boxId model
 
 
-fullscreen : TopicId -> Env2 -> (Model, Cmd Msg)
+fullscreen : TopicId -> Env -> (Model, Cmd Msg)
 fullscreen topicId env =
   ( env
       |> Box.turnTopicIntoBox topicId Extension.defaultRenderer
@@ -599,7 +599,7 @@ fullscreen topicId env =
   )
 
 
-setRenderer : Renderer -> Env2 -> Env2
+setRenderer : Renderer -> Env -> Env
 setRenderer renderer ({model} as env) =
   case Sel.single model of
     Just (T topicId, _) ->
@@ -609,7 +609,7 @@ setRenderer renderer ({model} as env) =
       env
         |> Env.map (Box.setRenderer boxId renderer)
         |> Box.init boxId
-        |> Env.auto
+        |> Env.autoSize
     _ ->
       let
         _ = U.logError "Feature.Tool.setRenderer" "No single topic selection"
@@ -618,7 +618,7 @@ setRenderer renderer ({model} as env) =
       env
 
 
-toggleExpansion : TopicId -> BoxId -> Env2 -> Env2
+toggleExpansion : TopicId -> BoxId -> Env -> Env
 toggleExpansion topicId boxId env =
   let
     toggle : Model -> Model
@@ -633,4 +633,4 @@ toggleExpansion topicId boxId env =
   in
   env
     |> Env.map toggle
-    |> Env.auto
+    |> Env.autoSize

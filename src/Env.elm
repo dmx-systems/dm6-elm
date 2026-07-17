@@ -1,5 +1,4 @@
-module Env exposing (Env2, ExtManager, map, auto, autoSize, outcomeDefault, outcomeWith,
-  outcomeWithCmd)
+module Env exposing (Env, ExtManager, map, autoSize, outcome, outcomeWith, outcomeWithCmd)
 
 import Model exposing (Model, Msg)
 import ModelBase exposing (..)
@@ -16,7 +15,7 @@ import Html exposing (Html)
 {-| The environment the dispatcher passes to the extensions/feature modules
 TODO: rename "Env" ### FIXDOC
 -}
-type alias Env2 =
+type alias Env =
   { model : Model
   , ext : ExtManager
   }
@@ -89,38 +88,36 @@ type alias DragStop =
 -- HELPER
 
 
-auto : Env2 -> Env2
-auto env =
+autoSize : Env -> Env
+autoSize env =
+  let
+    autoSize_ : Model -> Model
+    autoSize_ model =
+      model
+        |> env.ext.autoSize [ model.boxId ]
+        |> Tuple.second
+  in
   env
-    |> autoSize
-    |> \model -> map (\_ -> model) env
+    |> map autoSize_
 
 
--- TODO: drop?
-autoSize : Env2 -> Model
-autoSize {model, ext} =
-  model
-    |> ext.autoSize [ model.boxId ]
-    |> Tuple.second
-
-
-map : (Model -> Model) -> Env2 -> Env2
+map : (Model -> Model) -> Env -> Env
 map transform ({model} as env) =
   { env | model = transform model }
 
 
 -- Outcome
 
-outcomeDefault : Env2 -> Outcome
-outcomeDefault  env =
+outcome : Env -> Outcome
+outcome  env =
   Outcome (Directives NoStore Swap) Cmd.none env.model
 
 
-outcomeWith : Directives -> Env2 -> Outcome
+outcomeWith : Directives -> Env -> Outcome
 outcomeWith directives env =
   Outcome directives Cmd.none env.model
 
 
-outcomeWithCmd : Cmd Msg -> Env2 -> Outcome
+outcomeWithCmd : Cmd Msg -> Env -> Outcome
 outcomeWithCmd cmd env =
   Outcome (Directives NoStore Swap) cmd env.model

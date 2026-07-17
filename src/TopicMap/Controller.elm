@@ -1,7 +1,7 @@
 module TopicMap.Controller exposing (update)
 
 import ModelBase exposing (..)
-import Env exposing (Env2)
+import Env exposing (Env)
 import Feature.Sel as Sel
 import Model exposing (Model)
 import Outcome exposing (..)
@@ -14,7 +14,7 @@ import TopicMap.TopicMapDef as TopicMapDef
 -- UPDATE
 
 
-update : TopicMapDef.Msg -> Env2 -> Outcome
+update : TopicMapDef.Msg -> Env -> Outcome
 update msg ({model} as env) =
   case msg of
     TopicMapDef.AssocClicked assocId boxPath ->

@@ -1,5 +1,5 @@
 module Outcome exposing (Outcome, Directives, Storage(..), History(..), default, from, new,
-  newWith, with, map, exec)
+  newWith, with, map, perform)
 
 import Model exposing (Model, Msg)
 import Storage as S
@@ -33,7 +33,8 @@ type History
   | Undo
   | Redo
 
---
+
+-- TODO: replace these 5 by Builder API?
 
 default : Model -> Outcome
 default model =
@@ -60,28 +61,37 @@ with cmd model =
   Outcome (Directives NoStore Swap) cmd model
 
 
+--
+
 map : (Model -> Model) -> Outcome -> Outcome
 map transform ({model} as out) =
   { out | model = transform model }
 
 
-exec : UndoModel -> Outcome -> (UndoModel, Cmd Msg)
-exec undoModel {directives, cmd, model} =
+perform : UndoModel -> Outcome -> (UndoModel, Cmd Msg)
+perform undoModel {directives, cmd, model} =
   let
-    newUndoModel =
+    performHistory : UndoModel -> UndoModel
+    performHistory undoModel_ =
       case directives.history of
-        Push -> Undo.push undoModel model
-        Swap -> Undo.swap undoModel model
+        Push -> Undo.push undoModel_ model
+        Swap -> Undo.swap undoModel_ model
         Reset -> Undo.reset model
-        Undo -> Undo.undo undoModel
-        Redo -> Undo.redo undoModel
+        Undo -> Undo.undo undoModel_
+        Redo -> Undo.redo undoModel_
+    --
+    performStorage : UndoModel -> (UndoModel, Cmd Msg)
+    performStorage undoModel_ =
+      case directives.storage of
+        Store ->
+          ( undoModel_
+          , Cmd.batch
+              [ cmd
+              , S.store undoModel_.present
+              ]
+          )
+        NoStore -> (undoModel_, cmd)
   in
-  case directives.storage of
-    Store ->
-      ( newUndoModel
-      , Cmd.batch
-          [ cmd
-          , S.store newUndoModel.present
-          ]
-      )
-    NoStore -> (newUndoModel, cmd)
+  undoModel
+    |> performHistory
+    |> performStorage

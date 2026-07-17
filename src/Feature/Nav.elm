@@ -1,7 +1,7 @@
 port module Feature.Nav exposing (boxIdFromHash, pushUrl, update, sub)
 
 import Box
-import Env exposing (Env2)
+import Env exposing (Env)
 import Feature.NavDef as NavDef
 import Model exposing (Model, Msg(..))
 import ModelBase exposing (..)
@@ -36,7 +36,7 @@ sub =
 -- UPDATE
 
 
-update : NavDef.Msg -> Env2 -> Outcome
+update : NavDef.Msg -> Env -> Outcome
 update msg env =
   case msg of
     NavDef.HashChanged hash ->
@@ -44,7 +44,7 @@ update msg env =
         |> hashChanged hash
 
 
-hashChanged : String -> Env2 -> Outcome
+hashChanged : String -> Env -> Outcome
 hashChanged hash ({model} as env) =
   case boxIdFromHash hash of
     Just boxId ->
@@ -59,7 +59,7 @@ hashChanged hash ({model} as env) =
       Outcome.with (pushUrl model.boxId) model
 
 
-setFullscreen : BoxId -> Env2 -> (Model, Cmd Msg)
+setFullscreen : BoxId -> Env -> (Model, Cmd Msg)
 setFullscreen boxId ({model} as env) =
   let
     newModel = Box.setFullscreen boxId model
@@ -67,6 +67,7 @@ setFullscreen boxId ({model} as env) =
   ( env
       |> Env.map (\_ -> newModel)
       |> Env.autoSize
+      |> .model
   , Cmd.batch
       [ setViewport newModel
       , U.command (Cancel Nothing)
@@ -79,12 +80,12 @@ setViewport model =
   case TopicMap.fullscreen model of -- FIXME: dispatch via ExtManager
     Just topicMap ->
       Dom.setViewportOf "main" (toFloat topicMap.scroll.x) (toFloat topicMap.scroll.y)
-      |> Task.attempt
-        (\result ->
-          case result of
-            Ok () -> NoOp
-            Err e -> U.logError "Feature.Nav.setViewport" (U.toString e) NoOp
-        )
+        |> Task.attempt
+          (\result ->
+            case result of
+              Ok () -> NoOp
+              Err e -> U.logError "Feature.Nav.setViewport" (U.toString e) NoOp
+          )
     Nothing ->
       U.fail "Feature.Nav.setViewport" model.boxId Cmd.none
 

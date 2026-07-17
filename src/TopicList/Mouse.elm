@@ -2,7 +2,7 @@ module TopicList.Mouse exposing (dragStart, drag, updateDropTarget, dragStop)
 
 import Box
 import Config as C
-import Env exposing (Env2)
+import Env exposing (Env)
 import Extension
 import Feature.Sel as Sel
 import Model exposing (Model, Msg)
@@ -20,7 +20,7 @@ import Array
 
 
 -- ExtManager.ExtDragStart
-dragStart : Env2 -> (Model, Cmd Msg)
+dragStart : Env -> (Model, Cmd Msg)
 dragStart {model} =
   ( case model.mouse.dragSource of
       Just {ixBoxPath, startPos} ->
@@ -60,7 +60,7 @@ toIndex localPos =
 
 
 -- ExtManager.ExtDrag
-drag : Point -> Env2 -> (Model, Cmd Msg)
+drag : Point -> Env -> (Model, Cmd Msg)
 drag clientPos {model} =
   ( case (model.mouse.dragSource, model.topicList.dragPos) of
       (Just {lastPointerPos}, Just dragPos) ->
@@ -83,7 +83,7 @@ drag clientPos {model} =
 
 
 -- ExtManager.ExtDropTargeting
-updateDropTarget : Point -> Env2 -> (Model, Maybe Target)
+updateDropTarget : Point -> Env -> (Model, Maybe Target)
 updateDropTarget clientPos {model} =
   if TopicMap.Mouse.isDraftAssoc model then
     (model, acceptAssoc model)
@@ -155,15 +155,15 @@ dropTargetAt clientPos model =
 
 
 -- ExtManager.ExtDragStop
-dragStop : Env2 -> Outcome
-dragStop ({model} as env2) =
+dragStop : Env -> Outcome
+dragStop ({model} as env) =
   let
     outcome =
       case model.mouse.dragSource of
         Just {topicId, boxPath} ->
           case model.mouse.dropTarget of
             Just (T targetTopicId, targetBoxId :: _) ->
-              env2
+              env
                 |> processDrop topicId (Box.firstId boxPath) targetTopicId targetBoxId
             Nothing ->
               let
@@ -182,7 +182,7 @@ dragStop ({model} as env2) =
     |> Outcome.map (setDropMode Nothing)
 
 
-processDrop : TopicId -> BoxId -> TopicId -> BoxId -> Env2 -> Outcome
+processDrop : TopicId -> BoxId -> TopicId -> BoxId -> Env -> Outcome
 processDrop sourceTopicId sourceBoxId targetTopicId targetBoxId ({model} as env) =
   let
     _ = U.info "TopicList.Mouse.processDrop"
@@ -193,7 +193,7 @@ processDrop sourceTopicId sourceBoxId targetTopicId targetBoxId ({model} as env)
       , dropMode = model.topicList.dropMode
       }
     --
-    addTopic : Env2 -> Model
+    addTopic : Env -> Env
     addTopic env_ =
       case env_.model.topicList.dropMode of
         Just Drop ->
@@ -210,18 +210,18 @@ processDrop sourceTopicId sourceBoxId targetTopicId targetBoxId ({model} as env)
           let
             _ = U.logError "TopicList.Mouse.processDrop" "Unexpected dropMode" Nothing
           in
-          env_.model
+          env_
   in
   env
     |> Env.map (Box.removeTopic sourceTopicId sourceBoxId)
     |> addTopic
-    |> Outcome (Directives Store Push) Cmd.none
+    |> Env.outcomeWith (Directives Store Push)
 
 
-addTopic_ : TopicId -> BoxId -> Env2 -> Env2
+addTopic_ : TopicId -> BoxId -> Env -> Env
 addTopic_ topicId boxId env =
   let
-    setBoxRenderer : Env2 -> Env2
+    setBoxRenderer : Env -> Env
     setBoxRenderer ({model} as env_) =
       if Topic.isBox topicId model then
         env_

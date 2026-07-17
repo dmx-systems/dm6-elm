@@ -1,7 +1,7 @@
 module ExtManager exposing (ext)
 
 import Box
-import Env exposing (ExtManager, Env2)
+import Env exposing (ExtManager, Env)
 import Extension
 import Model exposing (Model, Msg)
 import ModelBase exposing (..)
@@ -58,16 +58,16 @@ their "view" function instead of importing a module. This avoids circular depend
 conjunction with recursively nested renderers.
 -}
 type alias ExtBoxView =
-  BoxId -> BoxPath -> Env2 -> Html Msg
+  BoxId -> BoxPath -> Env -> Html Msg
 
 
 -- Point is in box-local coordinates
 type alias ExtHitTest =
-  BoxId -> BoxPath -> Point -> Maybe TopicId -> Env2 -> Maybe BoxTarget
+  BoxId -> BoxPath -> Point -> Maybe TopicId -> Env -> Maybe BoxTarget
 
 
 type alias ExtAutoSize =
-  BoxPath -> Env2 -> (Rectangle, Model)
+  BoxPath -> Env -> (Rectangle, Model)
 
 
 -- Drag and Drop
@@ -75,19 +75,19 @@ type alias ExtAutoSize =
 -- Note: no drag specific parameters here. An extension's "dragStart" handler operates on
 -- (feature module) Mouse's "dragSource" directly.
 type alias ExtDragStart =
-  Env2 -> (Model, Cmd Msg)
+  Env -> (Model, Cmd Msg)
 
 
 type alias ExtDrag =
-  Point -> Env2 -> (Model, Cmd Msg)
+  Point -> Env -> (Model, Cmd Msg)
 
 
 type alias ExtDropTargeting =
-  Point -> Env2 -> (Model, Maybe Target)
+  Point -> Env -> (Model, Maybe Target)
 
 
 type alias ExtDragStop =
-  Env2 -> Outcome
+  Env -> Outcome
 
 
 
@@ -208,11 +208,11 @@ dragStop boxId model =
     (\env renderer -> renderer.dragStop env)
 
 
-dispatch : BoxId -> Model -> result -> (Env2 -> Extension -> result) -> result
+dispatch : BoxId -> Model -> result -> (Env -> Extension -> result) -> result
 dispatch boxId model errVal callExtWith =
   Box.rendererOf boxId model
     |> Maybe.andThen (\renderer -> registry |> Dict.get (Extension.toString renderer))
-    |> Maybe.map (callExtWith <| Env2 model ext)
+    |> Maybe.map (callExtWith <| Env model ext)
     |> Maybe.withDefault errVal
 
 

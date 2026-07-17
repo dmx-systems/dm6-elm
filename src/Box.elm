@@ -4,7 +4,7 @@ module Box exposing (topicIds, assocIds, turnTopicIntoBox, init, addTopic, addAs
   fromPath, topicCount, traverse)
 
 import Assoc
-import Env exposing (Env2)
+import Env exposing (Env)
 import Extension exposing (Renderer)
 import Model exposing (Model)
 import ModelBase exposing (..)
@@ -41,7 +41,7 @@ itemIds filter boxId model =
 
 -- Create box
 
-turnTopicIntoBox : TopicId -> Renderer -> Env2 -> Env2
+turnTopicIntoBox : TopicId -> Renderer -> Env -> Env
 turnTopicIntoBox topicId renderer ({model} as env) =
   if Topic.isBox topicId model then
     env
@@ -51,7 +51,7 @@ turnTopicIntoBox topicId renderer ({model} as env) =
       |> init (BoxId topicId)
 
 
-turnTopicIntoBox_ : TopicId -> Renderer -> Env2 -> Env2
+turnTopicIntoBox_ : TopicId -> Renderer -> Env -> Env
 turnTopicIntoBox_ topicId renderer ({model} as env) =
   let
     setId = model.nextId
@@ -79,7 +79,7 @@ createItemSet set ({itemSets} as model) =
 {-| Adds an item to a box and creates a connecting association. This is an idempotent operation.
 This is a generic operation: works for both, topics and associations.
 -}
-addTopic : BoxTopic -> BoxId -> Env2 -> Env2
+addTopic : BoxTopic -> BoxId -> Env -> Env
 addTopic topic boxId env =
   env
     |> Env.map (addToItemSet (T topic.id) boxId)
@@ -148,7 +148,7 @@ addToBoxTopics topic boxId ({boxes} as model) =
 
 -- Initialize/Update box view model
 
-init : BoxId -> Env2 -> Env2
+init : BoxId -> Env -> Env
 init boxId ({model, ext} as env) =
   let
     initBox : BoxId -> Model -> Model

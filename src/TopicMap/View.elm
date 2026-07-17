@@ -3,7 +3,7 @@ module TopicMap.View exposing (view)
 import Assoc
 import Box
 import Config as C
-import Env exposing (ExtManager, Env2)
+import Env exposing (ExtManager, Env)
 import Feature.Icon as Icon
 import Feature.Mouse as Mouse
 import Feature.Sel as Sel
@@ -56,7 +56,7 @@ type alias LineRenderer =
 
 -- ExtManager.ExtBoxView
 -- For the fullscreen box boxPath is empty
-view : BoxId -> BoxPath -> Env2 -> Html Msg
+view : BoxId -> BoxPath -> Env -> Html Msg
 view boxId boxPath ({model} as env) =
   let
     boxPath_ = boxId :: boxPath
@@ -132,7 +132,7 @@ gAttr boxId boxRect model =
 
 
 -- For the fullscreen box boxPath is empty
-boxInfo : BoxId -> BoxPath -> Env2 -> BoxInfo
+boxInfo : BoxId -> BoxPath -> Env -> BoxInfo
 boxInfo boxId boxPath ({model} as env) =
   case TM.byId boxId model of
     Just topicMap ->
@@ -154,7 +154,7 @@ boxInfo boxId boxPath ({model} as env) =
 
 
 -- For the fullscreen box boxPath is empty
-viewItems : TopicMap -> BoxPath -> Env2 -> (List (Html Msg), List (Svg Msg))
+viewItems : TopicMap -> BoxPath -> Env -> (List (Html Msg), List (Svg Msg))
 viewItems topicMap boxPath ({model} as env) =
   let
     newPath = topicMap.id :: boxPath
@@ -231,7 +231,7 @@ viewLimboAssoc boxId model =
 
 -- Topic Rendering
 
-viewTopic : Topic -> MapTopic -> BoxPath -> Env2 -> Html Msg
+viewTopic : Topic -> MapTopic -> BoxPath -> Env -> Html Msg
 viewTopic topic mapTopic boxPath ({model, ext}) =
   let
     render =

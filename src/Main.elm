@@ -2,7 +2,7 @@ port module Main exposing (..)
 
 import Box
 import Config as C
-import Env exposing (Env2)
+import Env exposing (Env)
 import ExtManager exposing (ext)
 import Feature.Icon as Icon
 import Feature.Mouse as Mouse
@@ -265,25 +265,25 @@ update msg ({present} as undoModel) =
       case msg of
         Mouse (MouseDef.Move _) -> msg
         _ -> U.info "Main.update" msg
-    env2 = Env2 present ext
+    env = Env present ext
     outcome =
       case msg of
         -- renderer modules
-        TopicMap msg_ -> TMC.update msg_ env2
+        TopicMap msg_ -> TMC.update msg_ env
         -- feature modules
-        Tool msg_ -> Tool.update msg_ env2
-        Text msg_ -> Text.update msg_ env2
-        Mouse msg_ -> Mouse.update msg_ env2
-        Search msg_ -> Search.update msg_ env2
-        Icon msg_ -> Icon.update msg_ env2
-        Nav msg_ -> Nav.update msg_ env2
+        Tool msg_ -> Tool.update msg_ env
+        Text msg_ -> Text.update msg_ env
+        Mouse msg_ -> Mouse.update msg_ env
+        Search msg_ -> Search.update msg_ env
+        Icon msg_ -> Icon.update msg_ env
+        Nav msg_ -> Nav.update msg_ env
         --
         Scrolled pos ->
           present
             |> updateScrollPos pos
             |> Outcome.from (Directives Store Swap)
         Cancel maybeTarget ->
-          env2
+          env
             |> cancelUI maybeTarget
             |> Outcome.new
         NoOp ->
@@ -291,10 +291,10 @@ update msg ({present} as undoModel) =
             |> Outcome.default
   in
   outcome
-    |> Outcome.exec undoModel
+    |> Outcome.perform undoModel
 
 
-cancelUI : Maybe Target -> Env2 -> (Model, Cmd Msg)
+cancelUI : Maybe Target -> Env -> (Model, Cmd Msg)
 cancelUI maybeTarget env =
   env
     |> Env.map Icon.closePicker
@@ -303,7 +303,7 @@ cancelUI maybeTarget env =
     |> cancelUIWith maybeTarget
 
 
-cancelUIWith : Maybe Target -> Env2 -> (Model, Cmd Msg)
+cancelUIWith : Maybe Target -> Env -> (Model, Cmd Msg)
 cancelUIWith maybeTarget ({model} as env) =
   let
     isTargeted =
