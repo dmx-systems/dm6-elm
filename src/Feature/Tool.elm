@@ -12,19 +12,21 @@ import Feature.Nav as Nav
 import Feature.Search as Search
 import Feature.Sel as Sel
 import Feature.Text as Text
-import Feature.ToolDef as ToolDef exposing (LineStyle(..))
+import Feature.ToolDef as ToolDef
+import Feature.ToolMenu as ToolMenu
 import Model exposing (Model, Msg(..))
 import ModelBase exposing (..)
 import Outcome exposing (..)
 import Shared.Events as Events
+import Shared.ViewBase as VB
 import Storage as S
 import Topic
 import TopicMap.TopicMap as TopicMap
 import Undo exposing (UndoModel)
 import Utils as U
 
-import Html exposing (Html, div, span, text, button, input, label, select, option)
-import Html.Attributes exposing (class, style, title, name, value, type_, disabled, checked)
+import Html exposing (Html, div, text, button, select, option)
+import Html.Attributes exposing (class, style, title, value, disabled)
 import Html.Events exposing (onClick, on, targetValue)
 import Json.Decode as D
 import String exposing (fromInt)
@@ -56,7 +58,7 @@ viewGlobalTools model =
   , Search.viewInput model
   , viewIconButton "Settings" "menu" iconSize ToolDef.Menu False Nothing homeButtonStyle
   ]
-  ++ viewMenu model
+  ++ ToolMenu.view model
 
 
 homeButtonStyle : Attrs Msg
@@ -64,111 +66,6 @@ homeButtonStyle =
   [ style "position" "relative"
   , style "top" "1px"
   ]
-
-
-viewMenu : Model -> List (Html Msg)
-viewMenu model =
-  let
-    is = (==) model.tool.lineStyle
-  in
-  if model.tool.menu then
-    [ div
-        menuStyle
-        [ div headingStyle [ text "Line Style" ]
-        , div
-            []
-            [ viewRadioButton "Cornered" (ToolDef.Set Cornered) <| is Cornered
-            , hGap 20
-            , viewRadioButton "Straight" (ToolDef.Set Straight) <| is Straight
-            ]
-        , vGap 32
-        , div headingStyle [ text "Database" ]
-        , div
-            []
-            [ viewTextButton "Import" ToolDef.Import
-            , hGap 20
-            , viewTextButton "Export" ToolDef.Export
-            ]
-        ]
-    ]
-  else
-    []
-
-
-menuStyle : Attrs Msg
-menuStyle =
-  [ style "font-size" <| fromInt C.toolFontSize ++ "px"
-  , style "position" "absolute"
-  , style "top" "32px"
-  , style "right" "10px"
-  , style "border" "1px solid lightgray"
-  , style "background-color" "white"
-  , style "padding" "24px 18px 16px"
-  , style "z-index" "5"
-  ]
-
-
-viewRadioButton : String -> ToolDef.Msg -> Bool -> Html Msg
-viewRadioButton label_ msg isChecked  =
-  label
-    [ Events.onPointerDownStop NoOp ]
-    [ input
-      ( [ type_ "radio"
-        , name "line-style"
-        , checked isChecked
-        , onClick <| Tool msg
-        ]
-        ++ radioButtonStyle
-      )
-      []
-    , text label_
-    ]
-
-
-viewTextButton : String -> ToolDef.Msg -> Html Msg
-viewTextButton label msg =
-  button
-    ( [ onClick <| Tool msg
-      , Events.onPointerDownStop NoOp
-      ]
-      ++ textButtonStyle
-    )
-    [ text label ]
-
-
-headingStyle : Attrs Msg
-headingStyle =
-  [ style "font-weight" "bold"
-  , style "margin-bottom" "14px"
-  ]
-
-
-radioButtonStyle : Attrs Msg
-radioButtonStyle =
-  [ style "margin" "0 6px 0 0" ]
-
-
-textButtonStyle : Attrs Msg
-textButtonStyle =
-  [ style "font-family" C.mainFont
-  , style "font-size" <| fromInt C.toolFontSize ++ "px"
-  ]
-
-
-hGap : Int -> Html Msg
-hGap gap =
-  span
-    [ style "display" "inline-block"
-    , style "width" <| fromInt gap ++ "px"
-    ]
-    []
-
-
-vGap : Int -> Html Msg
-vGap gap =
-  div
-    [ style "height" <| fromInt gap ++ "px" ]
-    []
 
 
 -- Map Tools
@@ -183,7 +80,7 @@ viewMapTools undoModel =
       -- The create-buttons must not clear the selection but still close menus.
       -- So we set the box where created things land as the target.
       [ viewMapButton "New Topic" "plus-circle" ToolDef.CreateTopic False target
-      , hGap 14
+      , VB.hGap 14
       , viewMapButton "Undo" "rotate-ccw" ToolDef.Undo (not <| Undo.hasPast undoModel) Nothing
       , viewMapButton "Redo" "rotate-cw" ToolDef.Redo (not <| Undo.hasFuture undoModel) Nothing
       ]

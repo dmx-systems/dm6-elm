@@ -2,8 +2,8 @@ port module Main exposing (..)
 
 import Box
 import Config as C
-import Env exposing (Env)
 import Dispatch exposing (dispatch)
+import Env exposing (Env)
 import Feature.Icon as Icon
 import Feature.Mouse as Mouse
 import Feature.MouseDef as MouseDef

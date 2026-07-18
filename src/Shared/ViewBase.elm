@@ -1,4 +1,4 @@
-module Shared.ViewBase exposing (boxStyle, topicBorderStyle, selectionStyle)
+module Shared.ViewBase exposing (boxStyle, topicBorderStyle, selectionStyle, hGap, vGap)
 
 import Box
 import Config as C
@@ -7,6 +7,7 @@ import Feature.Sel as Sel
 import Model exposing (Model, Msg)
 import ModelBase exposing (..)
 
+import Html exposing (Html, div, span)
 import Html.Attributes exposing (style)
 import String exposing (fromInt)
 
@@ -53,3 +54,21 @@ selectionStyle topicId boxPath model =
   case Sel.isSelected (T topicId) boxPath model of
     True -> [ style "box-shadow" C.topicBoxShadow ]
     False -> []
+
+
+--
+
+hGap : Int -> Html Msg
+hGap gap =
+  span
+    [ style "display" "inline-block"
+    , style "width" <| fromInt gap ++ "px"
+    ]
+    []
+
+
+vGap : Int -> Html Msg
+vGap gap =
+  div
+    [ style "height" <| fromInt gap ++ "px" ]
+    []

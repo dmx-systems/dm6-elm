@@ -2,8 +2,7 @@ module Env exposing (Env, Dispatch, map, autoSize, outcome, outcomeWith, outcome
 
 import Model exposing (Model, Msg)
 import ModelBase exposing (..)
-import Outcome exposing (Outcome, Directives, Storage(..), History(..))
-import Undo exposing (UndoModel)
+import Outcome exposing (..)
 
 import Html exposing (Html)
 

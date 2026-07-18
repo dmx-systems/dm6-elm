@@ -5,7 +5,7 @@ import Env exposing (Env)
 import Feature.NavDef as NavDef
 import Model exposing (Model, Msg(..))
 import ModelBase exposing (..)
-import Outcome exposing (Outcome, Directives, Storage(..), History(..))
+import Outcome exposing (..)
 import TopicMap.TopicMap as TopicMap
 import Utils as U
 

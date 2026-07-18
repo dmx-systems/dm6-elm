@@ -11,7 +11,7 @@ import Feature.SearchDef as SearchDef exposing (SearchResult(..))
 import Feature.Sel as Sel
 import Model exposing (Model, Msg(..))
 import ModelBase exposing (..)
-import Outcome exposing (Outcome, Directives, Storage(..), History(..))
+import Outcome exposing (..)
 import Shared.Events as Events
 import Topic
 import TopicMap.TopicMap as TopicMap
