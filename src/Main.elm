@@ -22,8 +22,8 @@ import Undo exposing (UndoModel)
 import Utils as U
 
 import Browser
-import Html exposing (Html, div, text, br, a)
-import Html.Attributes exposing (id, style, href)
+import Html exposing (Html, div, text, br)
+import Html.Attributes exposing (id, style)
 import Json.Decode as D
 import Json.Encode as E
 import String exposing (fromInt, fromFloat)
@@ -122,7 +122,6 @@ view ({present} as undoModel) =
               ++ Tool.viewMapTools undoModel
             )
         ]
-    , viewFooter
     , viewMeasure present
     ]
 
@@ -179,50 +178,6 @@ mainStyle =
   , style "flex-grow" "1"
   , style "overflow" "auto"
   ]
-
-
-viewFooter : Html Msg
-viewFooter =
-  div
-    footerStyle
-    [ div
-        []
-        [ text C.version ]
-    , div
-        []
-        [ text C.date ]
-    , div
-        []
-        [ text "Source: "
-        , a
-            ( [ href "https://github.com/dmx-systems/dm6-elm" ]
-              ++ linkStyle
-            )
-            [ text "GitHub" ]
-        ]
-    , a
-        ( [ href "https://dmx.berlin" ]
-          ++ linkStyle
-        )
-        [ text "DMX Berlin" ]
-    ]
-
-
-footerStyle : Attrs Msg
-footerStyle =
-  [ style "font-family" C.mainFont
-  , style "font-size" <| fromInt C.footerFontSize ++ "px"
-  , style "position" "absolute"
-  , style "bottom" "20px"
-  , style "right" "20px"
-  , style "text-align" "right"
-  , style "color" "lightgray" -- #d3d3d3
-  ]
-
-
-linkStyle : Attrs Msg
-linkStyle =
-  [ style "color" "lightgray" ]
 
 
 viewMeasure : Model -> Html Msg

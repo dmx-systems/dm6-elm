@@ -7,8 +7,8 @@ import ModelBase exposing (..)
 import Shared.Events as Events
 import Shared.ViewBase as VB
 
-import Html exposing (Html, div, text, button, input, label)
-import Html.Attributes exposing (style, name, type_, checked)
+import Html exposing (Html, div, text, button, input, label, a)
+import Html.Attributes exposing (style, name, type_, checked, href)
 import Html.Events exposing (onClick)
 import String exposing (fromInt)
 
@@ -37,6 +37,9 @@ view model =
             , VB.hGap 20
             , viewTextButton "Export" ToolDef.Export
             ]
+        , VB.vGap 32
+        , div headingStyle [ text "About" ]
+        , viewAbout
         ]
     ]
   else
@@ -101,3 +104,50 @@ textButtonStyle =
   [ style "font-family" C.mainFont
   , style "font-size" <| fromInt C.toolFontSize ++ "px"
   ]
+
+
+-- About
+
+viewAbout : Html Msg
+viewAbout =
+  div
+    aboutStyle
+    [ div
+        []
+        [ text ("DM6 Elm " ++ C.version) ]
+    , div
+        []
+        [ text ("Released: " ++ C.date) ]
+    , div
+        []
+        [ text "Source code: "
+        , a
+            ( [ href "https://github.com/dmx-systems/dm6-elm" ]
+              ++ linkStyle
+            )
+            [ text "GitHub" ]
+        ]
+    , div
+        []
+        [ text "Website: "
+        , a
+            ( [ href "https://dmx.berlin" ]
+              ++ linkStyle
+            )
+            [ text "DMX Berlin" ]
+        ]
+    ]
+
+
+aboutStyle : Attrs Msg
+aboutStyle =
+  [ style "font-family" C.mainFont
+  , style "font-size" <| fromInt C.aboutFontSize ++ "px"
+  , style "line-height" "1.3"
+  , style "color" "gray"
+  ]
+
+
+linkStyle : Attrs Msg
+linkStyle =
+  [ style "color" "gray" ]

@@ -17,7 +17,7 @@ mainFont = "sans-serif"
 editorFont = "monospace"
 toolFontSize = 15
 contentFontSize = 13
-footerFontSize = 13
+aboutFontSize = 13
 
 hoverColor = "#d0d0d7" -- Firefox default hover button color (index.css)
 disabledColor = "#b0b0b0" -- see button.tool:disabled (index.css)
