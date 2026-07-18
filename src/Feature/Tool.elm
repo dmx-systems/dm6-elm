@@ -4,6 +4,7 @@ module Feature.Tool exposing (ToolbarPos, viewGlobalTools, viewMapTools, viewToo
 import Assoc
 import Box
 import Config as C
+import Console
 import Env exposing (Env, Dispatch)
 import Extension exposing (Renderer)
 import Feature.Icon as Icon
@@ -23,7 +24,6 @@ import Storage as S
 import Topic
 import TopicMap.TopicMap as TopicMap
 import Undo exposing (UndoModel)
-import Utils as U
 
 import Html exposing (Html, div, text, button, select, option)
 import Html.Attributes exposing (class, style, title, value, disabled)
@@ -436,7 +436,7 @@ edit ({model} as env) =
       Text.enterEdit id boxPath env
     _ ->
       let
-        _ = U.logError "Feature.Tool.edit" "No single topic selection" (Sel.single model)
+        _ = Console.logError "Feature.Tool.edit" "No single topic selection" (Sel.single model)
       in
       (model, Cmd.none)
 
@@ -509,7 +509,7 @@ setRenderer renderer ({model} as env) =
         |> Env.autoSize
     _ ->
       let
-        _ = U.logError "Feature.Tool.setRenderer" "No single topic selection"
+        _ = Console.logError "Feature.Tool.setRenderer" "No single topic selection"
           (Sel.single model)
       in
       env

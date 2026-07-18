@@ -3,6 +3,7 @@ module TopicMap.View exposing (view)
 import Assoc
 import Box
 import Config as C
+import Console
 import Env exposing (Env, Dispatch)
 import Feature.Icon as Icon
 import Feature.Mouse as Mouse
@@ -19,7 +20,6 @@ import TopicMap.TopicMap as TM
 import TopicMap.TopicMapDef as TopicMapDef exposing (TopicMap, MapTopic, DragState(..),
   DragMode(..))
 import TopicMap.ViewModel as VM
-import Utils as U
 
 import Html exposing (Html, div, text)
 import Html.Attributes exposing (id, style)
@@ -149,7 +149,7 @@ boxInfo boxId boxPath ({model} as env) =
         )
       )
     Nothing ->
-      U.fail "TopicMap.View.boxInfo" {boxId = boxId, boxPath = boxPath}
+      Console.fail "TopicMap.View.boxInfo" {boxId = boxId, boxPath = boxPath}
         ( ([], []), Rectangle 0 0 0 0, ( {w = "0", h = "0"}, [] ))
 
 
@@ -163,7 +163,7 @@ viewItems topicMap boxPath ({model} as env) =
         (\({id} as mapTopic) ->
           case Topic.fromId id model of
             Just topic -> viewTopic topic mapTopic newPath env
-            _ -> U.logError "TopicMap.View.viewItems"
+            _ -> Console.logError "TopicMap.View.viewItems"
               ("problem with topic " ++ fromInt (toTopicId id)) (text "")
         )
     assocs =
@@ -175,7 +175,7 @@ viewItems topicMap boxPath ({model} as env) =
                 clickHandler = assocClickHandler id newPath
               in
               svgAcc ++ viewAssoc assoc newPath clickHandler model
-            _ -> U.logError "TopicMap.View.viewItems"
+            _ -> Console.logError "TopicMap.View.viewItems"
               ("problem with assoc " ++ fromInt (toAssocId id)) svgAcc
         )
         []
@@ -195,12 +195,12 @@ viewLimboAssoc boxId model =
       if boxId == limboBoxId then
         if Box.hasItem (A assocId) boxId model then
           let
-            _ = U.info "TopicMap.View.viewLimboAssoc" (assocId, "is in map", boxId)
+            _ = Console.info "TopicMap.View.viewLimboAssoc" (assocId, "is in map", boxId)
           in
           [] -- rendered already (viewItems())
         else
           let
-            _ = U.info "TopicMap.View.viewLimboAssoc" (assocId, "not in map", boxId)
+            _ = Console.info "TopicMap.View.viewLimboAssoc" (assocId, "not in map", boxId)
           in
           case Assoc.fromId assocId model of
             Just assoc ->

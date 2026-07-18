@@ -3,13 +3,13 @@ module Feature.Mouse exposing (update, clearHover, isHovered, isDragActive, isTo
 
 import Box
 import Config as C
+import Console
 import Env exposing (Env, Dispatch)
 import Feature.MouseDef as MouseDef exposing (DragSource)
 import Model exposing (Model, Msg(..))
 import ModelBase exposing (..)
 import Outcome exposing (Outcome)
 import TopicMap.Mouse
-import Utils as U
 
 
 
@@ -40,7 +40,7 @@ update msg ({model, dispatch} as env) =
         |> Outcome.map (setDropTarget Nothing)
     (MouseDef.Cancel, _) ->
       model
-        |> Outcome.with (U.command <| Cancel Nothing)
+        |> Outcome.with (Outcome.command <| Cancel Nothing)
     _ ->
       -- TODO: match no-op vs. error cases explicitly
       model

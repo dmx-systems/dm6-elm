@@ -3,14 +3,14 @@ module TopicList.TopicList exposing (init, targets, listOrder, getSize, reorderT
 
 import Box
 import Config as C
-import Dict
+import Console
 import Env exposing (Env)
 import Model exposing (Model)
 import ModelBase exposing (..)
 import TopicList.TopicListDef exposing (TopicList, Targets)
-import Utils as U
 
 import Array
+import Dict
 import String exposing (fromInt)
 
 
@@ -19,7 +19,7 @@ import String exposing (fromInt)
 init : BoxId -> Model -> Model
 init boxId model =
   let
-    _ = U.info "TopicList.TopicList.init" boxId
+    _ = Console.info "TopicList.TopicList.init" boxId
   in
   model
     |> initTopicList boxId
@@ -33,14 +33,14 @@ initTopicList boxId ({topicList} as model) =
   in
   if Dict.member id topicList.view then
     let
-      _ = U.info "TopicList.TopicList.initTopicList"
-        ("Box (" ++ U.toString boxId ++ ") has TopicList entry already")
+      _ = Console.info "TopicList.TopicList.initTopicList"
+        ("Box (" ++ Console.toString boxId ++ ") has TopicList entry already")
     in
     model
   else
     let
-      _ = U.info "TopicList.TopicList.initTopicList"
-        ("Creating TopicList entry for box (" ++ U.toString boxId ++ ")")
+      _ = Console.info "TopicList.TopicList.initTopicList"
+        ("Creating TopicList entry for box (" ++ Console.toString boxId ++ ")")
       topicList_ = TopicList boxId [] (Size 0 0)
     in
     { model | topicList =
@@ -60,8 +60,8 @@ initOrder boxId ({topicList} as model) =
             List.filterMap
               (missingTopicIds orderList)
               (Box.topicIds boxId model)
-          _ = U.info "TopicList.TopicList.initOrder"
-            ("Add missing TopicList " ++ U.toString missing ++ " to " ++ U.toString orderList)
+          _ = Console.info "TopicList.TopicList.initOrder" ("Add missing TopicList "
+            ++ Console.toString missing ++ " to " ++ Console.toString orderList)
         in
         missing ++ orderList
       )
@@ -107,7 +107,7 @@ listOrder boxId model topicIds =
   case fromId boxId model of
     Just {order} -> order
       |> List.filterMap isBoxContent
-    Nothing -> U.fail "TopicList.TopicList.listOrder" boxId topicIds
+    Nothing -> Console.fail "TopicList.TopicList.listOrder" boxId topicIds
 
 
 -- Box.Acc
@@ -128,7 +128,7 @@ reorderTopic topicId boxId beforeTopicId model =
       case (id == beforeTopicId, found) of -- at insertion point? insertion point found already?
         (False, _) -> (id :: list, found)
         (True, False) -> ([topicId, id] ++ list, True)
-        (True, True) -> U.logError "TopicList.TopicList.reorderTopic"
+        (True, True) -> Console.logError "TopicList.TopicList.reorderTopic"
           "Found more than one insertion point" (list, found)
   in
   model
@@ -139,7 +139,7 @@ reorderTopic topicId boxId beforeTopicId model =
         |> \(list, found) ->
             case found of
               True -> list
-              False -> U.logError "TopicList.TopicList.reorderTopic"
+              False -> Console.logError "TopicList.TopicList.reorderTopic"
                 "Insertion point not found" orderList
       )
 
@@ -154,8 +154,8 @@ updateOrder boxId transform ({topicList} as model) =
         (\maybeTopicList ->
           case maybeTopicList of
             Just topicList_ -> Just { topicList_ | order = transform topicList_.order }
-            Nothing -> U.logError "TopicList.TopicList.updateOrder"
-              (U.toString {boxId = boxId}) Nothing
+            Nothing -> Console.logError "TopicList.TopicList.updateOrder"
+              (Console.toString {boxId = boxId}) Nothing
         )
     }
   }
@@ -176,12 +176,12 @@ hitTest (BoxId topicId as boxId) boxPath localPos maybeFilter {model} =
     if isContentHovered boxId localPos model then
       let
         index = (localPos.y - 13) // (C.listItemHeight + 4) -- TODO: no magic numbers
-        -- _ = U.info "TopicList.TopicList.hitTest" (boxId, index, localPos)
+        -- _ = Console.info "TopicList.TopicList.hitTest" (boxId, index, localPos)
       in
       case Array.get index (targets fullPath model) of
         Just (_, target) -> Just (BoxTarget fullPath target)
         Nothing ->
-          U.logError "TopicList.TopicList.hitTest"
+          Console.logError "TopicList.TopicList.hitTest"
             ("Array lookup failed for index " ++ fromInt index)
             Nothing
     else
@@ -248,8 +248,8 @@ updateTopicList boxId transform ({topicList} as model) =
           (\maybeTopicList ->
             case maybeTopicList of
               Just topicList_ -> Just (transform topicList_)
-              Nothing -> U.logError "TopicList.TopicList.updateTopicList"
-                ("Missing TopicList entry for (" ++ U.toString boxId ++ ")") Nothing
+              Nothing -> Console.logError "TopicList.TopicList.updateTopicList"
+                ("Missing TopicList entry for (" ++ Console.toString boxId ++ ")") Nothing
           )
     }
   }
@@ -259,7 +259,7 @@ getSize : BoxId -> Model -> Size
 getSize boxId model =
   case fromId boxId model of
     Just topicList -> topicList.size
-    Nothing -> U.fail "TopicList.TopicList.getSize" boxId (Size 0 0)
+    Nothing -> Console.fail "TopicList.TopicList.getSize" boxId (Size 0 0)
 
 
 {-| Logs an error if the TopicList entry is missing.
@@ -268,5 +268,5 @@ fromId : BoxId -> Model -> Maybe TopicList
 fromId boxId model =
   case model.topicList.view |> Dict.get (toBoxId boxId) of
     Just topicList -> Just topicList
-    Nothing -> U.logError "TopicList.TopicList.fromId"
-      ("Missing TopicList entry for (" ++ U.toString boxId ++ ")") Nothing
+    Nothing -> Console.logError "TopicList.TopicList.fromId"
+      ("Missing TopicList entry for (" ++ Console.toString boxId ++ ")") Nothing

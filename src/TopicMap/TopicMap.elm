@@ -5,13 +5,13 @@ module TopicMap.TopicMap exposing (init, allMapTopics, topicPos, randomPos, setT
 
 import Box
 import Config as C
+import Console
 import Env exposing (Env)
 import Feature.SearchDef exposing (SearchResult(..))
 import Feature.Sel as Sel
 import Model exposing (Model, Msg)
 import ModelBase exposing (..)
 import TopicMap.TopicMapDef as TopicMapDef exposing (TopicMap, MapTopic)
-import Utils as U
 
 import Dict
 import Random
@@ -22,7 +22,7 @@ import Random
 init : BoxId -> Model -> Model
 init boxId model =
   let
-    _ = U.info "TopicMap.TopicMap.init" boxId
+    _ = Console.info "TopicMap.TopicMap.init" boxId
   in
   model
     |> initTopicMap boxId
@@ -36,14 +36,14 @@ initTopicMap boxId ({topicMap} as model) =
   in
   if Dict.member id topicMap.view then
     let
-      _ = U.info "TopicMap.TopicMap.initTopicMap"
-        ("Box (" ++ U.toString boxId ++ ") has TopicMap entry already")
+      _ = Console.info "TopicMap.TopicMap.initTopicMap"
+        ("Box (" ++ Console.toString boxId ++ ") has TopicMap entry already")
     in
     model
   else
     let
-      _ = U.info "TopicMap.TopicMap.initTopicMap"
-        ("Creating TopicMap entry for box (" ++ U.toString boxId ++ ")")
+      _ = Console.info "TopicMap.TopicMap.initTopicMap"
+        ("Creating TopicMap entry for box (" ++ Console.toString boxId ++ ")")
       topicMap_ = TopicMap boxId (Rectangle 0 0 0 0) (Point 0 0) Dict.empty
     in
     { model | topicMap =
@@ -95,7 +95,8 @@ topicPos : TopicId -> BoxId -> Model -> Maybe Point
 topicPos topicId boxId model =
   case mapTopic topicId boxId model of
     Just {pos} -> Just pos
-    Nothing -> U.fail "TopicMap.TopicMap.topicPos" {topicId = topicId, boxId = boxId} Nothing
+    Nothing ->
+      Console.fail "TopicMap.TopicMap.topicPos" {topicId = topicId, boxId = boxId} Nothing
 
 
 {-| Logs an error if the TopicMap entry is missing, or inside TopicMap the MapTopic entry is
@@ -123,7 +124,8 @@ assocGeometry assoc boxId model =
   in
   case Maybe.map2 (\p1 p2 -> (p1, p2)) pos1 pos2 of
     Just geometry -> Just geometry
-    Nothing -> U.fail "TopicMap.TopicMap.assocGeometry" {assoc = assoc, boxId = boxId} Nothing
+    Nothing ->
+      Console.fail "TopicMap.TopicMap.assocGeometry" {assoc = assoc, boxId = boxId} Nothing
 
 
 randomPos : TopicId -> BoxId -> Model -> (Model, Cmd Msg)
@@ -211,8 +213,9 @@ mapTopic_ : TopicId -> TopicMap -> Maybe MapTopic
 mapTopic_ topicId topicMap =
   case mapTopicOrNothing topicId topicMap of
     Just topic -> Just topic
-    Nothing -> U.logError "TopicMap.TopicMap.mapTopic_" ("Missing MapTopic ("
-      ++ U.toString topicId ++ ") inside (" ++ U.toString topicMap.id ++ ")") Nothing
+    Nothing -> Console.logError "TopicMap.TopicMap.mapTopic_" ("Missing MapTopic ("
+      ++ Console.toString topicId ++ ") inside (" ++ Console.toString topicMap.id ++ ")")
+      Nothing
 
 
 mapTopicOrNothing : TopicId -> TopicMap -> Maybe MapTopic
@@ -226,7 +229,8 @@ hasMapTopic : TopicId -> BoxId -> Model -> Bool
 hasMapTopic topicId boxId model =
   case byId boxId model of
     Just topicMap -> topicMap.topics |> Dict.member (toTopicId topicId)
-    Nothing -> U.fail "TopicMap.TopicMap.hasMapTopic" {topicId = topicId, boxId = boxId} False
+    Nothing ->
+      Console.fail "TopicMap.TopicMap.hasMapTopic" {topicId = topicId, boxId = boxId} False
 
 
 {-| Logs an error if the TopicMap entry is missing.
@@ -243,8 +247,8 @@ byId : BoxId -> Model -> Maybe TopicMap
 byId boxId model =
   case model.topicMap.view |> Dict.get (toBoxId boxId) of
     Just topicMap -> Just topicMap
-    Nothing -> U.logError "TopicMap.TopicMap.byId"
-      ("Missing TopicMap entry for (" ++ U.toString boxId ++ ")") Nothing
+    Nothing -> Console.logError "TopicMap.TopicMap.byId"
+      ("Missing TopicMap entry for (" ++ Console.toString boxId ++ ")") Nothing
 
 
 --
@@ -280,8 +284,8 @@ updateMapTopic topicId boxId transform model =
           (\maybeMapTopic ->
             case maybeMapTopic of
               Just mapTopic__ -> Just (transform mapTopic__)
-              Nothing -> U.logError "TopicMap.TopicMap.updateMapTopic"
-                ("Missing MapTopic entry for (" ++ U.toString topicId ++ ")") Nothing
+              Nothing -> Console.logError "TopicMap.TopicMap.updateMapTopic"
+                ("Missing MapTopic entry for (" ++ Console.toString topicId ++ ")") Nothing
           )
         }
       )
@@ -298,8 +302,8 @@ updateTopicMap boxId transform ({topicMap} as model) =
           (\maybeTopicMap ->
             case maybeTopicMap of
               Just topicMap_ -> Just (transform topicMap_)
-              Nothing -> U.logError "TopicMap.TopicMap.updateTopicMap"
-                ("Missing TopicMap entry for (" ++ U.toString boxId ++ ")") Nothing
+              Nothing -> Console.logError "TopicMap.TopicMap.updateTopicMap"
+                ("Missing TopicMap entry for (" ++ Console.toString boxId ++ ")") Nothing
           )
     }
   }
@@ -378,7 +382,7 @@ absPos boxPath posAcc model =
   case boxPath of
     [ boxId ] -> accumulateRect posAcc boxId model
     boxId :: parentBoxId :: boxIds -> accumulatePos posAcc boxId parentBoxId boxIds model
-    [] -> U.logError "TopicMap.ViewModel.absPos" "boxPath is empty!" (Point 0 0)
+    [] -> Console.logError "TopicMap.ViewModel.absPos" "boxPath is empty!" (Point 0 0)
 
 
 accumulatePos : Point -> BoxId -> BoxId -> BoxPath -> Model -> Point

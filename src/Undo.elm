@@ -1,7 +1,7 @@
 module Undo exposing (UndoModel, undo, redo, push, swap, reset, hasPast, hasFuture)
 
+import Console
 import Model exposing (Model, resetTransient)
-import Utils as U
 
 import UndoList exposing (UndoList)
 
@@ -39,7 +39,7 @@ the new present.
 push : UndoModel -> Model -> UndoModel
 push undoModel model =
   let
-    _ = U.info "Undo.push" "<------------------"
+    _ = Console.info "Undo.push" "<------------------"
   in
   undoModel
     |> UndoList.mapPresent resetTransient

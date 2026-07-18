@@ -4,6 +4,7 @@ module TopicMap.Mouse exposing (dragStart, drag, updateDropTarget, dragStop, tim
 import Assoc
 import Box
 import Config as C
+import Console
 import Env exposing (Env)
 import Extension
 import Feature.Sel as Sel
@@ -12,7 +13,6 @@ import ModelBase exposing (..)
 import Outcome exposing (..)
 import TopicMap.TopicMap as TopicMap
 import TopicMap.TopicMapDef as TopicMapDef exposing (DragState(..), DragMode(..))
-import Utils as U
 
 import String exposing (fromInt)
 import Task
@@ -31,13 +31,13 @@ dragStart {model} =
       ( model
           |> setDragState (Just WaitForStartTime)
       , Cmd.batch
-          [ U.command (Cancel (Just (T topicId, boxPath)))
+          [ Outcome.command (Cancel (Just (T topicId, boxPath)))
           , Task.perform (TopicMap << TopicMapDef.GotTime) Time.now
           ]
       )
     Nothing ->
       let
-        _ = U.logError "TopicMap.Mouse.dragStart" "Unexpected drag source"
+        _ = Console.logError "TopicMap.Mouse.dragStart" "Unexpected drag source"
           model.mouse.dragSource
       in
       (model, Cmd.none)
@@ -66,7 +66,7 @@ timeArrived time model =
         |> Outcome.from (Directives NoStore historyOp)
     _ ->
       let
-        _ = U.logError "TopicMap.Mouse.timeArrived" "Unexpected drag state"
+        _ = Console.logError "TopicMap.Mouse.timeArrived" "Unexpected drag state"
           (model.mouse.dragSource, model.topicMap.dragState)
       in
       model
@@ -110,7 +110,7 @@ updateTopicPos clientPos model =
           model
     _ ->
       let
-        _ = U.logError "TopicMap.Mouse.updateTopicPos" "Unexpected mouse state"
+        _ = Console.logError "TopicMap.Mouse.updateTopicPos" "Unexpected mouse state"
           (model.mouse.dragSource, model.topicMap.dragState)
       in
       model
@@ -180,7 +180,7 @@ dragStop ({model} as env) =
               assocDragEnd topicId boxPath model
             Just (DragEngaged _) ->
               let
-                _ = U.info "TopicMap.Mouse.dragStop" "topic not moved -> select topic"
+                _ = Console.info "TopicMap.Mouse.dragStop" "topic not moved -> select topic"
               in
               noOp
                 |> Outcome.map (Sel.select (T topicId) boxPath)
@@ -188,13 +188,13 @@ dragStop ({model} as env) =
               foreignTopicDrop topicId boxPath env
             _ ->
               let
-                _ = U.logError "TopicMap.Mouse.dragStop" "Unexpected drag state"
+                _ = Console.logError "TopicMap.Mouse.dragStop" "Unexpected drag state"
                   model.mouse.dragSource
               in
               noOp
         Nothing ->
           let
-            _ = U.logError "TopicMap.Mouse.dragStop" "Unexpected drag source"
+            _ = Console.logError "TopicMap.Mouse.dragStop" "Unexpected drag source"
               model.mouse.dragSource
           in
           noOp
@@ -208,7 +208,7 @@ topicDragEnd sourceTopicId sourceBoxPath origTopicPos ({model} as env) =
   case model.mouse.dropTarget of
     Just (T targetId, targetPath) ->
       let
-        _ = U.info "TopicMap.Mouse.topicDragEnd" ("dropped "
+        _ = Console.info "TopicMap.Mouse.topicDragEnd" ("dropped "
           ++ fromInt (toTopicId sourceTopicId) ++ " (box " ++ Box.fromPath sourceBoxPath
           ++ ") on " ++ fromInt (toTopicId targetId) ++ " (box " ++ Box.fromPath targetPath
           ++ ") --> move topic to box")
@@ -220,7 +220,7 @@ topicDragEnd sourceTopicId sourceBoxPath origTopicPos ({model} as env) =
         |> \(model_, cmd) -> Outcome (Directives Store Push) cmd model_
     Nothing ->
       let
-        _ = U.info "TopicMap.Mouse.topicDragEnd"
+        _ = Console.info "TopicMap.Mouse.topicDragEnd"
           "topic drag ended w/o target -> store position"
       in
       Outcome (Directives Store Swap) Cmd.none model
@@ -236,7 +236,7 @@ foreignTopicDrop sourceTopicId sourceBoxPath ({model} as env) =
   case model.mouse.dropTarget of
     Just (T targetId, targetPath) ->
       let
-        _ = U.info "TopicMap.Mouse.foreignTopicDrop" ("dropped "
+        _ = Console.info "TopicMap.Mouse.foreignTopicDrop" ("dropped "
           ++ fromInt (toTopicId sourceTopicId) ++ " (box " ++ Box.fromPath sourceBoxPath
           ++ ") on " ++ fromInt (toTopicId targetId) ++ " (box " ++ Box.fromPath targetPath
           ++ ") --> foreign topic drop")
@@ -247,13 +247,13 @@ foreignTopicDrop sourceTopicId sourceBoxPath ({model} as env) =
         |> \(model_, cmd) -> Outcome (Directives Store Push) cmd model_
     Nothing ->
       let
-        _ = U.info "TopicMap.Mouse.foreignTopicDrop"
+        _ = Console.info "TopicMap.Mouse.foreignTopicDrop"
           "foreign topic drag ended w/o target -> do nothing"
       in
       noOp
     _ ->
       let
-        _ = U.logError "TopicMap.Mouse.foreignTopicDrop" "Unexpected drop target"
+        _ = Console.logError "TopicMap.Mouse.foreignTopicDrop" "Unexpected drop target"
           model.mouse.dropTarget
       in
       noOp
@@ -264,7 +264,7 @@ assocDragEnd sourceTopicId sourceBoxPath model =
   case model.mouse.dropTarget of
     Just (T targetId, targetPath) ->
       let
-        _ = U.info "TopicMap.Mouse.assocDragEnd" ("assoc drawn from "
+        _ = Console.info "TopicMap.Mouse.assocDragEnd" ("assoc drawn from "
           ++ fromInt (toTopicId sourceTopicId) ++ " (box " ++ Box.fromPath sourceBoxPath
           ++ ") to " ++ fromInt (toTopicId targetId) ++ " (box " ++ Box.fromPath targetPath
           ++ ") --> create assoc")
@@ -276,7 +276,7 @@ assocDragEnd sourceTopicId sourceBoxPath model =
         (model |> createAssoc sourceTopicId targetId boxId)
     Nothing ->
       let
-        _ = U.info "TopicMap.Mouse.assocDragEnd" "drawn assoc ended w/o target"
+        _ = Console.info "TopicMap.Mouse.assocDragEnd" "drawn assoc ended w/o target"
       in
       Outcome.with Cmd.none model
     _ ->

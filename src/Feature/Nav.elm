@@ -1,13 +1,13 @@
 port module Feature.Nav exposing (boxIdFromHash, pushUrl, update, sub)
 
 import Box
+import Console
 import Env exposing (Env)
 import Feature.NavDef as NavDef
 import Model exposing (Model, Msg(..))
 import ModelBase exposing (..)
 import Outcome exposing (..)
 import TopicMap.TopicMap as TopicMap
-import Utils as U
 
 import Browser.Dom as Dom
 import String exposing (fromInt)
@@ -53,7 +53,7 @@ hashChanged hash ({model} as env) =
         |> Outcome.newWith (Directives Store Reset)
     Nothing ->
       let
-        _ = U.info "Feature.Nav.hashChanged"
+        _ = Console.info "Feature.Nav.hashChanged"
           ("No hash -> redirect to " ++ fromInt (toBoxId model.boxId))
       in
       Outcome.with (pushUrl model.boxId) model
@@ -70,7 +70,7 @@ setFullscreen boxId ({model} as env) =
       |> .model
   , Cmd.batch
       [ setViewport newModel
-      , U.command (Cancel Nothing)
+      , Outcome.command (Cancel Nothing)
       ]
   )
 
@@ -84,10 +84,10 @@ setViewport model =
           (\result ->
             case result of
               Ok () -> NoOp
-              Err e -> U.logError "Feature.Nav.setViewport" (U.toString e) NoOp
+              Err e -> Console.logError "Feature.Nav.setViewport" (Console.toString e) NoOp
           )
     Nothing ->
-      U.fail "Feature.Nav.setViewport" model.boxId Cmd.none
+      Console.fail "Feature.Nav.setViewport" model.boxId Cmd.none
 
 
 {- Pushes a new box-URL. This results in rendering the given box fullscreen.
@@ -107,7 +107,8 @@ boxIdFromHash hash =
         True -> case String.dropLeft 1 hash |> String.toInt of
           Just boxId -> Just (BoxId (TopicId boxId))
           Nothing ->
-            U.logError "Feature.Nav.boxIdFromHash"
+            Console.logError "Feature.Nav.boxIdFromHash"
               ("not a number after hash in \"" ++ hash ++ "\"") Nothing
         False ->
-          U.logError "Feature.Nav.boxIdFromHash" ("\"" ++ hash ++ "\" is not a hash") Nothing
+          Console.logError "Feature.Nav.boxIdFromHash" ("\"" ++ hash ++ "\" is not a hash")
+            Nothing

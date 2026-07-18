@@ -1,9 +1,9 @@
 module Assoc exposing (fromId, create, relatedTopics, otherTopicId)
 
+import Console
 import Model exposing (Model)
 import ModelBase exposing (..)
 import Topic
-import Utils as U
 
 import Dict
 
@@ -16,7 +16,7 @@ fromId : AssocId -> Model -> Maybe Assoc
 fromId assocId model =
   case model.assocs |> Dict.get (toAssocId assocId) of
     Just assoc -> Just assoc
-    Nothing -> U.assocNotFound "Assoc.fromId" assocId Nothing
+    Nothing -> Console.assocNotFound "Assoc.fromId" assocId Nothing
 
 
 create : AssocType -> TopicId -> TopicId -> Model -> (Model, AssocId)
@@ -57,7 +57,7 @@ relatedTopics topicId model =
             Nothing -> acc
         )
         []
-    Nothing -> U.fail "Assoc.relatedTopics" {topicId = topicId} []
+    Nothing -> Console.fail "Assoc.relatedTopics" {topicId = topicId} []
 
 
 otherTopicId : AssocId -> TopicId -> Model -> Maybe TopicId
@@ -69,6 +69,6 @@ otherTopicId assocId topicId model =
       else if topicId == topicId2 then
         Just topicId1
       else
-        U.logError "Assoc.otherTopicId"
-          (U.toString topicId ++ " is not connected by " ++ U.toString assocId) Nothing
-    Nothing -> U.fail "Assoc.otherTopicId" {assocId = assocId, topicId = topicId} Nothing
+        Console.logError "Assoc.otherTopicId" (Console.toString topicId
+          ++ " is not connected by " ++ Console.toString assocId) Nothing
+    Nothing -> Console.fail "Assoc.otherTopicId" {assocId = assocId, topicId = topicId} Nothing

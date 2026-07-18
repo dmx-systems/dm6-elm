@@ -1,7 +1,7 @@
 module Extension exposing (Renderer(..), defaultRenderer, toString, fromString, encodeRenderer,
   rendererDecoder)
 
--- import Utils as U -- TODO: cyclic
+-- import Console -- TODO: cyclic
 
 import Json.Decode as D
 import Json.Encode as E
@@ -32,7 +32,7 @@ fromString str =
     "TopicList" -> Just TopicList
     _ ->
       -- let
-      --   _ = U.logError "Extension.fromString" "Unknown renderer" str
+      --   _ = Console.logError "Extension.fromString" "Unknown renderer" str
       -- in
       Nothing
 

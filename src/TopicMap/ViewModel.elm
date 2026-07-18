@@ -1,12 +1,12 @@
 module TopicMap.ViewModel exposing (topicsToRender, isLimboTopic, isLimboAssoc, limboState)
 
 import Box
+import Console
 import Feature.SearchDef exposing (SearchResult(..))
 import Model exposing (Model)
 import ModelBase exposing (..)
 import TopicMap.TopicMap as TM
 import TopicMap.TopicMapDef exposing (TopicMap, MapTopic)
-import Utils as U
 
 
 
@@ -37,7 +37,7 @@ limboMapTopic topicMap model =
     Just (topicId, _, limboBoxId) ->
       if limboBoxId == topicMap.id && (not <| Box.hasItem (T topicId) topicMap.id model) then
         let
-          _ = U.info "TopicMap.ViewModel.limboMapTopic"
+          _ = Console.info "TopicMap.ViewModel.limboMapTopic"
             (topicId, "not in topicMap", topicMap.id)
           mapTopic =
             case TM.mapTopicOrNothing topicId topicMap of

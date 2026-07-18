@@ -2,6 +2,7 @@ port module Main exposing (..)
 
 import Box
 import Config as C
+import Console
 import Dispatch exposing (dispatch)
 import Env exposing (Env)
 import Feature.Icon as Icon
@@ -19,7 +20,6 @@ import Shared.Events as Events
 import TopicMap.Controller as TMC
 import TopicMap.TopicMap as TopicMap
 import Undo exposing (UndoModel)
-import Utils as U
 
 import Browser
 import Html exposing (Html, div, text, br)
@@ -76,20 +76,20 @@ initModel flags =
   case flags |> D.decodeValue (D.null True) of
     Ok True ->
       let
-        _ = U.info "Main.initModel" "localStorage: empty"
+        _ = Console.info "Main.initModel" "localStorage: empty"
       in
       Model.init
     _ ->
       case flags |> D.decodeValue Model.decoder of
         Ok model ->
           let
-            _ = U.info "Main.initModel" ("localStorage: " ++ bytes ++ " bytes")
-            bytes = model |> U.toString |> String.length |> fromInt
+            _ = Console.info "Main.initModel" ("localStorage: " ++ bytes ++ " bytes")
+            bytes = model |> Console.toString |> String.length |> fromInt
           in
           model
         Err e ->
           let
-            _ = U.logError "Main.initModel" "localStorage" e
+            _ = Console.logError "Main.initModel" "localStorage" e
           in
           Model.init
 
@@ -219,7 +219,7 @@ update msg ({present} as undoModel) =
     _ =
       case msg of
         Mouse (MouseDef.Move _) -> msg
-        _ -> U.info "Main.update" msg
+        _ -> Console.info "Main.update" msg
     env = Env present dispatch
     outcome =
       case msg of

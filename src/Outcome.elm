@@ -1,9 +1,11 @@
 module Outcome exposing (Outcome, Directives, Storage(..), History(..), default, from, new,
-  newWith, with, map, perform)
+  newWith, with, map, perform, command)
 
 import Model exposing (Model, Msg)
 import Storage as S
 import Undo exposing (UndoModel)
+
+import Task
 
 
 
@@ -95,3 +97,11 @@ perform undoModel {directives, cmd, model} =
   undoModel
     |> performHistory
     |> performStorage
+
+
+--
+
+command : msg -> Cmd msg
+command msg =
+  Task.succeed ()
+    |> Task.perform (\_ -> msg)

@@ -4,12 +4,12 @@ module Box exposing (topicIds, assocIds, turnTopicIntoBox, init, addTopic, addAs
   fromPath, topicCount, traverse)
 
 import Assoc
+import Console
 import Env exposing (Env)
 import Extension exposing (Renderer)
 import Model exposing (Model)
 import ModelBase exposing (..)
 import Topic
-import Utils as U
 
 import Dict
 import String exposing (fromInt)
@@ -36,7 +36,7 @@ itemIds filter boxId model =
     Just itemSet ->
       itemSet.items
         |> List.filterMap (.id >> filter)
-    Nothing -> U.fail "Box.itemIds" boxId []
+    Nothing -> Console.fail "Box.itemIds" boxId []
 
 
 -- Create box
@@ -112,7 +112,7 @@ addToItemSet_ setItem itemSetId ({itemSets} as model) =
     (\maybeItemSet ->
       case maybeItemSet of
         Just itemSet -> Just { itemSet | items = setItem :: itemSet.items }
-        Nothing -> U.itemSetNotFound "Box.addToItemSet_" itemSetId Nothing
+        Nothing -> Console.itemSetNotFound "Box.addToItemSet_" itemSetId Nothing
     )
   }
 
@@ -187,7 +187,7 @@ removeTopic topicId boxId model =
         |> deleteAssoc assocId
     _ ->
       let
-        _ = U.fail "Box.removeTopic" "Unexpected state" {topicId = topicId, boxId = boxId}
+        _ = Console.fail "Box.removeTopic" "Unexpected state" {topicId = topicId, boxId = boxId}
       in
       model
 
@@ -232,14 +232,14 @@ hierarchyAssoc topicId boxId model =
   case Topic.fromId topicId model of
     Just topic ->
       findHierarchy topicId boxId topic.assocIds model
-    Nothing -> U.fail "Box.hierarchyAssoc" {topicId = topicId, boxId = boxId} Nothing
+    Nothing -> Console.fail "Box.hierarchyAssoc" {topicId = topicId, boxId = boxId} Nothing
 
 
 findHierarchy : TopicId -> BoxId -> AssocIds -> Model -> Maybe AssocId
 findHierarchy topicId boxId assocIds_ model =
   case assocIds_ of
     [] ->
-      U.logError "Box.findHierarchy" ("Missing Hierarchy association between Topic "
+      Console.logError "Box.findHierarchy" ("Missing Hierarchy association between Topic "
         ++ fromInt (toTopicId topicId) ++ " and Box " ++ fromInt (toBoxId boxId)) Nothing
     assocId :: ids ->
       case Assoc.fromId assocId model of
@@ -266,7 +266,7 @@ deleteTopic topicId model =
           model
       )
       |> deleteTopic_ topicId
-    Nothing -> U.fail "Box.deleteTopic" {topicId = topicId} model
+    Nothing -> Console.fail "Box.deleteTopic" {topicId = topicId} model
 
 
 deleteAssoc : AssocId -> Model -> Model
@@ -287,7 +287,7 @@ removeAssocFromTopics assocId model =
       model
         |> removeAssocFromTopic assoc.id assoc.topicId1
         |> removeAssocFromTopic assoc.id assoc.topicId2
-    Nothing -> U.fail "Box.removeAssocFromTopics" {assocId = assocId} model
+    Nothing -> Console.fail "Box.removeAssocFromTopics" {assocId = assocId} model
 
 
 {-| Removes an association ID from the item's set of association IDs.
@@ -350,7 +350,7 @@ expansionOf : TopicId -> BoxId -> Model -> Expansion
 expansionOf topicId boxId model =
   case byId boxId model |> Maybe.andThen (\box -> topicFrom topicId box model) of
     Just {expansion} -> expansion
-    Nothing -> U.fail "Box.expansionOf" {topicId = topicId, boxId = boxId} Collapsed
+    Nothing -> Console.fail "Box.expansionOf" {topicId = topicId, boxId = boxId} Collapsed
 
 
 updateExpansion : TopicId -> BoxId -> (Expansion -> Expansion) -> Model -> Model
@@ -378,7 +378,7 @@ rendererOf : BoxId -> Model -> Maybe Renderer
 rendererOf boxId model =
   case byId boxId model of
     Just box -> Just box.renderer
-    Nothing -> U.fail "Box.rendererOf" {boxId = boxId} Nothing
+    Nothing -> Console.fail "Box.rendererOf" {boxId = boxId} Nothing
 
 
 setRenderer : BoxId -> Renderer -> Model -> Model
@@ -406,7 +406,7 @@ setRenderer_ boxId renderer ({boxes} as model) =
         Just box -> Just { box | renderer = renderer }
         Nothing ->
           let
-            _ = U.logError "Box.setRenderer_" "Box not found" boxId
+            _ = Console.logError "Box.setRenderer_" "Box not found" boxId
           in
           Nothing
     )
@@ -458,16 +458,16 @@ itemSetOf boxId model =
     Just box ->
       case Dict.get box.itemSetId model.itemSets of
         Just itemSet -> Just itemSet
-        Nothing -> U.logError "Box.itemSetOf" ("Missing underlying ItemSet ("
+        Nothing -> Console.logError "Box.itemSetOf" ("Missing underlying ItemSet ("
           ++ fromInt box.itemSetId ++ ") of Box " ++ fromInt (toBoxId boxId)) Nothing
-    Nothing -> U.fail "Box.itemSetOf" {boxId = boxId} Nothing
+    Nothing -> Console.fail "Box.itemSetOf" {boxId = boxId} Nothing
 
 
 hasBoxTopic : TopicId -> BoxId -> Model -> Bool
 hasBoxTopic topicId boxId model =
   case byId boxId model of
     Just box -> box.topics |> Dict.member (toTopicId topicId)
-    Nothing -> U.fail "Box.hasBoxTopic" {topicId = topicId, boxId = boxId} False
+    Nothing -> Console.fail "Box.hasBoxTopic" {topicId = topicId, boxId = boxId} False
 
 
 {-| Logs an error if the box is missing. -}
@@ -475,14 +475,14 @@ byId : BoxId -> Model -> Maybe Box
 byId boxId model =
   case model.boxes |> Dict.get (toBoxId boxId) of
     Just box -> Just box
-    Nothing -> U.boxNotFound "Box.byId" boxId Nothing
+    Nothing -> Console.boxNotFound "Box.byId" boxId Nothing
 
 
 topicFrom : TopicId -> Box -> Model -> Maybe BoxTopic
 topicFrom (TopicId id) box model =
   case box.topics |> Dict.get id of
     Just topic -> Just topic
-    Nothing -> U.logError "Box.topicFrom"
+    Nothing -> Console.logError "Box.topicFrom"
       ("Missing BoxTopic " ++ fromInt id ++ " in Box " ++ fromInt (toBoxId box.id))
       Nothing
 
@@ -494,7 +494,7 @@ mapTitle : Model -> String
 mapTitle model =
   case Topic.fromId (fromBoxId model.boxId) model of
     Just topic -> Topic.label topic
-    Nothing -> U.fail "mapTitle" model.boxId "??"
+    Nothing -> Console.fail "mapTitle" model.boxId "??"
 
 
 isFullscreen : BoxId -> Model -> Bool
@@ -518,7 +518,7 @@ firstId : BoxPath -> BoxId
 firstId boxPath =
   case boxPath of
     boxId :: _ -> boxId
-    [] -> U.logError "firstId" "boxPath is empty!" (BoxId (TopicId -1)) -- ### FIXME: -1
+    [] -> Console.logError "firstId" "boxPath is empty!" (BoxId (TopicId -1)) -- ### FIXME: -1
 
 
 fromPath : BoxPath -> String
@@ -614,4 +614,4 @@ topicLookup : Model -> TopicId -> Maybe Topic
 topicLookup model topicId =
   case Topic.fromId topicId model of
     Just topic -> Just topic
-    Nothing -> U.fail "Box.topicLookup" topicId Nothing
+    Nothing -> Console.fail "Box.topicLookup" topicId Nothing

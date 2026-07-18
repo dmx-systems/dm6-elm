@@ -2,6 +2,7 @@ module TopicList.Mouse exposing (dragStart, drag, updateDropTarget, dragStop)
 
 import Box
 import Config as C
+import Console
 import Env exposing (Env)
 import Extension
 import Feature.Sel as Sel
@@ -13,7 +14,6 @@ import TopicList.TopicList as TopicList
 import TopicList.TopicListDef exposing (DropMode(..))
 import TopicMap.Mouse
 import TopicMap.TopicMap as TopicMap
-import Utils as U
 
 import Array
 
@@ -28,7 +28,7 @@ dragStart {model} =
           |> setDragPos (Just (toElemPos startPos ixBoxPath model))
       Nothing ->
         let
-          _ = U.logError "TopicList.Mouse.dragStart" "Unexpected drag state"
+          _ = Console.logError "TopicList.Mouse.dragStart" "Unexpected drag state"
             model.mouse.dragSource
         in
         model
@@ -47,7 +47,7 @@ toElemPos clientPos ixBoxPath model =
         Nothing -> 0
     x = 41 + 41 * level -- 41 = 40 + 1px item border
     y = index * (C.listItemHeight + 4) - level + 16 -- 4 = 2px border (top/bottom) + 2px browser
-    _ = U.info "TopicList.Mouse.toElemPos" (index, localPos)
+    _ = Console.info "TopicList.Mouse.toElemPos" (index, localPos)
   in
   Point x y
 
@@ -74,7 +74,7 @@ drag clientPos {model} =
             )
       _ ->
         let
-          _ = U.logError "TopicList.Mouse.drag" "Unexpected drag state"
+          _ = Console.logError "TopicList.Mouse.drag" "Unexpected drag state"
             (model.mouse.dragSource, model.topicList.dragPos)
         in
         model
@@ -107,10 +107,10 @@ acceptAssoc model =
             Just (T topicId, targetPath)
           else
             Nothing
-        _ -> U.logError "TopicList.Mouse.acceptAssoc" "Empty ixBoxPath" Nothing
+        _ -> Console.logError "TopicList.Mouse.acceptAssoc" "Empty ixBoxPath" Nothing
     _ ->
       let
-        _ = U.logError "TopicList.Mouse.acceptAssoc" "Unexpected mouse state"
+        _ = Console.logError "TopicList.Mouse.acceptAssoc" "Unexpected mouse state"
           (model.mouse.hover, model.mouse.dragSource)
       in
       Nothing
@@ -138,7 +138,7 @@ dropTargetAt clientPos model =
               else
                 (InsertBefore, fromBoxId dropBoxId)
             isCyclic = Box.hadDeepTopic targetBoxId topicId model
-            -- _ = U.info "TopicList.Mouse.dropTargetAt" (targetBoxId, dropMode, localPos)
+            -- _ = Console.info "TopicList.Mouse.dropTargetAt" (targetBoxId, dropMode, localPos)
           in
           if not isCyclic then
             Just (target, dropMode)
@@ -148,7 +148,7 @@ dropTargetAt clientPos model =
           Nothing -- TODO: error?
     _ ->
       let
-        _ = U.logError "TopicList.Mouse.dropTargetAt" "Unexpected mouse state"
+        _ = Console.logError "TopicList.Mouse.dropTargetAt" "Unexpected mouse state"
           (model.mouse.hover, model.mouse.dragSource)
       in
       Nothing
@@ -167,14 +167,14 @@ dragStop ({model} as env) =
                 |> processDrop topicId (Box.firstId boxPath) targetTopicId targetBoxId
             Nothing ->
               let
-                _ = U.info "TopicList.Mouse.dragStop" "no drop target -> select topic"
+                _ = Console.info "TopicList.Mouse.dragStop" "no drop target -> select topic"
               in
               Outcome.with Cmd.none <| Sel.select (T topicId) boxPath model
             _ ->
-              U.logError "TopicList.Mouse.dragStop" (U.toString model.mouse.dropTarget)
-                (Outcome.with Cmd.none model)
+              Console.logError "TopicList.Mouse.dragStop"
+                (Console.toString model.mouse.dropTarget) (Outcome.with Cmd.none model)
         _ ->
-          U.logError "TopicList.Mouse.dragStop" (U.toString model.mouse.dragSource)
+          Console.logError "TopicList.Mouse.dragStop" (Console.toString model.mouse.dragSource)
             (Outcome.with Cmd.none model)
   in
   outcome
@@ -185,7 +185,7 @@ dragStop ({model} as env) =
 processDrop : TopicId -> BoxId -> TopicId -> BoxId -> Env -> Outcome
 processDrop sourceTopicId sourceBoxId targetTopicId targetBoxId ({model} as env) =
   let
-    _ = U.info "TopicList.Mouse.processDrop"
+    _ = Console.info "TopicList.Mouse.processDrop"
       { sourceTopicId = sourceTopicId
       , sourceBoxId = sourceBoxId
       , targetTopicId = targetTopicId
@@ -208,7 +208,7 @@ processDrop sourceTopicId sourceBoxId targetTopicId targetBoxId ({model} as env)
             |> Env.autoSize
         Nothing ->
           let
-            _ = U.logError "TopicList.Mouse.processDrop" "Unexpected dropMode" Nothing
+            _ = Console.logError "TopicList.Mouse.processDrop" "Unexpected dropMode" Nothing
           in
           env_
   in
@@ -242,6 +242,6 @@ setDragPos dragPos ({topicList} as model) =
 setDropMode : Maybe DropMode -> Model -> Model
 setDropMode dropMode ({topicList} as model) =
   -- let
-  --   _ = U.info "TopicList.Mouse.setDropMode" dropMode
+  --   _ = Console.info "TopicList.Mouse.setDropMode" dropMode
   -- in
   { model | topicList = { topicList | dropMode = dropMode }}

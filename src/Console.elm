@@ -1,23 +1,10 @@
-module Utils exposing (..)
+module Console exposing (..)
 
 import ModelBase exposing (..)
 
 import Logger
 import String exposing (fromInt)
-import Task
 
-
-
--- COMMAND
-
-
-command : msg -> Cmd msg
-command msg =
-  Task.succeed () |> Task.perform (\_ -> msg)
-
-
-
--- DEBUG
 
 
 topicNotFound : String -> TopicId -> a -> a

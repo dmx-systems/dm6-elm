@@ -1,6 +1,7 @@
 module Dispatch exposing (dispatch)
 
 import Box
+import Console
 import Env exposing (Env, Dispatch)
 import Extension
 import Model exposing (Model, Msg)
@@ -14,7 +15,6 @@ import TopicMap.TopicMap
 import TopicMap.Geometry
 import TopicMap.Mouse
 import TopicMap.View
-import Utils as U
 
 import Dict exposing (Dict)
 import Html exposing (Html, text)
@@ -185,7 +185,7 @@ dragStart model =
         (\env renderer -> renderer.dragStart env)
     _ ->
       let
-        _ = U.logError "Dispatch.dragStart" "Unexpected drag state" model.mouse.dragSource
+        _ = Console.logError "Dispatch.dragStart" "Unexpected drag state" model.mouse.dragSource
       in
       (model, Cmd.none)
 

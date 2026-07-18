@@ -2,6 +2,7 @@ module TopicMap.Geometry exposing (hitTest, autoSize)
 
 import Box
 import Config as C
+import Console
 import Env exposing (Env, Dispatch)
 import Feature.TextDef exposing (EditState(..))
 import Model exposing (Model)
@@ -10,7 +11,6 @@ import Topic
 import TopicMap.TopicMap as TM
 import TopicMap.TopicMapDef exposing (TopicMap, MapTopic)
 import TopicMap.ViewModel as VM
-import Utils as U
 
 
 
@@ -318,7 +318,7 @@ updateBoxGeometry boxPath newRect oldRect model =
         model |> setBoxRect boxId newRect
     [ boxId ] ->
       model |> setBoxRect boxId newRect
-    [] -> U.logError "updateBoxGeometry" "boxPath is empty!" model
+    [] -> Console.logError "updateBoxGeometry" "boxPath is empty!" model
 
 
 setBoxRect : BoxId -> Rectangle -> Model -> Model

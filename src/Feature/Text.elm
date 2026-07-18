@@ -3,6 +3,7 @@ port module Feature.Text exposing (viewInput, viewTextarea, enterEdit, leaveEdit
 
 import Box
 import Config as C
+import Console
 import Env exposing (Env)
 import Feature.TextDef as TextDef exposing (EditState(..), TopicImage)
 import Model exposing (Model, Msg(..))
@@ -11,7 +12,6 @@ import Outcome exposing (..)
 import Shared.Events as Events
 import Task
 import Topic
-import Utils as U
 
 import Browser.Dom as Dom
 import Dict
@@ -56,7 +56,7 @@ decodeTopicImage value =
       (Text << TextDef.ImageFilePicked) topicImage
     Err e ->
       let
-        _ = U.logError "Feature.Text.decodeTopicImage" "decoding onImageFilePicked" e
+        _ = Console.logError "Feature.Text.decodeTopicImage" "decoding onImageFilePicked" e
       in
       NoOp
 
@@ -186,7 +186,7 @@ onTextInput text model =
         |> setTopicText topicId text
     NoEdit ->
       let
-        _ = U.logError "Feature.Text.onTextInput" "Unexpected model.text.edit state"
+        _ = Console.logError "Feature.Text.onTextInput" "Unexpected model.text.edit state"
           model.text.edit
       in
       model
@@ -201,7 +201,7 @@ onTextareaInput text model =
         |> measureText topicId text
     NoEdit ->
       let
-        _ = U.logError "Feature.Text.onTextareaInput" "Unexpected model.text.edit state"
+        _ = Console.logError "Feature.Text.onTextareaInput" "Unexpected model.text.edit state"
           model.text.edit
       in
       (model, Cmd.none)
@@ -226,7 +226,9 @@ measureElement elemId topicId sizeField =
           )
         -- Note: not all renderers do text measuring (the TopicList renderer does not).
         -- TODO: don't call in the first place and regard dom-not-found an error.
-        Err err -> {- U.logError "Feature.Text.measureElement" (U.toString err) -} NoOp
+        Err err ->
+          {- Console.logError "Feature.Text.measureElement" (Console.toString err) -}
+          NoOp
     )
 
 
@@ -240,7 +242,7 @@ focus model =
           Box.elemId "input" id boxPath
         NoEdit ->
           let
-            _ = U.logError "Feature.Text.focus" "Unexpected model.text.edit state"
+            _ = Console.logError "Feature.Text.focus" "Unexpected model.text.edit state"
               model.text.edit
           in
           ""
@@ -250,7 +252,7 @@ focus model =
       (\result ->
         case result of
           Ok () -> NoOp
-          Err e -> U.logError "Feature.Text.focus" (U.toString e) NoOp
+          Err e -> Console.logError "Feature.Text.focus" (Console.toString e) NoOp
       )
 
 
@@ -347,12 +349,12 @@ resolveImageUrl url title altInlines model =
             Just blobUrl -> blobUrl
             Nothing ->
               let
-                _ = U.info "Feature.Text.resolveImageUrl" ("MISSING", imageId)
+                _ = Console.info "Feature.Text.resolveImageUrl" ("MISSING", imageId)
               in
               url
         Nothing ->
           let
-            _ = U.info "Feature.Text.resolveImageUrl" ("INVALID", url)
+            _ = Console.info "Feature.Text.resolveImageUrl" ("INVALID", url)
           in
           url
   in

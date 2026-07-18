@@ -1,9 +1,9 @@
 module Topic exposing (fromId, label, size, setSize, create, update, isBox)
 
 import Config as C
+import Console
 import Model exposing (Model)
 import ModelBase exposing (..)
-import Utils as U
 
 import Dict
 
@@ -16,7 +16,7 @@ fromId : TopicId -> Model -> Maybe Topic
 fromId topicId model =
   case model.topics |> Dict.get (toTopicId topicId) of
     Just topic -> Just topic
-    Nothing -> U.topicNotFound "Topic.fromId" topicId Nothing
+    Nothing -> Console.topicNotFound "Topic.fromId" topicId Nothing
 
 
 label : Topic -> String
@@ -33,7 +33,7 @@ size : TopicId -> (TextSize -> Size) -> Model -> Maybe Size
 size topicId get model =
   case fromId topicId model of
     Just topic -> Just <| get topic.size
-    Nothing -> U.fail "Topic.size" {topicId = topicId} Nothing
+    Nothing -> Console.fail "Topic.size" {topicId = topicId} Nothing
 
 
 {-| Logs an error if box does not exist, or topic is not in box -}
@@ -81,7 +81,7 @@ update topicId transform ({topics} as model) =
     (\maybeTopic ->
       case maybeTopic of
         Just topic -> Just <| transform topic
-        Nothing -> U.topicNotFound "Topic.update" topicId Nothing
+        Nothing -> Console.topicNotFound "Topic.update" topicId Nothing
     )
   }
 

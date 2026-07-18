@@ -4,6 +4,7 @@ module Feature.Search exposing (viewInput, viewSearchResult, viewTraversalResult
 import Assoc
 import Box
 import Config as C
+import Console
 import Env exposing (Env)
 import Feature.Icon as Icon
 import Feature.Nav as Nav
@@ -15,7 +16,6 @@ import Outcome exposing (..)
 import Shared.Events as Events
 import Topic
 import TopicMap.TopicMap as TopicMap
-import Utils as U
 
 import Dict
 import Html exposing (Html, button, div, input, text)
@@ -322,7 +322,7 @@ onTopicHovered topicId ({model} as env) =
         |> Env.autoSize
     _ ->
       let
-        _ = U.logError "Feature.Search.onTopicHovered"
+        _ = Console.logError "Feature.Search.onTopicHovered"
           "For model.search.result Topics is expected but is" model.search.result
       in
       env
@@ -337,7 +337,7 @@ onRelTopicHovered relTopicId ({model} as env) =
         |> Env.autoSize
     _ ->
       let
-        _ = U.logError "Feature.Search.onRelTopicHovered"
+        _ = Console.logError "Feature.Search.onRelTopicHovered"
           "For model.search.result RelTopics is expected but is" model.search.result
       in
       env
@@ -352,7 +352,7 @@ onTopicUnhovered ({model} as env) =
         |> Env.autoSize
     _ ->
       let
-        _ = U.logError "Feature.Search.onTopicUnhovered"
+        _ = Console.logError "Feature.Search.onTopicUnhovered"
           "For model.search.result Topics is expected but is" model.search.result
       in
       env
@@ -367,7 +367,7 @@ onRelTopicUnhovered ({model} as env) =
         |> Env.autoSize
     _ ->
       let
-        _ = U.logError "Feature.Search.onRelTopicUnhovered"
+        _ = Console.logError "Feature.Search.onRelTopicUnhovered"
           "For model.search.result RelTopics is expected but is" model.search.result
       in
       env

@@ -1,18 +1,18 @@
 module Feature.Sel exposing (select, clear, isSelected, single, landingBoxPath)
 
 import Box
+import Console
 import Feature.SelDef exposing (Selection)
 import Model exposing (Model)
 import ModelBase exposing (..)
 import Topic
-import Utils as U
 
 
 
 select : ItemId -> BoxPath -> Model -> Model
 select itemId boxPath model =
   let
-    _ = U.info "Feature.Sel.select" (itemId, boxPath)
+    _ = Console.info "Feature.Sel.select" (itemId, boxPath)
   in
   model
     |> setItems [ (itemId, boxPath) ]

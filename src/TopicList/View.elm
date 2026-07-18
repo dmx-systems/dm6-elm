@@ -2,6 +2,7 @@ module TopicList.View exposing (view)
 
 import Box
 import Config as C
+import Console
 import Env exposing (Env)
 import Feature.Mouse as Mouse
 import Feature.Text as Text
@@ -13,7 +14,6 @@ import Shared.ViewBase as VB
 import Topic
 import TopicList.TopicList as TopicList
 import TopicList.TopicListDef exposing (DropMode(..), Targets)
-import Utils as U
 
 import Array
 import Html exposing (Html, div, ul, li, text)
@@ -219,9 +219,10 @@ findIndexOf target targets =
   in
   case found of
     [(index, (level, _))] -> Just (index, level)
-    [] -> U.logError "TopicList.View.findIndexOf"
-      ("Target " ++ U.toString target ++ " not found")
+    [] -> Console.logError "TopicList.View.findIndexOf"
+      ("Target " ++ Console.toString target ++ " not found")
       Nothing
-    _ -> U.logError "TopicList.View.findIndexOf"
-      ("Target " ++ U.toString target ++ " found " ++ fromInt (List.length found) ++ " times")
+    _ -> Console.logError "TopicList.View.findIndexOf"
+      ("Target " ++ Console.toString target ++ " found " ++ fromInt (List.length found)
+        ++ " times")
       Nothing
