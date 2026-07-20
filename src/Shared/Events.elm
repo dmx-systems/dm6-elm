@@ -20,6 +20,7 @@ globalMouseHandler =
   , on "pointerup" (D.succeed (Mouse MouseDef.Up))
   -- "Cancel UI"
   , on "pointerdown" (D.succeed (Mouse MouseDef.Cancel))
+  , on "pointerleave" (D.succeed (Mouse MouseDef.Leave))
   ]
 
 

@@ -36,15 +36,21 @@ update msg ({model, dispatch} as env) =
     (MouseDef.Up, Just dragSource) ->
       env
         |> dragStop dragSource
-        |> Outcome.map (setDragSource Nothing)
-        |> Outcome.map (setDropTarget Nothing)
+        |> Outcome.map resetDragState
     (MouseDef.Cancel, _) ->
-      model
-        |> Outcome.with (Outcome.command <| Cancel Nothing)
+      env
+        |> Env.outcomeWithCmd (Outcome.command <| Cancel Nothing)
+    (MouseDef.Leave, _) ->
+      -- TODO: explicit abort-drag semantics resp. rethink pointer-leaves-screen in general.
+      -- Possibly introduce another hook to let modules react idiosyncratically, e.g. the
+      -- TopicMap module might want persist changed topic geometry.
+      env
+        |> Env.map resetDragState
+        |> Env.outcome
     _ ->
       -- TODO: match no-op vs. error cases explicitly
-      model
-        |> Outcome.default
+      env
+        |> Env.outcome
 
 
 updateDropTarget : Point -> Dispatch -> (Model, Cmd Msg) -> (Model, Cmd Msg)
@@ -73,6 +79,13 @@ dragStop dragSource {model, dispatch} =
   in
   model
     |> dispatch.dragStop stopBoxId
+
+
+resetDragState : Model -> Model
+resetDragState model =
+  model
+    |> setDragSource Nothing
+    |> setDropTarget Nothing
 
 
 -- Hover

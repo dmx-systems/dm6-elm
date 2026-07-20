@@ -37,7 +37,7 @@ type alias DragSource =
   , boxPath : BoxPath      -- direct topic context                        |
   , ixBoxPath : BoxPath    -- interaction box path - wider topic context  | constant while drag
   , startPos : Point       -- pointerdown position (client coordinates)   /
-  , lastPointerPos : Point -- pointermove position (client coordinates) -- rename lastClientPos?
+  , lastPointerPos : Point -- pointermove position (client coordinates) -- rename lastPos?
   }
 
 
@@ -50,3 +50,4 @@ type Msg
   | Up                        -- (fired by handlers created by Events.globalMouseHandler)
   -- UI cancellation
   | Cancel -- pointerdown somewhere (fired by handlers created by Events.globalMouseHandler)
+  | Leave
