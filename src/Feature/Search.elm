@@ -281,7 +281,7 @@ update msg env =
     SearchDef.TopicClicked topicId ->
       env
         |> revealTopic topicId
-        |> Env.outcomeWith (Directives Store Push)
+        |> Env.outcomeDir (Directives Store Push)
     -- Traverse
     SearchDef.RelTopicHovered relTopicId ->
       env
@@ -294,11 +294,11 @@ update msg env =
     SearchDef.RelTopicClicked relTopicId ->
       env
         |> revealRelTopic relTopicId
-        |> Env.outcomeWith (Directives Store Push)
+        |> Env.outcomeDir (Directives Store Push)
     -- Fullscreen (Search & Traverse)
     SearchDef.Fullscreen boxId ->
       env
-        |> Env.outcomeWithCmd (Nav.pushUrl boxId)
+        |> Env.outcomeCmd (Nav.pushUrl boxId)
 
 
 setSearchTerm : String -> Model -> Model

@@ -236,11 +236,11 @@ update msg ({present} as undoModel) =
         Scrolled pos ->
           present
             |> updateScrollPos pos
-            |> Outcome.from (Directives Store Swap)
+            |> Outcome.withDir (Directives Store Swap)
         Cancel maybeTarget ->
           env
             |> cancelUI maybeTarget
-            |> Outcome.new
+            |> Outcome.from
         NoOp ->
           present
             |> Outcome.default

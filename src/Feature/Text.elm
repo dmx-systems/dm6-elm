@@ -112,24 +112,24 @@ update msg ({model} as env) =
     TextDef.OnTextInput text ->
       model
         |> onTextInput text
-        |> Outcome.from (Directives Store Swap)
+        |> Outcome.withDir (Directives Store Swap)
     TextDef.OnTextareaInput text ->
       model
         |> onTextareaInput text
-        |> Outcome.newWith (Directives Store Swap)
+        |> Outcome.fromDir (Directives Store Swap)
     TextDef.GotTextSize topicId sizeField size ->
       env
         |> Env.map (Topic.setSize topicId sizeField size)
         |> Env.autoSize
-        |> Env.outcomeWith (Directives Store Swap)
+        |> Env.outcomeDir (Directives Store Swap)
     TextDef.LeaveEdit ->
       env
         |> leaveEdit
-        |> Outcome.new
+        |> Outcome.from
     TextDef.ImageFilePicked {topicId, imageId} ->
       model
         |> insertImage topicId imageId
-        |> Outcome.new
+        |> Outcome.from
     TextDef.ImageUrlResolved (imageId, url) ->
       model
         |> addToImageCache imageId url

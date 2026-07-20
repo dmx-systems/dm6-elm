@@ -319,7 +319,7 @@ update msg ({model} as env) =
     -- Global Tools
     ToolDef.Home ->
       env
-        |> Env.outcomeWithCmd (Nav.pushUrl rootBoxId)
+        |> Env.outcomeCmd (Nav.pushUrl rootBoxId)
     ToolDef.Menu ->
       env
         |> Env.map openMenu
@@ -327,29 +327,29 @@ update msg ({model} as env) =
     ToolDef.Set lineStyle ->
       env
         |> Env.map (setLineStyle lineStyle)
-        |> Env.outcomeWith (Directives Store Push)
+        |> Env.outcomeDir (Directives Store Push)
     ToolDef.Import ->
       env
-        |> Env.outcomeWithCmd (S.importJSON ())
+        |> Env.outcomeCmd (S.importJSON ())
     ToolDef.Export ->
       env
-        |> Env.outcomeWithCmd (S.exportJSON ())
+        |> Env.outcomeCmd (S.exportJSON ())
     -- Map Tools
     ToolDef.CreateTopic ->
       env
         |> createTopic
-        |> Outcome.newWith (Directives Store Push)
+        |> Outcome.fromDir (Directives Store Push)
     ToolDef.Undo ->
       model
-        |> Outcome.from (Directives Store Undo)
+        |> Outcome.withDir (Directives Store Undo)
     ToolDef.Redo ->
       model
-        |> Outcome.from (Directives Store Redo)
+        |> Outcome.withDir (Directives Store Redo)
     -- Item Tools
     ToolDef.Edit ->
       env
         |> edit
-        |> Outcome.newWith (Directives Store Push)
+        |> Outcome.fromDir (Directives Store Push)
     ToolDef.Icon ->
       env
         |> Env.map Icon.openPicker
@@ -361,32 +361,32 @@ update msg ({model} as env) =
     ToolDef.Delete ->
       env
         |> delete
-        |> Env.outcomeWith (Directives Store Push)
+        |> Env.outcomeDir (Directives Store Push)
     ToolDef.Remove ->
       env
         |> remove
-        |> Env.outcomeWith (Directives Store Push)
+        |> Env.outcomeDir (Directives Store Push)
     ToolDef.Fullscreen topicId ->
       env
         |> fullscreen topicId
-        |> Outcome.newWith (Directives Store Push)
+        |> Outcome.fromDir (Directives Store Push)
     ToolDef.RendererSelected renderer ->
       env
         |> setRenderer renderer
-        |> Env.outcomeWith (Directives Store Swap) -- TODO: better Push?
+        |> Env.outcomeDir (Directives Store Swap) -- TODO: better Push?
     ToolDef.ToggleExpansion topicId boxId ->
       env
         |> toggleExpansion topicId boxId
-        |> Env.outcomeWith (Directives Store Swap)
+        |> Env.outcomeDir (Directives Store Swap)
     -- Text Tools
     ToolDef.Image topicId ->
       model
         |> Text.openImageFilePicker topicId
-        |> Outcome.newWith (Directives Store Swap)
+        |> Outcome.fromDir (Directives Store Swap)
     ToolDef.LeaveEdit ->
       env
         |> Text.leaveEdit
-        |> Outcome.new
+        |> Outcome.from
 
 
 -- Global Tools

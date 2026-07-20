@@ -204,7 +204,7 @@ updateDropTarget boxId pos model =
 
 dragStop : BoxId -> Model -> Outcome
 dragStop boxId model =
-  dispatch_ boxId model (Outcome.with Cmd.none model)
+  dispatch_ boxId model (Outcome.default model)
     (\env renderer -> renderer.dragStop env)
 
 

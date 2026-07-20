@@ -50,13 +50,14 @@ hashChanged hash ({model} as env) =
     Just boxId ->
       env
         |> setFullscreen boxId
-        |> Outcome.newWith (Directives Store Reset)
+        |> Outcome.fromDir (Directives Store Reset)
     Nothing ->
       let
         _ = Console.info "Feature.Nav.hashChanged"
           ("No hash -> redirect to " ++ fromInt (toBoxId model.boxId))
       in
-      Outcome.with (pushUrl model.boxId) model
+      env
+        |> Env.outcomeCmd (pushUrl model.boxId)
 
 
 setFullscreen : BoxId -> Env -> (Model, Cmd Msg)

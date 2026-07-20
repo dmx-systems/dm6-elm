@@ -21,7 +21,7 @@ update msg ({model, dispatch} as env) =
         |> setDragSource (Just (DragSource topicId boxPath ixBoxPath pos pos))
         |> emulateHover topicId boxPath ixBoxPath pointerType
         |> dispatch.dragStart
-        |> Outcome.new
+        |> Outcome.from
     (MouseDef.Move (pos, _), Nothing) ->
       model
         |> updateHover pos dispatch
@@ -32,14 +32,14 @@ update msg ({model, dispatch} as env) =
         |> dispatch.drag (Box.firstId dragSource.ixBoxPath) pos
         |> updateDropTarget pos dispatch
         |> Model.map (setDragSource (Just {dragSource | lastPointerPos = pos}))
-        |> Outcome.new
+        |> Outcome.from
     (MouseDef.Up, Just dragSource) ->
       env
         |> dragStop dragSource
         |> Outcome.map resetDragState
     (MouseDef.Cancel, _) ->
       env
-        |> Env.outcomeWithCmd (Outcome.command <| Cancel Nothing)
+        |> Env.outcomeCmd (Outcome.command <| Cancel Nothing)
     (MouseDef.Leave, _) ->
       -- TODO: explicit abort-drag semantics resp. rethink pointer-leaves-screen in general.
       -- Possibly introduce another hook to let modules react idiosyncratically, e.g. the

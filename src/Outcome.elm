@@ -1,5 +1,5 @@
-module Outcome exposing (Outcome, Directives, Storage(..), History(..), default, from, new,
-  newWith, with, map, perform, command)
+module Outcome exposing (Outcome, Directives, Storage(..), History(..), default, withDir, from,
+  fromDir, map, perform, command)
 
 import Model exposing (Model, Msg)
 import Storage as S
@@ -10,9 +10,9 @@ import Task
 
 
 type alias Outcome =
-  { directives : Directives
+  { model : Model
   , cmd : Cmd Msg
-  , model : Model
+  , directives : Directives
   }
 
 
@@ -36,31 +36,26 @@ type History
   | Redo
 
 
--- TODO: replace these 5 by Builder API?
+--
 
 default : Model -> Outcome
 default model =
-  Outcome (Directives NoStore Swap) Cmd.none model
+  Outcome model Cmd.none (Directives NoStore Swap)
 
 
-from : Directives -> Model -> Outcome
-from directives model =
-  Outcome directives Cmd.none model
+withDir : Directives -> Model -> Outcome
+withDir directives model =
+  Outcome model Cmd.none directives
 
 
-new : (Model, Cmd Msg) -> Outcome
-new (model, cmd) =
-  Outcome (Directives NoStore Swap) cmd model
+from : (Model, Cmd Msg) -> Outcome
+from (model, cmd) =
+  Outcome model cmd (Directives NoStore Swap)
 
 
-newWith : Directives -> (Model, Cmd Msg) -> Outcome
-newWith directives (model, cmd) =
-  Outcome directives cmd model
-
-
-with : Cmd Msg -> Model -> Outcome
-with cmd model =
-  Outcome (Directives NoStore Swap) cmd model
+fromDir : Directives -> (Model, Cmd Msg) -> Outcome
+fromDir directives (model, cmd) =
+  Outcome model cmd directives
 
 
 --

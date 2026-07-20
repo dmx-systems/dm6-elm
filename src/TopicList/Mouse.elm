@@ -158,6 +158,7 @@ dropTargetAt clientPos model =
 dragStop : Env -> Outcome
 dragStop ({model} as env) =
   let
+    noOp = Outcome.default model
     outcome =
       case model.mouse.dragSource of
         Just {topicId, boxPath} ->
@@ -169,13 +170,15 @@ dragStop ({model} as env) =
               let
                 _ = Console.info "TopicList.Mouse.dragStop" "no drop target -> select topic"
               in
-              Outcome.with Cmd.none <| Sel.select (T topicId) boxPath model
+              env
+                |> Env.map (Sel.select (T topicId) boxPath)
+                |> Env.outcome
             _ ->
               Console.logError "TopicList.Mouse.dragStop"
-                (Console.toString model.mouse.dropTarget) (Outcome.with Cmd.none model)
+                (Console.toString model.mouse.dropTarget) noOp
         _ ->
-          Console.logError "TopicList.Mouse.dragStop" (Console.toString model.mouse.dragSource)
-            (Outcome.with Cmd.none model)
+          Console.logError "TopicList.Mouse.dragStop"
+            (Console.toString model.mouse.dragSource) noOp
   in
   outcome
     |> Outcome.map (setDragPos Nothing)
@@ -215,7 +218,7 @@ processDrop sourceTopicId sourceBoxId targetTopicId targetBoxId ({model} as env)
   env
     |> Env.map (Box.removeTopic sourceTopicId sourceBoxId)
     |> addTopic
-    |> Env.outcomeWith (Directives Store Push)
+    |> Env.outcomeDir (Directives Store Push)
 
 
 addTopic_ : TopicId -> BoxId -> Env -> Env

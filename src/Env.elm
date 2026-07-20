@@ -1,4 +1,4 @@
-module Env exposing (Env, Dispatch, map, autoSize, outcome, outcomeWith, outcomeWithCmd)
+module Env exposing (Env, Dispatch, map, autoSize, outcome, outcomeDir, outcomeCmd)
 
 import Model exposing (Model, Msg)
 import ModelBase exposing (..)
@@ -109,14 +109,14 @@ map transform ({model} as env) =
 
 outcome : Env -> Outcome
 outcome  env =
-  Outcome (Directives NoStore Swap) Cmd.none env.model
+  Outcome env.model Cmd.none (Directives NoStore Swap)
 
 
-outcomeWith : Directives -> Env -> Outcome
-outcomeWith directives env =
-  Outcome directives Cmd.none env.model
+outcomeDir : Directives -> Env -> Outcome
+outcomeDir directives env =
+  Outcome env.model Cmd.none directives
 
 
-outcomeWithCmd : Cmd Msg -> Env -> Outcome
-outcomeWithCmd cmd env =
-  Outcome (Directives NoStore Swap) cmd env.model
+outcomeCmd : Cmd Msg -> Env -> Outcome
+outcomeCmd cmd env =
+  Outcome env.model cmd (Directives NoStore Swap)
