@@ -176,7 +176,7 @@ dragStop ({model} as env) =
             _ ->
               Console.logError "TopicList.Mouse.dragStop"
                 (Console.toString model.mouse.dropTarget) noOp
-        _ ->
+        Nothing ->
           Console.logError "TopicList.Mouse.dragStop"
             (Console.toString model.mouse.dragSource) noOp
   in
@@ -218,7 +218,7 @@ processDrop sourceTopicId sourceBoxId targetTopicId targetBoxId ({model} as env)
   env
     |> Env.map (Box.removeTopic sourceTopicId sourceBoxId)
     |> addTopic
-    |> Env.outcomeDir (Directives Store Push)
+    |> Env.outcomeDir (Directives Store Push) -- FIXME: Push only if not foreign drop
 
 
 addTopic_ : TopicId -> BoxId -> Env -> Env

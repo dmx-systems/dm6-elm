@@ -221,7 +221,7 @@ topicDragEnd sourceTopicId sourceBoxPath origTopicPos ({model} as env) =
       env
         |> moveTopicToBox sourceTopicId boxId targetId targetPath
         |> Model.map (TopicMap.setTopicPos sourceTopicId boxId origTopicPos)
-        |> Outcome.fromDir (Directives Store Push)
+        |> Outcome.fromDir (Directives Store Swap)
     Nothing ->
       let
         _ = Console.info "TopicMap.Mouse.topicDragEnd"
@@ -292,7 +292,7 @@ assocDragEnd sourceTopicId sourceBoxPath model =
 
 
 moveTopicToBox : TopicId -> BoxId -> TopicId -> BoxPath -> Env -> (Model, Cmd Msg)
-moveTopicToBox topicId boxId targetTopicId targetPath ({model, dispatch} as env) =
+moveTopicToBox topicId boxId targetTopicId targetPath ({model} as env) =
   let
     targetBoxId = BoxId targetTopicId -- after turnTopicIntoBox target topic is a box for sure
     expansion = Box.expansionOf topicId boxId model

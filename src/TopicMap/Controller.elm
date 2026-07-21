@@ -27,7 +27,7 @@ update msg ({model} as env) =
     TopicMapDef.GotRandomPos topicId boxId pos ->
       env
         |> TopicMap.addTopicAt topicId boxId pos
-        |> Env.outcomeDir (Directives Store Push)
+        |> Env.outcomeDir (Directives Store Swap)
 
 
 selectAssoc : AssocId -> BoxPath -> Model -> Model
