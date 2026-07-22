@@ -1,12 +1,12 @@
 module ModelBase exposing (Id, TopicId(..), AssocId(..), ItemId(..), AssocIds, Topic, Icon,
   TextSize, Size, SizeField(..), Point, Rectangle, Assoc, AssocType(..), ItemSet, SetItem, Box,
   BoxId(..), Level, BoxPath, Target, BoxTarget, BoxTopic, Expansion(..), ImageId, Attrs,
-  PointerType, Extensions, ExtLabel, toTopicId, toAssocId, toBoxId, fromBoxId, maybeTopicId,
-  maybeAssocId, rootBoxId, encodeTopic, encodeAssoc, encodeItemSet, encodeBox, encodeTopicId,
-  encodeBoxId, topicDecoder, assocDecoder, itemSetDecoder, boxDecoder, topicIdDecoder,
-  boxIdDecoder, toDictDecoder, toDictDecoderWith)
+  PointerType, toTopicId, toAssocId, toBoxId, fromBoxId, maybeTopicId, maybeAssocId, rootBoxId,
+  encodeTopic, encodeAssoc, encodeItemSet, encodeBox, encodeTopicId, encodeBoxId, topicDecoder,
+  assocDecoder, itemSetDecoder, boxDecoder, topicIdDecoder, boxIdDecoder, toDictDecoder,
+  toDictDecoderWith)
 
-import Extension exposing (Renderer, encodeRenderer)
+import RendererDef exposing (Renderer)
 
 import Dict exposing (Dict)
 import Html exposing (Attribute)
@@ -197,13 +197,6 @@ type alias SetItem =
   }
 
 
--- Extensions
-
-type alias ExtName = String
-type alias ExtLabel = String
-type alias Extensions = List (ExtName, ExtLabel)
-
-
 
 -- JSON
 
@@ -278,7 +271,7 @@ encodeBox box =
     [ ("id", encodeBoxId box.id)
     , ("itemSetId", E.int box.itemSetId)
     , ("topics", E.list encodeBoxTopic <| Dict.values box.topics)
-    , ("renderer", encodeRenderer box.renderer)
+    , ("renderer", RendererDef.encode box.renderer)
     ]
 
 
@@ -381,7 +374,7 @@ boxDecoder =
     (D.field "id" boxIdDecoder)
     (D.field "itemSetId" D.int)
     (D.field "topics" (toDictDecoderWith toTopicId boxTopicDecoder))
-    (D.field "renderer" (Extension.rendererDecoder D.string))
+    (D.field "renderer" (RendererDef.decoder D.string))
 
 
 boxTopicDecoder : D.Decoder BoxTopic

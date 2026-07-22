@@ -1,4 +1,5 @@
-module Env exposing (Env, Dispatch, map, autoSize, outcome, outcomeDir, outcomeCmd)
+module Env exposing (Env, Dispatch, Extensions, ExtLabel, map, autoSize, outcome, outcomeDir,
+  outcomeCmd)
 
 import Model exposing (Model, Msg)
 import ModelBase exposing (..)
@@ -20,30 +21,36 @@ type alias Env =
   }
 
 
-{-| A value of this type is exported as "dispatch" by Dispatch module.
+{-| The "interface" of the renderer dispatcher, implemented by the Dispatch.elm module
+and exported as "dispatch".
+Env does not know the installed renderers, only the Dispatch module knows.
 -}
 type alias Dispatch =
+  -- Renderer Hooks
   { init : Init
   , view : BoxRenderer
   , hitTest : HitTest
   , autoSize : AutoSize
-  -- Drag and Drop
   , dragStart : DragStart
   , drag : Drag
   , updateDropTarget : DropTargeting
   , dragStop : DragStop
-  --
+  -- List of available renderers
   , all : Extensions
   }
 
 
+-- TODO: rename "Extension" -> "Renderer"
+type alias Extensions = List (ExtName, ExtLabel)
+type alias ExtName = String
+type alias ExtLabel = String
 
--- Extension Points
+
+-- Renderer Hooks
 --
 -- The functions of the "dispatch" value (as imported from Dispatch) have these types.
 -- Called by the **extension user**.
 -- Compare to Dispatch.elm
-
 
 type alias Init =
   BoxId -> Model -> (BoxId -> Model -> Model)

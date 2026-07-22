@@ -2,11 +2,11 @@ module Dispatch exposing (dispatch)
 
 import Box
 import Console
-import Env exposing (Env, Dispatch)
-import Extension
+import Env exposing (Env, Dispatch, Extensions, ExtLabel)
 import Model exposing (Model, Msg)
 import ModelBase exposing (..)
 import Outcome exposing (Outcome)
+import RendererDef
 -- box renderers
 import TopicList.Mouse
 import TopicList.TopicList
@@ -26,11 +26,11 @@ import Html exposing (Html, text)
 
 type alias Extension =
   { label : ExtLabel
+  -- Renderer Hooks
   , init : ExtInit
   , view : ExtBoxView
   , hitTest : ExtHitTest
   , autoSize : ExtAutoSize
-  -- Drag and Drop
   , dragStart : ExtDragStart
   , drag : ExtDrag
   , updateDropTarget : ExtDropTargeting
@@ -38,11 +38,10 @@ type alias Extension =
   }
 
 
-
--- Extension Points
+-- Renderer Hooks
 --
--- Implemented by the **extension developer**.
--- Called by the extension dispatcher (see below).
+-- Implemented by the **renderer developer**.
+-- Called by the renderer dispatcher (see "dispatch_" function below).
 -- Compare to Env.elm
 
 
@@ -96,6 +95,7 @@ type alias ExtDragStop =
 
 dispatch : Dispatch
 dispatch =
+  -- Renderer Hooks
   { init = init
   , view = view
   , hitTest = hitTest
@@ -104,14 +104,15 @@ dispatch =
   , drag = drag
   , updateDropTarget = updateDropTarget
   , dragStop = dragStop
+  -- Query all renderers
   , all = all
   }
 
 
 -- key = renderer name (String)
 -- Note: custom types can't be used as Dict keys
-registry : Dict String Extension
-registry =
+renderers : Dict String Extension
+renderers =
   Dict.fromList
     [ ("TopicMap",
         { label = "Topic Map"
@@ -211,7 +212,7 @@ dragStop boxId model =
 dispatch_ : BoxId -> Model -> result -> (Env -> Extension -> result) -> result
 dispatch_ boxId model errVal callExtWith =
   Box.rendererOf boxId model
-    |> Maybe.andThen (\renderer -> registry |> Dict.get (Extension.toString renderer))
+    |> Maybe.andThen (\renderer -> renderers |> Dict.get (RendererDef.toString renderer))
     |> Maybe.map (callExtWith <| Env model dispatch)
     |> Maybe.withDefault errVal
 
@@ -220,7 +221,7 @@ dispatch_ boxId model errVal callExtWith =
 
 all : Extensions
 all =
-  registry
+  renderers
     |> Dict.toList
     |> List.map
       (\(name, {label}) -> (name, label))

@@ -6,7 +6,6 @@ import Box
 import Config as C
 import Console
 import Env exposing (Env, Dispatch)
-import Extension exposing (Renderer)
 import Feature.Icon as Icon
 import Feature.Mouse as Mouse
 import Feature.Nav as Nav
@@ -18,6 +17,7 @@ import Feature.ToolMenu as ToolMenu
 import Model exposing (Model, Msg(..))
 import ModelBase exposing (..)
 import Outcome exposing (..)
+import RendererDef exposing (Renderer)
 import Shared.Events as Events
 import Shared.ViewBase as VB
 import Storage as S
@@ -163,8 +163,8 @@ viewTopicToolbar pos topicId boxPath ({model, dispatch}) =
 viewRendererSelect : Renderer -> (Renderer -> Msg) -> Dispatch -> Html Msg
 viewRendererSelect renderer toMsg dispatch =
   select
-    ( [ value <| Extension.toString renderer
-      , on "input" (targetValue |> Extension.rendererDecoder |> D.map toMsg)
+    ( [ value <| RendererDef.toString renderer
+      , on "input" (targetValue |> RendererDef.decoder |> D.map toMsg)
       , Events.onPointerDownStop NoOp
       ]
       ++ selectStyle
@@ -490,7 +490,7 @@ removeItem (itemId, boxPath) model =
 fullscreen : TopicId -> Env -> (Model, Cmd Msg)
 fullscreen topicId env =
   ( env
-      |> Box.turnTopicIntoBox topicId Extension.defaultRenderer
+      |> Box.turnTopicIntoBox topicId RendererDef.default
       |> .model
   , Nav.pushUrl (BoxId topicId)
   )

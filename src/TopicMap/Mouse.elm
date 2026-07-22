@@ -6,11 +6,11 @@ import Box
 import Config as C
 import Console
 import Env exposing (Env)
-import Extension
 import Feature.Sel as Sel
 import Model exposing (Model, Msg(..))
 import ModelBase exposing (..)
 import Outcome exposing (..)
+import RendererDef
 import TopicMap.TopicMap as TopicMap
 import TopicMap.TopicMapDef as TopicMapDef exposing (DragState(..), DragMode(..))
 
@@ -296,7 +296,7 @@ moveTopicToBox topicId boxId targetTopicId targetPath ({model} as env) =
   let
     targetBoxId = BoxId targetTopicId -- after turnTopicIntoBox target topic is a box for sure
     expansion = Box.expansionOf topicId boxId model
-    maybeRenderer = Extension.fromString "TopicMap"
+    maybeRenderer = RendererDef.fromString "TopicMap"
   in
   case maybeRenderer of
     Just renderer ->

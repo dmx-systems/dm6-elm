@@ -4,11 +4,11 @@ import Box
 import Config as C
 import Console
 import Env exposing (Env)
-import Extension
 import Feature.Sel as Sel
 import Model exposing (Model, Msg)
 import ModelBase exposing (..)
 import Outcome exposing (..)
+import RendererDef
 import Topic
 import TopicList.TopicList as TopicList
 import TopicList.TopicListDef exposing (DropMode(..))
@@ -201,7 +201,7 @@ processDrop sourceTopicId sourceBoxId targetTopicId targetBoxId ({model} as env)
       case env_.model.topicList.dropMode of
         Just Drop ->
           env_
-            |> Box.turnTopicIntoBox targetTopicId Extension.TopicList
+            |> Box.turnTopicIntoBox targetTopicId RendererDef.TopicList
             |> addTopic_ sourceTopicId (BoxId targetTopicId)
             |> Env.autoSize
         Just InsertBefore ->
@@ -228,7 +228,7 @@ addTopic_ topicId boxId env =
     setBoxRenderer ({model} as env_) =
       if Topic.isBox topicId model then
         env_
-          |> Env.map (Box.setRenderer (BoxId topicId) Extension.TopicList)
+          |> Env.map (Box.setRenderer (BoxId topicId) RendererDef.TopicList)
       else
         env_
   in

@@ -6,9 +6,9 @@ module Box exposing (topicIds, assocIds, turnTopicIntoBox, init, addTopic, addAs
 import Assoc
 import Console
 import Env exposing (Env)
-import Extension exposing (Renderer)
 import Model exposing (Model)
 import ModelBase exposing (..)
+import RendererDef exposing (Renderer)
 import Topic
 
 import Dict

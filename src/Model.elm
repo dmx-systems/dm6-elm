@@ -1,8 +1,8 @@
 module Model exposing (Model, Msg(..), init, resetTransient, encode, decoder, map, nextId)
 
 import Config as C
-import Extension
 import ModelBase exposing (..)
+import RendererDef
 -- box renderers
 import TopicList.TopicListDef as TopicListDef
 import TopicMap.TopicMapDef as TopicMapDef
@@ -52,7 +52,7 @@ init =
   , itemSets = Dict.singleton 1 <| ItemSet 1 []
   , boxes = Dict.singleton
       (toBoxId rootBoxId)
-      (Box rootBoxId 1 Dict.empty Extension.defaultRenderer)
+      (Box rootBoxId 1 Dict.empty RendererDef.default)
   , boxId = rootBoxId
   , nextId = 2
   -- renderer modules

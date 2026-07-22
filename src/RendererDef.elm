@@ -1,5 +1,4 @@
-module Extension exposing (Renderer(..), defaultRenderer, toString, fromString, encodeRenderer,
-  rendererDecoder)
+module RendererDef exposing (Renderer(..), default, toString, fromString, encode, decoder)
 
 -- import Console -- TODO: cyclic
 
@@ -13,8 +12,8 @@ type Renderer
   | TopicList
 
 
-defaultRenderer : Renderer
-defaultRenderer =
+default : Renderer
+default =
   TopicMap
 
 
@@ -32,7 +31,7 @@ fromString str =
     "TopicList" -> Just TopicList
     _ ->
       -- let
-      --   _ = Console.logError "Extension.fromString" "Unknown renderer" str
+      --   _ = Console.logError "RendererDef.fromString" "Unknown renderer" str
       -- in
       Nothing
 
@@ -41,13 +40,13 @@ fromString str =
 -- JSON
 
 
-encodeRenderer : Renderer -> E.Value
-encodeRenderer =
+encode : Renderer -> E.Value
+encode =
   toString >> E.string
 
 
-rendererDecoder : D.Decoder String -> D.Decoder Renderer
-rendererDecoder strDecoder =
+decoder : D.Decoder String -> D.Decoder Renderer
+decoder strDecoder =
   strDecoder |> D.andThen
     (\str ->
       case fromString str of
