@@ -8,7 +8,7 @@ import Console
 import Env exposing (Env)
 import Model exposing (Model)
 import ModelBase exposing (..)
-import RendererDef exposing (Renderer)
+import Renderer exposing (Renderer)
 import Topic
 
 import Dict

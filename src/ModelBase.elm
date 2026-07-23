@@ -6,7 +6,7 @@ module ModelBase exposing (Id, TopicId(..), AssocId(..), ItemId(..), AssocIds, T
   assocDecoder, itemSetDecoder, boxDecoder, topicIdDecoder, boxIdDecoder, toDictDecoder,
   toDictDecoderWith)
 
-import RendererDef exposing (Renderer)
+import Renderer exposing (Renderer)
 
 import Dict exposing (Dict)
 import Html exposing (Attribute)
@@ -271,7 +271,7 @@ encodeBox box =
     [ ("id", encodeBoxId box.id)
     , ("itemSetId", E.int box.itemSetId)
     , ("topics", E.list encodeBoxTopic <| Dict.values box.topics)
-    , ("renderer", RendererDef.encode box.renderer)
+    , ("renderer", Renderer.encode box.renderer)
     ]
 
 
@@ -374,7 +374,7 @@ boxDecoder =
     (D.field "id" boxIdDecoder)
     (D.field "itemSetId" D.int)
     (D.field "topics" (toDictDecoderWith toTopicId boxTopicDecoder))
-    (D.field "renderer" (RendererDef.decoder D.string))
+    (D.field "renderer" (Renderer.decoder D.string))
 
 
 boxTopicDecoder : D.Decoder BoxTopic

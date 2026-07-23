@@ -1,4 +1,4 @@
-module RendererDef exposing (Renderer(..), default, toString, fromString, encode, decoder)
+module Renderer exposing (Renderer(..), default, toString, fromString, encode, decoder)
 
 -- import Console -- TODO: cyclic
 
@@ -31,7 +31,7 @@ fromString str =
     "TopicList" -> Just TopicList
     _ ->
       -- let
-      --   _ = Console.logError "RendererDef.fromString" "Unknown renderer" str
+      --   _ = Console.logError "Renderer.fromString" "Unknown renderer" str
       -- in
       Nothing
 

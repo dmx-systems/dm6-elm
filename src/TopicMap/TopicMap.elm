@@ -18,7 +18,7 @@ import Random
 
 
 
--- Dispatch.ExtInit
+-- Dispatch.InitHook
 init : BoxId -> Model -> Model
 init boxId model =
   let
@@ -234,7 +234,7 @@ hasMapTopic topicId boxId model =
 
 
 {-| Logs an error if the TopicMap entry is missing.
-### FIXME: make it an extension point
+### FIXME: make it a hook?
 -}
 fullscreen : Model -> Maybe TopicMap
 fullscreen model =

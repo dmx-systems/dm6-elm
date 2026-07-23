@@ -1,4 +1,4 @@
-module TopicMap.Mouse exposing (dragStart, drag, updateDropTarget, dragStop, timeArrived,
+module TopicMap.Mouse exposing (dragStart, drag, dragAccept, dragStop, timeArrived,
   isDraftAssoc)
 
 import Assoc
@@ -10,7 +10,7 @@ import Feature.Sel as Sel
 import Model exposing (Model, Msg(..))
 import ModelBase exposing (..)
 import Outcome exposing (..)
-import RendererDef
+import Renderer
 import TopicMap.TopicMap as TopicMap
 import TopicMap.TopicMapDef as TopicMapDef exposing (DragState(..), DragMode(..))
 
@@ -23,7 +23,7 @@ import Time exposing (Posix, posixToMillis)
 -- UPDATE
 
 
--- Dispatch.ExtDragStart
+-- Dispatch.DragStartHook
 dragStart : Env -> (Model, Cmd Msg)
 dragStart {model} =
   case model.mouse.dragSource of
@@ -73,7 +73,7 @@ timeArrived time model =
         |> Outcome.default
 
 
--- Dispatch.ExtDrag
+-- Dispatch.DragHook
 drag : Point -> Env -> (Model, Cmd Msg)
 drag clientPos ({model} as env) =
   case model.topicMap.dragState of
@@ -116,9 +116,9 @@ updateTopicPos clientPos model =
       model
 
 
--- Dispatch.ExtDropTargeting
-updateDropTarget : Point -> Env -> (Model, Maybe Target)
-updateDropTarget _ {model} =
+-- Dispatch.DragAcceptHook
+dragAccept : Point -> Env -> (Model, Maybe Target)
+dragAccept _ {model} =
   (model, dropTarget model)
 
 
@@ -165,7 +165,7 @@ dropTarget model =
     _ -> Nothing -- TODO: error?
 
 
--- Dispatch.ExtDragStop
+-- Dispatch.DragStopHook
 dragStop : Env -> Outcome
 dragStop ({model} as env) =
   let
@@ -296,7 +296,7 @@ moveTopicToBox topicId boxId targetTopicId targetPath ({model} as env) =
   let
     targetBoxId = BoxId targetTopicId -- after turnTopicIntoBox target topic is a box for sure
     expansion = Box.expansionOf topicId boxId model
-    maybeRenderer = RendererDef.fromString "TopicMap"
+    maybeRenderer = Renderer.fromString "TopicMap"
   in
   case maybeRenderer of
     Just renderer ->

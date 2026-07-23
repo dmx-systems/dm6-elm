@@ -17,7 +17,7 @@ import Feature.ToolMenu as ToolMenu
 import Model exposing (Model, Msg(..))
 import ModelBase exposing (..)
 import Outcome exposing (..)
-import RendererDef exposing (Renderer)
+import Renderer exposing (Renderer)
 import Shared.Events as Events
 import Shared.ViewBase as VB
 import Storage as S
@@ -163,8 +163,8 @@ viewTopicToolbar pos topicId boxPath ({model, dispatch}) =
 viewRendererSelect : Renderer -> (Renderer -> Msg) -> Dispatch -> Html Msg
 viewRendererSelect renderer toMsg dispatch =
   select
-    ( [ value <| RendererDef.toString renderer
-      , on "input" (targetValue |> RendererDef.decoder |> D.map toMsg)
+    ( [ value <| Renderer.toString renderer
+      , on "input" (targetValue |> Renderer.decoder |> D.map toMsg)
       , Events.onPointerDownStop NoOp
       ]
       ++ selectStyle
@@ -490,7 +490,7 @@ removeItem (itemId, boxPath) model =
 fullscreen : TopicId -> Env -> (Model, Cmd Msg)
 fullscreen topicId env =
   ( env
-      |> Box.turnTopicIntoBox topicId RendererDef.default
+      |> Box.turnTopicIntoBox topicId Renderer.default
       |> .model
   , Nav.pushUrl (BoxId topicId)
   )

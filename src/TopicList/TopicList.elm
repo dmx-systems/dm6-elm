@@ -15,7 +15,7 @@ import String exposing (fromInt)
 
 
 
--- Dispatch.ExtInit
+-- Dispatch.InitHook
 init : BoxId -> Model -> Model
 init boxId model =
   let
@@ -165,7 +165,7 @@ updateOrder boxId transform ({topicList} as model) =
 -- HIT TEST
 
 
--- Dispatch.ExtHitTest
+-- Dispatch.HitTestHook
 -- Point is in box-local coordinates
 hitTest : BoxId -> BoxPath -> Point -> Maybe TopicId -> Env -> Maybe BoxTarget
 hitTest (BoxId topicId as boxId) boxPath localPos maybeFilter {model} =
@@ -216,7 +216,7 @@ isContentHovered boxId localPos model =
 -- AUTO-SIZE
 
 
--- Dispatch.ExtAutoSize
+-- Dispatch.AutoSizeHook
 autoSize : BoxPath -> Env -> (Rectangle, Model)
 autoSize boxPath {model} =
   let

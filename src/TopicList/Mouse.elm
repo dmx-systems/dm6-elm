@@ -1,4 +1,4 @@
-module TopicList.Mouse exposing (dragStart, drag, updateDropTarget, dragStop)
+module TopicList.Mouse exposing (dragStart, drag, dragAccept, dragStop)
 
 import Box
 import Config as C
@@ -8,7 +8,7 @@ import Feature.Sel as Sel
 import Model exposing (Model, Msg)
 import ModelBase exposing (..)
 import Outcome exposing (..)
-import RendererDef
+import Renderer
 import Topic
 import TopicList.TopicList as TopicList
 import TopicList.TopicListDef exposing (DropMode(..))
@@ -19,7 +19,7 @@ import Array
 
 
 
--- Dispatch.ExtDragStart
+-- Dispatch.DragStartHook
 dragStart : Env -> (Model, Cmd Msg)
 dragStart {model} =
   ( case model.mouse.dragSource of
@@ -59,7 +59,7 @@ toIndex localPos =
   (localPos.y - 13) // (C.listItemHeight + 4)
 
 
--- Dispatch.ExtDrag
+-- Dispatch.DragHook
 drag : Point -> Env -> (Model, Cmd Msg)
 drag clientPos {model} =
   ( case (model.mouse.dragSource, model.topicList.dragPos) of
@@ -82,9 +82,9 @@ drag clientPos {model} =
   )
 
 
--- Dispatch.ExtDropTargeting
-updateDropTarget : Point -> Env -> (Model, Maybe Target)
-updateDropTarget clientPos {model} =
+-- Dispatch.DragAcceptHook
+dragAccept : Point -> Env -> (Model, Maybe Target)
+dragAccept clientPos {model} =
   if TopicMap.Mouse.isDraftAssoc model then
     (model, acceptAssoc model)
   else
@@ -154,7 +154,7 @@ dropTargetAt clientPos model =
       Nothing
 
 
--- Dispatch.ExtDragStop
+-- Dispatch.DragStopHook
 dragStop : Env -> Outcome
 dragStop ({model} as env) =
   let
@@ -201,7 +201,7 @@ processDrop sourceTopicId sourceBoxId targetTopicId targetBoxId ({model} as env)
       case env_.model.topicList.dropMode of
         Just Drop ->
           env_
-            |> Box.turnTopicIntoBox targetTopicId RendererDef.TopicList
+            |> Box.turnTopicIntoBox targetTopicId Renderer.TopicList
             |> addTopic_ sourceTopicId (BoxId targetTopicId)
             |> Env.autoSize
         Just InsertBefore ->
@@ -228,7 +228,7 @@ addTopic_ topicId boxId env =
     setBoxRenderer ({model} as env_) =
       if Topic.isBox topicId model then
         env_
-          |> Env.map (Box.setRenderer (BoxId topicId) RendererDef.TopicList)
+          |> Env.map (Box.setRenderer (BoxId topicId) Renderer.TopicList)
       else
         env_
   in

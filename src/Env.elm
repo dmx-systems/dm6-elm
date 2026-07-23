@@ -1,5 +1,5 @@
-module Env exposing (Env, Dispatch, Extensions, ExtLabel, map, autoSize, outcome, outcomeDir,
-  outcomeCmd)
+module Env exposing (Env, Dispatch, Renderers, RendererLabel, map, autoSize, outcome,
+  outcomeDir, outcomeCmd)
 
 import Model exposing (Model, Msg)
 import ModelBase exposing (..)
@@ -12,8 +12,9 @@ import Html exposing (Html)
 -- TYPES
 
 
-{-| The environment the dispatcher passes to the extensions/feature modules
-TODO: rename "Env" ### FIXDOC
+{-| The environment as passed by Main.update to respective module update functions (both box
+renderers and feature modules).
+Env does not know the installed renderers, only the Dispatch module knows.
 -}
 type alias Env =
   { model : Model
@@ -21,42 +22,36 @@ type alias Env =
   }
 
 
-{-| The "interface" of the renderer dispatcher, implemented by the Dispatch.elm module
-and exported as "dispatch".
-Env does not know the installed renderers, only the Dispatch module knows.
+{-| The dispatcher "interface" as implemented by Dispatch.elm module.
+A value of this type is created by the Dispatch module and exported as "dispatch".
 -}
 type alias Dispatch =
-  -- Renderer Hooks
+  -- Dispatch functions
   { init : Init
-  , view : BoxRenderer
+  , view : View
   , hitTest : HitTest
   , autoSize : AutoSize
   , dragStart : DragStart
   , drag : Drag
-  , updateDropTarget : DropTargeting
+  , dragAccept : DragAccept
   , dragStop : DragStop
-  -- List of available renderers
-  , all : Extensions
+  -- List of all renderers
+  , all : Renderers
   }
 
 
--- TODO: rename "Extension" -> "Renderer"
-type alias Extensions = List (ExtName, ExtLabel)
-type alias ExtName = String
-type alias ExtLabel = String
+type alias Renderers = List (RendererName, RendererLabel)
+type alias RendererName = String
+type alias RendererLabel = String
 
 
--- Renderer Hooks
---
--- The functions of the "dispatch" value (as imported from Dispatch) have these types.
--- Called by the **extension user**.
--- Compare to Dispatch.elm
+-- Dispatch function types as implemented by Dispatch.elm
 
 type alias Init =
   BoxId -> Model -> (BoxId -> Model -> Model)
 
 
-type alias BoxRenderer =
+type alias View =
   BoxId -> BoxPath -> Model -> Html Msg
 
 
@@ -72,8 +67,8 @@ type alias AutoSize =
 
 -- Drag and Drop
 
--- Note: no drag specific parameters here. An extension's "dragStart" handler operates on
--- (feature module) Mouse's "dragSource" directly.
+-- Note: no drag specific parameters here. A renderer's "dragStart" handler operates on
+-- (feature module) Mouse's "dragSource" state.
 type alias DragStart =
   Model -> (Model, Cmd Msg)
 
@@ -82,7 +77,7 @@ type alias Drag =
   BoxId -> Point -> Model -> (Model, Cmd Msg)
 
 
-type alias DropTargeting =
+type alias DragAccept =
   BoxId -> Point -> Model -> (Model, Maybe Target)
 
 

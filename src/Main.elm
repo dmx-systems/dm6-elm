@@ -223,7 +223,7 @@ update msg ({present} as undoModel) =
     env = Env present dispatch
     outcome =
       case msg of
-        -- renderer modules
+        -- box renderers
         TopicMap msg_ -> TMC.update msg_ env
         -- feature modules
         Tool msg_ -> Tool.update msg_ env
@@ -234,16 +234,16 @@ update msg ({present} as undoModel) =
         Nav msg_ -> Nav.update msg_ env
         --
         Scrolled pos ->
-          present
-            |> updateScrollPos pos
-            |> Outcome.withDir (Directives Store Swap)
+          env
+            |> Env.map (updateScrollPos pos)
+            |> Env.outcomeDir (Directives Store Swap)
         Cancel maybeTarget ->
           env
             |> cancelUI maybeTarget
             |> Outcome.from
         NoOp ->
-          present
-            |> Outcome.default
+          env
+            |> Env.outcome
   in
   outcome
     |> Outcome.perform undoModel

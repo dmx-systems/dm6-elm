@@ -54,7 +54,7 @@ type alias LineRenderer =
 -- VIEW
 
 
--- Dispatch.ExtBoxView
+-- Dispatch.ViewHook
 -- For the fullscreen box boxPath is empty
 view : BoxId -> BoxPath -> Env -> Html Msg
 view boxId boxPath ({model} as env) =

@@ -17,7 +17,7 @@ import TopicMap.ViewModel as VM
 -- HIT TEST
 
 
--- Dispatch.ExtHitTest
+-- Dispatch.HitTestHook
 {-| Finds the topic/box at a given screen position, if any.
 Returns the found topic/box (Id) and its context (BoxPath), or Nothing.
 If `maybeFilter` is given that topic/box will be excluded from search.
@@ -162,7 +162,7 @@ isBoxRectHit pos topicMap parentBoxId model =
 -- AUTO-SIZE
 
 
--- Dispatch.ExtAutoSize
+-- Dispatch.AutoSizeHook
 {-| Calculates the TopicMap's "rect" (recursively) and modifies the model accordingly.
 Returns the modified model along with, for convenience, the calculated rect.
 Based on the rect's change the TopicMap's topic position adjustment within the parent

@@ -2,11 +2,11 @@ module Dispatch exposing (dispatch)
 
 import Box
 import Console
-import Env exposing (Env, Dispatch, Extensions, ExtLabel)
+import Env exposing (Env, Dispatch, Renderers, RendererLabel)
 import Model exposing (Model, Msg)
 import ModelBase exposing (..)
 import Outcome exposing (Outcome)
-import RendererDef
+import Renderer
 -- box renderers
 import TopicList.Mouse
 import TopicList.TopicList
@@ -24,17 +24,17 @@ import Html exposing (Html, text)
 -- TYPES
 
 
-type alias Extension =
-  { label : ExtLabel
-  -- Renderer Hooks
-  , init : ExtInit
-  , view : ExtBoxView
-  , hitTest : ExtHitTest
-  , autoSize : ExtAutoSize
-  , dragStart : ExtDragStart
-  , drag : ExtDrag
-  , updateDropTarget : ExtDropTargeting
-  , dragStop : ExtDragStop
+type alias Renderer =
+  { label : RendererLabel
+  -- Hooks
+  , init : InitHook
+  , view : ViewHook
+  , hitTest : HitTestHook
+  , autoSize : AutoSizeHook
+  , dragStart : DragStartHook
+  , drag : DragHook
+  , dragAccept : DragAcceptHook
+  , dragStop : DragStopHook
   }
 
 
@@ -42,10 +42,9 @@ type alias Extension =
 --
 -- Implemented by the **renderer developer**.
 -- Called by the renderer dispatcher (see "dispatch_" function below).
--- Compare to Env.elm
 
 
-type alias ExtInit =
+type alias InitHook =
   BoxId -> Model -> Model
 
 
@@ -56,36 +55,36 @@ Note: the actual box renderers get access to the dispatching box renderer as an 
 their "view" function instead of importing a module. This avoids circular dependencies in
 conjunction with recursively nested renderers.
 -}
-type alias ExtBoxView =
+type alias ViewHook =
   BoxId -> BoxPath -> Env -> Html Msg
 
 
 -- Point is in box-local coordinates
-type alias ExtHitTest =
+type alias HitTestHook =
   BoxId -> BoxPath -> Point -> Maybe TopicId -> Env -> Maybe BoxTarget
 
 
-type alias ExtAutoSize =
+type alias AutoSizeHook =
   BoxPath -> Env -> (Rectangle, Model)
 
 
 -- Drag and Drop
 
--- Note: no drag specific parameters here. An extension's "dragStart" handler operates on
+-- Note: no drag specific parameters here. A renderer's "dragStart" handler operates on
 -- (feature module) Mouse's "dragSource" directly.
-type alias ExtDragStart =
+type alias DragStartHook =
   Env -> (Model, Cmd Msg)
 
 
-type alias ExtDrag =
+type alias DragHook =
   Point -> Env -> (Model, Cmd Msg)
 
 
-type alias ExtDropTargeting =
+type alias DragAcceptHook =
   Point -> Env -> (Model, Maybe Target)
 
 
-type alias ExtDragStop =
+type alias DragStopHook =
   Env -> Outcome
 
 
@@ -102,16 +101,16 @@ dispatch =
   , autoSize = autoSize
   , dragStart = dragStart
   , drag = drag
-  , updateDropTarget = updateDropTarget
+  , dragAccept = dragAccept
   , dragStop = dragStop
-  -- Query all renderers
+  -- List of all renderers
   , all = all
   }
 
 
 -- key = renderer name (String)
 -- Note: custom types can't be used as Dict keys
-renderers : Dict String Extension
+renderers : Dict String Renderer
 renderers =
   Dict.fromList
     [ ("TopicMap",
@@ -122,7 +121,7 @@ renderers =
         , autoSize = TopicMap.Geometry.autoSize
         , dragStart = TopicMap.Mouse.dragStart
         , drag = TopicMap.Mouse.drag
-        , updateDropTarget = TopicMap.Mouse.updateDropTarget
+        , dragAccept = TopicMap.Mouse.dragAccept
         , dragStop = TopicMap.Mouse.dragStop
         }
       )
@@ -134,7 +133,7 @@ renderers =
         , autoSize = TopicList.TopicList.autoSize
         , dragStart = TopicList.Mouse.dragStart
         , drag = TopicList.Mouse.drag
-        , updateDropTarget = TopicList.Mouse.updateDropTarget
+        , dragAccept = TopicList.Mouse.dragAccept
         , dragStop = TopicList.Mouse.dragStop
         }
       )
@@ -142,7 +141,7 @@ renderers =
 
 
 
--- Note: these functions implement the Extension Point type signatures defined in Env.elm
+-- Implementation of the dispatch functions as specified in Env.elm
 
 
 init : BoxId -> Model -> (BoxId -> Model -> Model)
@@ -152,10 +151,10 @@ init boxId model =
 
 
 {-| The dispatching box renderer.
-Basically it takes a box ID and dispatches to the renderer (e.g. TopicMap, List) that is in
-charge. By passing itself it enables a box renderer to call it for rendering nested boxes.
+Basically it takes a box ID and dispatches to the renderer (e.g. TopicMap, TopicList) in charge.
+By passing itself it enables a box renderer to call it for rendering nested boxes.
 Note: structurally the dispatching box renderer *is* a box renderer: it takes a box ID and
-returns HTML.
+returns HTML. ### FIXDOC
 -}
 view : BoxId -> BoxPath -> Model -> Html Msg
 view boxId boxPath model =
@@ -197,10 +196,10 @@ drag boxId pos model =
     (\env renderer -> renderer.drag pos env)
 
 
-updateDropTarget : BoxId -> Point -> Model -> (Model, Maybe Target)
-updateDropTarget boxId pos model =
+dragAccept : BoxId -> Point -> Model -> (Model, Maybe Target)
+dragAccept boxId pos model =
   dispatch_ boxId model (model, Nothing)
-    (\env renderer -> renderer.updateDropTarget pos env)
+    (\env renderer -> renderer.dragAccept pos env)
 
 
 dragStop : BoxId -> Model -> Outcome
@@ -209,19 +208,25 @@ dragStop boxId model =
     (\env renderer -> renderer.dragStop env)
 
 
-dispatch_ : BoxId -> Model -> result -> (Env -> Extension -> result) -> result
-dispatch_ boxId model errVal callExtWith =
+dispatch_ : BoxId -> Model -> result -> (Env -> Renderer -> result) -> result
+dispatch_ boxId model errVal callHook =
   Box.rendererOf boxId model
-    |> Maybe.andThen (\renderer -> renderers |> Dict.get (RendererDef.toString renderer))
-    |> Maybe.map (callExtWith <| Env model dispatch)
+    |> Maybe.andThen lookup
+    |> Maybe.map (callHook <| Env model dispatch)
     |> Maybe.withDefault errVal
 
 
 --
 
-all : Extensions
+all : Renderers
 all =
   renderers
     |> Dict.toList
     |> List.map
       (\(name, {label}) -> (name, label))
+
+
+lookup : Renderer.Renderer -> Maybe Renderer
+lookup renderer =
+  renderers
+    |> Dict.get (Renderer.toString renderer)

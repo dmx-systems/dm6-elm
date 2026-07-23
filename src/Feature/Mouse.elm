@@ -30,7 +30,7 @@ update msg ({model, dispatch} as env) =
       model
         |> updateHover pos dispatch
         |> dispatch.drag (Box.firstId dragSource.ixBoxPath) pos
-        |> updateDropTarget pos dispatch
+        |> dragAccept pos dispatch
         |> Model.map (setDragSource (Just {dragSource | lastPointerPos = pos}))
         |> Outcome.from
     (MouseDef.Up, Just dragSource) ->
@@ -53,12 +53,12 @@ update msg ({model, dispatch} as env) =
         |> Env.outcome
 
 
-updateDropTarget : Point -> Dispatch -> (Model, Cmd Msg) -> (Model, Cmd Msg)
-updateDropTarget clientPos dispatch (model, cmd) =
+dragAccept : Point -> Dispatch -> (Model, Cmd Msg) -> (Model, Cmd Msg)
+dragAccept clientPos dispatch (model, cmd) =
   case model.mouse.hover of
     Just {ixBoxPath} ->
       let
-        (model_, dropTarget) = dispatch.updateDropTarget (Box.firstId ixBoxPath) clientPos model
+        (model_, dropTarget) = dispatch.dragAccept (Box.firstId ixBoxPath) clientPos model
       in
       ( model_
           |> setDropTarget dropTarget

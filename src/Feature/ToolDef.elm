@@ -1,7 +1,7 @@
 module Feature.ToolDef exposing (..)
 
 import ModelBase exposing (..)
-import RendererDef exposing (Renderer)
+import Renderer exposing (Renderer)
 
 import Json.Decode as D
 import Json.Encode as E
