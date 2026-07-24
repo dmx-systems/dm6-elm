@@ -2,6 +2,34 @@
 
 ## Version History
 
+**0.5** -- *unreleased*
+
+* Major refactoring towards a **compile-time plugin architecture**
+    * Plugins can provide additional box renderers (besides the default `TopicMap` renderer)
+    * New renderer inlcuded: `TopicList`
+        * Hierarchical topic lists
+        * Both, topic order and nesting structure are adjustable by drag'n'drop
+        * Existing toolbar commands are applicable (Create, Edit, Remove, Delete, Fullscreen, ...)
+        * Cross-renderer drag'n'drop (move topics and/or entire sub-trees between maps and lists)
+    * The box toolbar features a new command to switch between renderers
+    * A box renderer comprises all aspects:
+        * View model (additional data facets at both levels, per-topic and per-box)
+        * Rendering
+        * Hit-testing
+        * Drag'n'drop
+        * Auto-sizing
+        * Messaging
+* The strict "Topic" vs. "Box" distinction (as introduced in 0.3) is removed
+    * Again there is a single *Create* button
+    * A topic automatically turns into a box when dropping other topics onto it
+    * Topics can be viewed fullscreen (work in progress)
+* The "Unbox" command is removed (it will be replaced by a dedicated "TopicTree" renderer later on)
+* Box's topic count includes nested boxes (recursively)
+* Fixes:
+    * Drag is aborted when pointer leaves window (no sticky topics)
+    * Move-topic-to-box gesture creates a single undo step
+* "About" info is moved to burger menu
+
 **0.4.1** -- Mar 30, 2026
 
 * Fix:
@@ -110,4 +138,4 @@ Project begin -- Jun 11, 2025
 
 ---
 Jörg Richter  
-Mar 30, 2026
+Jul 24, 2026
