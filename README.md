@@ -2,7 +2,7 @@
 
 ## Version History
 
-**0.5** -- *unreleased*
+**0.5** -- Jul 24, 2026
 
 * Major refactoring towards a **compile-time plugin architecture**
     * Plugins can provide additional box renderers (besides the default `TopicMap` renderer)
