@@ -65,7 +65,7 @@ topicImageDecoder : D.Decoder TopicImage
 topicImageDecoder =
   D.map2 TopicImage
     (D.field "topicId" topicIdDecoder)
-    (D.field "imageId" D.int)
+    (D.field "imageId" D.string)
 
 
 
@@ -299,14 +299,14 @@ markdown source model =
 openImageFilePicker : TopicId -> Model -> (Model, Cmd Msg)
 openImageFilePicker (TopicId topicId) model =
   let
-    imageId = model.nextId
+    imageId = "### TODO" -- model.nextId
   in
   ( model
       |> Model.nextId
   , imageFilePicker
       ( E.object
-          [ ("topicId", E.int topicId)
-          , ("imageId", E.int imageId)
+          [ ("topicId", E.string topicId)
+          , ("imageId", E.string imageId)
           ]
       )
   )
@@ -317,7 +317,7 @@ insertImage topicId imageId model =
   case Topic.fromId topicId model of
     Just { text } ->
       let
-        image = "![image](app://image/" ++ fromInt imageId ++ ")"
+        image = "![image](app://image/" ++ imageId ++ ")"
         newText = text ++ image
       in
       model
@@ -367,4 +367,3 @@ imageIdFromUrl url =
     |> String.split "/"
     |> List.reverse
     |> List.head
-    |> Maybe.andThen String.toInt

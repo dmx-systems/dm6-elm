@@ -77,7 +77,7 @@ type alias Rectangle =
   }
 
 
-type alias Id = Int
+type alias Id = String
 
 
 type TopicId
@@ -133,7 +133,7 @@ maybeAssocId id =
 
 type alias AssocIds = List AssocId
 type alias Icon = String -- name of feather icon, https://feathericons.com
-type alias ImageId = Int
+type alias ImageId = Id
 type alias Attrs msg = List (Attribute msg)
 type alias PointerType = String
 
@@ -166,7 +166,7 @@ type alias Box =
 
 rootBoxId : BoxId
 rootBoxId =
-  BoxId (TopicId 0)
+  BoxId (TopicId "### TODO-0")
 
 
 {-| Attaches renderer-independent view properties to a SetItem.
@@ -210,7 +210,7 @@ encodeTopic {id, icon, text, size, assocIds} =
     , ("icon", E.string <| Maybe.withDefault "" icon)
     , ("text", E.string text)
     , ("size", encodeTextSize size)
-    , ("assocIds", E.list (toAssocId >> E.int) assocIds)
+    , ("assocIds", E.list (toAssocId >> E.string) assocIds)
     ]
 
 
@@ -251,7 +251,7 @@ encodeAssocType assocType =
 encodeItemSet : ItemSet -> E.Value
 encodeItemSet itemSet =
   E.object
-    [ ("id", E.int itemSet.id)
+    [ ("id", E.string itemSet.id)
     , ("items", E.list encodeSetItem itemSet.items)
     ]
 
@@ -260,8 +260,8 @@ encodeSetItem : SetItem -> E.Value
 encodeSetItem setItem =
   E.object
     [ case setItem.id of
-        T (TopicId id) -> ("topicId", E.int id)
-        A (AssocId id) -> ("assocId", E.int id)
+        T (TopicId id) -> ("topicId", E.string id)
+        A (AssocId id) -> ("assocId", E.string id)
     ]
 
 
@@ -269,7 +269,7 @@ encodeBox : Box -> E.Value
 encodeBox box =
   E.object
     [ ("id", encodeBoxId box.id)
-    , ("itemSetId", E.int box.itemSetId)
+    , ("itemSetId", E.string box.itemSetId)
     , ("topics", E.list encodeBoxTopic <| Dict.values box.topics)
     , ("renderer", Renderer.encode box.renderer)
     ]
@@ -293,17 +293,17 @@ encodeExpansion expansion =
 
 encodeTopicId : TopicId -> E.Value
 encodeTopicId id =
-  E.int (toTopicId id)
+  E.string (toTopicId id)
 
 
 encodeAssocId : AssocId -> E.Value
 encodeAssocId id =
-  E.int (toAssocId id)
+  E.string (toAssocId id)
 
 
 encodeBoxId : BoxId -> E.Value
 encodeBoxId id =
-  E.int (toBoxId id)
+  E.string (toBoxId id)
 
 
 -- Decode
@@ -358,11 +358,11 @@ assocTypeDecoder str =
 itemSetDecoder : D.Decoder ItemSet
 itemSetDecoder =
   D.map2 ItemSet
-    (D.field "id" D.int)
+    (D.field "id" D.string)
     (D.field "items" <| D.list
       ( D.oneOf
-        [ (D.field "topicId" D.int) |> D.map (SetItem << T << TopicId)
-        , (D.field "assocId" D.int) |> D.map (SetItem << A << AssocId)
+        [ (D.field "topicId" D.string) |> D.map (SetItem << T << TopicId)
+        , (D.field "assocId" D.string) |> D.map (SetItem << A << AssocId)
         ]
       )
     )
@@ -372,7 +372,7 @@ boxDecoder : D.Decoder Box
 boxDecoder =
   D.map4 Box
     (D.field "id" boxIdDecoder)
-    (D.field "itemSetId" D.int)
+    (D.field "itemSetId" D.string)
     (D.field "topics" (toDictDecoderWith toTopicId boxTopicDecoder))
     (D.field "renderer" (Renderer.decoder D.string))
 
@@ -412,17 +412,17 @@ toDictDecoderWith unwrapId entityDecoder =
 
 topicIdDecoder : D.Decoder TopicId
 topicIdDecoder =
-  D.map TopicId D.int
+  D.map TopicId D.string
 
 
 assocIdDecoder : D.Decoder AssocId
 assocIdDecoder =
-  D.map AssocId D.int
+  D.map AssocId D.string
 
 
 boxIdDecoder : D.Decoder BoxId
 boxIdDecoder =
-  D.map (BoxId << TopicId) D.int
+  D.map (BoxId << TopicId) D.string
 
 
 maybeString : String -> Maybe String

@@ -99,7 +99,7 @@ encodeTopicMap topicMap =
 encodeMapTopic : MapTopic -> E.Value
 encodeMapTopic topic =
   E.object
-    [ ("id", E.int (toTopicId topic.id))
+    [ ("id", E.string (toTopicId topic.id))
     , ("pos", E.object
         [ ("x", E.int topic.pos.x)
         , ("y", E.int topic.pos.y)

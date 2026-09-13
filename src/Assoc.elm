@@ -22,7 +22,7 @@ fromId assocId model =
 create : AssocType -> TopicId -> TopicId -> Model -> (Model, AssocId)
 create assocType topicId1 topicId2 ({assocs} as model) =
   let
-    id = AssocId model.nextId
+    id = AssocId "### TODO" -- model.nextId
     assoc = Assoc id assocType topicId1 topicId2
   in
   ( { model | assocs = assocs |> Dict.insert (toAssocId id) assoc }

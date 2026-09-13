@@ -29,7 +29,7 @@ itemSetNotFound funcName id val =
 
 notFound : String -> String -> Id -> a -> a
 notFound funcName item id val =
-  logError funcName (item ++ " " ++ fromInt id ++ " not found") val
+  logError funcName (item ++ " " ++ id ++ " not found") val
 
 
 --

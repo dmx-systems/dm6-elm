@@ -213,8 +213,8 @@ topicDragEnd sourceTopicId sourceBoxPath origTopicPos ({model} as env) =
     Just (T targetId, targetPath) ->
       let
         _ = Console.info "TopicMap.Mouse.topicDragEnd" ("dropped "
-          ++ fromInt (toTopicId sourceTopicId) ++ " (box " ++ Box.fromPath sourceBoxPath
-          ++ ") on " ++ fromInt (toTopicId targetId) ++ " (box " ++ Box.fromPath targetPath
+          ++ toTopicId sourceTopicId ++ " (box " ++ Box.fromPath sourceBoxPath
+          ++ ") on " ++ toTopicId targetId ++ " (box " ++ Box.fromPath targetPath
           ++ ") --> move topic to box")
         boxId = Box.firstId sourceBoxPath
       in
@@ -243,8 +243,8 @@ foreignTopicDrop sourceTopicId sourceBoxPath ({model} as env) =
     Just (T targetId, targetPath) ->
       let
         _ = Console.info "TopicMap.Mouse.foreignTopicDrop" ("dropped "
-          ++ fromInt (toTopicId sourceTopicId) ++ " (box " ++ Box.fromPath sourceBoxPath
-          ++ ") on " ++ fromInt (toTopicId targetId) ++ " (box " ++ Box.fromPath targetPath
+          ++ toTopicId sourceTopicId ++ " (box " ++ Box.fromPath sourceBoxPath
+          ++ ") on " ++ toTopicId targetId ++ " (box " ++ Box.fromPath targetPath
           ++ ") --> foreign topic drop")
         boxId = Box.firstId sourceBoxPath
       in
@@ -274,8 +274,8 @@ assocDragEnd sourceTopicId sourceBoxPath model =
     Just (T targetId, targetPath) ->
       let
         _ = Console.info "TopicMap.Mouse.assocDragEnd" ("assoc drawn from "
-          ++ fromInt (toTopicId sourceTopicId) ++ " (box " ++ Box.fromPath sourceBoxPath
-          ++ ") to " ++ fromInt (toTopicId targetId) ++ " (box " ++ Box.fromPath targetPath
+          ++ toTopicId sourceTopicId ++ " (box " ++ Box.fromPath sourceBoxPath
+          ++ ") to " ++ toTopicId targetId ++ " (box " ++ Box.fromPath targetPath
           ++ ") --> create assoc")
         boxId = Box.firstId sourceBoxPath
       in

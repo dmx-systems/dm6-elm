@@ -164,7 +164,7 @@ viewItems topicMap boxPath ({model} as env) =
           case Topic.fromId id model of
             Just topic -> viewTopic topic mapTopic newPath env
             _ -> Console.logError "TopicMap.View.viewItems"
-              ("problem with topic " ++ fromInt (toTopicId id)) (text "")
+              ("problem with topic " ++ toTopicId id) (text "")
         )
     assocs =
       Box.assocIds topicMap.id model |> List.foldr
@@ -176,7 +176,7 @@ viewItems topicMap boxPath ({model} as env) =
               in
               svgAcc ++ viewAssoc assoc newPath clickHandler model
             _ -> Console.logError "TopicMap.View.viewItems"
-              ("problem with assoc " ++ fromInt (toAssocId id)) svgAcc
+              ("problem with assoc " ++ toAssocId id) svgAcc
         )
         []
   in

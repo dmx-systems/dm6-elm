@@ -54,7 +54,7 @@ turnTopicIntoBox topicId renderer ({model} as env) =
 turnTopicIntoBox_ : TopicId -> Renderer -> Env -> Env
 turnTopicIntoBox_ topicId renderer ({model} as env) =
   let
-    setId = model.nextId
+    setId = "### TODO" -- model.nextId
     set = ItemSet setId []
     box = Box (BoxId topicId) setId Dict.empty renderer
   in
@@ -240,7 +240,7 @@ findHierarchy topicId boxId assocIds_ model =
   case assocIds_ of
     [] ->
       Console.logError "Box.findHierarchy" ("Missing Hierarchy association between Topic "
-        ++ fromInt (toTopicId topicId) ++ " and Box " ++ fromInt (toBoxId boxId)) Nothing
+        ++ toTopicId topicId ++ " and Box " ++ toBoxId boxId) Nothing
     assocId :: ids ->
       case Assoc.fromId assocId model of
         Just {id, assocType, topicId1, topicId2} ->
@@ -459,7 +459,7 @@ itemSetOf boxId model =
       case Dict.get box.itemSetId model.itemSets of
         Just itemSet -> Just itemSet
         Nothing -> Console.logError "Box.itemSetOf" ("Missing underlying ItemSet ("
-          ++ fromInt box.itemSetId ++ ") of Box " ++ fromInt (toBoxId boxId)) Nothing
+          ++ box.itemSetId ++ ") of Box " ++ toBoxId boxId) Nothing
     Nothing -> Console.fail "Box.itemSetOf" {boxId = boxId} Nothing
 
 
@@ -483,7 +483,7 @@ topicFrom (TopicId id) box model =
   case box.topics |> Dict.get id of
     Just topic -> Just topic
     Nothing -> Console.logError "Box.topicFrom"
-      ("Missing BoxTopic " ++ fromInt id ++ " in Box " ++ fromInt (toBoxId box.id))
+      ("Missing BoxTopic " ++ id ++ " in Box " ++ toBoxId box.id)
       Nothing
 
 
@@ -509,7 +509,7 @@ setFullscreen boxId model =
 
 elemId : String -> TopicId -> BoxPath -> String
 elemId name (TopicId id) boxPath =
-  name ++ "-" ++ fromInt id ++ "," ++ fromPath boxPath
+  name ++ "-" ++ id ++ "," ++ fromPath boxPath
 
 
 {-| Logs an error (and returns -1) if boxPath is empty.
@@ -518,13 +518,13 @@ firstId : BoxPath -> BoxId
 firstId boxPath =
   case boxPath of
     boxId :: _ -> boxId
-    [] -> Console.logError "firstId" "boxPath is empty!" (BoxId (TopicId -1)) -- ### FIXME: -1
+    [] -> Console.logError "firstId" "boxPath is empty!" (BoxId (TopicId "### FIXME"))
 
 
 fromPath : BoxPath -> String
 fromPath boxPath =
   boxPath
-    |> List.map (fromInt << toBoxId)
+    |> List.map toBoxId
     |> String.join ","
 
 

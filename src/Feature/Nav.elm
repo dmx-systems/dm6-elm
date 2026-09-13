@@ -54,7 +54,7 @@ hashChanged hash ({model} as env) =
     Nothing ->
       let
         _ = Console.info "Feature.Nav.hashChanged"
-          ("No hash -> redirect to " ++ fromInt (toBoxId model.boxId))
+          ("No hash -> redirect to " ++ toBoxId model.boxId)
       in
       env
         |> Env.outcomeCmd (pushUrl model.boxId)
@@ -96,7 +96,7 @@ Eventually the model.boxId will be updated, as a *result* of the route change.
 -}
 pushUrl : BoxId -> Cmd Msg
 pushUrl boxId =
-  setHash <| "#" ++ fromInt (toBoxId boxId)
+  setHash <| "#" ++ toBoxId boxId
 
 
 boxIdFromHash : String -> Maybe BoxId
@@ -105,11 +105,17 @@ boxIdFromHash hash =
     True -> Nothing
     False ->
       case String.startsWith "#" hash of
-        True -> case String.dropLeft 1 hash |> String.toInt of
-          Just boxId -> Just (BoxId (TopicId boxId))
-          Nothing ->
-            Console.logError "Feature.Nav.boxIdFromHash"
-              ("not a number after hash in \"" ++ hash ++ "\"") Nothing
+        True ->
+          let
+            boxId = String.dropLeft 1 hash
+          in
+          Just (BoxId (TopicId boxId))
+          -- ### TODO: check hash validity
+          -- case String.dropLeft 1 hash |> String.toInt of
+          --   Just boxId -> Just (BoxId (TopicId boxId))
+          --   Nothing ->
+          --     Console.logError "Feature.Nav.boxIdFromHash"
+          --       ("not a number after hash in \"" ++ hash ++ "\"") Nothing
         False ->
           Console.logError "Feature.Nav.boxIdFromHash" ("\"" ++ hash ++ "\" is not a hash")
             Nothing

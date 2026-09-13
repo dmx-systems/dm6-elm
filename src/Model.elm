@@ -28,7 +28,7 @@ type alias Model =
   , itemSets: Dict Id ItemSet
   , boxes : Dict Id Box
   , boxId : BoxId -- the box rendered fullscreen
-  , nextId : Id
+  --, nextId : Id -- ### TODO
   -- box renderers
   , topicMap : TopicMapDef.Model
   , topicList : TopicListDef.Model
@@ -45,16 +45,16 @@ type alias Model =
 init : Model
 init =
   let
-    rootTopic = Topic (TopicId 0) Nothing C.rootBoxName (TextSize (Size 0 0) (Size 0 0)) []
+    rootTopic = Topic (TopicId "### TODO-0") Nothing C.rootBoxName (TextSize (Size 0 0) (Size 0 0)) []
   in
-  { topics = Dict.singleton 0 rootTopic
+  { topics = Dict.singleton "### TODO-0" rootTopic
   , assocs = Dict.empty
-  , itemSets = Dict.singleton 1 <| ItemSet 1 []
+  , itemSets = Dict.singleton "### TODO-1" <| ItemSet "### TODO-1" []
   , boxes = Dict.singleton
       (toBoxId rootBoxId)
-      (Box rootBoxId 1 Dict.empty Renderer.default)
+      (Box rootBoxId "### TODO-1" Dict.empty Renderer.default)
   , boxId = rootBoxId
-  , nextId = 2
+  --, nextId = "### TODO-2"
   -- box renderers
   , topicMap = TopicMapDef.init
   , topicList = TopicListDef.init
@@ -105,7 +105,7 @@ encode model =
     , ("itemSets", model.itemSets |> Dict.values |> E.list encodeItemSet)
     , ("boxes", model.boxes |> Dict.values |> E.list encodeBox)
     , ("boxId", encodeBoxId model.boxId)
-    , ("nextId", E.int model.nextId)
+    --, ("nextId", E.int model.nextId) -- ### TODO
     -- box renderers
     , ("topicMap", TopicMapDef.encode model.topicMap)
     , ("topicList", TopicListDef.encode model.topicList)
@@ -122,7 +122,7 @@ decoder =
     |> required "itemSets" (toDictDecoder itemSetDecoder)
     |> required "boxes" (toDictDecoderWith toBoxId boxDecoder)
     |> required "boxId" boxIdDecoder
-    |> required "nextId" D.int
+    -- |> required "nextId" D.int -- ### TODO
     -- box renderers
     |> required "topicMap" TopicMapDef.decoder
     |> required "topicList" TopicListDef.decoder
@@ -146,4 +146,5 @@ map transform (model, cmd) =
 
 nextId : Model -> Model
 nextId model =
-  { model | nextId = model.nextId + 1 }
+  model
+  -- { model | nextId = model.nextId + 1 } -- ### TODO
