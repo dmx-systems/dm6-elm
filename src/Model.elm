@@ -1,4 +1,5 @@
-module Model exposing (Model, Msg(..), init, resetTransient, encode, decoder, map, nextId)
+module Model exposing (Model, Msg(..), TopicHandler, init, resetTransient, encode, decoder, map,
+  nextId, generateId)
 
 import Config as C
 import ModelBase exposing (..)
@@ -19,6 +20,7 @@ import Dict exposing (Dict)
 import Json.Decode as D
 import Json.Decode.Pipeline exposing (required, hardcoded)
 import Json.Encode as E
+import Random
 
 
 
@@ -78,8 +80,9 @@ resetTransient model =
 
 
 type Msg
+  = CreateTopic Id String (Maybe Icon) TopicHandler
   -- box renderers
-  = TopicMap TopicMapDef.Msg
+  | TopicMap TopicMapDef.Msg
   -- feature modules
   | Tool ToolDef.Msg
   | Text TextDef.Msg
@@ -144,7 +147,26 @@ map transform (model, cmd) =
   (transform model, cmd)
 
 
+-- TODO: drop
 nextId : Model -> Model
 nextId model =
   model
   -- { model | nextId = model.nextId + 1 } -- ### TODO
+
+
+-- TODO: use UUID generator
+idGenerator : Random.Generator Id
+idGenerator =
+  Random.int Random.minInt Random.maxInt
+    |> Random.map String.fromInt
+
+
+generateId : (Id -> msg) -> Cmd msg
+generateId toMsg =
+  Random.generate toMsg idGenerator
+
+
+-- ID Handler
+
+type alias TopicHandler =
+  Topic -> Model -> (Model, Cmd Msg)

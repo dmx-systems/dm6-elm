@@ -336,9 +336,8 @@ update msg ({model} as env) =
         |> Env.outcomeCmd (S.exportJSON ())
     -- Map Tools
     ToolDef.CreateTopic ->
-      env
-        |> createTopic
-        |> Outcome.fromDir (Directives Store Push)
+      (model, createTopic env)
+        |> Outcome.from
     ToolDef.Undo ->
       model
         |> Outcome.withDir (Directives Store Undo)
@@ -413,18 +412,20 @@ setLineStyle lineStyle ({tool} as model) =
 
 -- Map Tools
 
-createTopic : Env -> (Model, Cmd Msg)
-createTopic ({model} as env) =
-  let
-    (newModel, topicId) = Topic.create "" C.initTopicIcon model
-    boxPath = Sel.landingBoxPath model
-    boxId = Box.firstId boxPath
-  in
-  env
-    |> Env.map (\_ -> newModel)
-    |> Box.addTopic (BoxTopic topicId Collapsed) boxId
-    |> Env.map (Sel.select (T topicId) boxPath)
-    |> Text.enterEdit topicId boxPath
+createTopic : Env -> Cmd Msg
+createTopic env =
+  Topic.create "" C.initTopicIcon
+    (\topic model ->    -- TODO: pass env instead model, but creates cycle
+      let
+        boxPath = Sel.landingBoxPath model
+        boxId = Box.firstId boxPath
+      in
+      env
+        |> Env.map (\_ -> model)
+        |> Box.addTopic (BoxTopic topic.id Collapsed) boxId
+        |> Env.map (Sel.select (T topic.id) boxPath)
+        |> Text.enterEdit topic.id boxPath
+    )
 
 
 -- Item Tools

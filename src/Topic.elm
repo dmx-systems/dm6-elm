@@ -1,8 +1,8 @@
-module Topic exposing (fromId, label, size, setSize, create, update, isBox)
+module Topic exposing (fromId, label, size, setSize, create, create_, update, isBox)
 
 import Config as C
 import Console
-import Model exposing (Model)
+import Model exposing (Model, Msg(..), TopicHandler)
 import ModelBase exposing (..)
 
 import Dict
@@ -54,22 +54,20 @@ setSize topicId sizeField size_ model =
       )
 
 
-create : String -> Maybe Icon -> Model -> (Model, TopicId)
-create text icon model =
+create : String -> Maybe Icon -> TopicHandler -> Cmd Msg
+create text icon handleTopic =
+  Model.generateId
+    (\id -> CreateTopic id text icon handleTopic)
+
+
+create_ : Id -> String -> Maybe Icon -> Model -> TopicHandler -> (Model, Cmd Msg)
+create_ id text icon ({topics} as model) handleTopic =
   let
-    id = TopicId "### TODO" -- model.nextId
-    topic = Topic id icon text (TextSize C.topicDetailSize C.topicDetailSize) []
+    topicId = TopicId id
+    topic = Topic topicId icon text (TextSize C.topicDetailSize C.topicDetailSize) []
   in
-  ( model
-      |> create_ topic
-      |> Model.nextId
-  , id
-  )
-
-
-create_ : Topic -> Model -> Model
-create_ topic ({topics} as model) =
   { model | topics = topics |> Dict.insert (toTopicId topic.id) topic }
+    |> handleTopic topic
 
 
 {-| Canonical Topic transformation.

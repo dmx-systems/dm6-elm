@@ -17,6 +17,7 @@ import Model exposing (Model, Msg(..))
 import ModelBase exposing (..)
 import Outcome exposing (..)
 import Shared.Events as Events
+import Topic
 import TopicMap.Controller as TMC
 import TopicMap.TopicMap as TopicMap
 import Undo exposing (UndoModel)
@@ -223,6 +224,9 @@ update msg ({present} as undoModel) =
     env = Env present dispatch
     outcome =
       case msg of
+        CreateTopic id text icon topicHandler ->
+          Topic.create_ id text icon present topicHandler
+            |> Outcome.fromDir (Directives Store Push)
         -- box renderers
         TopicMap msg_ -> TMC.update msg_ env
         -- feature modules
