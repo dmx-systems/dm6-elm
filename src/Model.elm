@@ -1,5 +1,5 @@
-module Model exposing (Model, Msg(..), TopicHandler, init, resetTransient, encode, decoder, map,
-  nextId, generateId)
+module Model exposing (Model, Msg(..), TopicHandler, AssocHandler, init, resetTransient, encode,
+  decoder, map, nextId, generateId)
 
 import Config as C
 import ModelBase exposing (..)
@@ -47,14 +47,14 @@ type alias Model =
 init : Model
 init =
   let
-    rootTopic = Topic (TopicId "### TODO-0") Nothing C.rootBoxName (TextSize (Size 0 0) (Size 0 0)) []
+    rootTopic = Topic (TopicId "TODO-0") Nothing C.rootBoxName (TextSize (Size 0 0) (Size 0 0)) []
   in
-  { topics = Dict.singleton "### TODO-0" rootTopic
+  { topics = Dict.singleton "TODO-0" rootTopic
   , assocs = Dict.empty
-  , itemSets = Dict.singleton "### TODO-1" <| ItemSet "### TODO-1" []
+  , itemSets = Dict.singleton "TODO-1" <| ItemSet "TODO-1" []
   , boxes = Dict.singleton
       (toBoxId rootBoxId)
-      (Box rootBoxId "### TODO-1" Dict.empty Renderer.default)
+      (Box rootBoxId "TODO-1" Dict.empty Renderer.default)
   , boxId = rootBoxId
   --, nextId = "### TODO-2"
   -- box renderers
@@ -81,6 +81,7 @@ resetTransient model =
 
 type Msg
   = CreateTopic Id String (Maybe Icon) TopicHandler
+  | CreateAssoc Id AssocType TopicId TopicId AssocHandler
   -- box renderers
   | TopicMap TopicMapDef.Msg
   -- feature modules
@@ -170,3 +171,7 @@ generateId toMsg =
 
 type alias TopicHandler =
   Topic -> Model -> (Model, Cmd Msg)
+
+
+type alias AssocHandler =
+  Assoc -> Model -> Model

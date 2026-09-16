@@ -6,7 +6,7 @@ module Box exposing (topicIds, assocIds, turnTopicIntoBox, init, addTopic, addAs
 import Assoc
 import Console
 import Env exposing (Env)
-import Model exposing (Model)
+import Model exposing (Model, Msg)
 import ModelBase exposing (..)
 import Renderer exposing (Renderer)
 import Topic
@@ -79,31 +79,33 @@ createItemSet set ({itemSets} as model) =
 {-| Adds an item to a box and creates a connecting association. This is an idempotent operation.
 This is a generic operation: works for both, topics and associations.
 -}
-addTopic : BoxTopic -> BoxId -> Env -> Env
+addTopic : BoxTopic -> BoxId -> Env -> (Env, Cmd Msg)
 addTopic topic boxId env =
   env
-    |> Env.map (addToItemSet (T topic.id) boxId)
-    |> Env.map (addToBoxTopics topic boxId)
-    |> init boxId
+    |> addToItemSet (T topic.id) boxId
+    |> Env.mapWith (addToBoxTopics topic boxId)
+    |> Env.mapEnv (init boxId)
 
 
-addAssoc : AssocId -> BoxId -> Model -> Model
-addAssoc assocId boxId model =
-  model
+-- Note: no Cmd tuple is returned. For an assoc no Hierarchy is created
+addAssoc : AssocId -> BoxId -> Env -> Env
+addAssoc assocId boxId env =
+  env
     |> addToItemSet (A assocId) boxId
+    |> Tuple.first
 
 
-addToItemSet : ItemId -> BoxId -> Model -> Model
-addToItemSet itemId boxId model =
+addToItemSet : ItemId -> BoxId -> Env -> (Env, Cmd Msg)
+addToItemSet itemId boxId ({model} as env) =
   if hasItem itemId boxId model then
-    model
+    (env, Cmd.none)
   else
     case byId boxId model of
       Just box ->
-        model
-          |> addToItemSet_ (SetItem itemId) box.itemSetId
-          |> createHierarchy itemId boxId
-      Nothing -> model
+        env
+          |> Env.map (addToItemSet_ (SetItem itemId) box.itemSetId)
+          |> Env.with (createHierarchy itemId boxId)
+      Nothing -> (env, Cmd.none)
 
 
 addToItemSet_ : SetItem -> Id -> Model -> Model
@@ -117,16 +119,16 @@ addToItemSet_ setItem itemSetId ({itemSets} as model) =
   }
 
 
-createHierarchy : ItemId -> BoxId -> Model -> Model
-createHierarchy itemId boxId model =
+createHierarchy : ItemId -> BoxId -> Cmd Msg
+createHierarchy itemId boxId =
   -- Only topics get connected to box by Hierarchy association.
   -- We don't connect associations to associations.
   case itemId of
     T topicId ->
-        model
-          |> Assoc.create Hierarchy (fromBoxId boxId) topicId
-          |> Tuple.first
-    A _ -> model
+      Assoc.create Hierarchy (fromBoxId boxId) topicId
+        (\_ model -> model)
+    A _ ->
+      Cmd.none
 
 
 addToBoxTopics : BoxTopic -> BoxId -> Model -> Model

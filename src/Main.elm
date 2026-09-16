@@ -1,5 +1,6 @@
 port module Main exposing (..)
 
+import Assoc
 import Box
 import Config as C
 import Console
@@ -227,6 +228,9 @@ update msg ({present} as undoModel) =
         CreateTopic id text icon topicHandler ->
           Topic.create_ id text icon present topicHandler
             |> Outcome.fromDir (Directives Store Push)
+        CreateAssoc id assocType topicId1 topicId2 assocHandler ->
+          Assoc.create_ id assocType topicId1 topicId2 present assocHandler
+            |> Outcome.withDir (Directives Store Push)
         -- box renderers
         TopicMap msg_ -> TMC.update msg_ env
         -- feature modules

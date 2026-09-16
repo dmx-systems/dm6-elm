@@ -1,7 +1,7 @@
-module Assoc exposing (fromId, create, relatedTopics, otherTopicId)
+module Assoc exposing (fromId, create, create_, relatedTopics, otherTopicId)
 
 import Console
-import Model exposing (Model)
+import Model exposing (Model, Msg(..), AssocHandler)
 import ModelBase exposing (..)
 import Topic
 
@@ -19,18 +19,22 @@ fromId assocId model =
     Nothing -> Console.assocNotFound "Assoc.fromId" assocId Nothing
 
 
-create : AssocType -> TopicId -> TopicId -> Model -> (Model, AssocId)
-create assocType topicId1 topicId2 ({assocs} as model) =
+create : AssocType -> TopicId -> TopicId -> AssocHandler -> Cmd Msg
+create assocType topicId1 topicId2 handleAssoc =
+  Model.generateId
+    (\id -> CreateAssoc id assocType topicId1 topicId2 handleAssoc)
+
+
+create_ : Id -> AssocType -> TopicId -> TopicId -> Model -> AssocHandler -> Model
+create_ id assocType topicId1 topicId2 ({assocs} as model) handleAssoc =
   let
-    id = AssocId "### TODO" -- model.nextId
-    assoc = Assoc id assocType topicId1 topicId2
+    assocId = AssocId id
+    assoc = Assoc assocId assocType topicId1 topicId2
   in
-  ( { model | assocs = assocs |> Dict.insert (toAssocId id) assoc }
-      |> insertAssocId id topicId1
-      |> insertAssocId id topicId2
-      |> Model.nextId
-  , id
-  )
+  { model | assocs = assocs |> Dict.insert id assoc }
+    |> insertAssocId assocId topicId1
+    |> insertAssocId assocId topicId2
+    |> handleAssoc assoc
 
 
 {-| Inserts an association ID into the item's set of association IDs.

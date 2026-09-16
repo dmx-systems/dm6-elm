@@ -1,5 +1,5 @@
-module Env exposing (Env, Dispatch, Renderers, RendererLabel, map, autoSize, outcome,
-  outcomeDir, outcomeCmd)
+module Env exposing (Env, Dispatch, Renderers, RendererLabel, map, mapWith, mapEnv, with,
+  mergeCmd, mergeWith, autoSize, autoSizeWith, outcome, outcomeDir, outcomeCmd, outcomeWith)
 
 import Model exposing (Model, Msg)
 import ModelBase exposing (..)
@@ -102,9 +102,47 @@ autoSize env =
     |> map autoSize_
 
 
+autoSizeWith : (Env, Cmd Msg) -> (Env, Cmd Msg)
+autoSizeWith envCmd =
+  envCmd
+    |> mapEnv autoSize
+
+
 map : (Model -> Model) -> Env -> Env
 map transform ({model} as env) =
   { env | model = transform model }
+
+
+mapWith : (Model -> Model) -> (Env, Cmd Msg) -> (Env, Cmd Msg)
+mapWith transform (env, cmd) =
+  ( env |> map transform
+  , cmd
+  )
+
+
+mapEnv : (Env -> Env) -> (Env, Cmd Msg) -> (Env, Cmd Msg)
+mapEnv transform (env, cmd) =
+  ( env |> transform
+  , cmd
+  )
+
+
+with : Cmd Msg -> Env -> (Env, Cmd Msg)
+with cmd env =
+  ( env, cmd )
+
+
+mergeCmd : Cmd Msg -> (Env, Cmd Msg) -> (Model, Cmd Msg)
+mergeCmd cmd_ (env, cmd) =
+  (env.model, Cmd.batch [cmd, cmd_])
+
+
+mergeWith : (Env -> (Model, Cmd Msg)) -> (Env, Cmd Msg) -> (Model, Cmd Msg)
+mergeWith transform (env, cmd) =
+  let
+    (model, cmd_) = env |> transform
+  in
+  (model, Cmd.batch [cmd, cmd_])
 
 
 -- Outcome
@@ -122,3 +160,8 @@ outcomeDir directives env =
 outcomeCmd : Cmd Msg -> Env -> Outcome
 outcomeCmd cmd env =
   Outcome env.model cmd (Directives NoStore Swap)
+
+
+outcomeWith : Directives -> (Env, Cmd Msg) -> Outcome
+outcomeWith directives (env, cmd) =
+  Outcome env.model cmd directives

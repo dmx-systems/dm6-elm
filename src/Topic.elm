@@ -66,7 +66,7 @@ create_ id text icon ({topics} as model) handleTopic =
     topicId = TopicId id
     topic = Topic topicId icon text (TextSize C.topicDetailSize C.topicDetailSize) []
   in
-  { model | topics = topics |> Dict.insert (toTopicId topic.id) topic }
+  { model | topics = topics |> Dict.insert id topic }
     |> handleTopic topic
 
 

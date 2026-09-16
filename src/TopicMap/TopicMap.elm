@@ -128,13 +128,12 @@ assocGeometry assoc boxId model =
       Console.fail "TopicMap.TopicMap.assocGeometry" {assoc = assoc, boxId = boxId} Nothing
 
 
-randomPos : TopicId -> BoxId -> Model -> (Model, Cmd Msg)
-randomPos topicId boxId model =
+randomPos : TopicId -> BoxId -> Cmd Msg
+randomPos topicId boxId =
   let
     toMsg = Model.TopicMap << TopicMapDef.GotRandomPos topicId boxId
-    cmd = Random.generate toMsg pointGen
   in
-  (model, cmd)
+  Random.generate toMsg pointGen
 
 
 -- GotRandomPos message handler

@@ -413,18 +413,18 @@ setLineStyle lineStyle ({tool} as model) =
 -- Map Tools
 
 createTopic : Env -> Cmd Msg
-createTopic env =
+createTopic env = -- TODO: drop env param
   Topic.create "" C.initTopicIcon
-    (\topic model ->    -- TODO: pass env instead model, but creates cycle
+    (\topic model -> -- TODO: pass env instead model, but creates cycle
       let
         boxPath = Sel.landingBoxPath model
         boxId = Box.firstId boxPath
       in
       env
-        |> Env.map (\_ -> model)
+        |> Env.map (\_ -> model) -- TODO: drop
         |> Box.addTopic (BoxTopic topic.id Collapsed) boxId
-        |> Env.map (Sel.select (T topic.id) boxPath)
-        |> Text.enterEdit topic.id boxPath
+        |> Env.mapWith (Sel.select (T topic.id) boxPath)
+        |> Env.mergeWith (Text.enterEdit topic.id boxPath)
     )
 
 

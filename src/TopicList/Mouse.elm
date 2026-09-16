@@ -196,32 +196,33 @@ processDrop sourceTopicId sourceBoxId targetTopicId targetBoxId ({model} as env)
       , dropMode = model.topicList.dropMode
       }
     --
-    addTopic : Env -> Env
+    addTopic : Env -> (Env, Cmd Msg)
     addTopic env_ =
       case env_.model.topicList.dropMode of
         Just Drop ->
           env_
             |> Box.turnTopicIntoBox targetTopicId Renderer.TopicList
             |> addTopic_ sourceTopicId (BoxId targetTopicId)
-            |> Env.autoSize
+            |> Env.autoSizeWith
         Just InsertBefore ->
           env_
             |> addTopic_ sourceTopicId targetBoxId
-            |> Env.map (TopicList.reorderTopic sourceTopicId targetBoxId targetTopicId)
-            |> Env.autoSize
+            |> Env.mapWith (TopicList.reorderTopic sourceTopicId targetBoxId targetTopicId)
+            |> Env.autoSizeWith
         Nothing ->
           let
             _ = Console.logError "TopicList.Mouse.processDrop" "Unexpected dropMode" Nothing
           in
-          env_
+          (env_, Cmd.none)
   in
   env
     |> Env.map (Box.removeTopic sourceTopicId sourceBoxId)
     |> addTopic
-    |> Env.outcomeDir (Directives Store Push) -- FIXME: Push only if not foreign drop
+    |> Env.outcomeWith (Directives Store Push) -- FIXME: store/push after create-Hierarchy
+                                               -- FIXME: Push only if not foreign drop
 
 
-addTopic_ : TopicId -> BoxId -> Env -> Env
+addTopic_ : TopicId -> BoxId -> Env -> (Env, Cmd Msg)
 addTopic_ topicId boxId env =
   let
     setBoxRenderer : Env -> Env
@@ -234,7 +235,7 @@ addTopic_ topicId boxId env =
   in
   env
     |> Box.addTopic (BoxTopic topicId Expanded) boxId
-    |> setBoxRenderer
+    |> Env.mapEnv setBoxRenderer
 
 
 setDragPos : Maybe Point -> Model -> Model

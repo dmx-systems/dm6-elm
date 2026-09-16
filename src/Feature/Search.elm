@@ -281,7 +281,7 @@ update msg env =
     SearchDef.TopicClicked topicId ->
       env
         |> revealTopic topicId
-        |> Env.outcomeDir (Directives Store Push)
+        |> Env.outcomeWith (Directives Store Push) -- FIXME: store/push after create-Hierarchy
     -- Traverse
     SearchDef.RelTopicHovered relTopicId ->
       env
@@ -294,7 +294,7 @@ update msg env =
     SearchDef.RelTopicClicked relTopicId ->
       env
         |> revealRelTopic relTopicId
-        |> Env.outcomeDir (Directives Store Push)
+        |> Env.outcomeWith (Directives Store Push) -- FIXME: store/push after create-Hierarchy
     -- Fullscreen (Search & Traverse)
     SearchDef.Fullscreen boxId ->
       env
@@ -373,41 +373,42 @@ onRelTopicUnhovered ({model} as env) =
       env
 
 
-revealTopic : TopicId -> Env -> Env
+revealTopic : TopicId -> Env -> (Env, Cmd Msg)
 revealTopic topicId ({model} as env) =
   case TopicMap.revelationBoxPath model of
     Just (boxId :: _ as boxPath) ->
       env
         |> revealTopic_ topicId boxId
-        |> Env.map closeMenu
-        |> Env.map (Sel.select (T topicId) boxPath)
-        |> Env.autoSize
+        |> Env.mapWith closeMenu
+        |> Env.mapWith (Sel.select (T topicId) boxPath)
+        |> Env.autoSizeWith
     _ ->
-      env
+      (env, Cmd.none)
 
 
-revealRelTopic : (TopicId, AssocId) -> Env -> Env
+revealRelTopic : (TopicId, AssocId) -> Env -> (Env, Cmd Msg)
 revealRelTopic (topicId, assocId) ({model} as env) =
   case TopicMap.revelationBoxPath model of
     Just (boxId :: _ as boxPath) ->
       env
         |> revealTopic_ topicId boxId
-        |> Env.map (revealAssoc_ assocId boxId)
-        |> Env.map closeMenu
-        |> Env.map (Sel.select (T topicId) boxPath)
-        |> Env.autoSize
-    _ -> env
+        |> Env.mapEnv (revealAssoc_ assocId boxId)
+        |> Env.mapWith closeMenu
+        |> Env.mapWith (Sel.select (T topicId) boxPath)
+        |> Env.autoSizeWith
+    _ ->
+      (env, Cmd.none)
 
 
-revealTopic_ : TopicId -> BoxId -> Env -> Env
+revealTopic_ : TopicId -> BoxId -> Env -> (Env, Cmd Msg)
 revealTopic_ topicId boxId env =
   env
     |> Box.addTopic (BoxTopic topicId Collapsed) boxId
 
 
-revealAssoc_ : AssocId -> BoxId -> Model -> Model
-revealAssoc_ assocId boxId model =
-  model
+revealAssoc_ : AssocId -> BoxId -> Env -> Env
+revealAssoc_ assocId boxId env =
+  env
     |> Box.addAssoc assocId boxId
 
 

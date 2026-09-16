@@ -166,7 +166,7 @@ type alias Box =
 
 rootBoxId : BoxId
 rootBoxId =
-  BoxId (TopicId "### TODO-0")
+  BoxId (TopicId "TODO-0")
 
 
 {-| Attaches renderer-independent view properties to a SetItem.

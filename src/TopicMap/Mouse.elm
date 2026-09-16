@@ -178,7 +178,7 @@ dragStop ({model} as env) =
               env
                 |> topicDragEnd topicId boxPath origTopicPos
             Just (Drag DraftAssoc) ->
-              model
+              env
                 |> assocDragEnd topicId boxPath
             Just (DragEngaged _) ->
               let
@@ -265,8 +265,8 @@ foreignTopicDrop sourceTopicId sourceBoxPath ({model} as env) =
       noOp
 
 
-assocDragEnd : TopicId -> BoxPath -> Model -> Outcome
-assocDragEnd sourceTopicId sourceBoxPath model =
+assocDragEnd : TopicId -> BoxPath -> Env -> Outcome
+assocDragEnd sourceTopicId sourceBoxPath ({model} as env) =
   let
     noOp = Outcome.default model
   in
@@ -279,9 +279,8 @@ assocDragEnd sourceTopicId sourceBoxPath model =
           ++ ") --> create assoc")
         boxId = Box.firstId sourceBoxPath
       in
-      model
-        |> createAssoc sourceTopicId targetId boxId
-        |> Outcome.withDir (Directives Store Push)
+      (model, createAssoc sourceTopicId targetId boxId env)
+        |> Outcome.fromDir (Directives Store Push) -- FIXME: store/push after create-assoc
     Nothing ->
       let
         _ = Console.info "TopicMap.Mouse.assocDragEnd" "drawn assoc ended w/o target"
@@ -303,22 +302,23 @@ moveTopicToBox topicId boxId targetTopicId targetPath ({model} as env) =
       env
         |> Box.turnTopicIntoBox targetTopicId renderer
         |> Box.addTopic (BoxTopic topicId expansion) targetBoxId
-        |> .model
-        |> Box.removeTopic topicId boxId
-        |> Sel.select (T targetTopicId) targetPath
-        |> TopicMap.randomPos topicId targetBoxId
+        |> Env.mapWith (Box.removeTopic topicId boxId)
+        |> Env.mapWith (Sel.select (T targetTopicId) targetPath)
+        |> Env.mergeCmd (TopicMap.randomPos topicId targetBoxId)
     Nothing ->
       (model, Cmd.none)
 
 
 -- Presumption: both topics exist in same box
-createAssoc : TopicId -> TopicId -> BoxId -> Model -> Model
-createAssoc topicId1 topicId2 boxId model =
-  model
-    |> Assoc.create Association topicId1 topicId2
-    |> \(model_, assocId) ->
-      model_
-        |> Box.addAssoc assocId boxId
+createAssoc : TopicId -> TopicId -> BoxId -> Env -> Cmd Msg
+createAssoc topicId1 topicId2 boxId env = -- TODO: drop env param
+  Assoc.create Association topicId1 topicId2
+    (\assoc model -> -- TODO: pass env instead model, creates cycle, compare Tool.createTopic
+      env
+        |> Env.map (\_ -> model) -- TODO: drop
+        |> Box.addAssoc assoc.id boxId
+        |> .model
+    )
 
 
 setDragState : Maybe DragState -> Model -> Model
