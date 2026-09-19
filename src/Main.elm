@@ -6,6 +6,7 @@ import Console
 import Dispatch exposing (dispatch)
 import Env exposing (Env)
 import Feature.Icon as Icon
+import Feature.Id as Id
 import Feature.Mouse as Mouse
 import Feature.MouseDef as MouseDef
 import Feature.Nav as Nav
@@ -232,6 +233,7 @@ update msg ({present} as undoModel) =
         Search msg_ -> Search.update msg_ env
         Icon msg_ -> Icon.update msg_ env
         Nav msg_ -> Nav.update msg_ env
+        Id msg_ -> Id.update msg_ env
         --
         Scrolled pos ->
           env

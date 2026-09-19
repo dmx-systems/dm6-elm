@@ -1,4 +1,4 @@
-module Model exposing (Model, Msg(..), init, resetTransient, encode, decoder, map, nextId)
+module Model exposing (Model, Msg(..), init, resetTransient, encode, decoder, map)
 
 import Config as C
 import ModelBase exposing (..)
@@ -8,6 +8,7 @@ import TopicList.TopicListDef as TopicListDef
 import TopicMap.TopicMapDef as TopicMapDef
 -- feature modules
 import Feature.IconDef as IconDef
+import Feature.IdDef as IdDef
 import Feature.MouseDef as MouseDef
 import Feature.NavDef as NavDef
 import Feature.SearchDef as SearchDef
@@ -28,7 +29,6 @@ type alias Model =
   , itemSets: Dict Id ItemSet
   , boxes : Dict Id Box
   , boxId : BoxId -- the box rendered fullscreen
-  --, nextId : Id -- ### TODO
   -- box renderers
   , topicMap : TopicMapDef.Model
   , topicList : TopicListDef.Model
@@ -39,22 +39,22 @@ type alias Model =
   , search : SearchDef.Model
   , icon : IconDef.Model
   , selection : SelDef.Model
+  , id : IdDef.Model
   }
 
 
 init : Model
 init =
   let
-    rootTopic = Topic (TopicId "### TODO-0") Nothing C.rootBoxName (TextSize (Size 0 0) (Size 0 0)) []
+    rootTopic = Topic (TopicId "TODO-0") Nothing C.rootBoxName (TextSize (Size 0 0) (Size 0 0)) []
   in
-  { topics = Dict.singleton "### TODO-0" rootTopic
+  { topics = Dict.singleton "TODO-0" rootTopic
   , assocs = Dict.empty
-  , itemSets = Dict.singleton "### TODO-1" <| ItemSet "### TODO-1" []
+  , itemSets = Dict.singleton "TODO-1" <| ItemSet "TODO-1" []
   , boxes = Dict.singleton
       (toBoxId rootBoxId)
-      (Box rootBoxId "### TODO-1" Dict.empty Renderer.default)
+      (Box rootBoxId "TODO-1" Dict.empty Renderer.default)
   , boxId = rootBoxId
-  --, nextId = "### TODO-2"
   -- box renderers
   , topicMap = TopicMapDef.init
   , topicList = TopicListDef.init
@@ -65,6 +65,7 @@ init =
   , search = SearchDef.init
   , icon = IconDef.init
   , selection = SelDef.init
+  , id = IdDef.init
   }
 
 
@@ -87,6 +88,7 @@ type Msg
   | Search SearchDef.Msg
   | Icon IconDef.Msg
   | Nav NavDef.Msg
+  | Id IdDef.Msg
   --
   | Scrolled Point
   | Cancel (Maybe Target)
@@ -105,7 +107,6 @@ encode model =
     , ("itemSets", model.itemSets |> Dict.values |> E.list encodeItemSet)
     , ("boxes", model.boxes |> Dict.values |> E.list encodeBox)
     , ("boxId", encodeBoxId model.boxId)
-    --, ("nextId", E.int model.nextId) -- ### TODO
     -- box renderers
     , ("topicMap", TopicMapDef.encode model.topicMap)
     , ("topicList", TopicListDef.encode model.topicList)
@@ -122,7 +123,6 @@ decoder =
     |> required "itemSets" (toDictDecoder itemSetDecoder)
     |> required "boxes" (toDictDecoderWith toBoxId boxDecoder)
     |> required "boxId" boxIdDecoder
-    -- |> required "nextId" D.int -- ### TODO
     -- box renderers
     |> required "topicMap" TopicMapDef.decoder
     |> required "topicList" TopicListDef.decoder
@@ -133,6 +133,7 @@ decoder =
     |> hardcoded SearchDef.init
     |> hardcoded IconDef.init
     |> hardcoded SelDef.init
+    |> hardcoded IdDef.init
 
 
 
@@ -142,9 +143,3 @@ decoder =
 map : (Model -> Model) -> (Model, Cmd Msg) -> (Model, Cmd Msg)
 map transform (model, cmd) =
   (transform model, cmd)
-
-
-nextId : Model -> Model
-nextId model =
-  model
-  -- { model | nextId = model.nextId + 1 } -- ### TODO

@@ -6,6 +6,7 @@ module Box exposing (topicIds, assocIds, turnTopicIntoBox, init, addTopic, addAs
 import Assoc
 import Console
 import Env exposing (Env)
+import Feature.Id as Id
 import Model exposing (Model)
 import ModelBase exposing (..)
 import Renderer exposing (Renderer)
@@ -46,22 +47,17 @@ turnTopicIntoBox topicId renderer ({model} as env) =
   if Topic.isBox topicId model then
     env
   else
+    let
+      (id, model_) = Id.get model
+      set = ItemSet id []
+      boxId = BoxId topicId
+      box = Box boxId id Dict.empty renderer
+    in
     env
-      |> turnTopicIntoBox_ topicId renderer
-      |> init (BoxId topicId)
-
-
-turnTopicIntoBox_ : TopicId -> Renderer -> Env -> Env
-turnTopicIntoBox_ topicId renderer ({model} as env) =
-  let
-    setId = "### TODO" -- model.nextId
-    set = ItemSet setId []
-    box = Box (BoxId topicId) setId Dict.empty renderer
-  in
-  env
-    |> Env.map (create box)
-    |> Env.map (createItemSet set)
-    |> Env.map Model.nextId
+      |> Env.map (always model_)
+      |> Env.map (create box)
+      |> Env.map (createItemSet set)
+      |> init boxId
 
 
 create : Box -> Model -> Model

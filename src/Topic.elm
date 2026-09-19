@@ -2,6 +2,7 @@ module Topic exposing (fromId, label, size, setSize, create, update, isBox)
 
 import Config as C
 import Console
+import Feature.Id as Id
 import Model exposing (Model)
 import ModelBase exposing (..)
 
@@ -55,21 +56,16 @@ setSize topicId sizeField size_ model =
 
 
 create : String -> Maybe Icon -> Model -> (Model, TopicId)
-create text icon model =
+create text icon ({topics} as model) =
   let
-    id = TopicId "### TODO" -- model.nextId
-    topic = Topic id icon text (TextSize C.topicDetailSize C.topicDetailSize) []
+    (id, model_) = Id.get model
+    topicId = TopicId id
+    size_ = TextSize C.topicDetailSize C.topicDetailSize
+    topic = Topic topicId icon text size_ []
   in
-  ( model
-      |> create_ topic
-      |> Model.nextId
-  , id
+  ( { model_ | topics = topics |> Dict.insert id topic }
+  , topicId
   )
-
-
-create_ : Topic -> Model -> Model
-create_ topic ({topics} as model) =
-  { model | topics = topics |> Dict.insert (toTopicId topic.id) topic }
 
 
 {-| Canonical Topic transformation.

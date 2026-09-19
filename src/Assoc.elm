@@ -1,6 +1,7 @@
 module Assoc exposing (fromId, create, relatedTopics, otherTopicId)
 
 import Console
+import Feature.Id as Id
 import Model exposing (Model)
 import ModelBase exposing (..)
 import Topic
@@ -22,14 +23,14 @@ fromId assocId model =
 create : AssocType -> TopicId -> TopicId -> Model -> (Model, AssocId)
 create assocType topicId1 topicId2 ({assocs} as model) =
   let
-    id = AssocId "### TODO" -- model.nextId
-    assoc = Assoc id assocType topicId1 topicId2
+    (id, model_) = Id.get model
+    assocId = AssocId id
+    assoc = Assoc assocId assocType topicId1 topicId2
   in
-  ( { model | assocs = assocs |> Dict.insert (toAssocId id) assoc }
-      |> insertAssocId id topicId1
-      |> insertAssocId id topicId2
-      |> Model.nextId
-  , id
+  ( { model_ | assocs = assocs |> Dict.insert id assoc }
+      |> insertAssocId assocId topicId1
+      |> insertAssocId assocId topicId2
+  , assocId
   )
 
 

@@ -66,7 +66,7 @@ map transform ({model} as out) =
 
 
 perform : UndoModel -> Outcome -> (UndoModel, Cmd Msg)
-perform undoModel {directives, cmd, model} =
+perform undoModel {model, cmd, directives} =
   let
     performHistory : UndoModel -> UndoModel
     performHistory undoModel_ =

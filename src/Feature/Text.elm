@@ -5,6 +5,7 @@ import Box
 import Config as C
 import Console
 import Env exposing (Env)
+import Feature.Id as Id
 import Feature.TextDef as TextDef exposing (EditState(..), TopicImage)
 import Model exposing (Model, Msg(..))
 import ModelBase exposing (..)
@@ -299,14 +300,13 @@ markdown source model =
 openImageFilePicker : TopicId -> Model -> (Model, Cmd Msg)
 openImageFilePicker (TopicId topicId) model =
   let
-    imageId = "### TODO" -- model.nextId
+    (id, model_) = Id.get model
   in
-  ( model
-      |> Model.nextId
+  ( model_
   , imageFilePicker
       ( E.object
           [ ("topicId", E.string topicId)
-          , ("imageId", E.string imageId)
+          , ("imageId", E.string id)
           ]
       )
   )
