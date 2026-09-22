@@ -1,5 +1,5 @@
 module Outcome exposing (Outcome, Directives, Storage(..), History(..), default, withDir, from,
-  fromDir, map, perform, command)
+  fromDir, map, mergeCmd, perform, command)
 
 import Model exposing (Model, Msg)
 import Storage as S
@@ -63,6 +63,11 @@ fromDir directives (model, cmd) =
 map : (Model -> Model) -> Outcome -> Outcome
 map transform ({model} as out) =
   { out | model = transform model }
+
+
+mergeCmd : Cmd Msg -> Outcome -> Outcome
+mergeCmd cmd out =
+  { out | cmd = Cmd.batch [out.cmd, cmd] }
 
 
 perform : UndoModel -> Outcome -> (UndoModel, Cmd Msg)

@@ -248,6 +248,7 @@ update msg ({present} as undoModel) =
             |> Env.outcome
   in
   outcome
+    |> Outcome.mergeCmd (Id.requestIds outcome.model)
     |> Outcome.perform undoModel
 
 

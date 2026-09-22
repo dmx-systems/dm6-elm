@@ -1,4 +1,4 @@
-module Feature.Id exposing (get, update)
+module Feature.Id exposing (get, requestIds, update)
 
 import Config as C
 import Console
@@ -15,7 +15,7 @@ import Random
 get : Model -> (Id, Model)
 get model =
   case model.id.pool of
-    id_ :: ids -> (id_, { model | id = { pool = ids }})
+    id :: ids -> (id, { model | id = { pool = ids }})
     [] ->
       let
         _ = Console.logError "Id.get" "ID pool is empty" model.id.pool
