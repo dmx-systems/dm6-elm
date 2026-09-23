@@ -13,6 +13,7 @@ import Feature.MouseDef as MouseDef
 import Feature.NavDef as NavDef
 import Feature.SearchDef as SearchDef
 import Feature.SelDef as SelDef
+import Feature.SyncDef as SyncDef
 import Feature.TextDef as TextDef
 import Feature.ToolDef as ToolDef
 
@@ -39,6 +40,7 @@ type alias Model =
   , search : SearchDef.Model
   , icon : IconDef.Model
   , selection : SelDef.Model
+  , sync : SyncDef.Model
   , id : IdDef.Model
   }
 
@@ -65,6 +67,7 @@ init =
   , search = SearchDef.init
   , icon = IconDef.init
   , selection = SelDef.init
+  , sync = SyncDef.init
   , id = IdDef.init
   }
 
@@ -133,6 +136,7 @@ decoder =
     |> hardcoded SearchDef.init
     |> hardcoded IconDef.init
     |> hardcoded SelDef.init
+    |> hardcoded SyncDef.init
     |> hardcoded IdDef.init
 
 

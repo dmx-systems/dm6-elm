@@ -1,16 +1,27 @@
-module Sync exposing (doc)
+module Feature.SyncDef exposing (Model, SyncModel, init, refs)
 
 import ModelBase exposing (..)
 
 import Crdt as C
+import Crdt.Doc exposing (Doc)
 import Crdt.Id
 
 import Dict exposing (Dict)
 
 
--- the "Document"
 
 type alias Model =
+  { doc : Doc SyncModel }
+
+
+init : Model
+init =
+  { doc = C.init (Crdt.Id.replica "my-replica") modelDoc.schema }
+
+
+-- the "Document"
+
+type alias SyncModel =
   { topics : Dict Id Topic
   }
 
@@ -18,8 +29,8 @@ type alias Model =
 -- the "Schema"
 
 type alias ModelDoc =
-  { topics : C.Ref Model (C.DictK C.Nested Topic) (Dict Id Topic)
-  , schema : C.Schema C.Nested Model
+  { topics : C.Ref SyncModel (C.DictK C.Nested Topic) (Dict Id Topic)
+  , schema : C.Schema C.Nested SyncModel
   }
 
 
@@ -67,9 +78,14 @@ type alias SizeDoc =
 
 modelDoc : ModelDoc
 modelDoc =
-  C.record Model ModelDoc
+  C.record SyncModel ModelDoc
     |> C.field "topics" .topics (C.dict topicDoc)
     |> C.build
+
+
+refs : ModelDoc
+refs =
+  modelDoc
 
 
 topicDoc : TopicDoc
@@ -137,9 +153,3 @@ sizeDoc =
     |> C.field "w" .w C.int
     |> C.field "h" .h C.int
     |> C.build
-
-
--- the live document
-
-doc =
-    C.init (Crdt.Id.replica "test") modelDoc.schema
