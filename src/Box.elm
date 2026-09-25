@@ -7,6 +7,7 @@ import Assoc
 import Console
 import Env exposing (Env)
 import Feature.Id as Id
+import Feature.Sync as Sync
 import Model exposing (Model)
 import ModelBase exposing (..)
 import Renderer exposing (Renderer)
@@ -304,23 +305,26 @@ Low-level function that does NOT delete the item's associations. ### FIXDOC
 -}
 deleteTopic_ : TopicId -> Model -> Model
 deleteTopic_ topicId ({itemSets, topicMap} as model) =
-  { model
-  | topics = model.topics |> Dict.remove (toTopicId topicId) -- delete topic
-  , itemSets = itemSets |> Dict.map -- delete topic from all itemSets
-      (\_ ({items} as itemSet) ->
-        { itemSet | items = items |> List.filter
-          (\setItem -> setItem.id /= T topicId)
+  model
+    |> Sync.removeTopic topicId
+    |> (\model_ ->
+        { model_
+        | itemSets = itemSets |> Dict.map -- delete topic from all itemSets
+            (\_ ({items} as itemSet) ->
+              { itemSet | items = items |> List.filter
+                (\setItem -> setItem.id /= T topicId)
+              }
+            )
+        -- TODO: if item is box delete from "boxes" state as well
+        -- TODO: don't operate on "topicMap" directly, dispatch instead
+        , topicMap =
+            { topicMap | view = topicMap.view |> Dict.map -- delete item from all boxes
+              (\_ topicMap_ ->
+                { topicMap_ | topics = topicMap_.topics |> Dict.remove (toTopicId topicId) }
+              )
+            }
         }
       )
-  -- TODO: if item is box delete from "boxes" state as well
-  -- TODO: don't operate on "topicMap" directly, dispatch instead
-  , topicMap =
-      { topicMap | view = topicMap.view |> Dict.map -- delete item from all boxes
-        (\_ topicMap_ ->
-          { topicMap_ | topics = topicMap_.topics |> Dict.remove (toTopicId topicId) }
-        )
-      }
-  }
 
 
 {-| Deletes an item, and removes it from all boxes.

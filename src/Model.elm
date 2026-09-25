@@ -25,8 +25,7 @@ import Json.Encode as E
 
 
 type alias Model =
-  { topics : Dict Id Topic
-  , assocs : Dict Id Assoc
+  { assocs : Dict Id Assoc
   , itemSets: Dict Id ItemSet
   , boxes : Dict Id Box
   , boxId : BoxId -- the box rendered fullscreen
@@ -50,8 +49,7 @@ init =
   let
     rootTopic = Topic (TopicId "TODO-0") Nothing C.rootBoxName (TextSize (Size 0 0) (Size 0 0)) []
   in
-  { topics = Dict.singleton "TODO-0" rootTopic
-  , assocs = Dict.empty
+  { assocs = Dict.empty
   , itemSets = Dict.singleton "TODO-1" <| ItemSet "TODO-1" []
   , boxes = Dict.singleton
       (toBoxId rootBoxId)
@@ -105,8 +103,7 @@ type Msg
 encode : Model -> E.Value
 encode model =
   E.object
-    [ ("topics", model.topics |> Dict.values |> E.list encodeTopic)
-    , ("assocs", model.assocs |> Dict.values |> E.list encodeAssoc)
+    [ ("assocs", model.assocs |> Dict.values |> E.list encodeAssoc)
     , ("itemSets", model.itemSets |> Dict.values |> E.list encodeItemSet)
     , ("boxes", model.boxes |> Dict.values |> E.list encodeBox)
     , ("boxId", encodeBoxId model.boxId)
@@ -121,7 +118,6 @@ encode model =
 decoder : D.Decoder Model
 decoder =
   D.succeed Model
-    |> required "topics" (toDictDecoderWith toTopicId topicDecoder)
     |> required "assocs" (toDictDecoderWith toAssocId assocDecoder)
     |> required "itemSets" (toDictDecoder itemSetDecoder)
     |> required "boxes" (toDictDecoderWith toBoxId boxDecoder)

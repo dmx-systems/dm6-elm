@@ -1,4 +1,4 @@
-module Feature.SyncDef exposing (Model, SyncModel, init, refs)
+module Feature.SyncDef exposing (Model, init, refs)
 
 import ModelBase exposing (..)
 
@@ -17,13 +17,6 @@ type alias Model =
 init : Model
 init =
   { doc = C.init (Crdt.Id.replica "my-replica") modelDoc.schema }
-
-
--- the "Document"
-
-type alias SyncModel =
-  { topics : Dict Id Topic
-  }
 
 
 -- the "Schema"

@@ -3,6 +3,7 @@ module Topic exposing (fromId, label, size, setSize, create, update, isBox)
 import Config as C
 import Console
 import Feature.Id as Id
+import Feature.Sync as Sync
 import Model exposing (Model)
 import ModelBase exposing (..)
 
@@ -15,9 +16,16 @@ Logs an error if Topic is missing.
 -}
 fromId : TopicId -> Model -> Maybe Topic
 fromId topicId model =
-  case model.topics |> Dict.get (toTopicId topicId) of
-    Just topic -> Just topic
-    Nothing -> Console.topicNotFound "Topic.fromId" topicId Nothing
+  let
+    (TopicId id) = topicId
+  in
+  case Sync.model model of
+    Just syncModel ->
+      case syncModel.topics |> Dict.get id of
+        Just topic -> Just topic
+        Nothing -> Console.logError "Topic.fromId" (id ++ " not found") Nothing
+    Nothing ->
+      Console.fail "Topic.fromId" id Nothing
 
 
 label : Topic -> String
@@ -56,30 +64,32 @@ setSize topicId sizeField size_ model =
 
 
 create : String -> Maybe Icon -> Model -> (Model, TopicId)
-create text icon ({topics} as model) =
+create text icon model =
   let
     (id, model_) = Id.get model
     topicId = TopicId id
     size_ = TextSize C.topicDetailSize C.topicDetailSize
     topic = Topic topicId icon text size_ []
   in
-  ( { model_ | topics = topics |> Dict.insert id topic }
-  , topicId
-  )
+  ( Sync.setTopic topic model_, topicId )
 
 
 {-| Canonical Topic transformation.
 Logs an error if item does not exist.
 -}
 update : TopicId -> (Topic -> Topic) -> Model -> Model
-update topicId transform ({topics} as model) =
-  { model | topics = topics |> Dict.update (toTopicId topicId)
-    (\maybeTopic ->
-      case maybeTopic of
-        Just topic -> Just <| transform topic
-        Nothing -> Console.topicNotFound "Topic.update" topicId Nothing
-    )
-  }
+update topicId transform model =
+  let
+    (TopicId id) = topicId
+  in
+  case fromId topicId model of
+    Just topic ->
+      Sync.setTopic (transform topic) model
+    Nothing ->
+      let
+        _ = Console.fail "Topic.update" id Nothing
+      in
+      model
 
 
 isBox : TopicId -> Model -> Bool

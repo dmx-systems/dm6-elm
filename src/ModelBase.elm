@@ -1,6 +1,6 @@
-module ModelBase exposing (Id, TopicId(..), AssocId(..), ItemId(..), AssocIds, Topic, Icon,
-  TextSize, Size, SizeField(..), Point, Rectangle, Assoc, AssocType(..), ItemSet, SetItem, Box,
-  BoxId(..), Level, BoxPath, Target, BoxTarget, BoxTopic, Expansion(..), ImageId, Attrs,
+module ModelBase exposing (SyncModel, Id, TopicId(..), AssocId(..), ItemId(..), AssocIds, Topic,
+  Icon, TextSize, Size, SizeField(..), Point, Rectangle, Assoc, AssocType(..), ItemSet, SetItem,
+  Box, BoxId(..), Level, BoxPath, Target, BoxTarget, BoxTopic, Expansion(..), ImageId, Attrs,
   PointerType, toTopicId, toAssocId, toBoxId, fromBoxId, maybeTopicId, maybeAssocId, rootBoxId,
   encodeTopic, encodeAssoc, encodeItemSet, encodeBox, encodeTopicId, encodeBoxId, topicDecoder,
   assocDecoder, itemSetDecoder, boxDecoder, topicIdDecoder, boxIdDecoder, toDictDecoder,
@@ -16,6 +16,12 @@ import Json.Encode as E
 
 
 -- TYPES
+
+
+type alias SyncModel =
+  { topics : Dict Id Topic
+  -- TODO
+  }
 
 
 type alias Entity e i =
