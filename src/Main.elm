@@ -12,6 +12,7 @@ import Feature.MouseDef as MouseDef
 import Feature.Nav as Nav
 import Feature.Search as Search
 import Feature.Sel as Sel
+import Feature.Sync as Sync
 import Feature.Text as Text
 import Feature.Tool as Tool
 import Model exposing (Model, Msg(..))
@@ -79,7 +80,7 @@ initModel flags =
       let
         _ = Console.info "Main.initModel" "localStorage: empty"
       in
-      Model.init
+      freshModel
     _ ->
       case flags |> D.decodeValue Model.decoder of
         Ok model ->
@@ -92,7 +93,17 @@ initModel flags =
           let
             _ = Console.logError "Main.initModel" "localStorage" e
           in
-          Model.init
+          freshModel
+
+
+freshModel : Model
+freshModel =
+  let
+    size = TextSize (Size 0 0) (Size 0 0)
+    rootTopic = Topic (TopicId "TODO-0") Nothing C.rootBoxName size []
+  in
+  Model.init
+    |> Sync.setTopic rootTopic
 
 
 

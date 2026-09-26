@@ -46,9 +46,6 @@ type alias Model =
 
 init : Model
 init =
-  let
-    rootTopic = Topic (TopicId "TODO-0") Nothing C.rootBoxName (TextSize (Size 0 0) (Size 0 0)) []
-  in
   { assocs = Dict.empty
   , itemSets = Dict.singleton "TODO-1" <| ItemSet "TODO-1" []
   , boxes = Dict.singleton
