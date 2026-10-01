@@ -1,4 +1,5 @@
 import { Elm } from './src/Main.elm'
+import { openDB } from 'idb'
 import { zip, unzip, strToU8, strFromU8 } from 'fflate'
 
 const key = 'dm6-elm'
@@ -165,7 +166,7 @@ fpInput.addEventListener('change', async () => {
 })
 document.body.appendChild(fpInput)
 app.ports.imageFilePicker.subscribe(({topicId, imageId}) => {
-  console.log('$$imageFilePicker', 'topicId', topicId, 'imageId', imageId)
+  console.log('#imageFilePicker', 'topicId', topicId, 'imageId', imageId)
   fpInput.dataset.topicId = topicId     // update value before clicking
   fpInput.dataset.imageId = imageId     // update value before clicking
   fpInput.value = ''                    // allow re-selecting same file
@@ -182,73 +183,43 @@ async function u8(blob) {
 }
 
 const dbName = 'dm6-elm'
-const objectStoreName = 'images'
-const dbPromise = new Promise((resolve, reject) => {
-  const request = indexedDB.open(dbName, 1)   // version=1
-  request.onupgradeneeded = () => {
-    console.log('$$createObjectStore', objectStoreName)
-    const db = request.result
-    db.createObjectStore(objectStoreName)
+const imagesStore = 'images'
+const dbPromise = openDB(dbName, 1, {
+  upgrade(db) {
+    console.log('#createObjectStore', imagesStore)
+    db.createObjectStore(imagesStore)
   }
-  request.onsuccess = () => resolve(request.result)
-  request.onerror = () => reject(request.error)
 })
 
 resolveAllImages()
 
 // Returns a promise resolved once storage is complete
 async function storeImage(id, blob) {
-  console.log('$$storeImage', id, blob)
+  console.log('#storeImage', id, blob)
   const db = await dbPromise
-  return new Promise((resolve, reject) => {
-    const tx = db.transaction(objectStoreName, 'readwrite')
-    const store = tx.objectStore(objectStoreName)
-    const request = store.put(blob, id)
-    request.onsuccess = () => {
-      resolve()
-    }
-    request.onerror = () => reject(request.error)
-  })
+  return db.put(imagesStore, blob, id)
 }
 
 // Returns a promise resolving to a Blob
 async function loadImage(id) {
   const db = await dbPromise
-  return new Promise((resolve, reject) => {
-    const tx = db.transaction(objectStoreName, "readonly")
-    const store = tx.objectStore(objectStoreName)
-    const request = store.get(id)
-    request.onsuccess = () => {
-      if (request.result) {
-        resolve(request.result)
-      } else {
-        reject("File not found")
-      }
-    }
-    request.onerror = () => reject(request.error)
-  })
+  return db.get(imagesStore, id)
 }
 
 async function loadAllImageIds() {
   const db = await dbPromise
-  return new Promise((resolve, reject) => {
-    const tx = db.transaction(objectStoreName, "readonly")
-    const store = tx.objectStore(objectStoreName)
-    const request = store.getAllKeys()
-    request.onsuccess = () => {
-      console.log('$$loadAllImageIds', request.result)
-      resolve(request.result)
-    }
-    request.onerror = () => reject(request.error)
-  })
+  return db.getAllKeys(imagesStore)
 }
 
 function resolveAllImages() {   // TODO: resolve selectively
-  loadAllImageIds().then(ids => ids.forEach(id =>
-    loadImage(id).then(blob =>
-      resolveImage(id, blob)
+  loadAllImageIds().then(ids => {
+    console.log('#resolveAllImages', ids)
+    ids.forEach(id =>
+      loadImage(id).then(blob =>
+        resolveImage(id, blob)
+      )
     )
-  ))
+  })
 }
 
 function resolveImage(id, blob) {
