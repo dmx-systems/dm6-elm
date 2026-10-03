@@ -25,6 +25,7 @@ import Json.Encode as E
 
 
 type alias Model =
+  -- TODO: move more fields to ModelBase.SyncModel
   { assocs : Dict Id Assoc
   , itemSets: Dict Id ItemSet
   , boxes : Dict Id Box

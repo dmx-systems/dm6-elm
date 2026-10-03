@@ -1,4 +1,4 @@
-module Feature.Sync exposing (model, setTopic, removeTopic)
+module Feature.Sync exposing (model, initDoc, setTopic, removeTopic)
 
 import Console
 import Feature.SyncDef exposing (refs)
@@ -7,6 +7,8 @@ import ModelBase exposing (..)
 
 import Crdt.Doc as Doc exposing (Doc)
 import Crdt.Edit as Edit
+
+import Json.Encode as E
 
 
 
@@ -17,6 +19,14 @@ model model_ =
     Err err ->
       Console.logError "Feature.Sync.model"
         ("Schema read error: " ++ Doc.readErrorToString err) Nothing
+
+
+initDoc : E.Value -> Model -> Model
+initDoc ops model_ =
+  Doc.decodeInto ops model_.sync.doc
+    |> Result.map (setDoc model_)
+    |> Result.mapError (Console.logError "Feature.Sync.initDoc" "while decoding")
+    |> Result.withDefault model_
 
 
 setTopic : Topic -> Model -> Model

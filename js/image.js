@@ -10,13 +10,13 @@ let dbPromise
 function init(_app, _dbPromise) {
   app = _app
   dbPromise = _dbPromise
-  initFilePicker()
+  initImagePicker()
   resolveAllImages()
 }
 
 // File Picker
 
-function initFilePicker() {
+function initImagePicker() {
   const input = document.createElement('input')
   input.type = 'file'
   input.accept = 'image/*'

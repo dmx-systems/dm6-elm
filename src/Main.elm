@@ -42,7 +42,7 @@ port onScroll : (Point -> msg) -> Sub msg
 -- MAIN
 
 
-main : Program (E.Value, String) UndoModel Msg
+main : Program (E.Value, E.Value, String) UndoModel Msg
 main =
   Browser.document
     { init = init
@@ -58,10 +58,10 @@ main =
     }
 
 
-init : (E.Value, String) -> (UndoModel, Cmd Msg)
-init (flags, hash) =
+init : (E.Value, E.Value, String) -> (UndoModel, Cmd Msg)
+init (flags, ops, hash) =
   let
-    model = initModel flags
+    model = initModel flags ops
     boxId =
       case Nav.boxIdFromHash hash of
         Just boxId_ -> boxId_
@@ -73,8 +73,8 @@ init (flags, hash) =
   )
 
 
-initModel : E.Value -> Model
-initModel flags =
+initModel : E.Value -> E.Value -> Model
+initModel flags ops =
   case flags |> D.decodeValue (D.null True) of
     Ok True ->
       let
@@ -89,6 +89,7 @@ initModel flags =
             bytes = model |> Console.toString |> String.length |> fromInt
           in
           model
+            |> Sync.initDoc ops
         Err e ->
           let
             _ = Console.logError "Main.initModel" "localStorage" e

@@ -1,18 +1,9 @@
 import { Elm } from './src/Main.elm'
 import storage from './js/storage'
 import image from './js/image'
+import sync from './js/sync'
 import zip from './js/zip'
 import { openDB } from 'idb'
-
-// Init Elm app
-
-const app = Elm.Main.init({
-  flags: [storage.getJSON(), location.hash]
-})
-
-app.ports.storeModel.subscribe(model => {
-  storage.setJSON(model)
-})
 
 // IndexedDB
 
@@ -20,8 +11,30 @@ const dbName = 'dm6-elm'
 const dbPromise = openDB(dbName, 1, {
   upgrade(db) {
     image.upgrade(db)
+    sync.upgrade(db)
   }
 })
+
+// Init Elm app
+
+sync.init(dbPromise)
+
+const app = Elm.Main.init({
+  flags: [
+    storage.getJSON(),
+    await sync.getDoc(),
+    location.hash
+  ]
+})
+
+app.ports.storeModel.subscribe(model => {
+  storage.setJSON(model)
+})
+
+// Init Modules
+
+image.init(app, dbPromise)
+zip.init(app)
 
 // Scrolling
 
@@ -43,8 +56,3 @@ window.addEventListener('hashchange', () => {
 app.ports.setHash.subscribe(function (hash) {
   location.hash = hash    // creates history entries
 })
-
-// Init Modules
-
-image.init(app, dbPromise)
-zip.init(app)
