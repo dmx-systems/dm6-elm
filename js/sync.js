@@ -1,5 +1,5 @@
 export default {
-  init, upgrade, getDoc
+  init, upgrade, getDoc, storeDoc
 }
 
 const opsStore = "ops"
@@ -16,16 +16,24 @@ function upgrade(db) {
 }
 
 async function getDoc() {
-  const ops = await getOps()
   const payload = {
     kind: 'ops',
-    ops
+    ops: await getOps()
   }
-  console.log('doc payload', payload)
+  console.log('load ->', payload)
   return payload
 }
 
 async function getOps() {
   const db = await dbPromise
   return db.getAll(opsStore)
+}
+
+async function storeDoc(payload) {
+  if (payload.kind !== 'ops') {
+    throw 'storeDoc: invalid payload'
+  }
+  const db = await dbPromise
+  const tx = db.transaction(opsStore, 'readwrite')
+  payload.ops.forEach(op => tx.store.add(op, op.id))
 }

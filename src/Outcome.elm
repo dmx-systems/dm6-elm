@@ -73,7 +73,7 @@ mergeCmd cmd out =
 perform : UndoModel -> Outcome -> (UndoModel, Cmd Msg)
 perform undoModel {model, cmd, directives} =
   let
-    performHistory : UndoModel -> UndoModel
+    performHistory : UndoModel -> UndoModel -- TODO: utilze CRDT for Undo, drop UndoModel
     performHistory undoModel_ =
       case directives.history of
         Push -> Undo.push undoModel_ model
@@ -86,11 +86,11 @@ perform undoModel {model, cmd, directives} =
     performStorage undoModel_ =
       case directives.storage of
         Store ->
-          ( undoModel_
-          , Cmd.batch
-              [ cmd
-              , S.store undoModel_.present
-              ]
+          let
+            (model_, cmd_) = S.store undoModel_.present
+          in
+          ( Undo.swap undoModel_ model_
+          , Cmd.batch [ cmd, cmd_ ]
           )
         NoStore -> (undoModel_, cmd)
   in

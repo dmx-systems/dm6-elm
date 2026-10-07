@@ -3,7 +3,7 @@ module Feature.SyncDef exposing (Model, init, refs)
 import ModelBase exposing (..)
 
 import Crdt as C
-import Crdt.Doc exposing (Doc)
+import Crdt.Doc as Doc exposing (Doc)
 import Crdt.Id
 
 import Dict exposing (Dict)
@@ -11,12 +11,19 @@ import Dict exposing (Dict)
 
 
 type alias Model =
-  { doc : Doc SyncModel }
+  { doc : Doc SyncModel
+  , lastStored : Doc.Version
+  }
 
 
 init : Model
 init =
-  { doc = C.init (Crdt.Id.replica "my-replica") modelDoc.schema }
+  let
+    doc = C.init (Crdt.Id.replica "my-replica") modelDoc.schema -- TODO: replica ID
+  in
+  { doc = doc
+  , lastStored = doc |> Doc.version
+  }
 
 
 -- the "Schema"

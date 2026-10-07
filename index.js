@@ -27,8 +27,10 @@ const app = Elm.Main.init({
   ]
 })
 
-app.ports.storeModel.subscribe(model => {
+app.ports.storeModel.subscribe(([model, payload]) => {
+  console.log('store ->', payload)
   storage.setJSON(model)
+  sync.storeDoc(payload)
 })
 
 // Init Modules

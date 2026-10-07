@@ -1,4 +1,4 @@
-module Feature.Sync exposing (model, initDoc, setTopic, removeTopic)
+module Feature.Sync exposing (model, initDoc, encodeDoc, setTopic, removeTopic)
 
 import Console
 import Feature.SyncDef exposing (refs)
@@ -25,8 +25,16 @@ initDoc : E.Value -> Model -> Model
 initDoc ops model_ =
   Doc.decodeInto ops model_.sync.doc
     |> Result.map (setDoc model_)
+    |> Result.map updateLastStored
     |> Result.mapError (Console.logError "Feature.Sync.initDoc" "while decoding")
     |> Result.withDefault model_
+
+
+encodeDoc : Model -> (Model, E.Value)
+encodeDoc ({sync} as model_) =
+  ( model_ |> setLastStored (Doc.version sync.doc)
+  , sync.doc |> Doc.encodeSince sync.lastStored
+  )
 
 
 setTopic : Topic -> Model -> Model
@@ -60,3 +68,14 @@ orKeep fallback result =
 setDoc : Model -> Doc SyncModel -> Model
 setDoc ({sync} as model_) doc =
   { model_ | sync = { sync | doc = doc }}
+
+
+updateLastStored : Model -> Model
+updateLastStored model_ =
+  model_
+    |> setLastStored (Doc.version model_.sync.doc)
+
+
+setLastStored : Doc.Version -> Model -> Model
+setLastStored lastStored ({sync} as model_) =
+  { model_ | sync = { sync | lastStored = lastStored }}
