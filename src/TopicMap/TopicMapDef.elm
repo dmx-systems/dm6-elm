@@ -20,12 +20,8 @@ type alias Model =
 
 init : Model
 init =
-  { view =
-      Dict.singleton
-        (toBoxId rootBoxId)
-        (TopicMap rootBoxId (Rectangle 0 0 0 0) (Point 0 0) Dict.empty)
-  -- transient
-  , dragState = Nothing
+  { view = Dict.empty
+  , dragState = Nothing -- transient
   }
 
 

@@ -1,4 +1,4 @@
-module Feature.Id exposing (get, requestIds, update)
+module Feature.Id exposing (new, requestIds, requestIdsWith, update, fillPool)
 
 import Config as C
 import Console
@@ -12,25 +12,30 @@ import Random
 
 
 
-get : Model -> (Id, Model)
-get model =
+new : Model -> (Id, Model)
+new model =
   case model.id.pool of
     id :: ids -> (id, { model | id = { pool = ids }})
     [] ->
       let
-        _ = Console.logError "Id.get" "ID pool is empty" model.id.pool
+        _ = Console.logError "Id.new" "ID pool is empty" model.id.pool
       in
       ("### ERROR", model) -- ### TODO
 
 
 requestIds : Model -> Cmd Msg
-requestIds model =
+requestIds =
+  requestIdsWith (Id << IdDef.GotIds)
+
+
+requestIdsWith : (List Id -> Msg) -> Model -> Cmd Msg
+requestIdsWith toMsg model =
   let
     length = model.id.pool |> List.length
   in
   if length < C.idPoolThreshold then
     idGenerator (C.idPoolSize - length)
-      |> Random.generate (Id << IdDef.GotIds)
+      |> Random.generate toMsg
   else
     Cmd.none
 

@@ -23,7 +23,7 @@ fromId assocId model =
 create : AssocType -> TopicId -> TopicId -> Model -> (Model, AssocId)
 create assocType topicId1 topicId2 ({assocs} as model) =
   let
-    (id, model_) = Id.get model
+    (id, model_) = Id.new model
     assocId = AssocId id
     assoc = Assoc assocId assocType topicId1 topicId2
   in

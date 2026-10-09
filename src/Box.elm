@@ -49,7 +49,7 @@ turnTopicIntoBox topicId renderer ({model} as env) =
     env
   else
     let
-      (id, model_) = Id.get model
+      (id, model_) = Id.new model
       set = ItemSet id []
       boxId = BoxId topicId
       box = Box boxId id Dict.empty renderer

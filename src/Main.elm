@@ -3,6 +3,7 @@ port module Main exposing (..)
 import Box
 import Config as C
 import Console
+import Dict
 import Dispatch exposing (dispatch)
 import Env exposing (Env)
 import Feature.Icon as Icon
@@ -18,6 +19,7 @@ import Feature.Tool as Tool
 import Model exposing (Model, Msg(..))
 import ModelBase exposing (..)
 import Outcome exposing (..)
+import Renderer
 import Shared.Events as Events
 import TopicMap.Controller as TMC
 import TopicMap.TopicMap as TopicMap
@@ -61,26 +63,30 @@ main =
 init : (E.Value, E.Value, String) -> (UndoModel, Cmd Msg)
 init (flags, ops, hash) =
   let
-    model = initModel flags ops
-    boxId =
-      case Nav.boxIdFromHash hash of
-        Just boxId_ -> boxId_
-        Nothing -> model.boxId
-    cmd = Nav.pushUrl boxId
+    (model, isBootstrap) = initModel flags ops
+    initCmd =
+      case isBootstrap of
+        True ->
+          Id.requestIdsWith (Bootstrap hash) model
+        False ->
+          Cmd.batch
+            [ Id.requestIds model
+            , defaultNav hash model
+            ]
   in
   ( model |> Undo.reset
-  , cmd
+  , initCmd
   )
 
 
-initModel : E.Value -> E.Value -> Model
+initModel : E.Value -> E.Value -> (Model, Bool)
 initModel flags ops =
   case flags |> D.decodeValue (D.null True) of
     Ok True ->
       let
         _ = Console.info "Main.initModel" "localStorage: empty"
       in
-      freshModel
+      (Model.init, True)
     _ ->
       case flags |> D.decodeValue Model.decoder of
         Ok model ->
@@ -88,23 +94,56 @@ initModel flags ops =
             _ = Console.info "Main.initModel" ("localStorage: " ++ bytes ++ " bytes")
             bytes = model |> Console.toString |> String.length |> fromInt
           in
-          model
-            |> Sync.initDoc ops
+          (model |> Sync.initDoc ops, False)
         Err e ->
           let
             _ = Console.logError "Main.initModel" "localStorage" e
           in
-          freshModel
+          (Model.init, True)
 
 
-freshModel : Model
-freshModel =
+defaultNav : String -> Model -> Cmd Msg
+defaultNav hash model =
   let
-    size = TextSize (Size 0 0) (Size 0 0)
-    rootTopic = Topic (TopicId "TODO-0") Nothing C.rootBoxName size []
+    boxId =
+      case Nav.boxIdFromHash hash of
+        Just boxId_ -> boxId_
+        Nothing -> model.boxId
   in
-  Model.init
+  Nav.pushUrl boxId
+
+
+{- Sets up default content for freshly created DB. This comprises a) root topic/box and b)
+underlying item set. Called by `update` when handling `Bootstrap` message.
+-}
+defaultContent : Model -> Model
+defaultContent model =
+  let
+    (id, model_) = Id.new model
+    topicId = TopicId id
+    size = TextSize (Size 0 0) (Size 0 0)
+    rootTopic = Topic topicId Nothing C.rootBoxName size []
+    _ = Console.info "Main.defaultContent" ("root topic --> " ++ id)
+  in
+  model_
     |> Sync.setTopic rootTopic
+    |> createRootBox topicId
+
+
+createRootBox : TopicId -> Model -> Model
+createRootBox topicId model =
+  let
+    (setId, model_) = Id.new model
+    itemSet = ItemSet setId []
+    boxId = BoxId topicId
+    rootBox = Box boxId setId Dict.empty Renderer.default
+  in
+  { model_
+  | boxId = boxId -- Note: navigational concern not actually part of `createRootBox`
+  , rootBoxId = boxId
+  , itemSets = model_.itemSets |> Dict.insert setId itemSet
+  , boxes = model_.boxes |> Dict.insert (toBoxId boxId) rootBox
+  }
 
 
 
@@ -247,6 +286,12 @@ update msg ({present} as undoModel) =
         Nav msg_ -> Nav.update msg_ env
         Id msg_ -> Id.update msg_ env
         --
+        Bootstrap hash ids ->
+          env
+            |> Env.map (Id.fillPool ids)
+            |> Env.map defaultContent
+            |> Env.map TopicMap.defaultContent
+            |> Env.outcomeWith (defaultNav hash) (Directives Store Swap)
         Scrolled pos ->
           env
             |> Env.map (updateScrollPos pos)

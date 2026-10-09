@@ -300,7 +300,7 @@ markdown source model =
 openImageFilePicker : TopicId -> Model -> (Model, Cmd Msg)
 openImageFilePicker (TopicId topicId) model =
   let
-    (id, model_) = Id.get model
+    (id, model_) = Id.new model
   in
   ( model_
   , imageFilePicker

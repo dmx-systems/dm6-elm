@@ -104,4 +104,4 @@ perform undoModel {model, cmd, directives} =
 command : msg -> Cmd msg
 command msg =
   Task.succeed ()
-    |> Task.perform (\_ -> msg)
+    |> Task.perform (always msg)

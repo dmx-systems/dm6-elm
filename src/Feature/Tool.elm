@@ -51,7 +51,7 @@ type alias ToolbarPos =
 viewGlobalTools : Model -> List (Html Msg)
 viewGlobalTools model =
   let
-    isAtHome = model.boxId == rootBoxId
+    isAtHome = model.boxId == model.rootBoxId
     iconSize = C.globalToolsIconSize
   in
   [ viewIconButton "Show Home Map" "home" iconSize ToolDef.Home isAtHome Nothing homeButtonStyle
@@ -319,7 +319,7 @@ update msg ({model} as env) =
     -- Global Tools
     ToolDef.Home ->
       env
-        |> Env.outcomeCmd (Nav.pushUrl rootBoxId)
+        |> Env.outcomeCmd (Nav.pushUrl model.rootBoxId)
     ToolDef.Menu ->
       env
         |> Env.map openMenu

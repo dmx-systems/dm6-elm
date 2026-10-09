@@ -1,6 +1,6 @@
-module TopicMap.TopicMap exposing (init, allMapTopics, topicPos, randomPos, setTopicPos,
-  updateTopicPos, mapTopicOrNothing, assocGeometry, addTopicAt, initLimboMapTopic, initTopicPos,
-  hasMapTopic, fullscreen, byId, updateRect, updateScrollPos, revelationBoxId,
+module TopicMap.TopicMap exposing (defaultContent, init, allMapTopics, topicPos, randomPos,
+  setTopicPos, updateTopicPos, mapTopicOrNothing, assocGeometry, addTopicAt, initLimboMapTopic,
+  initTopicPos, hasMapTopic, fullscreen, byId, updateRect, updateScrollPos, revelationBoxId,
   revelationBoxPath, landingTarget, toLocalPos, toLocalModelPos)
 
 import Box
@@ -16,6 +16,17 @@ import TopicMap.TopicMapDef as TopicMapDef exposing (TopicMap, MapTopic)
 import Dict
 import Random
 
+
+
+defaultContent : Model -> Model
+defaultContent ({topicMap} as model) =
+  { model | topicMap =
+    { topicMap | view = topicMap.view
+        |> Dict.insert
+          (toBoxId model.rootBoxId)
+          (TopicMap model.rootBoxId (Rectangle 0 0 0 0) (Point 0 0) Dict.empty)
+    }
+  }
 
 
 -- Dispatch.InitHook

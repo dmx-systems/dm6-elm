@@ -1,7 +1,7 @@
 module ModelBase exposing (SyncModel, Id, TopicId(..), AssocId(..), ItemId(..), AssocIds, Topic,
   Icon, TextSize, Size, SizeField(..), Point, Rectangle, Assoc, AssocType(..), ItemSet, SetItem,
   Box, BoxId(..), Level, BoxPath, Target, BoxTarget, BoxTopic, Expansion(..), ImageId, Attrs,
-  PointerType, toTopicId, toAssocId, toBoxId, fromBoxId, maybeTopicId, maybeAssocId, rootBoxId,
+  PointerType, toTopicId, toAssocId, toBoxId, fromBoxId, maybeTopicId, maybeAssocId,
   encodeTopic, encodeAssoc, encodeItemSet, encodeBox, encodeTopicId, encodeBoxId, topicDecoder,
   assocDecoder, itemSetDecoder, boxDecoder, topicIdDecoder, boxIdDecoder, toDictDecoder,
   toDictDecoderWith)
@@ -168,11 +168,6 @@ type alias Box =
   -- Note: no "assocs" here as assocs have no renderer-independent view properties at the moment
   , renderer : Renderer
   }
-
-
-rootBoxId : BoxId
-rootBoxId =
-  BoxId (TopicId "TODO-0")
 
 
 {-| Attaches renderer-independent view properties to a SetItem.

@@ -2,7 +2,6 @@ module Model exposing (Model, Msg(..), init, resetTransient, encode, decoder, ma
 
 import Config as C
 import ModelBase exposing (..)
-import Renderer
 -- box renderers
 import TopicList.TopicListDef as TopicListDef
 import TopicMap.TopicMapDef as TopicMapDef
@@ -30,6 +29,7 @@ type alias Model =
   , itemSets: Dict Id ItemSet
   , boxes : Dict Id Box
   , boxId : BoxId -- the box rendered fullscreen
+  , rootBoxId : BoxId
   -- box renderers
   , topicMap : TopicMapDef.Model
   , topicList : TopicListDef.Model
@@ -48,11 +48,10 @@ type alias Model =
 init : Model
 init =
   { assocs = Dict.empty
-  , itemSets = Dict.singleton "TODO-1" <| ItemSet "TODO-1" []
-  , boxes = Dict.singleton
-      (toBoxId rootBoxId)
-      (Box rootBoxId "TODO-1" Dict.empty Renderer.default)
-  , boxId = rootBoxId
+  , itemSets = Dict.empty
+  , boxes = Dict.empty
+  , boxId = BoxId (TopicId "??")      -- TODO: not known at first launch (no DB exists)
+  , rootBoxId = BoxId (TopicId "??")  -- TODO: not known at first launch (no DB exists)
   -- box renderers
   , topicMap = TopicMapDef.init
   , topicList = TopicListDef.init
@@ -89,6 +88,7 @@ type Msg
   | Nav NavDef.Msg
   | Id IdDef.Msg
   --
+  | Bootstrap String (List Id) -- initial URL #hash and ID pool
   | Scrolled Point
   | Cancel (Maybe Target)
   | NoOp
@@ -105,6 +105,7 @@ encode model =
     , ("itemSets", model.itemSets |> Dict.values |> E.list encodeItemSet)
     , ("boxes", model.boxes |> Dict.values |> E.list encodeBox)
     , ("boxId", encodeBoxId model.boxId)
+    , ("rootBoxId", encodeBoxId model.rootBoxId)
     -- box renderers
     , ("topicMap", TopicMapDef.encode model.topicMap)
     , ("topicList", TopicListDef.encode model.topicList)
@@ -120,6 +121,7 @@ decoder =
     |> required "itemSets" (toDictDecoder itemSetDecoder)
     |> required "boxes" (toDictDecoderWith toBoxId boxDecoder)
     |> required "boxId" boxIdDecoder
+    |> required "rootBoxId" boxIdDecoder
     -- box renderers
     |> required "topicMap" TopicMapDef.decoder
     |> required "topicList" TopicListDef.decoder

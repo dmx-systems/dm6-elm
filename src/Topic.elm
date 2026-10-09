@@ -66,7 +66,7 @@ setSize topicId sizeField size_ model =
 create : String -> Maybe Icon -> Model -> (Model, TopicId)
 create text icon model =
   let
-    (id, model_) = Id.get model
+    (id, model_) = Id.new model
     topicId = TopicId id
     size_ = TextSize C.topicDetailSize C.topicDetailSize
     topic = Topic topicId icon text size_ []
