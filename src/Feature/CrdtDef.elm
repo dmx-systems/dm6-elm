@@ -1,4 +1,4 @@
-module Feature.SyncDef exposing (Model, init, refs)
+module Feature.CrdtDef exposing (Model, init, refs)
 
 import ModelBase exposing (..)
 
@@ -11,7 +11,7 @@ import Dict exposing (Dict)
 
 
 type alias Model =
-  { doc : Doc SyncModel
+  { doc : Doc DocModel
   , lastStored : Doc.Version
   }
 
@@ -29,8 +29,8 @@ init =
 -- the "Schema"
 
 type alias ModelDoc =
-  { topics : C.Ref SyncModel (C.DictK C.Nested Topic) (Dict Id Topic)
-  , schema : C.Schema C.Nested SyncModel
+  { topics : C.Ref DocModel (C.DictK C.Nested Topic) (Dict Id Topic)
+  , schema : C.Schema C.Nested DocModel
   }
 
 
@@ -78,7 +78,7 @@ type alias SizeDoc =
 
 modelDoc : ModelDoc
 modelDoc =
-  C.record SyncModel ModelDoc
+  C.record DocModel ModelDoc
     |> C.field "topics" .topics (C.dict topicDoc)
     |> C.build
 

@@ -6,11 +6,11 @@ import Box
 import Config as C
 import Console
 import Env exposing (Env)
+import Feature.Crdt as Crdt
 import Feature.Icon as Icon
 import Feature.Nav as Nav
 import Feature.SearchDef as SearchDef exposing (SearchResult(..))
 import Feature.Sel as Sel
-import Feature.Sync as Sync
 import Model exposing (Model, Msg(..))
 import ModelBase exposing (..)
 import Outcome exposing (..)
@@ -415,10 +415,10 @@ revealAssoc_ assocId boxId model =
 -- "searchTopics" instead "search" avoids shadowing
 searchTopics : Model -> Model
 searchTopics model =
-  case Sync.model model of
-    Just syncModel ->
+  case Crdt.model model of
+    Just docModel ->
       let
-        topicIds = syncModel.topics |> Dict.values |> List.filterMap
+        topicIds = docModel.topics |> Dict.values |> List.filterMap
           (\{id, text} ->
             if isMatch text model.search.term then
               Just id

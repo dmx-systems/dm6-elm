@@ -1,7 +1,7 @@
 port module Storage exposing (store, importJSON, exportJSON)
 
+import Feature.Crdt as Crdt
 import Model exposing (Model, Msg)
-import Feature.Sync as Sync
 
 import Json.Encode as E
 
@@ -22,7 +22,7 @@ port exportJSON : () -> Cmd msg
 store : Model -> (Model, Cmd Msg)
 store model =
   let
-    (model_, value) = Sync.encodeDoc model
+    (model_, value) = Crdt.encodeDoc model
   in
   ( model_
   , storeModel

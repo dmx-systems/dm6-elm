@@ -1,7 +1,7 @@
 import { Elm } from './src/Main.elm'
 import storage from './js/storage'
 import image from './js/image'
-import sync from './js/sync'
+import crdt from './js/crdt'
 import zip from './js/zip'
 import { openDB } from 'idb'
 
@@ -11,18 +11,18 @@ const dbName = 'dm6-elm'
 const dbPromise = openDB(dbName, 1, {
   upgrade(db) {
     image.upgrade(db)
-    sync.upgrade(db)
+    crdt.upgrade(db)
   }
 })
 
 // Init Elm app
 
-sync.init(dbPromise)
+crdt.init(dbPromise)
 
 const app = Elm.Main.init({
   flags: [
     storage.getJSON(),
-    await sync.getDoc(),
+    await crdt.getDoc(),
     location.hash
   ]
 })
@@ -30,7 +30,7 @@ const app = Elm.Main.init({
 app.ports.storeModel.subscribe(([model, payload]) => {
   console.log('store ->', payload)
   storage.setJSON(model)
-  sync.storeDoc(payload)
+  crdt.storeDoc(payload)
 })
 
 // Init Modules

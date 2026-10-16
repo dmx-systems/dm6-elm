@@ -2,8 +2,8 @@ module Topic exposing (fromId, label, size, setSize, create, update, isBox)
 
 import Config as C
 import Console
+import Feature.Crdt as Crdt
 import Feature.Id as Id
-import Feature.Sync as Sync
 import Model exposing (Model)
 import ModelBase exposing (..)
 
@@ -19,9 +19,9 @@ fromId topicId model =
   let
     (TopicId id) = topicId
   in
-  case Sync.model model of
-    Just syncModel ->
-      case syncModel.topics |> Dict.get id of
+  case Crdt.model model of
+    Just docModel ->
+      case docModel.topics |> Dict.get id of
         Just topic -> Just topic
         Nothing -> Console.logError "Topic.fromId" (id ++ " not found") Nothing
     Nothing ->
@@ -71,7 +71,7 @@ create text icon model =
     size_ = TextSize C.topicDetailSize C.topicDetailSize
     topic = Topic topicId icon text size_ []
   in
-  ( Sync.setTopic topic model_, topicId )
+  ( Crdt.setTopic topic model_, topicId )
 
 
 {-| Canonical Topic transformation.
@@ -84,7 +84,7 @@ update topicId transform model =
   in
   case fromId topicId model of
     Just topic ->
-      Sync.setTopic (transform topic) model
+      Crdt.setTopic (transform topic) model
     Nothing ->
       let
         _ = Console.fail "Topic.update" id Nothing

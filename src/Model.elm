@@ -1,4 +1,4 @@
-module Model exposing (Model, Msg(..), init, resetTransient, encode, decoder, map)
+module Model exposing (Model, Msg(..), empty, resetTransient, encode, decoder, map)
 
 import Config as C
 import ModelBase exposing (..)
@@ -6,13 +6,13 @@ import ModelBase exposing (..)
 import TopicList.TopicListDef as TopicListDef
 import TopicMap.TopicMapDef as TopicMapDef
 -- feature modules
+import Feature.CrdtDef as CrdtDef
 import Feature.IconDef as IconDef
 import Feature.IdDef as IdDef
 import Feature.MouseDef as MouseDef
 import Feature.NavDef as NavDef
 import Feature.SearchDef as SearchDef
 import Feature.SelDef as SelDef
-import Feature.SyncDef as SyncDef
 import Feature.TextDef as TextDef
 import Feature.ToolDef as ToolDef
 
@@ -24,7 +24,7 @@ import Json.Encode as E
 
 
 type alias Model =
-  -- TODO: move more fields to ModelBase.SyncModel
+  -- TODO: move more fields to ModelBase.DocModel
   { assocs : Dict Id Assoc
   , itemSets: Dict Id ItemSet
   , boxes : Dict Id Box
@@ -34,19 +34,19 @@ type alias Model =
   , topicMap : TopicMapDef.Model
   , topicList : TopicListDef.Model
   -- feature modules
+  , crdt : CrdtDef.Model
   , tool : ToolDef.Model
   , text : TextDef.Model
   , mouse : MouseDef.Model
   , search : SearchDef.Model
   , icon : IconDef.Model
   , selection : SelDef.Model
-  , sync : SyncDef.Model
   , id : IdDef.Model
   }
 
 
-init : Model
-init =
+empty : Model
+empty =
   { assocs = Dict.empty
   , itemSets = Dict.empty
   , boxes = Dict.empty
@@ -56,13 +56,13 @@ init =
   , topicMap = TopicMapDef.init
   , topicList = TopicListDef.init
   -- feature modules
+  , crdt = CrdtDef.init
   , tool = ToolDef.init
   , text = TextDef.init
   , mouse = MouseDef.init
   , search = SearchDef.init
   , icon = IconDef.init
   , selection = SelDef.init
-  , sync = SyncDef.init
   , id = IdDef.init
   }
 
@@ -88,7 +88,7 @@ type Msg
   | Nav NavDef.Msg
   | Id IdDef.Msg
   --
-  | Bootstrap String (List Id) -- initial URL #hash and ID pool
+  | Bootstrap String (List Id) -- initial URL #hash, initial ID pool
   | Scrolled Point
   | Cancel (Maybe Target)
   | NoOp
@@ -126,13 +126,13 @@ decoder =
     |> required "topicMap" TopicMapDef.decoder
     |> required "topicList" TopicListDef.decoder
     -- feature modules
+    |> hardcoded CrdtDef.init
     |> required "tool" ToolDef.decoder
     |> hardcoded TextDef.init
     |> hardcoded MouseDef.init
     |> hardcoded SearchDef.init
     |> hardcoded IconDef.init
     |> hardcoded SelDef.init
-    |> hardcoded SyncDef.init
     |> hardcoded IdDef.init
 
 

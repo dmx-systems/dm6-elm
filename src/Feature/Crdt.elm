@@ -1,7 +1,7 @@
-module Feature.Sync exposing (model, initDoc, encodeDoc, setTopic, removeTopic)
+module Feature.Crdt exposing (model, initDoc, encodeDoc, setTopic, removeTopic)
 
 import Console
-import Feature.SyncDef exposing (refs)
+import Feature.CrdtDef exposing (refs)
 import Model exposing (Model)
 import ModelBase exposing (..)
 
@@ -12,28 +12,28 @@ import Json.Encode as E
 
 
 
-model : Model -> Maybe SyncModel
+model : Model -> Maybe DocModel
 model model_ =
-  case model_.sync.doc |> Doc.read of
-    Ok syncModel -> Just syncModel
+  case model_.crdt.doc |> Doc.read of
+    Ok docModel -> Just docModel
     Err err ->
-      Console.logError "Feature.Sync.model"
+      Console.logError "Feature.Crdt.model"
         ("Schema read error: " ++ Doc.readErrorToString err) Nothing
 
 
 initDoc : E.Value -> Model -> Model
 initDoc ops model_ =
-  Doc.decodeInto ops model_.sync.doc
+  Doc.decodeInto ops model_.crdt.doc
     |> Result.map (setDoc model_)
     |> Result.map updateLastStored
-    |> Result.mapError (Console.logError "Feature.Sync.initDoc" "while decoding")
+    |> Result.mapError (Console.logError "Feature.Crdt.initDoc" "while decoding")
     |> Result.withDefault model_
 
 
 encodeDoc : Model -> (Model, E.Value)
-encodeDoc ({sync} as model_) =
-  ( model_ |> setLastStored (Doc.version sync.doc)
-  , sync.doc |> Doc.encodeSince sync.lastStored
+encodeDoc ({crdt} as model_) =
+  ( model_ |> setLastStored (Doc.version crdt.doc)
+  , crdt.doc |> Doc.encodeSince crdt.lastStored
   )
 
 
@@ -41,7 +41,7 @@ setTopic : Topic -> Model -> Model
 setTopic topic model_ =
   let
     (TopicId id) = topic.id
-    doc = model_.sync.doc
+    doc = model_.crdt.doc
   in
   Edit.setKey refs.topics id topic doc
     |> orKeep doc
@@ -51,7 +51,7 @@ setTopic topic model_ =
 removeTopic : TopicId -> Model -> Model
 removeTopic (TopicId id) model_ =
   let
-    doc = model_.sync.doc
+    doc = model_.crdt.doc
   in
   Edit.removeKey refs.topics id doc
     |> orKeep doc
@@ -60,22 +60,22 @@ removeTopic (TopicId id) model_ =
 
 --
 
-orKeep : Doc SyncModel -> Result Edit.EditError (Doc SyncModel) -> Doc SyncModel
+orKeep : Doc DocModel -> Result Edit.EditError (Doc DocModel) -> Doc DocModel
 orKeep fallback result =
     Result.withDefault fallback result
 
 
-setDoc : Model -> Doc SyncModel -> Model
-setDoc ({sync} as model_) doc =
-  { model_ | sync = { sync | doc = doc }}
+setDoc : Model -> Doc DocModel -> Model
+setDoc ({crdt} as model_) doc =
+  { model_ | crdt = { crdt | doc = doc }}
 
 
 updateLastStored : Model -> Model
 updateLastStored model_ =
   model_
-    |> setLastStored (Doc.version model_.sync.doc)
+    |> setLastStored (Doc.version model_.crdt.doc)
 
 
 setLastStored : Doc.Version -> Model -> Model
-setLastStored lastStored ({sync} as model_) =
-  { model_ | sync = { sync | lastStored = lastStored }}
+setLastStored lastStored ({crdt} as model_) =
+  { model_ | crdt = { crdt | lastStored = lastStored }}

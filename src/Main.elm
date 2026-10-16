@@ -6,6 +6,7 @@ import Console
 import Dict
 import Dispatch exposing (dispatch)
 import Env exposing (Env)
+import Feature.Crdt as Crdt
 import Feature.Icon as Icon
 import Feature.Id as Id
 import Feature.Mouse as Mouse
@@ -13,7 +14,6 @@ import Feature.MouseDef as MouseDef
 import Feature.Nav as Nav
 import Feature.Search as Search
 import Feature.Sel as Sel
-import Feature.Sync as Sync
 import Feature.Text as Text
 import Feature.Tool as Tool
 import Model exposing (Model, Msg(..))
@@ -86,7 +86,7 @@ initModel flags ops =
       let
         _ = Console.info "Main.initModel" "localStorage: empty"
       in
-      (Model.init, True)
+      (Model.empty, True)
     _ ->
       case flags |> D.decodeValue Model.decoder of
         Ok model ->
@@ -94,12 +94,12 @@ initModel flags ops =
             _ = Console.info "Main.initModel" ("localStorage: " ++ bytes ++ " bytes")
             bytes = model |> Console.toString |> String.length |> fromInt
           in
-          (model |> Sync.initDoc ops, False)
+          (model |> Crdt.initDoc ops, False)
         Err e ->
           let
             _ = Console.logError "Main.initModel" "localStorage" e
           in
-          (Model.init, True)
+          (Model.empty, True)
 
 
 defaultNav : String -> Model -> Cmd Msg
@@ -126,7 +126,7 @@ defaultContent model =
     _ = Console.info "Main.defaultContent" ("root topic --> " ++ id)
   in
   model_
-    |> Sync.setTopic rootTopic
+    |> Crdt.setTopic rootTopic
     |> createRootBox topicId
 
 

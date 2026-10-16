@@ -1,4 +1,4 @@
-module ModelBase exposing (SyncModel, Id, TopicId(..), AssocId(..), ItemId(..), AssocIds, Topic,
+module ModelBase exposing (DocModel, Id, TopicId(..), AssocId(..), ItemId(..), AssocIds, Topic,
   Icon, TextSize, Size, SizeField(..), Point, Rectangle, Assoc, AssocType(..), ItemSet, SetItem,
   Box, BoxId(..), Level, BoxPath, Target, BoxTarget, BoxTopic, Expansion(..), ImageId, Attrs,
   PointerType, toTopicId, toAssocId, toBoxId, fromBoxId, maybeTopicId, maybeAssocId,
@@ -18,7 +18,7 @@ import Json.Encode as E
 -- TYPES
 
 
-type alias SyncModel =
+type alias DocModel =
   { topics : Dict Id Topic
   -- TODO
   }

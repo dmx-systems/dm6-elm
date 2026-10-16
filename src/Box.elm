@@ -6,8 +6,8 @@ module Box exposing (topicIds, assocIds, turnTopicIntoBox, init, addTopic, addAs
 import Assoc
 import Console
 import Env exposing (Env)
+import Feature.Crdt as Crdt
 import Feature.Id as Id
-import Feature.Sync as Sync
 import Model exposing (Model)
 import ModelBase exposing (..)
 import Renderer exposing (Renderer)
@@ -306,7 +306,7 @@ Low-level function that does NOT delete the item's associations. ### FIXDOC
 deleteTopic_ : TopicId -> Model -> Model
 deleteTopic_ topicId ({itemSets, topicMap} as model) =
   model
-    |> Sync.removeTopic topicId
+    |> Crdt.removeTopic topicId
     |> (\model_ ->
         { model_
         | itemSets = itemSets |> Dict.map -- delete topic from all itemSets
