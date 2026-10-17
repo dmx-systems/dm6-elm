@@ -218,7 +218,7 @@ processDrop sourceTopicId sourceBoxId targetTopicId targetBoxId ({model} as env)
   env
     |> Env.map (Box.removeTopic sourceTopicId sourceBoxId)
     |> addTopic
-    |> Env.outcomeDir (Directives Store Push) -- FIXME: Push only if not foreign drop
+    |> Env.outcomeDir (Directives Store Push None) -- FIXME: Push only if not foreign drop
 
 
 addTopic_ : TopicId -> BoxId -> Env -> Env

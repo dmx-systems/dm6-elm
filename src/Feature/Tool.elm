@@ -6,6 +6,7 @@ import Box
 import Config as C
 import Console
 import Env exposing (Env, Dispatch)
+import Feature.Crdt as Crdt
 import Feature.Icon as Icon
 import Feature.Mouse as Mouse
 import Feature.Nav as Nav
@@ -70,10 +71,10 @@ homeButtonStyle =
 
 -- Map Tools
 
-viewMapTools : UndoModel -> List (Html Msg)
-viewMapTools undoModel =
+viewMapTools : Model -> List (Html Msg)
+viewMapTools model =
   let
-    target = TopicMap.landingTarget undoModel.present -- FIXME: dispatch instead
+    target = TopicMap.landingTarget model -- FIXME: dispatch instead
   in
   [ div
       mapToolsStyle
@@ -81,8 +82,8 @@ viewMapTools undoModel =
       -- So we set the box where created things land as the target.
       [ viewMapButton "New Topic" "plus-circle" ToolDef.CreateTopic False target
       , VB.hGap 14
-      , viewMapButton "Undo" "rotate-ccw" ToolDef.Undo (not <| Undo.hasPast undoModel) Nothing
-      , viewMapButton "Redo" "rotate-cw" ToolDef.Redo (not <| Undo.hasFuture undoModel) Nothing
+      , viewMapButton "Undo" "rotate-ccw" ToolDef.Undo (not <| Crdt.canUndo model) Nothing
+      , viewMapButton "Redo" "rotate-cw" ToolDef.Redo (not <| Crdt.canRedo model) Nothing
       ]
   ]
 
@@ -327,7 +328,7 @@ update msg ({model} as env) =
     ToolDef.Set lineStyle ->
       env
         |> Env.map (setLineStyle lineStyle)
-        |> Env.outcomeDir (Directives Store Push)
+        |> Env.outcomeDir (Directives Store Push None)
     ToolDef.Import ->
       env
         |> Env.outcomeCmd (S.importJSON ())
@@ -338,18 +339,18 @@ update msg ({model} as env) =
     ToolDef.CreateTopic ->
       env
         |> createTopic
-        |> Outcome.fromDir (Directives Store Push)
+        |> Outcome.fromDir (Directives Store Swap Single)
     ToolDef.Undo ->
       model
-        |> Outcome.withDir (Directives Store Undo)
+        |> Outcome.withDir (Directives Store Swap Undo)
     ToolDef.Redo ->
       model
-        |> Outcome.withDir (Directives Store Redo)
+        |> Outcome.withDir (Directives Store Swap Redo)
     -- Item Tools
     ToolDef.Edit ->
       env
         |> edit
-        |> Outcome.fromDir (Directives Store Push)
+        |> Outcome.fromDir (Directives Store Push None)
     ToolDef.Icon ->
       env
         |> Env.map Icon.openPicker
@@ -361,28 +362,28 @@ update msg ({model} as env) =
     ToolDef.Delete ->
       env
         |> delete
-        |> Env.outcomeDir (Directives Store Push)
+        |> Env.outcomeDir (Directives Store Push None)
     ToolDef.Remove ->
       env
         |> remove
-        |> Env.outcomeDir (Directives Store Push)
+        |> Env.outcomeDir (Directives Store Push None)
     ToolDef.Fullscreen topicId ->
       env
         |> fullscreen topicId
-        |> Outcome.fromDir (Directives Store Push)
+        |> Outcome.fromDir (Directives Store Push None)
     ToolDef.RendererSelected renderer ->
       env
         |> setRenderer renderer
-        |> Env.outcomeDir (Directives Store Swap) -- TODO: better Push?
+        |> Env.outcomeDir (Directives Store Swap None) -- TODO: better Push?
     ToolDef.ToggleExpansion topicId boxId ->
       env
         |> toggleExpansion topicId boxId
-        |> Env.outcomeDir (Directives Store Swap)
+        |> Env.outcomeDir (Directives Store Swap None)
     -- Text Tools
     ToolDef.Image topicId ->
       model
         |> Text.openImageFilePicker topicId
-        |> Outcome.fromDir (Directives Store Swap)
+        |> Outcome.fromDir (Directives Store Swap None)
     ToolDef.LeaveEdit ->
       env
         |> Text.leaveEdit
@@ -421,7 +422,7 @@ createTopic ({model} as env) =
     boxId = Box.firstId boxPath
   in
   env
-    |> Env.map (\_ -> newModel)
+    |> Env.map (always newModel)
     |> Box.addTopic (BoxTopic topicId Collapsed) boxId
     |> Env.map (Sel.select (T topicId) boxPath)
     |> Text.enterEdit topicId boxPath

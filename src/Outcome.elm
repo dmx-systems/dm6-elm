@@ -1,6 +1,7 @@
-module Outcome exposing (Outcome, Directives, Storage(..), History(..), default, withDir, from,
-  fromDir, map, mergeCmd, perform, command)
+module Outcome exposing (Outcome, Directives, Storage(..), History(..), Undo(..), default,
+  withDir, from, fromDir, map, mergeCmd, perform, command)
 
+import Feature.Crdt as Crdt
 import Model exposing (Model, Msg)
 import Storage as S
 import Undo exposing (UndoModel)
@@ -18,7 +19,8 @@ type alias Outcome =
 
 type alias Directives =
   { storage : Storage
-  , history : History
+  , history : History -- TODO: drop
+  , undo : Undo
   }
 
 
@@ -31,6 +33,11 @@ type History
   = Push
   | Swap -- default
   | Reset
+
+
+type Undo
+  = None
+  | Single
   --
   | Undo
   | Redo
@@ -40,7 +47,7 @@ type History
 
 default : Model -> Outcome
 default model =
-  Outcome model Cmd.none (Directives NoStore Swap)
+  Outcome model Cmd.none (Directives NoStore Swap None)
 
 
 withDir : Directives -> Model -> Outcome
@@ -50,7 +57,7 @@ withDir directives model =
 
 from : (Model, Cmd Msg) -> Outcome
 from (model, cmd) =
-  Outcome model cmd (Directives NoStore Swap)
+  Outcome model cmd (Directives NoStore Swap None)
 
 
 fromDir : Directives -> (Model, Cmd Msg) -> Outcome
@@ -73,14 +80,22 @@ mergeCmd cmd out =
 perform : UndoModel -> Outcome -> (UndoModel, Cmd Msg)
 perform undoModel {model, cmd, directives} =
   let
-    performHistory : UndoModel -> UndoModel -- TODO: utilze CRDT for Undo, drop UndoModel
-    performHistory undoModel_ =
-      case directives.history of
+    performUndo : UndoModel -> UndoModel -- TODO: utilze CRDT for Undo, drop UndoModel
+    performUndo undoModel_ =
+      ( case directives.undo of
+          None -> model
+          Single -> Crdt.recordSingle undoModel_.present model
+          Undo -> Crdt.undo model
+          Redo -> Crdt.redo model
+      )
+      |> Undo.swap undoModel_
+      {- case directives.history of -- TODO: drop
         Push -> Undo.push undoModel_ model
         Swap -> Undo.swap undoModel_ model
         Reset -> Undo.reset model
         Undo -> Undo.undo undoModel_
         Redo -> Undo.redo undoModel_
+      -}
     --
     performStorage : UndoModel -> (UndoModel, Cmd Msg)
     performStorage undoModel_ =
@@ -95,7 +110,7 @@ perform undoModel {model, cmd, directives} =
         NoStore -> (undoModel_, cmd)
   in
   undoModel
-    |> performHistory
+    |> performUndo
     |> performStorage
 
 

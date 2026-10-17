@@ -1,4 +1,5 @@
-module Feature.Crdt exposing (model, initDoc, encodeDoc, setTopic, removeTopic)
+module Feature.Crdt exposing (doc, initDoc, encodeDoc, setTopic, removeTopic, recordSingle,
+  undo, redo, canUndo, canRedo)
 
 import Console
 import Feature.CrdtDef exposing (refs)
@@ -12,53 +13,86 @@ import Json.Encode as E
 
 
 
-model : Model -> Maybe DocModel
-model model_ =
-  case model_.crdt.doc |> Doc.read of
-    Ok docModel -> Just docModel
+doc : Model -> Maybe DocModel
+doc model =
+  case Doc.read model.crdt.doc of
+    Ok doc_ -> Just doc_
     Err err ->
-      Console.logError "Feature.Crdt.model"
+      Console.logError "Feature.Crdt.doc"
         ("Schema read error: " ++ Doc.readErrorToString err) Nothing
 
 
 initDoc : E.Value -> Model -> Model
-initDoc ops model_ =
-  Doc.decodeInto ops model_.crdt.doc
-    |> Result.map (setDoc model_)
+initDoc ops model =
+  Doc.decodeInto ops model.crdt.doc
+    |> Result.map (setDoc model)
     |> Result.map updateLastStored
     |> Result.mapError (Console.logError "Feature.Crdt.initDoc" "while decoding")
-    |> Result.withDefault model_
+    |> Result.withDefault model
 
 
 encodeDoc : Model -> (Model, E.Value)
-encodeDoc ({crdt} as model_) =
-  ( model_ |> setLastStored (Doc.version crdt.doc)
+encodeDoc ({crdt} as model) =
+  ( model |> setLastStored (Doc.version crdt.doc)
   , crdt.doc |> Doc.encodeSince crdt.lastStored
   )
 
 
 setTopic : Topic -> Model -> Model
-setTopic topic model_ =
+setTopic topic model =
   let
     (TopicId id) = topic.id
-    doc = model_.crdt.doc
+    doc_ = model.crdt.doc
   in
-  Edit.setKey refs.topics id topic doc
-    |> orKeep doc
-    |> setDoc model_
+  Edit.setKey refs.topics id topic doc_
+    |> orKeep doc_
+    |> setDoc model
 
 
 removeTopic : TopicId -> Model -> Model
-removeTopic (TopicId id) model_ =
+removeTopic (TopicId id) model =
   let
-    doc = model_.crdt.doc
+    doc_ = model.crdt.doc
   in
-  Edit.removeKey refs.topics id doc
-    |> orKeep doc
-    |> setDoc model_
+  Edit.removeKey refs.topics id doc_
+    |> orKeep doc_
+    |> setDoc model
 
 
---
+
+-- UNDO / REDO
+
+
+recordSingle : Model -> Model -> Model
+recordSingle oldModel model =
+  Doc.recordEdit (Doc.version oldModel.crdt.doc) model.crdt.doc
+    |> setDoc model
+
+
+undo : Model -> Model
+undo model =
+  Doc.undo model.crdt.doc
+    |> setDoc model
+
+
+redo : Model -> Model
+redo model =
+  Doc.redo model.crdt.doc
+    |> setDoc model
+
+
+canUndo : Model -> Bool
+canUndo model =
+  Doc.canUndo model.crdt.doc
+
+
+canRedo : Model -> Bool
+canRedo model =
+  Doc.canRedo model.crdt.doc
+
+
+
+-- LOCAL HELPER
 
 orKeep : Doc DocModel -> Result Edit.EditError (Doc DocModel) -> Doc DocModel
 orKeep fallback result =
@@ -66,16 +100,16 @@ orKeep fallback result =
 
 
 setDoc : Model -> Doc DocModel -> Model
-setDoc ({crdt} as model_) doc =
-  { model_ | crdt = { crdt | doc = doc }}
+setDoc ({crdt} as model) doc_ =
+  { model | crdt = { crdt | doc = doc_ }}
 
 
 updateLastStored : Model -> Model
-updateLastStored model_ =
-  model_
-    |> setLastStored (Doc.version model_.crdt.doc)
+updateLastStored model =
+  model
+    |> setLastStored (Doc.version model.crdt.doc)
 
 
 setLastStored : Doc.Version -> Model -> Model
-setLastStored lastStored ({crdt} as model_) =
-  { model_ | crdt = { crdt | lastStored = lastStored }}
+setLastStored lastStored ({crdt} as model) =
+  { model | crdt = { crdt | lastStored = lastStored }}

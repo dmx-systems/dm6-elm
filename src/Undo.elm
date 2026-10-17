@@ -1,3 +1,4 @@
+-- TODO: drop
 module Undo exposing (UndoModel, undo, redo, push, swap, reset, hasPast, hasFuture)
 
 import Console
@@ -50,7 +51,7 @@ push undoModel model =
 -}
 swap : UndoModel -> Model -> UndoModel
 swap undoModel model =
-  UndoList.mapPresent (\_ -> model) undoModel
+  UndoList.mapPresent (always model) undoModel
 
 
 reset : Model -> UndoModel

@@ -19,9 +19,9 @@ fromId topicId model =
   let
     (TopicId id) = topicId
   in
-  case Crdt.model model of
-    Just docModel ->
-      case docModel.topics |> Dict.get id of
+  case Crdt.doc model of
+    Just doc ->
+      case doc.topics |> Dict.get id of
         Just topic -> Just topic
         Nothing -> Console.logError "Topic.fromId" (id ++ " not found") Nothing
     Nothing ->

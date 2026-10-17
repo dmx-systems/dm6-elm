@@ -282,7 +282,7 @@ update msg env =
     SearchDef.TopicClicked topicId ->
       env
         |> revealTopic topicId
-        |> Env.outcomeDir (Directives Store Push)
+        |> Env.outcomeDir (Directives Store Push None)
     -- Traverse
     SearchDef.RelTopicHovered relTopicId ->
       env
@@ -295,7 +295,7 @@ update msg env =
     SearchDef.RelTopicClicked relTopicId ->
       env
         |> revealRelTopic relTopicId
-        |> Env.outcomeDir (Directives Store Push)
+        |> Env.outcomeDir (Directives Store Push None)
     -- Fullscreen (Search & Traverse)
     SearchDef.Fullscreen boxId ->
       env
@@ -415,10 +415,10 @@ revealAssoc_ assocId boxId model =
 -- "searchTopics" instead "search" avoids shadowing
 searchTopics : Model -> Model
 searchTopics model =
-  case Crdt.model model of
-    Just docModel ->
+  case Crdt.doc model of
+    Just doc ->
       let
-        topicIds = docModel.topics |> Dict.values |> List.filterMap
+        topicIds = doc.topics |> Dict.values |> List.filterMap
           (\{id, text} ->
             if isMatch text model.search.term then
               Just id

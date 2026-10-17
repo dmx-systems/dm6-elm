@@ -171,7 +171,7 @@ view ({present} as undoModel) =
               ++ mainStyle
             )
             ( [ dispatch.view present.boxId [] present ] -- boxPath = []
-              ++ Tool.viewMapTools undoModel
+              ++ Tool.viewMapTools present
             )
         ]
     , viewMeasure present
@@ -291,11 +291,11 @@ update msg ({present} as undoModel) =
             |> Env.map (Id.fillPool ids)
             |> Env.map defaultContent
             |> Env.map TopicMap.defaultContent
-            |> Env.outcomeWith (defaultNav hash) (Directives Store Swap)
+            |> Env.outcomeWith (defaultNav hash) (Directives Store Swap None)
         Scrolled pos ->
           env
             |> Env.map (updateScrollPos pos)
-            |> Env.outcomeDir (Directives Store Swap)
+            |> Env.outcomeDir (Directives Store Swap None)
         Cancel maybeTarget ->
           env
             |> cancelUI maybeTarget

@@ -63,7 +63,7 @@ timeArrived time model =
       in
       model
         |> setDragState dragState
-        |> Outcome.withDir (Directives NoStore historyOp)
+        |> Outcome.withDir (Directives NoStore historyOp None)
     _ ->
       let
         _ = Console.logError "TopicMap.Mouse.timeArrived" "Unexpected drag state"
@@ -221,14 +221,14 @@ topicDragEnd sourceTopicId sourceBoxPath origTopicPos ({model} as env) =
       env
         |> moveTopicToBox sourceTopicId boxId targetId targetPath
         |> Model.map (TopicMap.setTopicPos sourceTopicId boxId origTopicPos)
-        |> Outcome.fromDir (Directives Store Swap)
+        |> Outcome.fromDir (Directives Store Swap None)
     Nothing ->
       let
         _ = Console.info "TopicMap.Mouse.topicDragEnd"
           "topic drag ended w/o target -> store position"
       in
       env
-        |> Env.outcomeDir (Directives Store Swap)
+        |> Env.outcomeDir (Directives Store Swap None)
     _ ->
       env
         |> Env.outcome
@@ -250,7 +250,7 @@ foreignTopicDrop sourceTopicId sourceBoxPath ({model} as env) =
       in
       env
         |> moveTopicToBox sourceTopicId boxId targetId targetPath
-        |> Outcome.fromDir (Directives Store Push)
+        |> Outcome.fromDir (Directives Store Push None)
     Nothing ->
       let
         _ = Console.info "TopicMap.Mouse.foreignTopicDrop"
@@ -281,7 +281,7 @@ assocDragEnd sourceTopicId sourceBoxPath model =
       in
       model
         |> createAssoc sourceTopicId targetId boxId
-        |> Outcome.withDir (Directives Store Push)
+        |> Outcome.withDir (Directives Store Push None)
     Nothing ->
       let
         _ = Console.info "TopicMap.Mouse.assocDragEnd" "drawn assoc ended w/o target"
