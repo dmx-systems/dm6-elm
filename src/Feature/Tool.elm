@@ -24,7 +24,6 @@ import Shared.ViewBase as VB
 import Storage as S
 import Topic
 import TopicMap.TopicMap as TopicMap
-import Undo exposing (UndoModel)
 
 import Html exposing (Html, div, text, button, select, option)
 import Html.Attributes exposing (class, style, title, value, disabled)

@@ -23,7 +23,6 @@ import Renderer
 import Shared.Events as Events
 import TopicMap.Controller as TMC
 import TopicMap.TopicMap as TopicMap
-import Undo exposing (UndoModel)
 
 import Browser
 import Html exposing (Html, div, text, br)
@@ -44,7 +43,7 @@ port onScroll : (Point -> msg) -> Sub msg
 -- MAIN
 
 
-main : Program (E.Value, E.Value, String) UndoModel Msg
+main : Program (E.Value, E.Value, String) Model Msg
 main =
   Browser.document
     { init = init
@@ -60,7 +59,7 @@ main =
     }
 
 
-init : (E.Value, E.Value, String) -> (UndoModel, Cmd Msg)
+init : (E.Value, E.Value, String) -> (Model, Cmd Msg)
 init (flags, ops, hash) =
   let
     (model, isBootstrap) = initModel flags ops
@@ -74,9 +73,7 @@ init (flags, ops, hash) =
             , defaultNav hash model
             ]
   in
-  ( model |> Undo.reset
-  , initCmd
-  )
+  (model, initCmd)
 
 
 initModel : E.Value -> E.Value -> (Model, Bool)
@@ -150,8 +147,8 @@ createRootBox topicId model =
 -- VIEW
 
 
-view : UndoModel -> Browser.Document Msg
-view ({present} as undoModel) =
+view : Model -> Browser.Document Msg
+view model =
   Browser.Document
     "DM6 Elm"
     [ div
@@ -160,21 +157,21 @@ view ({present} as undoModel) =
         )
         [ div
             headerStyle
-            ( [ viewMapTitle present
+            ( [ viewMapTitle model
               , viewSpacer
               ]
-              ++ Tool.viewGlobalTools present
-              ++ Search.viewSearchResult present -- TODO: move to "main" for scroll along?
+              ++ Tool.viewGlobalTools model
+              ++ Search.viewSearchResult model -- TODO: move to "main" for scroll along?
             )
         , div
             ( [ id "main" ]
               ++ mainStyle
             )
-            ( [ dispatch.view present.boxId [] present ] -- boxPath = []
-              ++ Tool.viewMapTools present
+            ( [ dispatch.view model.boxId [] model ] -- boxPath = []
+              ++ Tool.viewMapTools model
             )
         ]
-    , viewMeasure present
+    , viewMeasure model
     ]
 
 
@@ -265,14 +262,14 @@ measureStyle =
 -- UPDATE
 
 
-update : Msg -> UndoModel -> (UndoModel, Cmd Msg)
-update msg ({present} as undoModel) =
+update : Msg -> Model -> (Model, Cmd Msg)
+update msg model =
   let
     _ =
       case msg of
         Mouse (MouseDef.Move _) -> msg
         _ -> Console.info "Main.update" msg
-    env = Env present dispatch
+    env = Env model dispatch
     outcome =
       case msg of
         -- box renderers
@@ -306,7 +303,7 @@ update msg ({present} as undoModel) =
   in
   outcome
     |> Outcome.mergeCmd (Id.requestIds outcome.model)
-    |> Outcome.perform undoModel
+    |> Outcome.perform model
 
 
 cancelUI : Maybe Target -> Env -> (Model, Cmd Msg)

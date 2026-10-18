@@ -1,4 +1,4 @@
-module Model exposing (Model, Msg(..), empty, resetTransient, encode, decoder, map)
+module Model exposing (Model, Msg(..), empty, resetTransient, encode, decoder, map, mergeCmd)
 
 import Config as C
 import ModelBase exposing (..)
@@ -143,3 +143,8 @@ decoder =
 map : (Model -> Model) -> (Model, Cmd Msg) -> (Model, Cmd Msg)
 map transform (model, cmd) =
   (transform model, cmd)
+
+
+mergeCmd : Cmd Msg -> (Model, Cmd Msg) -> (Model, Cmd Msg)
+mergeCmd cmd_ (model, cmd) =
+  (model, Cmd.batch [ cmd, cmd_ ])

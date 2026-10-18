@@ -4,7 +4,6 @@ module Outcome exposing (Outcome, Directives, Storage(..), Undo(..), default, wi
 import Feature.Crdt as Crdt
 import Model exposing (Model, Msg)
 import Storage as S
-import Undo exposing (UndoModel)
 
 import Task
 
@@ -72,40 +71,32 @@ mergeCmd cmd out =
   { out | cmd = Cmd.batch [out.cmd, cmd] }
 
 
-perform : UndoModel -> Outcome -> (UndoModel, Cmd Msg)
-perform undoModel {model, cmd, directives} =
+perform : Model -> Outcome -> (Model, Cmd Msg)
+perform oldModel {model, cmd, directives} =
   let
-    performUndo : UndoModel -> UndoModel -- TODO: utilize CRDT for Undo, drop UndoModel
-    performUndo undoModel_ =
-      ( case directives.undo of
-          NoUndo -> model
-          SingleEdit -> Crdt.markSingleEdit undoModel_.present model
-          EditStart -> Crdt.markEditStart undoModel_.present model
-          EditEnd -> Crdt.markEditEnd model
-          Undo -> Crdt.undo model
-          Redo -> Crdt.redo model
-      )
-      |> Undo.swap undoModel_
+    performUndo : Model
+    performUndo =
+      case directives.undo of
+        NoUndo -> model
+        SingleEdit -> Crdt.markSingleEdit oldModel model
+        EditStart -> Crdt.markEditStart oldModel model
+        EditEnd -> Crdt.markEditEnd model
+        Undo -> Crdt.undo model
+        Redo -> Crdt.redo model
     --
-    performStorage : UndoModel -> (UndoModel, Cmd Msg)
-    performStorage undoModel_ =
+    performStorage : Model -> (Model, Cmd Msg)
+    performStorage model_ =
       case directives.storage of
-        Store ->
-          let
-            (model_, cmd_) = S.store undoModel_.present
-          in
-          ( Undo.swap undoModel_ model_
-          , Cmd.batch [ cmd, cmd_ ]
-          )
-        NoStore -> (undoModel_, cmd)
+        Store -> S.store model_ |> Model.mergeCmd cmd
+        NoStore -> (model_, cmd)
   in
-  undoModel
-    |> performUndo
+  performUndo
     |> performStorage
 
 
 --
 
+-- TODO: move to Model
 command : msg -> Cmd msg
 command msg =
   Task.succeed ()
