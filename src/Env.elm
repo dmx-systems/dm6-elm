@@ -111,12 +111,12 @@ map transform ({model} as env) =
 
 outcome : Env -> Outcome
 outcome  env =
-  Outcome env.model Cmd.none (Directives NoStore Swap None)
+  Outcome env.model Cmd.none (Directives NoStore NoUndo)
 
 
 outcomeCmd : Cmd Msg -> Env -> Outcome
 outcomeCmd cmd env =
-  Outcome env.model cmd (Directives NoStore Swap None)
+  Outcome env.model cmd (Directives NoStore NoUndo)
 
 
 outcomeDir : Directives -> Env -> Outcome

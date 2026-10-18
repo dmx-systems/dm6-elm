@@ -102,7 +102,7 @@ update msg env =
       env
         |> Env.map (setIcon icon)
         |> Env.map closePicker
-        |> Env.outcomeDir (Directives Store Push None)
+        |> Env.outcomeDir (Directives Store NoUndo) -- ### TODO: was "Push"
 
 
 setIcon : Maybe Icon -> Model -> Model

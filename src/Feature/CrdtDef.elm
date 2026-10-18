@@ -3,7 +3,7 @@ module Feature.CrdtDef exposing (Model, init, refs)
 import ModelBase exposing (..)
 
 import Crdt as C
-import Crdt.Doc as Doc exposing (Doc)
+import Crdt.Doc as Doc exposing (Doc, Version)
 import Crdt.Id
 
 import Dict exposing (Dict)
@@ -12,7 +12,8 @@ import Dict exposing (Dict)
 
 type alias Model =
   { doc : Doc DocModel
-  , lastStored : Doc.Version
+  , lastStored : Version
+  , editStartVersion : Maybe Version
   }
 
 
@@ -22,7 +23,8 @@ init =
     doc = C.init (Crdt.Id.replica "my-replica") modelDoc.schema -- TODO: replica ID
   in
   { doc = doc
-  , lastStored = doc |> Doc.version
+  , lastStored = Doc.version doc
+  , editStartVersion = Nothing
   }
 
 

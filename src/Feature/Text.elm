@@ -113,16 +113,16 @@ update msg ({model} as env) =
     TextDef.OnTextInput text ->
       model
         |> onTextInput text
-        |> Outcome.withDir (Directives Store Swap None)
+        |> Outcome.withDir (Directives Store NoUndo) -- ### TODO: was "Swap"
     TextDef.OnTextareaInput text ->
       model
         |> onTextareaInput text
-        |> Outcome.fromDir (Directives Store Swap None)
+        |> Outcome.fromDir (Directives Store NoUndo) -- ### TODO: was "Swap"
     TextDef.GotTextSize topicId sizeField size ->
       env
         |> Env.map (Topic.setSize topicId sizeField size)
         |> Env.autoSize
-        |> Env.outcomeDir (Directives Store Swap None)
+        |> Env.outcomeDir (Directives Store NoUndo) -- ### TODO: was "Swap"
     TextDef.LeaveEdit ->
       env
         |> leaveEdit

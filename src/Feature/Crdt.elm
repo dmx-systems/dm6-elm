@@ -1,12 +1,12 @@
-module Feature.Crdt exposing (doc, initDoc, encodeDoc, setTopic, removeTopic, recordSingle,
-  undo, redo, canUndo, canRedo)
+module Feature.Crdt exposing (doc, initDoc, encodeDoc, setTopic, removeTopic, markSingleEdit,
+  markEditStart, markEditEnd, undo, redo, canUndo, canRedo)
 
 import Console
 import Feature.CrdtDef exposing (refs)
 import Model exposing (Model)
 import ModelBase exposing (..)
 
-import Crdt.Doc as Doc exposing (Doc)
+import Crdt.Doc as Doc exposing (Doc, Version)
 import Crdt.Edit as Edit
 
 import Json.Encode as E
@@ -63,10 +63,30 @@ removeTopic (TopicId id) model =
 -- UNDO / REDO
 
 
-recordSingle : Model -> Model -> Model
-recordSingle oldModel model =
+markSingleEdit : Model -> Model -> Model
+markSingleEdit oldModel model =
   Doc.recordEdit (Doc.version oldModel.crdt.doc) model.crdt.doc
     |> setDoc model
+
+
+markEditStart : Model -> Model -> Model
+markEditStart oldModel model =
+  model
+    |> setEditStartVersion (Just (Doc.version oldModel.crdt.doc))
+
+
+markEditEnd : Model -> Model
+markEditEnd model =
+  case model.crdt.editStartVersion of
+    Just version ->
+      Doc.recordEdit version model.crdt.doc
+        |> setDoc model
+        |> setEditStartVersion Nothing
+    Nothing ->
+      let
+        _ = Console.logError "Feature.Crdt.markEditEnd" "Edit start is not marked" Nothing
+      in
+      model
 
 
 undo : Model -> Model
@@ -94,6 +114,7 @@ canRedo model =
 
 -- LOCAL HELPER
 
+
 orKeep : Doc DocModel -> Result Edit.EditError (Doc DocModel) -> Doc DocModel
 orKeep fallback result =
     Result.withDefault fallback result
@@ -110,6 +131,11 @@ updateLastStored model =
     |> setLastStored (Doc.version model.crdt.doc)
 
 
-setLastStored : Doc.Version -> Model -> Model
+setLastStored : Version -> Model -> Model
 setLastStored lastStored ({crdt} as model) =
   { model | crdt = { crdt | lastStored = lastStored }}
+
+
+setEditStartVersion : Maybe Version -> Model -> Model
+setEditStartVersion editStartVersion ({crdt} as model) =
+  { model | crdt = { crdt | editStartVersion = editStartVersion }}

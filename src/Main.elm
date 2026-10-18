@@ -291,11 +291,11 @@ update msg ({present} as undoModel) =
             |> Env.map (Id.fillPool ids)
             |> Env.map defaultContent
             |> Env.map TopicMap.defaultContent
-            |> Env.outcomeWith (defaultNav hash) (Directives Store Swap None)
+            |> Env.outcomeWith (defaultNav hash) (Directives Store NoUndo) -- ### TODO: was "Swap"
         Scrolled pos ->
           env
             |> Env.map (updateScrollPos pos)
-            |> Env.outcomeDir (Directives Store Swap None)
+            |> Env.outcomeDir (Directives Store NoUndo) -- ### TODO: was "Swap"
         Cancel maybeTarget ->
           env
             |> cancelUI maybeTarget

@@ -328,7 +328,7 @@ update msg ({model} as env) =
     ToolDef.Set lineStyle ->
       env
         |> Env.map (setLineStyle lineStyle)
-        |> Env.outcomeDir (Directives Store Push None)
+        |> Env.outcomeDir (Directives Store NoUndo) -- ### TODO: was "Push"
     ToolDef.Import ->
       env
         |> Env.outcomeCmd (S.importJSON ())
@@ -339,18 +339,18 @@ update msg ({model} as env) =
     ToolDef.CreateTopic ->
       env
         |> createTopic
-        |> Outcome.fromDir (Directives Store Swap Single)
+        |> Outcome.fromDir (Directives Store SingleEdit)
     ToolDef.Undo ->
       model
-        |> Outcome.withDir (Directives Store Swap Undo)
+        |> Outcome.withDir (Directives Store Undo)
     ToolDef.Redo ->
       model
-        |> Outcome.withDir (Directives Store Swap Redo)
+        |> Outcome.withDir (Directives Store Redo)
     -- Item Tools
     ToolDef.Edit ->
       env
         |> edit
-        |> Outcome.fromDir (Directives Store Push None)
+        |> Outcome.fromDir (Directives Store EditStart)
     ToolDef.Icon ->
       env
         |> Env.map Icon.openPicker
@@ -362,32 +362,32 @@ update msg ({model} as env) =
     ToolDef.Delete ->
       env
         |> delete
-        |> Env.outcomeDir (Directives Store Push None)
+        |> Env.outcomeDir (Directives Store NoUndo) -- ### TODO: was "Push"
     ToolDef.Remove ->
       env
         |> remove
-        |> Env.outcomeDir (Directives Store Push None)
+        |> Env.outcomeDir (Directives Store NoUndo) -- ### TODO: was "Push"
     ToolDef.Fullscreen topicId ->
       env
         |> fullscreen topicId
-        |> Outcome.fromDir (Directives Store Push None)
+        |> Outcome.fromDir (Directives Store NoUndo) -- ### TODO: was "Push"
     ToolDef.RendererSelected renderer ->
       env
         |> setRenderer renderer
-        |> Env.outcomeDir (Directives Store Swap None) -- TODO: better Push?
+        |> Env.outcomeDir (Directives Store NoUndo) -- ### TODO: was "Swap" -- better "Push"?
     ToolDef.ToggleExpansion topicId boxId ->
       env
         |> toggleExpansion topicId boxId
-        |> Env.outcomeDir (Directives Store Swap None)
+        |> Env.outcomeDir (Directives Store NoUndo) -- ### TODO: was "Swap"
     -- Text Tools
     ToolDef.Image topicId ->
       model
         |> Text.openImageFilePicker topicId
-        |> Outcome.fromDir (Directives Store Swap None)
+        |> Outcome.fromDir (Directives Store NoUndo) -- ### TODO: was "Swap"
     ToolDef.LeaveEdit ->
       env
         |> Text.leaveEdit
-        |> Outcome.from
+        |> Outcome.fromDir (Directives NoStore EditEnd)
 
 
 -- Global Tools

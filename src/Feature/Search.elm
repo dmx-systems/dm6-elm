@@ -282,7 +282,7 @@ update msg env =
     SearchDef.TopicClicked topicId ->
       env
         |> revealTopic topicId
-        |> Env.outcomeDir (Directives Store Push None)
+        |> Env.outcomeDir (Directives Store NoUndo) -- ### TODO: was "Push"
     -- Traverse
     SearchDef.RelTopicHovered relTopicId ->
       env
@@ -295,7 +295,7 @@ update msg env =
     SearchDef.RelTopicClicked relTopicId ->
       env
         |> revealRelTopic relTopicId
-        |> Env.outcomeDir (Directives Store Push None)
+        |> Env.outcomeDir (Directives Store NoUndo) -- ### TODO: was "Push"
     -- Fullscreen (Search & Traverse)
     SearchDef.Fullscreen boxId ->
       env

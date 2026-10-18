@@ -53,17 +53,17 @@ timeArrived time model =
     (Just {topicId, boxPath}, Just (WaitForEndTime startTime)) ->
       let
         delay = posixToMillis time - posixToMillis startTime
-        (dragState, historyOp) =
+        (dragState, undoOp) =
           if delay > C.assocDelayMillis then
-            (Just <| Drag DraftAssoc, Swap)
+            (Just <| Drag DraftAssoc, NoUndo) -- ### TODO: was "Swap"
           else
             case TopicMap.topicPos topicId (Box.firstId boxPath) model of
-              Just origPos -> (Just <| Drag <| DragTopic origPos, Push)
-              Nothing -> (Nothing, Swap) -- error is already logged
+              Just origPos -> (Just <| Drag <| DragTopic origPos, NoUndo) -- ### TODO: was "Push"
+              Nothing -> (Nothing, NoUndo) -- error is already logged -- ### TODO: was "Swap"
       in
       model
         |> setDragState dragState
-        |> Outcome.withDir (Directives NoStore historyOp None)
+        |> Outcome.withDir (Directives NoStore undoOp)
     _ ->
       let
         _ = Console.logError "TopicMap.Mouse.timeArrived" "Unexpected drag state"
@@ -221,14 +221,14 @@ topicDragEnd sourceTopicId sourceBoxPath origTopicPos ({model} as env) =
       env
         |> moveTopicToBox sourceTopicId boxId targetId targetPath
         |> Model.map (TopicMap.setTopicPos sourceTopicId boxId origTopicPos)
-        |> Outcome.fromDir (Directives Store Swap None)
+        |> Outcome.fromDir (Directives Store NoUndo) -- ### TODO: was "Swap"
     Nothing ->
       let
         _ = Console.info "TopicMap.Mouse.topicDragEnd"
           "topic drag ended w/o target -> store position"
       in
       env
-        |> Env.outcomeDir (Directives Store Swap None)
+        |> Env.outcomeDir (Directives Store NoUndo) -- ### TODO: was "Swap"
     _ ->
       env
         |> Env.outcome
@@ -250,7 +250,7 @@ foreignTopicDrop sourceTopicId sourceBoxPath ({model} as env) =
       in
       env
         |> moveTopicToBox sourceTopicId boxId targetId targetPath
-        |> Outcome.fromDir (Directives Store Push None)
+        |> Outcome.fromDir (Directives Store NoUndo) -- ### TODO: was "Push"
     Nothing ->
       let
         _ = Console.info "TopicMap.Mouse.foreignTopicDrop"
@@ -281,7 +281,7 @@ assocDragEnd sourceTopicId sourceBoxPath model =
       in
       model
         |> createAssoc sourceTopicId targetId boxId
-        |> Outcome.withDir (Directives Store Push None)
+        |> Outcome.withDir (Directives Store NoUndo) -- ### TODO: was "Push"
     Nothing ->
       let
         _ = Console.info "TopicMap.Mouse.assocDragEnd" "drawn assoc ended w/o target"
