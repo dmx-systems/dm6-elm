@@ -1,4 +1,4 @@
-module Feature.Id exposing (new, requestIds, requestIdsWith, update, fillPool)
+module Feature.Id exposing (new, requestIds, generateIds, update, fillPool)
 
 import Config as C
 import Console
@@ -24,20 +24,19 @@ new model =
 
 
 requestIds : Model -> Cmd Msg
-requestIds =
-  requestIdsWith (Id << IdDef.GotIds)
-
-
-requestIdsWith : (List Id -> Msg) -> Model -> Cmd Msg
-requestIdsWith toMsg model =
+requestIds model =
   let
-    length = model.id.pool |> List.length
+    length = List.length model.id.pool
   in
   if length < C.idPoolThreshold then
-    idGenerator (C.idPoolSize - length)
-      |> Random.generate toMsg
+    generateIds (C.idPoolSize - length) (Id << IdDef.GotIds)
   else
     Cmd.none
+
+
+generateIds : Int -> (List Id -> Msg) -> Cmd Msg
+generateIds count toMsg =
+  Random.generate toMsg (idGenerator count)
 
 
 -- TODO: use UUID generator

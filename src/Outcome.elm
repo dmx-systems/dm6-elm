@@ -1,5 +1,5 @@
 module Outcome exposing (Outcome, Directives, Storage(..), Undo(..), default, withDir, from,
-  fromDir, map, mergeCmd, perform, command)
+  fromDir, with, map, mergeCmd, perform, performWith, command)
 
 import Feature.Crdt as Crdt
 import Model exposing (Model, Msg)
@@ -59,6 +59,11 @@ fromDir directives (model, cmd) =
   Outcome model cmd directives
 
 
+with : (Model -> Cmd Msg) -> Directives -> Model -> Outcome
+with toCmd directives model =
+  Outcome model (toCmd model) directives
+
+
 --
 
 map : (Model -> Model) -> Outcome -> Outcome
@@ -71,8 +76,13 @@ mergeCmd cmd out =
   { out | cmd = Cmd.batch [out.cmd, cmd] }
 
 
-perform : Model -> Outcome -> (Model, Cmd Msg)
-perform oldModel {model, cmd, directives} =
+perform : Outcome -> (Model, Cmd Msg)
+perform outcome =
+  performWith outcome.model outcome
+
+
+performWith : Model -> Outcome -> (Model, Cmd Msg)
+performWith oldModel {model, cmd, directives} =
   let
     performUndo : Model
     performUndo =
@@ -93,8 +103,6 @@ perform oldModel {model, cmd, directives} =
   performUndo
     |> performStorage
 
-
---
 
 -- TODO: move to Model
 command : msg -> Cmd msg

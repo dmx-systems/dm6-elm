@@ -43,7 +43,12 @@ port onScroll : (Point -> msg) -> Sub msg
 -- MAIN
 
 
-main : Program (E.Value, E.Value, String) Model Msg
+type AppModel
+  = Bootstrapping
+  | Running Model
+
+
+main : Program (E.Value, E.Value, String) AppModel Msg
 main =
   Browser.document
     { init = init
@@ -59,31 +64,31 @@ main =
     }
 
 
-init : (E.Value, E.Value, String) -> (Model, Cmd Msg)
+init : (E.Value, E.Value, String) -> (AppModel, Cmd Msg)
 init (flags, ops, hash) =
   let
-    (model, isBootstrap) = initModel flags ops
+    appModel = initModel flags ops
     initCmd =
-      case isBootstrap of
-        True ->
-          Id.requestIdsWith (Bootstrap hash) model
-        False ->
+      case appModel of
+        Bootstrapping ->
+          Id.generateIds C.idPoolSize (Bootstrap hash)
+        Running model ->
           Cmd.batch
             [ Id.requestIds model
             , defaultNav hash model
             ]
   in
-  (model, initCmd)
+  (appModel, initCmd)
 
 
-initModel : E.Value -> E.Value -> (Model, Bool)
+initModel : E.Value -> E.Value -> AppModel
 initModel flags ops =
   case flags |> D.decodeValue (D.null True) of
     Ok True ->
       let
         _ = Console.info "Main.initModel" "localStorage: empty"
       in
-      (Model.empty, True)
+      Bootstrapping
     _ ->
       case flags |> D.decodeValue Model.decoder of
         Ok model ->
@@ -91,88 +96,48 @@ initModel flags ops =
             _ = Console.info "Main.initModel" ("localStorage: " ++ bytes ++ " bytes")
             bytes = model |> Console.toString |> String.length |> fromInt
           in
-          (model |> Crdt.initDoc ops, False)
+          Running (model |> Crdt.initDoc ops)
         Err e ->
           let
             _ = Console.logError "Main.initModel" "localStorage" e
           in
-          (Model.empty, True)
-
-
-defaultNav : String -> Model -> Cmd Msg
-defaultNav hash model =
-  let
-    boxId =
-      case Nav.boxIdFromHash hash of
-        Just boxId_ -> boxId_
-        Nothing -> model.boxId
-  in
-  Nav.pushUrl boxId
-
-
-{- Sets up default content for freshly created DB. This comprises a) root topic/box and b)
-underlying item set. Called by `update` when handling `Bootstrap` message.
--}
-defaultContent : Model -> Model
-defaultContent model =
-  let
-    (id, model_) = Id.new model
-    topicId = TopicId id
-    size = TextSize (Size 0 0) (Size 0 0)
-    rootTopic = Topic topicId Nothing C.rootBoxName size []
-    _ = Console.info "Main.defaultContent" ("root topic --> " ++ id)
-  in
-  model_
-    |> Crdt.setTopic rootTopic
-    |> createRootBox topicId
-
-
-createRootBox : TopicId -> Model -> Model
-createRootBox topicId model =
-  let
-    (setId, model_) = Id.new model
-    itemSet = ItemSet setId []
-    boxId = BoxId topicId
-    rootBox = Box boxId setId Dict.empty Renderer.default
-  in
-  { model_
-  | boxId = boxId -- Note: navigational concern not actually part of `createRootBox`
-  , rootBoxId = boxId
-  , itemSets = model_.itemSets |> Dict.insert setId itemSet
-  , boxes = model_.boxes |> Dict.insert (toBoxId boxId) rootBox
-  }
+          Bootstrapping
 
 
 
 -- VIEW
 
 
-view : Model -> Browser.Document Msg
-view model =
+view : AppModel -> Browser.Document Msg
+view appModel =
   Browser.Document
     "DM6 Elm"
-    [ div
-        ( Events.globalMouseHandler
-          ++ appStyle
-        )
-        [ div
-            headerStyle
-            ( [ viewMapTitle model
-              , viewSpacer
+    ( case appModel of
+        Bootstrapping -> []
+        Running model ->
+          [ div
+              ( Events.globalMouseHandler
+                ++ appStyle
+              )
+              [ div
+                  headerStyle
+                  ( [ viewMapTitle model
+                    , viewSpacer
+                    ]
+                    ++ Tool.viewGlobalTools model
+                    ++ Search.viewSearchResult model -- TODO: move to "main" for scroll along?
+                  )
+              , div
+                  ( [ id "main" ]
+                    ++ mainStyle
+                  )
+                  ( [ dispatch.view model.boxId [] model ] -- boxPath = []
+                    ++ Tool.viewMapTools model
+                  )
               ]
-              ++ Tool.viewGlobalTools model
-              ++ Search.viewSearchResult model -- TODO: move to "main" for scroll along?
-            )
-        , div
-            ( [ id "main" ]
-              ++ mainStyle
-            )
-            ( [ dispatch.view model.boxId [] model ] -- boxPath = []
-              ++ Tool.viewMapTools model
-            )
-        ]
-    , viewMeasure model
-    ]
+          , viewMeasure model
+          ]
+    )
 
 
 appStyle : Attrs Msg
@@ -262,48 +227,127 @@ measureStyle =
 -- UPDATE
 
 
-update : Msg -> Model -> (Model, Cmd Msg)
-update msg model =
+update : Msg -> AppModel -> (AppModel, Cmd Msg)
+update msg appModel =
   let
     _ =
       case msg of
         Mouse (MouseDef.Move _) -> msg
         _ -> Console.info "Main.update" msg
-    env = Env model dispatch
-    outcome =
-      case msg of
-        -- box renderers
-        TopicMap msg_ -> TMC.update msg_ env
-        -- feature modules
-        Tool msg_ -> Tool.update msg_ env
-        Text msg_ -> Text.update msg_ env
-        Mouse msg_ -> Mouse.update msg_ env
-        Search msg_ -> Search.update msg_ env
-        Icon msg_ -> Icon.update msg_ env
-        Nav msg_ -> Nav.update msg_ env
-        Id msg_ -> Id.update msg_ env
-        --
-        Bootstrap hash ids ->
-          env
-            |> Env.map (Id.fillPool ids)
-            |> Env.map defaultContent
-            |> Env.map TopicMap.defaultContent
-            |> Env.outcomeWith (defaultNav hash) (Directives Store NoUndo) -- ### TODO: was "Swap"
-        Scrolled pos ->
-          env
-            |> Env.map (updateScrollPos pos)
-            |> Env.outcomeDir (Directives Store NoUndo) -- ### TODO: was "Swap"
-        Cancel maybeTarget ->
-          env
-            |> cancelUI maybeTarget
-            |> Outcome.from
-        NoOp ->
-          env
-            |> Env.outcome
   in
-  outcome
-    |> Outcome.mergeCmd (Id.requestIds outcome.model)
-    |> Outcome.perform model
+  case appModel of
+    Bootstrapping -> bootstrap msg
+    Running model ->
+      let
+        env = Env model dispatch
+        outcome =
+          case msg of
+            -- box renderers
+            TopicMap msg_ -> TMC.update msg_ env
+            -- feature modules
+            Tool msg_ -> Tool.update msg_ env
+            Text msg_ -> Text.update msg_ env
+            Mouse msg_ -> Mouse.update msg_ env
+            Search msg_ -> Search.update msg_ env
+            Icon msg_ -> Icon.update msg_ env
+            Nav msg_ -> Nav.update msg_ env
+            Id msg_ -> Id.update msg_ env
+            --
+            Bootstrap hash ids ->
+              let
+                _ = Console.logError "Main.update"
+                  "Received Bootstrap message while not in Bootstrapping state" "-> ignore"
+              in
+              env
+                |> Env.outcome
+            Scrolled pos ->
+              env
+                |> Env.map (updateScrollPos pos)
+                |> Env.outcomeDir (Directives Store NoUndo) -- ### TODO: was "Swap"
+            Cancel maybeTarget ->
+              env
+                |> cancelUI maybeTarget
+                |> Outcome.from
+            NoOp ->
+              env
+                |> Env.outcome
+      in
+      outcome
+        |> Outcome.mergeCmd (Id.requestIds outcome.model)
+        |> Outcome.performWith model
+        |> running
+
+
+{- Handles the Bootstrap message.
+Transitions AppModel from Bootstrapping to Running.
+-}
+bootstrap : Msg -> (AppModel, Cmd Msg)
+bootstrap msg =
+  case msg of
+    Bootstrap hash ids ->
+      case ids of
+        id :: pool ->
+          Model.bootstrap (TopicId id)
+            |> Id.fillPool pool
+            |> defaultContent
+            |> TopicMap.defaultContent
+            |> Outcome.with (defaultNav hash) (Directives Store NoUndo) -- ### TODO: was "Swap"
+            |> Outcome.perform 
+            |> running
+        [] ->
+          Console.logError "Main.bootstrap" "Empty ID list received in Bootstrap message"
+            (Bootstrapping, Cmd.none)
+    _ ->
+      Console.logError "Main.bootstrap"
+        "Received other than Bootstrap message while in Bootstrapping state"
+        (Bootstrapping, Cmd.none)
+
+
+running : (Model, Cmd Msg) -> (AppModel, Cmd Msg)
+running (model, cmd) =
+  (Running model, cmd)
+
+
+{- Sets up default content for newly created DB. This comprises a) root topic/box and b) the
+underlying item set. Note: the ID for the root topic is taken from model, where it is written
+to while bootstrapping.
+-}
+defaultContent : Model -> Model
+defaultContent model =
+  let
+    (BoxId (TopicId id as topicId)) = model.rootBoxId
+    size = TextSize (Size 0 0) (Size 0 0)
+    rootTopic = Topic topicId Nothing C.rootBoxName size []
+    _ = Console.info "Main.defaultContent" ("root topic --> " ++ id)
+  in
+  model
+    |> Crdt.setTopic rootTopic
+    |> createRootBox topicId
+
+
+createRootBox : TopicId -> Model -> Model
+createRootBox topicId model =
+  let
+    (setId, model_) = Id.new model
+    itemSet = ItemSet setId []
+    boxId = BoxId topicId
+    rootBox = Box boxId setId Dict.empty Renderer.default
+  in
+  { model_
+  | itemSets = model_.itemSets |> Dict.insert setId itemSet
+  , boxes = model_.boxes |> Dict.insert (toBoxId boxId) rootBox
+  }
+
+
+defaultNav : String -> Model -> Cmd Msg
+defaultNav hash model =
+  let
+    boxId =
+      case Nav.boxIdFromHash hash of
+        Just boxId_ -> boxId_
+        Nothing -> model.boxId
+  in
+  Nav.pushUrl boxId
 
 
 cancelUI : Maybe Target -> Env -> (Model, Cmd Msg)

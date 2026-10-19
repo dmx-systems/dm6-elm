@@ -1,4 +1,5 @@
-module Model exposing (Model, Msg(..), empty, resetTransient, encode, decoder, map, mergeCmd)
+module Model exposing (Model, Msg(..), bootstrap, resetTransient, encode, decoder, map,
+  mergeCmd)
 
 import Config as C
 import ModelBase exposing (..)
@@ -45,13 +46,16 @@ type alias Model =
   }
 
 
-empty : Model
-empty =
+{- Creates the initial Model value from a sole root topic ID.
+Called when no DB exists ("bootstrapping").
+-}
+bootstrap : TopicId -> Model
+bootstrap rootTopicId =
   { assocs = Dict.empty
   , itemSets = Dict.empty
   , boxes = Dict.empty
-  , boxId = BoxId (TopicId "??")      -- TODO: not known at first launch (no DB exists)
-  , rootBoxId = BoxId (TopicId "??")  -- TODO: not known at first launch (no DB exists)
+  , boxId = BoxId rootTopicId
+  , rootBoxId = BoxId rootTopicId
   -- box renderers
   , topicMap = TopicMapDef.init
   , topicList = TopicListDef.init
