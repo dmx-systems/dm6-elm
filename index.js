@@ -27,27 +27,30 @@ const app = Elm.Main.init({
   ]
 })
 
+image.init(app, dbPromise)
+zip.init(app)
+
+// Storage
+
 app.ports.storeModel.subscribe(([model, payload]) => {
-  console.log('store ->', payload)
   storage.setJSON(model)
   crdt.storeDoc(payload)
 })
 
-// Init Modules
-
-image.init(app, dbPromise)
-zip.init(app)
-
 // Scrolling
 
-const main = document.getElementById('main')
-let timer
-main.addEventListener('scroll', () => {
-  clearTimeout(timer)
-  timer = setTimeout(() => {
-    app.ports.onScroll.send({x: main.scrollLeft, y: main.scrollTop})
-  }, 200)   // debounce 200ms
-}, {passive: true})
+app.ports.domReady.subscribe(() => {
+  requestAnimationFrame(() => {
+    const main = document.getElementById('main')
+    let timer
+    main.addEventListener('scroll', () => {
+      clearTimeout(timer)
+      timer = setTimeout(() => {
+        app.ports.onScroll.send({x: main.scrollLeft, y: main.scrollTop})
+      }, 200)   // debounce 200ms
+    }, {passive: true})
+  })
+})
 
 // Routing
 

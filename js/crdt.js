@@ -20,7 +20,7 @@ async function getDoc() {
     kind: 'ops',
     ops: await getOps()
   }
-  console.log('load ->', payload)
+  console.log('#getDoc ->', payload)
   return payload
 }
 
@@ -30,6 +30,7 @@ async function getOps() {
 }
 
 async function storeDoc(payload) {
+  console.log('#storeDoc ->', payload)
   if (payload.kind !== 'ops') {
     throw 'storeDoc: invalid payload'
   }

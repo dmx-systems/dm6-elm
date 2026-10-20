@@ -36,6 +36,8 @@ import String exposing (fromInt, fromFloat)
 -- PORTS
 
 
+port domReady : () -> Cmd msg
+
 port onScroll : (Point -> msg) -> Sub msg
 
 
@@ -293,7 +295,7 @@ bootstrap msg =
             |> TopicMap.defaultContent
             |> Outcome.with (defaultNav hash) (Directives Store NoUndo) -- ### TODO: was "Swap"
             |> Outcome.perform 
-            |> running
+            |> runningWidth (domReady ())
         [] ->
           Console.logError "Main.bootstrap" "Empty ID list received in Bootstrap message"
             (Bootstrapping, Cmd.none)
@@ -306,6 +308,11 @@ bootstrap msg =
 running : (Model, Cmd Msg) -> (AppModel, Cmd Msg)
 running (model, cmd) =
   (Running model, cmd)
+
+
+runningWidth : Cmd Msg -> (Model, Cmd Msg) -> (AppModel, Cmd Msg)
+runningWidth cmd_ (model, cmd) =
+  (Running model, Cmd.batch [cmd, cmd_])
 
 
 {- Sets up default content for newly created DB. This comprises a) root topic/box and b) the
