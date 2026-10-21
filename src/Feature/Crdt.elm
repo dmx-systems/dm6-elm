@@ -1,8 +1,9 @@
-module Feature.Crdt exposing (doc, initDoc, encodeDoc, setTopic, removeTopic, markSingleEdit,
-  markEditStart, markEditEnd, undo, redo, canUndo, canRedo)
+module Feature.Crdt exposing (docModel, initDoc, encodeDoc, setTopic, setTopicText,
+  setTopicViewSize, setTopicEditorSize, removeTopic, markSingleEdit, markEditStart, markEditEnd,
+  undo, redo, canUndo, canRedo)
 
 import Console
-import Feature.CrdtDef exposing (refs)
+import Feature.CrdtDef exposing (refs, topicTextRef, topicViewSizeRef, topicEditorSizeRef)
 import Model exposing (Model)
 import ModelBase exposing (..)
 
@@ -13,13 +14,15 @@ import Json.Encode as E
 
 
 
-doc : Model -> Maybe DocModel
-doc model =
+docModel : Model -> Maybe DocModel
+docModel model =
   case Doc.read model.crdt.doc of
-    Ok doc_ -> Just doc_
+    Ok docModel_ -> Just docModel_
     Err err ->
-      Console.logError "Feature.Crdt.doc"
-        ("Schema read error: " ++ Doc.readErrorToString err) Nothing
+      let
+        _ = Console.logError "Feature.Crdt.doc" "Schema read error" (Doc.readErrorToString err)
+      in
+      Nothing
 
 
 initDoc : E.Value -> Model -> Model
@@ -27,7 +30,7 @@ initDoc ops model =
   Doc.decodeInto ops model.crdt.doc
     |> Result.map (setDoc model)
     |> Result.map updateLastStored
-    |> Result.mapError (Console.logError "Feature.Crdt.initDoc" "while decoding")
+    |> Result.mapError (Console.logError "Feature.Crdt.initDoc" "Decoding failed")
     |> Result.withDefault model
 
 
@@ -40,23 +43,32 @@ encodeDoc ({crdt} as model) =
 
 setTopic : Topic -> Model -> Model
 setTopic topic model =
-  let
-    (TopicId id) = topic.id
-    doc_ = model.crdt.doc
-  in
-  Edit.setKey refs.topics id topic doc_
-    |> orKeep doc_
-    |> setDoc model
+  Edit.setKey refs.topics (toTopicId topic.id) topic model.crdt.doc
+    |> editResult model
+
+
+setTopicText : TopicId -> String -> Model -> Model
+setTopicText (TopicId id) text model =
+  Edit.set (topicTextRef id) text model.crdt.doc
+    |> editResult model
+
+
+setTopicViewSize : TopicId -> Size -> Model -> Model
+setTopicViewSize (TopicId id) size model =
+  Edit.set (topicViewSizeRef id) size model.crdt.doc
+    |> editResult model
+
+
+setTopicEditorSize : TopicId -> Size -> Model -> Model
+setTopicEditorSize (TopicId id) size model =
+  Edit.set (topicEditorSizeRef id) size model.crdt.doc
+    |> editResult model
 
 
 removeTopic : TopicId -> Model -> Model
 removeTopic (TopicId id) model =
-  let
-    doc_ = model.crdt.doc
-  in
-  Edit.removeKey refs.topics id doc_
-    |> orKeep doc_
-    |> setDoc model
+  Edit.removeKey refs.topics id model.crdt.doc
+    |> editResult model
 
 
 
@@ -115,14 +127,21 @@ canRedo model =
 -- LOCAL HELPER
 
 
-orKeep : Doc DocModel -> Result Edit.EditError (Doc DocModel) -> Doc DocModel
-orKeep fallback result =
-    Result.withDefault fallback result
+editResult : Model -> Result Edit.EditError (Doc DocModel) -> Model
+editResult model result =
+  case result of
+    Ok doc -> doc |> setDoc model
+    Err err ->
+      let
+        _ = Console.logError "Feature.Crdt.editResult" "Edit failed"
+          (Edit.editErrorToString err)
+      in
+      model
 
 
 setDoc : Model -> Doc DocModel -> Model
-setDoc ({crdt} as model) doc_ =
-  { model | crdt = { crdt | doc = doc_ }}
+setDoc ({crdt} as model) doc =
+  { model | crdt = { crdt | doc = doc }}
 
 
 updateLastStored : Model -> Model

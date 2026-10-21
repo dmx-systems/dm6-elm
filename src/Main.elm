@@ -235,7 +235,7 @@ update msg appModel =
     _ =
       case msg of
         Mouse (MouseDef.Move _) -> msg
-        _ -> Console.info "Main.update" msg
+        _ -> Console.infoGroup msg
   in
   case appModel of
     Bootstrapping -> bootstrap msg

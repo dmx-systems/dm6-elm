@@ -184,7 +184,7 @@ onTextInput text model =
   case model.text.edit of
     Edit topicId _ ->
       model
-        |> setTopicText topicId text
+        |> Topic.setText topicId text
     NoEdit ->
       let
         _ = Console.logError "Feature.Text.onTextInput" "Unexpected model.text.edit state"
@@ -198,7 +198,7 @@ onTextareaInput text model =
   case model.text.edit of
     Edit topicId _ ->
       model
-        |> setTopicText topicId text
+        |> Topic.setText topicId text
         |> measureText topicId text
     NoEdit ->
       let
@@ -262,12 +262,6 @@ isEdit topicId boxPath model =
   model.text.edit == Edit topicId boxPath
 
 
-setTopicText : TopicId -> String -> Model -> Model
-setTopicText topicId text model =
-  model |> Topic.update topicId
-    (\topic -> { topic | text = text })
-
-
 setEditState : EditState -> Model -> Model
 setEditState state ({text} as model) =
   { model | text = { text | edit = state }}
@@ -321,7 +315,7 @@ insertImage topicId imageId model =
         newText = text ++ image
       in
       model
-        |> setTopicText topicId newText
+        |> Topic.setText topicId newText
         |> measureText topicId newText
     Nothing -> (model, Cmd.none)
 

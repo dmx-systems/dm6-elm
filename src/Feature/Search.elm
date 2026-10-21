@@ -415,10 +415,10 @@ revealAssoc_ assocId boxId model =
 -- "searchTopics" instead "search" avoids shadowing
 searchTopics : Model -> Model
 searchTopics model =
-  case Crdt.doc model of
-    Just doc ->
+  case Crdt.docModel model of
+    Just docModel ->
       let
-        topicIds = doc.topics |> Dict.values |> List.filterMap
+        topicIds = docModel.topics |> Dict.values |> List.filterMap
           (\{id, text} ->
             if isMatch text model.search.term then
               Just id
