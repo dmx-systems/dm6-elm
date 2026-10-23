@@ -1,5 +1,5 @@
-module Feature.CrdtDef exposing (Model, init, refs, topicTextRef, topicViewSizeRef,
-  topicEditorSizeRef)
+module Feature.CrdtDef exposing (Model, init, refs, topicIconRef, topicTextRef, topicViewSizeRef,
+  topicEditorSizeRef, topicAssocIdsRef)
 
 import ModelBase exposing (..)
 
@@ -92,6 +92,11 @@ topicDoc =
     |> C.build
 
 
+topicIconRef : Id -> C.Ref DocModel (C.Variants (Maybe Icon)) (Maybe Icon)
+topicIconRef id =
+  topicRef id |> C.at topicDoc.icon
+
+
 topicTextRef : Id -> C.Ref DocModel C.Settable String
 topicTextRef id =
   topicRef id |> C.at topicDoc.text
@@ -110,6 +115,34 @@ topicViewSizeRef id =
 topicEditorSizeRef : Id -> C.Ref DocModel C.Nested Size
 topicEditorSizeRef id =
   topicSizeRef id |> C.at textSizeDoc.editor
+
+
+topicAssocIdsRef : Id ->
+  C.Ref DocModel (C.ListK C.Fixed (C.Variants AssocId) AssocId) (List AssocId)
+topicAssocIdsRef id =
+  topicRef id |> C.at topicDoc.assocIds
+
+
+type alias IconDoc =
+  { just : C.Ref (Maybe Icon) C.Settable Icon -- only variants with payload needs to be modelled
+  , schema : C.Schema (C.Variants (Maybe Icon)) (Maybe Icon)
+  }
+
+
+iconDoc : IconDoc
+iconDoc =
+  C.custom
+    (\just nothing value ->
+      case value of
+        Just val ->
+          just val
+        Nothing ->
+          nothing
+    )
+    IconDoc
+      |> C.variant1 "just" Just C.string
+      |> C.variant0 "nothing" Nothing
+      |> C.buildCustom
 
 
 type alias TextSizeDoc =
@@ -175,26 +208,4 @@ assocIdDoc =
     )
     AssocIdDoc
       |> C.variant1 "assocId" AssocId C.string
-      |> C.buildCustom
-
-
-type alias IconDoc =
-  { just : C.Ref (Maybe Icon) C.Settable Icon
-  , schema : C.Schema (C.Variants (Maybe Icon)) (Maybe Icon)
-  }
-
-
-iconDoc : IconDoc
-iconDoc =
-  C.custom
-    (\just nothing value ->
-      case value of
-        Just val ->
-          just val
-        Nothing ->
-          nothing
-    )
-    IconDoc
-      |> C.variant1 "just" Just C.string
-      |> C.variant0 "nothing" Nothing
       |> C.buildCustom

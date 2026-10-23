@@ -1,9 +1,10 @@
-module Feature.Crdt exposing (docModel, initDoc, encodeDoc, setTopic, setTopicText,
-  setTopicViewSize, setTopicEditorSize, removeTopic, markSingleEdit, markEditStart, markEditEnd,
-  undo, redo, canUndo, canRedo)
+module Feature.Crdt exposing (docModel, initDoc, encodeDoc, addTopic, setTopicIcon, setTopicText,
+  setTopicViewSize, setTopicEditorSize, addAssocId, removeAssocId, removeTopic, markSingleEdit,
+  markEditStart, markEditEnd, undo, redo, canUndo, canRedo)
 
 import Console
-import Feature.CrdtDef exposing (refs, topicTextRef, topicViewSizeRef, topicEditorSizeRef)
+import Feature.CrdtDef exposing (refs, topicIconRef, topicTextRef, topicViewSizeRef,
+  topicEditorSizeRef, topicAssocIdsRef)
 import Model exposing (Model)
 import ModelBase exposing (..)
 
@@ -41,9 +42,17 @@ encodeDoc ({crdt} as model) =
   )
 
 
-setTopic : Topic -> Model -> Model
-setTopic topic model =
+-- Topic
+
+addTopic : Topic -> Model -> Model
+addTopic topic model =
   Edit.setKey refs.topics (toTopicId topic.id) topic model.crdt.doc
+    |> editResult model
+
+
+setTopicIcon : TopicId -> Maybe Icon -> Model -> Model
+setTopicIcon (TopicId id) icon model =
+  Edit.set (topicIconRef id) icon model.crdt.doc
     |> editResult model
 
 
@@ -62,6 +71,18 @@ setTopicViewSize (TopicId id) size model =
 setTopicEditorSize : TopicId -> Size -> Model -> Model
 setTopicEditorSize (TopicId id) size model =
   Edit.set (topicEditorSizeRef id) size model.crdt.doc
+    |> editResult model
+
+
+addAssocId : AssocId -> TopicId -> Model -> Model
+addAssocId assocId (TopicId topicId) model =
+  Edit.append (topicAssocIdsRef topicId) assocId model.crdt.doc
+    |> editResult model
+
+
+removeAssocId : Int -> TopicId -> Model -> Model
+removeAssocId index (TopicId topicId) model =
+  Edit.remove (topicAssocIdsRef topicId) index model.crdt.doc
     |> editResult model
 
 

@@ -106,12 +106,10 @@ update msg env =
 
 
 setIcon : Maybe Icon -> Model -> Model
-setIcon iconName model =
+setIcon icon model =
   case Sel.single model of
     Just (T topicId, _) ->
-      model
-        |> Topic.update topicId
-          (\topic -> { topic | icon = iconName })
+      Topic.setIcon topicId icon model
     _ ->
       model
 

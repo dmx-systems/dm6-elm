@@ -1,4 +1,5 @@
-module Topic exposing (fromId, label, setText, size, setSize, create, update, isBox)
+module Topic exposing (fromId, label, setIcon, setText, size, setSize, addAssocId,
+  removeAssocId, create, isBox)
 
 import Config as C
 import Console
@@ -15,10 +16,7 @@ import Dict
 Logs an error if Topic is missing.
 -}
 fromId : TopicId -> Model -> Maybe Topic
-fromId topicId model =
-  let
-    (TopicId id) = topicId
-  in
+fromId (TopicId id) model =
   case Crdt.docModel model of
     Just docModel ->
       case docModel.topics |> Dict.get id of
@@ -34,6 +32,11 @@ label topic =
     |> String.lines
     |> List.head
     |> Maybe.withDefault ""
+
+
+setIcon : TopicId -> Maybe Icon -> Model -> Model
+setIcon =
+  Crdt.setTopicIcon
 
 
 setText : TopicId -> String -> Model -> Model
@@ -59,6 +62,72 @@ setSize topicId sizeField size_ model =
     Editor -> Crdt.setTopicEditorSize topicId size_ model
 
 
+{-| Adds an association ID to the topic's set of association IDs.
+No-op if the association ID is in the set already.
+Logs an error if the topic does not exist. ### FIXDOC
+Low-level API for maintaining the association ID set.
+-}
+addAssocId : AssocId -> TopicId -> Model -> Model
+addAssocId =
+  Crdt.addAssocId
+
+
+{-| Removes an association ID from the topic's set of association IDs.
+No-op if the given association ID is not in the set.
+Logs an error if the topic does not exist. ### FIXDOC
+-}
+removeAssocId : AssocId -> TopicId -> Model -> Model
+removeAssocId assocId topicId model =
+  let
+    findAssocId : Topic -> Maybe Int
+    findAssocId topic =
+      findIndex assocId topic.assocIds
+
+    remove : Int -> Maybe Model
+    remove index =
+      Just <| Crdt.removeAssocId index topicId model
+
+    log : Model
+    log =
+      let
+        _ = Console.fail "Topic.removeAssocId" topicId assocId
+      in
+      model
+  in
+  model
+    |> fromId topicId
+    |> Maybe.andThen findAssocId
+    |> Maybe.andThen remove
+    |> Maybe.withDefault log
+
+
+findIndex : v -> List v -> Maybe Int
+findIndex val list =
+  let
+    equality : Int -> v -> Maybe Int
+    equality index val_ =
+      case val_ == val of
+        True -> Just index
+        False -> Nothing
+
+    result : List Int -> Maybe Int
+    result indexes =
+      case indexes of
+        [ index ] ->
+          Just index
+        [] ->
+          Console.logError "Topic.findIndex"
+            (Console.toString val ++ " not in " ++ Console.toString list) Nothing
+        _ ->
+          Console.logError "Topic.findIndex"
+            (Console.toString val ++ " more than once in " ++ Console.toString list) Nothing
+  in
+  list
+    |> List.indexedMap equality
+    |> List.filterMap identity
+    |> result
+
+
 create : String -> Maybe Icon -> Model -> (Model, TopicId)
 create text icon model =
   let
@@ -67,26 +136,7 @@ create text icon model =
     size_ = TextSize C.topicDetailSize C.topicDetailSize
     topic = Topic topicId icon text size_ []
   in
-  ( Crdt.setTopic topic model_, topicId )
-
-
--- ### TODO: drop
-{-| Canonical Topic transformation.
-Logs an error if item does not exist.
--}
-update : TopicId -> (Topic -> Topic) -> Model -> Model
-update topicId transform model =
-  let
-    (TopicId id) = topicId
-  in
-  case fromId topicId model of
-    Just topic ->
-      Crdt.setTopic (transform topic) model
-    Nothing ->
-      let
-        _ = Console.fail "Topic.update" id Nothing
-      in
-      model
+  (Crdt.addTopic topic model_, topicId)
 
 
 isBox : TopicId -> Model -> Bool

@@ -323,7 +323,7 @@ insertImage topicId imageId model =
 resolveImageUrls : Model -> List Block -> List Block
 resolveImageUrls model blocks =
   blocks |> List.map
-    ( Block.walkInlines
+    (Block.walkInlines
       (\inline ->
         case inline of
           Block.Image url title altInlines ->

@@ -282,21 +282,9 @@ removeAssocFromTopics assocId model =
   case Assoc.fromId assocId model of
     Just assoc ->
       model
-        |> removeAssocFromTopic assoc.id assoc.topicId1
-        |> removeAssocFromTopic assoc.id assoc.topicId2
+        |> Topic.removeAssocId assoc.id assoc.topicId1
+        |> Topic.removeAssocId assoc.id assoc.topicId2
     Nothing -> Console.fail "Box.removeAssocFromTopics" {assocId = assocId} model
-
-
-{-| Removes an association ID from the item's set of association IDs.
-No-op if the given association ID is not in the set.
-Logs an error if item does not exist.
--}
-removeAssocFromTopic : AssocId -> TopicId -> Model -> Model
-removeAssocFromTopic assocId topicId model =
-  model |> Topic.update topicId
-    (\topic ->
-      {topic | assocIds = topic.assocIds |> List.filter ((/=) assocId)}
-    )
 
 
 {-| Deletes an item, and removes it from all boxes.

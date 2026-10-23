@@ -28,23 +28,10 @@ create assocType topicId1 topicId2 ({assocs} as model) =
     assoc = Assoc assocId assocType topicId1 topicId2
   in
   ( { model_ | assocs = assocs |> Dict.insert id assoc }
-      |> insertAssocId assocId topicId1
-      |> insertAssocId assocId topicId2
+      |> Topic.addAssocId assocId topicId1
+      |> Topic.addAssocId assocId topicId2
   , assocId
   )
-
-
-{-| Inserts an association ID into the item's set of association IDs.
-No-op if the association ID is in the set already.
-Logs an error if item does not exist.
-Low-level API for maintaining the association ID set.
--}
-insertAssocId : AssocId -> TopicId -> Model -> Model
-insertAssocId assocId topicId model =
-  model |> Topic.update topicId
-    (\({assocIds} as topic) ->
-      {topic | assocIds = assocId :: assocIds}
-    )
 
 
 relatedTopics : TopicId -> Model -> List (TopicId, AssocId)

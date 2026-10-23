@@ -317,7 +317,7 @@ runningWidth cmd_ (model, cmd) =
 
 {- Sets up default content for newly created DB. This comprises a) root topic/box and b) the
 underlying item set. Note: the ID for the root topic is taken from model, where it is written
-to while bootstrapping.
+while bootstrapping.
 -}
 defaultContent : Model -> Model
 defaultContent model =
@@ -328,7 +328,7 @@ defaultContent model =
     _ = Console.info "Main.defaultContent" ("root topic --> " ++ id)
   in
   model
-    |> Crdt.setTopic rootTopic
+    |> Crdt.addTopic rootTopic
     |> createRootBox topicId
 
 
