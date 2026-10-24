@@ -250,9 +250,8 @@ findHierarchy topicId boxId assocIds_ model =
 
 -- Delete item
 
-{-| Deletes an item, along its associations, and removes them from all boxes.
-Logs an error if no such item exists.
-It's a generic operation: works for both, topics and associations. ### FIXDOC
+{-| Deletes a topic, along its associations, and removes them from all boxes.
+Logs an error if no such topic exists.
 -}
 deleteTopic : TopicId -> Model -> Model
 deleteTopic topicId model =
@@ -287,14 +286,14 @@ removeAssocFromTopics assocId model =
     Nothing -> Console.fail "Box.removeAssocFromTopics" {assocId = assocId} model
 
 
-{-| Deletes an item, and removes it from all boxes.
-No-op if there is no such item.
-Low-level function that does NOT delete the item's associations. ### FIXDOC
+{-| Deletes a topic, and removes it from all boxes.
+No-op if there is no such topic.
+Low-level function that does NOT delete the topic's associations.
 -}
 deleteTopic_ : TopicId -> Model -> Model
 deleteTopic_ topicId ({itemSets, topicMap} as model) =
   model
-    |> Crdt.removeTopic topicId
+    |> Crdt.deleteTopic topicId
     |> (\model_ ->
         { model_
         | itemSets = itemSets |> Dict.map -- delete topic from all itemSets
@@ -315,21 +314,24 @@ deleteTopic_ topicId ({itemSets, topicMap} as model) =
       )
 
 
-{-| Deletes an item, and removes it from all boxes.
-No-op if there is no such item.
-Low-level function that does NOT delete the item's associations. ### FIXDOC
+{-| Deletes an assoc, and removes it from all boxes.
+No-op if there is no such assoc.
+Low-level function that does NOT disconnect the involved topics.
 -}
 deleteAssoc_ : AssocId -> Model -> Model
-deleteAssoc_ assocId ({assocs, itemSets} as model) =
-  { model
-  | assocs = assocs |> Dict.remove (toAssocId assocId) -- delete assoc
-  , itemSets = itemSets |> Dict.map -- delete assoc from all itemSets
-      (\_ ({items} as itemSet) ->
-        { itemSet | items = items |> List.filter
-          (\setItem -> setItem.id /= A assocId)
+deleteAssoc_ assocId ({itemSets} as model) =
+  model
+    |> Crdt.deleteAssoc assocId
+    |> (\model_ ->
+        { model_
+        | itemSets = itemSets |> Dict.map -- delete assoc from all itemSets
+            (\_ ({items} as itemSet) ->
+              { itemSet | items = items |> List.filter
+                (\setItem -> setItem.id /= A assocId)
+              }
+            )
         }
       )
-  }
 
 
 -- Expansion

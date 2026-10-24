@@ -1,6 +1,7 @@
 module Assoc exposing (fromId, create, relatedTopics, otherTopicId)
 
 import Console
+import Feature.Crdt as Crdt
 import Feature.Id as Id
 import Model exposing (Model)
 import ModelBase exposing (..)
@@ -14,24 +15,24 @@ import Dict
 Logs an error if Assoc is missing.
 -}
 fromId : AssocId -> Model -> Maybe Assoc
-fromId assocId model =
-  case model.assocs |> Dict.get (toAssocId assocId) of
-    Just assoc -> Just assoc
-    Nothing -> Console.assocNotFound "Assoc.fromId" assocId Nothing
+fromId (AssocId id) model =
+  case Crdt.docModel model of
+    Just docModel ->
+      case docModel.assocs |> Dict.get id of
+        Just assoc -> Just assoc
+        Nothing -> Console.logError "Assoc.fromId" (id ++ " not found") Nothing
+    Nothing ->
+      Console.fail "Assoc.fromId" id Nothing
 
 
 create : AssocType -> TopicId -> TopicId -> Model -> (Model, AssocId)
-create assocType topicId1 topicId2 ({assocs} as model) =
+create assocType topicId1 topicId2 model =
   let
     (id, model_) = Id.new model
     assocId = AssocId id
     assoc = Assoc assocId assocType topicId1 topicId2
   in
-  ( { model_ | assocs = assocs |> Dict.insert id assoc }
-      |> Topic.addAssocId assocId topicId1
-      |> Topic.addAssocId assocId topicId2
-  , assocId
-  )
+  (Crdt.addAssoc assoc model_, assocId)
 
 
 relatedTopics : TopicId -> Model -> List (TopicId, AssocId)

@@ -35,6 +35,7 @@ init =
 
 type alias ModelDoc =
   { topics : C.Ref DocModel (C.DictK C.Nested Topic) (Dict Id Topic)
+  , assocs : C.Ref DocModel (C.DictK C.Nested Assoc) (Dict Id Assoc)
   , schema : C.Schema C.Nested DocModel
   }
 
@@ -43,6 +44,7 @@ modelDoc : ModelDoc
 modelDoc =
   C.record DocModel ModelDoc
     |> C.field "topics" .topics topicsDict
+    |> C.field "assocs" .assocs assocsDict
     |> C.build
 
 
@@ -59,6 +61,19 @@ topicsDict =
   C.dict topicDoc
 
 
+assocsDict :
+  C.Crdt
+    (C.DictK C.Nested Assoc)
+    (Dict Id Assoc)
+    { key :
+        Id
+          -> C.Ref DocModel (C.DictK C.Nested Assoc) (Dict Id Assoc)
+          -> C.Ref DocModel C.Nested Assoc
+    }
+assocsDict =
+  C.dict assocDoc
+
+
 topicRef : Id -> C.Ref DocModel C.Nested Topic
 topicRef id =
   refs.topics |> topicsDict.key id
@@ -69,7 +84,7 @@ refs =
   modelDoc
 
 
--- Topic
+-- Topic + Assoc
 
 type alias TopicDoc =
   { id : C.Ref Topic (C.Variants TopicId) TopicId
@@ -81,6 +96,15 @@ type alias TopicDoc =
   }
 
 
+type alias AssocDoc =
+  { id : C.Ref Assoc (C.Variants AssocId) AssocId
+  , assocType : C.Ref Assoc (C.Variants AssocType) AssocType
+  , topicId1 : C.Ref Assoc (C.Variants TopicId) TopicId
+  , topicId2 : C.Ref Assoc (C.Variants TopicId) TopicId
+  , schema : C.Schema C.Nested Assoc
+  }
+
+
 topicDoc : TopicDoc
 topicDoc =
   C.record Topic TopicDoc
@@ -89,6 +113,16 @@ topicDoc =
     |> C.field "text" .text C.text
     |> C.field "size" .size textSizeDoc
     |> C.field "assocIds" .assocIds (C.list assocIdDoc)
+    |> C.build
+
+
+assocDoc : AssocDoc
+assocDoc =
+  C.record Assoc AssocDoc
+    |> C.field "id" .id assocIdDoc
+    |> C.field "assocType" .assocType assocTypeDoc
+    |> C.field "topicId1" .topicId1 topicIdDoc
+    |> C.field "topicId2" .topicId2 topicIdDoc
     |> C.build
 
 
@@ -208,4 +242,23 @@ assocIdDoc =
     )
     AssocIdDoc
       |> C.variant1 "assocId" AssocId C.string
+      |> C.buildCustom
+
+
+type alias AssocTypeDoc =
+  { schema : C.Schema (C.Variants AssocType) AssocType
+  }
+
+
+assocTypeDoc : AssocTypeDoc
+assocTypeDoc =
+  C.custom
+    (\association hierarchy value ->
+      case value of
+        Association -> association
+        Hierarchy -> hierarchy
+    )
+    AssocTypeDoc
+      |> C.variant0 "association" Association
+      |> C.variant0 "hierarchy" Hierarchy
       |> C.buildCustom

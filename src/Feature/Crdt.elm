@@ -1,6 +1,6 @@
-module Feature.Crdt exposing (docModel, initDoc, encodeDoc, addTopic, setTopicIcon, setTopicText,
-  setTopicViewSize, setTopicEditorSize, addAssocId, removeAssocId, removeTopic, markSingleEdit,
-  markEditStart, markEditEnd, undo, redo, canUndo, canRedo)
+module Feature.Crdt exposing (docModel, initDoc, encodeDoc, addTopic, addAssoc, setTopicIcon,
+  setTopicText, setTopicViewSize, setTopicEditorSize, removeAssocId, deleteTopic, deleteAssoc,
+  markSingleEdit, markEditStart, markEditEnd, undo, redo, canUndo, canRedo)
 
 import Console
 import Feature.CrdtDef exposing (refs, topicIconRef, topicTextRef, topicViewSizeRef,
@@ -42,11 +42,19 @@ encodeDoc ({crdt} as model) =
   )
 
 
--- Topic
+-- Topic + Assoc
 
 addTopic : Topic -> Model -> Model
 addTopic topic model =
   Edit.setKey refs.topics (toTopicId topic.id) topic model.crdt.doc
+    |> editResult model
+
+
+addAssoc : Assoc -> Model -> Model
+addAssoc assoc model =
+  Edit.setKey refs.assocs (toAssocId assoc.id) assoc model.crdt.doc
+    |> Result.andThen (Edit.append (topicAssocIdsRef (toTopicId assoc.topicId1)) assoc.id)
+    |> Result.andThen (Edit.append (topicAssocIdsRef (toTopicId assoc.topicId2)) assoc.id)
     |> editResult model
 
 
@@ -74,21 +82,22 @@ setTopicEditorSize (TopicId id) size model =
     |> editResult model
 
 
-addAssocId : AssocId -> TopicId -> Model -> Model
-addAssocId assocId (TopicId topicId) model =
-  Edit.append (topicAssocIdsRef topicId) assocId model.crdt.doc
-    |> editResult model
-
-
+-- ### TODO: is low-level, don't expose
 removeAssocId : Int -> TopicId -> Model -> Model
 removeAssocId index (TopicId topicId) model =
   Edit.remove (topicAssocIdsRef topicId) index model.crdt.doc
     |> editResult model
 
 
-removeTopic : TopicId -> Model -> Model
-removeTopic (TopicId id) model =
+deleteTopic : TopicId -> Model -> Model
+deleteTopic (TopicId id) model =
   Edit.removeKey refs.topics id model.crdt.doc
+    |> editResult model
+
+
+deleteAssoc : AssocId -> Model -> Model
+deleteAssoc (AssocId id) model =
+  Edit.removeKey refs.assocs id model.crdt.doc
     |> editResult model
 
 
@@ -151,7 +160,7 @@ canRedo model =
 editResult : Model -> Result Edit.EditError (Doc DocModel) -> Model
 editResult model result =
   case result of
-    Ok doc -> doc |> setDoc model
+    Ok doc -> setDoc model doc
     Err err ->
       let
         _ = Console.logError "Feature.Crdt.editResult" "Edit failed"

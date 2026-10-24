@@ -1,5 +1,5 @@
-module Topic exposing (fromId, label, setIcon, setText, size, setSize, addAssocId,
-  removeAssocId, create, isBox)
+module Topic exposing (fromId, label, setIcon, setText, size, setSize, removeAssocId, create,
+  isBox)
 
 import Config as C
 import Console
@@ -62,16 +62,7 @@ setSize topicId sizeField size_ model =
     Editor -> Crdt.setTopicEditorSize topicId size_ model
 
 
-{-| Adds an association ID to the topic's set of association IDs.
-No-op if the association ID is in the set already.
-Logs an error if the topic does not exist. ### FIXDOC
-Low-level API for maintaining the association ID set.
--}
-addAssocId : AssocId -> TopicId -> Model -> Model
-addAssocId =
-  Crdt.addAssocId
-
-
+-- ### TODO: make it Crdt internal
 {-| Removes an association ID from the topic's set of association IDs.
 No-op if the given association ID is not in the set.
 Logs an error if the topic does not exist. ### FIXDOC
@@ -83,22 +74,27 @@ removeAssocId assocId topicId model =
     findAssocId topic =
       findIndex assocId topic.assocIds
 
+
     remove : Int -> Maybe Model
     remove index =
       Just <| Crdt.removeAssocId index topicId model
 
-    log : Model
-    log =
-      let
-        _ = Console.fail "Topic.removeAssocId" topicId assocId
-      in
-      model
+
+    result : Maybe Model -> Model
+    result maybeModel =
+      case maybeModel of
+        Just model_ -> model_
+        Nothing ->
+          let
+            _ = Console.fail "Topic.removeAssocId" topicId assocId
+          in
+          model
   in
   model
     |> fromId topicId
     |> Maybe.andThen findAssocId
     |> Maybe.andThen remove
-    |> Maybe.withDefault log
+    |> result
 
 
 findIndex : v -> List v -> Maybe Int
@@ -109,6 +105,7 @@ findIndex val list =
       case val_ == val of
         True -> Just index
         False -> Nothing
+
 
     result : List Int -> Maybe Int
     result indexes =

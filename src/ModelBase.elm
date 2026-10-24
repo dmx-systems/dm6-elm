@@ -20,6 +20,7 @@ import Json.Encode as E
 
 type alias DocModel =
   { topics : Dict Id Topic
+  , assocs : Dict Id Assoc
   -- TODO
   }
 
