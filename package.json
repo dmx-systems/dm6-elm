@@ -1,12 +1,12 @@
 {
   "devDependencies": {
-    "terser": "^5.47.1",
-    "vite": "^8.0.12",
+    "terser": "^5.51.2",
+    "vite": "^8.3.5",
     "vite-plugin-elm": "^3.0.1",
-    "vite-plugin-singlefile": "^2.3.3"
+    "vite-plugin-singlefile": "^2.3.4"
   },
   "dependencies": {
-    "fflate": "^0.8.2",
-    "idb": "^8.0.3"
+    "fflate": "^0.8.3",
+    "idb": "^8.0.4"
   }
 }
