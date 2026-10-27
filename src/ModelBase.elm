@@ -21,6 +21,8 @@ import Json.Encode as E
 type alias DocModel =
   { topics : Dict Id Topic
   , assocs : Dict Id Assoc
+  , boxes : Dict Id Box
+  , itemSets: Dict Id ItemSet
   -- TODO
   }
 

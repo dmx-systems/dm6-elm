@@ -26,9 +26,7 @@ import Json.Encode as E
 
 type alias Model =
   -- TODO: move more fields to ModelBase.DocModel
-  { itemSets: Dict Id ItemSet
-  , boxes : Dict Id Box
-  , boxId : BoxId -- the box rendered fullscreen
+  { boxId : BoxId -- the box rendered fullscreen
   , rootBoxId : BoxId
   -- box renderers
   , topicMap : TopicMapDef.Model
@@ -50,9 +48,7 @@ Called when no DB exists ("bootstrapping").
 -}
 bootstrap : TopicId -> Model
 bootstrap rootTopicId =
-  { itemSets = Dict.empty
-  , boxes = Dict.empty
-  , boxId = BoxId rootTopicId
+  { boxId = BoxId rootTopicId
   , rootBoxId = BoxId rootTopicId
   -- box renderers
   , topicMap = TopicMapDef.init
@@ -103,9 +99,7 @@ type Msg
 encode : Model -> E.Value
 encode model =
   E.object
-    [ ("itemSets", model.itemSets |> Dict.values |> E.list encodeItemSet)
-    , ("boxes", model.boxes |> Dict.values |> E.list encodeBox)
-    , ("boxId", encodeBoxId model.boxId)
+    [ ("boxId", encodeBoxId model.boxId)
     , ("rootBoxId", encodeBoxId model.rootBoxId)
     -- box renderers
     , ("topicMap", TopicMapDef.encode model.topicMap)
@@ -118,8 +112,6 @@ encode model =
 decoder : D.Decoder Model
 decoder =
   D.succeed Model
-    |> required "itemSets" (toDictDecoder itemSetDecoder)
-    |> required "boxes" (toDictDecoderWith toBoxId boxDecoder)
     |> required "boxId" boxIdDecoder
     |> required "rootBoxId" boxIdDecoder
     -- box renderers

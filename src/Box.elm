@@ -73,45 +73,61 @@ createItemSet set ({itemSets} as model) =
 
 -- Add item to box
 
-{-| Adds an item to a box and creates a connecting association. This is an idempotent operation.
-This is a generic operation: works for both, topics and associations.
+{-| Adds a topic to a box and creates a connecting association.
+This is an idempotent operation.
+Logs an error if box is missing.
 -}
 addTopic : BoxTopic -> BoxId -> Env -> Env
 addTopic topic boxId env =
-  env
-    |> Env.map (addToItemSet (T topic.id) boxId)
-    |> Env.map (addToBoxTopics topic boxId)
-    |> init boxId
-
-
-addAssoc : AssocId -> BoxId -> Model -> Model
-addAssoc assocId boxId model =
-  model
-    |> addToItemSet (A assocId) boxId
-
-
-addToItemSet : ItemId -> BoxId -> Model -> Model
-addToItemSet itemId boxId model =
-  if hasItem itemId boxId model then
-    model
-  else
-    case byId boxId model of
-      Just box ->
-        model
-          |> addToItemSet_ (SetItem itemId) box.itemSetId
-          |> createHierarchy itemId boxId
-      Nothing -> model
-
-
-addToItemSet_ : SetItem -> Id -> Model -> Model
-addToItemSet_ setItem itemSetId ({itemSets} as model) =
-  { model | itemSets = itemSets |> Dict.update itemSetId
-    (\maybeItemSet ->
-      case maybeItemSet of
-        Just itemSet -> Just { itemSet | items = setItem :: itemSet.items }
-        Nothing -> Console.itemSetNotFound "Box.addToItemSet_" itemSetId Nothing
+  workWithBox boxId env
+    (\box itemSet ->
+      let
+        itemId = T topic.id
+      in
+      if hasItem_ itemId itemSet then
+        env
+      else
+        env
+          |> Env.map (Crdt.addToItemSet box.itemSetId (SetItem itemId))
+          |> Env.map (createHierarchy itemId boxId)
+          |> Env.map (addToBoxTopics topic box)
+          |> init boxId
     )
-  }
+
+
+addAssoc : AssocId -> BoxId -> Env -> Env
+addAssoc assocId boxId env =
+  workWithBox boxId env
+    (\box itemSet ->
+      let
+        itemId = A assocId
+      in
+      if hasItem_ itemId itemSet then
+        env
+      else
+        env
+          |> Env.map (Crdt.addToItemSet box.itemSetId (SetItem itemId))
+    )
+
+
+workWithBox : BoxId -> Env -> (Box -> ItemSet -> Env) -> Env
+workWithBox boxId env work =
+  case lookup boxId env.model of
+    Just box ->
+      case lookupItemSet box.itemSetId env.model of
+        Just itemSet ->
+          work box itemSet 
+        Nothing ->
+          let
+            _ = Console.fail "Box.addTopic" "missing ItemSet of Box"
+              {itemSetId = box.itemSetId, boxId = boxId}
+          in
+          env
+    Nothing ->
+      let
+        _ = Console.fail "Box.addTopic" "Missing box" boxId
+      in
+      env
 
 
 createHierarchy : ItemId -> BoxId -> Model -> Model
@@ -126,21 +142,15 @@ createHierarchy itemId boxId model =
     A _ -> model
 
 
-addToBoxTopics : BoxTopic -> BoxId -> Model -> Model
-addToBoxTopics topic boxId ({boxes} as model) =
-  if hasBoxTopic topic.id boxId model then
+{- Internal function that adds to box.topics dict.
+No-op if already added (key exists).
+-}
+addToBoxTopics : BoxTopic -> Box -> Model -> Model
+addToBoxTopics topic box model =
+  if Dict.member (toTopicId topic.id) box.topics then
     model
   else
-    { model | boxes = boxes |> Dict.update (toBoxId boxId)
-      (\maybeBox ->
-        case maybeBox of
-          Just box -> Just
-            { box | topics = box.topics
-              |> Dict.insert (toTopicId topic.id) topic
-            }
-          Nothing -> Nothing
-      )
-    }
+    Crdt.addToBoxTopics box.id topic model
 
 
 -- Initialize/Update box view model
@@ -208,7 +218,7 @@ Note: the BoxItem itself is *not* removed.
 -}
 removeItem : ItemId -> BoxId -> Model -> Model
 removeItem itemId boxId model =
-  case byId boxId model of
+  case lookup boxId model of
     Just box ->
       { model | itemSets = model.itemSets
         |> Dict.update box.itemSetId
@@ -338,7 +348,7 @@ deleteAssoc_ assocId ({itemSets} as model) =
 
 expansionOf : TopicId -> BoxId -> Model -> Expansion
 expansionOf topicId boxId model =
-  case byId boxId model |> Maybe.andThen (\box -> topicFrom topicId box model) of
+  case lookup boxId model |> Maybe.andThen (\box -> topicFrom topicId box model) of
     Just {expansion} -> expansion
     Nothing -> Console.fail "Box.expansionOf" {topicId = topicId, boxId = boxId} Collapsed
 
@@ -366,7 +376,7 @@ updateExpansion topicId boxId transform model =
 
 rendererOf : BoxId -> Model -> Maybe Renderer
 rendererOf boxId model =
-  case byId boxId model of
+  case lookup boxId model of
     Just box -> Just box.renderer
     Nothing -> Console.fail "Box.rendererOf" {boxId = boxId} Nothing
 
@@ -406,15 +416,19 @@ setRenderer_ boxId renderer ({boxes} as model) =
 --
 
 {-| Checks if an item (Topic or Assoc) is contained in a box's underlying ItemSet.
-Logs an error if the box or its ItemSet is missing.
+Logs an error if the box or its ItemSet is missing, returning False.
 -}
 hasItem : ItemId -> BoxId -> Model -> Bool
 hasItem itemId boxId model =
   case itemSetOf boxId model of
-    Just itemSet ->
-      itemSet.items
-        |> List.any (\setItem -> setItem.id == itemId)
+    Just itemSet -> hasItem_ itemId itemSet
     Nothing -> False
+
+
+hasItem_ : ItemId -> ItemSet -> Bool
+hasItem_ itemId itemSet =
+  itemSet.items
+    |> List.any (\setItem -> setItem.id == itemId)
 
 
 {-| Checks if a topic (1st parameter, the *needle*) is contained in a box (2nd parameter, the
@@ -444,7 +458,7 @@ Logs an error (and returns Nothing) if the box is missing, or its underlying Ite
 -}
 itemSetOf : BoxId -> Model -> Maybe ItemSet
 itemSetOf boxId model =
-  case byId boxId model of
+  case lookup boxId model of
     Just box ->
       case Dict.get box.itemSetId model.itemSets of
         Just itemSet -> Just itemSet
@@ -455,17 +469,20 @@ itemSetOf boxId model =
 
 hasBoxTopic : TopicId -> BoxId -> Model -> Bool
 hasBoxTopic topicId boxId model =
-  case byId boxId model of
+  case lookup boxId model of
     Just box -> box.topics |> Dict.member (toTopicId topicId)
     Nothing -> Console.fail "Box.hasBoxTopic" {topicId = topicId, boxId = boxId} False
 
 
 {-| Logs an error if the box is missing. -}
-byId : BoxId -> Model -> Maybe Box
-byId boxId model =
-  case model.boxes |> Dict.get (toBoxId boxId) of
-    Just box -> Just box
-    Nothing -> Console.boxNotFound "Box.byId" boxId Nothing
+lookup : BoxId -> Model -> Maybe Box
+lookup =
+  Crdt.lookupBox
+
+
+lookupItemSet : Id -> Model -> Maybe ItemSet
+lookupItemSet =
+  Crdt.lookupItemSet
 
 
 topicFrom : TopicId -> Box -> Model -> Maybe BoxTopic

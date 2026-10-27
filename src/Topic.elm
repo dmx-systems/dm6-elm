@@ -138,5 +138,8 @@ create text icon model =
 
 isBox : TopicId -> Model -> Bool
 isBox (TopicId id) model =
-  model.boxes
-    |> Dict.member id
+  case Crdt.docModel model of -- TODO: don't read entire doc
+    Just docModel ->
+      docModel.boxes |> Dict.member id
+    Nothing ->
+      Console.fail "Topic.isBox" id False

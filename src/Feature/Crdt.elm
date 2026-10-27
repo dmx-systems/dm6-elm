@@ -1,10 +1,11 @@
 module Feature.Crdt exposing (docModel, initDoc, encodeDoc, addTopic, addAssoc, setTopicIcon,
   setTopicText, setTopicViewSize, setTopicEditorSize, removeAssocId, deleteTopic, deleteAssoc,
+  lookupBox, lookupItemSet, addToItemSet, addToBoxTopics,
   markSingleEdit, markEditStart, markEditEnd, undo, redo, canUndo, canRedo)
 
 import Console
 import Feature.CrdtDef exposing (refs, topicIconRef, topicTextRef, topicViewSizeRef,
-  topicEditorSizeRef, topicAssocIdsRef)
+  topicEditorSizeRef, topicAssocIdsRef, boxRef, boxTopicsRef, itemSetRef, itemSetItemsRef)
 import Model exposing (Model)
 import ModelBase exposing (..)
 
@@ -18,7 +19,8 @@ import Json.Encode as E
 docModel : Model -> Maybe DocModel
 docModel model =
   case Doc.read model.crdt.doc of
-    Ok docModel_ -> Just docModel_
+    Ok docModel_ ->
+      Just docModel_
     Err err ->
       let
         _ = Console.logError "Feature.Crdt.doc" "Schema read error" (Doc.readErrorToString err)
@@ -98,6 +100,40 @@ deleteTopic (TopicId id) model =
 deleteAssoc : AssocId -> Model -> Model
 deleteAssoc (AssocId id) model =
   Edit.removeKey refs.assocs id model.crdt.doc
+    |> editResult model
+
+
+-- Box
+
+lookupBox : BoxId -> Model -> Maybe Box
+lookupBox (BoxId (TopicId id)) model =
+  model.crdt.doc
+    |> Edit.readAt (Doc.version model.crdt.doc) (boxRef id)
+    |> Result.map Just
+    |> Result.mapError (Console.logError "Feature.Crdt.lookupBox" id)
+    |> Result.withDefault Nothing
+
+
+lookupItemSet : Id -> Model -> Maybe ItemSet
+lookupItemSet id model =
+  model.crdt.doc
+    |> Edit.readAt (Doc.version model.crdt.doc) (itemSetRef id)
+    |> Result.map Just
+    |> Result.mapError (Console.logError "Feature.Crdt.lookupItemSet" id)
+    |> Result.withDefault Nothing
+
+
+addToItemSet : Id -> SetItem -> Model -> Model
+addToItemSet itemSetId item model =
+  model.crdt.doc
+    |> Edit.append (itemSetItemsRef itemSetId) item
+    |> editResult model
+
+
+addToBoxTopics : BoxId -> BoxTopic -> Model -> Model
+addToBoxTopics (BoxId (TopicId id)) topic model =
+  model.crdt.doc
+    |> Edit.setKey (boxTopicsRef id) (toTopicId topic.id) topic
     |> editResult model
 
 
