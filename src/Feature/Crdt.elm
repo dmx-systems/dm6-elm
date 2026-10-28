@@ -1,17 +1,22 @@
-module Feature.Crdt exposing (docModel, initDoc, encodeDoc, addTopic, addAssoc, setTopicIcon,
-  setTopicText, setTopicViewSize, setTopicEditorSize, removeAssocId, deleteTopic, deleteAssoc,
-  lookupBox, lookupItemSet, addToItemSet, addToBoxTopics,
+module Feature.Crdt exposing (docModel, initDoc, encodeDoc,
+  createTopic, createAssoc, setTopicIcon, setTopicText, setTopicViewSize, setTopicEditorSize,
+  removeAssocId, deleteTopic, deleteAssoc,
+  createBox, createItemSet, lookupBox, lookupItemSet, itemSets, addToItemSet, removeFromItemSet,
+  addBoxTopic, lookupBoxTopic, setExpansion, setBoxRenderer,
   markSingleEdit, markEditStart, markEditEnd, undo, redo, canUndo, canRedo)
 
 import Console
 import Feature.CrdtDef exposing (refs, topicIconRef, topicTextRef, topicViewSizeRef,
-  topicEditorSizeRef, topicAssocIdsRef, boxRef, boxTopicsRef, itemSetRef, itemSetItemsRef)
+  topicEditorSizeRef, topicAssocIdsRef, boxRef, boxTopicsRef, boxTopicRef, expansionRef,
+  boxRendererRef, itemSetRef, itemSetItemsRef)
 import Model exposing (Model)
 import ModelBase exposing (..)
+import Renderer exposing (Renderer)
 
 import Crdt.Doc as Doc exposing (Doc, Version)
 import Crdt.Edit as Edit
 
+import Dict exposing (Dict)
 import Json.Encode as E
 
 
@@ -33,7 +38,7 @@ initDoc ops model =
   Doc.decodeInto ops model.crdt.doc
     |> Result.map (setDoc model)
     |> Result.map updateLastStored
-    |> Result.mapError (Console.logError "Feature.Crdt.initDoc" "Decoding failed")
+    |> Result.mapError (Console.logError "Feature.Crdt.initDoc" "Decode error")
     |> Result.withDefault model
 
 
@@ -46,15 +51,16 @@ encodeDoc ({crdt} as model) =
 
 -- Topic + Assoc
 
-addTopic : Topic -> Model -> Model
-addTopic topic model =
+createTopic : Topic -> Model -> Model
+createTopic topic model =
   Edit.setKey refs.topics (toTopicId topic.id) topic model.crdt.doc
     |> editResult model
 
 
-addAssoc : Assoc -> Model -> Model
-addAssoc assoc model =
-  Edit.setKey refs.assocs (toAssocId assoc.id) assoc model.crdt.doc
+createAssoc : Assoc -> Model -> Model
+createAssoc assoc model =
+  model.crdt.doc
+    |> Edit.setKey refs.assocs (toAssocId assoc.id) assoc
     |> Result.andThen (Edit.append (topicAssocIdsRef (toTopicId assoc.topicId1)) assoc.id)
     |> Result.andThen (Edit.append (topicAssocIdsRef (toTopicId assoc.topicId2)) assoc.id)
     |> editResult model
@@ -62,55 +68,75 @@ addAssoc assoc model =
 
 setTopicIcon : TopicId -> Maybe Icon -> Model -> Model
 setTopicIcon (TopicId id) icon model =
-  Edit.set (topicIconRef id) icon model.crdt.doc
+  model.crdt.doc
+    |> Edit.set (topicIconRef id) icon -- TODO: use Edit.switch instead?
     |> editResult model
 
 
 setTopicText : TopicId -> String -> Model -> Model
 setTopicText (TopicId id) text model =
-  Edit.set (topicTextRef id) text model.crdt.doc
+  model.crdt.doc
+    |> Edit.set (topicTextRef id) text
     |> editResult model
 
 
 setTopicViewSize : TopicId -> Size -> Model -> Model
 setTopicViewSize (TopicId id) size model =
-  Edit.set (topicViewSizeRef id) size model.crdt.doc
+  model.crdt.doc
+    |> Edit.set (topicViewSizeRef id) size
     |> editResult model
 
 
 setTopicEditorSize : TopicId -> Size -> Model -> Model
 setTopicEditorSize (TopicId id) size model =
-  Edit.set (topicEditorSizeRef id) size model.crdt.doc
+  model.crdt.doc
+    |> Edit.set (topicEditorSizeRef id) size
     |> editResult model
 
 
--- ### TODO: is low-level, don't expose
 removeAssocId : Int -> TopicId -> Model -> Model
 removeAssocId index (TopicId topicId) model =
-  Edit.remove (topicAssocIdsRef topicId) index model.crdt.doc
+  model.crdt.doc
+    |> Edit.remove (topicAssocIdsRef topicId) index
     |> editResult model
 
 
 deleteTopic : TopicId -> Model -> Model
 deleteTopic (TopicId id) model =
-  Edit.removeKey refs.topics id model.crdt.doc
+  model.crdt.doc
+    |> Edit.removeKey refs.topics id
     |> editResult model
 
 
 deleteAssoc : AssocId -> Model -> Model
 deleteAssoc (AssocId id) model =
-  Edit.removeKey refs.assocs id model.crdt.doc
+  model.crdt.doc
+    |> Edit.removeKey refs.assocs id
     |> editResult model
 
 
 -- Box
+
+createBox : Box -> Model -> Model
+createBox box model =
+  model.crdt.doc
+    |> Edit.setKey refs.boxes (toBoxId box.id) box
+    |> editResult model
+
+
+createItemSet : ItemSet -> Model -> Model
+createItemSet itemSet model =
+  model.crdt.doc
+    |> Edit.setKey refs.itemSets itemSet.id itemSet
+    |> editResult model
+
 
 lookupBox : BoxId -> Model -> Maybe Box
 lookupBox (BoxId (TopicId id)) model =
   model.crdt.doc
     |> Edit.readAt (Doc.version model.crdt.doc) (boxRef id)
     |> Result.map Just
-    |> Result.mapError (Console.logError "Feature.Crdt.lookupBox" id)
+    |> Result.mapError (Console.logError "Feature.Crdt.lookupBox" "Read error")
     |> Result.withDefault Nothing
 
 
@@ -119,7 +145,16 @@ lookupItemSet id model =
   model.crdt.doc
     |> Edit.readAt (Doc.version model.crdt.doc) (itemSetRef id)
     |> Result.map Just
-    |> Result.mapError (Console.logError "Feature.Crdt.lookupItemSet" id)
+    |> Result.mapError (Console.logError "Feature.Crdt.lookupItemSet" "Read error")
+    |> Result.withDefault Nothing
+
+
+itemSets : Model -> Maybe (Dict Id ItemSet)
+itemSets model =
+  model.crdt.doc
+    |> Edit.readAt (Doc.version model.crdt.doc) refs.itemSets
+    |> Result.map Just
+    |> Result.mapError (Console.logError "Feature.Crdt.itemSets" "Read error")
     |> Result.withDefault Nothing
 
 
@@ -130,10 +165,41 @@ addToItemSet itemSetId item model =
     |> editResult model
 
 
-addToBoxTopics : BoxId -> BoxTopic -> Model -> Model
-addToBoxTopics (BoxId (TopicId id)) topic model =
+removeFromItemSet : Id -> Int -> Model -> Model
+removeFromItemSet itemSetId index model =
+  model.crdt.doc
+    |> Edit.remove (itemSetItemsRef itemSetId) index
+    |> editResult model
+
+
+addBoxTopic : BoxTopic -> BoxId -> Model -> Model
+addBoxTopic topic (BoxId (TopicId id)) model =
   model.crdt.doc
     |> Edit.setKey (boxTopicsRef id) (toTopicId topic.id) topic
+    |> editResult model
+
+
+lookupBoxTopic : TopicId -> BoxId -> Model -> Maybe BoxTopic
+lookupBoxTopic (TopicId topicId) (BoxId (TopicId boxId)) model =
+  model.crdt.doc
+    |> Edit.readAt (Doc.version model.crdt.doc) (boxTopicRef topicId boxId)
+    |> Result.map Just
+    |> Result.mapError (Console.logError "Feature.Crdt.lookupBoxTopic" "Read error")
+    |> Result.withDefault Nothing
+
+
+-- TODO: change to updateExpansion and receive transform function?
+setExpansion : TopicId -> BoxId -> Expansion -> Model -> Model
+setExpansion (TopicId topicId) (BoxId (TopicId boxId)) expansion model =
+  model.crdt.doc
+    |> Edit.set (expansionRef topicId boxId) expansion -- TODO: use Edit.switch instead?
+    |> editResult model
+
+
+setBoxRenderer : BoxId -> Renderer -> Model -> Model
+setBoxRenderer (BoxId (TopicId id)) renderer model =
+  model.crdt.doc
+    |> Edit.set (boxRendererRef id) renderer
     |> editResult model
 
 
@@ -199,7 +265,7 @@ editResult model result =
     Ok doc -> setDoc model doc
     Err err ->
       let
-        _ = Console.logError "Feature.Crdt.editResult" "Edit failed"
+        _ = Console.logError "Feature.Crdt.editResult" "Edit error"
           (Edit.editErrorToString err)
       in
       model

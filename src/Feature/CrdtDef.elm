@@ -1,5 +1,6 @@
 module Feature.CrdtDef exposing (Model, init, refs, topicIconRef, topicTextRef, topicViewSizeRef,
-  topicEditorSizeRef, topicAssocIdsRef, boxRef, boxTopicsRef, itemSetRef, itemSetItemsRef)
+  topicEditorSizeRef, topicAssocIdsRef, boxRef, boxTopicsRef, boxTopicRef, expansionRef,
+  boxRendererRef, itemSetRef, itemSetItemsRef)
 
 import ModelBase exposing (..)
 import Renderer exposing (Renderer(..))
@@ -262,20 +263,33 @@ topicEditorSizeRef id =
   topicSizeRef id |> C.at textSizeDoc.editor
 
 
-topicAssocIdsRef : Id ->
-  C.Ref DocModel (C.ListK C.Fixed (C.Variants AssocId) AssocId) (List AssocId)
+topicAssocIdsRef : Id -> C.Ref DocModel (C.ListK C.Fixed (C.Variants AssocId) AssocId)
+                                                                                  (List AssocId)
 topicAssocIdsRef id =
   topicRef id |> C.at topicDoc.assocIds
 
 
-boxTopicsRef : Id ->
-  C.Ref DocModel (C.DictK C.Nested BoxTopic) (Dict Id BoxTopic)
+expansionRef : Id -> Id -> C.Ref DocModel (C.Variants Expansion) Expansion
+expansionRef topicId boxId =
+  boxTopicRef topicId boxId |> C.at boxTopicDoc.expansion
+
+
+boxTopicRef : Id -> Id -> C.Ref DocModel C.Nested BoxTopic
+boxTopicRef topicId boxId =
+  boxTopicsRef boxId |> boxTopicsDict.key topicId
+
+
+boxTopicsRef : Id -> C.Ref DocModel (C.DictK C.Nested BoxTopic) (Dict Id BoxTopic)
 boxTopicsRef id =
   boxRef id |> C.at boxDoc.topics
 
 
-itemSetItemsRef : Id ->
-  C.Ref DocModel (C.ListK C.Fixed C.Nested SetItem) (List SetItem)
+boxRendererRef : Id -> C.Ref DocModel (C.Variants Renderer) Renderer
+boxRendererRef id =
+  boxRef id |> C.at boxDoc.renderer
+
+
+itemSetItemsRef : Id -> C.Ref DocModel (C.ListK C.Fixed C.Nested SetItem) (List SetItem)
 itemSetItemsRef id =
   itemSetRef id |> C.at itemSetDoc.items
 

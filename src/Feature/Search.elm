@@ -237,7 +237,7 @@ fullscreenButtonStyle =
 isItemDisabled : TopicId -> Model -> Bool
 isItemDisabled topicId model =
   case TopicMap.revelationBoxId model of
-    Just (BoxId topicId_) -> Box.hadDeepTopic topicId_ topicId model
+    Just (BoxId topicId_) -> Box.hasDeepTopic topicId_ topicId model
     Nothing -> False
 
 

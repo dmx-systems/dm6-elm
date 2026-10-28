@@ -328,7 +328,7 @@ defaultContent model =
     _ = Console.info "Main.defaultContent" ("root topic --> " ++ id)
   in
   model
-    |> Crdt.addTopic rootTopic
+    |> Crdt.createTopic rootTopic
     |> createRootBox topicId
 
 
@@ -340,10 +340,9 @@ createRootBox topicId model =
     boxId = BoxId topicId
     rootBox = Box boxId setId Dict.empty Renderer.default
   in
-  { model_
-  | itemSets = model_.itemSets |> Dict.insert setId itemSet
-  , boxes = model_.boxes |> Dict.insert (toBoxId boxId) rootBox
-  }
+  model_
+    |> Crdt.createItemSet itemSet
+    |> Crdt.createBox rootBox
 
 
 defaultNav : String -> Model -> Cmd Msg

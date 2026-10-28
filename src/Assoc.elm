@@ -32,7 +32,7 @@ create assocType topicId1 topicId2 model =
     assocId = AssocId id
     assoc = Assoc assocId assocType topicId1 topicId2
   in
-  (Crdt.addAssoc assoc model_, assocId)
+  (Crdt.createAssoc assoc model_, assocId)
 
 
 relatedTopics : TopicId -> Model -> List (TopicId, AssocId)

@@ -133,7 +133,7 @@ dropTarget model =
           let
             -- geometrically hovered topic (targetTopicId) is accepted as a drop target if
             -- it is not contained in item/box being dragged (topicId), would create a cycle
-            isCyclic = Box.hadDeepTopic targetTopicId topicId -- partially applied
+            isCyclic = Box.hasDeepTopic targetTopicId topicId -- partially applied
           in
           case model.topicMap.dragState of
             Just (Drag (DragTopic _)) ->

@@ -137,7 +137,7 @@ dropTargetAt clientPos model =
                 (Drop, dropTopicId)
               else
                 (InsertBefore, fromBoxId dropBoxId)
-            isCyclic = Box.hadDeepTopic targetBoxId topicId model
+            isCyclic = Box.hasDeepTopic targetBoxId topicId model
             -- _ = Console.info "TopicList.Mouse.dropTargetAt" (targetBoxId, dropMode, localPos)
           in
           if not isCyclic then

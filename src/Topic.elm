@@ -7,6 +7,7 @@ import Feature.Crdt as Crdt
 import Feature.Id as Id
 import Model exposing (Model)
 import ModelBase exposing (..)
+import Shared.Util as Util
 
 import Dict
 
@@ -62,7 +63,7 @@ setSize topicId sizeField size_ model =
     Editor -> Crdt.setTopicEditorSize topicId size_ model
 
 
--- ### TODO: make it Crdt internal
+-- ### TODO: make it Crdt internal?
 {-| Removes an association ID from the topic's set of association IDs.
 No-op if the given association ID is not in the set.
 Logs an error if the topic does not exist. ### FIXDOC
@@ -72,7 +73,7 @@ removeAssocId assocId topicId model =
   let
     findAssocId : Topic -> Maybe Int
     findAssocId topic =
-      findIndex assocId topic.assocIds
+      Util.requireIndex assocId identity topic.assocIds
 
 
     remove : Int -> Maybe Model
@@ -97,34 +98,6 @@ removeAssocId assocId topicId model =
     |> result
 
 
-findIndex : v -> List v -> Maybe Int
-findIndex val list =
-  let
-    equality : Int -> v -> Maybe Int
-    equality index val_ =
-      case val_ == val of
-        True -> Just index
-        False -> Nothing
-
-
-    result : List Int -> Maybe Int
-    result indexes =
-      case indexes of
-        [ index ] ->
-          Just index
-        [] ->
-          Console.logError "Topic.findIndex"
-            (Console.toString val ++ " not in " ++ Console.toString list) Nothing
-        _ ->
-          Console.logError "Topic.findIndex"
-            (Console.toString val ++ " more than once in " ++ Console.toString list) Nothing
-  in
-  list
-    |> List.indexedMap equality
-    |> List.filterMap identity
-    |> result
-
-
 create : String -> Maybe Icon -> Model -> (Model, TopicId)
 create text icon model =
   let
@@ -133,7 +106,7 @@ create text icon model =
     size_ = TextSize C.topicDetailSize C.topicDetailSize
     topic = Topic topicId icon text size_ []
   in
-  (Crdt.addTopic topic model_, topicId)
+  (Crdt.createTopic topic model_, topicId)
 
 
 isBox : TopicId -> Model -> Bool
