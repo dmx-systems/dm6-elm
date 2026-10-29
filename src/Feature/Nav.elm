@@ -10,7 +10,6 @@ import Outcome exposing (..)
 import TopicMap.TopicMap as TopicMap
 
 import Browser.Dom as Dom
-import String exposing (fromInt)
 import Task
 
 

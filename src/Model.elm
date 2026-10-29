@@ -1,7 +1,6 @@
 module Model exposing (Model, Msg(..), bootstrap, resetTransient, encode, decoder, map,
   mergeCmd)
 
-import Config as C
 import ModelBase exposing (..)
 -- box renderers
 import TopicList.TopicListDef as TopicListDef
@@ -17,7 +16,6 @@ import Feature.SelDef as SelDef
 import Feature.TextDef as TextDef
 import Feature.ToolDef as ToolDef
 
-import Dict exposing (Dict)
 import Json.Decode as D
 import Json.Decode.Pipeline exposing (required, hardcoded)
 import Json.Encode as E

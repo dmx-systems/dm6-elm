@@ -13,6 +13,9 @@ import Dict exposing (Dict)
 
 
 
+-- FEATURE MODULE
+
+
 type alias Model =
   { doc : Doc DocModel
   , lastStored : Version
@@ -32,7 +35,7 @@ init =
 
 
 
--- SCHEMA
+-- CRDT SCHEMA
 
 
 type alias ModelDoc =
@@ -52,6 +55,11 @@ modelDoc =
     |> C.field "boxes" .boxes boxesDict
     |> C.field "itemSets" .itemSets itemSetsDict
     |> C.build
+
+
+refs : ModelDoc
+refs =
+  modelDoc
 
 
 topicsDict :
@@ -114,27 +122,7 @@ boxTopicsDict =
   C.dict boxTopicDoc
 
 
-topicRef : Id -> C.Ref DocModel C.Nested Topic
-topicRef id =
-  refs.topics |> topicsDict.key id
-
-
-boxRef : Id -> C.Ref DocModel C.Nested Box
-boxRef id =
-  refs.boxes |> boxesDict.key id
-
-
-itemSetRef : Id -> C.Ref DocModel C.Nested ItemSet
-itemSetRef id =
-  refs.itemSets |> itemSetsDict.key id
-
-
-refs : ModelDoc
-refs =
-  modelDoc
-
-
--- Topic + Assoc + Box
+-- Topic
 
 type alias TopicDoc =
   { id : C.Ref Topic (C.Variants TopicId) TopicId
@@ -143,44 +131,6 @@ type alias TopicDoc =
   , size : C.Ref Topic C.Nested TextSize
   , assocIds : C.Ref Topic (C.ListK C.Fixed (C.Variants AssocId) AssocId) (List AssocId)
   , schema : C.Schema C.Nested Topic
-  }
-
-
-type alias AssocDoc =
-  { id : C.Ref Assoc (C.Variants AssocId) AssocId
-  , assocType : C.Ref Assoc (C.Variants AssocType) AssocType
-  , topicId1 : C.Ref Assoc (C.Variants TopicId) TopicId
-  , topicId2 : C.Ref Assoc (C.Variants TopicId) TopicId
-  , schema : C.Schema C.Nested Assoc
-  }
-
-
-type alias BoxDoc =
-  { id : C.Ref Box (C.Variants BoxId) BoxId
-  , itemSetId : C.Ref Box C.Settable Id
-  , topics : C.Ref Box (C.DictK C.Nested BoxTopic) (Dict Id BoxTopic)
-  , renderer : C.Ref Box (C.Variants Renderer) Renderer
-  , schema : C.Schema C.Nested Box
-  }
-
-
-type alias BoxTopicDoc =
-  { id : C.Ref BoxTopic (C.Variants TopicId) TopicId
-  , expansion : C.Ref BoxTopic (C.Variants Expansion) Expansion
-  , schema : C.Schema C.Nested BoxTopic
-  }
-
-
-type alias ItemSetDoc =
-  { id : C.Ref ItemSet C.Settable Id
-  , items : C.Ref ItemSet (C.ListK C.Fixed C.Nested SetItem) (List SetItem)
-  , schema : C.Schema C.Nested ItemSet
-  }
-
-
-type alias SetItemDoc =
-  { id : C.Ref SetItem (C.Variants ItemId) ItemId
-  , schema : C.Schema C.Nested SetItem
   }
 
 
@@ -195,103 +145,22 @@ topicDoc =
     |> C.build
 
 
-assocDoc : AssocDoc
-assocDoc =
-  C.record Assoc AssocDoc
-    |> C.field "id" .id assocIdDoc
-    |> C.field "assocType" .assocType assocTypeDoc
-    |> C.field "topicId1" .topicId1 topicIdDoc
-    |> C.field "topicId2" .topicId2 topicIdDoc
-    |> C.build
+type alias TopicIdDoc =
+  { topicId : C.Ref TopicId C.Settable Id
+  , schema : C.Schema (C.Variants TopicId) TopicId
+  }
 
 
-boxDoc : BoxDoc
-boxDoc =
-  C.record Box BoxDoc
-    |> C.field "id" .id boxIdDoc
-    |> C.field "itemSetId" .itemSetId C.string
-    |> C.field "topics" .topics boxTopicsDict
-    |> C.field "renderer" .renderer rendererDoc
-    |> C.build
-
-
-boxTopicDoc : BoxTopicDoc
-boxTopicDoc =
-  C.record BoxTopic BoxTopicDoc
-    |> C.field "id" .id topicIdDoc
-    |> C.field "expansion" .expansion expansionDoc
-    |> C.build
-
-
-itemSetDoc : ItemSetDoc
-itemSetDoc =
-  C.record ItemSet ItemSetDoc
-    |> C.field "id" .id C.string
-    |> C.field "items" .items (C.list setItemDoc)
-    |> C.build
-
-
-setItemDoc : SetItemDoc
-setItemDoc =
-  C.record SetItem SetItemDoc
-    |> C.field "id" .id itemIdDoc
-    |> C.build
-
-
-topicIconRef : Id -> C.Ref DocModel (C.Variants (Maybe Icon)) (Maybe Icon)
-topicIconRef id =
-  topicRef id |> C.at topicDoc.icon
-
-
-topicTextRef : Id -> C.Ref DocModel C.Settable String
-topicTextRef id =
-  topicRef id |> C.at topicDoc.text
-
-
-topicSizeRef : Id -> C.Ref DocModel C.Nested TextSize
-topicSizeRef id =
-  topicRef id |> C.at topicDoc.size
-
-
-topicViewSizeRef : Id -> C.Ref DocModel C.Nested Size
-topicViewSizeRef id =
-  topicSizeRef id |> C.at textSizeDoc.view
-
-
-topicEditorSizeRef : Id -> C.Ref DocModel C.Nested Size
-topicEditorSizeRef id =
-  topicSizeRef id |> C.at textSizeDoc.editor
-
-
-topicAssocIdsRef : Id -> C.Ref DocModel (C.ListK C.Fixed (C.Variants AssocId) AssocId)
-                                                                                  (List AssocId)
-topicAssocIdsRef id =
-  topicRef id |> C.at topicDoc.assocIds
-
-
-expansionRef : Id -> Id -> C.Ref DocModel (C.Variants Expansion) Expansion
-expansionRef topicId boxId =
-  boxTopicRef topicId boxId |> C.at boxTopicDoc.expansion
-
-
-boxTopicRef : Id -> Id -> C.Ref DocModel C.Nested BoxTopic
-boxTopicRef topicId boxId =
-  boxTopicsRef boxId |> boxTopicsDict.key topicId
-
-
-boxTopicsRef : Id -> C.Ref DocModel (C.DictK C.Nested BoxTopic) (Dict Id BoxTopic)
-boxTopicsRef id =
-  boxRef id |> C.at boxDoc.topics
-
-
-boxRendererRef : Id -> C.Ref DocModel (C.Variants Renderer) Renderer
-boxRendererRef id =
-  boxRef id |> C.at boxDoc.renderer
-
-
-itemSetItemsRef : Id -> C.Ref DocModel (C.ListK C.Fixed C.Nested SetItem) (List SetItem)
-itemSetItemsRef id =
-  itemSetRef id |> C.at itemSetDoc.items
+topicIdDoc : TopicIdDoc
+topicIdDoc =
+  C.custom
+    (\topicId value ->
+      case value of
+        TopicId id -> topicId id
+    )
+    TopicIdDoc
+      |> C.variant1 "topicId" TopicId C.string
+      |> C.buildCustom
 
 
 type alias IconDoc =
@@ -346,22 +215,25 @@ sizeDoc =
     |> C.build
 
 
-type alias TopicIdDoc =
-  { topicId : C.Ref TopicId C.Settable Id
-  , schema : C.Schema (C.Variants TopicId) TopicId
+-- Assoc
+
+type alias AssocDoc =
+  { id : C.Ref Assoc (C.Variants AssocId) AssocId
+  , assocType : C.Ref Assoc (C.Variants AssocType) AssocType
+  , topicId1 : C.Ref Assoc (C.Variants TopicId) TopicId
+  , topicId2 : C.Ref Assoc (C.Variants TopicId) TopicId
+  , schema : C.Schema C.Nested Assoc
   }
 
 
-topicIdDoc : TopicIdDoc
-topicIdDoc =
-  C.custom
-    (\topicId value ->
-      case value of
-        TopicId id -> topicId id
-    )
-    TopicIdDoc
-      |> C.variant1 "topicId" TopicId C.string
-      |> C.buildCustom
+assocDoc : AssocDoc
+assocDoc =
+  C.record Assoc AssocDoc
+    |> C.field "id" .id assocIdDoc
+    |> C.field "assocType" .assocType assocTypeDoc
+    |> C.field "topicId1" .topicId1 topicIdDoc
+    |> C.field "topicId2" .topicId2 topicIdDoc
+    |> C.build
 
 
 type alias AssocIdDoc =
@@ -382,6 +254,46 @@ assocIdDoc =
       |> C.buildCustom
 
 
+type alias AssocTypeDoc =
+  { schema : C.Schema (C.Variants AssocType) AssocType
+  }
+
+
+assocTypeDoc : AssocTypeDoc
+assocTypeDoc =
+  C.custom
+    (\association hierarchy value ->
+      case value of
+        Association -> association
+        Hierarchy -> hierarchy
+    )
+    AssocTypeDoc
+      |> C.variant0 "association" Association
+      |> C.variant0 "hierarchy" Hierarchy
+      |> C.buildCustom
+
+
+-- Box
+
+type alias BoxDoc =
+  { id : C.Ref Box (C.Variants BoxId) BoxId
+  , itemSetId : C.Ref Box C.Settable Id
+  , topics : C.Ref Box (C.DictK C.Nested BoxTopic) (Dict Id BoxTopic)
+  , renderer : C.Ref Box (C.Variants Renderer) Renderer
+  , schema : C.Schema C.Nested Box
+  }
+
+
+boxDoc : BoxDoc
+boxDoc =
+  C.record Box BoxDoc
+    |> C.field "id" .id boxIdDoc
+    |> C.field "itemSetId" .itemSetId C.string
+    |> C.field "topics" .topics boxTopicsDict
+    |> C.field "renderer" .renderer rendererDoc
+    |> C.build
+
+
 type alias BoxIdDoc =
   { boxId : C.Ref BoxId (C.Variants TopicId) TopicId
   , schema : C.Schema (C.Variants BoxId) BoxId
@@ -400,24 +312,39 @@ boxIdDoc =
       |> C.buildCustom
 
 
-type alias ItemIdDoc =
-  { t : C.Ref ItemId (C.Variants TopicId) TopicId
-  , a : C.Ref ItemId (C.Variants AssocId) AssocId
-  , schema : C.Schema (C.Variants ItemId) ItemId
+type alias BoxTopicDoc =
+  { id : C.Ref BoxTopic (C.Variants TopicId) TopicId
+  , expansion : C.Ref BoxTopic (C.Variants Expansion) Expansion
+  , schema : C.Schema C.Nested BoxTopic
   }
 
 
-itemIdDoc : ItemIdDoc
-itemIdDoc =
+boxTopicDoc : BoxTopicDoc
+boxTopicDoc =
+  C.record BoxTopic BoxTopicDoc
+    |> C.field "id" .id topicIdDoc
+    |> C.field "expansion" .expansion expansionDoc
+    |> C.build
+
+
+type alias ExpansionDoc =
+  { schema : C.Schema (C.Variants Expansion) Expansion
+  }
+
+
+expansionDoc : ExpansionDoc
+expansionDoc =
   C.custom
-    (\t a value ->
+    (\collapsed expanded value ->
       case value of
-        T topicId -> t topicId
-        A assocId -> a assocId
+        Collapsed ->
+          collapsed
+        Expanded ->
+          expanded
     )
-    ItemIdDoc
-      |> C.variant1 "t" T topicIdDoc
-      |> C.variant1 "a" A assocIdDoc
+    ExpansionDoc
+      |> C.variant0 "collapsed" Collapsed
+      |> C.variant0 "expanded" Expanded
       |> C.buildCustom
 
 
@@ -442,41 +369,143 @@ rendererDoc =
       |> C.buildCustom
 
 
-type alias ExpansionDoc =
-  { schema : C.Schema (C.Variants Expansion) Expansion
+-- Item Set
+
+type alias ItemSetDoc =
+  { id : C.Ref ItemSet C.Settable Id
+  , items : C.Ref ItemSet (C.ListK C.Fixed C.Nested SetItem) (List SetItem)
+  , schema : C.Schema C.Nested ItemSet
   }
 
 
-expansionDoc : ExpansionDoc
-expansionDoc =
-  C.custom
-    (\collapsed expanded value ->
-      case value of
-        Collapsed ->
-          collapsed
-        Expanded ->
-          expanded
-    )
-    ExpansionDoc
-      |> C.variant0 "collapsed" Collapsed
-      |> C.variant0 "expanded" Expanded
-      |> C.buildCustom
+itemSetDoc : ItemSetDoc
+itemSetDoc =
+  C.record ItemSet ItemSetDoc
+    |> C.field "id" .id C.string
+    |> C.field "items" .items (C.list setItemDoc)
+    |> C.build
 
 
-type alias AssocTypeDoc =
-  { schema : C.Schema (C.Variants AssocType) AssocType
+type alias SetItemDoc =
+  { id : C.Ref SetItem (C.Variants ItemId) ItemId
+  , schema : C.Schema C.Nested SetItem
   }
 
 
-assocTypeDoc : AssocTypeDoc
-assocTypeDoc =
+setItemDoc : SetItemDoc
+setItemDoc =
+  C.record SetItem SetItemDoc
+    |> C.field "id" .id itemIdDoc
+    |> C.build
+
+
+type alias ItemIdDoc =
+  { t : C.Ref ItemId (C.Variants TopicId) TopicId
+  , a : C.Ref ItemId (C.Variants AssocId) AssocId
+  , schema : C.Schema (C.Variants ItemId) ItemId
+  }
+
+
+itemIdDoc : ItemIdDoc
+itemIdDoc =
   C.custom
-    (\association hierarchy value ->
+    (\t a value ->
       case value of
-        Association -> association
-        Hierarchy -> hierarchy
+        T topicId -> t topicId
+        A assocId -> a assocId
     )
-    AssocTypeDoc
-      |> C.variant0 "association" Association
-      |> C.variant0 "hierarchy" Hierarchy
+    ItemIdDoc
+      |> C.variant1 "t" T topicIdDoc
+      |> C.variant1 "a" A assocIdDoc
       |> C.buildCustom
+
+
+
+-- REF COMPOSITION
+
+
+topicRef : Id -> C.Ref DocModel C.Nested Topic
+topicRef id =
+  refs.topics
+    |> topicsDict.key id
+
+
+topicIconRef : Id -> C.Ref DocModel (C.Variants (Maybe Icon)) (Maybe Icon)
+topicIconRef id =
+  topicRef id
+    |> C.at topicDoc.icon
+
+
+topicTextRef : Id -> C.Ref DocModel C.Settable String
+topicTextRef id =
+  topicRef id
+    |> C.at topicDoc.text
+
+
+topicSizeRef : Id -> C.Ref DocModel C.Nested TextSize
+topicSizeRef id =
+  topicRef id
+    |> C.at topicDoc.size
+
+
+topicViewSizeRef : Id -> C.Ref DocModel C.Nested Size
+topicViewSizeRef id =
+  topicSizeRef id
+    |> C.at textSizeDoc.view
+
+
+topicEditorSizeRef : Id -> C.Ref DocModel C.Nested Size
+topicEditorSizeRef id =
+  topicSizeRef id
+    |> C.at textSizeDoc.editor
+
+
+topicAssocIdsRef : Id -> C.Ref DocModel (C.ListK C.Fixed (C.Variants AssocId) AssocId)
+                                                                                  (List AssocId)
+topicAssocIdsRef id =
+  topicRef id
+    |> C.at topicDoc.assocIds
+
+
+--
+
+boxRef : Id -> C.Ref DocModel C.Nested Box
+boxRef id =
+  refs.boxes
+    |> boxesDict.key id
+
+
+itemSetRef : Id -> C.Ref DocModel C.Nested ItemSet
+itemSetRef id =
+  refs.itemSets
+    |> itemSetsDict.key id
+
+
+itemSetItemsRef : Id -> C.Ref DocModel (C.ListK C.Fixed C.Nested SetItem) (List SetItem)
+itemSetItemsRef id =
+  itemSetRef id
+    |> C.at itemSetDoc.items
+
+
+boxTopicsRef : Id -> C.Ref DocModel (C.DictK C.Nested BoxTopic) (Dict Id BoxTopic)
+boxTopicsRef id =
+  boxRef id
+    |> C.at boxDoc.topics
+
+
+boxTopicRef : Id -> Id -> C.Ref DocModel C.Nested BoxTopic
+boxTopicRef topicId boxId =
+  boxTopicsRef boxId
+    |> boxTopicsDict.key topicId
+
+
+expansionRef : Id -> Id -> C.Ref DocModel (C.Variants Expansion) Expansion
+expansionRef topicId boxId =
+  boxTopicRef topicId boxId
+    |> C.at boxTopicDoc.expansion
+
+
+boxRendererRef : Id -> C.Ref DocModel (C.Variants Renderer) Renderer
+boxRendererRef id =
+  boxRef id
+    |> C.at boxDoc.renderer

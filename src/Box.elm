@@ -15,7 +15,6 @@ import Shared.Util as Util
 import Topic
 
 import Dict
-import String exposing (fromInt)
 
 
 
@@ -81,7 +80,7 @@ addTopic topic boxId ({model} as env) =
       else
         env
           |> Env.map (Crdt.addToItemSet itemSet.id (SetItem itemId))
-          |> Env.map (createHierarchy itemId boxId)
+          |> Env.map (createHierarchy topic.id boxId)
           |> Env.map (addBoxTopic topic box)
           |> init boxId
     Nothing ->
@@ -112,16 +111,11 @@ addAssoc assocId boxId model =
       model
 
 
-createHierarchy : ItemId -> BoxId -> Model -> Model
-createHierarchy itemId boxId model =
-  -- Only topics get connected to box by Hierarchy association.
-  -- We don't connect associations to associations.
-  case itemId of
-    T topicId ->
-        model
-          |> Assoc.create Hierarchy (fromBoxId boxId) topicId
-          |> Tuple.first
-    A _ -> model
+createHierarchy : TopicId -> BoxId -> Model -> Model
+createHierarchy topicId boxId model =
+  model
+    |> Assoc.create Hierarchy (fromBoxId boxId) topicId
+    |> Tuple.first
 
 
 {- Internal function that adds to box.topics dict.
@@ -129,10 +123,15 @@ No-op if already added (key exists).
 -}
 addBoxTopic : BoxTopic -> Box -> Model -> Model
 addBoxTopic topic box model =
-  if Dict.member (toTopicId topic.id) box.topics then
+  if hasBoxTopic topic.id box then
     model
   else
     Crdt.addBoxTopic topic box.id model
+
+
+hasBoxTopic : TopicId -> Box -> Bool
+hasBoxTopic topicId box =
+  Dict.member (toTopicId topicId) box.topics
 
 
 -- Initialize/Update box view model
@@ -143,7 +142,8 @@ init boxId ({model, dispatch} as env) =
     initBox : BoxId -> Model -> Model
     initBox =
       dispatch.init boxId model
-    --
+
+
     init_ : BoxId -> Model -> Model
     init_ boxId_ model_ =
       model_
@@ -152,11 +152,13 @@ init boxId ({model, dispatch} as env) =
         |> List.foldl childBoxInit model_
         -- 2) init box itself
         |> initBox boxId_
-    --
+
+
     childBoxInit : TopicId -> Model -> Model
     childBoxInit topicId modelAcc =
       if Topic.isBox topicId modelAcc then
-        modelAcc |> init_ (BoxId topicId) -- recursion
+        modelAcc
+          |> init_ (BoxId topicId) -- recursion
       else
         modelAcc
   in
@@ -338,7 +340,7 @@ removeItem itemId boxId model =
 
 expansionOf : TopicId -> BoxId -> Model -> Expansion
 expansionOf topicId boxId model =
-  case lookup boxId model |> Maybe.andThen (\box -> topicFrom topicId box model) of
+  case Crdt.lookupBoxTopic topicId boxId model of
     Just {expansion} -> expansion
     Nothing -> Console.fail "Box.expansionOf" {topicId = topicId, boxId = boxId} Collapsed
 
@@ -360,8 +362,8 @@ updateExpansion topicId boxId transform model =
 
 rendererOf : BoxId -> Model -> Maybe Renderer
 rendererOf boxId model =
-  case lookup boxId model of
-    Just box -> Just box.renderer
+  case Crdt.lookupBox boxId model of
+    Just {renderer} -> Just renderer
     Nothing -> Console.fail "Box.rendererOf" boxId Nothing
 
 
@@ -436,9 +438,9 @@ Logs an error (and returns Nothing) if the box is missing, or its underlying Ite
 -}
 itemSetOf : BoxId -> Model -> Maybe (ItemSet, Box)
 itemSetOf boxId model =
-  case lookup boxId model of
+  case Crdt.lookupBox boxId model of
     Just box ->
-      case lookupItemSet box.itemSetId model of
+      case Crdt.lookupItemSet box.itemSetId model of
         Just itemSet ->
           Just (itemSet, box)
         Nothing ->
@@ -448,33 +450,6 @@ itemSetOf boxId model =
       Console.fail "Box.itemSetOf" ("Missing box " ++ toBoxId boxId) Nothing
 
 
-hasBoxTopic : TopicId -> BoxId -> Model -> Bool
-hasBoxTopic topicId boxId model =
-  case lookup boxId model of
-    Just box -> box.topics |> Dict.member (toTopicId topicId)
-    Nothing -> Console.fail "Box.hasBoxTopic" {topicId = topicId, boxId = boxId} False
-
-
-{-| Logs an error if the box is missing. -}
-lookup : BoxId -> Model -> Maybe Box
-lookup =
-  Crdt.lookupBox
-
-
-lookupItemSet : Id -> Model -> Maybe ItemSet
-lookupItemSet =
-  Crdt.lookupItemSet
-
-
-topicFrom : TopicId -> Box -> Model -> Maybe BoxTopic
-topicFrom (TopicId id) box model =
-  case box.topics |> Dict.get id of
-    Just topic -> Just topic
-    Nothing -> Console.logError "Box.topicFrom"
-      ("Missing BoxTopic " ++ id ++ " in Box " ++ toBoxId box.id)
-      Nothing
-
-
 {-| Title of fullscreen box.
 TODO: rename
 -}
@@ -482,7 +457,7 @@ mapTitle : Model -> String
 mapTitle model =
   case Topic.fromId (fromBoxId model.boxId) model of
     Just topic -> Topic.label topic
-    Nothing -> Console.fail "mapTitle" model.boxId "??"
+    Nothing -> Console.fail "Box.mapTitle" model.boxId "??"
 
 
 isFullscreen : BoxId -> Model -> Bool
@@ -506,7 +481,7 @@ firstId : BoxPath -> BoxId
 firstId boxPath =
   case boxPath of
     boxId :: _ -> boxId
-    [] -> Console.logError "firstId" "boxPath is empty!" (BoxId (TopicId "### FIXME"))
+    [] -> Console.logError "Box.firstId" "boxPath is empty!" (BoxId (TopicId "### FIXME"))
 
 
 fromPath : BoxPath -> String

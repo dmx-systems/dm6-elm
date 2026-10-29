@@ -3,7 +3,6 @@ module Feature.Mouse exposing (update, clearHover, isHovered, isDragActive, isTo
 
 import Box
 import Config as C
-import Console
 import Env exposing (Env, Dispatch)
 import Feature.MouseDef as MouseDef exposing (DragSource)
 import Model exposing (Model, Msg(..))

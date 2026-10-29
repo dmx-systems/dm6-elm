@@ -14,7 +14,6 @@ import Renderer
 import TopicMap.TopicMap as TopicMap
 import TopicMap.TopicMapDef as TopicMapDef exposing (DragState(..), DragMode(..))
 
-import String exposing (fromInt)
 import Task
 import Time exposing (Posix, posixToMillis)
 

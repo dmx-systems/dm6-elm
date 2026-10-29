@@ -69,7 +69,7 @@ createAssoc assoc model =
 setTopicIcon : TopicId -> Maybe Icon -> Model -> Model
 setTopicIcon (TopicId id) icon model =
   model.crdt.doc
-    |> Edit.set (topicIconRef id) icon -- TODO: use Edit.switch instead?
+    |> Edit.switch (topicIconRef id) icon
     |> editResult model
 
 
@@ -141,9 +141,9 @@ lookupBox (BoxId (TopicId id)) model =
 
 
 lookupItemSet : Id -> Model -> Maybe ItemSet
-lookupItemSet id model =
+lookupItemSet itemSetId model =
   model.crdt.doc
-    |> Edit.readAt (Doc.version model.crdt.doc) (itemSetRef id)
+    |> Edit.readAt (Doc.version model.crdt.doc) (itemSetRef itemSetId)
     |> Result.map Just
     |> Result.mapError (Console.logError "Feature.Crdt.lookupItemSet" "Read error")
     |> Result.withDefault Nothing
@@ -192,7 +192,7 @@ lookupBoxTopic (TopicId topicId) (BoxId (TopicId boxId)) model =
 setExpansion : TopicId -> BoxId -> Expansion -> Model -> Model
 setExpansion (TopicId topicId) (BoxId (TopicId boxId)) expansion model =
   model.crdt.doc
-    |> Edit.set (expansionRef topicId boxId) expansion -- TODO: use Edit.switch instead?
+    |> Edit.switch (expansionRef topicId boxId) expansion
     |> editResult model
 
 
@@ -262,7 +262,8 @@ canRedo model =
 editResult : Model -> Result Edit.EditError (Doc DocModel) -> Model
 editResult model result =
   case result of
-    Ok doc -> setDoc model doc
+    Ok doc ->
+      setDoc model doc
     Err err ->
       let
         _ = Console.logError "Feature.Crdt.editResult" "Edit error"

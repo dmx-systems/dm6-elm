@@ -24,7 +24,6 @@ import Json.Encode as E
 import Markdown.Block as Block exposing (Block)
 import Markdown.Parser as Parser
 import Markdown.Renderer as Renderer
-import String exposing (fromInt)
 
 
 
