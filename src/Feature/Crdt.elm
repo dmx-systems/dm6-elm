@@ -1,14 +1,15 @@
-module Feature.Crdt exposing (docModel, initDoc, encodeDoc,
-  createTopic, createAssoc, setTopicIcon, setTopicText, setTopicViewSize, setTopicEditorSize,
-  removeAssocId, deleteTopic, deleteAssoc,
-  createBox, createItemSet, lookupBox, lookupItemSet, itemSets, addToItemSet, removeFromItemSet,
-  addBoxTopic, lookupBoxTopic, setExpansion, setBoxRenderer,
+module Feature.Crdt exposing ({-docModel,-} initDoc, encodeDoc,
+  lookupTopic, topics, createTopic, createAssoc, setTopicIcon, setTopicText, setTopicViewSize,
+  setTopicEditorSize, removeAssocId, deleteTopic, deleteAssoc,
+  lookupAssoc,
+  createBox, createItemSet, lookupBox, topicIsBox, lookupItemSet, itemSets, addToItemSet,
+  removeFromItemSet, addBoxTopic, lookupBoxTopic, setExpansion, setBoxRenderer,
   markSingleEdit, markEditStart, markEditEnd, undo, redo, canUndo, canRedo)
 
 import Console
-import Feature.CrdtDef exposing (refs, topicIconRef, topicTextRef, topicViewSizeRef,
-  topicEditorSizeRef, topicAssocIdsRef, boxRef, boxTopicsRef, boxTopicRef, expansionRef,
-  boxRendererRef, itemSetRef, itemSetItemsRef)
+import Feature.CrdtDef exposing (refs, topicRef, topicIconRef, topicTextRef, topicViewSizeRef,
+  topicEditorSizeRef, topicAssocIdsRef, assocRef, boxRef, boxTopicsRef, boxTopicRef,
+  expansionRef, boxRendererRef, itemSetRef, itemSetItemsRef)
 import Model exposing (Model)
 import ModelBase exposing (..)
 import Renderer exposing (Renderer)
@@ -21,6 +22,7 @@ import Json.Encode as E
 
 
 
+-- not used
 docModel : Model -> Maybe DocModel
 docModel model =
   case Doc.read model.crdt.doc of
@@ -49,20 +51,29 @@ encodeDoc ({crdt} as model) =
   )
 
 
--- Topic + Assoc
+-- Topic
+
+lookupTopic : TopicId -> Model -> Maybe Topic
+lookupTopic (TopicId id) model =
+  model.crdt.doc
+    |> Edit.readAt (Doc.version model.crdt.doc) (topicRef id)
+    |> Result.map Just
+    |> Result.mapError (Console.logError "Feature.Crdt.lookupTopic" "Read error")
+    |> Result.withDefault Nothing
+
+
+topics : Model -> Maybe (Dict Id Topic)
+topics model =
+  model.crdt.doc
+    |> Edit.readAt (Doc.version model.crdt.doc) refs.topics
+    |> Result.map Just
+    |> Result.mapError (Console.logError "Feature.Crdt.topics" "Read error")
+    |> Result.withDefault Nothing
+
 
 createTopic : Topic -> Model -> Model
 createTopic topic model =
   Edit.setKey refs.topics (toTopicId topic.id) topic model.crdt.doc
-    |> editResult model
-
-
-createAssoc : Assoc -> Model -> Model
-createAssoc assoc model =
-  model.crdt.doc
-    |> Edit.setKey refs.assocs (toAssocId assoc.id) assoc
-    |> Result.andThen (Edit.append (topicAssocIdsRef (toTopicId assoc.topicId1)) assoc.id)
-    |> Result.andThen (Edit.append (topicAssocIdsRef (toTopicId assoc.topicId2)) assoc.id)
     |> editResult model
 
 
@@ -108,6 +119,26 @@ deleteTopic (TopicId id) model =
     |> editResult model
 
 
+-- Assoc
+
+lookupAssoc : AssocId -> Model -> Maybe Assoc
+lookupAssoc (AssocId id) model =
+  model.crdt.doc
+    |> Edit.readAt (Doc.version model.crdt.doc) (assocRef id)
+    |> Result.map Just
+    |> Result.mapError (Console.logError "Feature.Crdt.lookupAssoc" "Read error")
+    |> Result.withDefault Nothing
+
+
+createAssoc : Assoc -> Model -> Model
+createAssoc assoc model =
+  model.crdt.doc
+    |> Edit.setKey refs.assocs (toAssocId assoc.id) assoc
+    |> Result.andThen (Edit.append (topicAssocIdsRef (toTopicId assoc.topicId1)) assoc.id)
+    |> Result.andThen (Edit.append (topicAssocIdsRef (toTopicId assoc.topicId2)) assoc.id)
+    |> editResult model
+
+
 deleteAssoc : AssocId -> Model -> Model
 deleteAssoc (AssocId id) model =
   model.crdt.doc
@@ -138,6 +169,17 @@ lookupBox (BoxId (TopicId id)) model =
     |> Result.map Just
     |> Result.mapError (Console.logError "Feature.Crdt.lookupBox" "Read error")
     |> Result.withDefault Nothing
+
+
+topicIsBox : TopicId -> Model -> Bool
+topicIsBox (TopicId id) model =
+  model.crdt.doc
+    |> Edit.readAt (Doc.version model.crdt.doc) (boxRef id)
+    |> (\result ->
+          case result of
+            Ok box -> True
+            Err e -> False
+       )
 
 
 lookupItemSet : Id -> Model -> Maybe ItemSet

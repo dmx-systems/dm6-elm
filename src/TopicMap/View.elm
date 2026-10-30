@@ -5,6 +5,7 @@ import Box
 import Config as C
 import Console
 import Env exposing (Env, Dispatch)
+import Feature.Crdt as Crdt
 import Feature.Icon as Icon
 import Feature.Mouse as Mouse
 import Feature.Sel as Sel
@@ -161,7 +162,7 @@ viewItems topicMap boxPath ({model} as env) =
     topics =
       VM.topicsToRender topicMap model |> List.map
         (\({id} as mapTopic) ->
-          case Topic.fromId id model of
+          case Crdt.lookupTopic id model of
             Just topic -> viewTopic topic mapTopic newPath env
             _ -> Console.logError "TopicMap.View.viewItems"
               ("problem with topic " ++ toTopicId id) (text "")
@@ -169,7 +170,7 @@ viewItems topicMap boxPath ({model} as env) =
     assocs =
       Box.assocIds topicMap.id model |> List.foldr
         (\id svgAcc ->
-          case Assoc.fromId id model of
+          case Crdt.lookupAssoc id model of
             Just assoc ->
               let
                 clickHandler = assocClickHandler id newPath
@@ -202,7 +203,7 @@ viewLimboAssoc boxId model =
           let
             _ = Console.info "TopicMap.View.viewLimboAssoc" (assocId, "not in map", boxId)
           in
-          case Assoc.fromId assocId model of
+          case Crdt.lookupAssoc assocId model of
             Just assoc ->
               -- only if connected topic has geometry in this map already we can call
               -- viewAssoc()
@@ -235,7 +236,7 @@ viewTopic : Topic -> MapTopic -> BoxPath -> Env -> Html Msg
 viewTopic topic mapTopic boxPath ({model, dispatch}) =
   let
     render =
-      case (Topic.isBox topic.id model, mapTopic.expansion) of
+      case (Crdt.topicIsBox topic.id model, mapTopic.expansion) of
         (False, Collapsed) -> labelTopic topic mapTopic boxPath
         (False, Expanded) -> detailTopic topic mapTopic boxPath
         (True, Collapsed) -> blackBoxTopic topic mapTopic boxPath
@@ -401,7 +402,7 @@ iconBoxStyle mapTopic model =
   let
     r1 = fromInt C.topicRadius ++ "px"
     r4 =
-      case (Topic.isBox mapTopic.id model, mapTopic.expansion) of
+      case (Crdt.topicIsBox mapTopic.id model, mapTopic.expansion) of
         (True, Expanded) -> "0"
         _ -> r1
   in
@@ -457,7 +458,7 @@ topicFlexboxStyle mapTopic boxPath model =
   let
     r12 = fromInt C.topicRadius ++ "px"
     r34 =
-      case (Topic.isBox mapTopic.id model, mapTopic.expansion) of
+      case (Crdt.topicIsBox mapTopic.id model, mapTopic.expansion) of
         (True, Expanded) -> "0"
         _ -> r12
   in

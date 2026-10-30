@@ -1,5 +1,4 @@
-module Topic exposing (fromId, label, setIcon, setText, size, setSize, removeAssocId, create,
-  isBox)
+module Topic exposing (label, setIcon, setText, size, setSize, removeAssocId, create)
 
 import Config as C
 import Console
@@ -11,20 +10,6 @@ import Shared.Util as Util
 
 import Dict
 
-
-
-{-| Looks up a Topic in Model.topics.
-Logs an error if Topic is missing.
--}
-fromId : TopicId -> Model -> Maybe Topic
-fromId (TopicId id) model =
-  case Crdt.docModel model of
-    Just docModel ->
-      case docModel.topics |> Dict.get id of
-        Just topic -> Just topic
-        Nothing -> Console.logError "Topic.fromId" (id ++ " not found") Nothing
-    Nothing ->
-      Console.fail "Topic.fromId" id Nothing
 
 
 label : Topic -> String
@@ -49,7 +34,7 @@ setText =
 -- TODO: rename to textSize/topicTextSize?
 size : TopicId -> (TextSize -> Size) -> Model -> Maybe Size
 size topicId get model =
-  case fromId topicId model of
+  case Crdt.lookupTopic topicId model of
     Just topic -> Just <| get topic.size
     Nothing -> Console.fail "Topic.size" {topicId = topicId} Nothing
 
@@ -92,7 +77,7 @@ removeAssocId assocId topicId model =
           model
   in
   model
-    |> fromId topicId
+    |> Crdt.lookupTopic topicId
     |> Maybe.andThen findAssocId
     |> Maybe.andThen remove
     |> result
@@ -107,12 +92,3 @@ create text icon model =
     topic = Topic topicId icon text size_ []
   in
   (Crdt.createTopic topic model_, topicId)
-
-
-isBox : TopicId -> Model -> Bool
-isBox (TopicId id) model =
-  case Crdt.docModel model of -- TODO: don't read entire doc
-    Just docModel ->
-      docModel.boxes |> Dict.member id
-    Nothing ->
-      Console.fail "Topic.isBox" id False

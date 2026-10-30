@@ -1,4 +1,4 @@
-module Assoc exposing (fromId, create, relatedTopics, otherTopicId)
+module Assoc exposing (create, relatedTopics, otherTopicId)
 
 import Console
 import Feature.Crdt as Crdt
@@ -9,20 +9,6 @@ import Topic
 
 import Dict
 
-
-
-{-| Looks up an Assoc in Model.assocs.
-Logs an error if Assoc is missing.
--}
-fromId : AssocId -> Model -> Maybe Assoc
-fromId (AssocId id) model =
-  case Crdt.docModel model of
-    Just docModel ->
-      case docModel.assocs |> Dict.get id of
-        Just assoc -> Just assoc
-        Nothing -> Console.logError "Assoc.fromId" (id ++ " not found") Nothing
-    Nothing ->
-      Console.fail "Assoc.fromId" id Nothing
 
 
 create : AssocType -> TopicId -> TopicId -> Model -> (Model, AssocId)
@@ -37,7 +23,7 @@ create assocType topicId1 topicId2 model =
 
 relatedTopics : TopicId -> Model -> List (TopicId, AssocId)
 relatedTopics topicId model =
-  case Topic.fromId topicId model of
+  case Crdt.lookupTopic topicId model of
     Just topic ->
       topic.assocIds |> List.foldr
         (\assocId acc ->
@@ -51,7 +37,7 @@ relatedTopics topicId model =
 
 otherTopicId : AssocId -> TopicId -> Model -> Maybe TopicId
 otherTopicId assocId topicId model =
-  case fromId assocId model of
+  case Crdt.lookupAssoc assocId model of
     Just {topicId1, topicId2} ->
       if topicId == topicId1 then
         Just topicId2

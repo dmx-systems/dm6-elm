@@ -107,18 +107,18 @@ viewToolbar boxPath toolbarPos ({model} as env) =
       if selBoxPath == boxPath then
         case itemId of
           T id ->
-            case Topic.fromId id model of
+            case Crdt.lookupTopic id model of
               Just topic ->
                 let
                   pos = toolbarPos.topic topic
                 in
-                case (Text.isEdit id boxPath model, Topic.isBox id model) of
+                case (Text.isEdit id boxPath model, Crdt.topicIsBox id model) of
                   (False, _) -> [ viewTopicToolbar pos id boxPath env ]
                   (True, False) -> [ viewTextToolbar pos id boxPath ]
                   _ -> []
               Nothing -> []
           A id ->
-            case Assoc.fromId id model of
+            case Crdt.lookupAssoc id model of
               Just assoc ->
                 let
                   pos = toolbarPos.assoc assoc
@@ -143,7 +143,7 @@ viewTopicToolbar pos topicId boxPath ({model, dispatch}) =
       , viewButton "Fullscreen" "maximize-2" (ToolDef.Fullscreen topicId) False target
       ]
     boxTools =
-      if Topic.isBox topicId model then
+      if Crdt.topicIsBox topicId model then
         case Box.rendererOf (BoxId topicId) model of
           Just renderer ->
             [ viewRendererSelect renderer (Tool << ToolDef.RendererSelected) dispatch ]

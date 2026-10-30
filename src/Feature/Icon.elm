@@ -1,6 +1,7 @@
 module Feature.Icon exposing (view, viewTopicIcon, viewPicker, openPicker, closePicker, update)
 
 import Env exposing (Env)
+import Feature.Crdt as Crdt
 import Feature.IconDef as IconDef
 import Feature.Sel as Sel
 import Model exposing (Model, Msg(..))
@@ -69,7 +70,7 @@ iconButtonStyle =
 
 viewTopicIcon : TopicId -> Int -> Attrs Msg -> Model -> Html Msg
 viewTopicIcon topicId size style_ model =
-  case Topic.fromId topicId model of
+  case Crdt.lookupTopic topicId model of
     Just {icon} ->
       case icon of
         Just iconName ->

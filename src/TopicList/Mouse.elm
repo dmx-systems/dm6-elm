@@ -4,6 +4,7 @@ import Box
 import Config as C
 import Console
 import Env exposing (Env)
+import Feature.Crdt as Crdt
 import Feature.Sel as Sel
 import Model exposing (Model, Msg)
 import ModelBase exposing (..)
@@ -227,7 +228,7 @@ addTopic_ topicId boxId env =
   let
     setBoxRenderer : Env -> Env
     setBoxRenderer ({model} as env_) =
-      if Topic.isBox topicId model then
+      if Crdt.topicIsBox topicId model then
         env_
           |> Env.map (Box.setRenderer (BoxId topicId) Renderer.TopicList)
       else

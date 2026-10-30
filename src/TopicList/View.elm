@@ -4,6 +4,7 @@ import Box
 import Config as C
 import Console
 import Env exposing (Env)
+import Feature.Crdt as Crdt
 import Feature.Mouse as Mouse
 import Feature.Text as Text
 import Feature.Tool as Tool exposing (ToolbarPos)
@@ -165,7 +166,7 @@ viewDraggingItem : BoxPath -> Model -> HtList
 viewDraggingItem viewBoxPath model =
   case (model.mouse.dragSource, model.topicList.dragPos) of
     (Just {topicId, ixBoxPath}, Just dragPos) ->
-      case (viewBoxPath == ixBoxPath, Topic.fromId topicId model) of
+      case (viewBoxPath == ixBoxPath, Crdt.lookupTopic topicId model) of
         (True, Just topic) ->
           [ div
               (draggingTopicStyle dragPos)

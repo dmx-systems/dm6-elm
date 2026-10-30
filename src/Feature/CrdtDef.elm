@@ -1,5 +1,7 @@
-module Feature.CrdtDef exposing (Model, init, refs, topicIconRef, topicTextRef, topicViewSizeRef,
-  topicEditorSizeRef, topicAssocIdsRef, boxRef, boxTopicsRef, boxTopicRef, expansionRef,
+module Feature.CrdtDef exposing (Model, init, refs,
+  topicRef, topicIconRef, topicTextRef, topicViewSizeRef, topicEditorSizeRef, topicAssocIdsRef,
+  assocRef,
+  boxRef, boxTopicsRef, boxTopicRef, expansionRef,
   boxRendererRef, itemSetRef, itemSetItemsRef)
 
 import ModelBase exposing (..)
@@ -465,6 +467,14 @@ topicAssocIdsRef : Id -> C.Ref DocModel (C.ListK C.Fixed (C.Variants AssocId) As
 topicAssocIdsRef id =
   topicRef id
     |> C.at topicDoc.assocIds
+
+
+--
+
+assocRef : Id -> C.Ref DocModel C.Nested Assoc
+assocRef id =
+  refs.assocs
+    |> assocsDict.key id
 
 
 --

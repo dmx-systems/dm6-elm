@@ -5,6 +5,7 @@ import Box
 import Config as C
 import Console
 import Env exposing (Env)
+import Feature.Crdt as Crdt
 import Feature.Id as Id
 import Feature.TextDef as TextDef exposing (EditState(..), TopicImage)
 import Model exposing (Model, Msg(..))
@@ -171,7 +172,7 @@ setExpansion topicId boxId model =
   model
     |> Box.updateExpansion topicId boxId
       (\expansion ->
-        if Topic.isBox topicId model then
+        if Crdt.topicIsBox topicId model then
           expansion
         else
           Expanded
@@ -307,7 +308,7 @@ openImageFilePicker (TopicId topicId) model =
 
 insertImage : TopicId -> ImageId -> Model -> (Model, Cmd Msg)
 insertImage topicId imageId model =
-  case Topic.fromId topicId model of
+  case Crdt.lookupTopic topicId model of
     Just { text } ->
       let
         image = "![image](app://image/" ++ imageId ++ ")"

@@ -4,6 +4,7 @@ import Box
 import Config as C
 import Console
 import Env exposing (Env, Dispatch)
+import Feature.Crdt as Crdt
 import Feature.TextDef exposing (EditState(..))
 import Model exposing (Model)
 import ModelBase exposing (..)
@@ -65,7 +66,7 @@ testChildren modelPos topics boxPath maybeFilter ({model, dispatch} as env) =
       let
         boxId = Box.firstId boxPath
         isHeaderHit = isTopicHeaderHit modelPos topic.id boxId model
-        isBox = Topic.isBox topic.id model
+        isBox = Crdt.topicIsBox topic.id model
         expansion = Box.expansionOf topic.id boxId model
         ixBoxPath = if isBox then BoxId topic.id :: boxPath else boxPath
         -- partially applied
@@ -204,7 +205,7 @@ accumulateItem mapItem boxPath rectAcc dispatch model =
 
 calcItemRect : MapTopic -> BoxPath -> Dispatch -> Model -> (Rectangle, Model)
 calcItemRect ({pos, expansion} as topic) boxPath dispatch model =
-  case (Topic.isBox topic.id model, expansion) of
+  case (Crdt.topicIsBox topic.id model, expansion) of
     (False, Collapsed) -> (topicExtent pos, model)
     (False, Expanded) -> (detailTopicExtent topic.id boxPath pos model, model)
     (True, Collapsed) -> (topicExtent pos, model)
