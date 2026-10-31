@@ -1,4 +1,4 @@
-module Feature.Crdt exposing ({-docModel,-} initDoc, encodeDoc,
+module Feature.Crdt exposing ({-docModel,-} encodeDoc,
   lookupTopic, topics, createTopic, createAssoc, setTopicIcon, setTopicText, setTopicViewSize,
   setTopicEditorSize, removeAssocId, deleteTopic, deleteAssoc,
   lookupAssoc,
@@ -33,15 +33,6 @@ docModel model =
         _ = Console.logError "Feature.Crdt.doc" "Schema read error" (Doc.readErrorToString err)
       in
       Nothing
-
-
-initDoc : E.Value -> Model -> Model
-initDoc ops model =
-  Doc.decodeInto ops model.crdt.doc
-    |> Result.map (setDoc model)
-    |> Result.map updateLastStored
-    |> Result.mapError (Console.logError "Feature.Crdt.initDoc" "Decode error")
-    |> Result.withDefault model
 
 
 encodeDoc : Model -> (Model, E.Value)
@@ -317,12 +308,6 @@ editResult model result =
 setDoc : Model -> Doc DocModel -> Model
 setDoc ({crdt} as model) doc =
   { model | crdt = { crdt | doc = doc }}
-
-
-updateLastStored : Model -> Model
-updateLastStored model =
-  model
-    |> setLastStored (Doc.version model.crdt.doc)
 
 
 setLastStored : Version -> Model -> Model

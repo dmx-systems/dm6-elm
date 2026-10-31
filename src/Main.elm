@@ -7,6 +7,7 @@ import Dict
 import Dispatch exposing (dispatch)
 import Env exposing (Env)
 import Feature.Crdt as Crdt
+import Feature.CrdtDef as CrdtDef
 import Feature.Icon as Icon
 import Feature.Id as Id
 import Feature.Mouse as Mouse
@@ -85,25 +86,30 @@ init (flags, ops, hash) =
 
 initModel : E.Value -> E.Value -> AppModel
 initModel flags ops =
-  case flags |> D.decodeValue (D.null True) of
+  case D.decodeValue (D.null True) flags of
     Ok True ->
       let
         _ = Console.info "Main.initModel" "localStorage: empty"
       in
       Bootstrapping
     _ ->
-      case flags |> D.decodeValue Model.decoder of
-        Ok model ->
-          let
-            _ = Console.info "Main.initModel" ("localStorage: " ++ bytes ++ " bytes")
-            bytes = model |> Console.toString |> String.length |> fromInt
-          in
-          Running (model |> Crdt.initDoc ops)
-        Err e ->
-          let
-            _ = Console.logError "Main.initModel" "localStorage" e
-          in
-          Bootstrapping
+      CrdtDef.decodeDoc ops
+        |> Maybe.map
+          (\(doc, docModel) ->
+            case Model.decode flags (doc, docModel) of
+              Ok model ->
+                let
+                  _ = Console.info "Main.initModel" ("localStorage: " ++ bytes ++ " bytes")
+                  bytes = model |> Console.toString |> String.length |> fromInt
+                in
+                Running model
+              Err e ->
+                let
+                  _ = Console.logError "Main.initModel" "localStorage" e
+                in
+                Bootstrapping -- stuck
+          )
+        |> Maybe.withDefault Bootstrapping -- stuck
 
 
 

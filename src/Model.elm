@@ -1,4 +1,4 @@
-module Model exposing (Model, Msg(..), bootstrap, resetTransient, encode, decoder, map,
+module Model exposing (Model, Msg(..), bootstrap, resetTransient, encode, decode, map,
   mergeCmd)
 
 import ModelBase exposing (..)
@@ -16,6 +16,8 @@ import Feature.SelDef as SelDef
 import Feature.TextDef as TextDef
 import Feature.ToolDef as ToolDef
 
+import Crdt.Doc exposing (Doc) -- TODO: drop
+
 import Json.Decode as D
 import Json.Decode.Pipeline exposing (required, hardcoded)
 import Json.Encode as E
@@ -24,7 +26,8 @@ import Json.Encode as E
 
 type alias Model =
   -- TODO: move more fields to ModelBase.DocModel
-  { boxId : BoxId -- the box rendered fullscreen
+  { cache : DocModel -- the materialzed CRDT document
+  , boxId : BoxId -- the box rendered fullscreen
   , rootBoxId : BoxId
   -- box renderers
   , topicMap : TopicMapDef.Model
@@ -41,18 +44,18 @@ type alias Model =
   }
 
 
-{- Creates the initial Model value from a sole root topic ID.
-Called when no DB exists ("bootstrapping").
+{- Creates the initial Model when no DB exists.
 -}
 bootstrap : TopicId -> Model
 bootstrap rootTopicId =
-  { boxId = BoxId rootTopicId
+  { cache = ModelBase.init
+  , boxId = BoxId rootTopicId
   , rootBoxId = BoxId rootTopicId
   -- box renderers
   , topicMap = TopicMapDef.init
   , topicList = TopicListDef.init
   -- feature modules
-  , crdt = CrdtDef.init
+  , crdt = CrdtDef.bootstrap
   , tool = ToolDef.init
   , text = TextDef.init
   , mouse = MouseDef.init
@@ -107,23 +110,27 @@ encode model =
     ]
 
 
-decoder : D.Decoder Model
-decoder =
-  D.succeed Model
-    |> required "boxId" boxIdDecoder
-    |> required "rootBoxId" boxIdDecoder
-    -- box renderers
-    |> required "topicMap" TopicMapDef.decoder
-    |> required "topicList" TopicListDef.decoder
-    -- feature modules
-    |> hardcoded CrdtDef.init
-    |> required "tool" ToolDef.decoder
-    |> hardcoded TextDef.init
-    |> hardcoded MouseDef.init
-    |> hardcoded SearchDef.init
-    |> hardcoded IconDef.init
-    |> hardcoded SelDef.init
-    |> hardcoded IdDef.init
+{- Creates the initial Model from DB content. -}
+decode : E.Value -> (Doc DocModel, DocModel) -> Result D.Error Model
+decode flags (doc, docModel) =
+  flags |> D.decodeValue
+    (D.succeed Model
+      |> hardcoded docModel
+      |> required "boxId" boxIdDecoder
+      |> required "rootBoxId" boxIdDecoder
+      -- box renderers
+      |> required "topicMap" TopicMapDef.decoder
+      |> required "topicList" TopicListDef.decoder
+      -- feature modules
+      |> hardcoded (CrdtDef.init doc)
+      |> required "tool" ToolDef.decoder
+      |> hardcoded TextDef.init
+      |> hardcoded MouseDef.init
+      |> hardcoded SearchDef.init
+      |> hardcoded IconDef.init
+      |> hardcoded SelDef.init
+      |> hardcoded IdDef.init
+    )
 
 
 

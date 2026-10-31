@@ -1,7 +1,7 @@
-module ModelBase exposing (DocModel, Id, TopicId(..), AssocId(..), ItemId(..), AssocIds, Topic,
-  Icon, TextSize, Size, SizeField(..), Point, Rectangle, Assoc, AssocType(..), ItemSet, SetItem,
-  Box, BoxId(..), Level, BoxPath, Target, BoxTarget, BoxTopic, Expansion(..), ImageId, Attrs,
-  PointerType, toTopicId, toAssocId, toBoxId, fromBoxId, maybeTopicId, maybeAssocId,
+module ModelBase exposing (DocModel, init, Id, TopicId(..), AssocId(..), ItemId(..), AssocIds,
+  Topic, Icon, TextSize, Size, SizeField(..), Point, Rectangle, Assoc, AssocType(..), ItemSet,
+  SetItem, Box, BoxId(..), Level, BoxPath, Target, BoxTarget, BoxTopic, Expansion(..), ImageId,
+  Attrs, PointerType, toTopicId, toAssocId, toBoxId, fromBoxId, maybeTopicId, maybeAssocId,
   encodeTopic, encodeAssoc, encodeItemSet, encodeBox, encodeTopicId, encodeBoxId, topicDecoder,
   assocDecoder, itemSetDecoder, boxDecoder, topicIdDecoder, boxIdDecoder, toDictDecoder,
   toDictDecoderWith)
@@ -24,6 +24,15 @@ type alias DocModel =
   , boxes : Dict Id Box
   , itemSets: Dict Id ItemSet
   -- TODO
+  }
+
+
+init : DocModel
+init =
+  { topics = Dict.empty
+  , assocs = Dict.empty
+  , boxes = Dict.empty
+  , itemSets = Dict.empty
   }
 
 

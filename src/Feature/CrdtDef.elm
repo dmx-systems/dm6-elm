@@ -1,9 +1,10 @@
-module Feature.CrdtDef exposing (Model, init, refs,
+module Feature.CrdtDef exposing (Model, bootstrap, init, decodeDoc, refs,
   topicRef, topicIconRef, topicTextRef, topicViewSizeRef, topicEditorSizeRef, topicAssocIdsRef,
   assocRef,
   boxRef, boxTopicsRef, boxTopicRef, expansionRef,
   boxRendererRef, itemSetRef, itemSetItemsRef)
 
+import Console
 import ModelBase exposing (..)
 import Renderer exposing (Renderer(..))
 
@@ -12,6 +13,7 @@ import Crdt.Doc as Doc exposing (Doc, Version)
 import Crdt.Id
 
 import Dict exposing (Dict)
+import Json.Encode as E
 
 
 
@@ -25,15 +27,39 @@ type alias Model =
   }
 
 
-init : Model
-init =
-  let
-    doc = C.init (Crdt.Id.replica "my-replica") modelDoc.schema -- TODO: replica ID
-  in
+bootstrap : Model
+bootstrap =
+  init freshDoc
+
+
+init : Doc DocModel -> Model
+init doc =
   { doc = doc
   , lastStored = Doc.version doc
   , editStartVersion = Nothing
   }
+
+
+decodeDoc : E.Value -> Maybe (Doc DocModel, DocModel)
+decodeDoc ops =
+  Doc.decodeInto ops freshDoc
+    |> Result.mapError (Console.logError "Feature.CrdtDef.decodeDoc" "Decode error")
+    |> Result.andThen
+        (\doc ->
+          Doc.read doc
+            |> Result.map (\docModel -> Just (doc, docModel))
+            |> Result.mapError
+              (Doc.readErrorToString
+                >> Console.logError "Feature.CrdtDef.decodeDoc" "Schema read error"
+              )
+        )
+    |> Result.toMaybe
+    |> Maybe.withDefault Nothing
+
+
+freshDoc : Doc DocModel
+freshDoc =
+  C.init (Crdt.Id.replica "my-replica") modelDoc.schema -- TODO: replica ID
 
 
 
