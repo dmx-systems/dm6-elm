@@ -1,4 +1,4 @@
-module TopicMap.TopicMap exposing (defaultContent, init, allMapTopics, topicPos, randomPos,
+module TopicMap.TopicMap exposing (bootstrapContent, init, allMapTopics, topicPos, randomPos,
   setTopicPos, updateTopicPos, mapTopicOrNothing, assocGeometry, addTopicAt, initLimboMapTopic,
   initTopicPos, hasMapTopic, fullscreen, byId, updateRect, updateScrollPos, revelationBoxId,
   revelationBoxPath, landingTarget, toLocalPos, toLocalModelPos)
@@ -18,8 +18,8 @@ import Random
 
 
 
-defaultContent : Model -> Model
-defaultContent ({topicMap} as model) =
+bootstrapContent : Model -> Model
+bootstrapContent ({topicMap} as model) =
   { model | topicMap =
     { topicMap | view = topicMap.view
         |> Dict.insert

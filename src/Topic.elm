@@ -1,5 +1,5 @@
-module Topic exposing (lookup, label, setIcon, setText, size, setSize, removeAssocId, create,
-  isBox)
+module Topic exposing (lookup, label, size, isBox, create, setIcon, setText, setSize,
+  removeAssocId)
 
 import Config as C
 import Console
@@ -33,6 +33,31 @@ label topic =
     |> Maybe.withDefault ""
 
 
+{-| Logs an error if topic does not exist, or ID refers not a topic (but an association). -}
+-- TODO: rename to textSize/topicTextSize?
+size : TopicId -> (TextSize -> Size) -> Model -> Maybe Size
+size topicId get model =
+  case lookup topicId model of
+    Just topic -> Just (get topic.size)
+    Nothing -> Console.fail "Topic.size" topicId Nothing
+
+
+isBox : TopicId -> Model -> Bool
+isBox (TopicId id) model =
+  Dict.member id model.cache.boxes
+
+
+create : String -> Maybe Icon -> Model -> (Model, TopicId)
+create text icon model =
+  let
+    (id, model_) = Id.new model
+    topicId = TopicId id
+    size_ = TextSize C.topicDetailSize C.topicDetailSize
+    topic = Topic topicId icon text size_ []
+  in
+  (Crdt.createTopic topic model_, topicId)
+
+
 setIcon : TopicId -> Maybe Icon -> Model -> Model
 setIcon =
   Crdt.setTopicIcon
@@ -41,15 +66,6 @@ setIcon =
 setText : TopicId -> String -> Model -> Model
 setText =
   Crdt.setTopicText
-
-
-{-| Logs an error if topic does not exist, or ID refers not a topic (but an association). -}
--- TODO: rename to textSize/topicTextSize?
-size : TopicId -> (TextSize -> Size) -> Model -> Maybe Size
-size topicId get model =
-  case lookup topicId model of
-    Just topic -> Just (get topic.size)
-    Nothing -> Console.fail "Topic.size" topicId Nothing
 
 
 {-| Logs an error if box does not exist, or topic is not in box ### FIXDOC -}
@@ -61,7 +77,6 @@ setSize topicId sizeField size_ model =
     Editor -> Crdt.setTopicEditorSize topicId size_ model
 
 
--- ### TODO: make it Crdt internal?
 {-| Removes an association ID from the topic's set of association IDs.
 No-op if the given association ID is not in the set.
 Logs an error if the topic does not exist. ### FIXDOC
@@ -76,7 +91,7 @@ removeAssocId assocId topicId model =
 
     remove : Int -> Maybe Model
     remove index =
-      Just <| Crdt.removeAssocId index topicId model
+      Just (Crdt.removeAssocId index topicId model)
 
 
     result : Maybe Model -> Model
@@ -94,19 +109,3 @@ removeAssocId assocId topicId model =
     |> Maybe.andThen findAssocId
     |> Maybe.andThen remove
     |> result
-
-
-create : String -> Maybe Icon -> Model -> (Model, TopicId)
-create text icon model =
-  let
-    (id, model_) = Id.new model
-    topicId = TopicId id
-    size_ = TextSize C.topicDetailSize C.topicDetailSize
-    topic = Topic topicId icon text size_ []
-  in
-  (Crdt.createTopic topic model_, topicId)
-
-
-isBox : TopicId -> Model -> Bool
-isBox (TopicId id) model =
-  Dict.member id model.cache.boxes

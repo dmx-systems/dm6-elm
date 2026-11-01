@@ -37,14 +37,14 @@ relatedTopics : TopicId -> Model -> List (TopicId, AssocId)
 relatedTopics topicId model =
   case Topic.lookup topicId model of
     Just topic ->
-      topic.assocIds |> List.foldr
-        (\assocId acc ->
-          case otherTopicId assocId topicId model of
-            Just id -> (id, assocId) :: acc
-            Nothing -> acc
+      topic.assocIds |> List.filterMap
+        (\assocId ->
+          model
+            |> otherTopicId assocId topicId
+            |> Maybe.map (\id -> (id, assocId))
         )
-        []
-    Nothing -> Console.fail "Assoc.relatedTopics" {topicId = topicId} []
+    Nothing ->
+      Console.fail "Assoc.relatedTopics" topicId []
 
 
 otherTopicId : AssocId -> TopicId -> Model -> Maybe TopicId
@@ -58,4 +58,5 @@ otherTopicId assocId topicId model =
       else
         Console.logError "Assoc.otherTopicId" (Console.toString topicId
           ++ " is not connected by " ++ Console.toString assocId) Nothing
-    Nothing -> Console.fail "Assoc.otherTopicId" {assocId = assocId, topicId = topicId} Nothing
+    Nothing ->
+      Console.fail "Assoc.otherTopicId" (assocId, topicId) Nothing

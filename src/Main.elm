@@ -298,8 +298,8 @@ bootstrap msg =
         id :: pool ->
           Model.bootstrap (TopicId id)
             |> Id.fillPool pool
-            |> defaultContent
-            |> TopicMap.defaultContent
+            |> bootstrapContent
+            |> TopicMap.bootstrapContent
             |> Outcome.with (defaultNav hash) (Directives Store NoUndo) -- ### TODO: was "Swap"
             |> Outcome.perform 
             |> runningWith (domReady ())
@@ -326,30 +326,30 @@ runningWith cmd_ (model, cmd) =
 underlying item set. Note: the ID for the root topic is taken from model, where it is written
 while bootstrapping.
 -}
-defaultContent : Model -> Model
-defaultContent model =
+bootstrapContent : Model -> Model
+bootstrapContent model =
   let
     (BoxId (TopicId id as topicId)) = model.rootBoxId
     size = TextSize (Size 0 0) (Size 0 0)
     rootTopic = Topic topicId Nothing C.rootBoxName size []
-    _ = Console.info "Main.defaultContent" ("root topic --> " ++ id)
+    _ = Console.info "Main.bootstrapContent" ("root topic --> " ++ id)
   in
   model
-    |> Crdt.createTopic rootTopic
+    |> Crdt.createTopic rootTopic -- low-level call with given ID
     |> createRootBox topicId
 
 
 createRootBox : TopicId -> Model -> Model
 createRootBox topicId model =
   let
+    boxId = BoxId topicId
     (setId, model_) = Id.new model
     itemSet = ItemSet setId []
-    boxId = BoxId topicId
     rootBox = Box boxId setId Dict.empty Renderer.default
   in
   model_
-    |> Crdt.createItemSet itemSet
-    |> Crdt.createBox rootBox
+    |> Box.createItemSet itemSet
+    |> Box.create rootBox
 
 
 defaultNav : String -> Model -> Cmd Msg

@@ -1,7 +1,7 @@
-module Box exposing (topicIds, assocIds, turnTopicIntoBox, init, addTopic, addAssoc,
-  removeTopic, removeAssoc, deleteTopic, deleteAssoc, expansionOf, updateExpansion, rendererOf,
-  setRenderer, hasItem, hasDeepTopic, mapTitle, isFullscreen, setFullscreen, elemId, firstId,
-  fromPath, topicCount, traverse)
+module Box exposing (topicIds, assocIds, turnTopicIntoBox, create, createItemSet, init,
+  addTopic, addAssoc, removeTopic, removeAssoc, deleteTopic, deleteAssoc, expansionOf,
+  updateExpansion, rendererOf, setRenderer, hasItem, hasDeepTopic, mapTitle, isFullscreen,
+  setFullscreen, elemId, firstId, fromPath, topicCount, traverse)
 
 import Assoc
 import Console
@@ -69,9 +69,19 @@ turnTopicIntoBox topicId renderer ({model} as env) =
     in
     env
       |> Env.map (always model_)
-      |> Env.map (Crdt.createBox box)
-      |> Env.map (Crdt.createItemSet itemSet)
+      |> Env.map (create box)
+      |> Env.map (createItemSet itemSet)
       |> init boxId
+
+
+create : Box -> Model -> Model
+create =
+  Crdt.createBox
+
+
+createItemSet : ItemSet -> Model -> Model
+createItemSet =
+  Crdt.createItemSet
 
 
 -- Add item to box
@@ -464,8 +474,8 @@ itemSetOf boxId model =
       Console.fail "Box.itemSetOf" ("Missing box " ++ toBoxId boxId) Nothing
 
 
-{-| Looks up a Topic in cache.
-Logs an error if Topic is missing.
+{-| Looks up an ItemSet in cache.
+Logs an error if ItemSet is missing.
 -}
 lookupItemSet : Id -> Model -> Maybe ItemSet
 lookupItemSet id model =
