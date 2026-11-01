@@ -228,7 +228,7 @@ addTopic_ topicId boxId env =
   let
     setBoxRenderer : Env -> Env
     setBoxRenderer ({model} as env_) =
-      if Crdt.topicIsBox topicId model then
+      if Topic.isBox topicId model then
         env_
           |> Env.map (Box.setRenderer (BoxId topicId) Renderer.TopicList)
       else

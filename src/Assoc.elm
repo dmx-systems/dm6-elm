@@ -1,4 +1,4 @@
-module Assoc exposing (create, relatedTopics, otherTopicId)
+module Assoc exposing (lookup, create, relatedTopics, otherTopicId)
 
 import Console
 import Feature.Crdt as Crdt
@@ -9,6 +9,18 @@ import Topic
 
 import Dict
 
+
+
+{-| Looks up an Assoc in cache.
+Logs an error if Assoc is missing.
+-}
+lookup : AssocId -> Model -> Maybe Assoc
+lookup (AssocId id) model =
+  case Dict.get id model.cache.assocs of
+    Just assoc ->
+      Just assoc
+    Nothing ->
+      Console.logError "Assoc.lookup" ("Missing assoc " ++ id) Nothing
 
 
 create : AssocType -> TopicId -> TopicId -> Model -> (Model, AssocId)
@@ -23,7 +35,7 @@ create assocType topicId1 topicId2 model =
 
 relatedTopics : TopicId -> Model -> List (TopicId, AssocId)
 relatedTopics topicId model =
-  case Crdt.lookupTopic topicId model of
+  case Topic.lookup topicId model of
     Just topic ->
       topic.assocIds |> List.foldr
         (\assocId acc ->
@@ -37,7 +49,7 @@ relatedTopics topicId model =
 
 otherTopicId : AssocId -> TopicId -> Model -> Maybe TopicId
 otherTopicId assocId topicId model =
-  case Crdt.lookupAssoc assocId model of
+  case lookup assocId model of
     Just {topicId1, topicId2} ->
       if topicId == topicId1 then
         Just topicId2

@@ -172,7 +172,7 @@ setExpansion topicId boxId model =
   model
     |> Box.updateExpansion topicId boxId
       (\expansion ->
-        if Crdt.topicIsBox topicId model then
+        if Topic.isBox topicId model then
           expansion
         else
           Expanded
@@ -308,7 +308,7 @@ openImageFilePicker (TopicId topicId) model =
 
 insertImage : TopicId -> ImageId -> Model -> (Model, Cmd Msg)
 insertImage topicId imageId model =
-  case Crdt.lookupTopic topicId model of
+  case Topic.lookup topicId model of
     Just { text } ->
       let
         image = "![image](app://image/" ++ imageId ++ ")"

@@ -93,7 +93,8 @@ initModel flags ops =
       in
       Bootstrapping
     _ ->
-      CrdtDef.decodeDoc ops
+      ops
+        |> CrdtDef.decodeDoc
         |> Maybe.map
           (\(doc, docModel) ->
             case Model.decode flags (doc, docModel) of
@@ -107,9 +108,9 @@ initModel flags ops =
                 let
                   _ = Console.logError "Main.initModel" "localStorage" e
                 in
-                Bootstrapping -- stuck
+                Bootstrapping -- decoding localStorage failed -> stuck
           )
-        |> Maybe.withDefault Bootstrapping -- stuck
+        |> Maybe.withDefault Bootstrapping -- decoding CRDT document failed -> stuck
 
 
 
@@ -301,7 +302,7 @@ bootstrap msg =
             |> TopicMap.defaultContent
             |> Outcome.with (defaultNav hash) (Directives Store NoUndo) -- ### TODO: was "Swap"
             |> Outcome.perform 
-            |> runningWidth (domReady ())
+            |> runningWith (domReady ())
         [] ->
           Console.logError "Main.bootstrap" "Empty ID list received in Bootstrap message"
             (Bootstrapping, Cmd.none)
@@ -316,8 +317,8 @@ running (model, cmd) =
   (Running model, cmd)
 
 
-runningWidth : Cmd Msg -> (Model, Cmd Msg) -> (AppModel, Cmd Msg)
-runningWidth cmd_ (model, cmd) =
+runningWith : Cmd Msg -> (Model, Cmd Msg) -> (AppModel, Cmd Msg)
+runningWith cmd_ (model, cmd) =
   (Running model, Cmd.batch [cmd, cmd_])
 
 

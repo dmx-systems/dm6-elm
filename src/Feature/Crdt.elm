@@ -1,9 +1,8 @@
-module Feature.Crdt exposing ({-docModel,-} encodeDoc,
-  lookupTopic, topics, createTopic, createAssoc, setTopicIcon, setTopicText, setTopicViewSize,
+module Feature.Crdt exposing (encodeDoc,
+  createTopic, createAssoc, setTopicIcon, setTopicText, setTopicViewSize,
   setTopicEditorSize, removeAssocId, deleteTopic, deleteAssoc,
-  lookupAssoc,
-  createBox, createItemSet, lookupBox, topicIsBox, lookupItemSet, itemSets, addToItemSet,
-  removeFromItemSet, addBoxTopic, lookupBoxTopic, setExpansion, setBoxRenderer,
+  createBox, createItemSet, addToItemSet,
+  removeFromItemSet, addBoxTopic, setExpansion, setBoxRenderer,
   markSingleEdit, markEditStart, markEditEnd, undo, redo, canUndo, canRedo)
 
 import Console
@@ -22,19 +21,6 @@ import Json.Encode as E
 
 
 
--- not used
-docModel : Model -> Maybe DocModel
-docModel model =
-  case Doc.read model.crdt.doc of
-    Ok docModel_ ->
-      Just docModel_
-    Err err ->
-      let
-        _ = Console.logError "Feature.Crdt.doc" "Schema read error" (Doc.readErrorToString err)
-      in
-      Nothing
-
-
 encodeDoc : Model -> (Model, E.Value)
 encodeDoc ({crdt} as model) =
   ( model |> setLastStored (Doc.version crdt.doc)
@@ -44,27 +30,10 @@ encodeDoc ({crdt} as model) =
 
 -- Topic
 
-lookupTopic : TopicId -> Model -> Maybe Topic
-lookupTopic (TopicId id) model =
-  model.crdt.doc
-    |> Edit.readAt (Doc.version model.crdt.doc) (topicRef id)
-    |> Result.map Just
-    |> Result.mapError (Console.logError "Feature.Crdt.lookupTopic" "Read error")
-    |> Result.withDefault Nothing
-
-
-topics : Model -> Maybe (Dict Id Topic)
-topics model =
-  model.crdt.doc
-    |> Edit.readAt (Doc.version model.crdt.doc) refs.topics
-    |> Result.map Just
-    |> Result.mapError (Console.logError "Feature.Crdt.topics" "Read error")
-    |> Result.withDefault Nothing
-
-
 createTopic : Topic -> Model -> Model
 createTopic topic model =
-  Edit.setKey refs.topics (toTopicId topic.id) topic model.crdt.doc
+  model.crdt.doc
+    |> Edit.setKey refs.topics (toTopicId topic.id) topic
     |> editResult model
 
 
@@ -112,15 +81,6 @@ deleteTopic (TopicId id) model =
 
 -- Assoc
 
-lookupAssoc : AssocId -> Model -> Maybe Assoc
-lookupAssoc (AssocId id) model =
-  model.crdt.doc
-    |> Edit.readAt (Doc.version model.crdt.doc) (assocRef id)
-    |> Result.map Just
-    |> Result.mapError (Console.logError "Feature.Crdt.lookupAssoc" "Read error")
-    |> Result.withDefault Nothing
-
-
 createAssoc : Assoc -> Model -> Model
 createAssoc assoc model =
   model.crdt.doc
@@ -153,44 +113,6 @@ createItemSet itemSet model =
     |> editResult model
 
 
-lookupBox : BoxId -> Model -> Maybe Box
-lookupBox (BoxId (TopicId id)) model =
-  model.crdt.doc
-    |> Edit.readAt (Doc.version model.crdt.doc) (boxRef id)
-    |> Result.map Just
-    |> Result.mapError (Console.logError "Feature.Crdt.lookupBox" "Read error")
-    |> Result.withDefault Nothing
-
-
-topicIsBox : TopicId -> Model -> Bool
-topicIsBox (TopicId id) model =
-  model.crdt.doc
-    |> Edit.readAt (Doc.version model.crdt.doc) (boxRef id)
-    |> (\result ->
-          case result of
-            Ok box -> True
-            Err e -> False
-       )
-
-
-lookupItemSet : Id -> Model -> Maybe ItemSet
-lookupItemSet itemSetId model =
-  model.crdt.doc
-    |> Edit.readAt (Doc.version model.crdt.doc) (itemSetRef itemSetId)
-    |> Result.map Just
-    |> Result.mapError (Console.logError "Feature.Crdt.lookupItemSet" "Read error")
-    |> Result.withDefault Nothing
-
-
-itemSets : Model -> Maybe (Dict Id ItemSet)
-itemSets model =
-  model.crdt.doc
-    |> Edit.readAt (Doc.version model.crdt.doc) refs.itemSets
-    |> Result.map Just
-    |> Result.mapError (Console.logError "Feature.Crdt.itemSets" "Read error")
-    |> Result.withDefault Nothing
-
-
 addToItemSet : Id -> SetItem -> Model -> Model
 addToItemSet itemSetId item model =
   model.crdt.doc
@@ -210,15 +132,6 @@ addBoxTopic topic (BoxId (TopicId id)) model =
   model.crdt.doc
     |> Edit.setKey (boxTopicsRef id) (toTopicId topic.id) topic
     |> editResult model
-
-
-lookupBoxTopic : TopicId -> BoxId -> Model -> Maybe BoxTopic
-lookupBoxTopic (TopicId topicId) (BoxId (TopicId boxId)) model =
-  model.crdt.doc
-    |> Edit.readAt (Doc.version model.crdt.doc) (boxTopicRef topicId boxId)
-    |> Result.map Just
-    |> Result.mapError (Console.logError "Feature.Crdt.lookupBoxTopic" "Read error")
-    |> Result.withDefault Nothing
 
 
 -- TODO: change to updateExpansion and receive transform function?
@@ -296,11 +209,26 @@ editResult : Model -> Result Edit.EditError (Doc DocModel) -> Model
 editResult model result =
   case result of
     Ok doc ->
-      setDoc model doc
+      doc
+        |> setDoc model
+        |> updateCache
     Err err ->
       let
         _ = Console.logError "Feature.Crdt.editResult" "Edit error"
           (Edit.editErrorToString err)
+      in
+      model
+
+
+updateCache : Model -> Model
+updateCache model =
+  case Doc.read model.crdt.doc of
+    Ok docModel ->
+      { model | cache = docModel }
+    Err err ->
+      let
+        _ = Console.logError "Feature.Crdt.updateCache" "Schema read error"
+          (Doc.readErrorToString err)
       in
       model
 

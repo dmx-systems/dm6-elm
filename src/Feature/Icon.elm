@@ -70,7 +70,7 @@ iconButtonStyle =
 
 viewTopicIcon : TopicId -> Int -> Attrs Msg -> Model -> Html Msg
 viewTopicIcon topicId size style_ model =
-  case Crdt.lookupTopic topicId model of
+  case Topic.lookup topicId model of
     Just {icon} ->
       case icon of
         Just iconName ->

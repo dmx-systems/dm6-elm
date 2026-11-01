@@ -56,7 +56,7 @@ landingBoxPath model =
         boxId = Box.firstId boxPath
         isExpanded = Box.expansionOf topicId boxId model == Expanded
       in
-      if Crdt.topicIsBox topicId model && isExpanded then
+      if Topic.isBox topicId model && isExpanded then
         BoxId topicId :: boxPath
       else
         [ model.boxId ]

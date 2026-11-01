@@ -1,4 +1,5 @@
-module Topic exposing (label, setIcon, setText, size, setSize, removeAssocId, create)
+module Topic exposing (lookup, label, setIcon, setText, size, setSize, removeAssocId, create,
+  isBox)
 
 import Config as C
 import Console
@@ -10,6 +11,18 @@ import Shared.Util as Util
 
 import Dict
 
+
+
+{-| Looks up a Topic in cache.
+Logs an error if Topic is missing.
+-}
+lookup : TopicId -> Model -> Maybe Topic
+lookup (TopicId id) model =
+  case Dict.get id model.cache.topics of
+    Just topic ->
+      Just topic
+    Nothing ->
+      Console.logError "Topic.lookup" ("Missing topic " ++ id) Nothing
 
 
 label : Topic -> String
@@ -34,9 +47,9 @@ setText =
 -- TODO: rename to textSize/topicTextSize?
 size : TopicId -> (TextSize -> Size) -> Model -> Maybe Size
 size topicId get model =
-  case Crdt.lookupTopic topicId model of
-    Just topic -> Just <| get topic.size
-    Nothing -> Console.fail "Topic.size" {topicId = topicId} Nothing
+  case lookup topicId model of
+    Just topic -> Just (get topic.size)
+    Nothing -> Console.fail "Topic.size" topicId Nothing
 
 
 {-| Logs an error if box does not exist, or topic is not in box ### FIXDOC -}
@@ -77,7 +90,7 @@ removeAssocId assocId topicId model =
           model
   in
   model
-    |> Crdt.lookupTopic topicId
+    |> lookup topicId
     |> Maybe.andThen findAssocId
     |> Maybe.andThen remove
     |> result
@@ -92,3 +105,8 @@ create text icon model =
     topic = Topic topicId icon text size_ []
   in
   (Crdt.createTopic topic model_, topicId)
+
+
+isBox : TopicId -> Model -> Bool
+isBox (TopicId id) model =
+  Dict.member id model.cache.boxes

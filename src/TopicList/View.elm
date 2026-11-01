@@ -166,7 +166,7 @@ viewDraggingItem : BoxPath -> Model -> HtList
 viewDraggingItem viewBoxPath model =
   case (model.mouse.dragSource, model.topicList.dragPos) of
     (Just {topicId, ixBoxPath}, Just dragPos) ->
-      case (viewBoxPath == ixBoxPath, Crdt.lookupTopic topicId model) of
+      case (viewBoxPath == ixBoxPath, Topic.lookup topicId model) of
         (True, Just topic) ->
           [ div
               (draggingTopicStyle dragPos)

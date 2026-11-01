@@ -92,7 +92,7 @@ viewSearchtMenu topicIds model =
           isDisabled = isItemDisabled topicId model
           isHover = isTopicHover topicId model
         in
-        case Crdt.lookupTopic topicId model of
+        case Topic.lookup topicId model of
           Just topic ->
             div
               ( [ onClick <| Search <| SearchDef.TopicClicked topicId
@@ -123,7 +123,7 @@ viewTraversalMenu relTopicIds model =
           isDisabled = isItemDisabled topicId model
           isHover = isRelTopicHover relTopic model
         in
-        case Crdt.lookupTopic topicId model of
+        case Topic.lookup topicId model of
           Just topic ->
             div
               ( [ onClick <| Search <| SearchDef.RelTopicClicked relTopic
@@ -210,7 +210,7 @@ viewFullscreenButton topicId model =
   let
     isDisabled = fromBoxId model.boxId == topicId
   in
-  if Crdt.topicIsBox topicId model then
+  if Topic.isBox topicId model then
     button
       ( [ class "tool"
         , title "Fullscreen"
@@ -415,24 +415,17 @@ revealAssoc_ assocId boxId model =
 -- "searchTopics" instead "search" avoids shadowing
 searchTopics : Model -> Model
 searchTopics model =
-  case Crdt.topics model of
-    Just topics ->
-      let
-        topicIds = topics |> Dict.values |> List.filterMap
-          (\{id, text} ->
-            if isMatch text model.search.term then
-              Just id
-            else
-              Nothing
-          )
-      in
-      model
-        |> setResult (Topics topicIds Nothing)
-    Nothing ->
-      let
-        _ = Console.fail "Feature.Search.searchTopics" model.search.term ""
-      in
-      model
+  let
+    topicIds = model.cache.topics |> Dict.values |> List.filterMap
+      (\{id, text} ->
+        if isMatch text model.search.term then
+          Just id
+        else
+          Nothing
+      )
+  in
+  model
+    |> setResult (Topics topicIds Nothing)
 
 
 traverse : Model -> Model

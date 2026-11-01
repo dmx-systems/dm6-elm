@@ -42,7 +42,8 @@ init doc =
 
 decodeDoc : E.Value -> Maybe (Doc DocModel, DocModel)
 decodeDoc ops =
-  Doc.decodeInto ops freshDoc
+  freshDoc
+    |> Doc.decodeInto ops
     |> Result.mapError (Console.logError "Feature.CrdtDef.decodeDoc" "Decode error")
     |> Result.andThen
         (\doc ->

@@ -18,6 +18,18 @@ import Dict
 
 
 
+{-| Looks up a Box in cache.
+Logs an error if Box is missing.
+-}
+lookup : BoxId -> Model -> Maybe Box
+lookup (BoxId (TopicId id)) model =
+  case Dict.get id model.cache.boxes of
+    Just box ->
+      Just box
+    Nothing ->
+      Console.logError "Box.lookup" ("Missing box " ++ id) Nothing
+
+
 {-| The TopicIds contained in the box's underlying ItemSet.
 -}
 topicIds : BoxId -> Model -> List TopicId
@@ -46,7 +58,7 @@ itemIds filter boxId model =
 
 turnTopicIntoBox : TopicId -> Renderer -> Env -> Env
 turnTopicIntoBox topicId renderer ({model} as env) =
-  if Crdt.topicIsBox topicId model then
+  if Topic.isBox topicId model then
     env
   else
     let
@@ -156,7 +168,7 @@ init boxId ({model, dispatch} as env) =
 
     childBoxInit : TopicId -> Model -> Model
     childBoxInit topicId modelAcc =
-      if Crdt.topicIsBox topicId modelAcc then
+      if Topic.isBox topicId modelAcc then
         modelAcc
           |> init_ (BoxId topicId) -- recursion
       else
@@ -170,7 +182,7 @@ init boxId ({model, dispatch} as env) =
 
 removeTopic : TopicId -> BoxId -> Model -> Model
 removeTopic topicId boxId model =
-  case (Crdt.lookupTopic topicId model, hierarchyAssoc topicId boxId model) of
+  case (Topic.lookup topicId model, hierarchyAssoc topicId boxId model) of
     (Just topic, Just assocId) ->
       model
         |> removeItem (T topicId) boxId
@@ -198,7 +210,7 @@ removeAssoc assocId boxId model =
 
 hierarchyAssoc : TopicId -> BoxId -> Model -> Maybe AssocId
 hierarchyAssoc topicId boxId model =
-  case Crdt.lookupTopic topicId model of
+  case Topic.lookup topicId model of
     Just topic ->
       findHierarchy topicId boxId topic.assocIds model
     Nothing -> Console.fail "Box.hierarchyAssoc" {topicId = topicId, boxId = boxId} Nothing
@@ -211,7 +223,7 @@ findHierarchy topicId boxId assocIds_ model =
       Console.logError "Box.findHierarchy" ("Missing Hierarchy association between Topic "
         ++ toTopicId topicId ++ " and Box " ++ toBoxId boxId) Nothing
     assocId :: ids ->
-      case Crdt.lookupAssoc assocId model of
+      case Assoc.lookup assocId model of
         Just {id, assocType, topicId1, topicId2} ->
           if assocType == Hierarchy && topicId1 == fromBoxId boxId && topicId2 == topicId then
             Just id
@@ -227,7 +239,7 @@ Logs an error if no such topic exists.
 -}
 deleteTopic : TopicId -> Model -> Model
 deleteTopic topicId model =
-  case Crdt.lookupTopic topicId model of
+  case Topic.lookup topicId model of
     Just topic ->
       ( topic.assocIds |> List.foldr
           deleteAssoc
@@ -250,7 +262,7 @@ Logs an error no item for the given ID exists. ### FIXDOC
 -}
 removeAssocFromTopics : AssocId -> Model -> Model
 removeAssocFromTopics assocId model =
-  case Crdt.lookupAssoc assocId model of
+  case Assoc.lookup assocId model of
     Just assoc ->
       model
         |> Topic.removeAssocId assoc.id assoc.topicId1
@@ -294,23 +306,16 @@ deleteAssoc_ assocId model =
 
 removeFromItemSets : ItemId -> Model -> Model
 removeFromItemSets itemId model =
-  case Crdt.itemSets model of
-    Just itemSets ->
-      Dict.values itemSets
-        |> List.foldl
-          (\({items} as itemSet) modelAcc ->
-            case Util.findIndex itemId .id items of -- TODO: reuse in removeItem below?
-              Just index ->
-                modelAcc
-                  |> Crdt.removeFromItemSet itemSet.id index
-              Nothing ->
-                modelAcc
-          )
-          model
-    Nothing ->
-      let
-        _ = Console.fail "Box.removeFromItemSets" "Can't read itemSets dict" Nothing
-      in
+  Dict.values model.cache.itemSets
+    |> List.foldl
+      (\({items} as itemSet) modelAcc ->
+        case Util.findIndex itemId .id items of -- TODO: reuse in removeItem below?
+          Just index ->
+            modelAcc
+              |> Crdt.removeFromItemSet itemSet.id index
+          Nothing ->
+            modelAcc
+      )
       model
 
 
@@ -340,29 +345,43 @@ removeItem itemId boxId model =
 
 expansionOf : TopicId -> BoxId -> Model -> Expansion
 expansionOf topicId boxId model =
-  case Crdt.lookupBoxTopic topicId boxId model of
+  case lookupBoxTopic topicId boxId model of
     Just {expansion} -> expansion
-    Nothing -> Console.fail "Box.expansionOf" {topicId = topicId, boxId = boxId} Collapsed
+    Nothing -> Console.fail "Box.expansionOf" (topicId, boxId) Collapsed
 
 
 updateExpansion : TopicId -> BoxId -> (Expansion -> Expansion) -> Model -> Model
 updateExpansion topicId boxId transform model =
-  case Crdt.lookupBoxTopic topicId boxId model of
+  case lookupBoxTopic topicId boxId model of
     Just topic ->
       model
         |> Crdt.setExpansion topicId boxId (transform topic.expansion)
     Nothing ->
       let
-        _ = Console.fail "Box.updateExpansion" {topicId = topicId, boxId = boxId} Nothing
+        _ = Console.fail "Box.updateExpansion" (topicId, boxId) Nothing
       in
       model
+
+
+lookupBoxTopic : TopicId -> BoxId -> Model -> Maybe BoxTopic
+lookupBoxTopic (TopicId topicId) boxId model =
+  case lookup boxId model of
+    Just box ->
+      case Dict.get topicId box.topics of
+        Just boxTopic ->
+          Just boxTopic
+        Nothing ->
+          Console.logError "Box.lookupBoxTopic"
+            ("Missing BoxTopic " ++ topicId ++ " in Box " ++ (toBoxId boxId))
+            Nothing
+    Nothing -> Nothing
 
 
 -- Renderer
 
 rendererOf : BoxId -> Model -> Maybe Renderer
 rendererOf boxId model =
-  case Crdt.lookupBox boxId model of
+  case lookup boxId model of
     Just {renderer} -> Just renderer
     Nothing -> Console.fail "Box.rendererOf" boxId Nothing
 
@@ -376,7 +395,7 @@ setRenderer boxId renderer model =
   -- set for all child boxes (deep)
   fold boxId model_
     (\topicId modelAcc ->
-      if Crdt.topicIsBox topicId modelAcc then
+      if Topic.isBox topicId modelAcc then
         Crdt.setBoxRenderer (BoxId topicId) renderer modelAcc
       else
         modelAcc
@@ -413,7 +432,7 @@ hasDeepTopic topicId boxId model =
   if topicId == boxId then
     True
   else
-    if Crdt.topicIsBox boxId model then
+    if Topic.isBox boxId model then
       case itemSetOf (BoxId boxId) model of
         Just (itemSet, _) ->
           itemSet.items |> List.any
@@ -433,9 +452,9 @@ Logs an error (and returns Nothing) if the box is missing, or its underlying Ite
 -}
 itemSetOf : BoxId -> Model -> Maybe (ItemSet, Box)
 itemSetOf boxId model =
-  case Crdt.lookupBox boxId model of
+  case lookup boxId model of
     Just box ->
-      case Crdt.lookupItemSet box.itemSetId model of
+      case lookupItemSet box.itemSetId model of
         Just itemSet ->
           Just (itemSet, box)
         Nothing ->
@@ -445,12 +464,24 @@ itemSetOf boxId model =
       Console.fail "Box.itemSetOf" ("Missing box " ++ toBoxId boxId) Nothing
 
 
+{-| Looks up a Topic in cache.
+Logs an error if Topic is missing.
+-}
+lookupItemSet : Id -> Model -> Maybe ItemSet
+lookupItemSet id model =
+  case Dict.get id model.cache.itemSets of
+    Just itemSet ->
+      Just itemSet
+    Nothing ->
+      Console.logError "Box.lookupItemSet" ("Missing itemSet " ++ id) Nothing
+
+
 {-| Title of fullscreen box.
 TODO: rename
 -}
 mapTitle : Model -> String
 mapTitle model =
-  case Crdt.lookupTopic (fromBoxId model.boxId) model of
+  case Topic.lookup (fromBoxId model.boxId) model of
     Just topic -> Topic.label topic
     Nothing -> Console.fail "Box.mapTitle" model.boxId "??"
 
@@ -505,7 +536,7 @@ fold boxId initAcc foldTopic model =
             let
               newAcc = foldTopic topicId accVal
             in
-            if Crdt.topicIsBox topicId model then
+            if Topic.isBox topicId model then
               fold_ (BoxId topicId) newAcc -- recursion
             else
               newAcc
@@ -552,7 +583,7 @@ traverse boxPath transform initAcc accumulate levelDone model =
         topicAccumulator topic acc =
           let
             children =
-              if Crdt.topicIsBox topic.id model then
+              if Topic.isBox topic.id model then
                 Just <| traverse_ (level + 1) (BoxId topic.id :: boxPath_) -- recursion
               else
                 Nothing
@@ -570,6 +601,6 @@ traverse boxPath transform initAcc accumulate levelDone model =
 
 topicLookup : Model -> TopicId -> Maybe Topic
 topicLookup model topicId =
-  case Crdt.lookupTopic topicId model of
+  case Topic.lookup topicId model of
     Just topic -> Just topic
     Nothing -> Console.fail "Box.topicLookup" topicId Nothing
