@@ -2,7 +2,6 @@ module Feature.Sel exposing (select, clear, isSelected, single, landingBoxPath)
 
 import Box
 import Console
-import Feature.Crdt as Crdt
 import Feature.SelDef exposing (Selection)
 import Model exposing (Model)
 import ModelBase exposing (..)

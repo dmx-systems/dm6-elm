@@ -4,7 +4,6 @@ import Box
 import Config as C
 import Console
 import Env exposing (Env)
-import Feature.Crdt as Crdt
 import Feature.Mouse as Mouse
 import Feature.Text as Text
 import Feature.Tool as Tool exposing (ToolbarPos)

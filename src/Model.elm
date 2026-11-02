@@ -1,7 +1,7 @@
-module Model exposing (Model, Msg(..), bootstrap, resetTransient, encode, decode, map,
-  mergeCmd)
+module Model exposing (Model, Msg(..), bootstrap, encode, decode, map, mergeCmd)
 
 import ModelBase exposing (..)
+import SyncModel exposing (SyncModel)
 -- box renderers
 import TopicList.TopicListDef as TopicListDef
 import TopicMap.TopicMapDef as TopicMapDef
@@ -25,8 +25,7 @@ import Json.Encode as E
 
 
 type alias Model =
-  -- TODO: move more fields to ModelBase.DocModel
-  { cache : DocModel -- the materialzed CRDT document
+  { cache : SyncModel -- the materialzed CRDT document
   , boxId : BoxId -- the box rendered fullscreen
   , rootBoxId : BoxId
   -- box renderers
@@ -48,7 +47,7 @@ type alias Model =
 -}
 bootstrap : TopicId -> Model
 bootstrap rootTopicId =
-  { cache = ModelBase.init
+  { cache = SyncModel.init
   , boxId = BoxId rootTopicId
   , rootBoxId = BoxId rootTopicId
   -- box renderers
@@ -66,6 +65,7 @@ bootstrap rootTopicId =
   }
 
 
+-- not used
 resetTransient : Model -> Model
 resetTransient model =
   { model
@@ -111,7 +111,7 @@ encode model =
 
 
 {- Creates the initial Model from DB content. -}
-decode : E.Value -> (Doc DocModel, DocModel) -> Result D.Error Model
+decode : E.Value -> (Doc SyncModel, SyncModel) -> Result D.Error Model
 decode flags (doc, docModel) =
   flags |> D.decodeValue
     (D.succeed Model

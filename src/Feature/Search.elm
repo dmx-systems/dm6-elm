@@ -6,7 +6,6 @@ import Box
 import Config as C
 import Console
 import Env exposing (Env)
-import Feature.Crdt as Crdt
 import Feature.Icon as Icon
 import Feature.Nav as Nav
 import Feature.SearchDef as SearchDef exposing (SearchResult(..))

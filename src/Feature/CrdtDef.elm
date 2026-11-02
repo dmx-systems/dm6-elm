@@ -1,12 +1,12 @@
 module Feature.CrdtDef exposing (Model, bootstrap, init, decodeDoc, refs,
-  topicRef, topicIconRef, topicTextRef, topicViewSizeRef, topicEditorSizeRef, topicAssocIdsRef,
-  assocRef,
-  boxRef, boxTopicsRef, boxTopicRef, expansionRef,
-  boxRendererRef, itemSetRef, itemSetItemsRef)
+  topicIconRef, topicTextRef, topicViewSizeRef, topicEditorSizeRef, topicAssocIdsRef,
+  boxTopicsRef, expansionRef,
+  boxRendererRef, itemSetItemsRef)
 
 import Console
 import ModelBase exposing (..)
 import Renderer exposing (Renderer(..))
+import SyncModel exposing (SyncModel)
 
 import Crdt as C
 import Crdt.Doc as Doc exposing (Doc, Version)
@@ -21,7 +21,7 @@ import Json.Encode as E
 
 
 type alias Model =
-  { doc : Doc DocModel
+  { doc : Doc SyncModel
   , lastStored : Version
   , editStartVersion : Maybe Version
   }
@@ -32,7 +32,7 @@ bootstrap =
   init freshDoc
 
 
-init : Doc DocModel -> Model
+init : Doc SyncModel -> Model
 init doc =
   { doc = doc
   , lastStored = Doc.version doc
@@ -40,7 +40,7 @@ init doc =
   }
 
 
-decodeDoc : E.Value -> Maybe (Doc DocModel, DocModel)
+decodeDoc : E.Value -> Maybe (Doc SyncModel, SyncModel)
 decodeDoc ops =
   freshDoc
     |> Doc.decodeInto ops
@@ -58,7 +58,7 @@ decodeDoc ops =
     |> Maybe.withDefault Nothing
 
 
-freshDoc : Doc DocModel
+freshDoc : Doc SyncModel
 freshDoc =
   C.init (Crdt.Id.replica "my-replica") modelDoc.schema -- TODO: replica ID
 
@@ -68,17 +68,17 @@ freshDoc =
 
 
 type alias ModelDoc =
-  { topics : C.Ref DocModel (C.DictK C.Nested Topic) (Dict Id Topic)
-  , assocs : C.Ref DocModel (C.DictK C.Nested Assoc) (Dict Id Assoc)
-  , boxes : C.Ref DocModel (C.DictK C.Nested Box) (Dict Id Box)
-  , itemSets : C.Ref DocModel (C.DictK C.Nested ItemSet) (Dict Id ItemSet)
-  , schema : C.Schema C.Nested DocModel
+  { topics : C.Ref SyncModel (C.DictK C.Nested Topic) (Dict Id Topic)
+  , assocs : C.Ref SyncModel (C.DictK C.Nested Assoc) (Dict Id Assoc)
+  , boxes : C.Ref SyncModel (C.DictK C.Nested Box) (Dict Id Box)
+  , itemSets : C.Ref SyncModel (C.DictK C.Nested ItemSet) (Dict Id ItemSet)
+  , schema : C.Schema C.Nested SyncModel
   }
 
 
 modelDoc : ModelDoc
 modelDoc =
-  C.record DocModel ModelDoc
+  C.record SyncModel ModelDoc
     |> C.field "topics" .topics topicsDict
     |> C.field "assocs" .assocs assocsDict
     |> C.field "boxes" .boxes boxesDict
@@ -96,8 +96,8 @@ topicsDict :
     (C.DictK C.Nested Topic) (Dict Id Topic)
     { key :
         Id
-          -> C.Ref DocModel (C.DictK C.Nested Topic) (Dict Id Topic)
-          -> C.Ref DocModel C.Nested Topic
+          -> C.Ref SyncModel (C.DictK C.Nested Topic) (Dict Id Topic)
+          -> C.Ref SyncModel C.Nested Topic
     }
 topicsDict =
   C.dict topicDoc
@@ -108,8 +108,8 @@ assocsDict :
     (C.DictK C.Nested Assoc) (Dict Id Assoc)
     { key :
         Id
-          -> C.Ref DocModel (C.DictK C.Nested Assoc) (Dict Id Assoc)
-          -> C.Ref DocModel C.Nested Assoc
+          -> C.Ref SyncModel (C.DictK C.Nested Assoc) (Dict Id Assoc)
+          -> C.Ref SyncModel C.Nested Assoc
     }
 assocsDict =
   C.dict assocDoc
@@ -120,8 +120,8 @@ boxesDict :
     (C.DictK C.Nested Box) (Dict Id Box)
     { key :
         Id
-          -> C.Ref DocModel (C.DictK C.Nested Box) (Dict Id Box)
-          -> C.Ref DocModel C.Nested Box
+          -> C.Ref SyncModel (C.DictK C.Nested Box) (Dict Id Box)
+          -> C.Ref SyncModel C.Nested Box
     }
 boxesDict =
   C.dict boxDoc
@@ -132,8 +132,8 @@ itemSetsDict :
     (C.DictK C.Nested ItemSet) (Dict Id ItemSet)
     { key :
         Id
-          -> C.Ref DocModel (C.DictK C.Nested ItemSet) (Dict Id ItemSet)
-          -> C.Ref DocModel C.Nested ItemSet
+          -> C.Ref SyncModel (C.DictK C.Nested ItemSet) (Dict Id ItemSet)
+          -> C.Ref SyncModel C.Nested ItemSet
     }
 itemSetsDict =
   C.dict itemSetDoc
@@ -144,8 +144,8 @@ boxTopicsDict :
     (C.DictK C.Nested BoxTopic) (Dict Id BoxTopic)
     { key :
         Id
-          -> C.Ref DocModel (C.DictK C.Nested BoxTopic) (Dict Id BoxTopic)
-          -> C.Ref DocModel C.Nested BoxTopic
+          -> C.Ref SyncModel (C.DictK C.Nested BoxTopic) (Dict Id BoxTopic)
+          -> C.Ref SyncModel C.Nested BoxTopic
     }
 boxTopicsDict =
   C.dict boxTopicDoc
@@ -453,43 +453,43 @@ itemIdDoc =
 -- REF COMPOSITION
 
 
-topicRef : Id -> C.Ref DocModel C.Nested Topic
+topicRef : Id -> C.Ref SyncModel C.Nested Topic
 topicRef id =
   refs.topics
     |> topicsDict.key id
 
 
-topicIconRef : Id -> C.Ref DocModel (C.Variants (Maybe Icon)) (Maybe Icon)
+topicIconRef : Id -> C.Ref SyncModel (C.Variants (Maybe Icon)) (Maybe Icon)
 topicIconRef id =
   topicRef id
     |> C.at topicDoc.icon
 
 
-topicTextRef : Id -> C.Ref DocModel C.Settable String
+topicTextRef : Id -> C.Ref SyncModel C.Settable String
 topicTextRef id =
   topicRef id
     |> C.at topicDoc.text
 
 
-topicSizeRef : Id -> C.Ref DocModel C.Nested TextSize
+topicSizeRef : Id -> C.Ref SyncModel C.Nested TextSize
 topicSizeRef id =
   topicRef id
     |> C.at topicDoc.size
 
 
-topicViewSizeRef : Id -> C.Ref DocModel C.Nested Size
+topicViewSizeRef : Id -> C.Ref SyncModel C.Nested Size
 topicViewSizeRef id =
   topicSizeRef id
     |> C.at textSizeDoc.view
 
 
-topicEditorSizeRef : Id -> C.Ref DocModel C.Nested Size
+topicEditorSizeRef : Id -> C.Ref SyncModel C.Nested Size
 topicEditorSizeRef id =
   topicSizeRef id
     |> C.at textSizeDoc.editor
 
 
-topicAssocIdsRef : Id -> C.Ref DocModel (C.ListK C.Fixed (C.Variants AssocId) AssocId)
+topicAssocIdsRef : Id -> C.Ref SyncModel (C.ListK C.Fixed (C.Variants AssocId) AssocId)
                                                                                   (List AssocId)
 topicAssocIdsRef id =
   topicRef id
@@ -498,51 +498,43 @@ topicAssocIdsRef id =
 
 --
 
-assocRef : Id -> C.Ref DocModel C.Nested Assoc
-assocRef id =
-  refs.assocs
-    |> assocsDict.key id
-
-
---
-
-boxRef : Id -> C.Ref DocModel C.Nested Box
+boxRef : Id -> C.Ref SyncModel C.Nested Box
 boxRef id =
   refs.boxes
     |> boxesDict.key id
 
 
-itemSetRef : Id -> C.Ref DocModel C.Nested ItemSet
+itemSetRef : Id -> C.Ref SyncModel C.Nested ItemSet
 itemSetRef id =
   refs.itemSets
     |> itemSetsDict.key id
 
 
-itemSetItemsRef : Id -> C.Ref DocModel (C.ListK C.Fixed C.Nested SetItem) (List SetItem)
+itemSetItemsRef : Id -> C.Ref SyncModel (C.ListK C.Fixed C.Nested SetItem) (List SetItem)
 itemSetItemsRef id =
   itemSetRef id
     |> C.at itemSetDoc.items
 
 
-boxTopicsRef : Id -> C.Ref DocModel (C.DictK C.Nested BoxTopic) (Dict Id BoxTopic)
+boxTopicsRef : Id -> C.Ref SyncModel (C.DictK C.Nested BoxTopic) (Dict Id BoxTopic)
 boxTopicsRef id =
   boxRef id
     |> C.at boxDoc.topics
 
 
-boxTopicRef : Id -> Id -> C.Ref DocModel C.Nested BoxTopic
+boxTopicRef : Id -> Id -> C.Ref SyncModel C.Nested BoxTopic
 boxTopicRef topicId boxId =
   boxTopicsRef boxId
     |> boxTopicsDict.key topicId
 
 
-expansionRef : Id -> Id -> C.Ref DocModel (C.Variants Expansion) Expansion
+expansionRef : Id -> Id -> C.Ref SyncModel (C.Variants Expansion) Expansion
 expansionRef topicId boxId =
   boxTopicRef topicId boxId
     |> C.at boxTopicDoc.expansion
 
 
-boxRendererRef : Id -> C.Ref DocModel (C.Variants Renderer) Renderer
+boxRendererRef : Id -> C.Ref SyncModel (C.Variants Renderer) Renderer
 boxRendererRef id =
   boxRef id
     |> C.at boxDoc.renderer

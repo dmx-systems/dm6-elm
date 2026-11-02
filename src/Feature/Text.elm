@@ -5,7 +5,6 @@ import Box
 import Config as C
 import Console
 import Env exposing (Env)
-import Feature.Crdt as Crdt
 import Feature.Id as Id
 import Feature.TextDef as TextDef exposing (EditState(..), TopicImage)
 import Model exposing (Model, Msg(..))

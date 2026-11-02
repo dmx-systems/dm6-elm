@@ -6,17 +6,17 @@ module Feature.Crdt exposing (encodeDoc,
   markSingleEdit, markEditStart, markEditEnd, undo, redo, canUndo, canRedo)
 
 import Console
-import Feature.CrdtDef exposing (refs, topicRef, topicIconRef, topicTextRef, topicViewSizeRef,
-  topicEditorSizeRef, topicAssocIdsRef, assocRef, boxRef, boxTopicsRef, boxTopicRef,
-  expansionRef, boxRendererRef, itemSetRef, itemSetItemsRef)
+import Feature.CrdtDef exposing (refs, topicIconRef, topicTextRef, topicViewSizeRef,
+  topicEditorSizeRef, topicAssocIdsRef, boxTopicsRef, expansionRef, boxRendererRef,
+  itemSetItemsRef)
 import Model exposing (Model)
 import ModelBase exposing (..)
 import Renderer exposing (Renderer)
+import SyncModel exposing (SyncModel)
 
 import Crdt.Doc as Doc exposing (Doc, Version)
 import Crdt.Edit as Edit
 
-import Dict exposing (Dict)
 import Json.Encode as E
 
 
@@ -205,7 +205,7 @@ canRedo model =
 -- LOCAL HELPER
 
 
-editResult : Model -> Result Edit.EditError (Doc DocModel) -> Model
+editResult : Model -> Result Edit.EditError (Doc SyncModel) -> Model
 editResult model result =
   case result of
     Ok doc ->
@@ -233,7 +233,7 @@ updateCache model =
       model
 
 
-setDoc : Model -> Doc DocModel -> Model
+setDoc : Model -> Doc SyncModel -> Model
 setDoc ({crdt} as model) doc =
   { model | crdt = { crdt | doc = doc }}
 

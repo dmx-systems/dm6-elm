@@ -5,7 +5,6 @@ import Box
 import Config as C
 import Console
 import Env exposing (Env, Dispatch)
-import Feature.Crdt as Crdt
 import Feature.Icon as Icon
 import Feature.Mouse as Mouse
 import Feature.Sel as Sel

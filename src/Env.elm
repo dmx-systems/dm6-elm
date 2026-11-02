@@ -1,5 +1,5 @@
 module Env exposing (Env, Dispatch, Renderers, RendererLabel, map, autoSize, outcome,
-  outcomeDir, outcomeCmd, outcomeWith)
+  outcomeDir, outcomeCmd)
 
 import Model exposing (Model, Msg)
 import ModelBase exposing (..)

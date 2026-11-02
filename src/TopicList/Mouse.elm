@@ -4,7 +4,6 @@ import Box
 import Config as C
 import Console
 import Env exposing (Env)
-import Feature.Crdt as Crdt
 import Feature.Sel as Sel
 import Model exposing (Model, Msg)
 import ModelBase exposing (..)

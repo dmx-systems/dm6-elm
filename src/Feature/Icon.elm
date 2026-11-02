@@ -1,7 +1,6 @@
 module Feature.Icon exposing (view, viewTopicIcon, viewPicker, openPicker, closePicker, update)
 
 import Env exposing (Env)
-import Feature.Crdt as Crdt
 import Feature.IconDef as IconDef
 import Feature.Sel as Sel
 import Model exposing (Model, Msg(..))

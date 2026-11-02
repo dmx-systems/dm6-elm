@@ -4,7 +4,6 @@ import Box
 import Config as C
 import Console
 import Env exposing (Env, Dispatch)
-import Feature.Crdt as Crdt
 import Feature.TextDef exposing (EditState(..))
 import Model exposing (Model)
 import ModelBase exposing (..)
