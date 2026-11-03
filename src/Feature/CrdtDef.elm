@@ -1,12 +1,14 @@
 module Feature.CrdtDef exposing (Model, bootstrap, init, decodeDoc, refs,
   topicIconRef, topicTextRef, topicViewSizeRef, topicEditorSizeRef, topicAssocIdsRef,
-  boxTopicsRef, expansionRef,
-  boxRendererRef, itemSetItemsRef)
+  boxTopicsRef, expansionRef, boxRendererRef, itemSetItemsRef)
 
 import Console
 import ModelBase exposing (..)
-import Renderer exposing (Renderer(..))
+import Renderer exposing (Renderer)
+import SyncBase exposing (..)
 import SyncModel exposing (SyncModel)
+-- box renderers
+import TopicMap.TopicMapDef as TopicMapDef exposing (TopicMap)
 
 import Crdt as C
 import Crdt.Doc as Doc exposing (Doc, Version)
@@ -72,6 +74,9 @@ type alias ModelDoc =
   , assocs : C.Ref SyncModel (C.DictK C.Nested Assoc) (Dict Id Assoc)
   , boxes : C.Ref SyncModel (C.DictK C.Nested Box) (Dict Id Box)
   , itemSets : C.Ref SyncModel (C.DictK C.Nested ItemSet) (Dict Id ItemSet)
+  -- box renderers
+  , topicMap : C.Ref SyncModel (C.DictK C.Nested TopicMap) (Dict Id TopicMap)
+  --
   , schema : C.Schema C.Nested SyncModel
   }
 
@@ -83,6 +88,9 @@ modelDoc =
     |> C.field "assocs" .assocs assocsDict
     |> C.field "boxes" .boxes boxesDict
     |> C.field "itemSets" .itemSets itemSetsDict
+    -- box renderers
+    |> C.field "topicMap" .topicMap TopicMapDef.topicMapsDict
+    --
     |> C.build
 
 
@@ -174,24 +182,6 @@ topicDoc =
     |> C.build
 
 
-type alias TopicIdDoc =
-  { topicId : C.Ref TopicId C.Settable Id
-  , schema : C.Schema (C.Variants TopicId) TopicId
-  }
-
-
-topicIdDoc : TopicIdDoc
-topicIdDoc =
-  C.custom
-    (\topicId value ->
-      case value of
-        TopicId id -> topicId id
-    )
-    TopicIdDoc
-      |> C.variant1 "topicId" TopicId C.string
-      |> C.buildCustom
-
-
 type alias IconDoc =
   { just : C.Ref (Maybe Icon) C.Settable Icon -- only variants with payload needs to be modelled
   , schema : C.Schema (C.Variants (Maybe Icon)) (Maybe Icon)
@@ -226,21 +216,6 @@ textSizeDoc =
   C.record TextSize TextSizeDoc
     |> C.field "view" .view sizeDoc
     |> C.field "editor" .editor sizeDoc
-    |> C.build
-
-
-type alias SizeDoc =
-  { w : C.Ref Size C.Settable Int
-  , h : C.Ref Size C.Settable Int
-  , schema : C.Schema C.Nested Size
-  }
-
-
-sizeDoc : SizeDoc
-sizeDoc =
-  C.record Size SizeDoc
-    |> C.field "w" .w C.int
-    |> C.field "h" .h C.int
     |> C.build
 
 
@@ -323,24 +298,6 @@ boxDoc =
     |> C.build
 
 
-type alias BoxIdDoc =
-  { boxId : C.Ref BoxId (C.Variants TopicId) TopicId
-  , schema : C.Schema (C.Variants BoxId) BoxId
-  }
-
-
-boxIdDoc : BoxIdDoc
-boxIdDoc =
-  C.custom
-    (\boxId value ->
-      case value of
-        BoxId topicId -> boxId topicId
-    )
-    BoxIdDoc
-      |> C.variant1 "boxId" BoxId topicIdDoc
-      |> C.buildCustom
-
-
 type alias BoxTopicDoc =
   { id : C.Ref BoxTopic (C.Variants TopicId) TopicId
   , expansion : C.Ref BoxTopic (C.Variants Expansion) Expansion
@@ -356,27 +313,6 @@ boxTopicDoc =
     |> C.build
 
 
-type alias ExpansionDoc =
-  { schema : C.Schema (C.Variants Expansion) Expansion
-  }
-
-
-expansionDoc : ExpansionDoc
-expansionDoc =
-  C.custom
-    (\collapsed expanded value ->
-      case value of
-        Collapsed ->
-          collapsed
-        Expanded ->
-          expanded
-    )
-    ExpansionDoc
-      |> C.variant0 "collapsed" Collapsed
-      |> C.variant0 "expanded" Expanded
-      |> C.buildCustom
-
-
 type alias RendererDoc =
   { schema : C.Schema (C.Variants Renderer) Renderer
   }
@@ -387,14 +323,14 @@ rendererDoc =
   C.custom
     (\topicMap topicList value ->
       case value of
-        TopicMap ->
+        Renderer.TopicMap ->
           topicMap
-        TopicList ->
+        Renderer.TopicList ->
           topicList
     )
     RendererDoc
-      |> C.variant0 "topicMap" TopicMap
-      |> C.variant0 "topicList" TopicList
+      |> C.variant0 "topicMap" Renderer.TopicMap
+      |> C.variant0 "topicList" Renderer.TopicList
       |> C.buildCustom
 
 

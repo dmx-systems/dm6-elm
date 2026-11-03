@@ -25,7 +25,7 @@ import Json.Encode as E
 
 
 type alias Model =
-  { cache : SyncModel -- the materialzed CRDT document
+  { cache : SyncModel -- the materialzed CRDT document, for reading
   , boxId : BoxId -- the box rendered fullscreen
   , rootBoxId : BoxId
   -- box renderers
