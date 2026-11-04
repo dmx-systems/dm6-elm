@@ -7,13 +7,19 @@ import Box
 import Config as C
 import Console
 import Env exposing (Env)
+import Feature.Crdt
+import Feature.CrdtDef as CrdtDef
 import Feature.SearchDef exposing (SearchResult(..))
 import Feature.Sel as Sel
 import Model exposing (Model, Msg)
 import ModelBase exposing (..)
+import SyncModel exposing (SyncModel)
 import TopicMap.TopicMapDef as TopicMapDef exposing (TopicMap, MapTopic)
 
-import Dict
+import Crdt
+import Crdt.Edit as Edit
+
+import Dict exposing (Dict)
 import Random
 
 
@@ -421,3 +427,45 @@ accumulateRect posAcc boxId model =
         (posAcc.x - topicMap.rect.x1)
         (posAcc.y - topicMap.rect.y1)
     Nothing -> Point 0 0 -- error is already logged
+
+
+
+-- CRDT
+
+
+-- TODO: make it a hook, dispatch from Box.deleteTopic_
+{- Removes a topic from TopicMap model:
+    - remove MapTopic from all TopicMaps
+    - remove TopicMap itself if topic is a box
+-}
+deleteTopic : TopicId -> Model -> Model
+deleteTopic topicId model =
+  Dict.values model.cache.topicMap
+    |> List.foldl
+      (\topicMap modelAcc ->
+        if Dict.member (toTopicId topicId) topicMap.topics then
+          modelAcc
+            |> removeMapTopic topicId topicMap.id
+        else
+          modelAcc
+      )
+      model
+
+
+removeMapTopic : TopicId -> BoxId -> Model -> Model
+removeMapTopic (TopicId topicId) (BoxId (TopicId boxId)) model =
+  model.crdt.doc
+    |> Edit.removeKey (mapTopicsRef boxId) topicId
+    |> Feature.Crdt.editResult model
+
+
+mapTopicsRef : Id -> Crdt.Ref SyncModel (Crdt.DictK Crdt.Nested MapTopic) (Dict Id MapTopic)
+mapTopicsRef id =
+  topicMapRef id
+    |> Crdt.at TopicMapDef.topicMapDoc.topics
+
+
+topicMapRef : Id -> Crdt.Ref SyncModel Crdt.Nested TopicMap
+topicMapRef id =
+  CrdtDef.refs.topicMap
+    |> TopicMapDef.topicMapsDict.key id

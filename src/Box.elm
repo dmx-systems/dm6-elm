@@ -289,18 +289,9 @@ deleteTopic_ topicId ({topicMap} as model) =
   model
     |> Crdt.deleteTopic topicId
     |> removeFromItemSets (T topicId)
-    |> (\model_ ->
-        { model_
-        -- TODO: if item is box delete from "boxes" state as well
-        -- TODO: don't operate on "topicMap" directly, dispatch instead
-        | topicMap =
-            { topicMap | view = topicMap.view |> Dict.map -- delete item from all boxes
-              (\_ topicMap_ ->
-                { topicMap_ | topics = topicMap_.topics |> Dict.remove (toTopicId topicId) }
-              )
-            }
-        }
-      )
+    -- TODO: delete topic from all BoxTopics dicts
+    -- TODO: if topic is box delete from "boxes" dict as well
+    -- TODO: introduce "deleteTopic" hook, dispatch here
 
 
 {-| Deletes an assoc, and removes it from all boxes.
@@ -318,8 +309,8 @@ removeFromItemSets : ItemId -> Model -> Model
 removeFromItemSets itemId model =
   Dict.values model.cache.itemSets
     |> List.foldl
-      (\({items} as itemSet) modelAcc ->
-        case Util.findIndex itemId .id items of -- TODO: reuse in removeItem below?
+      (\itemSet modelAcc ->
+        case Util.findIndex itemId .id itemSet.items of -- TODO: reuse in removeItem below?
           Just index ->
             modelAcc
               |> Crdt.removeFromItemSet itemSet.id index

@@ -3,7 +3,8 @@ module Feature.Crdt exposing (encodeDoc,
   setTopicEditorSize, removeAssocId, deleteTopic, deleteAssoc,
   createBox, createItemSet, addToItemSet,
   removeFromItemSet, addBoxTopic, setExpansion, setBoxRenderer,
-  markSingleEdit, markEditStart, markEditEnd, undo, redo, canUndo, canRedo)
+  markSingleEdit, markEditStart, markEditEnd, undo, redo, canUndo, canRedo,
+  editResult)
 
 import Console
 import Feature.CrdtDef exposing (refs, topicIconRef, topicTextRef, topicViewSizeRef,
