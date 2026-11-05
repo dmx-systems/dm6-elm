@@ -134,7 +134,7 @@ gAttr boxId boxRect model =
 -- For the fullscreen box boxPath is empty
 boxInfo : BoxId -> BoxPath -> Env -> BoxInfo
 boxInfo boxId boxPath ({model} as env) =
-  case TM.byId boxId model of
+  case TM.lookup boxId model of
     Just topicMap ->
       let
         width = topicMap.rect.x2 - topicMap.rect.x1
@@ -707,7 +707,7 @@ toolbarPos boxPath model =
   let
     boxId = Box.firstId boxPath
   in
-  case TM.byId boxId model of
+  case TM.lookup boxId model of
     Just {rect} ->
       ToolbarPos
         (\topic ->

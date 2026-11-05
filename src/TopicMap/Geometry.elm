@@ -28,7 +28,7 @@ localPos - the screen position, local to the Box to search in
 -}
 hitTest : BoxId -> BoxPath -> Point -> Maybe TopicId -> Env -> Maybe BoxTarget
 hitTest (BoxId topicId as boxId) boxPath localPos maybeFilter ({model} as env) =
-  case TM.byId boxId model of
+  case TM.lookup boxId model of
     Just topicMap ->
       let
         fullPath = boxId :: boxPath
@@ -173,7 +173,7 @@ autoSize boxPath ({model, dispatch}) =
   let
     boxId = Box.firstId boxPath
   in
-  case TM.byId boxId model of
+  case TM.lookup boxId model of
     Just topicMap ->
       let
         topics = VM.topicsToRender topicMap model
@@ -324,7 +324,7 @@ updateBoxGeometry boxPath newRect oldRect model =
 setBoxRect : BoxId -> Rectangle -> Model -> Model
 setBoxRect boxId rect model =
   model
-    |> TM.updateRect boxId (\_ -> rect)
+    |> TM.setRect boxId rect
 
 
 adjustBoxPos : BoxId -> BoxId -> Rectangle -> Rectangle -> Model -> Model

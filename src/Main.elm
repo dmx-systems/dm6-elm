@@ -271,7 +271,7 @@ update msg appModel =
                 |> Env.outcome
             Scrolled pos ->
               env
-                |> Env.map (updateScrollPos pos)
+                |> Env.map (setScroll pos)
                 |> Env.outcomeDir (Directives Store NoUndo) -- ### TODO: was "Swap"
             Cancel maybeTarget ->
               env
@@ -393,6 +393,6 @@ cancelUIWith maybeTarget ({model} as env) =
       |> Text.leaveEdit
 
 
-updateScrollPos : Point -> Model -> Model
-updateScrollPos pos model =
-  TopicMap.updateScrollPos model.boxId (\_ -> pos) model
+setScroll : Point -> Model -> Model
+setScroll pos model =
+  TopicMap.setScroll model.boxId pos model

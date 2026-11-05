@@ -1,6 +1,6 @@
 module TopicMap.TopicMap exposing (bootstrapContent, init, allMapTopics, topicPos, randomPos,
-  setTopicPos, updateTopicPos, mapTopicOrNothing, assocGeometry, addTopicAt, initLimboMapTopic,
-  initTopicPos, hasMapTopic, fullscreen, byId, updateRect, updateScrollPos, revelationBoxId,
+  updateTopicPos, mapTopicOrNothing, assocGeometry, addTopicAt, initLimboMapTopic,
+  initTopicPos, hasMapTopic, fullscreen, lookup, setRect, setScroll, revelationBoxId,
   revelationBoxPath, landingTarget, toLocalPos, toLocalModelPos)
 
 import Box
@@ -24,15 +24,22 @@ import Random
 
 
 
+{-| Looks up a TopicMap in cache.
+Logs an error if TopicMap is missing.
+-}
+lookup : BoxId -> Model -> Maybe TopicMap
+lookup (BoxId (TopicId id)) model =
+  case Dict.get id model.cache.topicMap of
+    Just topicMap ->
+      Just topicMap
+    Nothing ->
+      Console.logError "TopicMap.TopicMap.lookup" ("Missing TopicMap " ++ id) Nothing
+
+
 bootstrapContent : Model -> Model
-bootstrapContent ({topicMap} as model) =
-  { model | topicMap =
-    { topicMap | view = topicMap.view
-        |> Dict.insert
-          (toBoxId model.rootBoxId)
-          (TopicMap model.rootBoxId (Rectangle 0 0 0 0) (Point 0 0) Dict.empty)
-    }
-  }
+bootstrapContent model =
+  model
+    |> create (new model.rootBoxId)
 
 
 -- Dispatch.InitHook
@@ -47,49 +54,67 @@ init boxId model =
 
 
 initTopicMap : BoxId -> Model -> Model
-initTopicMap boxId ({topicMap} as model) =
-  let
-    id = toBoxId boxId
-  in
-  if Dict.member id topicMap.view then
+initTopicMap (BoxId (TopicId id) as boxId) model =
+  if Dict.member id model.cache.topicMap then
     let
       _ = Console.info "TopicMap.TopicMap.initTopicMap"
-        ("Box (" ++ Console.toString boxId ++ ") has TopicMap entry already")
+        ("Box " ++ id ++ " has TopicMap entry already")
     in
     model
   else
     let
       _ = Console.info "TopicMap.TopicMap.initTopicMap"
-        ("Creating TopicMap entry for box (" ++ Console.toString boxId ++ ")")
-      topicMap_ = TopicMap boxId (Rectangle 0 0 0 0) (Point 0 0) Dict.empty
+        ("Creating TopicMap entry for box " ++ id)
     in
-    { model | topicMap =
-      { topicMap | view = topicMap.view
-          |> Dict.insert id topicMap_
-      }
-    }
+    model
+      |> create (new boxId)
+
+
+new : BoxId -> TopicMap
+new boxId =
+  TopicMap boxId (Rectangle 0 0 0 0) (Point 0 0) Dict.empty
 
 
 initMapTopics : BoxId -> Model -> Model
 initMapTopics boxId model =
-  model
-    |> updateTopicMap boxId
-      (\topicMap ->
-        { topicMap | topics =
-            Box.topicIds boxId model
-              |> List.foldl
-                (\topicId acc ->
-                  let
-                    id = toTopicId topicId
-                  in
-                  if Dict.member id acc then
-                    acc
-                  else
-                    acc |> Dict.insert id (initMapTopic topicId boxId model)
-                )
-                topicMap.topics
-        }
+  case lookup boxId model of
+    Just topicMap ->
+      model
+        |> Box.topicIds boxId
+        |> List.foldl
+          (\topicId modelAcc ->
+            if Dict.member (toTopicId topicId) topicMap.topics then
+              modelAcc
+            else
+              modelAcc
+                |> addMapTopic (initMapTopic topicId boxId modelAcc) boxId
+          )
+          model
+    Nothing ->
+      let
+        _ = Console.fail "TopicMap.TopicMap.initMapTopics" ("MapTopics can't be inited") Nothing
+      in
+      model
+
+
+-- TODO: make it a hook, dispatch from Box.deleteTopic_
+{- Removes a topic from TopicMap model:
+    - remove MapTopic from all TopicMaps
+    - remove TopicMap itself if topic is a box
+-}
+onDeleteTopic : TopicId -> Model -> Model
+onDeleteTopic topicId model =
+  model.cache.topicMap
+    |> Dict.values
+    |> List.foldl
+      (\topicMap modelAcc ->
+        if Dict.member (toTopicId topicId) topicMap.topics then
+          modelAcc
+            |> removeMapTopic topicId topicMap.id
+        else
+          modelAcc
       )
+      model
 
 
 --
@@ -105,32 +130,27 @@ allMapTopics topicMap model =
       (\topicId -> mapTopic_ topicId topicMap)
 
 
-{-| Logs an error if the TopicMap entry is missing, or inside TopicMap the MapTopic entry is
-missing.
--}
+{-| Logs an error if TopicMap is missing, or inside TopicMap the MapTopic is missing. -}
 topicPos : TopicId -> BoxId -> Model -> Maybe Point
 topicPos topicId boxId model =
   case mapTopic topicId boxId model of
-    Just {pos} -> Just pos
+    Just topic -> Just topic.pos
     Nothing ->
-      Console.fail "TopicMap.TopicMap.topicPos" {topicId = topicId, boxId = boxId} Nothing
+      Console.fail "TopicMap.TopicMap.topicPos" (topicId, boxId) Nothing
 
 
-{-| Logs an error if the TopicMap entry is missing, or inside TopicMap the MapTopic entry is
-missing. -}
-setTopicPos : TopicId -> BoxId -> Point -> Model -> Model
-setTopicPos topicId boxId pos model =
-  model
-    |> updateTopicPos topicId boxId (\_ -> pos)
-
-
-{-| Logs an error if the TopicMap entry is missing, or inside TopicMap the MapTopic entry is
-missing. -}
+{-| Logs an error if TopicMap is missing, or inside TopicMap the MapTopic is missing. -}
 updateTopicPos : TopicId -> BoxId -> (Point -> Point) -> Model -> Model
 updateTopicPos topicId boxId transform model =
-  model
-    |> updateMapTopic topicId boxId
-      (\topic -> { topic | pos = transform topic.pos })
+  case topicPos topicId boxId model of
+    Just pos ->
+      model
+        |> setTopicPos topicId boxId (transform pos)
+    Nothing ->
+      let
+        _ = Console.fail "TopicMap.TopicMap.updateTopicPos" "Can't update pos" (topicId, boxId)
+      in
+      model
 
 
 assocGeometry : Assoc -> BoxId -> Model -> Maybe (Point, Point)
@@ -158,17 +178,8 @@ randomPos topicId boxId model =
 addTopicAt : TopicId -> BoxId -> Point -> Env -> Env
 addTopicAt topicId boxId pos env =
   env
-    |> Env.map (updateTopicMap boxId (addTopic_ topicId pos))
+    |> Env.map (addMapTopic (MapTopic topicId pos Collapsed) boxId)
     |> Env.autoSize
-
-
-addTopic_ : TopicId -> Point -> TopicMap -> TopicMap
-addTopic_ topicId pos topicMap =
-  { topicMap | topics =
-      topicMap.topics |> Dict.insert
-        (toTopicId topicId)
-        (MapTopic topicId pos Collapsed)
-  }
 
 
 pointGen : Random.Generator Point
@@ -190,7 +201,7 @@ initMapTopic : TopicId -> BoxId -> Model -> MapTopic
 initMapTopic topicId boxId model =
   MapTopic
     topicId
-    (initTopicPos boxId model)
+    (initTopicPos boxId model) -- TODO: don't lookup TopicMap again
     Collapsed
 
 
@@ -202,29 +213,29 @@ initLimboMapTopic topicId boxId model =
     Expanded
 
 
-{-| Logs an error if the TopicMap entry is missing. -}
+{-| Logs an error if TopicMap is missing. -}
 initTopicPos : BoxId -> Model -> Point
 initTopicPos boxId model =
-  case byId boxId model of
+  case lookup boxId model of
     Just topicMap ->
       Point
         (C.initTopicPos.x + topicMap.rect.x1 + topicMap.scroll.x)
         (C.initTopicPos.y + topicMap.rect.y1 + topicMap.scroll.y)
-    Nothing -> Point 0 0 -- error is already logged
+    Nothing ->
+      Point 0 0 -- error is already logged
 
 
 {-| Looks up MapTopic for a given BoxId.
-Logs an error if the TopicMap entry is missing, or inside TopicMap the MapTopic entry is
-missing.
+Logs an error if TopicMap is missing, or inside TopicMap the MapTopic is missing.
 -}
 mapTopic : TopicId -> BoxId -> Model -> Maybe MapTopic
 mapTopic topicId boxId model =
-  byId boxId model
+  lookup boxId model
     |> Maybe.andThen (mapTopic_ topicId)
 
 
 {-| Looks up MapTopic inside the given TopicMap.
-Logs an error if the MapTopic entry is missing.
+Logs an error if MapTopic is missing.
 -}
 mapTopic_ : TopicId -> TopicMap -> Maybe MapTopic
 mapTopic_ topicId topicMap =
@@ -244,86 +255,18 @@ mapTopicOrNothing topicId topicMap =
 
 hasMapTopic : TopicId -> BoxId -> Model -> Bool
 hasMapTopic topicId boxId model =
-  case byId boxId model of
+  case lookup boxId model of
     Just topicMap -> topicMap.topics |> Dict.member (toTopicId topicId)
     Nothing ->
       Console.fail "TopicMap.TopicMap.hasMapTopic" {topicId = topicId, boxId = boxId} False
 
 
-{-| Logs an error if the TopicMap entry is missing.
+{-| Logs an error if TopicMap is missing.
 ### FIXME: make it a hook?
 -}
 fullscreen : Model -> Maybe TopicMap
 fullscreen model =
-  byId model.boxId model
-
-
-{-| Logs an error if the TopicMap entry is missing.
--}
-byId : BoxId -> Model -> Maybe TopicMap
-byId boxId model =
-  case model.topicMap.view |> Dict.get (toBoxId boxId) of
-    Just topicMap -> Just topicMap
-    Nothing -> Console.logError "TopicMap.TopicMap.byId"
-      ("Missing TopicMap entry for (" ++ Console.toString boxId ++ ")") Nothing
-
-
---
-
-updateRect : BoxId -> (Rectangle -> Rectangle) -> Model -> Model
-updateRect boxId transform model =
-  model
-    |> updateTopicMap boxId
-      (\topicMap ->
-        { topicMap | rect = transform topicMap.rect }
-      )
-
-
-updateScrollPos : BoxId -> (Point -> Point) -> Model -> Model
-updateScrollPos boxId transform model =
-  model
-    |> updateTopicMap boxId
-      (\topicMap ->
-        { topicMap | scroll = transform topicMap.scroll }
-      )
-
-
-{-| Canonical MapTopic transformation.
-Logs an error if the TopicMap entry is missing, or inside TopicMap the MapTopic entry is
-missing.
--}
-updateMapTopic : TopicId -> BoxId -> (MapTopic -> MapTopic) -> Model -> Model
-updateMapTopic topicId boxId transform model =
-  model
-    |> updateTopicMap boxId
-      (\topicMap ->
-        { topicMap | topics = topicMap.topics |> Dict.update (toTopicId topicId)
-          (\maybeMapTopic ->
-            case maybeMapTopic of
-              Just mapTopic__ -> Just (transform mapTopic__)
-              Nothing -> Console.logError "TopicMap.TopicMap.updateMapTopic"
-                ("Missing MapTopic entry for (" ++ Console.toString topicId ++ ")") Nothing
-          )
-        }
-      )
-
-
-{-| Canonical TopicMap transformation.
-Logs an error if the TopicMap entry is missing.
--}
-updateTopicMap : BoxId -> (TopicMap -> TopicMap) -> Model -> Model
-updateTopicMap boxId transform ({topicMap} as model) =
-  { model | topicMap =
-    { topicMap | view = topicMap.view
-        |> Dict.update (toBoxId boxId)
-          (\maybeTopicMap ->
-            case maybeTopicMap of
-              Just topicMap_ -> Just (transform topicMap_)
-              Nothing -> Console.logError "TopicMap.TopicMap.updateTopicMap"
-                ("Missing TopicMap entry for (" ++ Console.toString boxId ++ ")") Nothing
-          )
-    }
-  }
+  lookup model.boxId model
 
 
 --
@@ -421,7 +364,7 @@ accumulatePos posAcc boxId parentBoxId boxIds model =
 
 accumulateRect : Point -> BoxId -> Model -> Point
 accumulateRect posAcc boxId model =
-  case byId boxId model of
+  case lookup boxId model of
     Just topicMap ->
       Point
         (posAcc.x - topicMap.rect.x1)
@@ -433,23 +376,18 @@ accumulateRect posAcc boxId model =
 -- CRDT
 
 
--- TODO: make it a hook, dispatch from Box.deleteTopic_
-{- Removes a topic from TopicMap model:
-    - remove MapTopic from all TopicMaps
-    - remove TopicMap itself if topic is a box
--}
-deleteTopic : TopicId -> Model -> Model
-deleteTopic topicId model =
-  Dict.values model.cache.topicMap
-    |> List.foldl
-      (\topicMap modelAcc ->
-        if Dict.member (toTopicId topicId) topicMap.topics then
-          modelAcc
-            |> removeMapTopic topicId topicMap.id
-        else
-          modelAcc
-      )
-      model
+create : TopicMap -> Model -> Model
+create topicMap model =
+  model.crdt.doc
+    |> Edit.setKey CrdtDef.refs.topicMap (toBoxId topicMap.id) topicMap
+    |> Feature.Crdt.editResult model
+
+
+addMapTopic : MapTopic -> BoxId -> Model -> Model
+addMapTopic topic (BoxId (TopicId boxId)) model =
+  model.crdt.doc
+    |> Edit.setKey (mapTopicsRef boxId) (toTopicId topic.id) topic
+    |> Feature.Crdt.editResult model
 
 
 removeMapTopic : TopicId -> BoxId -> Model -> Model
@@ -459,13 +397,63 @@ removeMapTopic (TopicId topicId) (BoxId (TopicId boxId)) model =
     |> Feature.Crdt.editResult model
 
 
+-- ### TODO: don't edit CRDT continuously while dragging, only once on drag-end
+-- ### Required: add transient drag-state instead of modifying persistent pos
+-- ### Alternative: while dragging *write* pos into model.cache (which is *read* cache)
+setTopicPos : TopicId -> BoxId -> Point -> Model -> Model
+setTopicPos (TopicId topicId) (BoxId (TopicId boxId)) pos model =
+  model.crdt.doc
+    |> Edit.set (topicPosRef topicId boxId) pos
+    |> Feature.Crdt.editResult model
+
+
+setRect : BoxId -> Rectangle -> Model -> Model
+setRect (BoxId (TopicId boxId)) rect model =
+  model.crdt.doc
+    |> Edit.set (mapRectRef boxId) rect
+    |> Feature.Crdt.editResult model
+
+
+setScroll : BoxId -> Point -> Model -> Model
+setScroll (BoxId (TopicId boxId)) scroll model =
+  model.crdt.doc
+    |> Edit.set (mapScrollRef boxId) scroll
+    |> Feature.Crdt.editResult model
+
+
+--
+
+mapRef : Id -> Crdt.Ref SyncModel Crdt.Nested TopicMap
+mapRef id =
+  CrdtDef.refs.topicMap
+    |> TopicMapDef.topicMapsDict.key id
+
+
+mapTopicRef : Id -> Id -> Crdt.Ref SyncModel Crdt.Nested MapTopic
+mapTopicRef topicId boxId =
+  mapTopicsRef boxId
+    |> TopicMapDef.mapTopicsDict.key topicId
+
+
+topicPosRef : Id -> Id -> Crdt.Ref SyncModel Crdt.Nested Point
+topicPosRef topicId boxId =
+  mapTopicRef topicId boxId
+    |> Crdt.at TopicMapDef.mapTopicDoc.pos
+
+
 mapTopicsRef : Id -> Crdt.Ref SyncModel (Crdt.DictK Crdt.Nested MapTopic) (Dict Id MapTopic)
 mapTopicsRef id =
-  topicMapRef id
+  mapRef id
     |> Crdt.at TopicMapDef.topicMapDoc.topics
 
 
-topicMapRef : Id -> Crdt.Ref SyncModel Crdt.Nested TopicMap
-topicMapRef id =
-  CrdtDef.refs.topicMap
-    |> TopicMapDef.topicMapsDict.key id
+mapRectRef : Id -> Crdt.Ref SyncModel Crdt.Nested Rectangle
+mapRectRef id =
+  mapRef id
+    |> Crdt.at TopicMapDef.topicMapDoc.rect
+
+
+mapScrollRef : Id -> Crdt.Ref SyncModel Crdt.Nested Point
+mapScrollRef id =
+  mapRef id
+    |> Crdt.at TopicMapDef.topicMapDoc.scroll

@@ -27,7 +27,7 @@ lookup (BoxId (TopicId id)) model =
     Just box ->
       Just box
     Nothing ->
-      Console.logError "Box.lookup" ("Missing box " ++ id) Nothing
+      Console.logError "Box.lookup" ("Missing Box " ++ id) Nothing
 
 
 {-| The TopicIds contained in the box's underlying ItemSet.
@@ -291,7 +291,7 @@ deleteTopic_ topicId ({topicMap} as model) =
     |> removeFromItemSets (T topicId)
     -- TODO: delete topic from all BoxTopics dicts
     -- TODO: if topic is box delete from "boxes" dict as well
-    -- TODO: introduce "deleteTopic" hook, dispatch here
+    -- TODO: introduce "onDeleteTopic" hook, dispatch here
 
 
 {-| Deletes an assoc, and removes it from all boxes.

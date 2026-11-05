@@ -1,5 +1,5 @@
 module TopicMap.TopicMapDef exposing (Model, SyncModel, TopicMap, MapTopic, DragState(..),
-  DragMode(..), Msg(..), init, initSync, topicMapsDict, topicMapDoc)
+  DragMode(..), Msg(..), init, initSync, topicMapsDict, topicMapDoc, mapTopicsDict, mapTopicDoc)
 
 import ModelBase exposing (..)
 import SyncBase exposing (..)

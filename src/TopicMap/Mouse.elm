@@ -219,7 +219,7 @@ topicDragEnd sourceTopicId sourceBoxPath origTopicPos ({model} as env) =
       in
       env
         |> moveTopicToBox sourceTopicId boxId targetId targetPath
-        |> Model.map (TopicMap.setTopicPos sourceTopicId boxId origTopicPos)
+        |> Model.map (TopicMap.updateTopicPos sourceTopicId boxId (always origTopicPos))
         |> Outcome.fromDir (Directives Store NoUndo) -- ### TODO: was "Swap"
     Nothing ->
       let
