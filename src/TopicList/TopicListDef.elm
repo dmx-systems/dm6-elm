@@ -1,32 +1,44 @@
-module TopicList.TopicListDef exposing (Model, TopicList, DropMode(..), Targets, init,
-  resetTransient, encode, decoder)
+module TopicList.TopicListDef exposing (Model, SyncModel, TopicList, DropMode(..), Targets,
+  init, initSync, resetTransient, topicListsDict, topicListDoc)
 
 import ModelBase exposing (..)
+import SyncBase exposing (..)
+
+import Crdt as C
+
+import Array exposing (Array)
 import Dict exposing (Dict)
 import Json.Decode as D
 import Json.Encode as E
 
-import Array exposing (Array)
 
 
 
 type alias Model =
-  { view : Dict Id TopicList
+  {
   -- Position of dragging list item.
   -- Available while a drag that started from a TopicList box is active.
-  , dragPos : Maybe Point -- transient
+    dragPos : Maybe Point -- transient
   -- Accepted drop location within a TopicList box.
   -- Note: the drag has not necessarily started from a TopicList box (but another renderer).
   , dropMode : Maybe DropMode -- transient
   }
 
 
+type alias SyncModel =
+  Dict Id TopicList
+
+
 init : Model
 init =
-  { view = Dict.empty
-  , dragPos = Nothing
+  { dragPos = Nothing
   , dropMode = Nothing
   }
+
+
+initSync : SyncModel
+initSync =
+  Dict.empty
 
 
 resetTransient : Model -> Model
@@ -53,45 +65,25 @@ type alias Targets = Array (Level, Target)
 
 
 
--- JSON
+-- CRDT SCHEMA
 
 
--- Encode
-
-encode : Model -> E.Value
-encode model =
-  E.list encodeTopicList (model.view |> Dict.values)
+topicListsDict =
+  C.dict topicListDoc
 
 
-encodeTopicList : TopicList -> E.Value
-encodeTopicList list =
-  E.object
-    [ ("id", encodeBoxId list.id)
-    , ("order", E.list encodeTopicId list.order)
-    , ("size", E.object
-        [ ("w", E.int list.size.w)
-        , ("h", E.int list.size.h)
-        ]
-      )
-    ]
+type alias TopicListDoc =
+  { id : C.Ref TopicList (C.Variants BoxId) BoxId                  -- TODO: make order C.Movable
+  , order : C.Ref TopicList (C.ListK C.Fixed (C.Variants TopicId) TopicId) (List TopicId)
+  , size : C.Ref TopicList C.Nested Size
+  , schema : C.Schema C.Nested TopicList
+  }
 
 
--- Decode
-
-decoder : D.Decoder Model
-decoder =
-  D.map3 Model
-    (toDictDecoderWith toBoxId topicListDecoder)
-    (D.succeed Nothing)
-    (D.succeed Nothing)
-
-
-topicListDecoder : D.Decoder TopicList
-topicListDecoder =
-  D.map3 TopicList
-    (D.field "id" boxIdDecoder)
-    (D.field "order" (D.list topicIdDecoder))
-    (D.field "size" <| D.map2 Size
-      (D.field "w" D.int)
-      (D.field "h" D.int)
-    )
+topicListDoc : TopicListDoc
+topicListDoc =
+  C.record TopicList TopicListDoc
+    |> C.field "id" .id boxIdDoc
+    |> C.field "order" .order (C.list topicIdDoc)
+    |> C.field "size" .size sizeDoc
+    |> C.build

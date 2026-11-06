@@ -5,14 +5,32 @@ import Box
 import Config as C
 import Console
 import Env exposing (Env)
+import Feature.Crdt
+import Feature.CrdtDef as CrdtDef
 import Model exposing (Model)
 import ModelBase exposing (..)
-import TopicList.TopicListDef exposing (TopicList, Targets)
+import SyncModel exposing (SyncModel)
+import TopicList.TopicListDef as TopicListDef exposing (TopicList, Targets)
+
+import Crdt
+import Crdt.Edit as Edit
 
 import Array
 import Dict
 import String exposing (fromInt)
 
+
+
+{-| Looks up a TopicList in cache.
+Logs an error if TopicList is missing.
+-}
+lookup : BoxId -> Model -> Maybe TopicList
+lookup (BoxId (TopicId id)) model =
+  case Dict.get id model.cache.topicList of
+    Just topicList ->
+      Just topicList
+    Nothing ->
+      Console.logError "TopicList.TopicList.lookup" ("Missing TopicList " ++ id) Nothing
 
 
 -- Dispatch.InitHook
@@ -27,27 +45,20 @@ init boxId model =
 
 
 initTopicList : BoxId -> Model -> Model
-initTopicList boxId ({topicList} as model) =
-  let
-    id = toBoxId boxId
-  in
-  if Dict.member id topicList.view then
+initTopicList (BoxId (TopicId id) as boxId) model =
+  if Dict.member id model.cache.topicList then
     let
       _ = Console.info "TopicList.TopicList.initTopicList"
-        ("Box (" ++ Console.toString boxId ++ ") has TopicList entry already")
+        ("Box " ++ id ++ " has TopicList entry already")
     in
     model
   else
     let
       _ = Console.info "TopicList.TopicList.initTopicList"
-        ("Creating TopicList entry for box (" ++ Console.toString boxId ++ ")")
-      topicList_ = TopicList boxId [] (Size 0 0)
+        ("Creating TopicList entry for box " ++ id)
     in
-    { model | topicList =
-      { topicList | view = topicList.view
-          |> Dict.insert id topicList_
-      }
-    }
+    model
+      |> create (TopicList boxId [] (Size 0 0))
 
 
 initOrder : BoxId -> Model -> Model
@@ -104,7 +115,7 @@ listOrder boxId model topicIds =
       else
         Nothing
   in
-  case fromId boxId model of
+  case lookup boxId model of
     Just {order} -> order
       |> List.filterMap isBoxContent
     Nothing -> Console.fail "TopicList.TopicList.listOrder" boxId topicIds
@@ -133,32 +144,32 @@ reorderTopic topicId boxId beforeTopicId model =
   in
   model
     |> updateOrder boxId
-      (\orderList -> orderList
-        |> List.filter (\id -> id /= topicId) -- remove before inserting
-        |> List.foldr insertion ([], False)
-        |> \(list, found) ->
-            case found of
-              True -> list
-              False -> Console.logError "TopicList.TopicList.reorderTopic"
-                "Insertion point not found" orderList
+      (\orderList ->
+        orderList
+          |> List.filter (\id -> id /= topicId) -- remove before inserting
+          |> List.foldr insertion ([], False)
+          |> \(list, found) ->
+              case found of
+                True -> list
+                False -> Console.logError "TopicList.TopicList.reorderTopic"
+                  "Insertion point not found" orderList
       )
 
 
 {- Canonical order list transformation.
-Logs an error if the TopicList entry is missing.
+Logs an error if TopicList is missing.
 -}
 updateOrder : BoxId -> (List TopicId -> List TopicId) -> Model -> Model
-updateOrder boxId transform ({topicList} as model) =
-  { model | topicList =
-    { topicList | view = topicList.view |> Dict.update (toBoxId boxId)
-        (\maybeTopicList ->
-          case maybeTopicList of
-            Just topicList_ -> Just { topicList_ | order = transform topicList_.order }
-            Nothing -> Console.logError "TopicList.TopicList.updateOrder"
-              (Console.toString {boxId = boxId}) Nothing
-        )
-    }
-  }
+updateOrder boxId transform model =
+  case lookup boxId model of
+    Just topicList ->
+      model
+        |> setOrder boxId (transform topicList.order)
+    Nothing ->
+      let
+        _ = Console.fail "TopicList.TopicList.updateOrder" "Can't update order" Nothing
+      in
+      model
 
 
 
@@ -230,43 +241,54 @@ autoSize boxPath {model} =
   (rect, newModel)
 
 
-setSize : BoxId -> Size -> Model -> Model
-setSize boxId size model =
-  model
-    |> updateTopicList boxId
-      (\topicList -> {topicList | size = size})
-
-
-{-| Canonical TopicList transformation.
-Logs an error if TopicList do not exist.
--}
-updateTopicList : BoxId -> (TopicList -> TopicList) -> Model -> Model
-updateTopicList boxId transform ({topicList} as model) =
-  { model | topicList =
-    { topicList | view = topicList.view
-        |> Dict.update (toBoxId boxId)
-          (\maybeTopicList ->
-            case maybeTopicList of
-              Just topicList_ -> Just (transform topicList_)
-              Nothing -> Console.logError "TopicList.TopicList.updateTopicList"
-                ("Missing TopicList entry for (" ++ Console.toString boxId ++ ")") Nothing
-          )
-    }
-  }
-
-
 getSize : BoxId -> Model -> Size
 getSize boxId model =
-  case fromId boxId model of
+  case lookup boxId model of
     Just topicList -> topicList.size
     Nothing -> Console.fail "TopicList.TopicList.getSize" boxId (Size 0 0)
 
 
-{-| Logs an error if the TopicList entry is missing.
--}
-fromId : BoxId -> Model -> Maybe TopicList
-fromId boxId model =
-  case model.topicList.view |> Dict.get (toBoxId boxId) of
-    Just topicList -> Just topicList
-    Nothing -> Console.logError "TopicList.TopicList.fromId"
-      ("Missing TopicList entry for (" ++ Console.toString boxId ++ ")") Nothing
+
+-- CRDT
+
+
+create : TopicList -> Model -> Model
+create topicList model =
+  model.crdt.doc
+    |> Edit.setKey CrdtDef.refs.topicList (toBoxId topicList.id) topicList
+    |> Feature.Crdt.editResult model
+
+
+setOrder : BoxId -> List TopicId -> Model -> Model
+setOrder (BoxId (TopicId boxId)) order model =
+  model.crdt.doc
+    |> Edit.set (listOrderRef boxId) order
+    |> Feature.Crdt.editResult model
+
+
+setSize : BoxId -> Size -> Model -> Model
+setSize (BoxId (TopicId boxId)) size model =
+  model.crdt.doc
+    |> Edit.set (listSizeRef boxId) size
+    |> Feature.Crdt.editResult model
+
+
+-- Ref composition
+
+listRef : Id -> Crdt.Ref SyncModel Crdt.Nested TopicList
+listRef id =
+  CrdtDef.refs.topicList
+    |> TopicListDef.topicListsDict.key id
+
+
+listOrderRef : Id -> Crdt.Ref SyncModel (Crdt.ListK Crdt.Fixed (Crdt.Variants TopicId) TopicId)
+                                                                                  (List TopicId)
+listOrderRef id =
+  listRef id
+    |> Crdt.at TopicListDef.topicListDoc.order
+
+
+listSizeRef : Id -> Crdt.Ref SyncModel Crdt.Nested Size
+listSizeRef id =
+  listRef id
+    |> Crdt.at TopicListDef.topicListDoc.size

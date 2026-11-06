@@ -102,8 +102,6 @@ encode model =
   E.object
     [ ("boxId", encodeBoxId model.boxId)
     , ("rootBoxId", encodeBoxId model.rootBoxId)
-    -- box renderers
-    , ("topicList", TopicListDef.encode model.topicList)
     -- feature modules
     , ("tool", ToolDef.encode model.tool)
     ]
@@ -119,7 +117,7 @@ decode flags (doc, docModel) =
       |> required "rootBoxId" boxIdDecoder
       -- box renderers
       |> hardcoded TopicMapDef.init
-      |> required "topicList" TopicListDef.decoder
+      |> hardcoded TopicListDef.init
       -- feature modules
       |> hardcoded (CrdtDef.init doc)
       |> required "tool" ToolDef.decoder

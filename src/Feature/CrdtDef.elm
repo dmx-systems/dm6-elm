@@ -9,6 +9,7 @@ import SyncBase exposing (..)
 import SyncModel exposing (SyncModel)
 -- box renderers
 import TopicMap.TopicMapDef as TopicMapDef exposing (TopicMap)
+import TopicList.TopicListDef as TopicListDef exposing (TopicList)
 
 import Crdt as C
 import Crdt.Doc as Doc exposing (Doc, Version)
@@ -76,6 +77,7 @@ type alias ModelDoc =
   , itemSets : C.Ref SyncModel (C.DictK C.Nested ItemSet) (Dict Id ItemSet)
   -- box renderers
   , topicMap : C.Ref SyncModel (C.DictK C.Nested TopicMap) (Dict Id TopicMap)
+  , topicList : C.Ref SyncModel (C.DictK C.Nested TopicList) (Dict Id TopicList)
   --
   , schema : C.Schema C.Nested SyncModel
   }
@@ -90,6 +92,7 @@ modelDoc =
     |> C.field "itemSets" .itemSets itemSetsDict
     -- box renderers
     |> C.field "topicMap" .topicMap TopicMapDef.topicMapsDict
+    |> C.field "topicList" .topicList TopicListDef.topicListsDict
     --
     |> C.build
 

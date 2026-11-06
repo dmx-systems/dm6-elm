@@ -3,6 +3,7 @@ module SyncModel exposing (SyncModel, init)
 import ModelBase exposing (..)
 -- box renderers
 import TopicMap.TopicMapDef as TopicMapDef
+import TopicList.TopicListDef as TopicListDef
 
 import Dict exposing (Dict)
 
@@ -18,6 +19,7 @@ type alias SyncModel =
   , itemSets : Dict Id ItemSet
   -- box renderers
   , topicMap : TopicMapDef.SyncModel
+  , topicList : TopicListDef.SyncModel
   -- TODO
   }
 
@@ -30,4 +32,5 @@ init =
   , itemSets = Dict.empty
   -- box renderers
   , topicMap = TopicMapDef.initSync
+  , topicList = TopicListDef.initSync
   }

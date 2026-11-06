@@ -421,7 +421,7 @@ setScroll (BoxId (TopicId boxId)) scroll model =
     |> Feature.Crdt.editResult model
 
 
---
+-- Ref composition
 
 mapRef : Id -> Crdt.Ref SyncModel Crdt.Nested TopicMap
 mapRef id =
