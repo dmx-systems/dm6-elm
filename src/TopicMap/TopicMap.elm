@@ -39,7 +39,7 @@ lookup (BoxId (TopicId id)) model =
 bootstrapContent : Model -> Model
 bootstrapContent model =
   model
-    |> create (new model.rootBoxId)
+    |> create (new model.cache.rootBoxId)
 
 
 -- Dispatch.InitHook

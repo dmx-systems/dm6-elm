@@ -74,6 +74,7 @@ type alias ModelDoc =
   { topics : C.Ref SyncModel (C.DictK C.Nested Topic) (Dict Id Topic)
   , assocs : C.Ref SyncModel (C.DictK C.Nested Assoc) (Dict Id Assoc)
   , boxes : C.Ref SyncModel (C.DictK C.Nested Box) (Dict Id Box)
+  , rootBoxId : C.Ref SyncModel (C.Variants BoxId) BoxId
   , itemSets : C.Ref SyncModel (C.DictK C.Nested ItemSet) (Dict Id ItemSet)
   -- box renderers
   , topicMap : C.Ref SyncModel (C.DictK C.Nested TopicMap) (Dict Id TopicMap)
@@ -89,6 +90,7 @@ modelDoc =
     |> C.field "topics" .topics topicsDict
     |> C.field "assocs" .assocs assocsDict
     |> C.field "boxes" .boxes boxesDict
+    |> C.field "rootBoxId" .rootBoxId boxIdDoc
     |> C.field "itemSets" .itemSets itemSetsDict
     -- box renderers
     |> C.field "topicMap" .topicMap TopicMapDef.topicMapsDict

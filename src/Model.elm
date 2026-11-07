@@ -27,7 +27,6 @@ import Json.Encode as E
 type alias Model =
   { cache : SyncModel -- the materialzed CRDT document, for reading
   , boxId : BoxId -- the box rendered fullscreen
-  , rootBoxId : BoxId
   -- box renderers
   , topicMap : TopicMapDef.Model
   , topicList : TopicListDef.Model
@@ -43,13 +42,12 @@ type alias Model =
   }
 
 
-{- Creates the initial Model when no DB exists.
+{- Creates the initial empty Model when no DB exists.
 -}
 bootstrap : TopicId -> Model
 bootstrap rootTopicId =
-  { cache = SyncModel.init
+  { cache = SyncModel.bootstrap
   , boxId = BoxId rootTopicId
-  , rootBoxId = BoxId rootTopicId
   -- box renderers
   , topicMap = TopicMapDef.init
   , topicList = TopicListDef.init
@@ -91,7 +89,6 @@ encode : Model -> E.Value
 encode model =
   E.object
     [ ("boxId", encodeBoxId model.boxId)
-    , ("rootBoxId", encodeBoxId model.rootBoxId)
     -- feature modules
     , ("tool", ToolDef.encode model.tool)
     ]
@@ -104,7 +101,6 @@ decode flags (doc, docModel) =
     (D.succeed Model
       |> hardcoded docModel
       |> required "boxId" boxIdDecoder
-      |> required "rootBoxId" boxIdDecoder
       -- box renderers
       |> hardcoded TopicMapDef.init
       |> hardcoded TopicListDef.init

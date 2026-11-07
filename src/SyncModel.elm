@@ -1,4 +1,4 @@
-module SyncModel exposing (SyncModel, init)
+module SyncModel exposing (SyncModel, bootstrap)
 
 import ModelBase exposing (..)
 -- box renderers
@@ -16,19 +16,20 @@ type alias SyncModel =
   { topics : Dict Id Topic
   , assocs : Dict Id Assoc
   , boxes : Dict Id Box
+  , rootBoxId : BoxId
   , itemSets : Dict Id ItemSet
   -- box renderers
   , topicMap : TopicMapDef.SyncModel
   , topicList : TopicListDef.SyncModel
-  -- TODO
   }
 
 
-init : SyncModel
-init =
+bootstrap : SyncModel
+bootstrap =
   { topics = Dict.empty
   , assocs = Dict.empty
   , boxes = Dict.empty
+  , rootBoxId = BoxId (TopicId "") -- Initialized later through Main.bootstrapContent
   , itemSets = Dict.empty
   -- box renderers
   , topicMap = TopicMapDef.initSync

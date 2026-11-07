@@ -1,9 +1,7 @@
-module Feature.Crdt exposing (encodeDoc,
-  createTopic, createAssoc, setTopicIcon, setTopicText, setTopicViewSize,
-  setTopicEditorSize, removeAssocId, deleteTopic, deleteAssoc,
-  createBox, createItemSet, addToItemSet,
-  removeFromItemSet, addBoxTopic, setExpansion, setBoxRenderer,
-  markSingleEdit, markEditStart, markEditEnd, undo, redo, canUndo, canRedo,
+module Feature.Crdt exposing (encodeDoc, setRootBoxId, createTopic, setTopicIcon, setTopicText,
+  setTopicViewSize, setTopicEditorSize, removeAssocId, deleteTopic, createAssoc, deleteAssoc,
+  createBox, createItemSet, addToItemSet, removeFromItemSet, addBoxTopic, setExpansion,
+  setBoxRenderer, markSingleEdit, markEditStart, markEditEnd, undo, redo, canUndo, canRedo,
   editResult)
 
 import Console
@@ -27,6 +25,13 @@ encodeDoc ({crdt} as model) =
   ( setLastStored (Doc.version crdt.doc) model
   , Doc.encodeSince crdt.lastStored crdt.doc
   )
+
+
+setRootBoxId : BoxId -> Model -> Model
+setRootBoxId boxId model =
+  model.crdt.doc
+    |> Edit.set refs.rootBoxId boxId
+    |> editResult model
 
 
 -- Topic

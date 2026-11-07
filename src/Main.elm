@@ -297,9 +297,13 @@ bootstrap msg =
     Bootstrap hash ids ->
       case ids of
         id :: pool ->
-          Model.bootstrap (TopicId id)
+          let
+            rootTopicId = TopicId id
+            _ = Console.info "Main.bootstrap" ("root topic -> " ++ id)
+          in
+          Model.bootstrap rootTopicId
             |> Id.fillPool pool
-            |> bootstrapContent
+            |> bootstrapContent rootTopicId
             |> TopicMap.bootstrapContent
             |> Outcome.with (defaultNav hash) (Directives Store NoUndo) -- ### TODO: was "Swap"
             |> Outcome.perform 
@@ -313,43 +317,29 @@ bootstrap msg =
         (Bootstrapping, Cmd.none)
 
 
-running : (Model, Cmd Msg) -> (AppModel, Cmd Msg)
-running (model, cmd) =
-  (Running model, cmd)
-
-
-runningWith : Cmd Msg -> (Model, Cmd Msg) -> (AppModel, Cmd Msg)
-runningWith cmd_ (model, cmd) =
-  (Running model, Cmd.batch [cmd, cmd_])
-
-
-{- Sets up default content for newly created DB. This comprises a) root topic/box and b) the
-underlying item set. Note: the ID for the root topic is taken from model, where it is written
-while bootstrapping.
+{- Sets up default CRDT content for newly created DB: root topic, root box, root box ID.
 -}
-bootstrapContent : Model -> Model
-bootstrapContent model =
+bootstrapContent : TopicId -> Model -> Model
+bootstrapContent rootTopicId model =
   let
-    (BoxId (TopicId id as topicId)) = model.rootBoxId
     size = TextSize (Size 0 0) (Size 0 0)
-    rootTopic = Topic topicId Nothing C.rootBoxName size []
-    _ = Console.info "Main.bootstrapContent" ("root topic --> " ++ id)
+    rootTopic = Topic rootTopicId Nothing C.rootBoxName size []
+    rootBoxId = BoxId rootTopicId
   in
   model
     |> Crdt.createTopic rootTopic -- low-level call with given ID
-    |> createRootBox topicId
+    |> createRootBox rootBoxId
+    |> Crdt.setRootBoxId rootBoxId
 
 
-createRootBox : TopicId -> Model -> Model
-createRootBox topicId model =
+createRootBox : BoxId -> Model -> Model
+createRootBox boxId model =
   let
-    boxId = BoxId topicId
     (setId, model_) = Id.new model
-    itemSet = ItemSet setId []
     rootBox = Box boxId setId Dict.empty Renderer.default
   in
   model_
-    |> Box.createItemSet itemSet
+    |> Box.createItemSet (ItemSet setId [])
     |> Box.create rootBox
 
 
@@ -363,6 +353,18 @@ defaultNav hash model =
   in
   Nav.pushUrl boxId
 
+
+running : (Model, Cmd Msg) -> (AppModel, Cmd Msg)
+running (model, cmd) =
+  (Running model, cmd)
+
+
+runningWith : Cmd Msg -> (Model, Cmd Msg) -> (AppModel, Cmd Msg)
+runningWith cmd_ (model, cmd) =
+  (Running model, Cmd.batch [cmd, cmd_])
+
+
+--
 
 cancelUI : Maybe Target -> Env -> (Model, Cmd Msg)
 cancelUI maybeTarget env =
