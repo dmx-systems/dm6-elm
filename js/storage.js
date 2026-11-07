@@ -1,3 +1,5 @@
+// TODO: drop this module in favor of crdt.js (and rename that one to storage.js then)
+
 export default {
   getJSON,
   getString,

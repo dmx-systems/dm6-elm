@@ -26,7 +26,7 @@ store model =
   in
   ( model_
   , storeModel
-      ( model_ |> Model.encode
+      ( Model.encode model_
       , value
       )
   )

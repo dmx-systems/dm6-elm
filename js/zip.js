@@ -119,7 +119,7 @@ async function imagesToZip() {
 async function imageToZipEntry(id) {
   const blob = await image.loadImage(id)
   const filename = id + '.' + mimeToExt(blob.type)
-  console.log('image to zip', blob.type, '->', filename)
+  console.log('🔸 zip.imageToZipEntry', blob.type, '->', filename)
   return [filename, await u8(blob)]
 }
 

@@ -24,8 +24,8 @@ import Json.Encode as E
 
 encodeDoc : Model -> (Model, E.Value)
 encodeDoc ({crdt} as model) =
-  ( model |> setLastStored (Doc.version crdt.doc)
-  , crdt.doc |> Doc.encodeSince crdt.lastStored
+  ( setLastStored (Doc.version crdt.doc) model
+  , Doc.encodeSince crdt.lastStored crdt.doc
   )
 
 

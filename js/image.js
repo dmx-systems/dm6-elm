@@ -35,7 +35,7 @@ function initImagePicker() {
   })
   document.body.appendChild(input)
   app.ports.imageFilePicker.subscribe(({topicId, imageId}) => {
-    console.log('#imageFilePicker', 'topicId', topicId, 'imageId', imageId)
+    console.log('🔸 image.imageFilePicker', 'topicId', topicId, 'imageId', imageId)
     input.dataset.topicId = topicId     // update value before clicking
     input.dataset.imageId = imageId     // update value before clicking
     input.value = ''                    // allow re-selecting same file
@@ -52,20 +52,20 @@ async function blobFromFile(file) {
 const imagesStore = 'images'
 
 function upgrade(db) {
-  console.log('#createObjectStore', imagesStore)
+  console.log('🔸 image.createObjectStore', imagesStore)
   db.createObjectStore(imagesStore)
 }
 
 // Returns a promise resolved once storage is complete
 async function storeImage(id, blob) {
-  console.log('#storeImage', id, blob)
+  console.log('🔸 image.storeImage', id, blob)
   const db = await dbPromise
   return db.put(imagesStore, blob, id)
 }
 
 function resolveAllImages() {   // TODO: resolve selectively
   loadAllImageIds().then(ids => {
-    console.log('#resolveAllImages', ids)
+    console.log('🔸 image.resolveAllImages', ids)
     ids.forEach(id =>
       loadImage(id).then(blob =>
         resolveImage(id, blob)

@@ -68,9 +68,9 @@ main =
 
 
 init : (E.Value, E.Value, String) -> (AppModel, Cmd Msg)
-init (flags, ops, hash) =
+init (local, ops, hash) =
   let
-    appModel = initModel flags ops
+    appModel = initModel local ops
     initCmd =
       case appModel of
         Bootstrapping ->
@@ -84,33 +84,34 @@ init (flags, ops, hash) =
   (appModel, initCmd)
 
 
+{- Returns initial AppModel based on passed database content.
+Database content is passed separately: local state and synced state.
+-}
 initModel : E.Value -> E.Value -> AppModel
-initModel flags ops =
-  case D.decodeValue (D.null True) flags of
+initModel local ops =
+  case D.decodeValue (D.null True) local of
     Ok True ->
       let
-        _ = Console.info "Main.initModel" "localStorage: empty"
+        _ = Console.info "Main.initModel" "-> Creating bootstrap model"
       in
       Bootstrapping
     _ ->
-      ops
-        |> CrdtDef.decodeDoc
-        |> Maybe.map
-          (\(doc, docModel) ->
-            case Model.decode flags (doc, docModel) of
-              Ok model ->
-                let
-                  _ = Console.info "Main.initModel" ("localStorage: " ++ bytes ++ " bytes")
-                  bytes = model |> Console.toString |> String.length |> fromInt
-                in
-                Running model
-              Err e ->
-                let
-                  _ = Console.logError "Main.initModel" "localStorage" e
-                in
-                Bootstrapping -- decoding localStorage failed -> stuck
-          )
-        |> Maybe.withDefault Bootstrapping -- decoding CRDT document failed -> stuck
+      case CrdtDef.decodeDoc ops of
+        Just (doc, docModel) ->
+          case Model.decode local (doc, docModel) of
+            Ok model ->
+              let
+                bytes = model |> Console.toString |> String.length |> fromInt
+                _ = Console.info "Main.initModel" ("Decoded model: " ++ bytes ++ " bytes")
+              in
+              Running model
+            Err e ->
+              let
+                _ = Console.logError "Main.initModel" "Decoding \"local\" store failed" e
+              in
+              Bootstrapping -- decoding "local" store failed -> creating bootstrap model
+        Nothing ->
+          Bootstrapping -- decoding CRDT document failed -> creating bootstrap model
 
 
 

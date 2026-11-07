@@ -1,5 +1,4 @@
 import { Elm } from './src/Main.elm'
-import storage from './js/storage'
 import image from './js/image'
 import crdt from './js/crdt'
 import zip from './js/zip'
@@ -21,7 +20,7 @@ crdt.init(dbPromise)
 
 const app = Elm.Main.init({
   flags: [
-    storage.getJSON(),
+    await crdt.getLocal(),
     await crdt.getDoc(),
     location.hash
   ]
@@ -32,9 +31,8 @@ zip.init(app)
 
 // Storage
 
-app.ports.storeModel.subscribe(([model, payload]) => {
-  storage.setJSON(model)
-  crdt.storeDoc(payload)
+app.ports.storeModel.subscribe(([local, payload]) => {
+  crdt.store(local, payload)
 })
 
 // Scrolling

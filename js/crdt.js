@@ -1,8 +1,9 @@
 export default {
-  init, upgrade, getDoc, storeDoc
+  init, upgrade, getLocal, getDoc, store
 }
 
-const opsStore = "ops"
+const localStore = 'local'
+const opsStore = 'ops'
 
 let dbPromise
 
@@ -11,8 +12,16 @@ function init(_dbPromise) {
 }
 
 function upgrade(db) {
-  console.log('#createObjectStore', opsStore)
+  console.log('🔸 crdt.createObjectStore', localStore, opsStore)
+  db.createObjectStore(localStore)
   db.createObjectStore(opsStore)
+}
+
+async function getLocal() {
+  const db = await dbPromise
+  const local = await db.get(localStore, 'local') || null
+  console.log('🔸 crdt.getLocal ->', local)
+  return local
 }
 
 async function getDoc() {
@@ -20,7 +29,7 @@ async function getDoc() {
     kind: 'ops',
     ops: await getOps()
   }
-  console.log('#getDoc ->', payload)
+  console.log('🔸 crdt.getDoc ->', payload)
   return payload
 }
 
@@ -29,12 +38,13 @@ async function getOps() {
   return db.getAll(opsStore)
 }
 
-async function storeDoc(payload) {
-  console.log('#storeDoc ->', payload)
+async function store(local, payload) {
+  console.log('🔸 crdt.store ->', local, payload)
   if (payload.kind !== 'ops') {
-    throw 'storeDoc: invalid payload'
+    throw 'store: invalid payload'
   }
   const db = await dbPromise
+  db.put(localStore, local, 'local')
   const tx = db.transaction(opsStore, 'readwrite')
   payload.ops.forEach(op => tx.store.add(op, op.id))
 }
