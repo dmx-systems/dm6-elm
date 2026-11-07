@@ -65,16 +65,6 @@ bootstrap rootTopicId =
   }
 
 
--- not used
-resetTransient : Model -> Model
-resetTransient model =
-  { model
-    | mouse = model.mouse |> MouseDef.resetTransient
-    , topicList = model.topicList |> TopicListDef.resetTransient
-    -- TODO: add other modules as well
-  }
-
-
 type Msg
   -- box renderers
   = TopicMap TopicMapDef.Msg

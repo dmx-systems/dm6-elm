@@ -1,14 +1,12 @@
 module TopicMap.TopicMapDef exposing (Model, SyncModel, TopicMap, MapTopic, DragState(..),
   DragMode(..), Msg(..), init, initSync, topicMapsDict, topicMapDoc, mapTopicsDict, mapTopicDoc)
 
+import Feature.CrdtBase exposing (..)
 import ModelBase exposing (..)
-import SyncBase exposing (..)
 
 import Crdt as C
 
 import Dict exposing (Dict)
-import Json.Decode as D
-import Json.Encode as E
 import Time
 
 

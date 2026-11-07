@@ -1,16 +1,13 @@
 module TopicList.TopicListDef exposing (Model, SyncModel, TopicList, DropMode(..), Targets,
-  init, initSync, resetTransient, topicListsDict, topicListDoc)
+  init, initSync, topicListsDict, topicListDoc)
 
+import Feature.CrdtBase exposing (..)
 import ModelBase exposing (..)
-import SyncBase exposing (..)
 
 import Crdt as C
 
 import Array exposing (Array)
 import Dict exposing (Dict)
-import Json.Decode as D
-import Json.Encode as E
-
 
 
 
@@ -39,14 +36,6 @@ init =
 initSync : SyncModel
 initSync =
   Dict.empty
-
-
-resetTransient : Model -> Model
-resetTransient model =
-  { model
-  | dragPos = Nothing
-  , dropMode = Nothing
-  }
 
 
 type alias TopicList =

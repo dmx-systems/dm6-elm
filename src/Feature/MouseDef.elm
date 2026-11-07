@@ -27,11 +27,6 @@ init =
   }
 
 
-resetTransient : Model -> Model
-resetTransient _ =
-  init
-
-
 type alias DragSource =
   { topicId : TopicId      -- the topic being dragged                     \
   , boxPath : BoxPath      -- direct topic context                        |

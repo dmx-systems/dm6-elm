@@ -2,7 +2,7 @@ module ModelBase exposing (Id, TopicId(..), AssocId(..), ItemId(..), AssocIds,
   Topic, Icon, TextSize, Size, SizeField(..), Point, Rectangle, Assoc, AssocType(..), ItemSet,
   SetItem, Box, BoxId(..), Level, BoxPath, Target, BoxTarget, BoxTopic, Expansion(..), ImageId,
   Attrs, PointerType, toTopicId, toAssocId, toBoxId, fromBoxId, maybeTopicId, maybeAssocId,
-  encodeTopicId, encodeBoxId, topicIdDecoder, boxIdDecoder, toDictDecoderWith)
+  encodeBoxId, topicIdDecoder, boxIdDecoder)
 
 import Renderer exposing (Renderer)
 
@@ -11,13 +11,6 @@ import Html exposing (Attribute)
 import Json.Decode as D
 import Json.Encode as E
 
-
-
--- TYPES
-
-
-type alias Entity e i =
-  { e | id : i }
 
 
 -- Item
@@ -196,30 +189,12 @@ type alias SetItem =
 
 -- Encode
 
-encodeTopicId : TopicId -> E.Value
-encodeTopicId id =
-  E.string (toTopicId id)
-
-
 encodeBoxId : BoxId -> E.Value
 encodeBoxId id =
   E.string (toBoxId id)
 
 
 -- Decode
-
-{-| A Dict decoder that takes an extra function to unwrap the entity ID so it can be used as a
-Dict key.
--}
-toDictDecoderWith : (i -> Id) -> D.Decoder (Entity e i) -> D.Decoder (Dict Id (Entity e i))
-toDictDecoderWith unwrapId entityDecoder =
-  D.list entityDecoder |> D.map
-    (\items ->
-      items
-        |> List.map (\item -> (unwrapId item.id, item))
-        |> Dict.fromList
-    )
-
 
 topicIdDecoder : D.Decoder TopicId
 topicIdDecoder =
