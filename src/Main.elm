@@ -277,7 +277,6 @@ update msg appModel =
             Cancel maybeTarget ->
               env
                 |> cancelUI maybeTarget
-                |> Outcome.from
             NoOp ->
               env
                 |> Env.outcome
@@ -288,8 +287,8 @@ update msg appModel =
         |> running
 
 
-{- Handles the Bootstrap message.
-Transitions AppModel from Bootstrapping to Running.
+{- Handles the Bootstrap message: creates default content and transitions AppModel from
+Bootstrapping to Running.
 -}
 bootstrap : Msg -> (AppModel, Cmd Msg)
 bootstrap msg =
@@ -305,7 +304,7 @@ bootstrap msg =
             |> Id.fillPool pool
             |> bootstrapContent rootTopicId
             |> TopicMap.bootstrapContent
-            |> Outcome.with (defaultNav hash) (Directives Store NoUndo) -- ### TODO: was "Swap"
+            |> Outcome.with (defaultNav hash) (Directives Store NoUndo)
             |> Outcome.perform 
             |> runningWith (domReady ())
         [] ->
@@ -366,7 +365,7 @@ runningWith cmd_ (model, cmd) =
 
 --
 
-cancelUI : Maybe Target -> Env -> (Model, Cmd Msg)
+cancelUI : Maybe Target -> Env -> Outcome
 cancelUI maybeTarget env =
   env
     |> Env.map Icon.closePicker
@@ -375,7 +374,7 @@ cancelUI maybeTarget env =
     |> cancelUIWith maybeTarget
 
 
-cancelUIWith : Maybe Target -> Env -> (Model, Cmd Msg)
+cancelUIWith : Maybe Target -> Env -> Outcome
 cancelUIWith maybeTarget ({model} as env) =
   let
     isTargeted =
@@ -388,7 +387,8 @@ cancelUIWith maybeTarget ({model} as env) =
         _ -> False
   in
   if isTargeted then
-    (model, Cmd.none) -- keep selection, hover state, and edit mode
+    env
+      |> Env.outcome -- keep selection, hover state, and edit mode
   else
     env
       |> Env.map Sel.clear

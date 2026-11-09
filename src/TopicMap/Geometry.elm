@@ -169,7 +169,7 @@ Based on the rect's change the TopicMap's topic position adjustment within the p
 TopicMap (if any) is calculated as well.
 -}
 autoSize : BoxPath -> Env -> (Rectangle, Model)
-autoSize boxPath ({model, dispatch}) =
+autoSize boxPath {model, dispatch} =
   let
     boxId = Box.firstId boxPath
   in

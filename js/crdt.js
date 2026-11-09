@@ -20,7 +20,7 @@ function upgrade(db) {
 async function getLocal() {
   const db = await dbPromise
   const local = await db.get(localStore, 'local') || null
-  console.log('🔸 crdt.getLocal ->', local)
+  console.log('🔸 crdt.getLocal', local)
   return local
 }
 
@@ -29,7 +29,7 @@ async function getDoc() {
     kind: 'ops',
     ops: await getOps()
   }
-  console.log('🔸 crdt.getDoc ->', payload)
+  console.log('🔸 crdt.getDoc', payload)
   return payload
 }
 
@@ -39,7 +39,7 @@ async function getOps() {
 }
 
 async function store(local, payload) {
-  console.log('🔸 crdt.store ->', local, payload)
+  console.log('🔸 crdt.store', payload)
   if (payload.kind !== 'ops') {
     throw 'store: invalid payload'
   }

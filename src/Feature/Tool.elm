@@ -338,7 +338,6 @@ update msg ({model} as env) =
     ToolDef.CreateTopic ->
       env
         |> createTopic
-        |> Outcome.fromDir (Directives Store SingleEdit)
     ToolDef.Undo ->
       model
         |> Outcome.withDir (Directives Store Undo)
@@ -349,7 +348,6 @@ update msg ({model} as env) =
     ToolDef.Edit ->
       env
         |> edit
-        |> Outcome.fromDir (Directives Store EditStart)
     ToolDef.Icon ->
       env
         |> Env.map Icon.openPicker
@@ -386,7 +384,6 @@ update msg ({model} as env) =
     ToolDef.LeaveEdit ->
       env
         |> Text.leaveEdit
-        |> Outcome.fromDir (Directives NoStore EditEnd)
 
 
 -- Global Tools
@@ -413,7 +410,7 @@ setLineStyle lineStyle ({tool} as model) =
 
 -- Map Tools
 
-createTopic : Env -> (Model, Cmd Msg)
+createTopic : Env -> Outcome
 createTopic ({model} as env) =
   let
     (newModel, topicId) = Topic.create "" C.initTopicIcon model
@@ -429,7 +426,7 @@ createTopic ({model} as env) =
 
 -- Item Tools
 
-edit : Env -> (Model, Cmd Msg)
+edit : Env -> Outcome
 edit ({model} as env) =
   case Sel.single model of
     Just (T id, boxPath) ->
@@ -438,7 +435,8 @@ edit ({model} as env) =
       let
         _ = Console.logError "Feature.Tool.edit" "No single topic selection" (Sel.single model)
       in
-      (model, Cmd.none)
+      env
+        |> Env.outcome
 
 
 delete : Env -> Env

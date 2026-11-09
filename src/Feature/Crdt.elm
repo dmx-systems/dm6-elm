@@ -160,15 +160,17 @@ setBoxRenderer (BoxId (TopicId id)) renderer model =
 
 
 markSingleEdit : Model -> Model -> Model
-markSingleEdit oldModel model =
-  Doc.recordEdit (Doc.version oldModel.crdt.doc) model.crdt.doc
+markSingleEdit prevModel model =
+  Doc.recordEdit (Doc.version prevModel.crdt.doc) model.crdt.doc
     |> setDoc model
 
 
+{- Marks the begin of an undoable action.
+-}
 markEditStart : Model -> Model -> Model
-markEditStart oldModel model =
+markEditStart prevModel model =
   model
-    |> setEditStartVersion (Just (Doc.version oldModel.crdt.doc))
+    |> setEditStartVersion (Just (Doc.version prevModel.crdt.doc))
 
 
 markEditEnd : Model -> Model
@@ -189,12 +191,14 @@ undo : Model -> Model
 undo model =
   Doc.undo model.crdt.doc
     |> setDoc model
+    |> updateCache
 
 
 redo : Model -> Model
 redo model =
   Doc.redo model.crdt.doc
     |> setDoc model
+    |> updateCache
 
 
 canUndo : Model -> Bool

@@ -29,7 +29,7 @@ bootstrap =
   { topics = Dict.empty
   , assocs = Dict.empty
   , boxes = Dict.empty
-  , rootBoxId = BoxId (TopicId "") -- Initialized later through Main.bootstrapContent
+  , rootBoxId = BoxId (TopicId "") -- Set while cache materialization (Main.bootstrapContent)
   , itemSets = Dict.empty
   -- box renderers
   , topicMap = TopicMapDef.initSync

@@ -28,10 +28,10 @@ type Storage
 
 
 type Undo
-  = NoUndo
-  | SingleEdit
-  | EditStart
-  | EditEnd
+  = NoUndo -- default
+  | SingleEdit -- TODO: rename to MarkSingle
+  | EditStart  -- TODO: rename to MarkBegin
+  | EditEnd    -- TODO: rename to MarkEnd
   --
   | Undo
   | Redo
@@ -76,24 +76,31 @@ mergeCmd cmd out =
   { out | cmd = Cmd.batch [out.cmd, cmd] }
 
 
+{- Perform the effects encoded in an outcome.
+Only used for bootstrap when there is no previous model (no undo possible).
+-}
 perform : Outcome -> (Model, Cmd Msg)
 perform outcome =
   performWith outcome.model outcome
 
 
+{- Perform the effects encoded in an outcome.
+In case of an Undo directive the previous model marks the begin of an undoable action.
+-}
 performWith : Model -> Outcome -> (Model, Cmd Msg)
-performWith oldModel {model, cmd, directives} =
+performWith prevModel {model, cmd, directives} =
   let
     performUndo : Model
     performUndo =
       case directives.undo of
         NoUndo -> model
-        SingleEdit -> Crdt.markSingleEdit oldModel model
-        EditStart -> Crdt.markEditStart oldModel model
+        SingleEdit -> Crdt.markSingleEdit prevModel model
+        EditStart -> Crdt.markEditStart prevModel model
         EditEnd -> Crdt.markEditEnd model
         Undo -> Crdt.undo model
         Redo -> Crdt.redo model
-    --
+
+
     performStorage : Model -> (Model, Cmd Msg)
     performStorage model_ =
       case directives.storage of

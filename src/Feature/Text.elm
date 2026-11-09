@@ -125,7 +125,6 @@ update msg ({model} as env) =
     TextDef.LeaveEdit ->
       env
         |> leaveEdit
-        |> Outcome.from
     TextDef.ImageFilePicked {topicId, imageId} ->
       model
         |> insertImage topicId imageId
@@ -136,38 +135,39 @@ update msg ({model} as env) =
         |> Outcome.default
 
 
-enterEdit : TopicId -> BoxPath -> Env -> (Model, Cmd Msg)
+enterEdit : TopicId -> BoxPath -> Env -> Outcome
 enterEdit topicId boxPath env =
-  let
-    model =
-      env
-        |> Env.map (setEditState (Edit topicId boxPath))
-        |> Env.map (setExpansion topicId (Box.firstId boxPath))
-        |> Env.autoSize
-        |> .model
-  in
-  (model, focus model)
+  env
+    |> Env.map (setEditState (Edit topicId boxPath))
+    |> Env.map (adjustExpansion topicId (Box.firstId boxPath))
+    |> Env.autoSize
+    |> Env.outcomeWith focus (Directives Store EditStart)
+    -- Store: stores adjusted expansion state
+    -- EditStart: ...
 
 
-leaveEdit : Env -> (Model, Cmd Msg)
+leaveEdit : Env -> Outcome
 leaveEdit ({model} as env) =
   case model.text.edit of
     Edit topicId boxPath ->
       let
         elemId = Box.elemId "topic" topicId boxPath
       in
-      ( env
-          |> Env.map (setEditState NoEdit)
-          |> Env.autoSize
-          |> .model
-      , measureElement elemId topicId View
-      )
+      env
+        |> Env.map (setEditState NoEdit)
+        |> Env.autoSize
+        |> Env.outcomeFrom (measureElement elemId topicId View) (Directives NoStore EditEnd)
+        -- NoStore: measurement is requested here, once size arrives Store is requested anyways
+        -- (see TextDef.GotTextSize above)
+        -- EditEnd: the entire keystroke burst forms a single undoable action. EditStart is
+        -- marked by ToolDef.Edit resp. ToolDef.CreateTopic
     NoEdit ->
-      (model, Cmd.none)
+      env
+        |> Env.outcome
 
 
-setExpansion : TopicId -> BoxId -> Model -> Model
-setExpansion topicId boxId model =
+adjustExpansion : TopicId -> BoxId -> Model -> Model
+adjustExpansion topicId boxId model =
   model
     |> Box.updateExpansion topicId boxId
       (\expansion ->

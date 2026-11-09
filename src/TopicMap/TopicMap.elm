@@ -130,7 +130,11 @@ allMapTopics topicMap model =
       (\topicId -> mapTopic_ topicId topicMap)
 
 
-{-| Logs an error if TopicMap is missing, or inside TopicMap the MapTopic is missing. -}
+-- Topic position
+
+{-| Returns the topic position inside a topic map.
+Logs an error if TopicMap is missing, or inside TopicMap the MapTopic is missing.
+-}
 topicPos : TopicId -> BoxId -> Model -> Maybe Point
 topicPos topicId boxId model =
   case mapTopic topicId boxId model of
@@ -139,7 +143,9 @@ topicPos topicId boxId model =
       Console.fail "TopicMap.TopicMap.topicPos" (topicId, boxId) Nothing
 
 
-{-| Logs an error if TopicMap is missing, or inside TopicMap the MapTopic is missing. -}
+{-| Transforms a topic position into a new topic position.
+Logs an error if TopicMap is missing, or inside TopicMap the MapTopic is missing.
+-}
 updateTopicPos : TopicId -> BoxId -> (Point -> Point) -> Model -> Model
 updateTopicPos topicId boxId transform model =
   case topicPos topicId boxId model of
@@ -152,6 +158,8 @@ updateTopicPos topicId boxId transform model =
       in
       model
 
+
+--
 
 assocGeometry : Assoc -> BoxId -> Model -> Maybe (Point, Point)
 assocGeometry assoc boxId model =
@@ -225,7 +233,7 @@ initTopicPos boxId model =
       Point 0 0 -- error is already logged
 
 
-{-| Looks up MapTopic for a given BoxId.
+{-| Look up a MapTopic for a given BoxId.
 Logs an error if TopicMap is missing, or inside TopicMap the MapTopic is missing.
 -}
 mapTopic : TopicId -> BoxId -> Model -> Maybe MapTopic
@@ -234,7 +242,7 @@ mapTopic topicId boxId model =
     |> Maybe.andThen (mapTopic_ topicId)
 
 
-{-| Looks up MapTopic inside the given TopicMap.
+{-| Look up a MapTopic when you have a TopicMap already.
 Logs an error if MapTopic is missing.
 -}
 mapTopic_ : TopicId -> TopicMap -> Maybe MapTopic
@@ -246,9 +254,12 @@ mapTopic_ topicId topicMap =
       Nothing
 
 
+{-| Look up a MapTopic when you have a TopicMap already.
+Returns Nothing if MapTopic is not there (not treated as error).
+-}
 mapTopicOrNothing : TopicId -> TopicMap -> Maybe MapTopic
-mapTopicOrNothing topicId topicMap =
-  case topicMap.topics |> Dict.get (toTopicId topicId) of
+mapTopicOrNothing (TopicId id) topicMap =
+  case Dict.get id topicMap.topics of
     Just topic -> Just topic
     Nothing -> Nothing
 
