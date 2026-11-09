@@ -1,6 +1,6 @@
 import { Elm } from './src/Main.elm'
 import image from './js/image'
-import crdt from './js/crdt'
+import store from './js/store'
 import zip from './js/zip'
 import { openDB } from 'idb'
 
@@ -10,18 +10,18 @@ const dbName = 'dm6-elm'
 const dbPromise = openDB(dbName, 1, {
   upgrade(db) {
     image.upgrade(db)
-    crdt.upgrade(db)
+    store.upgrade(db)
   }
 })
 
 // Init Elm app
 
-crdt.init(dbPromise)
+store.init(dbPromise)
 
 const app = Elm.Main.init({
   flags: [
-    await crdt.getLocal(),
-    await crdt.getDoc(),
+    await store.getLocal(),
+    await store.getDoc(),
     location.hash
   ]
 })
@@ -31,8 +31,8 @@ zip.init(app)
 
 // Storage
 
-app.ports.storeModel.subscribe(([local, payload]) => {
-  crdt.store(local, payload)
+app.ports.storeModel.subscribe(([local, doc]) => {
+  store.put(local, doc)
 })
 
 // Scrolling

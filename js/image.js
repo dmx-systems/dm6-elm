@@ -27,11 +27,11 @@ function initImagePicker() {
     // Files. At the other hand when user inserts an image via file picker, it will give us a File
     // object. We want uniformly have Blobs in the DB. So we explicitly create a Blob from File.
     const blob = await blobFromFile(file)
-    const topicId = Number(input.dataset.topicId)
-    const imageId = Number(input.dataset.imageId)
+    const topicId = input.dataset.topicId
+    const imageId = input.dataset.imageId
     app.ports.onImageFilePicked.send({topicId, imageId})
     resolveImage(imageId, blob)
-    storeImage(imageId, blob)             // don't need to wait for completion
+    storeImage(imageId, blob)           // don't need to wait for completion
   })
   document.body.appendChild(input)
   app.ports.imageFilePicker.subscribe(({topicId, imageId}) => {

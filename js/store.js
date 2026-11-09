@@ -1,5 +1,5 @@
 export default {
-  init, upgrade, getLocal, getDoc, store
+  init, upgrade, getLocal, getDoc, put, clear
 }
 
 const localStore = 'local'
@@ -12,7 +12,7 @@ function init(_dbPromise) {
 }
 
 function upgrade(db) {
-  console.log('🔸 crdt.createObjectStore', localStore, opsStore)
+  console.log('🔸 store.createObjectStore', localStore, opsStore)
   db.createObjectStore(localStore)
   db.createObjectStore(opsStore)
 }
@@ -20,17 +20,17 @@ function upgrade(db) {
 async function getLocal() {
   const db = await dbPromise
   const local = await db.get(localStore, 'local') || null
-  console.log('🔸 crdt.getLocal', local)
+  console.log('🔸 store.getLocal', local)
   return local
 }
 
 async function getDoc() {
-  const payload = {
+  const doc = {
     kind: 'ops',
     ops: await getOps()
   }
-  console.log('🔸 crdt.getDoc', payload)
-  return payload
+  console.log('🔸 store.getDoc', doc)
+  return doc
 }
 
 async function getOps() {
@@ -38,13 +38,21 @@ async function getOps() {
   return db.getAll(opsStore)
 }
 
-async function store(local, payload) {
-  console.log('🔸 crdt.store', payload)
-  if (payload.kind !== 'ops') {
-    throw 'store: invalid payload'
+async function put(local, doc) {
+  console.log('🔸 store.put', doc)
+  if (doc.kind !== 'ops') {
+    throw 'store.put: invalid doc'
   }
   const db = await dbPromise
   db.put(localStore, local, 'local')
   const tx = db.transaction(opsStore, 'readwrite')
-  payload.ops.forEach(op => tx.store.add(op, op.id))
+  doc.ops.forEach(op => tx.store.add(op, op.id))
+  return tx.done
+}
+
+async function clear() {
+  const db = await dbPromise
+  db.clear(localStore)
+  db.clear(opsStore)
+  db.clear('images')    // TODO: modularization
 }
