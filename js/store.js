@@ -25,17 +25,13 @@ async function getLocal() {
 }
 
 async function getDoc() {
+  const db = await dbPromise
   const doc = {
     kind: 'ops',
-    ops: await getOps()
+    ops: await db.getAll(opsStore)
   }
   console.log('🔸 store.getDoc', doc)
   return doc
-}
-
-async function getOps() {
-  const db = await dbPromise
-  return db.getAll(opsStore)
 }
 
 async function put(local, doc) {

@@ -63,13 +63,13 @@ toIndex localPos =
 drag : Point -> Env -> (Model, Cmd Msg)
 drag clientPos {model} =
   ( case (model.mouse.dragSource, model.topicList.dragPos) of
-      (Just {lastPointerPos}, Just dragPos) ->
+      (Just {lastPos}, Just dragPos) ->
         model
           |> setDragPos
             (Just
               { dragPos
-              | x = dragPos.x + clientPos.x - lastPointerPos.x
-              , y = dragPos.y + clientPos.y - lastPointerPos.y
+              | x = dragPos.x + clientPos.x - lastPos.x
+              , y = dragPos.y + clientPos.y - lastPos.y
               }
             )
       _ ->

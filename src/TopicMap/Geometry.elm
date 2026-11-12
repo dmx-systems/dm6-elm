@@ -8,6 +8,7 @@ import Feature.TextDef exposing (EditState(..))
 import Model exposing (Model)
 import ModelBase exposing (..)
 import Topic
+import TopicMap.Mouse as Mouse
 import TopicMap.TopicMap as TM
 import TopicMap.TopicMapDef exposing (TopicMap, MapTopic)
 import TopicMap.ViewModel as VM
@@ -321,10 +322,13 @@ updateBoxGeometry boxPath newRect oldRect model =
     [] -> Console.logError "updateBoxGeometry" "boxPath is empty!" model
 
 
+{- Set the box rect, either in geometry buffer (while dragging), or in persistent model (CRDT).
+-}
 setBoxRect : BoxId -> Rectangle -> Model -> Model
 setBoxRect boxId rect model =
-  model
-    |> TM.setRect boxId rect
+  case Mouse.bufferBoxRect boxId rect model of
+    Just model_ -> model_
+    Nothing -> TM.setRect boxId rect model
 
 
 adjustBoxPos : BoxId -> BoxId -> Rectangle -> Rectangle -> Model -> Model

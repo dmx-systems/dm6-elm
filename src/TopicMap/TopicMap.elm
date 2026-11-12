@@ -1,7 +1,7 @@
 module TopicMap.TopicMap exposing (bootstrapContent, init, allMapTopics, topicPos, randomPos,
-  updateTopicPos, mapTopicOrNothing, assocGeometry, addTopicAt, initLimboMapTopic,
-  initTopicPos, hasMapTopic, fullscreen, lookup, setRect, setScroll, revelationBoxId,
-  revelationBoxPath, landingTarget, toLocalPos, toLocalModelPos)
+  updateTopicPos, updateTopicPosWith, mapTopicOrNothing, assocGeometry, addTopicAt,
+  initLimboMapTopic, initTopicPos, hasMapTopic, fullscreen, lookup, setTopicPos, setRect,
+  setScroll, revelationBoxId, revelationBoxPath, landingTarget, toLocalPos, toLocalModelPos)
 
 import Box
 import Config as C
@@ -125,7 +125,8 @@ once rendered. ### TODO: function name
 -}
 allMapTopics : TopicMap -> Model -> List MapTopic
 allMapTopics topicMap model =
-  Box.topicIds topicMap.id model
+  model
+    |> Box.topicIds topicMap.id 
     |> List.filterMap
       (\topicId -> mapTopic_ topicId topicMap)
 
@@ -143,18 +144,30 @@ topicPos topicId boxId model =
       Console.fail "TopicMap.TopicMap.topicPos" (topicId, boxId) Nothing
 
 
-{-| Transforms a topic position into a new topic position.
+{-| Transforms a topic position into a new topic position and persists it (CRDT).
 Logs an error if TopicMap is missing, or inside TopicMap the MapTopic is missing.
 -}
 updateTopicPos : TopicId -> BoxId -> (Point -> Point) -> Model -> Model
 updateTopicPos topicId boxId transform model =
+  updateTopicPosWith topicId boxId
+    (\pos -> setTopicPos topicId boxId (transform pos) model)
+    model
+
+
+{-| Transforms a topic position into a new model. Allows the caller e.g. to persist the new
+position, or to buffer it in transient model (the geometry buffer as utilized while dragging
+a topic).
+Logs an error if TopicMap is missing, or inside TopicMap the MapTopic is missing.
+-}
+updateTopicPosWith : TopicId -> BoxId -> (Point -> Model) -> Model -> Model
+updateTopicPosWith topicId boxId transform model =
   case topicPos topicId boxId model of
     Just pos ->
-      model
-        |> setTopicPos topicId boxId (transform pos)
+      transform pos
     Nothing ->
       let
-        _ = Console.fail "TopicMap.TopicMap.updateTopicPos" "Can't update pos" (topicId, boxId)
+        _ = Console.fail "TopicMap.TopicMap.updateTopicPosWith" "Can't update pos"
+          (topicId, boxId)
       in
       model
 
@@ -173,13 +186,11 @@ assocGeometry assoc boxId model =
       Console.fail "TopicMap.TopicMap.assocGeometry" {assoc = assoc, boxId = boxId} Nothing
 
 
-randomPos : TopicId -> BoxId -> Model -> (Model, Cmd Msg)
-randomPos topicId boxId model =
-  let
-    toMsg = Model.TopicMap << TopicMapDef.GotRandomPos topicId boxId
-    cmd = Random.generate toMsg pointGen
-  in
-  (model, cmd)
+randomPos : TopicId -> BoxId -> Cmd Msg
+randomPos topicId boxId =
+  Random.generate
+    (Model.TopicMap << TopicMapDef.GotRandomPos topicId boxId)
+    pointGen
 
 
 -- GotRandomPos message handler
@@ -408,9 +419,6 @@ removeMapTopic (TopicId topicId) (BoxId (TopicId boxId)) model =
     |> Feature.Crdt.editResult model
 
 
--- ### TODO: don't edit CRDT continuously while dragging, only once on drag-end
--- ### Required: add transient drag-state instead of modifying persistent pos
--- ### Alternative: while dragging *write* pos into model.cache (which is *read* cache)
 setTopicPos : TopicId -> BoxId -> Point -> Model -> Model
 setTopicPos (TopicId topicId) (BoxId (TopicId boxId)) pos model =
   model.crdt.doc

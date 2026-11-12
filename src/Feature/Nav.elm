@@ -100,21 +100,14 @@ pushUrl boxId =
 
 boxIdFromHash : String -> Maybe BoxId
 boxIdFromHash hash =
-  case String.isEmpty hash of
-    True -> Nothing
-    False ->
-      case String.startsWith "#" hash of
-        True ->
-          let
-            boxId = String.dropLeft 1 hash
-          in
-          Just (BoxId (TopicId boxId))
-          -- ### TODO: check hash validity
-          -- case String.dropLeft 1 hash |> String.toInt of
-          --   Just boxId -> Just (BoxId (TopicId boxId))
-          --   Nothing ->
-          --     Console.logError "Feature.Nav.boxIdFromHash"
-          --       ("not a number after hash in \"" ++ hash ++ "\"") Nothing
-        False ->
-          Console.logError "Feature.Nav.boxIdFromHash" ("\"" ++ hash ++ "\" is not a hash")
-            Nothing
+  if String.isEmpty hash then
+    Nothing
+  else
+    if String.startsWith "#" hash then
+      let
+        boxId = String.dropLeft 1 hash
+      in
+      Just (BoxId (TopicId boxId))
+    else
+      Console.logError "Feature.Nav.boxIdFromHash" ("\"" ++ hash ++ "\" is not a hash")
+        Nothing

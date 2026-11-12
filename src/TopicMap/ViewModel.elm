@@ -5,6 +5,7 @@ import Console
 import Feature.SearchDef exposing (SearchResult(..))
 import Model exposing (Model)
 import ModelBase exposing (..)
+import TopicMap.Mouse as Mouse
 import TopicMap.TopicMap as TM
 import TopicMap.TopicMapDef exposing (TopicMap, MapTopic)
 
@@ -14,8 +15,10 @@ import TopicMap.TopicMapDef exposing (TopicMap, MapTopic)
 topicsToRender : TopicMap -> Model -> List MapTopic
 topicsToRender topicMap model =
   let
-    topics = TM.allMapTopics topicMap model |> List.map
-      (\topic -> effectiveExpansion topic topicMap.id model)
+    topics =
+      TM.allMapTopics topicMap model
+        |> List.map (\topic -> Mouse.effectivePos topic topicMap.id model)
+        |> List.map (\topic -> effectiveExpansion topic topicMap.id model)
     limboTopic = limboMapTopic topicMap model
   in
   topics ++ limboTopic

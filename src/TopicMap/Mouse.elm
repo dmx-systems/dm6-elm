@@ -1,5 +1,5 @@
 module TopicMap.Mouse exposing (dragStart, drag, dragAccept, dragStop, timeArrived,
-  isDraftAssoc)
+  isDraftAssoc, bufferBoxRect, effectivePos)
 
 import Assoc
 import Box
@@ -12,8 +12,10 @@ import ModelBase exposing (..)
 import Outcome exposing (..)
 import Renderer
 import TopicMap.TopicMap as TopicMap
-import TopicMap.TopicMapDef as TopicMapDef exposing (DragState(..), DragMode(..))
+import TopicMap.TopicMapDef as TopicMapDef exposing (MapTopic, DragState(..), DragMode(..),
+  GeometryBuffer)
 
+import Dict exposing (Dict)
 import Task
 import Time exposing (Posix, posixToMillis)
 
@@ -52,12 +54,13 @@ timeArrived time model =
     (Just {topicId, boxPath}, Just (WaitForEndTime startTime)) ->
       let
         delay = posixToMillis time - posixToMillis startTime
+        initDragTopic = Just << Drag << DragTopic (GeometryBuffer Dict.empty Dict.empty)
         (dragState, undoOp) =
           if delay > C.assocDelayMillis then
             (Just <| Drag DraftAssoc, NoUndo) -- ### TODO: was "Swap"
           else
             case TopicMap.topicPos topicId (Box.firstId boxPath) model of
-              Just origPos -> (Just <| Drag <| DragTopic origPos, NoUndo) -- ### TODO: was "Push"
+              Just origPos -> (initDragTopic origPos, NoUndo) -- ### TODO: was "Push"
               Nothing -> (Nothing, NoUndo) -- error is already logged -- ### TODO: was "Swap"
       in
       model
@@ -95,15 +98,21 @@ drag clientPos ({model} as env) =
 updateTopicPos : Point -> Model -> Model
 updateTopicPos clientPos model =
   case (model.mouse.dragSource, model.topicMap.dragState) of
-    (Just {topicId, boxPath, lastPointerPos}, Just (Drag dragMode)) ->
+    (Just {topicId, boxPath, startPos}, Just (Drag dragMode)) ->
       case dragMode of
-        DragTopic _ ->
+        DragTopic buffer origPos ->
+          let
+            boxId = Box.firstId boxPath
+          in
           model
-            |> TopicMap.updateTopicPos topicId (Box.firstId boxPath)
+            |> TopicMap.updateTopicPosWith topicId boxId
               (\pos ->
-                Point
-                  (pos.x + clientPos.x - lastPointerPos.x)
-                  (pos.y + clientPos.y - lastPointerPos.y)
+                bufferTopicPos topicId boxId
+                  (Point
+                    (pos.x + clientPos.x - startPos.x)
+                    (pos.y + clientPos.y - startPos.y)
+                  )
+                  buffer origPos model
               )
         DraftAssoc ->
           model
@@ -135,7 +144,7 @@ dropTarget model =
             isCyclic = Box.hasDeepTopic targetTopicId topicId -- partially applied
           in
           case model.topicMap.dragState of
-            Just (Drag (DragTopic _)) ->
+            Just (Drag (DragTopic _ _)) ->
               let
                 -- When dragging a topic inside a nested box that box will be the target (this
                 -- is since target is determined by map geometry, not by enter/leave events
@@ -173,7 +182,7 @@ dragStop ({model} as env) =
       case model.mouse.dragSource of
         Just {topicId, boxPath} ->
           case model.topicMap.dragState of
-            Just (Drag (DragTopic origTopicPos)) ->
+            Just (Drag (DragTopic _ origTopicPos)) ->
               env
                 |> topicDragEnd topicId boxPath origTopicPos
             Just (Drag DraftAssoc) ->
@@ -227,6 +236,7 @@ topicDragEnd sourceTopicId sourceBoxPath origTopicPos ({model} as env) =
           "topic drag ended w/o target -> store position"
       in
       env
+        |> Env.map persistBuffer
         |> Env.outcomeDir (Directives Store NoUndo) -- ### TODO: was "Swap"
     _ ->
       env
@@ -302,10 +312,9 @@ moveTopicToBox topicId boxId targetTopicId targetPath ({model} as env) =
       env
         |> Box.turnTopicIntoBox targetTopicId renderer
         |> Box.addTopic (BoxTopic topicId expansion) targetBoxId
-        |> .model
-        |> Box.removeTopic topicId boxId
-        |> Sel.select (T targetTopicId) targetPath
-        |> TopicMap.randomPos topicId targetBoxId
+        |> Env.map (Box.removeTopic topicId boxId)
+        |> Env.map (Sel.select (T targetTopicId) targetPath)
+        |> Env.withCmd (TopicMap.randomPos topicId targetBoxId)
     Nothing ->
       (model, Cmd.none)
 
@@ -330,3 +339,75 @@ isDraftAssoc model =
   case model.topicMap.dragState of
     Just (Drag DraftAssoc) -> True
     _ -> False
+
+
+
+-- GEOMETRY BUFFER
+
+bufferTopicPos : TopicId -> BoxId -> Point -> GeometryBuffer -> Point -> Model -> Model
+bufferTopicPos (TopicId topicId) (BoxId (TopicId boxId)) newPos buffer origPos model =
+  setDragState
+    (Just <| Drag <| DragTopic
+      { buffer | topics = buffer.topics |> Dict.insert (topicId, boxId) newPos }
+      origPos
+    )
+    model
+
+
+bufferBoxRect : BoxId -> Rectangle -> Model -> Maybe Model
+bufferBoxRect (BoxId (TopicId boxId)) rect model =
+  case model.topicMap.dragState of
+    Just (Drag (DragTopic buffer origPos)) ->
+      Just
+        (setDragState
+          (Just <| Drag <| DragTopic
+            { buffer | topicMaps = buffer.topicMaps |> Dict.insert boxId rect }
+            origPos
+          )
+          model
+        )
+    _ -> Nothing
+
+
+effectivePos : MapTopic -> BoxId -> Model -> MapTopic
+effectivePos topic (BoxId (TopicId boxId)) model =
+  case model.topicMap.dragState of
+    Just (Drag (DragTopic buffer _)) ->
+      case Dict.get (toTopicId topic.id, boxId) buffer.topics of
+        Just pos -> { topic | pos = pos }
+        Nothing -> topic
+    _ -> topic
+
+
+persistBuffer : Model -> Model
+persistBuffer model =
+  let
+    persistTopics : Dict (Id, Id) Point -> Model -> Model
+    persistTopics topics model_ =
+      topics
+        |> Dict.foldl
+          (\(topicId, boxId) pos modelAcc ->
+            TopicMap.setTopicPos (TopicId topicId) (BoxId (TopicId boxId)) pos modelAcc
+          )
+          model_
+
+    persistTopicMaps : Dict Id Rectangle -> Model -> Model
+    persistTopicMaps topicMaps model_ =
+      topicMaps
+        |> Dict.foldl
+          (\boxId rect modelAcc ->
+            TopicMap.setRect (BoxId (TopicId boxId)) rect modelAcc
+          )
+          model_
+  in
+  case model.topicMap.dragState of
+    Just (Drag (DragTopic buffer _)) ->
+      model
+        |> persistTopics buffer.topics
+        |> persistTopicMaps buffer.topicMaps
+    _ ->
+      let
+        _ = Console.logError "TopicMap.Mouse.persistBuffer" "Unexpected drag state"
+          model.topicMap.dragState
+      in
+      model

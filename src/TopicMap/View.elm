@@ -536,7 +536,7 @@ viewAssoc assoc boxPath clickHandler model =
 viewAssocDraft : BoxId -> Model -> List (Svg Msg)
 viewAssocDraft boxId model =
   case (model.mouse.dragSource, model.topicMap.dragState) of
-    (Just {topicId, boxPath, lastPointerPos}, Just (Drag DraftAssoc)) ->
+    (Just {topicId, boxPath, lastPos}, Just (Drag DraftAssoc)) ->
       let
         sourceBoxId = Box.firstId boxPath
       in
@@ -544,7 +544,7 @@ viewAssocDraft boxId model =
         case TM.topicPos topicId sourceBoxId model of
           Just pos1 ->
             let
-              pos2 = TM.toLocalModelPos lastPointerPos boxPath model
+              pos2 = TM.toLocalModelPos lastPos boxPath model
             in
             (lineRenderer model) pos1 pos2 Nothing [boxId] [] model
             -- simple box path is sufficient for geometry, draft assoc is never selected

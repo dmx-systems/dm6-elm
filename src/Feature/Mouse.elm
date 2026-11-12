@@ -30,7 +30,7 @@ update msg ({model, dispatch} as env) =
         |> updateHover pos dispatch
         |> dispatch.drag (Box.firstId dragSource.ixBoxPath) pos
         |> dragAccept pos dispatch
-        |> Model.map (setDragSource (Just {dragSource | lastPointerPos = pos}))
+        |> Model.map (setDragSource (Just {dragSource | lastPos = pos}))
         |> Outcome.from
     (MouseDef.Up, Just dragSource) ->
       env

@@ -1,5 +1,5 @@
 module Env exposing (Env, Dispatch, Renderers, RendererLabel, map, autoSize, outcome,
-  outcomeCmd, outcomeDir, outcomeFrom, outcomeWith)
+  outcomeCmd, outcomeDir, outcomeFrom, outcomeWith, withCmd)
 
 import Model exposing (Model, Msg)
 import ModelBase exposing (..)
@@ -132,3 +132,10 @@ outcomeFrom cmd directives env =
 outcomeWith : (Model -> Cmd Msg) -> Directives -> Env -> Outcome
 outcomeWith toCmd directives {model} =
   Outcome model (toCmd model) directives
+
+
+-- Model-Cmd tuple
+
+withCmd : Cmd Msg -> Env -> (Model, Cmd Msg)
+withCmd cmd env =
+  (env.model, cmd)

@@ -1,5 +1,6 @@
 module TopicMap.TopicMapDef exposing (Model, SyncModel, TopicMap, MapTopic, DragState(..),
-  DragMode(..), Msg(..), init, initSync, topicMapsDict, topicMapDoc, mapTopicsDict, mapTopicDoc)
+  DragMode(..), GeometryBuffer, Msg(..), init, initSync, topicMapsDict, topicMapDoc,
+  mapTopicsDict, mapTopicDoc)
 
 import Feature.CrdtBase exposing (..)
 import ModelBase exposing (..)
@@ -58,8 +59,14 @@ type DragState
 
 
 type DragMode
-  = DragTopic Point -- original topic position
+  = DragTopic GeometryBuffer Point -- Point: original topic position TODO: drop
   | DraftAssoc
+
+
+type alias GeometryBuffer =
+  { topics : Dict (Id, Id) Point -- (topicId, topicMapId)
+  , topicMaps : Dict Id Rectangle -- topicMapId
+  }
 
 
 type Msg
