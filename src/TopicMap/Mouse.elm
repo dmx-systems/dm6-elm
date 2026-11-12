@@ -1,5 +1,5 @@
 module TopicMap.Mouse exposing (dragStart, drag, dragAccept, dragStop, timeArrived,
-  isDraftAssoc, bufferBoxRect, effectivePos)
+  isDraftAssoc, bufferBoxRect, effectivePos, effectivePosFor)
 
 import Assoc
 import Box
@@ -369,14 +369,29 @@ bufferBoxRect (BoxId (TopicId boxId)) rect model =
     _ -> Nothing
 
 
-effectivePos : MapTopic -> BoxId -> Model -> MapTopic
-effectivePos topic (BoxId (TopicId boxId)) model =
+effectivePos : TopicId -> BoxId -> Model -> Point
+effectivePos topicId boxId model =
+  case bufferedPos topicId boxId model of
+    Just pos -> pos
+    Nothing ->
+      case TopicMap.topicPos topicId boxId model of
+        Just pos -> pos
+        Nothing -> Point 0 0 -- TODO?
+
+
+effectivePosFor : MapTopic -> BoxId -> Model -> MapTopic
+effectivePosFor topic boxId model =
+  case bufferedPos topic.id boxId model of
+    Just pos -> { topic | pos = pos }
+    Nothing -> topic
+
+
+bufferedPos : TopicId -> BoxId -> Model -> Maybe Point
+bufferedPos topicId boxId model =
   case model.topicMap.dragState of
     Just (Drag (DragTopic buffer _)) ->
-      case Dict.get (toTopicId topic.id, boxId) buffer.topics of
-        Just pos -> { topic | pos = pos }
-        Nothing -> topic
-    _ -> topic
+      Dict.get (toTopicId topicId, toBoxId boxId) buffer.topics
+    _ -> Nothing
 
 
 persistBuffer : Model -> Model

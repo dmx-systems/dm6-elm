@@ -17,7 +17,7 @@ topicsToRender topicMap model =
   let
     topics =
       TM.allMapTopics topicMap model
-        |> List.map (\topic -> Mouse.effectivePos topic topicMap.id model)
+        |> List.map (\topic -> Mouse.effectivePosFor topic topicMap.id model)
         |> List.map (\topic -> effectiveExpansion topic topicMap.id model)
     limboTopic = limboMapTopic topicMap model
   in
