@@ -5,8 +5,7 @@ import Console
 import Feature.SearchDef exposing (SearchResult(..))
 import Model exposing (Model)
 import ModelBase exposing (..)
-import TopicMap.Mouse as Mouse
-import TopicMap.TopicMap as TM
+import TopicMap.TopicMap as TopicMap
 import TopicMap.TopicMapDef exposing (TopicMap, MapTopic)
 
 
@@ -16,8 +15,8 @@ topicsToRender : TopicMap -> Model -> List MapTopic
 topicsToRender topicMap model =
   let
     topics =
-      TM.allMapTopics topicMap model
-        |> List.map (\topic -> Mouse.effectivePosFor topic topicMap.id model)
+      TopicMap.allMapTopics topicMap model
+        |> List.map (\topic -> TopicMap.effectivePosFor topic topicMap.id model)
         |> List.map (\topic -> effectiveExpansion topic topicMap.id model)
     limboTopic = limboMapTopic topicMap model
   in
@@ -43,9 +42,9 @@ limboMapTopic topicMap model =
           _ = Console.info "TopicMap.ViewModel.limboMapTopic"
             (topicId, "not in topicMap", topicMap.id)
           mapTopic =
-            case TM.mapTopicOrNothing topicId topicMap of
+            case TopicMap.mapTopicOrNothing topicId topicMap of
               Just {pos} -> MapTopic topicId pos Expanded
-              Nothing -> TM.initLimboMapTopic topicId topicMap.id model
+              Nothing -> TopicMap.initLimboMapTopic topicId topicMap.id model
         in
         [ mapTopic ]
       else
@@ -69,7 +68,7 @@ isLimboAssoc assocId boxId model =
 
 limboState : Model -> Maybe (TopicId, Maybe AssocId, BoxId)
 limboState model =
-  case TM.revelationBoxId model of
+  case TopicMap.revelationBoxId model of
     Just boxId ->
       case model.search.result of
         Topics _ (Just topicId) -> Just (topicId, Nothing, boxId)

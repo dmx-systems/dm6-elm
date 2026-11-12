@@ -16,7 +16,6 @@ import ModelBase exposing (..)
 import Shared.Events as Events
 import Shared.ViewBase as VB
 import Topic
-import TopicMap.Mouse as Mouse
 import TopicMap.TopicMap as TopicMap
 import TopicMap.TopicMapDef as TopicMapDef exposing (TopicMap, MapTopic, DragState(..),
   DragMode(..))
@@ -138,11 +137,12 @@ boxInfo boxId boxPath ({model} as env) =
   case TopicMap.lookup boxId model of
     Just topicMap ->
       let
-        width = topicMap.rect.x2 - topicMap.rect.x1
-        height = topicMap.rect.y2 - topicMap.rect.y1
+        rect = TopicMap.effectiveRect topicMap model
+        width = rect.x2 - rect.x1
+        height = rect.y2 - rect.y1
       in
       ( viewItems topicMap boxPath env
-      , topicMap.rect
+      , rect
       , ( { w = fromInt width
           , h = fromInt height
           }
@@ -712,12 +712,12 @@ toolbarPos boxPath model =
     Just {rect} ->
       ToolbarPos
         (\topic ->
-          let
-            pos = Mouse.effectivePos topic.id boxId model
-          in
-          Point
-            (pos.x - rect.x1 - C.topicW2)
-            (pos.y - rect.y1 - C.topicH2 - 29) -- TODO: 29 ≈ toolbar height
+          case TopicMap.effectivePos topic.id boxId model of
+            Just pos ->
+              Point
+                (pos.x - rect.x1 - C.topicW2)
+                (pos.y - rect.y1 - C.topicH2 - 29) -- TODO: 29 ≈ toolbar height
+            Nothing -> Point 0 0
         )
         (\assoc ->
           case TopicMap.assocGeometry assoc boxId model of
@@ -728,4 +728,4 @@ toolbarPos boxPath model =
             Nothing -> Point 0 0
         )
     Nothing ->
-      (ToolbarPos (\_ -> Point 0 0) (\_ -> Point 0 0))
+      ToolbarPos (always (Point 0 0)) (always (Point 0 0))

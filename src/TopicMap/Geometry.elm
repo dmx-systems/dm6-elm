@@ -9,7 +9,7 @@ import Model exposing (Model)
 import ModelBase exposing (..)
 import Topic
 import TopicMap.Mouse as Mouse
-import TopicMap.TopicMap as TM
+import TopicMap.TopicMap as TopicMap
 import TopicMap.TopicMapDef exposing (TopicMap, MapTopic)
 import TopicMap.ViewModel as VM
 
@@ -29,11 +29,11 @@ localPos - the screen position, local to the Box to search in
 -}
 hitTest : BoxId -> BoxPath -> Point -> Maybe TopicId -> Env -> Maybe BoxTarget
 hitTest (BoxId topicId as boxId) boxPath localPos maybeFilter ({model} as env) =
-  case TM.lookup boxId model of
+  case TopicMap.lookup boxId model of
     Just topicMap ->
       let
         fullPath = boxId :: boxPath
-        topics = TM.allMapTopics topicMap model
+        topics = TopicMap.allMapTopics topicMap model
         modelPos = toModelPos localPos topicMap
       in
       case testChildren modelPos topics fullPath maybeFilter env of
@@ -116,7 +116,7 @@ toModelPos pos topicMap =
 -- TODO: function name, description
 relPos_ : Point -> TopicId -> BoxPath -> Model -> Point
 relPos_ pos topicId boxPath model =
-  case TM.topicPos topicId (Box.firstId boxPath) model of
+  case TopicMap.topicPos topicId (Box.firstId boxPath) model of
     Just boxPos ->
       Point
         (pos.x - boxPos.x + C.topicW2)
@@ -128,7 +128,7 @@ relPos_ pos topicId boxPath model =
 
 isTopicHeaderHit : Point -> TopicId -> BoxId -> Model -> Bool
 isTopicHeaderHit pos topicId boxId model =
-  case TM.topicPos topicId boxId model of
+  case TopicMap.topicPos topicId boxId model of
     Just topicPos ->
       pos.x > topicPos.x - C.topicW2 - C.topicHeight && -- left edge includes caret area
       pos.x < topicPos.x + C.topicW2 &&
@@ -139,7 +139,7 @@ isTopicHeaderHit pos topicId boxId model =
 
 isTopicDetailHit : Point -> TopicId -> BoxId -> Model -> Bool
 isTopicDetailHit pos topicId boxId model =
-  case (TM.topicPos topicId boxId model, Topic.size topicId .view model) of
+  case (TopicMap.topicPos topicId boxId model, Topic.size topicId .view model) of
     (Just topicPos, Just size) ->
       pos.x > topicPos.x - C.topicW2 + C.topicHeight && -- topicHeight = icon box width
       pos.x < topicPos.x - C.topicW2 + C.topicHeight + size.w &&
@@ -150,7 +150,7 @@ isTopicDetailHit pos topicId boxId model =
 
 isBoxRectHit : Point -> TopicMap -> BoxId -> Model -> Bool
 isBoxRectHit pos topicMap parentBoxId model =
-  case TM.topicPos (fromBoxId topicMap.id) parentBoxId model of
+  case TopicMap.topicPos (fromBoxId topicMap.id) parentBoxId model of
     Just boxPos ->
       pos.x > 0 &&
       pos.x < topicMap.rect.x2 - topicMap.rect.x1 &&
@@ -174,7 +174,7 @@ autoSize boxPath {model, dispatch} =
   let
     boxId = Box.firstId boxPath
   in
-  case TM.lookup boxId model of
+  case TopicMap.lookup boxId model of
     Just topicMap ->
       let
         topics = VM.topicsToRender topicMap model
@@ -328,13 +328,13 @@ setBoxRect : BoxId -> Rectangle -> Model -> Model
 setBoxRect boxId rect model =
   case Mouse.bufferBoxRect boxId rect model of
     Just model_ -> model_
-    Nothing -> TM.setRect boxId rect model
+    Nothing -> TopicMap.setRect boxId rect model
 
 
 adjustBoxPos : BoxId -> BoxId -> Rectangle -> Rectangle -> Model -> Model
 adjustBoxPos (BoxId topicId) parentBoxId newRect oldRect model =
   model
-    |> TM.updateTopicPos topicId parentBoxId
+    |> TopicMap.updateTopicPos topicId parentBoxId
       (\oldPos ->
         (Point
           (oldPos.x + newRect.x1 - oldRect.x1)

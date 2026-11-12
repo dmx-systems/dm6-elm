@@ -1,7 +1,8 @@
 module TopicMap.TopicMap exposing (bootstrapContent, init, allMapTopics, topicPos, randomPos,
   updateTopicPos, updateTopicPosWith, mapTopicOrNothing, assocGeometry, addTopicAt,
   initLimboMapTopic, initTopicPos, hasMapTopic, fullscreen, lookup, setTopicPos, setRect,
-  setScroll, revelationBoxId, revelationBoxPath, landingTarget, toLocalPos, toLocalModelPos)
+  setScroll, revelationBoxId, revelationBoxPath, landingTarget, toLocalPos, toLocalModelPos,
+  effectivePos, effectivePosFor, effectiveRect)
 
 import Box
 import Config as C
@@ -14,7 +15,8 @@ import Feature.Sel as Sel
 import Model exposing (Model, Msg)
 import ModelBase exposing (..)
 import SyncModel exposing (SyncModel)
-import TopicMap.TopicMapDef as TopicMapDef exposing (TopicMap, MapTopic)
+import TopicMap.TopicMapDef as TopicMapDef exposing (TopicMap, MapTopic, DragState(..),
+  DragMode(..))
 
 import Crdt
 import Crdt.Edit as Edit
@@ -97,7 +99,8 @@ initMapTopics boxId model =
       model
 
 
--- TODO: make it a hook, dispatch from Box.deleteTopic_
+-- ### not in use
+-- ### TODO: make it a hook, dispatch from Box.deleteTopic_
 {- Removes a topic from TopicMap model:
     - remove MapTopic from all TopicMaps
     - remove TopicMap itself if topic is a box
@@ -177,8 +180,8 @@ updateTopicPosWith topicId boxId transform model =
 assocGeometry : Assoc -> BoxId -> Model -> Maybe (Point, Point)
 assocGeometry assoc boxId model =
   let
-    pos1 = topicPos assoc.topicId1 boxId model
-    pos2 = topicPos assoc.topicId2 boxId model
+    pos1 = effectivePos assoc.topicId1 boxId model
+    pos2 = effectivePos assoc.topicId2 boxId model
   in
   case Maybe.map2 (\p1 p2 -> (p1, p2)) pos1 pos2 of
     Just geometry -> Just geometry
@@ -392,6 +395,43 @@ accumulateRect posAcc boxId model =
         (posAcc.x - topicMap.rect.x1)
         (posAcc.y - topicMap.rect.y1)
     Nothing -> Point 0 0 -- error is already logged
+
+
+
+-- GEOMETRY BUFFER
+
+
+effectivePos : TopicId -> BoxId -> Model -> Maybe Point
+effectivePos topicId boxId model =
+  case bufferedPos topicId boxId model of
+    Just pos -> Just pos
+    Nothing -> topicPos topicId boxId model
+
+
+effectivePosFor : MapTopic -> BoxId -> Model -> MapTopic
+effectivePosFor topic boxId model =
+  case bufferedPos topic.id boxId model of
+    Just pos -> { topic | pos = pos }
+    Nothing -> topic
+
+
+bufferedPos : TopicId -> BoxId -> Model -> Maybe Point
+bufferedPos topicId boxId model =
+  case model.topicMap.dragState of
+    Just (Drag (DragTopic buffer _)) ->
+      buffer.topics
+        |> Dict.get (toTopicId topicId, toBoxId boxId)
+    _ -> Nothing
+
+
+effectiveRect : TopicMap -> Model -> Rectangle
+effectiveRect topicMap model =
+  case model.topicMap.dragState of
+    Just (Drag (DragTopic buffer _)) ->
+      buffer.topicMaps
+        |> Dict.get (toBoxId topicMap.id)
+        |> Maybe.withDefault topicMap.rect
+    _ -> topicMap.rect
 
 
 

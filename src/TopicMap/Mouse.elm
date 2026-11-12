@@ -1,5 +1,5 @@
 module TopicMap.Mouse exposing (dragStart, drag, dragAccept, dragStop, timeArrived,
-  isDraftAssoc, bufferBoxRect, effectivePos, effectivePosFor)
+  isDraftAssoc, bufferBoxRect)
 
 import Assoc
 import Box
@@ -12,7 +12,7 @@ import ModelBase exposing (..)
 import Outcome exposing (..)
 import Renderer
 import TopicMap.TopicMap as TopicMap
-import TopicMap.TopicMapDef as TopicMapDef exposing (MapTopic, DragState(..), DragMode(..),
+import TopicMap.TopicMapDef as TopicMapDef exposing (DragState(..), DragMode(..),
   GeometryBuffer)
 
 import Dict exposing (Dict)
@@ -344,6 +344,7 @@ isDraftAssoc model =
 
 -- GEOMETRY BUFFER
 
+
 bufferTopicPos : TopicId -> BoxId -> Point -> GeometryBuffer -> Point -> Model -> Model
 bufferTopicPos (TopicId topicId) (BoxId (TopicId boxId)) newPos buffer origPos model =
   setDragState
@@ -366,31 +367,6 @@ bufferBoxRect (BoxId (TopicId boxId)) rect model =
           )
           model
         )
-    _ -> Nothing
-
-
-effectivePos : TopicId -> BoxId -> Model -> Point
-effectivePos topicId boxId model =
-  case bufferedPos topicId boxId model of
-    Just pos -> pos
-    Nothing ->
-      case TopicMap.topicPos topicId boxId model of
-        Just pos -> pos
-        Nothing -> Point 0 0 -- TODO?
-
-
-effectivePosFor : MapTopic -> BoxId -> Model -> MapTopic
-effectivePosFor topic boxId model =
-  case bufferedPos topic.id boxId model of
-    Just pos -> { topic | pos = pos }
-    Nothing -> topic
-
-
-bufferedPos : TopicId -> BoxId -> Model -> Maybe Point
-bufferedPos topicId boxId model =
-  case model.topicMap.dragState of
-    Just (Drag (DragTopic buffer _)) ->
-      Dict.get (toTopicId topicId, toBoxId boxId) buffer.topics
     _ -> Nothing
 
 
