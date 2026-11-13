@@ -10,7 +10,7 @@ import ModelBase exposing (..)
 import Topic
 import TopicMap.Mouse as Mouse
 import TopicMap.TopicMap as TopicMap
-import TopicMap.TopicMapDef exposing (TopicMap, MapTopic)
+import TopicMap.TopicMapDef exposing (TopicMap, MapTopic, DragState(..), DragMode(..))
 import TopicMap.ViewModel as VM
 
 
@@ -327,17 +327,37 @@ updateBoxGeometry boxPath newRect oldRect model =
 setBoxRect : BoxId -> Rectangle -> Model -> Model
 setBoxRect boxId rect model =
   case Mouse.bufferBoxRect boxId rect model of
-    Just model_ -> model_
-    Nothing -> TopicMap.setRect boxId rect model
+    Just model_ ->
+      model_
+    Nothing ->
+      TopicMap.setRect boxId rect model
 
 
 adjustBoxPos : BoxId -> BoxId -> Rectangle -> Rectangle -> Model -> Model
 adjustBoxPos (BoxId topicId) parentBoxId newRect oldRect model =
-  model
-    |> TopicMap.updateTopicPos topicId parentBoxId
-      (\oldPos ->
-        (Point
-          (oldPos.x + newRect.x1 - oldRect.x1)
-          (oldPos.y + newRect.y1 - oldRect.y1)
-        )
-      )
+  case model.topicMap.dragState of
+    Just (Drag dragMode) ->
+      case dragMode of
+        DragTopic buffer origPos ->
+          model
+            |> TopicMap.updateTopicPosWith topicId parentBoxId
+              (\oldPos ->
+                Mouse.bufferTopicPos topicId parentBoxId
+                  (Point
+                    (oldPos.x + newRect.x1 - oldRect.x1)
+                    (oldPos.y + newRect.y1 - oldRect.y1)
+                  )
+                  buffer origPos model
+              )
+        DraftAssoc ->
+          let
+            _ = Console.logError "TopicMap.Geometry.adjustBoxPos" "Unexpected drag mode"
+              dragMode
+          in
+          model
+    _ ->
+      let
+        _ = Console.logError "TopicMap.Geometry.adjustBoxPos" "Unexpected drag state"
+          model.topicMap.dragState
+      in
+      model

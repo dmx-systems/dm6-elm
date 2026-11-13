@@ -1,5 +1,5 @@
 module TopicMap.Mouse exposing (dragStart, drag, dragAccept, dragStop, timeArrived,
-  isDraftAssoc, bufferBoxRect)
+  isDraftAssoc, bufferTopicPos, bufferBoxRect)
 
 import Assoc
 import Box

@@ -709,7 +709,10 @@ toolbarPos boxPath model =
     boxId = Box.firstId boxPath
   in
   case TopicMap.lookup boxId model of
-    Just {rect} ->
+    Just topicMap ->
+      let
+        rect = TopicMap.effectiveRect topicMap model
+      in
       ToolbarPos
         (\topic ->
           case TopicMap.effectivePos topic.id boxId model of

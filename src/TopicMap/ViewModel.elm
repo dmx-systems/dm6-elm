@@ -10,7 +10,9 @@ import TopicMap.TopicMapDef exposing (TopicMap, MapTopic)
 
 
 
-{- Projects box data and search state ("limbo") into a TopicMap render model -}
+{- Projects actual box data plus mouse state (dragging) and search state ("limbo") into a
+  TopicMap render model.
+-}
 topicsToRender : TopicMap -> Model -> List MapTopic
 topicsToRender topicMap model =
   let
