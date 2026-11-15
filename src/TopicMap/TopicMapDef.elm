@@ -59,7 +59,7 @@ type DragState
 
 
 type DragMode
-  = DragTopic GeometryBuffer Point -- Point: original topic position TODO: drop
+  = DragTopic GeometryBuffer
   | DraftAssoc
 
 

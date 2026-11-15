@@ -338,7 +338,7 @@ adjustBoxPos (BoxId topicId) parentBoxId newRect oldRect model =
   case model.topicMap.dragState of
     Just (Drag dragMode) ->
       case dragMode of
-        DragTopic buffer origPos ->
+        DragTopic buffer ->
           model
             |> TopicMap.updateTopicPosWith topicId parentBoxId
               (\oldPos ->
@@ -347,7 +347,7 @@ adjustBoxPos (BoxId topicId) parentBoxId newRect oldRect model =
                     (oldPos.x + newRect.x1 - oldRect.x1)
                     (oldPos.y + newRect.y1 - oldRect.y1)
                   )
-                  buffer origPos model
+                  buffer model
               )
         DraftAssoc ->
           let

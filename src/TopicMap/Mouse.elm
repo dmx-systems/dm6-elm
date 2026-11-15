@@ -54,14 +54,13 @@ timeArrived time model =
     (Just {topicId, boxPath}, Just (WaitForEndTime startTime)) ->
       let
         delay = posixToMillis time - posixToMillis startTime
-        initDragTopic = Just << Drag << DragTopic (GeometryBuffer Dict.empty Dict.empty)
         (dragState, undoOp) =
           if delay > C.assocDelayMillis then
-            (Just <| Drag DraftAssoc, NoUndo) -- ### TODO: was "Swap"
+            (Just (Drag DraftAssoc), NoUndo) -- ### TODO: was "Swap"
           else
-            case TopicMap.topicPos topicId (Box.firstId boxPath) model of
-              Just origPos -> (initDragTopic origPos, NoUndo) -- ### TODO: was "Push"
-              Nothing -> (Nothing, NoUndo) -- error is already logged -- ### TODO: was "Swap"
+            ( Just (Drag (DragTopic (GeometryBuffer Dict.empty Dict.empty)))
+            , NoUndo -- ### TODO: was "Push"
+            )
       in
       model
         |> setDragState dragState
@@ -100,7 +99,7 @@ updateTopicPos clientPos model =
   case (model.mouse.dragSource, model.topicMap.dragState) of
     (Just {topicId, boxPath, startPos}, Just (Drag dragMode)) ->
       case dragMode of
-        DragTopic buffer origPos ->
+        DragTopic buffer ->
           let
             boxId = Box.firstId boxPath
           in
@@ -112,7 +111,7 @@ updateTopicPos clientPos model =
                     (pos.x + clientPos.x - startPos.x)
                     (pos.y + clientPos.y - startPos.y)
                   )
-                  buffer origPos model
+                  buffer model
               )
         DraftAssoc ->
           model
@@ -144,7 +143,7 @@ dropTarget model =
             isCyclic = Box.hasDeepTopic targetTopicId topicId -- partially applied
           in
           case model.topicMap.dragState of
-            Just (Drag (DragTopic _ _)) ->
+            Just (Drag (DragTopic _)) ->
               let
                 -- When dragging a topic inside a nested box that box will be the target (this
                 -- is since target is determined by map geometry, not by enter/leave events
@@ -182,9 +181,9 @@ dragStop ({model} as env) =
       case model.mouse.dragSource of
         Just {topicId, boxPath} ->
           case model.topicMap.dragState of
-            Just (Drag (DragTopic _ origTopicPos)) ->
+            Just (Drag (DragTopic _)) ->
               env
-                |> topicDragEnd topicId boxPath origTopicPos
+                |> topicDragEnd topicId boxPath
             Just (Drag DraftAssoc) ->
               model
                 |> assocDragEnd topicId boxPath
@@ -215,8 +214,8 @@ dragStop ({model} as env) =
     |> Outcome.map (setDragState Nothing)
 
 
-topicDragEnd : TopicId -> BoxPath -> Point -> Env -> Outcome
-topicDragEnd sourceTopicId sourceBoxPath origTopicPos ({model} as env) =
+topicDragEnd : TopicId -> BoxPath -> Env -> Outcome
+topicDragEnd sourceTopicId sourceBoxPath ({model} as env) =
   case model.mouse.dropTarget of
     Just (T targetId, targetPath) ->
       let
@@ -228,7 +227,6 @@ topicDragEnd sourceTopicId sourceBoxPath origTopicPos ({model} as env) =
       in
       env
         |> moveTopicToBox sourceTopicId boxId targetId targetPath
-        |> Model.map (TopicMap.updateTopicPos sourceTopicId boxId (always origTopicPos))
         |> Outcome.fromDir (Directives Store NoUndo) -- ### TODO: was "Swap"
     Nothing ->
       let
@@ -345,12 +343,11 @@ isDraftAssoc model =
 -- GEOMETRY BUFFER
 
 
-bufferTopicPos : TopicId -> BoxId -> Point -> GeometryBuffer -> Point -> Model -> Model
-bufferTopicPos (TopicId topicId) (BoxId (TopicId boxId)) newPos buffer origPos model =
+bufferTopicPos : TopicId -> BoxId -> Point -> GeometryBuffer -> Model -> Model
+bufferTopicPos (TopicId topicId) (BoxId (TopicId boxId)) newPos buffer model =
   setDragState
     (Just <| Drag <| DragTopic
       { buffer | topics = buffer.topics |> Dict.insert (topicId, boxId) newPos }
-      origPos
     )
     model
 
@@ -358,12 +355,11 @@ bufferTopicPos (TopicId topicId) (BoxId (TopicId boxId)) newPos buffer origPos m
 bufferBoxRect : BoxId -> Rectangle -> Model -> Maybe Model
 bufferBoxRect (BoxId (TopicId boxId)) rect model =
   case model.topicMap.dragState of
-    Just (Drag (DragTopic buffer origPos)) ->
+    Just (Drag (DragTopic buffer)) ->
       Just
         (setDragState
           (Just <| Drag <| DragTopic
             { buffer | topicMaps = buffer.topicMaps |> Dict.insert boxId rect }
-            origPos
           )
           model
         )
@@ -392,7 +388,7 @@ persistBuffer model =
           model_
   in
   case model.topicMap.dragState of
-    Just (Drag (DragTopic buffer _)) ->
+    Just (Drag (DragTopic buffer)) ->
       model
         |> persistTopics buffer.topics
         |> persistTopicMaps buffer.topicMaps

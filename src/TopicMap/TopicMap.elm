@@ -418,7 +418,7 @@ effectivePosFor topic boxId model =
 bufferedPos : TopicId -> BoxId -> Model -> Maybe Point
 bufferedPos topicId boxId model =
   case model.topicMap.dragState of
-    Just (Drag (DragTopic buffer _)) ->
+    Just (Drag (DragTopic buffer)) ->
       buffer.topics
         |> Dict.get (toTopicId topicId, toBoxId boxId)
     _ -> Nothing
@@ -427,7 +427,7 @@ bufferedPos topicId boxId model =
 effectiveRect : TopicMap -> Model -> Rectangle
 effectiveRect topicMap model =
   case model.topicMap.dragState of
-    Just (Drag (DragTopic buffer _)) ->
+    Just (Drag (DragTopic buffer)) ->
       buffer.topicMaps
         |> Dict.get (toBoxId topicMap.id)
         |> Maybe.withDefault topicMap.rect

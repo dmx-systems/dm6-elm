@@ -223,7 +223,8 @@ hierarchyAssoc topicId boxId model =
   case Topic.lookup topicId model of
     Just topic ->
       findHierarchy topicId boxId topic.assocIds model
-    Nothing -> Console.fail "Box.hierarchyAssoc" {topicId = topicId, boxId = boxId} Nothing
+    Nothing ->
+      Console.fail "Box.hierarchyAssoc" {topicId = topicId, boxId = boxId} Nothing
 
 
 findHierarchy : TopicId -> BoxId -> AssocIds -> Model -> Maybe AssocId
