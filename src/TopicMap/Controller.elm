@@ -24,6 +24,7 @@ update msg ({model} as env) =
     TopicMapDef.GotTime time ->
       model
         |> Mouse.timeArrived time
+        |> Outcome.default
     TopicMapDef.GotRandomPos topicId boxId pos ->
       env
         |> TopicMap.addTopicAt topicId boxId pos

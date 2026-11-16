@@ -100,7 +100,6 @@ performWith prevModel {model, cmd, directives} =
         Undo -> Crdt.undo model
         Redo -> Crdt.redo model
 
-
     performStorage : Model -> (Model, Cmd Msg)
     performStorage model_ =
       case directives.storage of

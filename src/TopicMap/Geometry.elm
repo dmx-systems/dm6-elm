@@ -319,7 +319,7 @@ updateBoxGeometry boxPath newRect oldRect model =
         model |> setBoxRect boxId newRect
     [ boxId ] ->
       model |> setBoxRect boxId newRect
-    [] -> Console.logError "updateBoxGeometry" "boxPath is empty!" model
+    [] -> Console.logError "TopicMap.Geometry.updateBoxGeometry" "boxPath is empty!" model
 
 
 {- Set the box rect, either in geometry buffer (while dragging), or in persistent model (CRDT).

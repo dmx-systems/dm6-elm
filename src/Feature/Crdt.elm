@@ -161,7 +161,8 @@ setBoxRenderer (BoxId (TopicId id)) renderer model =
 
 markSingleEdit : Model -> Model -> Model
 markSingleEdit prevModel model =
-  Doc.recordEdit (Doc.version prevModel.crdt.doc) model.crdt.doc
+  model.crdt.doc
+    |> Doc.recordEdit (Doc.version prevModel.crdt.doc)
     |> setDoc model
 
 
@@ -189,26 +190,30 @@ markEditEnd model =
 
 undo : Model -> Model
 undo model =
-  Doc.undo model.crdt.doc
+  model.crdt.doc
+    |> Doc.undo
     |> setDoc model
     |> updateCache
 
 
 redo : Model -> Model
 redo model =
-  Doc.redo model.crdt.doc
+  model.crdt.doc
+    |> Doc.redo
     |> setDoc model
     |> updateCache
 
 
 canUndo : Model -> Bool
 canUndo model =
-  Doc.canUndo model.crdt.doc
+  model.crdt.doc
+    |> Doc.canUndo
 
 
 canRedo : Model -> Bool
 canRedo model =
-  Doc.canRedo model.crdt.doc
+  model.crdt.doc
+    |> Doc.canRedo
 
 
 

@@ -13,10 +13,9 @@ import Time
 
 
 type alias Model =
-  {
   -- State machine to initiate a drag from a TopicMap box.
   -- Available while a drag that started from a TopicMap box is active.
-    dragState : Maybe DragState -- transient
+  { dragState : Maybe DragState -- transient
   }
 
 

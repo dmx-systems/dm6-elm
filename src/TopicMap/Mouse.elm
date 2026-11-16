@@ -44,34 +44,29 @@ dragStart {model} =
       (model, Cmd.none)
 
 
-timeArrived : Posix -> Model -> Outcome
+timeArrived : Posix -> Model -> Model
 timeArrived time model =
   case (model.mouse.dragSource, model.topicMap.dragState) of
     (_, Just WaitForStartTime) ->
       model
-        |> setDragState (Just <| DragEngaged time)
-        |> Outcome.default
+        |> setDragState (Just (DragEngaged time))
     (Just {topicId, boxPath}, Just (WaitForEndTime startTime)) ->
       let
         delay = posixToMillis time - posixToMillis startTime
-        (dragState, undoOp) =
+        dragState =
           if delay > C.assocDelayMillis then
-            (Just (Drag DraftAssoc), NoUndo) -- ### TODO: was "Swap"
+            Just (Drag DraftAssoc)
           else
-            ( Just (Drag (DragTopic (GeometryBuffer Dict.empty Dict.empty)))
-            , NoUndo -- ### TODO: was "Push"
-            )
+            Just (Drag (DragTopic (GeometryBuffer Dict.empty Dict.empty)))
       in
       model
         |> setDragState dragState
-        |> Outcome.withDir (Directives NoStore undoOp)
     _ ->
       let
         _ = Console.logError "TopicMap.Mouse.timeArrived" "Unexpected drag state"
           (model.mouse.dragSource, model.topicMap.dragState)
       in
       model
-        |> Outcome.default
 
 
 -- Dispatch.DragHook
@@ -80,11 +75,11 @@ drag clientPos ({model} as env) =
   case model.topicMap.dragState of
     Just (DragEngaged time) ->
       ( model
-          |> setDragState (Just <| WaitForEndTime time)
+          |> setDragState (Just (WaitForEndTime time))
       , Task.perform (TopicMap << TopicMapDef.GotTime) Time.now
       )
     Just (Drag _) ->
-      ( env
+      ( env -- FIXME: perform only for DragTopic, no-op for DraftAssoc
           |> Env.map (updateTopicPos clientPos)
           |> Env.autoSize
           |> .model
@@ -227,15 +222,15 @@ topicDragEnd sourceTopicId sourceBoxPath ({model} as env) =
       in
       env
         |> moveTopicToBox sourceTopicId boxId targetId targetPath
-        |> Outcome.fromDir (Directives Store NoUndo) -- ### TODO: was "Swap"
+        |> Outcome.fromDir (Directives Store SingleEdit)
     Nothing ->
       let
         _ = Console.info "TopicMap.Mouse.topicDragEnd"
-          "topic drag ended w/o target -> store position"
+          "topic drag ended w/o target -> persist geometry"
       in
       env
         |> Env.map persistBuffer
-        |> Env.outcomeDir (Directives Store NoUndo) -- ### TODO: was "Swap"
+        |> Env.outcomeDir (Directives Store SingleEdit)
     _ ->
       env
         |> Env.outcome
@@ -257,7 +252,7 @@ foreignTopicDrop sourceTopicId sourceBoxPath ({model} as env) =
       in
       env
         |> moveTopicToBox sourceTopicId boxId targetId targetPath
-        |> Outcome.fromDir (Directives Store NoUndo) -- ### TODO: was "Push"
+        |> Outcome.fromDir (Directives Store SingleEdit)
     Nothing ->
       let
         _ = Console.info "TopicMap.Mouse.foreignTopicDrop"
@@ -288,7 +283,7 @@ assocDragEnd sourceTopicId sourceBoxPath model =
       in
       model
         |> createAssoc sourceTopicId targetId boxId
-        |> Outcome.withDir (Directives Store NoUndo) -- ### TODO: was "Push"
+        |> Outcome.withDir (Directives Store SingleEdit)
     Nothing ->
       let
         _ = Console.info "TopicMap.Mouse.assocDragEnd" "drawn assoc ended w/o target"
