@@ -30,7 +30,7 @@ type Msg
   = OnTextInput String
   | OnTextareaInput String
   | GotTextSize TopicId SizeField Size
-  | LeaveEdit
+  | EnterOrEscPressed
   | ImageFilePicked TopicImage
   | ImageUrlResolved (ImageId, String)
 

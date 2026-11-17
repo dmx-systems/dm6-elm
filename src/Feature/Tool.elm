@@ -201,7 +201,7 @@ viewTextToolbar pos topicId boxPath =
   div
     ( toolbarStyle pos )
     [ viewButton "Insert Image" "image" (ToolDef.Image topicId) False target
-    , viewButton "Done" "check" ToolDef.LeaveEdit False target
+    , viewButton "Done" "check" ToolDef.DoneButtonClicked False target
     ]
 
 
@@ -339,11 +339,15 @@ update msg ({model} as env) =
       env
         |> createTopic
     ToolDef.Undo ->
-      model
-        |> Outcome.withDir (Directives Store Undo)
+      env
+        |> Env.map Crdt.undo
+        |> Env.autoSize
+        |> Env.outcomeDir (Directives Store NoUndo)
     ToolDef.Redo ->
-      model
-        |> Outcome.withDir (Directives Store Redo)
+      env
+        |> Env.map Crdt.redo
+        |> Env.autoSize
+        |> Env.outcomeDir (Directives Store NoUndo)
     -- Item Tools
     ToolDef.Edit ->
       env
@@ -381,7 +385,7 @@ update msg ({model} as env) =
       model
         |> Text.openImageFilePicker topicId
         |> Outcome.fromDir (Directives Store NoUndo) -- ### TODO: was "Swap"
-    ToolDef.LeaveEdit ->
+    ToolDef.DoneButtonClicked ->
       env
         |> Text.leaveEdit
 

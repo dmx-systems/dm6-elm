@@ -28,13 +28,10 @@ type Storage
 
 
 type Undo
-  = NoUndo -- default
-  | SingleEdit -- TODO: rename to MarkSingle
-  | EditStart  -- TODO: rename to MarkBegin
-  | EditEnd    -- TODO: rename to MarkEnd
-  --
-  | Undo
-  | Redo
+  = MarkSingle
+  | MarkBegin
+  | MarkEnd
+  | NoUndo -- default
 
 
 --
@@ -90,15 +87,13 @@ In case of an Undo directive the previous model marks the begin of an undoable a
 performWith : Model -> Outcome -> (Model, Cmd Msg)
 performWith prevModel {model, cmd, directives} =
   let
-    performUndo : Model
-    performUndo =
+    performUndo : Model -> Model
+    performUndo model_ =
       case directives.undo of
-        NoUndo -> model
-        SingleEdit -> Crdt.markSingleEdit prevModel model
-        EditStart -> Crdt.markEditStart prevModel model
-        EditEnd -> Crdt.markEditEnd model
-        Undo -> Crdt.undo model
-        Redo -> Crdt.redo model
+        MarkSingle -> Crdt.markUndoSingle prevModel model_
+        MarkBegin -> Crdt.markUndoBegin prevModel model_
+        MarkEnd -> Crdt.markUndoEnd model_
+        NoUndo -> model_
 
     performStorage : Model -> (Model, Cmd Msg)
     performStorage model_ =
@@ -106,7 +101,8 @@ performWith prevModel {model, cmd, directives} =
         Store -> S.store model_ |> Model.mergeCmd cmd
         NoStore -> (model_, cmd)
   in
-  performUndo
+  model
+    |> performUndo
     |> performStorage
 
 

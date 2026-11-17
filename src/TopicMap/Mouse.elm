@@ -74,46 +74,49 @@ drag : Point -> Env -> (Model, Cmd Msg)
 drag clientPos ({model} as env) =
   case model.topicMap.dragState of
     Just (DragEngaged time) ->
-      ( model
-          |> setDragState (Just (WaitForEndTime time))
-      , Task.perform (TopicMap << TopicMapDef.GotTime) Time.now
-      )
-    Just (Drag _) ->
-      ( env -- FIXME: perform only for DragTopic, no-op for DraftAssoc
-          |> Env.map (updateTopicPos clientPos)
-          |> Env.autoSize
-          |> .model
-      , Cmd.none
-      )
-    _ ->
-      (model, Cmd.none)
-
-
-updateTopicPos : Point -> Model -> Model
-updateTopicPos clientPos model =
-  case (model.mouse.dragSource, model.topicMap.dragState) of
-    (Just {topicId, boxPath, startPos}, Just (Drag dragMode)) ->
+      env
+        |> Env.map(setDragState (Just (WaitForEndTime time)))
+        |> Env.withCmd(Task.perform (TopicMap << TopicMapDef.GotTime) Time.now)
+    Just (Drag dragMode) ->
       case dragMode of
         DragTopic buffer ->
-          let
-            boxId = Box.firstId boxPath
-          in
-          model
-            |> TopicMap.updateTopicPosWith topicId boxId
-              (\pos ->
-                bufferTopicPos topicId boxId
-                  (Point
-                    (pos.x + clientPos.x - startPos.x)
-                    (pos.y + clientPos.y - startPos.y)
-                  )
-                  buffer model
-              )
+          env
+            |> Env.map (updateTopicPos clientPos buffer)
+            |> Env.autoSize
+            |> Env.toMct
         DraftAssoc ->
-          model
+          env
+            |> Env.toMct
     _ ->
       let
-        _ = Console.logError "TopicMap.Mouse.updateTopicPos" "Unexpected mouse state"
-          (model.mouse.dragSource, model.topicMap.dragState)
+        _ = Console.logError "TopicMap.Mouse.drag" "Unexpected drag state"
+          model.topicMap.dragState
+      in
+      env
+        |> Env.toMct
+
+
+updateTopicPos : Point -> GeometryBuffer -> Model -> Model
+updateTopicPos clientPos buffer model =
+  case model.mouse.dragSource of
+    Just {topicId, boxPath, startPos} ->
+      let
+        boxId = Box.firstId boxPath
+      in
+      model
+        |> TopicMap.updateTopicPosWith topicId boxId
+          (\pos ->
+            bufferTopicPos topicId boxId
+              (Point
+                (pos.x + clientPos.x - startPos.x)
+                (pos.y + clientPos.y - startPos.y)
+              )
+              buffer model
+          )
+    Nothing ->
+      let
+        _ = Console.logError "TopicMap.Mouse.updateTopicPos" "Unexpected drag source"
+          model.mouse.dragSource
       in
       model
 
@@ -156,9 +159,10 @@ dropTarget model =
                 Just target
               else
                 Nothing
-            Just _ -> Nothing -- TODO: error?
+            Just _ ->
+              Nothing -- TODO: error?
             Nothing ->
-              -- foreign drop (from non-TopicMap renderer)
+              -- foreign drop (from other than TopicMap renderer)
               if not (isCyclic model) then
                 Just target
               else
@@ -222,7 +226,7 @@ topicDragEnd sourceTopicId sourceBoxPath ({model} as env) =
       in
       env
         |> moveTopicToBox sourceTopicId boxId targetId targetPath
-        |> Outcome.fromDir (Directives Store SingleEdit)
+        |> Outcome.fromDir (Directives Store MarkSingle)
     Nothing ->
       let
         _ = Console.info "TopicMap.Mouse.topicDragEnd"
@@ -230,7 +234,7 @@ topicDragEnd sourceTopicId sourceBoxPath ({model} as env) =
       in
       env
         |> Env.map persistBuffer
-        |> Env.outcomeDir (Directives Store SingleEdit)
+        |> Env.outcomeDir (Directives Store MarkSingle)
     _ ->
       env
         |> Env.outcome
@@ -252,7 +256,7 @@ foreignTopicDrop sourceTopicId sourceBoxPath ({model} as env) =
       in
       env
         |> moveTopicToBox sourceTopicId boxId targetId targetPath
-        |> Outcome.fromDir (Directives Store SingleEdit)
+        |> Outcome.fromDir (Directives Store MarkSingle)
     Nothing ->
       let
         _ = Console.info "TopicMap.Mouse.foreignTopicDrop"
@@ -283,7 +287,7 @@ assocDragEnd sourceTopicId sourceBoxPath model =
       in
       model
         |> createAssoc sourceTopicId targetId boxId
-        |> Outcome.withDir (Directives Store SingleEdit)
+        |> Outcome.withDir (Directives Store MarkSingle)
     Nothing ->
       let
         _ = Console.info "TopicMap.Mouse.assocDragEnd" "drawn assoc ended w/o target"

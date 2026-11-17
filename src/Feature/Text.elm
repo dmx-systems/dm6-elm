@@ -79,7 +79,7 @@ viewInput topic boxPath style =
       , value topic.text
       , placeholder C.initTopicText
       , onInput (Text << TextDef.OnTextInput)
-      , Events.onEnterOrEsc (Text TextDef.LeaveEdit)
+      , Events.onEnterOrEsc (Text TextDef.EnterOrEscPressed)
       , Events.onPointerDownStop NoOp -- Prevent drag initiation
       ]
       ++ style
@@ -94,7 +94,7 @@ viewTextarea topic boxPath style =
       , value topic.text
       , placeholder C.initTopicText
       , onInput (Text << TextDef.OnTextareaInput)
-      , Events.onEsc (Text TextDef.LeaveEdit)
+      , Events.onEsc (Text TextDef.EnterOrEscPressed)
       , Events.onPointerDownStop NoOp -- Prevent drag initiation
       ]
       ++ style
@@ -118,11 +118,18 @@ update msg ({model} as env) =
         |> onTextareaInput text
         |> Outcome.fromDir (Directives Store NoUndo) -- ### TODO: was "Swap"
     TextDef.GotTextSize topicId sizeField size ->
+      let
+        undoOp : Undo
+        undoOp =
+          case sizeField of
+            View -> MarkEnd -- end the undoable action only when switching back to View mode
+            Editor -> NoUndo -- while editing collect the keystrokes into one undoable action
+      in
       env
         |> Env.map (Topic.setSize topicId sizeField size)
         |> Env.autoSize
-        |> Env.outcomeDir (Directives Store NoUndo) -- ### TODO: was "Swap"
-    TextDef.LeaveEdit ->
+        |> Env.outcomeDir (Directives Store undoOp)
+    TextDef.EnterOrEscPressed ->
       env
         |> leaveEdit
     TextDef.ImageFilePicked {topicId, imageId} ->
@@ -141,9 +148,9 @@ enterEdit topicId boxPath env =
     |> Env.map (setEditState (Edit topicId boxPath))
     |> Env.map (adjustExpansion topicId (Box.firstId boxPath))
     |> Env.autoSize
-    |> Env.outcomeWith focus (Directives Store EditStart)
+    |> Env.outcomeWith focus (Directives Store MarkBegin)
     -- Store: stores adjusted expansion state
-    -- EditStart: ...
+    -- MarkBegin: start collecting keystrokes into a single undoable action
 
 
 leaveEdit : Env -> Outcome
@@ -156,11 +163,9 @@ leaveEdit ({model} as env) =
       env
         |> Env.map (setEditState NoEdit)
         |> Env.autoSize
-        |> Env.outcomeFrom (measureElement elemId topicId View) (Directives NoStore EditEnd)
-        -- NoStore: measurement is requested here, once size arrives Store is requested anyways
-        -- (see TextDef.GotTextSize above)
-        -- EditEnd: the entire keystroke burst forms a single undoable action. EditStart is
-        -- marked by ToolDef.Edit resp. ToolDef.CreateTopic
+        |> Env.outcomeCmd (measureElement elemId topicId View)
+        -- Note: no Store or Undo directives here. These are issued only in the next update
+        -- frame when TextDef.GotTextSize message arrives (see update above).
     NoEdit ->
       env
         |> Env.outcome
@@ -209,27 +214,28 @@ onTextareaInput text model =
 
 measureText : TopicId -> String -> Model -> (Model, Cmd Msg)
 measureText topicId text model =
-  ( model
-      |> setMeasureText text
-  , measureElement "measure" topicId Editor
-  )
+  model
+    |> setMeasureText text
+    |> Model.cmd (measureElement "measure" topicId Editor)
 
 
 measureElement : String -> TopicId -> SizeField -> Cmd Msg
 measureElement elemId topicId sizeField =
-  Dom.getElement elemId |> Task.attempt
-    (\result ->
-      case result of
-        Ok {element} -> Text
-          (TextDef.GotTextSize topicId sizeField
-            <| Size (round element.width) (round element.height)
-          )
-        -- Note: not all renderers do text measuring (the TopicList renderer does not).
-        -- TODO: don't call in the first place and regard dom-not-found an error.
-        Err err ->
-          {- Console.logError "Feature.Text.measureElement" (Console.toString err) -}
-          NoOp
-    )
+  Dom.getElement elemId
+    |> Task.attempt
+      (\result ->
+        case result of
+          Ok {element} ->
+            Text
+              (TextDef.GotTextSize topicId sizeField
+                (Size (round element.width) (round element.height))
+              )
+          -- Note: not all renderers do text measuring (the TopicList renderer does not).
+          -- TODO: don't call in the first place and treat dom-not-found as an error.
+          Err err ->
+            {- Console.logError "Feature.Text.measureElement" (Console.toString err) -}
+            NoOp
+      )
 
 
 focus : Model -> Cmd Msg

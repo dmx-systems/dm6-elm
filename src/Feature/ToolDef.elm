@@ -48,7 +48,7 @@ type Msg
   | ToggleExpansion TopicId BoxId
   -- Text Tools
   | Image TopicId
-  | LeaveEdit
+  | DoneButtonClicked
 
 
 

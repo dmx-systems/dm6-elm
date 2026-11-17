@@ -1,7 +1,7 @@
 module Feature.Crdt exposing (encodeDoc, setRootBoxId, createTopic, setTopicIcon, setTopicText,
   setTopicViewSize, setTopicEditorSize, removeAssocId, deleteTopic, createAssoc, deleteAssoc,
   createBox, createItemSet, addToItemSet, removeFromItemSet, addBoxTopic, setExpansion,
-  setBoxRenderer, markSingleEdit, markEditStart, markEditEnd, undo, redo, canUndo, canRedo,
+  setBoxRenderer, markUndoSingle, markUndoBegin, markUndoEnd, undo, redo, canUndo, canRedo,
   editResult)
 
 import Console
@@ -159,31 +159,33 @@ setBoxRenderer (BoxId (TopicId id)) renderer model =
 -- UNDO / REDO
 
 
-markSingleEdit : Model -> Model -> Model
-markSingleEdit prevModel model =
+markUndoSingle : Model -> Model -> Model
+markUndoSingle prevModel model =
   model.crdt.doc
     |> Doc.recordEdit (Doc.version prevModel.crdt.doc)
     |> setDoc model
 
 
-{- Marks the begin of an undoable action.
+{- Marks the begin of an undoable action:
+remembers the previous model's document version in the given model.
 -}
-markEditStart : Model -> Model -> Model
-markEditStart prevModel model =
+markUndoBegin : Model -> Model -> Model
+markUndoBegin prevModel model =
   model
     |> setEditStartVersion (Just (Doc.version prevModel.crdt.doc))
 
 
-markEditEnd : Model -> Model
-markEditEnd model =
+markUndoEnd : Model -> Model
+markUndoEnd model =
   case model.crdt.editStartVersion of
     Just version ->
-      Doc.recordEdit version model.crdt.doc
+      model.crdt.doc
+        |> Doc.recordEdit version
         |> setDoc model
         |> setEditStartVersion Nothing
     Nothing ->
       let
-        _ = Console.logError "Feature.Crdt.markEditEnd" "Edit start is not marked" Nothing
+        _ = Console.logError "Feature.Crdt.markUndoEnd" "Undo begin is not marked" Nothing
       in
       model
 

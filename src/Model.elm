@@ -1,4 +1,4 @@
-module Model exposing (Model, Msg(..), bootstrap, encode, decode, map, mergeCmd)
+module Model exposing (Model, Msg(..), bootstrap, encode, decode, map, cmd, mergeCmd)
 
 import ModelBase exposing (..)
 import SyncModel exposing (SyncModel)
@@ -117,14 +117,19 @@ decode flags (doc, docModel) =
 
 
 
--- API
+-- Model-Cmd tuple
 
 
 map : (Model -> Model) -> (Model, Cmd Msg) -> (Model, Cmd Msg)
-map transform (model, cmd) =
-  (transform model, cmd)
+map transform (model, cmd_) =
+  (transform model, cmd_)
+
+
+cmd : Cmd Msg -> Model -> (Model, Cmd Msg)
+cmd cmd_ model =
+  (model, cmd_)
 
 
 mergeCmd : Cmd Msg -> (Model, Cmd Msg) -> (Model, Cmd Msg)
-mergeCmd cmd_ (model, cmd) =
-  (model, Cmd.batch [ cmd, cmd_ ])
+mergeCmd cmd2 (model, cmd1) =
+  (model, Cmd.batch [ cmd1, cmd2 ])
