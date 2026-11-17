@@ -44,7 +44,10 @@ app.ports.domReady.subscribe(() => {
     main.addEventListener('scroll', () => {
       clearTimeout(timer)
       timer = setTimeout(() => {
-        app.ports.onScroll.send({x: main.scrollLeft, y: main.scrollTop})
+        app.ports.onScroll.send({
+          x: Math.round(main.scrollLeft),
+          y: Math.round(main.scrollTop)
+        })
       }, 200)   // debounce 200ms
     }, {passive: true})
   })

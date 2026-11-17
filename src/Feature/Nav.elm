@@ -1,4 +1,4 @@
-port module Feature.Nav exposing (boxIdFromHash, pushUrl, update, sub)
+port module Feature.Nav exposing (sub, update, setViewport, pushUrl, boxIdFromHash)
 
 import Box
 import Console
@@ -47,6 +47,9 @@ hashChanged : String -> Env -> Outcome
 hashChanged hash ({model} as env) =
   case boxIdFromHash hash of
     Just boxId ->
+      let
+        _ = Console.info "Feature.Nav.hashChanged" boxId
+      in
       env
         |> setFullscreen boxId
         |> Outcome.fromDir (Directives Store NoUndo) -- ### TODO: was "Reset"
@@ -79,6 +82,9 @@ setViewport : Model -> Cmd Msg
 setViewport model =
   case TopicMap.fullscreen model of -- FIXME: dispatch instead
     Just topicMap ->
+      let
+        _ = Console.info "Feature.Nav.setViewport" topicMap.scroll
+      in
       Dom.setViewportOf "main" (toFloat topicMap.scroll.x) (toFloat topicMap.scroll.y)
         |> Task.attempt
           (\result ->
@@ -95,6 +101,9 @@ Eventually the model.boxId will be updated, as a *result* of the route change.
 -}
 pushUrl : BoxId -> Cmd Msg
 pushUrl boxId =
+  let
+    _ = Console.info "Feature.Nav.pushUrl" boxId
+  in
   setHash <| "#" ++ toBoxId boxId
 
 

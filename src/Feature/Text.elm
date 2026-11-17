@@ -112,11 +112,11 @@ update msg ({model} as env) =
     TextDef.OnTextInput text ->
       model
         |> onTextInput text
-        |> Outcome.withDir (Directives Store NoUndo) -- ### TODO: was "Swap"
+        |> Outcome.withDir (Directives Store NoUndo)
     TextDef.OnTextareaInput text ->
       model
         |> onTextareaInput text
-        |> Outcome.fromDir (Directives Store NoUndo) -- ### TODO: was "Swap"
+        |> Outcome.fromDir (Directives Store NoUndo)
     TextDef.GotTextSize topicId sizeField size ->
       let
         undoOp : Undo

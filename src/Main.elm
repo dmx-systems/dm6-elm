@@ -78,7 +78,8 @@ init (local, ops, hash) =
         Running model ->
           Cmd.batch
             [ Id.requestIds model
-            , defaultNav hash model
+            , initNav hash model
+            , domReady ()
             ]
   in
   (appModel, initCmd)
@@ -304,7 +305,7 @@ bootstrap msg =
             |> Id.fillPool pool
             |> bootstrapContent rootTopicId
             |> TopicMap.bootstrapContent
-            |> Outcome.with (defaultNav hash) (Directives Store NoUndo)
+            |> Outcome.with (initNav hash) (Directives Store NoUndo)
             |> Outcome.perform 
             |> runningWith (domReady ())
         [] ->
@@ -342,15 +343,23 @@ createRootBox boxId model =
     |> Box.create rootBox
 
 
-defaultNav : String -> Model -> Cmd Msg
-defaultNav hash model =
+initNav : String -> Model -> Cmd Msg
+initNav hash model =
   let
-    boxId =
-      case Nav.boxIdFromHash hash of
-        Just boxId_ -> boxId_
-        Nothing -> model.boxId
+    _ = Console.info "Main.initNav" hash
   in
-  Nav.pushUrl boxId
+  case Nav.boxIdFromHash hash of
+    Just boxId ->
+      if boxId == model.boxId then
+        Nav.setViewport model
+      else
+        let
+          _ = Console.info "Main.initNav" ("Unexpected boxId hash: " ++ toBoxId boxId ++
+            " -> using boxId from model: " ++ toBoxId model.boxId)
+        in
+        Nav.pushUrl model.boxId
+    Nothing ->
+      Nav.pushUrl model.boxId
 
 
 running : (Model, Cmd Msg) -> (AppModel, Cmd Msg)
