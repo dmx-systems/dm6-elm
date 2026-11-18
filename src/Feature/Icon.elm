@@ -13,6 +13,7 @@ import Dict
 import Html exposing (Html, div, text, button)
 import Html.Attributes exposing (class, title, style)
 import Html.Events exposing (onClick)
+
 import FeatherIcons as FI
 
 
@@ -102,7 +103,7 @@ update msg env =
       env
         |> Env.map (setIcon icon)
         |> Env.map closePicker
-        |> Env.outcomeDir (Directives Store NoUndo) -- ### TODO: was "Push"
+        |> Env.outcomeDir (Directives Store MarkSingle)
 
 
 setIcon : Maybe Icon -> Model -> Model

@@ -327,7 +327,7 @@ update msg ({model} as env) =
     ToolDef.Set lineStyle ->
       env
         |> Env.map (setLineStyle lineStyle)
-        |> Env.outcomeDir (Directives Store NoUndo) -- ### TODO: was "Push"
+        |> Env.outcomeDir (Directives Store NoUndo) -- Settings are local state, not undoable
     ToolDef.Import ->
       env
         |> Env.outcomeCmd (S.importJSON ())
@@ -363,28 +363,28 @@ update msg ({model} as env) =
     ToolDef.Delete ->
       env
         |> delete
-        |> Env.outcomeDir (Directives Store NoUndo) -- ### TODO: was "Push"
+        |> Env.outcomeDir (Directives Store MarkSingle)
     ToolDef.Remove ->
       env
         |> remove
-        |> Env.outcomeDir (Directives Store NoUndo) -- ### TODO: was "Push"
+        |> Env.outcomeDir (Directives Store MarkSingle)
     ToolDef.Fullscreen topicId ->
       env
         |> fullscreen topicId
-        |> Outcome.fromDir (Directives Store NoUndo) -- ### TODO: was "Push"
+        |> Outcome.fromDir (Directives Store NoUndo) -- "boxId" is local state, not undoable
     ToolDef.RendererSelected renderer ->
       env
         |> setRenderer renderer
-        |> Env.outcomeDir (Directives Store NoUndo) -- ### TODO: was "Swap" -- better "Push"?
+        |> Env.outcomeDir (Directives Store NoUndo) -- TODO: better "MarkSingle"?
     ToolDef.ToggleExpansion topicId boxId ->
       env
         |> toggleExpansion topicId boxId
-        |> Env.outcomeDir (Directives Store NoUndo) -- ### TODO: was "Swap"
+        |> Env.outcomeDir (Directives Store NoUndo)
     -- Text Tools
     ToolDef.Image topicId ->
       model
         |> Text.openImageFilePicker topicId
-        |> Outcome.fromDir (Directives Store NoUndo) -- ### TODO: was "Swap"
+        |> Outcome.from
     ToolDef.DoneButtonClicked ->
       env
         |> Text.leaveEdit
@@ -491,11 +491,9 @@ removeItem (itemId, boxPath) model =
 
 fullscreen : TopicId -> Env -> (Model, Cmd Msg)
 fullscreen topicId env =
-  ( env
-      |> Box.turnTopicIntoBox topicId Renderer.default
-      |> .model
-  , Nav.pushUrl (BoxId topicId)
-  )
+  env
+    |> Box.turnTopicIntoBox topicId Renderer.default
+    |> Env.withCmd (Nav.pushUrl (BoxId topicId))
 
 
 setRenderer : Renderer -> Env -> Env

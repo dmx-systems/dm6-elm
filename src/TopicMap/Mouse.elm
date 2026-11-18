@@ -75,8 +75,8 @@ drag clientPos ({model} as env) =
   case model.topicMap.dragState of
     Just (DragEngaged time) ->
       env
-        |> Env.map(setDragState (Just (WaitForEndTime time)))
-        |> Env.withCmd(Task.perform (TopicMap << TopicMapDef.GotTime) Time.now)
+        |> Env.map (setDragState (Just (WaitForEndTime time)))
+        |> Env.withCmd (Task.perform (TopicMap << TopicMapDef.GotTime) Time.now)
     Just (Drag dragMode) ->
       case dragMode of
         DragTopic buffer ->

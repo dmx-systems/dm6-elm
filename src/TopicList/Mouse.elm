@@ -195,7 +195,7 @@ processDrop sourceTopicId sourceBoxId targetTopicId targetBoxId ({model} as env)
       , targetBoxId = targetBoxId
       , dropMode = model.topicList.dropMode
       }
-    --
+
     addTopic : Env -> Env
     addTopic env_ =
       case env_.model.topicList.dropMode of
@@ -218,8 +218,7 @@ processDrop sourceTopicId sourceBoxId targetTopicId targetBoxId ({model} as env)
   env
     |> Env.map (Box.removeTopic sourceTopicId sourceBoxId)
     |> addTopic
-    |> Env.outcomeDir (Directives Store NoUndo) -- ### TODO: was "Push"
-                                                -- FIXME: Push only if not foreign drop
+    |> Env.outcomeDir (Directives Store MarkSingle) -- FIXME: Mark only if not foreign drop?
 
 
 addTopic_ : TopicId -> BoxId -> Env -> Env

@@ -63,19 +63,17 @@ hashChanged hash ({model} as env) =
 
 
 setFullscreen : BoxId -> Env -> (Model, Cmd Msg)
-setFullscreen boxId ({model} as env) =
-  let
-    newModel = Box.setFullscreen boxId model
-  in
-  ( env
-      |> Env.map (\_ -> newModel)
-      |> Env.autoSize
-      |> .model
-  , Cmd.batch
-      [ setViewport newModel
-      , Outcome.command (Cancel Nothing)
-      ]
-  )
+setFullscreen boxId env =
+  env
+    |> Env.map (Box.setFullscreen boxId)
+    |> Env.autoSize
+    |> Env.toCmd
+      (\model ->
+        Cmd.batch
+          [ setViewport model
+          , Outcome.command (Cancel Nothing)
+          ]
+      )
 
 
 setViewport : Model -> Cmd Msg
@@ -104,7 +102,7 @@ pushUrl boxId =
   let
     _ = Console.info "Feature.Nav.pushUrl" boxId
   in
-  setHash <| "#" ++ toBoxId boxId
+  setHash ("#" ++ toBoxId boxId)
 
 
 boxIdFromHash : String -> Maybe BoxId

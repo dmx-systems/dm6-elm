@@ -274,7 +274,7 @@ update msg appModel =
             Scrolled pos ->
               env
                 |> Env.map (setScroll pos)
-                |> Env.outcomeDir (Directives Store NoUndo) -- ### TODO: was "Swap"
+                |> Env.outcomeDir (Directives Store NoUndo)
             Cancel maybeTarget ->
               env
                 |> cancelUI maybeTarget
