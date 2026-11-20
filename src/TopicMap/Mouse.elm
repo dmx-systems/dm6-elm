@@ -227,6 +227,10 @@ topicDragEnd sourceTopicId sourceBoxPath ({model} as env) =
       env
         |> moveTopicToBox sourceTopicId boxId targetId targetPath
         |> Outcome.fromDir (Directives Store MarkSingle)
+        -- Note: the topic geometry is only set at next update frame (through
+        -- TopicMapDef.GotRandomPos) and is not part of this undo bracket. So when undoing the
+        -- drop the geometry remains intact and could be restored when dropping the same topic
+        -- again (geometry stability), but at the moment is not (see moveTopicToBox below).
     Nothing ->
       let
         _ = Console.info "TopicMap.Mouse.topicDragEnd"
@@ -311,7 +315,10 @@ moveTopicToBox topicId boxId targetTopicId targetPath ({model} as env) =
         |> Box.addTopic (BoxTopic topicId expansion) targetBoxId
         |> Env.map (Box.removeTopic topicId boxId)
         |> Env.map (Sel.select (T targetTopicId) targetPath)
-        |> Env.withCmd (TopicMap.randomPos topicId targetBoxId)
+        |> Env.withCmd (TopicMap.placeRandomly topicId targetBoxId)
+        -- TODO: place topic randomly only if there is no geometry yet (geometry stability).
+        -- Could not be checked though as MapTopic (with default 0/0 position) exists already,
+        -- created through box initialization while Box.addTopic. Rethink box initialization.
     Nothing ->
       (model, Cmd.none)
 

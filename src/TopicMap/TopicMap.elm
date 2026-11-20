@@ -1,5 +1,5 @@
-module TopicMap.TopicMap exposing (bootstrapContent, init, allMapTopics, topicPos, randomPos,
-  updateTopicPos, updateTopicPosWith, mapTopicOrNothing, assocGeometry, addTopicAt,
+module TopicMap.TopicMap exposing (bootstrapContent, init, allMapTopics, topicPos, placeRandomly,
+  updateTopicPos, updateTopicPosWith, mapTopicOrNothing, assocGeometry, placeTopicAt,
   initLimboMapTopic, initTopicPos, hasMapTopic, fullscreen, lookup, setTopicPos, setRect,
   setScroll, revelationBoxId, revelationBoxPath, landingTarget, toLocalPos, toLocalModelPos,
   effectivePos, effectivePosFor, effectiveRect)
@@ -189,18 +189,21 @@ assocGeometry assoc boxId model =
       Console.fail "TopicMap.TopicMap.assocGeometry" {assoc = assoc, boxId = boxId} Nothing
 
 
-randomPos : TopicId -> BoxId -> Cmd Msg
-randomPos topicId boxId =
+{- Requests a random position, and once arrived places the topic there.
+Prerequisite: a MapTopic entry exists already.
+-}
+placeRandomly : TopicId -> BoxId -> Cmd Msg
+placeRandomly topicId boxId =
   Random.generate
     (Model.TopicMap << TopicMapDef.GotRandomPos topicId boxId)
     pointGen
 
 
 -- GotRandomPos message handler
-addTopicAt : TopicId -> BoxId -> Point -> Env -> Env
-addTopicAt topicId boxId pos env =
+placeTopicAt : TopicId -> BoxId -> Point -> Env -> Env
+placeTopicAt topicId boxId pos env =
   env
-    |> Env.map (addMapTopic (MapTopic topicId pos Collapsed) boxId)
+    |> Env.map (setTopicPos topicId boxId pos)
     |> Env.autoSize
 
 
@@ -281,9 +284,11 @@ mapTopicOrNothing (TopicId id) topicMap =
 hasMapTopic : TopicId -> BoxId -> Model -> Bool
 hasMapTopic topicId boxId model =
   case lookup boxId model of
-    Just topicMap -> topicMap.topics |> Dict.member (toTopicId topicId)
+    Just topicMap ->
+      topicMap.topics
+        |> Dict.member (toTopicId topicId)
     Nothing ->
-      Console.fail "TopicMap.TopicMap.hasMapTopic" {topicId = topicId, boxId = boxId} False
+      Console.fail "TopicMap.TopicMap.hasMapTopic" topicId False
 
 
 {-| Logs an error if TopicMap is missing.
