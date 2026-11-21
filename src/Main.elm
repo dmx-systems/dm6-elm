@@ -85,34 +85,35 @@ init (local, ops, hash) =
   (appModel, initCmd)
 
 
-{- Returns initial AppModel based on passed database content.
+{- Creates initial AppModel based on passed database content.
 Database content is passed separately: local state and synced state.
 -}
 initModel : E.Value -> E.Value -> AppModel
 initModel local ops =
-  case D.decodeValue (D.null True) local of
+  case local |> D.decodeValue (D.null True) of
     Ok True ->
       let
-        _ = Console.info "Main.initModel" "-> Creating bootstrap model"
+        _ = Console.info "Main.initModel" "Bootstrap detected (no DB exists)"
       in
       Bootstrapping
     _ ->
-      case CrdtDef.decodeDoc ops of
-        Just (doc, docModel) ->
-          case Model.decode local (doc, docModel) of
-            Ok model ->
+      case Model.decode local of
+        Ok localModel ->
+          case CrdtDef.decodeDoc ops localModel.replicaId of
+            Just (doc, docModel) ->
               let
+                model = Model.init localModel (doc, docModel)
                 bytes = model |> Console.toString |> String.length |> fromInt
                 _ = Console.info "Main.initModel" ("Decoded model: " ++ bytes ++ " bytes")
               in
               Running model
-            Err e ->
-              let
-                _ = Console.logError "Main.initModel" "Decoding \"local\" store failed" e
-              in
-              Bootstrapping -- decoding "local" store failed -> creating bootstrap model
-        Nothing ->
-          Bootstrapping -- decoding CRDT document failed -> creating bootstrap model
+            Nothing ->
+              Bootstrapping -- decoding CRDT document failed -> creating bootstrap model
+        Err e ->
+          let
+            _ = Console.logError "Main.initModel" "Decoding \"local\" store failed" e
+          in
+          Bootstrapping -- decoding "local" store failed -> creating bootstrap model
 
 
 
@@ -288,7 +289,7 @@ update msg appModel =
         |> running
 
 
-{- Handles the Bootstrap message: creates default content and transitions AppModel from
+{- Handles the Bootstrap message: creates bootstrap content and transitions AppModel from
 Bootstrapping to Running.
 -}
 bootstrap : Msg -> (AppModel, Cmd Msg)
@@ -296,20 +297,21 @@ bootstrap msg =
   case msg of
     Bootstrap hash ids ->
       case ids of
-        id :: pool ->
+        repId :: rootId :: pool ->
           let
-            rootTopicId = TopicId id
-            _ = Console.info "Main.bootstrap" ("root topic -> " ++ id)
+            replicaId = "r-" ++ repId
+            rootTopicId = TopicId rootId
+            _ = Console.info "Main.bootstrap" {replicaId = replicaId, rootTopicId = rootId}
           in
-          Model.bootstrap rootTopicId
+          Model.bootstrap replicaId rootTopicId
             |> Id.fillPool pool
             |> bootstrapContent rootTopicId
             |> TopicMap.bootstrapContent
             |> Outcome.with (initNav hash) (Directives Store NoUndo)
             |> Outcome.perform 
             |> runningWith (domReady ())
-        [] ->
-          Console.logError "Main.bootstrap" "Empty ID list received in Bootstrap message"
+        _ ->
+          Console.logError "Main.bootstrap" "Not enough IDs in Bootstrap message"
             (Bootstrapping, Cmd.none)
     _ ->
       Console.logError "Main.bootstrap"
@@ -317,7 +319,7 @@ bootstrap msg =
         (Bootstrapping, Cmd.none)
 
 
-{- Sets up default CRDT content for newly created DB: root topic, root box, root box ID.
+{- Sets up bootstrap CRDT content for newly created DB: root topic, root box, root box ID.
 -}
 bootstrapContent : TopicId -> Model -> Model
 bootstrapContent rootTopicId model =

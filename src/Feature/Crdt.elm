@@ -172,17 +172,17 @@ remembers the previous model's document version in the given model.
 markUndoBegin : Model -> Model -> Model
 markUndoBegin prevModel model =
   model
-    |> setEditStartVersion (Just (Doc.version prevModel.crdt.doc))
+    |> setUndoBoundary (Just (Doc.version prevModel.crdt.doc))
 
 
 markUndoEnd : Model -> Model
 markUndoEnd model =
-  case model.crdt.editStartVersion of
+  case model.crdt.undoBoundary of
     Just version ->
       model.crdt.doc
         |> Doc.recordEdit version
         |> setDoc model
-        |> setEditStartVersion Nothing
+        |> setUndoBoundary Nothing
     Nothing ->
       let
         _ = Console.logError "Feature.Crdt.markUndoEnd" "Undo begin is not marked" Nothing
@@ -260,6 +260,6 @@ setLastStored lastStored ({crdt} as model) =
   { model | crdt = { crdt | lastStored = lastStored }}
 
 
-setEditStartVersion : Maybe Version -> Model -> Model
-setEditStartVersion editStartVersion ({crdt} as model) =
-  { model | crdt = { crdt | editStartVersion = editStartVersion }}
+setUndoBoundary : Maybe Version -> Model -> Model
+setUndoBoundary undoBoundary ({crdt} as model) =
+  { model | crdt = { crdt | undoBoundary = undoBoundary }}

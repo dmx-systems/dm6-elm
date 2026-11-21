@@ -1,4 +1,4 @@
-module Model exposing (Model, Msg(..), bootstrap, encode, decode, map, cmd, mergeCmd)
+module Model exposing (Model, Msg(..), bootstrap, encode, decode, init, map, cmd, mergeCmd)
 
 import ModelBase exposing (..)
 import SyncModel exposing (SyncModel)
@@ -24,8 +24,13 @@ import Json.Encode as E
 
 
 
+{- Local state, not synced. ### FIXDOC
+A certain portion is persistent (see `encode` below), the remainder is transient.
+Additionally holds a materialized form (`cache`) of the synced state.
+-}
 type alias Model =
-  { cache : SyncModel -- the materialzed CRDT document, for reading
+  { cache : SyncModel -- the materialized CRDT document, for reading
+  , replicaId : String
   , boxId : BoxId -- the box rendered fullscreen
   -- box renderers
   , topicMap : TopicMapDef.Model
@@ -44,15 +49,16 @@ type alias Model =
 
 {- Creates the initial empty Model when no DB exists.
 -}
-bootstrap : TopicId -> Model
-bootstrap rootTopicId =
+bootstrap : String -> TopicId -> Model
+bootstrap replicaId rootTopicId =
   { cache = SyncModel.bootstrap
+  , replicaId = replicaId
   , boxId = BoxId rootTopicId
   -- box renderers
   , topicMap = TopicMapDef.init
   , topicList = TopicListDef.init
   -- feature modules
-  , crdt = CrdtDef.bootstrap
+  , crdt = CrdtDef.bootstrap replicaId
   , tool = ToolDef.init
   , text = TextDef.init
   , mouse = MouseDef.init
@@ -85,35 +91,60 @@ type Msg
 -- JSON
 
 
+{- Content of the "local" object store.
+-}
+type alias LocalModel =
+  { replicaId : String
+  , boxId : BoxId
+  , toolModel : ToolDef.Model
+  }
+
+
+{- Encodes the Model portion to be stored in the "local" object store.
+-}
 encode : Model -> E.Value
 encode model =
   E.object
-    [ ("boxId", encodeBoxId model.boxId)
+    [ ("replicaId", E.string model.replicaId)
+    , ("boxId", encodeBoxId model.boxId)
     -- feature modules
     , ("tool", ToolDef.encode model.tool)
     ]
 
 
-{- Creates the initial Model from DB content. -}
-decode : E.Value -> (Doc SyncModel, SyncModel) -> Result D.Error Model
-decode flags (doc, docModel) =
-  flags |> D.decodeValue
-    (D.succeed Model
-      |> hardcoded docModel
-      |> required "boxId" boxIdDecoder
-      -- box renderers
-      |> hardcoded TopicMapDef.init
-      |> hardcoded TopicListDef.init
-      -- feature modules
-      |> hardcoded (CrdtDef.init doc)
-      |> required "tool" ToolDef.decoder
-      |> hardcoded TextDef.init
-      |> hardcoded MouseDef.init
-      |> hardcoded SearchDef.init
-      |> hardcoded IconDef.init
-      |> hardcoded SelDef.init
-      |> hardcoded IdDef.init
-    )
+{- Decodes the content of the "local" object store.
+-}
+decode : E.Value -> Result D.Error LocalModel
+decode local =
+  let
+    localDecoder =
+      D.map3 LocalModel
+        (D.field "replicaId" D.string)
+        (D.field "boxId" boxIdDecoder)
+        (D.field "tool" ToolDef.decoder)
+  in
+  local
+    |> D.decodeValue localDecoder
+
+
+init : LocalModel -> (Doc SyncModel, SyncModel) -> Model
+init local (doc, docModel) =
+  Model
+    docModel
+    local.replicaId
+    local.boxId
+    -- box renderers
+    TopicMapDef.init
+    TopicListDef.init
+    -- feature modules
+    (CrdtDef.init doc)
+    local.toolModel
+    TextDef.init
+    MouseDef.init
+    SearchDef.init
+    IconDef.init
+    SelDef.init
+    IdDef.init
 
 
 

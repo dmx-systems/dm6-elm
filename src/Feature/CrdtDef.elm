@@ -26,26 +26,26 @@ import Json.Encode as E
 type alias Model =
   { doc : Doc SyncModel
   , lastStored : Version
-  , editStartVersion : Maybe Version
+  , undoBoundary : Maybe Version
   }
 
 
-bootstrap : Model
-bootstrap =
-  init freshDoc
+bootstrap : String -> Model
+bootstrap replicaId =
+  init (initDoc replicaId)
 
 
 init : Doc SyncModel -> Model
 init doc =
   { doc = doc
   , lastStored = Doc.version doc
-  , editStartVersion = Nothing
+  , undoBoundary = Nothing
   }
 
 
-decodeDoc : E.Value -> Maybe (Doc SyncModel, SyncModel)
-decodeDoc ops =
-  freshDoc
+decodeDoc : E.Value -> String -> Maybe (Doc SyncModel, SyncModel)
+decodeDoc ops replicaId =
+  (initDoc replicaId)
     |> Doc.decodeInto ops
     |> Result.mapError (Console.logError "Feature.CrdtDef.decodeDoc" "Decode error")
     |> Result.andThen
@@ -61,9 +61,9 @@ decodeDoc ops =
     |> Maybe.withDefault Nothing
 
 
-freshDoc : Doc SyncModel
-freshDoc =
-  C.init (Crdt.Id.replica "my-replica") modelDoc.schema -- TODO: replica ID
+initDoc : String -> Doc SyncModel
+initDoc replicaId =
+  C.init (Crdt.Id.replica replicaId) modelDoc.schema
 
 
 

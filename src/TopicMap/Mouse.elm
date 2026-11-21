@@ -228,7 +228,7 @@ topicDragEnd sourceTopicId sourceBoxPath ({model} as env) =
         |> moveTopicToBox sourceTopicId boxId targetId targetPath
         |> Outcome.fromDir (Directives Store MarkSingle)
         -- Note: the topic geometry is only set at next update frame (through
-        -- TopicMapDef.GotRandomPos) and is not part of this undo bracket. So when undoing the
+        -- TopicMapDef.GotRandomPos) and is not part of this undo boundary. So when undoing the
         -- drop the geometry remains intact and could be restored when dropping the same topic
         -- again (geometry stability), but at the moment is not (see moveTopicToBox below).
     Nothing ->
