@@ -1,9 +1,8 @@
-module Renderer exposing (Renderer(..), default, toString, fromString, encode, decoder)
+module Renderer exposing (Renderer(..), default, toString, fromString, decoder)
 
 -- import Console -- TODO: cyclic
 
 import Json.Decode as D
-import Json.Encode as E
 
 
 
@@ -38,11 +37,6 @@ fromString str =
 
 
 -- JSON
-
-
-encode : Renderer -> E.Value
-encode =
-  toString >> E.string
 
 
 decoder : D.Decoder String -> D.Decoder Renderer

@@ -7,9 +7,9 @@ import Dict exposing (Dict)
 
 
 type alias Model =
-  { edit : EditState
-  , measure : String
-  , imageCache : Dict ImageId String -- Int -> blob: URL
+  { edit : EditState -- transient
+  , measure : String -- transient
+  , imageCache : Dict ImageId String -- Int -> blob: URL -- transient
   }
 
 
@@ -30,7 +30,7 @@ type Msg
   = OnTextInput String
   | OnTextareaInput String
   | GotTextSize TopicId SizeField Size
-  | LeaveEdit
+  | EnterOrEscPressed
   | ImageFilePicked TopicImage
   | ImageUrlResolved (ImageId, String)
 

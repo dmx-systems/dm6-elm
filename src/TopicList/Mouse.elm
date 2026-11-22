@@ -63,13 +63,13 @@ toIndex localPos =
 drag : Point -> Env -> (Model, Cmd Msg)
 drag clientPos {model} =
   ( case (model.mouse.dragSource, model.topicList.dragPos) of
-      (Just {lastPointerPos}, Just dragPos) ->
+      (Just {lastPos}, Just dragPos) ->
         model
           |> setDragPos
             (Just
               { dragPos
-              | x = dragPos.x + clientPos.x - lastPointerPos.x
-              , y = dragPos.y + clientPos.y - lastPointerPos.y
+              | x = dragPos.x + clientPos.x - lastPos.x
+              , y = dragPos.y + clientPos.y - lastPos.y
               }
             )
       _ ->
@@ -137,7 +137,7 @@ dropTargetAt clientPos model =
                 (Drop, dropTopicId)
               else
                 (InsertBefore, fromBoxId dropBoxId)
-            isCyclic = Box.hadDeepTopic targetBoxId topicId model
+            isCyclic = Box.hasDeepTopic targetBoxId topicId model
             -- _ = Console.info "TopicList.Mouse.dropTargetAt" (targetBoxId, dropMode, localPos)
           in
           if not isCyclic then
@@ -195,7 +195,7 @@ processDrop sourceTopicId sourceBoxId targetTopicId targetBoxId ({model} as env)
       , targetBoxId = targetBoxId
       , dropMode = model.topicList.dropMode
       }
-    --
+
     addTopic : Env -> Env
     addTopic env_ =
       case env_.model.topicList.dropMode of
@@ -218,7 +218,7 @@ processDrop sourceTopicId sourceBoxId targetTopicId targetBoxId ({model} as env)
   env
     |> Env.map (Box.removeTopic sourceTopicId sourceBoxId)
     |> addTopic
-    |> Env.outcomeDir (Directives Store Push) -- FIXME: Push only if not foreign drop
+    |> Env.outcomeDir (Directives Store MarkSingle) -- FIXME: Mark only if not foreign drop?
 
 
 addTopic_ : TopicId -> BoxId -> Env -> Env

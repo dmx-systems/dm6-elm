@@ -91,7 +91,7 @@ viewSearchtMenu topicIds model =
           isDisabled = isItemDisabled topicId model
           isHover = isTopicHover topicId model
         in
-        case Topic.fromId topicId model of
+        case Topic.lookup topicId model of
           Just topic ->
             div
               ( [ onClick <| Search <| SearchDef.TopicClicked topicId
@@ -122,7 +122,7 @@ viewTraversalMenu relTopicIds model =
           isDisabled = isItemDisabled topicId model
           isHover = isRelTopicHover relTopic model
         in
-        case Topic.fromId topicId model of
+        case Topic.lookup topicId model of
           Just topic ->
             div
               ( [ onClick <| Search <| SearchDef.RelTopicClicked relTopic
@@ -236,7 +236,7 @@ fullscreenButtonStyle =
 isItemDisabled : TopicId -> Model -> Bool
 isItemDisabled topicId model =
   case TopicMap.revelationBoxId model of
-    Just (BoxId topicId_) -> Box.hadDeepTopic topicId_ topicId model
+    Just (BoxId topicId_) -> Box.hasDeepTopic topicId_ topicId model
     Nothing -> False
 
 
@@ -281,7 +281,7 @@ update msg env =
     SearchDef.TopicClicked topicId ->
       env
         |> revealTopic topicId
-        |> Env.outcomeDir (Directives Store Push)
+        |> Env.outcomeDir (Directives Store MarkSingle)
     -- Traverse
     SearchDef.RelTopicHovered relTopicId ->
       env
@@ -294,7 +294,7 @@ update msg env =
     SearchDef.RelTopicClicked relTopicId ->
       env
         |> revealRelTopic relTopicId
-        |> Env.outcomeDir (Directives Store Push)
+        |> Env.outcomeDir (Directives Store MarkSingle)
     -- Fullscreen (Search & Traverse)
     SearchDef.Fullscreen boxId ->
       env
@@ -415,14 +415,13 @@ revealAssoc_ assocId boxId model =
 searchTopics : Model -> Model
 searchTopics model =
   let
-    topicIds = model.topics |> Dict.foldr
-      (\id {text} idAcc ->
+    topicIds = model.cache.topics |> Dict.values |> List.filterMap
+      (\{id, text} ->
         if isMatch text model.search.term then
-          (TopicId id) :: idAcc
+          Just id
         else
-          idAcc
+          Nothing
       )
-      []
   in
   model
     |> setResult (Topics topicIds Nothing)

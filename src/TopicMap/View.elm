@@ -16,7 +16,7 @@ import ModelBase exposing (..)
 import Shared.Events as Events
 import Shared.ViewBase as VB
 import Topic
-import TopicMap.TopicMap as TM
+import TopicMap.TopicMap as TopicMap
 import TopicMap.TopicMapDef as TopicMapDef exposing (TopicMap, MapTopic, DragState(..),
   DragMode(..))
 import TopicMap.ViewModel as VM
@@ -134,14 +134,15 @@ gAttr boxId boxRect model =
 -- For the fullscreen box boxPath is empty
 boxInfo : BoxId -> BoxPath -> Env -> BoxInfo
 boxInfo boxId boxPath ({model} as env) =
-  case TM.byId boxId model of
+  case TopicMap.lookup boxId model of
     Just topicMap ->
       let
-        width = topicMap.rect.x2 - topicMap.rect.x1
-        height = topicMap.rect.y2 - topicMap.rect.y1
+        rect = TopicMap.effectiveRect topicMap model
+        width = rect.x2 - rect.x1
+        height = rect.y2 - rect.y1
       in
       ( viewItems topicMap boxPath env
-      , topicMap.rect
+      , rect
       , ( { w = fromInt width
           , h = fromInt height
           }
@@ -161,22 +162,29 @@ viewItems topicMap boxPath ({model} as env) =
     topics =
       VM.topicsToRender topicMap model |> List.map
         (\({id} as mapTopic) ->
-          case Topic.fromId id model of
-            Just topic -> viewTopic topic mapTopic newPath env
-            _ -> Console.logError "TopicMap.View.viewItems"
-              ("problem with topic " ++ fromInt (toTopicId id)) (text "")
+          case Topic.lookup id model of
+            Just topic ->
+              viewTopic topic mapTopic newPath env
+            _ ->
+              let
+                _ = Console.fail "TopicMap.View.viewItems" "not rendered" id
+              in
+              text ""
         )
     assocs =
       Box.assocIds topicMap.id model |> List.foldr
         (\id svgAcc ->
-          case Assoc.fromId id model of
+          case Assoc.lookup id model of
             Just assoc ->
               let
                 clickHandler = assocClickHandler id newPath
               in
               svgAcc ++ viewAssoc assoc newPath clickHandler model
-            _ -> Console.logError "TopicMap.View.viewItems"
-              ("problem with assoc " ++ fromInt (toAssocId id)) svgAcc
+            _ ->
+              let
+                _ = Console.fail "TopicMap.View.viewItems" "not rendered" id
+              in
+              svgAcc
         )
         []
   in
@@ -202,22 +210,22 @@ viewLimboAssoc boxId model =
           let
             _ = Console.info "TopicMap.View.viewLimboAssoc" (assocId, "not in map", boxId)
           in
-          case Assoc.fromId assocId model of
+          case Assoc.lookup assocId model of
             Just assoc ->
               -- only if connected topic has geometry in this map already we can call
               -- viewAssoc()
-              if TM.hasMapTopic topicId boxId model then
+              if TopicMap.hasMapTopic topicId boxId model then
                 viewAssoc assoc [boxId] [] model -- simple box path is sufficient for geometry,
                                                  -- limbo assoc is never selected
               else
                 -- otherwise we call low-level lineRenderer() with topic default position
                 Assoc.otherTopicId assocId topicId model
                   |> Maybe.andThen
-                    (\sourceTopicId -> TM.topicPos sourceTopicId boxId model)
+                    (\sourceTopicId -> TopicMap.topicPos sourceTopicId boxId model)
                   |> Maybe.andThen
                     (\pos -> Just
                       ( (lineRenderer model)
-                          pos (TM.initTopicPos boxId model) (Just assoc)
+                          pos (TopicMap.initTopicPos boxId model) (Just assoc)
                           [boxId] [] model -- simple box path is sufficient for geometry,
                                            -- limbo assoc is never selected
                       )
@@ -519,7 +527,7 @@ viewAssoc : Assoc -> BoxPath -> Attrs Msg -> Model -> List (Svg Msg)
 viewAssoc assoc boxPath clickHandler model =
   let
     boxId = Box.firstId boxPath
-    geom = TM.assocGeometry assoc boxId model
+    geom = TopicMap.assocGeometry assoc boxId model
   in
   case geom of
     Just (pos1, pos2) -> (lineRenderer model) pos1 pos2 (Just assoc) boxPath clickHandler model
@@ -529,15 +537,15 @@ viewAssoc assoc boxPath clickHandler model =
 viewAssocDraft : BoxId -> Model -> List (Svg Msg)
 viewAssocDraft boxId model =
   case (model.mouse.dragSource, model.topicMap.dragState) of
-    (Just {topicId, boxPath, lastPointerPos}, Just (Drag DraftAssoc)) ->
+    (Just {topicId, boxPath, lastPos}, Just (Drag DraftAssoc)) ->
       let
         sourceBoxId = Box.firstId boxPath
       in
       if sourceBoxId == boxId then
-        case TM.topicPos topicId sourceBoxId model of
+        case TopicMap.topicPos topicId sourceBoxId model of
           Just pos1 ->
             let
-              pos2 = TM.toLocalModelPos lastPointerPos boxPath model
+              pos2 = TopicMap.toLocalModelPos lastPos boxPath model
             in
             (lineRenderer model) pos1 pos2 Nothing [boxId] [] model
             -- simple box path is sufficient for geometry, draft assoc is never selected
@@ -700,19 +708,22 @@ toolbarPos boxPath model =
   let
     boxId = Box.firstId boxPath
   in
-  case TM.byId boxId model of
-    Just {rect} ->
+  case TopicMap.lookup boxId model of
+    Just topicMap ->
+      let
+        rect = TopicMap.effectiveRect topicMap model
+      in
       ToolbarPos
         (\topic ->
-          case TM.topicPos topic.id boxId model of
-            Just topicPos ->
+          case TopicMap.effectivePos topic.id boxId model of
+            Just pos ->
               Point
-                (topicPos.x - rect.x1 - C.topicW2)
-                (topicPos.y - rect.y1 - C.topicH2 - 29) -- TODO: 29 ≈ toolbar height
+                (pos.x - rect.x1 - C.topicW2)
+                (pos.y - rect.y1 - C.topicH2 - 29) -- TODO: 29 ≈ toolbar height
             Nothing -> Point 0 0
         )
         (\assoc ->
-          case TM.assocGeometry assoc boxId model of
+          case TopicMap.assocGeometry assoc boxId model of
             Just (p1, p2) ->
               Point
                 ((p1.x + p2.x) // 2 - rect.x1 - 32) -- TODO: 32 ≈ toolbar width / 2
@@ -720,4 +731,4 @@ toolbarPos boxPath model =
             Nothing -> Point 0 0
         )
     Nothing ->
-      (ToolbarPos (\_ -> Point 0 0) (\_ -> Point 0 0))
+      ToolbarPos (always (Point 0 0)) (always (Point 0 0))

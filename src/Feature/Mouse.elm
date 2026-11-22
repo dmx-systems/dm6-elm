@@ -3,7 +3,6 @@ module Feature.Mouse exposing (update, clearHover, isHovered, isDragActive, isTo
 
 import Box
 import Config as C
-import Console
 import Env exposing (Env, Dispatch)
 import Feature.MouseDef as MouseDef exposing (DragSource)
 import Model exposing (Model, Msg(..))
@@ -31,7 +30,7 @@ update msg ({model, dispatch} as env) =
         |> updateHover pos dispatch
         |> dispatch.drag (Box.firstId dragSource.ixBoxPath) pos
         |> dragAccept pos dispatch
-        |> Model.map (setDragSource (Just {dragSource | lastPointerPos = pos}))
+        |> Model.map (setDragSource (Just {dragSource | lastPos = pos}))
         |> Outcome.from
     (MouseDef.Up, Just dragSource) ->
       env

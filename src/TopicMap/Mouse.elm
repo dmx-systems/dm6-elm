@@ -1,5 +1,5 @@
 module TopicMap.Mouse exposing (dragStart, drag, dragAccept, dragStop, timeArrived,
-  isDraftAssoc)
+  isDraftAssoc, bufferTopicPos, bufferBoxRect)
 
 import Assoc
 import Box
@@ -12,9 +12,10 @@ import ModelBase exposing (..)
 import Outcome exposing (..)
 import Renderer
 import TopicMap.TopicMap as TopicMap
-import TopicMap.TopicMapDef as TopicMapDef exposing (DragState(..), DragMode(..))
+import TopicMap.TopicMapDef as TopicMapDef exposing (DragState(..), DragMode(..),
+  GeometryBuffer)
 
-import String exposing (fromInt)
+import Dict exposing (Dict)
 import Task
 import Time exposing (Posix, posixToMillis)
 
@@ -43,34 +44,29 @@ dragStart {model} =
       (model, Cmd.none)
 
 
-timeArrived : Posix -> Model -> Outcome
+timeArrived : Posix -> Model -> Model
 timeArrived time model =
   case (model.mouse.dragSource, model.topicMap.dragState) of
     (_, Just WaitForStartTime) ->
       model
-        |> setDragState (Just <| DragEngaged time)
-        |> Outcome.default
+        |> setDragState (Just (DragEngaged time))
     (Just {topicId, boxPath}, Just (WaitForEndTime startTime)) ->
       let
         delay = posixToMillis time - posixToMillis startTime
-        (dragState, historyOp) =
+        dragState =
           if delay > C.assocDelayMillis then
-            (Just <| Drag DraftAssoc, Swap)
+            Just (Drag DraftAssoc)
           else
-            case TopicMap.topicPos topicId (Box.firstId boxPath) model of
-              Just origPos -> (Just <| Drag <| DragTopic origPos, Push)
-              Nothing -> (Nothing, Swap) -- error is already logged
+            Just (Drag (DragTopic (GeometryBuffer Dict.empty Dict.empty)))
       in
       model
         |> setDragState dragState
-        |> Outcome.withDir (Directives NoStore historyOp)
     _ ->
       let
         _ = Console.logError "TopicMap.Mouse.timeArrived" "Unexpected drag state"
           (model.mouse.dragSource, model.topicMap.dragState)
       in
       model
-        |> Outcome.default
 
 
 -- Dispatch.DragHook
@@ -78,40 +74,49 @@ drag : Point -> Env -> (Model, Cmd Msg)
 drag clientPos ({model} as env) =
   case model.topicMap.dragState of
     Just (DragEngaged time) ->
-      ( model
-          |> setDragState (Just <| WaitForEndTime time)
-      , Task.perform (TopicMap << TopicMapDef.GotTime) Time.now
-      )
-    Just (Drag _) ->
-      ( env
-          |> Env.map (updateTopicPos clientPos)
-          |> Env.autoSize
-          |> .model
-      , Cmd.none
-      )
-    _ ->
-      (model, Cmd.none)
-
-
-updateTopicPos : Point -> Model -> Model
-updateTopicPos clientPos model =
-  case (model.mouse.dragSource, model.topicMap.dragState) of
-    (Just {topicId, boxPath, lastPointerPos}, Just (Drag dragMode)) ->
+      env
+        |> Env.map (setDragState (Just (WaitForEndTime time)))
+        |> Env.withCmd (Task.perform (TopicMap << TopicMapDef.GotTime) Time.now)
+    Just (Drag dragMode) ->
       case dragMode of
-        DragTopic _ ->
-          model
-            |> TopicMap.updateTopicPos topicId (Box.firstId boxPath)
-              (\pos ->
-                Point
-                  (pos.x + clientPos.x - lastPointerPos.x)
-                  (pos.y + clientPos.y - lastPointerPos.y)
-              )
+        DragTopic buffer ->
+          env
+            |> Env.map (updateTopicPos clientPos buffer)
+            |> Env.autoSize
+            |> Env.toMct
         DraftAssoc ->
-          model
+          env
+            |> Env.toMct
     _ ->
       let
-        _ = Console.logError "TopicMap.Mouse.updateTopicPos" "Unexpected mouse state"
-          (model.mouse.dragSource, model.topicMap.dragState)
+        _ = Console.logError "TopicMap.Mouse.drag" "Unexpected drag state"
+          model.topicMap.dragState
+      in
+      env
+        |> Env.toMct
+
+
+updateTopicPos : Point -> GeometryBuffer -> Model -> Model
+updateTopicPos clientPos buffer model =
+  case model.mouse.dragSource of
+    Just {topicId, boxPath, startPos} ->
+      let
+        boxId = Box.firstId boxPath
+      in
+      model
+        |> TopicMap.updateTopicPosWith topicId boxId
+          (\pos ->
+            bufferTopicPos topicId boxId
+              (Point
+                (pos.x + clientPos.x - startPos.x)
+                (pos.y + clientPos.y - startPos.y)
+              )
+              buffer model
+          )
+    Nothing ->
+      let
+        _ = Console.logError "TopicMap.Mouse.updateTopicPos" "Unexpected drag source"
+          model.mouse.dragSource
       in
       model
 
@@ -133,7 +138,7 @@ dropTarget model =
           let
             -- geometrically hovered topic (targetTopicId) is accepted as a drop target if
             -- it is not contained in item/box being dragged (topicId), would create a cycle
-            isCyclic = Box.hadDeepTopic targetTopicId topicId -- partially applied
+            isCyclic = Box.hasDeepTopic targetTopicId topicId -- partially applied
           in
           case model.topicMap.dragState of
             Just (Drag (DragTopic _)) ->
@@ -154,9 +159,10 @@ dropTarget model =
                 Just target
               else
                 Nothing
-            Just _ -> Nothing -- TODO: error?
+            Just _ ->
+              Nothing -- TODO: error?
             Nothing ->
-              -- foreign drop (from non-TopicMap renderer)
+              -- foreign drop (from other than TopicMap renderer)
               if not (isCyclic model) then
                 Just target
               else
@@ -174,9 +180,9 @@ dragStop ({model} as env) =
       case model.mouse.dragSource of
         Just {topicId, boxPath} ->
           case model.topicMap.dragState of
-            Just (Drag (DragTopic origTopicPos)) ->
+            Just (Drag (DragTopic _)) ->
               env
-                |> topicDragEnd topicId boxPath origTopicPos
+                |> topicDragEnd topicId boxPath
             Just (Drag DraftAssoc) ->
               model
                 |> assocDragEnd topicId boxPath
@@ -207,28 +213,32 @@ dragStop ({model} as env) =
     |> Outcome.map (setDragState Nothing)
 
 
-topicDragEnd : TopicId -> BoxPath -> Point -> Env -> Outcome
-topicDragEnd sourceTopicId sourceBoxPath origTopicPos ({model} as env) =
+topicDragEnd : TopicId -> BoxPath -> Env -> Outcome
+topicDragEnd sourceTopicId sourceBoxPath ({model} as env) =
   case model.mouse.dropTarget of
     Just (T targetId, targetPath) ->
       let
         _ = Console.info "TopicMap.Mouse.topicDragEnd" ("dropped "
-          ++ fromInt (toTopicId sourceTopicId) ++ " (box " ++ Box.fromPath sourceBoxPath
-          ++ ") on " ++ fromInt (toTopicId targetId) ++ " (box " ++ Box.fromPath targetPath
+          ++ toTopicId sourceTopicId ++ " (box " ++ Box.fromPath sourceBoxPath
+          ++ ") on " ++ toTopicId targetId ++ " (box " ++ Box.fromPath targetPath
           ++ ") --> move topic to box")
         boxId = Box.firstId sourceBoxPath
       in
       env
         |> moveTopicToBox sourceTopicId boxId targetId targetPath
-        |> Model.map (TopicMap.setTopicPos sourceTopicId boxId origTopicPos)
-        |> Outcome.fromDir (Directives Store Swap)
+        |> Outcome.fromDir (Directives Store MarkSingle)
+        -- Note: the topic geometry is only set at next update frame (through
+        -- TopicMapDef.GotRandomPos) and is not part of this undo boundary. So when undoing the
+        -- drop the geometry remains intact and could be restored when dropping the same topic
+        -- again (geometry stability), but at the moment is not (see moveTopicToBox below).
     Nothing ->
       let
         _ = Console.info "TopicMap.Mouse.topicDragEnd"
-          "topic drag ended w/o target -> store position"
+          "topic drag ended w/o target -> persist geometry"
       in
       env
-        |> Env.outcomeDir (Directives Store Swap)
+        |> Env.map persistBuffer
+        |> Env.outcomeDir (Directives Store MarkSingle)
     _ ->
       env
         |> Env.outcome
@@ -243,14 +253,14 @@ foreignTopicDrop sourceTopicId sourceBoxPath ({model} as env) =
     Just (T targetId, targetPath) ->
       let
         _ = Console.info "TopicMap.Mouse.foreignTopicDrop" ("dropped "
-          ++ fromInt (toTopicId sourceTopicId) ++ " (box " ++ Box.fromPath sourceBoxPath
-          ++ ") on " ++ fromInt (toTopicId targetId) ++ " (box " ++ Box.fromPath targetPath
+          ++ toTopicId sourceTopicId ++ " (box " ++ Box.fromPath sourceBoxPath
+          ++ ") on " ++ toTopicId targetId ++ " (box " ++ Box.fromPath targetPath
           ++ ") --> foreign topic drop")
         boxId = Box.firstId sourceBoxPath
       in
       env
         |> moveTopicToBox sourceTopicId boxId targetId targetPath
-        |> Outcome.fromDir (Directives Store Push)
+        |> Outcome.fromDir (Directives Store MarkSingle)
     Nothing ->
       let
         _ = Console.info "TopicMap.Mouse.foreignTopicDrop"
@@ -274,14 +284,14 @@ assocDragEnd sourceTopicId sourceBoxPath model =
     Just (T targetId, targetPath) ->
       let
         _ = Console.info "TopicMap.Mouse.assocDragEnd" ("assoc drawn from "
-          ++ fromInt (toTopicId sourceTopicId) ++ " (box " ++ Box.fromPath sourceBoxPath
-          ++ ") to " ++ fromInt (toTopicId targetId) ++ " (box " ++ Box.fromPath targetPath
+          ++ toTopicId sourceTopicId ++ " (box " ++ Box.fromPath sourceBoxPath
+          ++ ") to " ++ toTopicId targetId ++ " (box " ++ Box.fromPath targetPath
           ++ ") --> create assoc")
         boxId = Box.firstId sourceBoxPath
       in
       model
         |> createAssoc sourceTopicId targetId boxId
-        |> Outcome.withDir (Directives Store Push)
+        |> Outcome.withDir (Directives Store MarkSingle)
     Nothing ->
       let
         _ = Console.info "TopicMap.Mouse.assocDragEnd" "drawn assoc ended w/o target"
@@ -303,10 +313,12 @@ moveTopicToBox topicId boxId targetTopicId targetPath ({model} as env) =
       env
         |> Box.turnTopicIntoBox targetTopicId renderer
         |> Box.addTopic (BoxTopic topicId expansion) targetBoxId
-        |> .model
-        |> Box.removeTopic topicId boxId
-        |> Sel.select (T targetTopicId) targetPath
-        |> TopicMap.randomPos topicId targetBoxId
+        |> Env.map (Box.removeTopic topicId boxId)
+        |> Env.map (Sel.select (T targetTopicId) targetPath)
+        |> Env.withCmd (TopicMap.placeRandomly topicId targetBoxId)
+        -- TODO: place topic randomly only if there is no geometry yet (geometry stability).
+        -- Could not be checked though as MapTopic (with default 0/0 position) exists already,
+        -- created through box initialization while Box.addTopic. Rethink box initialization.
     Nothing ->
       (model, Cmd.none)
 
@@ -331,3 +343,64 @@ isDraftAssoc model =
   case model.topicMap.dragState of
     Just (Drag DraftAssoc) -> True
     _ -> False
+
+
+
+-- GEOMETRY BUFFER
+
+
+bufferTopicPos : TopicId -> BoxId -> Point -> GeometryBuffer -> Model -> Model
+bufferTopicPos (TopicId topicId) (BoxId (TopicId boxId)) newPos buffer model =
+  setDragState
+    (Just <| Drag <| DragTopic
+      { buffer | topics = buffer.topics |> Dict.insert (topicId, boxId) newPos }
+    )
+    model
+
+
+bufferBoxRect : BoxId -> Rectangle -> Model -> Maybe Model
+bufferBoxRect (BoxId (TopicId boxId)) rect model =
+  case model.topicMap.dragState of
+    Just (Drag (DragTopic buffer)) ->
+      Just
+        (setDragState
+          (Just <| Drag <| DragTopic
+            { buffer | topicMaps = buffer.topicMaps |> Dict.insert boxId rect }
+          )
+          model
+        )
+    _ -> Nothing
+
+
+persistBuffer : Model -> Model
+persistBuffer model =
+  let
+    persistTopics : Dict (Id, Id) Point -> Model -> Model
+    persistTopics topics model_ =
+      topics
+        |> Dict.foldl
+          (\(topicId, boxId) pos modelAcc ->
+            TopicMap.setTopicPos (TopicId topicId) (BoxId (TopicId boxId)) pos modelAcc
+          )
+          model_
+
+    persistTopicMaps : Dict Id Rectangle -> Model -> Model
+    persistTopicMaps topicMaps model_ =
+      topicMaps
+        |> Dict.foldl
+          (\boxId rect modelAcc ->
+            TopicMap.setRect (BoxId (TopicId boxId)) rect modelAcc
+          )
+          model_
+  in
+  case model.topicMap.dragState of
+    Just (Drag (DragTopic buffer)) ->
+      model
+        |> persistTopics buffer.topics
+        |> persistTopicMaps buffer.topicMaps
+    _ ->
+      let
+        _ = Console.logError "TopicMap.Mouse.persistBuffer" "Unexpected drag state"
+          model.topicMap.dragState
+      in
+      model

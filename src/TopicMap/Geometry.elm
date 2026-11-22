@@ -8,8 +8,9 @@ import Feature.TextDef exposing (EditState(..))
 import Model exposing (Model)
 import ModelBase exposing (..)
 import Topic
-import TopicMap.TopicMap as TM
-import TopicMap.TopicMapDef exposing (TopicMap, MapTopic)
+import TopicMap.Mouse as Mouse
+import TopicMap.TopicMap as TopicMap
+import TopicMap.TopicMapDef exposing (TopicMap, MapTopic, DragState(..), DragMode(..))
 import TopicMap.ViewModel as VM
 
 
@@ -28,11 +29,11 @@ localPos - the screen position, local to the Box to search in
 -}
 hitTest : BoxId -> BoxPath -> Point -> Maybe TopicId -> Env -> Maybe BoxTarget
 hitTest (BoxId topicId as boxId) boxPath localPos maybeFilter ({model} as env) =
-  case TM.byId boxId model of
+  case TopicMap.lookup boxId model of
     Just topicMap ->
       let
         fullPath = boxId :: boxPath
-        topics = TM.allMapTopics topicMap model
+        topics = TopicMap.allMapTopics topicMap model
         modelPos = toModelPos localPos topicMap
       in
       case testChildren modelPos topics fullPath maybeFilter env of
@@ -115,7 +116,7 @@ toModelPos pos topicMap =
 -- TODO: function name, description
 relPos_ : Point -> TopicId -> BoxPath -> Model -> Point
 relPos_ pos topicId boxPath model =
-  case TM.topicPos topicId (Box.firstId boxPath) model of
+  case TopicMap.topicPos topicId (Box.firstId boxPath) model of
     Just boxPos ->
       Point
         (pos.x - boxPos.x + C.topicW2)
@@ -127,7 +128,7 @@ relPos_ pos topicId boxPath model =
 
 isTopicHeaderHit : Point -> TopicId -> BoxId -> Model -> Bool
 isTopicHeaderHit pos topicId boxId model =
-  case TM.topicPos topicId boxId model of
+  case TopicMap.topicPos topicId boxId model of
     Just topicPos ->
       pos.x > topicPos.x - C.topicW2 - C.topicHeight && -- left edge includes caret area
       pos.x < topicPos.x + C.topicW2 &&
@@ -138,7 +139,7 @@ isTopicHeaderHit pos topicId boxId model =
 
 isTopicDetailHit : Point -> TopicId -> BoxId -> Model -> Bool
 isTopicDetailHit pos topicId boxId model =
-  case (TM.topicPos topicId boxId model, Topic.size topicId .view model) of
+  case (TopicMap.topicPos topicId boxId model, Topic.size topicId .view model) of
     (Just topicPos, Just size) ->
       pos.x > topicPos.x - C.topicW2 + C.topicHeight && -- topicHeight = icon box width
       pos.x < topicPos.x - C.topicW2 + C.topicHeight + size.w &&
@@ -149,7 +150,7 @@ isTopicDetailHit pos topicId boxId model =
 
 isBoxRectHit : Point -> TopicMap -> BoxId -> Model -> Bool
 isBoxRectHit pos topicMap parentBoxId model =
-  case TM.topicPos (fromBoxId topicMap.id) parentBoxId model of
+  case TopicMap.topicPos (fromBoxId topicMap.id) parentBoxId model of
     Just boxPos ->
       pos.x > 0 &&
       pos.x < topicMap.rect.x2 - topicMap.rect.x1 &&
@@ -169,11 +170,11 @@ Based on the rect's change the TopicMap's topic position adjustment within the p
 TopicMap (if any) is calculated as well.
 -}
 autoSize : BoxPath -> Env -> (Rectangle, Model)
-autoSize boxPath ({model, dispatch}) =
+autoSize boxPath {model, dispatch} =
   let
     boxId = Box.firstId boxPath
   in
-  case TM.byId boxId model of
+  case TopicMap.lookup boxId model of
     Just topicMap ->
       let
         topics = VM.topicsToRender topicMap model
@@ -318,22 +319,45 @@ updateBoxGeometry boxPath newRect oldRect model =
         model |> setBoxRect boxId newRect
     [ boxId ] ->
       model |> setBoxRect boxId newRect
-    [] -> Console.logError "updateBoxGeometry" "boxPath is empty!" model
+    [] -> Console.logError "TopicMap.Geometry.updateBoxGeometry" "boxPath is empty!" model
 
 
+{- Set the box rect, either in geometry buffer (while dragging), or in persistent model (CRDT).
+-}
 setBoxRect : BoxId -> Rectangle -> Model -> Model
 setBoxRect boxId rect model =
-  model
-    |> TM.updateRect boxId (\_ -> rect)
+  case Mouse.bufferBoxRect boxId rect model of
+    Just model_ ->
+      model_
+    Nothing ->
+      TopicMap.setRect boxId rect model
 
 
 adjustBoxPos : BoxId -> BoxId -> Rectangle -> Rectangle -> Model -> Model
 adjustBoxPos (BoxId topicId) parentBoxId newRect oldRect model =
-  model
-    |> TM.updateTopicPos topicId parentBoxId
-      (\oldPos ->
-        (Point
-          (oldPos.x + newRect.x1 - oldRect.x1)
-          (oldPos.y + newRect.y1 - oldRect.y1)
-        )
-      )
+  case model.topicMap.dragState of
+    Just (Drag dragMode) ->
+      case dragMode of
+        DragTopic buffer ->
+          model
+            |> TopicMap.updateTopicPosWith topicId parentBoxId
+              (\oldPos ->
+                Mouse.bufferTopicPos topicId parentBoxId
+                  (Point
+                    (oldPos.x + newRect.x1 - oldRect.x1)
+                    (oldPos.y + newRect.y1 - oldRect.y1)
+                  )
+                  buffer model
+              )
+        DraftAssoc ->
+          let
+            _ = Console.logError "TopicMap.Geometry.adjustBoxPos" "Unexpected drag mode"
+              dragMode
+          in
+          model
+    _ ->
+      let
+        _ = Console.logError "TopicMap.Geometry.adjustBoxPos" "Unexpected drag state"
+          model.topicMap.dragState
+      in
+      model

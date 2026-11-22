@@ -13,6 +13,7 @@ import Dict
 import Html exposing (Html, div, text, button)
 import Html.Attributes exposing (class, title, style)
 import Html.Events exposing (onClick)
+
 import FeatherIcons as FI
 
 
@@ -69,7 +70,7 @@ iconButtonStyle =
 
 viewTopicIcon : TopicId -> Int -> Attrs Msg -> Model -> Html Msg
 viewTopicIcon topicId size style_ model =
-  case Topic.fromId topicId model of
+  case Topic.lookup topicId model of
     Just {icon} ->
       case icon of
         Just iconName ->
@@ -102,16 +103,14 @@ update msg env =
       env
         |> Env.map (setIcon icon)
         |> Env.map closePicker
-        |> Env.outcomeDir (Directives Store Push)
+        |> Env.outcomeDir (Directives Store MarkSingle)
 
 
 setIcon : Maybe Icon -> Model -> Model
-setIcon iconName model =
+setIcon icon model =
   case Sel.single model of
     Just (T topicId, _) ->
-      model
-        |> Topic.update topicId
-          (\topic -> { topic | icon = iconName })
+      Topic.setIcon topicId icon model
     _ ->
       model
 

@@ -1,13 +1,14 @@
-module Model exposing (Model, Msg(..), init, resetTransient, encode, decoder, map, nextId)
+module Model exposing (Model, Msg(..), bootstrap, encode, decode, init, map, cmd, mergeCmd)
 
-import Config as C
 import ModelBase exposing (..)
-import Renderer
+import SyncModel exposing (SyncModel)
 -- box renderers
 import TopicList.TopicListDef as TopicListDef
 import TopicMap.TopicMapDef as TopicMapDef
 -- feature modules
+import Feature.CrdtDef as CrdtDef
 import Feature.IconDef as IconDef
+import Feature.IdDef as IdDef
 import Feature.MouseDef as MouseDef
 import Feature.NavDef as NavDef
 import Feature.SearchDef as SearchDef
@@ -15,65 +16,56 @@ import Feature.SelDef as SelDef
 import Feature.TextDef as TextDef
 import Feature.ToolDef as ToolDef
 
-import Dict exposing (Dict)
+import Crdt.Doc exposing (Doc) -- TODO: drop
+
 import Json.Decode as D
 import Json.Decode.Pipeline exposing (required, hardcoded)
 import Json.Encode as E
 
 
 
+{- Local state, not synced. ### FIXDOC
+A certain portion is persistent (see `encode` below), the remainder is transient.
+Additionally holds a materialized form (`cache`) of the synced state.
+-}
 type alias Model =
-  { topics : Dict Id Topic
-  , assocs : Dict Id Assoc
-  , itemSets: Dict Id ItemSet
-  , boxes : Dict Id Box
+  { cache : SyncModel -- the materialized CRDT document, for reading
+  , replicaId : String
   , boxId : BoxId -- the box rendered fullscreen
-  , nextId : Id
   -- box renderers
   , topicMap : TopicMapDef.Model
   , topicList : TopicListDef.Model
   -- feature modules
+  , crdt : CrdtDef.Model
   , tool : ToolDef.Model
   , text : TextDef.Model
   , mouse : MouseDef.Model
   , search : SearchDef.Model
   , icon : IconDef.Model
   , selection : SelDef.Model
+  , id : IdDef.Model
   }
 
 
-init : Model
-init =
-  let
-    rootTopic = Topic (TopicId 0) Nothing C.rootBoxName (TextSize (Size 0 0) (Size 0 0)) []
-  in
-  { topics = Dict.singleton 0 rootTopic
-  , assocs = Dict.empty
-  , itemSets = Dict.singleton 1 <| ItemSet 1 []
-  , boxes = Dict.singleton
-      (toBoxId rootBoxId)
-      (Box rootBoxId 1 Dict.empty Renderer.default)
-  , boxId = rootBoxId
-  , nextId = 2
+{- Creates the initial empty Model when no DB exists.
+-}
+bootstrap : String -> TopicId -> Model
+bootstrap replicaId rootTopicId =
+  { cache = SyncModel.bootstrap
+  , replicaId = replicaId
+  , boxId = BoxId rootTopicId
   -- box renderers
   , topicMap = TopicMapDef.init
   , topicList = TopicListDef.init
   -- feature modules
+  , crdt = CrdtDef.bootstrap replicaId
   , tool = ToolDef.init
   , text = TextDef.init
   , mouse = MouseDef.init
   , search = SearchDef.init
   , icon = IconDef.init
   , selection = SelDef.init
-  }
-
-
-resetTransient : Model -> Model
-resetTransient model =
-  { model
-    | mouse = model.mouse |> MouseDef.resetTransient
-    , topicList = model.topicList |> TopicListDef.resetTransient
-    -- TODO: add other modules as well
+  , id = IdDef.init
   }
 
 
@@ -87,7 +79,9 @@ type Msg
   | Search SearchDef.Msg
   | Icon IconDef.Msg
   | Nav NavDef.Msg
+  | Id IdDef.Msg
   --
+  | Bootstrap String (List Id) -- initial URL #hash, initial ID pool
   | Scrolled Point
   | Cancel (Maybe Target)
   | NoOp
@@ -97,53 +91,76 @@ type Msg
 -- JSON
 
 
+{- Content of the "local" object store.
+-}
+type alias LocalModel =
+  { replicaId : String
+  , boxId : BoxId
+  , toolModel : ToolDef.Model
+  }
+
+
+{- Encodes the Model portion to be stored in the "local" object store.
+-}
 encode : Model -> E.Value
 encode model =
   E.object
-    [ ("topics", model.topics |> Dict.values |> E.list encodeTopic)
-    , ("assocs", model.assocs |> Dict.values |> E.list encodeAssoc)
-    , ("itemSets", model.itemSets |> Dict.values |> E.list encodeItemSet)
-    , ("boxes", model.boxes |> Dict.values |> E.list encodeBox)
+    [ ("replicaId", E.string model.replicaId)
     , ("boxId", encodeBoxId model.boxId)
-    , ("nextId", E.int model.nextId)
-    -- box renderers
-    , ("topicMap", TopicMapDef.encode model.topicMap)
-    , ("topicList", TopicListDef.encode model.topicList)
     -- feature modules
     , ("tool", ToolDef.encode model.tool)
     ]
 
 
-decoder : D.Decoder Model
-decoder =
-  D.succeed Model
-    |> required "topics" (toDictDecoderWith toTopicId topicDecoder)
-    |> required "assocs" (toDictDecoderWith toAssocId assocDecoder)
-    |> required "itemSets" (toDictDecoder itemSetDecoder)
-    |> required "boxes" (toDictDecoderWith toBoxId boxDecoder)
-    |> required "boxId" boxIdDecoder
-    |> required "nextId" D.int
+{- Decodes the content of the "local" object store.
+-}
+decode : E.Value -> Result D.Error LocalModel
+decode local =
+  let
+    localDecoder =
+      D.map3 LocalModel
+        (D.field "replicaId" D.string)
+        (D.field "boxId" boxIdDecoder)
+        (D.field "tool" ToolDef.decoder)
+  in
+  local
+    |> D.decodeValue localDecoder
+
+
+init : LocalModel -> (Doc SyncModel, SyncModel) -> Model
+init local (doc, docModel) =
+  Model
+    docModel
+    local.replicaId
+    local.boxId
     -- box renderers
-    |> required "topicMap" TopicMapDef.decoder
-    |> required "topicList" TopicListDef.decoder
+    TopicMapDef.init
+    TopicListDef.init
     -- feature modules
-    |> required "tool" ToolDef.decoder
-    |> hardcoded TextDef.init
-    |> hardcoded MouseDef.init
-    |> hardcoded SearchDef.init
-    |> hardcoded IconDef.init
-    |> hardcoded SelDef.init
+    (CrdtDef.init doc)
+    local.toolModel
+    TextDef.init
+    MouseDef.init
+    SearchDef.init
+    IconDef.init
+    SelDef.init
+    IdDef.init
 
 
 
--- API
+-- Model-Cmd tuple
 
 
 map : (Model -> Model) -> (Model, Cmd Msg) -> (Model, Cmd Msg)
-map transform (model, cmd) =
-  (transform model, cmd)
+map transform (model, cmd_) =
+  (transform model, cmd_)
 
 
-nextId : Model -> Model
-nextId model =
-  { model | nextId = model.nextId + 1 }
+cmd : Cmd Msg -> Model -> (Model, Cmd Msg)
+cmd cmd_ model =
+  (model, cmd_)
+
+
+mergeCmd : Cmd Msg -> (Model, Cmd Msg) -> (Model, Cmd Msg)
+mergeCmd cmd2 (model, cmd1) =
+  (model, Cmd.batch [ cmd1, cmd2 ])

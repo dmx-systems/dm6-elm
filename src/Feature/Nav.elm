@@ -1,4 +1,4 @@
-port module Feature.Nav exposing (boxIdFromHash, pushUrl, update, sub)
+port module Feature.Nav exposing (sub, update, setViewport, pushUrl, boxIdFromHash)
 
 import Box
 import Console
@@ -10,7 +10,6 @@ import Outcome exposing (..)
 import TopicMap.TopicMap as TopicMap
 
 import Browser.Dom as Dom
-import String exposing (fromInt)
 import Task
 
 
@@ -48,38 +47,42 @@ hashChanged : String -> Env -> Outcome
 hashChanged hash ({model} as env) =
   case boxIdFromHash hash of
     Just boxId ->
+      let
+        _ = Console.info "Feature.Nav.hashChanged" boxId
+      in
       env
         |> setFullscreen boxId
-        |> Outcome.fromDir (Directives Store Reset)
+        |> Outcome.fromDir (Directives Store NoUndo) -- ### TODO: was "Reset"
     Nothing ->
       let
         _ = Console.info "Feature.Nav.hashChanged"
-          ("No hash -> redirect to " ++ fromInt (toBoxId model.boxId))
+          ("No hash -> redirect to " ++ toBoxId model.boxId)
       in
       env
         |> Env.outcomeCmd (pushUrl model.boxId)
 
 
 setFullscreen : BoxId -> Env -> (Model, Cmd Msg)
-setFullscreen boxId ({model} as env) =
-  let
-    newModel = Box.setFullscreen boxId model
-  in
-  ( env
-      |> Env.map (\_ -> newModel)
-      |> Env.autoSize
-      |> .model
-  , Cmd.batch
-      [ setViewport newModel
-      , Outcome.command (Cancel Nothing)
-      ]
-  )
+setFullscreen boxId env =
+  env
+    |> Env.map (Box.setFullscreen boxId)
+    |> Env.autoSize
+    |> Env.toCmd
+      (\model ->
+        Cmd.batch
+          [ setViewport model
+          , Outcome.command (Cancel Nothing)
+          ]
+      )
 
 
 setViewport : Model -> Cmd Msg
 setViewport model =
   case TopicMap.fullscreen model of -- FIXME: dispatch instead
     Just topicMap ->
+      let
+        _ = Console.info "Feature.Nav.setViewport" topicMap.scroll
+      in
       Dom.setViewportOf "main" (toFloat topicMap.scroll.x) (toFloat topicMap.scroll.y)
         |> Task.attempt
           (\result ->
@@ -96,20 +99,22 @@ Eventually the model.boxId will be updated, as a *result* of the route change.
 -}
 pushUrl : BoxId -> Cmd Msg
 pushUrl boxId =
-  setHash <| "#" ++ fromInt (toBoxId boxId)
+  let
+    _ = Console.info "Feature.Nav.pushUrl" boxId
+  in
+  setHash ("#" ++ toBoxId boxId)
 
 
 boxIdFromHash : String -> Maybe BoxId
 boxIdFromHash hash =
-  case String.isEmpty hash of
-    True -> Nothing
-    False ->
-      case String.startsWith "#" hash of
-        True -> case String.dropLeft 1 hash |> String.toInt of
-          Just boxId -> Just (BoxId (TopicId boxId))
-          Nothing ->
-            Console.logError "Feature.Nav.boxIdFromHash"
-              ("not a number after hash in \"" ++ hash ++ "\"") Nothing
-        False ->
-          Console.logError "Feature.Nav.boxIdFromHash" ("\"" ++ hash ++ "\" is not a hash")
-            Nothing
+  if String.isEmpty hash then
+    Nothing
+  else
+    if String.startsWith "#" hash then
+      let
+        boxId = String.dropLeft 1 hash
+      in
+      Just (BoxId (TopicId boxId))
+    else
+      Console.logError "Feature.Nav.boxIdFromHash" ("\"" ++ hash ++ "\" is not a hash")
+        Nothing

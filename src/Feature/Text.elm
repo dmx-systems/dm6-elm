@@ -5,6 +5,7 @@ import Box
 import Config as C
 import Console
 import Env exposing (Env)
+import Feature.Id as Id
 import Feature.TextDef as TextDef exposing (EditState(..), TopicImage)
 import Model exposing (Model, Msg(..))
 import ModelBase exposing (..)
@@ -23,7 +24,6 @@ import Json.Encode as E
 import Markdown.Block as Block exposing (Block)
 import Markdown.Parser as Parser
 import Markdown.Renderer as Renderer
-import String exposing (fromInt)
 
 
 
@@ -65,7 +65,7 @@ topicImageDecoder : D.Decoder TopicImage
 topicImageDecoder =
   D.map2 TopicImage
     (D.field "topicId" topicIdDecoder)
-    (D.field "imageId" D.int)
+    (D.field "imageId" D.string)
 
 
 
@@ -79,7 +79,7 @@ viewInput topic boxPath style =
       , value topic.text
       , placeholder C.initTopicText
       , onInput (Text << TextDef.OnTextInput)
-      , Events.onEnterOrEsc (Text TextDef.LeaveEdit)
+      , Events.onEnterOrEsc (Text TextDef.EnterOrEscPressed)
       , Events.onPointerDownStop NoOp -- Prevent drag initiation
       ]
       ++ style
@@ -94,7 +94,7 @@ viewTextarea topic boxPath style =
       , value topic.text
       , placeholder C.initTopicText
       , onInput (Text << TextDef.OnTextareaInput)
-      , Events.onEsc (Text TextDef.LeaveEdit)
+      , Events.onEsc (Text TextDef.EnterOrEscPressed)
       , Events.onPointerDownStop NoOp -- Prevent drag initiation
       ]
       ++ style
@@ -112,20 +112,26 @@ update msg ({model} as env) =
     TextDef.OnTextInput text ->
       model
         |> onTextInput text
-        |> Outcome.withDir (Directives Store Swap)
+        |> Outcome.withDir (Directives Store NoUndo)
     TextDef.OnTextareaInput text ->
       model
         |> onTextareaInput text
-        |> Outcome.fromDir (Directives Store Swap)
+        |> Outcome.fromDir (Directives Store NoUndo)
     TextDef.GotTextSize topicId sizeField size ->
+      let
+        undoOp : Undo
+        undoOp =
+          case sizeField of
+            View -> MarkEnd -- end the undoable action only when switching back to View mode
+            Editor -> NoUndo -- while editing collect the keystrokes into one undoable action
+      in
       env
         |> Env.map (Topic.setSize topicId sizeField size)
         |> Env.autoSize
-        |> Env.outcomeDir (Directives Store Swap)
-    TextDef.LeaveEdit ->
+        |> Env.outcomeDir (Directives Store undoOp)
+    TextDef.EnterOrEscPressed ->
       env
         |> leaveEdit
-        |> Outcome.from
     TextDef.ImageFilePicked {topicId, imageId} ->
       model
         |> insertImage topicId imageId
@@ -136,38 +142,37 @@ update msg ({model} as env) =
         |> Outcome.default
 
 
-enterEdit : TopicId -> BoxPath -> Env -> (Model, Cmd Msg)
+enterEdit : TopicId -> BoxPath -> Env -> Outcome
 enterEdit topicId boxPath env =
-  let
-    model =
-      env
-        |> Env.map (setEditState (Edit topicId boxPath))
-        |> Env.map (setExpansion topicId (Box.firstId boxPath))
-        |> Env.autoSize
-        |> .model
-  in
-  (model, focus model)
+  env
+    |> Env.map (setEditState (Edit topicId boxPath))
+    |> Env.map (adjustExpansion topicId (Box.firstId boxPath))
+    |> Env.autoSize
+    |> Env.outcomeWith focus (Directives Store MarkBegin)
+    -- Store: stores adjusted expansion state
+    -- MarkBegin: start collecting keystrokes into a single undoable action
 
 
-leaveEdit : Env -> (Model, Cmd Msg)
+leaveEdit : Env -> Outcome
 leaveEdit ({model} as env) =
   case model.text.edit of
     Edit topicId boxPath ->
       let
         elemId = Box.elemId "topic" topicId boxPath
       in
-      ( env
-          |> Env.map (setEditState NoEdit)
-          |> Env.autoSize
-          |> .model
-      , measureElement elemId topicId View
-      )
+      env
+        |> Env.map (setEditState NoEdit)
+        |> Env.autoSize
+        |> Env.outcomeCmd (measureElement elemId topicId View)
+        -- Note: no Store or Undo directives here. These are issued only in the next update
+        -- frame when TextDef.GotTextSize message arrives (see update above).
     NoEdit ->
-      (model, Cmd.none)
+      env
+        |> Env.outcome
 
 
-setExpansion : TopicId -> BoxId -> Model -> Model
-setExpansion topicId boxId model =
+adjustExpansion : TopicId -> BoxId -> Model -> Model
+adjustExpansion topicId boxId model =
   model
     |> Box.updateExpansion topicId boxId
       (\expansion ->
@@ -183,7 +188,7 @@ onTextInput text model =
   case model.text.edit of
     Edit topicId _ ->
       model
-        |> setTopicText topicId text
+        |> Topic.setText topicId text
     NoEdit ->
       let
         _ = Console.logError "Feature.Text.onTextInput" "Unexpected model.text.edit state"
@@ -197,7 +202,7 @@ onTextareaInput text model =
   case model.text.edit of
     Edit topicId _ ->
       model
-        |> setTopicText topicId text
+        |> Topic.setText topicId text
         |> measureText topicId text
     NoEdit ->
       let
@@ -209,27 +214,28 @@ onTextareaInput text model =
 
 measureText : TopicId -> String -> Model -> (Model, Cmd Msg)
 measureText topicId text model =
-  ( model
-      |> setMeasureText text
-  , measureElement "measure" topicId Editor
-  )
+  model
+    |> setMeasureText text
+    |> Model.cmd (measureElement "measure" topicId Editor)
 
 
 measureElement : String -> TopicId -> SizeField -> Cmd Msg
 measureElement elemId topicId sizeField =
-  Dom.getElement elemId |> Task.attempt
-    (\result ->
-      case result of
-        Ok {element} -> Text
-          (TextDef.GotTextSize topicId sizeField
-            <| Size (round element.width) (round element.height)
-          )
-        -- Note: not all renderers do text measuring (the TopicList renderer does not).
-        -- TODO: don't call in the first place and regard dom-not-found an error.
-        Err err ->
-          {- Console.logError "Feature.Text.measureElement" (Console.toString err) -}
-          NoOp
-    )
+  Dom.getElement elemId
+    |> Task.attempt
+      (\result ->
+        case result of
+          Ok {element} ->
+            Text
+              (TextDef.GotTextSize topicId sizeField
+                (Size (round element.width) (round element.height))
+              )
+          -- Note: not all renderers do text measuring (the TopicList renderer does not).
+          -- TODO: don't call in the first place and treat dom-not-found as an error.
+          Err err ->
+            {- Console.logError "Feature.Text.measureElement" (Console.toString err) -}
+            NoOp
+      )
 
 
 focus : Model -> Cmd Msg
@@ -259,12 +265,6 @@ focus model =
 isEdit : TopicId -> BoxPath -> Model -> Bool
 isEdit topicId boxPath model =
   model.text.edit == Edit topicId boxPath
-
-
-setTopicText : TopicId -> String -> Model -> Model
-setTopicText topicId text model =
-  model |> Topic.update topicId
-    (\topic -> { topic | text = text })
 
 
 setEditState : EditState -> Model -> Model
@@ -299,14 +299,13 @@ markdown source model =
 openImageFilePicker : TopicId -> Model -> (Model, Cmd Msg)
 openImageFilePicker (TopicId topicId) model =
   let
-    imageId = model.nextId
+    (id, model_) = Id.new model
   in
-  ( model
-      |> Model.nextId
+  ( model_
   , imageFilePicker
       ( E.object
-          [ ("topicId", E.int topicId)
-          , ("imageId", E.int imageId)
+          [ ("topicId", E.string topicId)
+          , ("imageId", E.string id)
           ]
       )
   )
@@ -314,14 +313,14 @@ openImageFilePicker (TopicId topicId) model =
 
 insertImage : TopicId -> ImageId -> Model -> (Model, Cmd Msg)
 insertImage topicId imageId model =
-  case Topic.fromId topicId model of
+  case Topic.lookup topicId model of
     Just { text } ->
       let
-        image = "![image](app://image/" ++ fromInt imageId ++ ")"
+        image = "![image](app://image/" ++ imageId ++ ")"
         newText = text ++ image
       in
       model
-        |> setTopicText topicId newText
+        |> Topic.setText topicId newText
         |> measureText topicId newText
     Nothing -> (model, Cmd.none)
 
@@ -329,7 +328,7 @@ insertImage topicId imageId model =
 resolveImageUrls : Model -> List Block -> List Block
 resolveImageUrls model blocks =
   blocks |> List.map
-    ( Block.walkInlines
+    (Block.walkInlines
       (\inline ->
         case inline of
           Block.Image url title altInlines ->
@@ -367,4 +366,3 @@ imageIdFromUrl url =
     |> String.split "/"
     |> List.reverse
     |> List.head
-    |> Maybe.andThen String.toInt

@@ -1,5 +1,5 @@
 module Env exposing (Env, Dispatch, Renderers, RendererLabel, map, autoSize, outcome,
-  outcomeDir, outcomeCmd)
+  outcomeCmd, outcomeDir, outcomeFrom, outcomeWith, toMct, withCmd, toCmd)
 
 import Model exposing (Model, Msg)
 import ModelBase exposing (..)
@@ -111,7 +111,12 @@ map transform ({model} as env) =
 
 outcome : Env -> Outcome
 outcome  env =
-  Outcome env.model Cmd.none (Directives NoStore Swap)
+  Outcome env.model Cmd.none (Directives NoStore NoUndo)
+
+
+outcomeCmd : Cmd Msg -> Env -> Outcome
+outcomeCmd cmd env =
+  Outcome env.model cmd (Directives NoStore NoUndo)
 
 
 outcomeDir : Directives -> Env -> Outcome
@@ -119,6 +124,28 @@ outcomeDir directives env =
   Outcome env.model Cmd.none directives
 
 
-outcomeCmd : Cmd Msg -> Env -> Outcome
-outcomeCmd cmd env =
-  Outcome env.model cmd (Directives NoStore Swap)
+outcomeFrom : Cmd Msg -> Directives -> Env -> Outcome
+outcomeFrom cmd directives env =
+  Outcome env.model cmd directives
+
+
+outcomeWith : (Model -> Cmd Msg) -> Directives -> Env -> Outcome
+outcomeWith toCmd_ directives {model} =
+  Outcome model (toCmd_ model) directives
+
+
+-- Model-Cmd tuple
+
+toMct : Env -> (Model, Cmd Msg)
+toMct env =
+  (env.model, Cmd.none)
+
+
+withCmd : Cmd Msg -> Env -> (Model, Cmd Msg)
+withCmd cmd env =
+  (env.model, cmd)
+
+
+toCmd : (Model -> Cmd Msg) -> Env -> (Model, Cmd Msg)
+toCmd toCmd_ {model} =
+  (model, toCmd_ model)

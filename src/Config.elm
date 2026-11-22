@@ -11,6 +11,9 @@ rootBoxName = "DM6 Elm"
 version = "0.5"
 date = "Jul 24, 2026"
 
+idPoolSize = 20
+idPoolThreshold = 10
+
 appHeaderHeight = 36
 
 mainFont = "sans-serif"

@@ -1,9 +1,9 @@
-module Outcome exposing (Outcome, Directives, Storage(..), History(..), default, withDir, from,
-  fromDir, map, perform, command)
+module Outcome exposing (Outcome, Directives, Storage(..), Undo(..), default, withDir, from,
+  fromDir, with, map, mergeCmd, perform, performWith, command)
 
+import Feature.Crdt as Crdt
 import Model exposing (Model, Msg)
 import Storage as S
-import Undo exposing (UndoModel)
 
 import Task
 
@@ -18,7 +18,7 @@ type alias Outcome =
 
 type alias Directives =
   { storage : Storage
-  , history : History
+  , undo : Undo
   }
 
 
@@ -27,20 +27,18 @@ type Storage
   | NoStore -- default
 
 
-type History
-  = Push
-  | Swap -- default
-  | Reset
-  --
-  | Undo
-  | Redo
+type Undo
+  = MarkSingle
+  | MarkBegin
+  | MarkEnd
+  | NoUndo -- default
 
 
 --
 
 default : Model -> Outcome
 default model =
-  Outcome model Cmd.none (Directives NoStore Swap)
+  Outcome model Cmd.none (Directives NoStore NoUndo)
 
 
 withDir : Directives -> Model -> Outcome
@@ -50,12 +48,17 @@ withDir directives model =
 
 from : (Model, Cmd Msg) -> Outcome
 from (model, cmd) =
-  Outcome model cmd (Directives NoStore Swap)
+  Outcome model cmd (Directives NoStore NoUndo)
 
 
 fromDir : Directives -> (Model, Cmd Msg) -> Outcome
 fromDir directives (model, cmd) =
   Outcome model cmd directives
+
+
+with : (Model -> Cmd Msg) -> Directives -> Model -> Outcome
+with toCmd directives model =
+  Outcome model (toCmd model) directives
 
 
 --
@@ -65,38 +68,46 @@ map transform ({model} as out) =
   { out | model = transform model }
 
 
-perform : UndoModel -> Outcome -> (UndoModel, Cmd Msg)
-perform undoModel {directives, cmd, model} =
+mergeCmd : Cmd Msg -> Outcome -> Outcome
+mergeCmd cmd out =
+  { out | cmd = Cmd.batch [out.cmd, cmd] }
+
+
+{- Perform the effects encoded in an outcome.
+Only used for bootstrap when there is no previous model (no undo possible).
+-}
+perform : Outcome -> (Model, Cmd Msg)
+perform outcome =
+  performWith outcome.model outcome
+
+
+{- Perform the effects encoded in an outcome.
+In case of an Undo directive the previous model marks the begin of an undoable action.
+-}
+performWith : Model -> Outcome -> (Model, Cmd Msg)
+performWith prevModel {model, cmd, directives} =
   let
-    performHistory : UndoModel -> UndoModel
-    performHistory undoModel_ =
-      case directives.history of
-        Push -> Undo.push undoModel_ model
-        Swap -> Undo.swap undoModel_ model
-        Reset -> Undo.reset model
-        Undo -> Undo.undo undoModel_
-        Redo -> Undo.redo undoModel_
-    --
-    performStorage : UndoModel -> (UndoModel, Cmd Msg)
-    performStorage undoModel_ =
+    performUndo : Model -> Model
+    performUndo model_ =
+      case directives.undo of
+        MarkSingle -> Crdt.markUndoSingle prevModel model_
+        MarkBegin -> Crdt.markUndoBegin prevModel model_
+        MarkEnd -> Crdt.markUndoEnd model_
+        NoUndo -> model_
+
+    performStorage : Model -> (Model, Cmd Msg)
+    performStorage model_ =
       case directives.storage of
-        Store ->
-          ( undoModel_
-          , Cmd.batch
-              [ cmd
-              , S.store undoModel_.present
-              ]
-          )
-        NoStore -> (undoModel_, cmd)
+        Store -> S.store model_ |> Model.mergeCmd cmd
+        NoStore -> (model_, cmd)
   in
-  undoModel
-    |> performHistory
+  model
+    |> performUndo
     |> performStorage
 
 
---
-
+-- TODO: move to Model
 command : msg -> Cmd msg
 command msg =
   Task.succeed ()
-    |> Task.perform (\_ -> msg)
+    |> Task.perform (always msg)

@@ -1,22 +1,28 @@
-module Topic exposing (fromId, label, size, setSize, create, update, isBox)
+module Topic exposing (lookup, label, size, isBox, create, setIcon, setText, setSize,
+  removeAssocId)
 
 import Config as C
 import Console
+import Feature.Crdt as Crdt
+import Feature.Id as Id
 import Model exposing (Model)
 import ModelBase exposing (..)
+import Shared.Util as Util
 
 import Dict
 
 
 
-{-| Looks up a Topic in Model.topics.
+{-| Looks up a Topic in cache.
 Logs an error if Topic is missing.
 -}
-fromId : TopicId -> Model -> Maybe Topic
-fromId topicId model =
-  case model.topics |> Dict.get (toTopicId topicId) of
-    Just topic -> Just topic
-    Nothing -> Console.topicNotFound "Topic.fromId" topicId Nothing
+lookup : TopicId -> Model -> Maybe Topic
+lookup (TopicId id) model =
+  case Dict.get id model.cache.topics of
+    Just topic ->
+      Just topic
+    Nothing ->
+      Console.logError "Topic.lookup" ("Missing topic " ++ id) Nothing
 
 
 label : Topic -> String
@@ -31,62 +37,75 @@ label topic =
 -- TODO: rename to textSize/topicTextSize?
 size : TopicId -> (TextSize -> Size) -> Model -> Maybe Size
 size topicId get model =
-  case fromId topicId model of
-    Just topic -> Just <| get topic.size
-    Nothing -> Console.fail "Topic.size" {topicId = topicId} Nothing
+  case lookup topicId model of
+    Just topic -> Just (get topic.size)
+    Nothing -> Console.fail "Topic.size" topicId Nothing
 
 
-{-| Logs an error if box does not exist, or topic is not in box -}
-setSize : TopicId -> SizeField -> Size -> Model -> Model
-setSize topicId sizeField size_ model =
-  model
-    |> update topicId
-      (\topic ->
-        let
-          size__ = topic.size
-        in
-        { topic | size =
-            case sizeField of
-              -- detail width does not include icon box
-              View -> { size__ | view = { size_ | w = size_.w - C.topicHeight } }
-              Editor -> { size__ | editor = size_ }
-        }
-      )
+isBox : TopicId -> Model -> Bool
+isBox (TopicId id) model =
+  Dict.member id model.cache.boxes
 
 
 create : String -> Maybe Icon -> Model -> (Model, TopicId)
 create text icon model =
   let
-    id = TopicId model.nextId
-    topic = Topic id icon text (TextSize C.topicDetailSize C.topicDetailSize) []
+    (id, model_) = Id.new model
+    topicId = TopicId id
+    size_ = TextSize C.topicDetailSize C.topicDetailSize
+    topic = Topic topicId icon text size_ []
   in
-  ( model
-      |> create_ topic
-      |> Model.nextId
-  , id
-  )
+  (Crdt.createTopic topic model_, topicId)
 
 
-create_ : Topic -> Model -> Model
-create_ topic ({topics} as model) =
-  { model | topics = topics |> Dict.insert (toTopicId topic.id) topic }
+setIcon : TopicId -> Maybe Icon -> Model -> Model
+setIcon =
+  Crdt.setTopicIcon
 
 
-{-| Canonical Topic transformation.
-Logs an error if item does not exist.
+setText : TopicId -> String -> Model -> Model
+setText =
+  Crdt.setTopicText
+
+
+{-| Logs an error if box does not exist, or topic is not in box ### FIXDOC -}
+setSize : TopicId -> SizeField -> Size -> Model -> Model
+setSize topicId sizeField size_ model =
+  case sizeField of
+    -- detail width does not include icon box
+    View -> Crdt.setTopicViewSize topicId { size_ | w = size_.w - C.topicHeight } model
+    Editor -> Crdt.setTopicEditorSize topicId size_ model
+
+
+{-| Removes an association ID from the topic's set of association IDs.
+No-op if the given association ID is not in the set.
+Logs an error if the topic does not exist. ### FIXDOC
 -}
-update : TopicId -> (Topic -> Topic) -> Model -> Model
-update topicId transform ({topics} as model) =
-  { model | topics = topics |> Dict.update (toTopicId topicId)
-    (\maybeTopic ->
-      case maybeTopic of
-        Just topic -> Just <| transform topic
-        Nothing -> Console.topicNotFound "Topic.update" topicId Nothing
-    )
-  }
+removeAssocId : AssocId -> TopicId -> Model -> Model
+removeAssocId assocId topicId model =
+  let
+    findAssocId : Topic -> Maybe Int
+    findAssocId topic =
+      Util.requireIndex assocId identity topic.assocIds
 
 
-isBox : TopicId -> Model -> Bool
-isBox (TopicId id) model =
-  model.boxes
-    |> Dict.member id
+    remove : Int -> Maybe Model
+    remove index =
+      Just (Crdt.removeAssocId index topicId model)
+
+
+    result : Maybe Model -> Model
+    result maybeModel =
+      case maybeModel of
+        Just model_ -> model_
+        Nothing ->
+          let
+            _ = Console.fail "Topic.removeAssocId" topicId assocId
+          in
+          model
+  in
+  model
+    |> lookup topicId
+    |> Maybe.andThen findAssocId
+    |> Maybe.andThen remove
+    |> result
