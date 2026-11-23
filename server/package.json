@@ -1,0 +1,6 @@
+{
+  "dependencies": {
+    "indexeddbshim": "^19.0.8",
+    "ws": "^8.23.0"
+  }
+}
