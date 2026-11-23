@@ -38,11 +38,13 @@ wss.on('connection', socket => {
 
   socket.on('message', data => {
     const env = JSON.parse(data)    // "envelope"
-    console.log('--> %o', env)
+    console.log('-->', env)
     if (env.kind === 'doc') {
       store(env.ops)
+    } else if (env.kind === 'ping') {
+      // no-op
     } else {
-      throw '❌ message: invalid envelope'
+      throw `❌ incoming message: invalid envelope (kind="${env.kind}")`
     }
     broadcastExcept(socket, data)
   })

@@ -37,7 +37,7 @@ import String exposing (fromInt, fromFloat)
 -- PORTS
 
 
-port domReady : () -> Cmd msg
+port modelReady : () -> Cmd msg
 
 port onScroll : (Point -> msg) -> Sub msg
 
@@ -79,7 +79,7 @@ init (local, ops, hash) =
           Cmd.batch
             [ Id.requestIds model
             , initNav hash model
-            , domReady ()
+            , modelReady ()
             ]
   in
   (appModel, initCmd)
@@ -309,7 +309,7 @@ bootstrap msg =
             |> TopicMap.bootstrapContent
             |> Outcome.with (initNav hash) (Directives Store NoUndo)
             |> Outcome.perform 
-            |> runningWith (domReady ())
+            |> runningWith (modelReady ())
         _ ->
           Console.logError "Main.bootstrap" "Not enough IDs in Bootstrap message"
             (Bootstrapping, Cmd.none)

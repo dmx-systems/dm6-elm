@@ -1,6 +1,7 @@
 import { Elm } from './src/Main.elm'
 import image from './js/image'
 import store from './js/store'
+import ws from './js/ws'
 import zip from './js/zip'
 import { openDB } from 'idb'
 
@@ -37,21 +38,24 @@ app.ports.storeModel.subscribe(([local, doc]) => {
 
 // Scrolling
 
-app.ports.domReady.subscribe(() => {
-  requestAnimationFrame(() => {
-    const main = document.getElementById('main')
-    let timer
-    main.addEventListener('scroll', () => {
-      clearTimeout(timer)
-      timer = setTimeout(() => {
-        app.ports.onScroll.send({
-          x: Math.round(main.scrollLeft),
-          y: Math.round(main.scrollTop)
-        })
-      }, 200)   // debounce 200ms
-    }, {passive: true})
-  })
+app.ports.modelReady.subscribe(() => {
+  ws.init()
+  requestAnimationFrame(registerScrollHandler)
 })
+
+function registerScrollHandler() {
+  const main = document.getElementById('main')
+  let timer
+  main.addEventListener('scroll', () => {
+    clearTimeout(timer)
+    timer = setTimeout(() => {
+      app.ports.onScroll.send({
+        x: Math.round(main.scrollLeft),
+        y: Math.round(main.scrollTop)
+      })
+    }, 200)   // debounce 200ms
+  }, {passive: true})
+}
 
 // Routing
 
