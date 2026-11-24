@@ -1,5 +1,5 @@
 export default {
-  init
+  init, send
 }
 
 const HOST = '127.0.0.1'
@@ -9,9 +9,11 @@ const HEARTBEAT_INTERVAL = 25 * 1000     // 25s
 const DEV = true
 
 let ws
+let messageHandler
 let heartbeatTimer
 
-function init() {
+function init(_messageHandler) {
+  messageHandler = _messageHandler
   document.addEventListener('visibilitychange', onVisibilityChange)
   connect()
 }

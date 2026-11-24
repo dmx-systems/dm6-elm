@@ -17,7 +17,7 @@ const opsStore = 'ops'
 const dbPromise = openDB(dbName, 1, {
   upgrade(db) {
     console.log('🔸 Creating object store', opsStore)
-    db.createObjectStore(opsStore)
+    db.createObjectStore(opsStore, {keyPath: 'id'})
   }
 })
 
@@ -39,14 +39,14 @@ wss.on('connection', socket => {
   socket.on('message', data => {
     const env = JSON.parse(data)    // "envelope"
     console.log('-->', env)
-    if (env.kind === 'doc') {
+    if (env.kind === 'ops') {
+      broadcastExcept(socket, data)
       store(env.ops)
     } else if (env.kind === 'ping') {
       // no-op
     } else {
       throw `❌ incoming message: invalid envelope (kind="${env.kind}")`
     }
-    broadcastExcept(socket, data)
   })
 
   socket.on('close', () => {
@@ -77,6 +77,6 @@ async function store(ops) {
   console.log('🔸 Storing %d ops', ops.length)
   const db = await dbPromise
   const tx = db.transaction(opsStore, 'readwrite')
-  ops.forEach(op => tx.store.add(op, op.id))
+  ops.forEach(op => tx.store.add(op))
   return tx.done
 }

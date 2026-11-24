@@ -1,8 +1,8 @@
 module TopicMap.TopicMap exposing (bootstrapContent, init, allMapTopics, topicPos, placeRandomly,
-  updateTopicPos, updateTopicPosWith, mapTopicOrNothing, assocGeometry, placeTopicAt,
-  initLimboMapTopic, initTopicPos, hasMapTopic, fullscreen, lookup, setTopicPos, setRect,
-  setScroll, revelationBoxId, revelationBoxPath, landingTarget, toLocalPos, toLocalModelPos,
-  effectivePos, effectivePosFor, effectiveRect)
+  updateTopicPosWith, mapTopicOrNothing, assocGeometry, placeTopicAt, initLimboMapTopic,
+  initTopicPos, hasMapTopic, fullscreen, lookup, setTopicPos, setRect, setScroll,
+  revelationBoxId, revelationBoxPath, landingTarget, toLocalPos, toLocalModelPos, effectivePos,
+  effectivePosFor, effectiveRect)
 
 import Box
 import Config as C
@@ -147,6 +147,7 @@ topicPos topicId boxId model =
       Console.fail "TopicMap.TopicMap.topicPos" (topicId, boxId) Nothing
 
 
+-- ### TODO: not used
 {-| Transforms a topic position into a new topic position and persists it (CRDT).
 Logs an error if TopicMap is missing, or inside TopicMap the MapTopic is missing.
 -}

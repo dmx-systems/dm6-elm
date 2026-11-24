@@ -1,4 +1,4 @@
-module Feature.CrdtDef exposing (Model, bootstrap, init, decodeDoc, refs,
+module Feature.CrdtDef exposing (Model, Msg(..), bootstrap, init, decodeDoc, refs,
   topicIconRef, topicTextRef, topicViewSizeRef, topicEditorSizeRef, topicAssocIdsRef,
   boxTopicsRef, expansionRef, boxRendererRef, itemSetItemsRef)
 
@@ -28,6 +28,10 @@ type alias Model =
   , lastStored : Version
   , undoBoundary : Maybe Version
   }
+
+
+type Msg
+  = OpsReceived E.Value
 
 
 bootstrap : String -> Model

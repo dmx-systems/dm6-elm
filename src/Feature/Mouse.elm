@@ -38,7 +38,7 @@ update msg ({model, dispatch} as env) =
         |> Outcome.map resetDragState
     (MouseDef.Cancel, _) ->
       env
-        |> Env.outcomeCmd (Outcome.command <| Cancel Nothing)
+        |> Env.outcomeCmd (Outcome.command (Cancel Nothing))
     (MouseDef.Leave, _) ->
       -- TODO: explicit abort-drag semantics resp. rethink pointer-leaves-screen in general.
       -- Possibly introduce another hook to let modules react idiosyncratically, e.g. the

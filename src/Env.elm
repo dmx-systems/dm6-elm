@@ -1,5 +1,5 @@
 module Env exposing (Env, Dispatch, Renderers, RendererLabel, map, autoSize, outcome,
-  outcomeCmd, outcomeDir, outcomeFrom, outcomeWith, toMct, withCmd, toCmd)
+  outcomeCmd, outcomeDir, outcomeWith, toMct, withCmd, toCmd)
 
 import Model exposing (Model, Msg)
 import ModelBase exposing (..)
@@ -124,6 +124,7 @@ outcomeDir directives env =
   Outcome env.model Cmd.none directives
 
 
+-- Note used
 outcomeFrom : Cmd Msg -> Directives -> Env -> Outcome
 outcomeFrom cmd directives env =
   Outcome env.model cmd directives

@@ -1,4 +1,4 @@
-module Model exposing (Model, Msg(..), bootstrap, encode, decode, init, map, cmd, mergeCmd)
+module Model exposing (Model, Msg(..), bootstrap, encode, decode, init, map, cmd)
 
 import ModelBase exposing (..)
 import SyncModel exposing (SyncModel)
@@ -19,7 +19,6 @@ import Feature.ToolDef as ToolDef
 import Crdt.Doc exposing (Doc) -- TODO: drop
 
 import Json.Decode as D
-import Json.Decode.Pipeline exposing (required, hardcoded)
 import Json.Encode as E
 
 
@@ -73,6 +72,7 @@ type Msg
   -- box renderers
   = TopicMap TopicMapDef.Msg
   -- feature modules
+  | Crdt CrdtDef.Msg
   | Tool ToolDef.Msg
   | Text TextDef.Msg
   | Mouse MouseDef.Msg
@@ -159,8 +159,3 @@ map transform (model, cmd_) =
 cmd : Cmd Msg -> Model -> (Model, Cmd Msg)
 cmd cmd_ model =
   (model, cmd_)
-
-
-mergeCmd : Cmd Msg -> (Model, Cmd Msg) -> (Model, Cmd Msg)
-mergeCmd cmd2 (model, cmd1) =
-  (model, Cmd.batch [ cmd1, cmd2 ])

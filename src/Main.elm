@@ -39,6 +39,10 @@ import String exposing (fromInt, fromFloat)
 
 port modelReady : () -> Cmd msg
 
+port store : (E.Value, E.Value) -> Cmd msg
+
+port outgoing : E.Value -> Cmd msg
+
 port onScroll : (Point -> msg) -> Sub msg
 
 
@@ -59,7 +63,8 @@ main =
     , update = update
     , subscriptions =
         (\model -> Sub.batch
-          [ Text.sub
+          [ Crdt.sub
+          , Text.sub
           , Nav.sub
           , onScroll Scrolled
           ]
@@ -257,6 +262,7 @@ update msg appModel =
             -- box renderers
             TopicMap msg_ -> TMC.update msg_ env
             -- feature modules
+            Crdt msg_ -> Crdt.update msg_ env
             Tool msg_ -> Tool.update msg_ env
             Text msg_ -> Text.update msg_ env
             Mouse msg_ -> Mouse.update msg_ env
@@ -285,7 +291,7 @@ update msg appModel =
       in
       outcome
         |> Outcome.mergeCmd (Id.requestIds outcome.model)
-        |> Outcome.performWith model
+        |> performOutcomeWith model
         |> running
 
 
@@ -308,7 +314,7 @@ bootstrap msg =
             |> bootstrapContent rootTopicId
             |> TopicMap.bootstrapContent
             |> Outcome.with (initNav hash) (Directives Store NoUndo)
-            |> Outcome.perform 
+            |> performOutcome 
             |> runningWith (modelReady ())
         _ ->
           Console.logError "Main.bootstrap" "Not enough IDs in Bootstrap message"
@@ -372,6 +378,57 @@ running (model, cmd) =
 runningWith : Cmd Msg -> (Model, Cmd Msg) -> (AppModel, Cmd Msg)
 runningWith cmd_ (model, cmd) =
   (Running model, Cmd.batch [cmd, cmd_])
+
+
+--
+
+{- Perform the directives described in an outcome.
+Only used for bootstrap when there is no previous model (no undo possible).
+-}
+performOutcome : Outcome -> (Model, Cmd Msg)
+performOutcome outcome =
+  performOutcomeWith outcome.model outcome
+
+
+{- Perform the directives described in an outcome.
+In case of an Undo directive the previous model marks the begin of an undoable action.
+-}
+performOutcomeWith : Model -> Outcome -> (Model, Cmd Msg)
+performOutcomeWith prevModel {model, cmd, directives} =
+  let
+    performUndo : Model -> Model
+    performUndo model_ =
+      case directives.undo of
+        MarkSingle -> Crdt.markUndoSingle prevModel model_
+        MarkBegin -> Crdt.markUndoBegin prevModel model_
+        MarkEnd -> Crdt.markUndoEnd model_
+        NoUndo -> model_
+
+
+    performStorage : Model -> (Model, Cmd Msg)
+    performStorage model_ =
+      case directives.storage of
+        Store -> store_ model_ True
+        StoreOnly -> store_ model_ False
+        NoStore -> (model_, cmd)
+
+
+    store_ : Model -> Bool -> (Model, Cmd Msg)
+    store_ model_ shouldSend =
+      let
+        (doc, model__) = Crdt.encodeDelta model_
+      in
+      ( model__
+      , Cmd.batch
+          [ cmd
+          , store (doc, Model.encode model__)
+          , if shouldSend then outgoing doc else Cmd.none
+          ]
+      )
+  in
+  model
+    |> performUndo
+    |> performStorage
 
 
 --

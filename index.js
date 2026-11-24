@@ -32,16 +32,36 @@ zip.init(app)
 
 // Storage
 
-app.ports.storeModel.subscribe(([local, doc]) => {
-  store.put(local, doc)
+app.ports.store.subscribe(([doc, local]) => {
+  if (doc.kind !== 'ops') {
+    throw '❌ store: invalid doc'
+  }
+  store.put(doc, local)
 })
 
-// Scrolling
+// Sync
+
+app.ports.outgoing.subscribe(doc => {
+  if (doc.kind !== 'ops') {
+    throw '❌ outgoing: invalid doc'
+  }
+  ws.send(doc)
+})
+
+// Model-ready
 
 app.ports.modelReady.subscribe(() => {
-  ws.init()
+  ws.init(messageHandler)
   requestAnimationFrame(registerScrollHandler)
 })
+
+function messageHandler(env) {
+  if (env.kind === 'ops') {
+    app.ports.incoming.send(env)
+  } else {
+    throw `❌ incoming message: invalid envelope (kind="${env.kind}")`
+  }
+}
 
 function registerScrollHandler() {
   const main = document.getElementById('main')

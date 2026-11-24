@@ -1,9 +1,7 @@
 module Outcome exposing (Outcome, Directives, Storage(..), Undo(..), default, withDir, from,
-  fromDir, with, map, mergeCmd, perform, performWith, command)
+  fromDir, with, map, mergeCmd, command)
 
-import Feature.Crdt as Crdt
 import Model exposing (Model, Msg)
-import Storage as S
 
 import Task
 
@@ -24,6 +22,7 @@ type alias Directives =
 
 type Storage
   = Store
+  | StoreOnly
   | NoStore -- default
 
 
@@ -73,40 +72,7 @@ mergeCmd cmd out =
   { out | cmd = Cmd.batch [out.cmd, cmd] }
 
 
-{- Perform the effects encoded in an outcome.
-Only used for bootstrap when there is no previous model (no undo possible).
--}
-perform : Outcome -> (Model, Cmd Msg)
-perform outcome =
-  performWith outcome.model outcome
-
-
-{- Perform the effects encoded in an outcome.
-In case of an Undo directive the previous model marks the begin of an undoable action.
--}
-performWith : Model -> Outcome -> (Model, Cmd Msg)
-performWith prevModel {model, cmd, directives} =
-  let
-    performUndo : Model -> Model
-    performUndo model_ =
-      case directives.undo of
-        MarkSingle -> Crdt.markUndoSingle prevModel model_
-        MarkBegin -> Crdt.markUndoBegin prevModel model_
-        MarkEnd -> Crdt.markUndoEnd model_
-        NoUndo -> model_
-
-    performStorage : Model -> (Model, Cmd Msg)
-    performStorage model_ =
-      case directives.storage of
-        Store -> S.store model_ |> Model.mergeCmd cmd
-        NoStore -> (model_, cmd)
-  in
-  model
-    |> performUndo
-    |> performStorage
-
-
--- TODO: move to Model
+-- TODO: move to Model?
 command : msg -> Cmd msg
 command msg =
   Task.succeed ()

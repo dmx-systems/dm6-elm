@@ -1,4 +1,4 @@
-module Feature.Tool exposing (ToolbarPos, viewGlobalTools, viewMapTools, viewToolbar,
+port module Feature.Tool exposing (ToolbarPos, viewGlobalTools, viewMapTools, viewToolbar,
   viewTopicTools, closeMenu, update)
 
 import Assoc
@@ -21,7 +21,6 @@ import Outcome exposing (..)
 import Renderer exposing (Renderer)
 import Shared.Events as Events
 import Shared.ViewBase as VB
-import Storage as S
 import Topic
 import TopicMap.TopicMap as TopicMap
 
@@ -30,6 +29,14 @@ import Html.Attributes exposing (class, style, title, value, disabled)
 import Html.Events exposing (onClick, on, targetValue)
 import Json.Decode as D
 import String exposing (fromInt)
+
+
+
+-- PORTS
+
+
+port importJSON : () -> Cmd msg
+port exportJSON : () -> Cmd msg
 
 
 
@@ -330,10 +337,10 @@ update msg ({model} as env) =
         |> Env.outcomeDir (Directives Store NoUndo) -- Settings are local state, not undoable
     ToolDef.Import ->
       env
-        |> Env.outcomeCmd (S.importJSON ())
+        |> Env.outcomeCmd (importJSON ())
     ToolDef.Export ->
       env
-        |> Env.outcomeCmd (S.exportJSON ())
+        |> Env.outcomeCmd (exportJSON ())
     -- Map Tools
     ToolDef.CreateTopic ->
       env

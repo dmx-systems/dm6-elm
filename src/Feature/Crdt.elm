@@ -1,15 +1,17 @@
-module Feature.Crdt exposing (encodeDoc, setRootBoxId, createTopic, setTopicIcon, setTopicText,
-  setTopicViewSize, setTopicEditorSize, removeAssocId, deleteTopic, createAssoc, deleteAssoc,
-  createBox, createItemSet, addToItemSet, removeFromItemSet, addBoxTopic, setExpansion,
-  setBoxRenderer, markUndoSingle, markUndoBegin, markUndoEnd, undo, redo, canUndo, canRedo,
-  editResult)
+port module Feature.Crdt exposing (update, sub, encodeDelta, setRootBoxId, createTopic,
+  setTopicIcon, setTopicText, setTopicViewSize, setTopicEditorSize, removeAssocId, deleteTopic,
+  createAssoc, deleteAssoc, createBox, createItemSet, addToItemSet, removeFromItemSet,
+  addBoxTopic, setExpansion, setBoxRenderer, markUndoSingle, markUndoBegin, markUndoEnd, undo,
+  redo, canUndo, canRedo, editResult)
 
 import Console
-import Feature.CrdtDef exposing (refs, topicIconRef, topicTextRef, topicViewSizeRef,
+import Env exposing (Env)
+import Feature.CrdtDef as CrdtDef exposing (refs, topicIconRef, topicTextRef, topicViewSizeRef,
   topicEditorSizeRef, topicAssocIdsRef, boxTopicsRef, expansionRef, boxRendererRef,
   itemSetItemsRef)
-import Model exposing (Model)
+import Model exposing (Model, Msg(..))
 import ModelBase exposing (..)
+import Outcome exposing (..)
 import Renderer exposing (Renderer)
 import SyncModel exposing (SyncModel)
 
@@ -20,10 +22,43 @@ import Json.Encode as E
 
 
 
-encodeDoc : Model -> (Model, E.Value)
-encodeDoc ({crdt} as model) =
-  ( setLastStored (Doc.version crdt.doc) model
-  , Doc.encodeSince crdt.lastStored crdt.doc
+-- PORTS
+
+
+port incoming : (E.Value -> msg) -> Sub msg
+
+
+
+-- SUBSCRIPTIONS
+
+
+sub : Sub Msg
+sub =
+  incoming (Crdt << CrdtDef.OpsReceived)
+
+
+
+-- UPDATE
+
+
+update : CrdtDef.Msg -> Env -> Outcome
+update msg {model} =
+  case msg of
+    CrdtDef.OpsReceived ops ->
+      model.crdt.doc
+        |> Doc.decodeInto ops
+        |> result model
+        |> Outcome.withDir (Directives StoreOnly NoUndo)
+
+
+
+--
+
+
+encodeDelta : Model -> (E.Value, Model)
+encodeDelta ({crdt} as model) =
+  ( Doc.encodeSince crdt.lastStored crdt.doc
+  , setLastStored (Doc.version crdt.doc) model
   )
 
 
@@ -223,16 +258,20 @@ canRedo model =
 
 
 editResult : Model -> Result Edit.EditError (Doc SyncModel) -> Model
-editResult model result =
-  case result of
+editResult model result_ =
+  result model (result_ |> Result.mapError Edit.editErrorToString)
+
+
+result : Model -> Result String (Doc SyncModel) -> Model
+result model result_ =
+  case result_ of
     Ok doc ->
       doc
         |> setDoc model
         |> updateCache
     Err err ->
       let
-        _ = Console.logError "Feature.Crdt.editResult" "Edit error"
-          (Edit.editErrorToString err)
+        _ = Console.logError "Feature.Crdt.result" "Edit error" err
       in
       model
 

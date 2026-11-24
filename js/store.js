@@ -14,7 +14,7 @@ function init(_dbPromise) {
 function upgrade(db) {
   console.log('🔸 store.createObjectStore', localStore, opsStore)
   db.createObjectStore(localStore)
-  db.createObjectStore(opsStore)
+  db.createObjectStore(opsStore, {keyPath: 'id'})
 }
 
 async function getLocal() {
@@ -34,15 +34,16 @@ async function getDoc() {
   return doc
 }
 
-async function put(local, doc) {
+async function put(doc, local) {
   console.log('🔸 store.put', doc)
-  if (doc.kind !== 'ops') {
-    throw 'store.put: invalid doc'
-  }
+
+  // store local state
   const db = await dbPromise
   db.put(localStore, local, 'local')
+
+  // store doc
   const tx = db.transaction(opsStore, 'readwrite')
-  doc.ops.forEach(op => tx.store.add(op, op.id))
+  doc.ops.forEach(op => tx.store.add(op))
   return tx.done
 }
 
