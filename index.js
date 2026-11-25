@@ -19,10 +19,12 @@ const dbPromise = openDB(dbName, 1, {
 
 store.init(dbPromise)
 
+const local = await store.getLocal()
+const doc = local ? await store.getDoc(local.docId) : null
 const app = Elm.Main.init({
   flags: [
-    await store.getLocal(),
-    await store.getDoc(),
+    local,
+    doc,
     location.hash
   ]
 })
@@ -37,6 +39,10 @@ app.ports.store.subscribe(([doc, local]) => {
     throw '❌ store: invalid doc'
   }
   store.put(doc, local)
+})
+
+app.ports.storeMeta.subscribe(([replicaId, docId]) => {
+  store.putMeta(replicaId, docId)
 })
 
 // Sync

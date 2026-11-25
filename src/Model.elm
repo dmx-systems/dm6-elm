@@ -29,7 +29,7 @@ Additionally holds a materialized form (`cache`) of the synced state.
 -}
 type alias Model =
   { cache : SyncModel -- the materialized CRDT document, for reading
-  , replicaId : String
+  , docId : String
   , boxId : BoxId -- the box rendered fullscreen
   -- box renderers
   , topicMap : TopicMapDef.Model
@@ -48,10 +48,10 @@ type alias Model =
 
 {- Creates the initial empty Model when no DB exists.
 -}
-bootstrap : String -> TopicId -> Model
-bootstrap replicaId rootTopicId =
+bootstrap : String -> String -> TopicId -> Model
+bootstrap replicaId docId rootTopicId =
   { cache = SyncModel.bootstrap
-  , replicaId = replicaId
+  , docId = docId
   , boxId = BoxId rootTopicId
   -- box renderers
   , topicMap = TopicMapDef.init
@@ -91,10 +91,11 @@ type Msg
 -- JSON
 
 
-{- Content of the "local" object store.
+{- Content read from "local" object store.
 -}
 type alias LocalModel =
   { replicaId : String
+  , docId : String
   , boxId : BoxId
   , toolModel : ToolDef.Model
   }
@@ -105,7 +106,8 @@ type alias LocalModel =
 encode : Model -> E.Value
 encode model =
   E.object
-    [ ("replicaId", E.string model.replicaId)
+    -- Note: "replicaId" is stored only once, at bootstrap, not available in model
+    [ ("docId", E.string model.docId)
     , ("boxId", encodeBoxId model.boxId)
     -- feature modules
     , ("tool", ToolDef.encode model.tool)
@@ -118,8 +120,9 @@ decode : E.Value -> Result D.Error LocalModel
 decode local =
   let
     localDecoder =
-      D.map3 LocalModel
+      D.map4 LocalModel
         (D.field "replicaId" D.string)
+        (D.field "docId" D.string)
         (D.field "boxId" boxIdDecoder)
         (D.field "tool" ToolDef.decoder)
   in
@@ -127,11 +130,12 @@ decode local =
     |> D.decodeValue localDecoder
 
 
+{- Creates the initial Running model -}
 init : LocalModel -> (Doc SyncModel, SyncModel) -> Model
 init local (doc, docModel) =
   Model
     docModel
-    local.replicaId
+    local.docId
     local.boxId
     -- box renderers
     TopicMapDef.init

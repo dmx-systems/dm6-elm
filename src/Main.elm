@@ -41,6 +41,8 @@ port modelReady : () -> Cmd msg
 
 port store : (E.Value, E.Value) -> Cmd msg
 
+port storeMeta : (String, String) -> Cmd msg
+
 port outgoing : E.Value -> Cmd msg
 
 port onScroll : (Point -> msg) -> Sub msg
@@ -303,17 +305,20 @@ bootstrap msg =
   case msg of
     Bootstrap hash ids ->
       case ids of
-        repId :: rootId :: pool ->
+        repId :: docId :: rootId :: pool ->
           let
             replicaId = "r-" ++ repId
+            documentId = "d-" ++ docId
             rootTopicId = TopicId rootId
-            _ = Console.info "Main.bootstrap" {replicaId = replicaId, rootTopicId = rootId}
+            _ = Console.info "Main.bootstrap"
+              {replicaId = replicaId, docId = documentId, rootTopicId = rootId}
           in
-          Model.bootstrap replicaId rootTopicId
+          Model.bootstrap replicaId documentId rootTopicId
             |> Id.fillPool pool
             |> bootstrapContent rootTopicId
             |> TopicMap.bootstrapContent
             |> Outcome.with (initNav hash) (Directives Store NoUndo)
+            |> Outcome.mergeCmd (storeMeta (replicaId, documentId))
             |> performOutcome 
             |> runningWith (modelReady ())
         _ ->

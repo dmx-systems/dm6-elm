@@ -124,7 +124,7 @@ outcomeDir directives env =
   Outcome env.model Cmd.none directives
 
 
--- Note used
+-- Not used
 outcomeFrom : Cmd Msg -> Directives -> Env -> Outcome
 outcomeFrom cmd directives env =
   Outcome env.model cmd directives
