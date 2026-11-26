@@ -37,7 +37,7 @@ import String exposing (fromInt, fromFloat)
 -- PORTS
 
 
-port modelReady : () -> Cmd msg
+port modelReady : String -> Cmd msg           -- "docId"
 
 port store : (E.Value, E.Value) -> Cmd msg
 
@@ -86,7 +86,7 @@ init (local, ops, hash) =
           Cmd.batch
             [ Id.requestIds model
             , initNav hash model
-            , modelReady ()
+            , modelReady model.docId
             ]
   in
   (appModel, initCmd)
@@ -320,7 +320,7 @@ bootstrap msg =
             |> Outcome.with (initNav hash) (Directives Store NoUndo)
             |> Outcome.mergeCmd (storeMeta (replicaId, documentId))
             |> performOutcome 
-            |> runningWith (modelReady ())
+            |> runningWith (modelReady documentId)
         _ ->
           Console.logError "Main.bootstrap" "Not enough IDs in Bootstrap message"
             (Bootstrapping, Cmd.none)

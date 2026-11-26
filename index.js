@@ -56,8 +56,8 @@ app.ports.outgoing.subscribe(doc => {
 
 // Model-ready
 
-app.ports.modelReady.subscribe(() => {
-  ws.init(messageHandler)
+app.ports.modelReady.subscribe(docId => {
+  ws.init(docId, messageHandler)
   requestAnimationFrame(registerScrollHandler)
 })
 

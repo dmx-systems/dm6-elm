@@ -9,10 +9,12 @@ const HEARTBEAT_INTERVAL = 25 * 1000     // 25s
 const DEV = true
 
 let ws
+let docId
 let messageHandler
 let heartbeatTimer
 
-function init(_messageHandler) {
+function init(_docId, _messageHandler) {
+  docId = _docId
   messageHandler = _messageHandler
   document.addEventListener('visibilitychange', onVisibilityChange)
   connect()
@@ -38,8 +40,10 @@ function onVisibilityChange() {
 }
 
 function connect() {
-  DEV && console.log('🔸 ws.connect', URL)
-  ws = new WebSocket(URL)
+  const params = new URLSearchParams({docId})
+  const url = `${URL}?${params}`
+  DEV && console.log('🔸 ws.connect', url)
+  ws = new WebSocket(url)
   ws.onopen = e => {
     startHeartbeat()
   }

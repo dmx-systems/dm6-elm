@@ -50,13 +50,13 @@ async function getDoc(id) {
 
 async function put(doc, local) {
   console.log('🔸 store.put', local, doc)
+  const db = await dbPromise
   //
   // store local state
   const localState = {
     "boxId": local.boxId,
     "tool": local.tool
   }
-  const db = await dbPromise
   db.put(localStore, localState, local.docId)
   //
   // store doc

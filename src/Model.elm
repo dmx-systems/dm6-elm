@@ -29,7 +29,7 @@ Additionally holds a materialized form (`cache`) of the synced state.
 -}
 type alias Model =
   { cache : SyncModel -- the materialized CRDT document, for reading
-  , docId : String
+  , docId : String -- ID of the CRDT document being edited
   , boxId : BoxId -- the box rendered fullscreen
   -- box renderers
   , topicMap : TopicMapDef.Model
