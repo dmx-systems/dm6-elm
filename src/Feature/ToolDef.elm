@@ -9,8 +9,8 @@ import Json.Encode as E
 
 
 type alias Model =
-  { menu : Bool
-  , lineStyle : LineStyle
+  { menu : Bool           -- transient
+  , lineStyle : LineStyle -- persistent (`local` store)
   }
 
 
