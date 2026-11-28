@@ -1,4 +1,4 @@
-module Model exposing (Model, Msg(..), bootstrap, encode, decode, init, map, cmd)
+module Model exposing (Model, Msg(..), BootMode(..), bootstrap, encode, decode, init, map, cmd)
 
 import ModelBase exposing (..)
 import SyncModel exposing (SyncModel)
@@ -16,7 +16,7 @@ import Feature.SelDef as SelDef
 import Feature.TextDef as TextDef
 import Feature.ToolDef as ToolDef
 
-import Crdt.Doc exposing (Doc) -- TODO: drop
+import Crdt.Doc exposing (Doc)
 
 import Json.Decode as D
 import Json.Encode as E
@@ -68,6 +68,27 @@ bootstrap replicaId docId rootTopicId =
   }
 
 
+{- Creates the initial Running model -}
+init : String -> LocalDocState -> Doc SyncModel -> SyncModel -> Model
+init docId docState doc docModel =
+  Model
+    docModel
+    docId
+    docState.boxId
+    -- box renderers
+    TopicMapDef.init
+    TopicListDef.init
+    -- feature modules
+    (CrdtDef.init doc)
+    docState.tool
+    TextDef.init
+    MouseDef.init
+    SearchDef.init
+    IconDef.init
+    SelDef.init
+    IdDef.init
+
+
 type Msg
   -- box renderers
   = TopicMap TopicMapDef.Msg
@@ -81,24 +102,36 @@ type Msg
   | Nav NavDef.Msg
   | Id IdDef.Msg
   --
-  | Bootstrap String (List Id) -- initial URL #hash, initial ID pool
+  | Bootstrap BootMode String (List Id) -- initial URL #hash, initial ID pool
   | Scrolled Point
   | Cancel (Maybe Target)
   | NoOp
 
 
+type BootMode
+  = Local
+  | Server
+
+
+{- State compiled from environment (local DB, URL), for handing over to Elm initialization.
+Not created for `Bootstrap` (no local DB, no URL parameters).
+-}
+type alias LaunchState =
+  { replicaId : Maybe String        -- Not available for `ServerBootstrap`
+  , docId : String
+  , docState : Maybe LocalDocState  -- Not available for `Server` and `ServerBootstrap`
+  , doc : Maybe E.Value             -- Not available for `Server` and `ServerBootstrap`
+  }
+
+
+type alias LocalDocState =
+  { boxId : BoxId
+  , tool : ToolDef.Model
+  }
+
+
 
 -- JSON
-
-
-{- Content read from "local" object store.
--}
-type alias LocalModel =
-  { replicaId : String
-  , docId : String
-  , boxId : BoxId
-  , toolModel : ToolDef.Model
-  }
 
 
 {- Encodes the Model portion to be stored in the "local" object store.
@@ -106,7 +139,6 @@ type alias LocalModel =
 encode : Model -> E.Value
 encode model =
   E.object
-    -- Note: "replicaId" is stored only once, at bootstrap, not available in model
     [ ("docId", E.string model.docId)
     , ("boxId", encodeBoxId model.boxId)
     -- feature modules
@@ -114,41 +146,24 @@ encode model =
     ]
 
 
-{- Decodes the content of the "local" object store.
--}
-decode : E.Value -> Result D.Error LocalModel
-decode local =
+decode : E.Value -> Result D.Error LaunchState
+decode launchState =
   let
-    localDecoder =
-      D.map4 LocalModel
-        (D.field "replicaId" D.string)
+    launchStateDecoder =
+      D.map4 LaunchState
+        (D.field "replicaId" (D.nullable D.string))
         (D.field "docId" D.string)
+        (D.field "docState" (D.nullable docStateDecoder))
+        (D.field "doc" (D.nullable D.value))
+
+
+    docStateDecoder =
+      D.map2 LocalDocState
         (D.field "boxId" boxIdDecoder)
         (D.field "tool" ToolDef.decoder)
   in
-  local
-    |> D.decodeValue localDecoder
-
-
-{- Creates the initial Running model -}
-init : LocalModel -> (Doc SyncModel, SyncModel) -> Model
-init local (doc, docModel) =
-  Model
-    docModel
-    local.docId
-    local.boxId
-    -- box renderers
-    TopicMapDef.init
-    TopicListDef.init
-    -- feature modules
-    (CrdtDef.init doc)
-    local.toolModel
-    TextDef.init
-    MouseDef.init
-    SearchDef.init
-    IconDef.init
-    SelDef.init
-    IdDef.init
+  launchState
+    |> D.decodeValue launchStateDecoder
 
 
 

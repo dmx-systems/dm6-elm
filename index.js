@@ -19,18 +19,41 @@ const dbPromise = openDB(dbName, 1, {
 
 store.init(dbPromise)
 
-const local = await store.getLocal()
-const doc = local ? await store.getDoc(local.docId) : null
 const app = Elm.Main.init({
   flags: [
-    local,
-    doc,
+    await launchState(),
     location.hash
   ]
 })
 
 image.init(app, dbPromise)
 zip.init(app)
+
+// returns LaunchState or null
+async function launchState() {
+  const docIdFromUrl = getDocId(location.hash)
+  const docIdFromDB = await store.getLocal('lastDocId')
+  if (!docIdFromUrl && !docIdFromDB) {
+    return null
+  }
+
+  const replicaId = await store.getLocal('replicaId')   // FIXME: create per browsing context
+  const docId = docIdFromUrl || docIdFromDB
+  const docState = await store.getLocal(docId)
+  const doc = docState ? await store.getDoc(docId) : null
+
+  return {
+    replicaId, docId, docState, doc
+  }
+}
+
+// returns docId (string) or undefined
+function getDocId(hash) {
+  const val = hash.substr(1)
+  if (val.startsWith('d-')) {
+    return val
+  }
+}
 
 // Storage
 

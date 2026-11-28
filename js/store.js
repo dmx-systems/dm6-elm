@@ -17,21 +17,10 @@ function upgrade(db) {
   db.createObjectStore(opsStore)
 }
 
-async function getLocal() {
+// returns value from `local` store or null
+async function getLocal(key) {
   const db = await dbPromise
-  const replicaId = await db.get(localStore, 'replicaId')
-  let local = null
-  if (replicaId) {
-    const docId = await db.get(localStore, 'lastDocId')
-    const docState = await db.get(localStore, docId)
-    local = {
-      replicaId,
-      docId,
-      ...docState
-    }
-  }
-  console.log('🔸 store.getLocal', local)
-  return local
+  return await db.get(localStore, key) || null
 }
 
 async function getDoc(id) {

@@ -17,7 +17,7 @@ import Feature.Search as Search
 import Feature.Sel as Sel
 import Feature.Text as Text
 import Feature.Tool as Tool
-import Model exposing (Model, Msg(..))
+import Model exposing (Model, Msg(..), BootMode(..))
 import ModelBase exposing (..)
 import Outcome exposing (..)
 import Renderer
@@ -53,11 +53,11 @@ port onScroll : (Point -> msg) -> Sub msg
 
 
 type AppModel
-  = Bootstrapping
+  = Bootstrapping BootMode
   | Running Model
 
 
-main : Program (E.Value, E.Value, String) AppModel Msg
+main : Program (E.Value, String) AppModel Msg
 main =
   Browser.document
     { init = init
@@ -74,14 +74,14 @@ main =
     }
 
 
-init : (E.Value, E.Value, String) -> (AppModel, Cmd Msg)
-init (local, ops, hash) =
+init : (E.Value, String) -> (AppModel, Cmd Msg)
+init (launchState, hash) =
   let
-    appModel = initModel local ops
+    appModel = initModel launchState
     initCmd =
       case appModel of
-        Bootstrapping ->
-          Id.generateIds C.idPoolSize (Bootstrap hash)
+        Bootstrapping mode ->
+          Id.generateIds C.idPoolSize (Bootstrap mode hash)
         Running model ->
           Cmd.batch
             [ Id.requestIds model
@@ -95,32 +95,43 @@ init (local, ops, hash) =
 {- Creates initial AppModel based on passed database content.
 Database content is passed separately: local state and synced state.
 -}
-initModel : E.Value -> E.Value -> AppModel
-initModel local ops =
-  case local |> D.decodeValue (D.null True) of
+initModel : E.Value -> AppModel
+initModel launchState_ =
+  case launchState_ |> D.decodeValue (D.null True) of
     Ok True ->
       let
-        _ = Console.info "Main.initModel" "Bootstrap detected (no DB exists)"
+        _ = Console.info "Main.initModel" "5️⃣ Bootstrap (no DB exists)"
       in
-      Bootstrapping
+      Bootstrapping Local
     _ ->
-      case Model.decode local of
-        Ok localModel ->
-          case CrdtDef.decodeDoc ops localModel.replicaId of
-            Just (doc, docModel) ->
-              let
-                model = Model.init localModel (doc, docModel)
-                bytes = model |> Console.toString |> String.length |> fromInt
-                _ = Console.info "Main.initModel" ("Decoded model: " ++ bytes ++ " bytes")
-              in
-              Running model
-            Nothing ->
-              Bootstrapping -- decoding CRDT document failed -> creating bootstrap model
+      case Model.decode launchState_ of
+        Ok launchState ->
+          case (launchState.replicaId, launchState.doc, launchState.docState) of
+            (Just replicaId, Just ops, Just docState) ->
+              case CrdtDef.decodeDoc ops replicaId of
+                Just (doc, docModel) ->
+                  let
+                    model = Model.init launchState.docId docState doc docModel
+                    bytes = model |> Console.toString |> String.length |> fromInt
+                    _ = Console.info "Main.initModel"
+                      ("1️⃣ FromUrl / 4️⃣ FromDB, decoded model: " ++ bytes ++ " bytes")
+                  in
+                  Running model -- cases 1️⃣ "FromUrl" and 4️⃣ "FromDB"
+                _ ->
+                  let
+                    _ = Console.logError "Main.initModel" "Decoding CRDT document failed" e
+                  in
+                  Bootstrapping Local -- decoding failed -> creating local bootstrap model
+            (Just replicaId, _, _) ->
+              -- ### TODO: case 2️⃣ "Server" - create empty doc, wait for initial server push
+              Bootstrapping Local
+            (Nothing, _, _) ->
+              Bootstrapping Server -- case 3️⃣ "ServerBootstrap"
         Err e ->
           let
-            _ = Console.logError "Main.initModel" "Decoding \"local\" store failed" e
+            _ = Console.logError "Main.initModel" "Decoding launchState failed" e
           in
-          Bootstrapping -- decoding "local" store failed -> creating bootstrap model
+          Bootstrapping Local -- decoding launchState failed -> creating local bootstrap model
 
 
 
@@ -132,7 +143,7 @@ view appModel =
   Browser.Document
     "DM6 Elm"
     ( case appModel of
-        Bootstrapping -> []
+        Bootstrapping _ -> []
         Running model ->
           [ div
               ( Events.globalMouseHandler
@@ -255,7 +266,7 @@ update msg appModel =
         _ -> Console.infoGroup msg
   in
   case appModel of
-    Bootstrapping -> bootstrap msg
+    Bootstrapping _ -> bootstrap msg
     Running model ->
       let
         env = Env model dispatch
@@ -273,7 +284,7 @@ update msg appModel =
             Nav msg_ -> Nav.update msg_ env
             Id msg_ -> Id.update msg_ env
             --
-            Bootstrap hash ids ->
+            Bootstrap mode hash ids ->
               let
                 _ = Console.logError "Main.update"
                   "Received Bootstrap message while not in Bootstrapping state" "-> ignore"
@@ -303,31 +314,36 @@ Bootstrapping to Running.
 bootstrap : Msg -> (AppModel, Cmd Msg)
 bootstrap msg =
   case msg of
-    Bootstrap hash ids ->
-      case ids of
-        repId :: docId :: rootId :: pool ->
-          let
-            replicaId = "r-" ++ repId
-            documentId = "d-" ++ docId
-            rootTopicId = TopicId rootId
-            _ = Console.info "Main.bootstrap"
-              {replicaId = replicaId, docId = documentId, rootTopicId = rootId}
-          in
-          Model.bootstrap replicaId documentId rootTopicId
-            |> Id.fillPool pool
-            |> bootstrapContent rootTopicId
-            |> TopicMap.bootstrapContent
-            |> Outcome.with (initNav hash) (Directives Store NoUndo)
-            |> Outcome.mergeCmd (storeMeta (replicaId, documentId))
-            |> performOutcome 
-            |> runningWith (modelReady documentId)
-        _ ->
-          Console.logError "Main.bootstrap" "Not enough IDs in Bootstrap message"
-            (Bootstrapping, Cmd.none)
+    Bootstrap mode hash ids ->
+      case mode of
+        Local ->
+          case ids of
+            repId :: docId :: rootId :: pool ->
+              let
+                replicaId = "r-" ++ repId
+                documentId = "d-" ++ docId
+                rootTopicId = TopicId rootId
+                _ = Console.info "Main.bootstrap"
+                  {replicaId = replicaId, docId = documentId, rootTopicId = rootId}
+              in
+              Model.bootstrap replicaId documentId rootTopicId
+                |> Id.fillPool pool
+                |> bootstrapContent rootTopicId
+                |> TopicMap.bootstrapContent
+                |> Outcome.with (initNav hash) (Directives Store NoUndo)
+                |> Outcome.mergeCmd (storeMeta (replicaId, documentId))
+                |> performOutcome 
+                |> runningWith (modelReady documentId)
+            _ ->
+              Console.logError "Main.bootstrap" "Not enough IDs in Bootstrap message"
+                (Bootstrapping Local, Cmd.none)
+        Server ->
+          -- ### TODO: case 3️⃣ "ServerBootstrap" - create empty doc, wait for initial server push
+          (Bootstrapping Local, Cmd.none)
     _ ->
       Console.logError "Main.bootstrap"
         "Received other than Bootstrap message while in Bootstrapping state"
-        (Bootstrapping, Cmd.none)
+        (Bootstrapping Local, Cmd.none)
 
 
 {- Sets up bootstrap CRDT content for newly created DB: root topic, root box, root box ID.
